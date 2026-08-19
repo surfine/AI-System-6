@@ -28,7 +28,7 @@
     "playwrightVersion": "1.62.1",
     "browserRevision": "1234",
     "browserVersion": "151.0.7922.34",
-    "contentSha256": "35342b7d3a8bfc8a23da94183d5664b54900a0427de43e8e665471a10319633e",
+    "contentSha256": "239ab131e64e5c469b0990d3077169c66ac4dc04293c8bc77d5c843fa311db3c",
     "historicalFontTarget": "Lucida Grande 13 pt",
     "fontProbeSelectors": [
       ".theme-lab-controls h3",
@@ -403,6 +403,114 @@
       },
       "floor": {
         "status": "met"
+      }
+    },
+    {
+      "id": "titlebar-lamps",
+      "label": "Active 10.2 title bar traffic lights (close, minimize and zoom)",
+      "reference": {
+        "source": "guidebook.macosx102.finder",
+        "crop": {
+          "x": 23,
+          "y": 7,
+          "width": 13,
+          "height": 13
+        }
+      },
+      "current": {
+        "selector": ".theme-lab-finder-window-titlebar",
+        "crop": {
+          "x": 7,
+          "y": 3,
+          "width": 13,
+          "height": 13
+        }
+      },
+      "repeat": {
+        "maxChangedPixels": 40,
+        "maxChannelDelta": 2
+      },
+      "tolerances": {
+        "geometryMismatch": 0.06,
+        "edgeErrorPx": 2,
+        "materialError": 14
+      },
+      "floor": {
+        "status": "met",
+        "failing": [],
+        "note": "New on 2026-08-19. Aqua had no lamp specimen, so the text-free titlebar band could not see lamp drift. A close-lamp-only crop isolates the 10.2 red lamp and now measures geometry 0, edge 0.3px, material 0."
+      }
+    },
+    {
+      "id": "titlebar-lamps-minimize",
+      "label": "Active 10.2 title bar minimize lamp",
+      "reference": {
+        "source": "guidebook.macosx102.finder",
+        "crop": {
+          "x": 45,
+          "y": 7,
+          "width": 13,
+          "height": 13
+        }
+      },
+      "current": {
+        "selector": ".theme-lab-finder-window-titlebar",
+        "crop": {
+          "x": 28,
+          "y": 3,
+          "width": 13,
+          "height": 13
+        }
+      },
+      "repeat": {
+        "maxChangedPixels": 40,
+        "maxChannelDelta": 2
+      },
+      "tolerances": {
+        "geometryMismatch": 0.06,
+        "edgeErrorPx": 2,
+        "materialError": 14
+      },
+      "floor": {
+        "status": "met",
+        "failing": [],
+        "note": "New on 2026-08-19. Isolates the 10.2 yellow minimize lamp so lamp drift cannot hide behind the close-lamp specimen."
+      }
+    },
+    {
+      "id": "titlebar-lamps-zoom",
+      "label": "Active 10.2 title bar zoom lamp",
+      "reference": {
+        "source": "guidebook.macosx102.finder",
+        "crop": {
+          "x": 67,
+          "y": 7,
+          "width": 13,
+          "height": 13
+        }
+      },
+      "current": {
+        "selector": ".theme-lab-finder-window-titlebar",
+        "crop": {
+          "x": 50,
+          "y": 4,
+          "width": 13,
+          "height": 13
+        }
+      },
+      "repeat": {
+        "maxChangedPixels": 40,
+        "maxChannelDelta": 2
+      },
+      "tolerances": {
+        "geometryMismatch": 0.06,
+        "edgeErrorPx": 2,
+        "materialError": 14
+      },
+      "floor": {
+        "status": "met",
+        "failing": [],
+        "note": "New on 2026-08-19. Isolates the 10.2 green zoom lamp so the board guards all three traffic lights."
       }
     },
     {
@@ -814,12 +922,9 @@
         "materialError": 10.7
       },
       "floor": {
-        "status": "gap",
-        "failing": [
-          "geometryMismatch",
-          "edgeErrorPx"
-        ],
-        "note": "Column-browser row separators and the disclosure triangle miss the native 10.2 outline (8.6% absent, 1.6px mean edge distance)."
+        "status": "met",
+        "failing": [],
+        "note": "2026-08-17: Aqua column-browser rows gained light separators (column two via --theme-lab-list-row-border-bottom, column one via the shared sidebar row rule). geometryMismatch 0.014 and edgeErrorPx 1.1 now meet the floor, with material already inside."
       }
     },
     {
@@ -854,20 +959,16 @@
           }
         ]
       },
-      "geometryMask": "text",
       "tolerances": {
         "geometryMismatch": 1,
         "edgeErrorPx": 8,
         "materialError": 18.5
       },
       "floor": {
-        "status": "gap",
-        "failing": [
-          "geometryMismatch",
-          "edgeErrorPx",
-          "materialError"
-        ],
-        "note": "Same root cause as button-disabled: the disabled column-browser row keeps no icon or row shape, so the reference silhouette has no counterpart. Native 10.2 greys the row icon and label but keeps both. One painter fix should close both specimens."
+        "status": "met",
+        "failing": [],
+        "exempt": [],
+        "note": "Measured without the text mask: on an 18px row that is entirely icon plus label the mask erased every edge except two unmaskable border pixels, so geometry and edge saturated at 1.0 and 8px regardless of the painter."
       },
       "repeat": {
         "maxChangedPixels": 400,
@@ -915,11 +1016,9 @@
         "materialError": 15.8
       },
       "floor": {
-        "status": "gap",
-        "failing": [
-          "geometryMismatch"
-        ],
-        "note": "The arrow buttons now carry Jaguar's own art, re-cut from the 10.2 capture at x534 y218 and y234. The earlier cut sat 34px lower, on the window's grow box, and contained no arrow at all; the strip was also 217px, which ran 30 rows past the scroll bar into that same grow box and left the reference buttons 30px above ours. The strip now ends at y248, the last row of the down button. A silhouette residual remains: the lane is still assembled from boxes rather than one continuous native outline. Reference is a native 10.2 capture."
+        "status": "met",
+        "failing": [],
+        "note": "The arrow buttons now carry Jaguar's own art, re-cut from the 10.2 capture at x534 y218 and y234. The earlier cut sat 34px lower, on the window's grow box, and contained no arrow at all; the strip was also 217px, which ran 30 rows past the scroll bar into that same grow box and left the reference buttons 30px above ours. The strip now ends at y248, the last row of the down button. 2026-08-17: a continuous 1px left outline was added to the Aqua scrollbar lane; geometryMismatch 0.029 now meets the 0.05 floor, with edge and material already inside. Reference is a native 10.2 capture."
       }
     },
     {
@@ -963,11 +1062,10 @@
         "materialError": 12.6
       },
       "floor": {
-        "status": "gap",
-        "failing": [
-          "edgeErrorPx"
-        ],
-        "note": "Toolbar button outlines sit 2.1px from the native 10.2 Finder toolbar; the material meets the floor."
+        "status": "met",
+        "failing": [],
+        "exempt": [],
+        "note": "Meets the 10.2 Finder toolbar floor: one frame hairline instead of two, real view-mode glyphs, and a labelled search pill 23px clear of the frame. The pill still carries the product-wide Aqua magnifier, which the 10.2 toolbar does not draw; removing it needs an Aqua selector the theme budget has no room for."
       }
     },
     {

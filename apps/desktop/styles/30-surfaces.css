@@ -1956,6 +1956,41 @@ body.alarm-clock-ringing .alarm-clock-menu-icon {
   color: var(--paper);
 }
 
+/* Dictation Pad Record/Stop. The cells share Writing Bell's segmented grammar
+   (paper, ink divider, no bevel), but Record is a transient action rather than
+   a persistent mode, so the disabled cell is simply dimmed by the shared
+   `button:disabled` rule instead of being inverted. */
+.dictation-capture-actions {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--dictation-capture-gap);
+  padding: var(--dictation-capture-padding);
+  border: var(--dictation-capture-border);
+  border-radius: var(--dictation-capture-radius);
+  background: var(--dictation-capture-bg);
+  box-shadow: var(--dictation-capture-shadow);
+}
+
+.dictation-capture-actions button {
+  min-height: var(--dictation-capture-button-min-height);
+  border: var(--dictation-capture-button-border);
+  border-right: var(--dictation-capture-button-border-right);
+  border-radius: var(--dictation-capture-button-radius);
+  background: var(--dictation-capture-button-bg);
+  color: var(--dictation-capture-button-fg);
+  box-shadow: var(--dictation-capture-button-shadow);
+}
+
+.dictation-capture-actions button:last-child {
+  border-right: var(--dictation-capture-button-last-border-right);
+}
+
+.dictation-capture-actions button:not(:disabled):hover,
+.dictation-capture-actions button:not(:disabled):focus-visible {
+  background: var(--paper);
+  color: var(--ink);
+}
+
 .writing-bell-presets {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

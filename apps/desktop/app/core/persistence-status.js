@@ -192,6 +192,7 @@ function settingsSnapshotPayload() {
     modernFonts: modernFontsInput.checked,
     classicLineIcons: classicLineIconsInput.checked,
     theme: getCurrentTheme(),
+    liquidTintLevel: liquidTintLevelInput ? Number(liquidTintLevelInput.value) : 0.5,
     soundEffects: soundEffectsInput.checked,
     menuClock: menuClockInput.checked,
     keepScreenAwake: document.getElementById("keep-screen-awake")?.checked || false,
@@ -1657,6 +1658,11 @@ function applySettings(settings) {
   if (restoredTheme) {
     applyTheme(restoredTheme, { persist: true, saveDesk: false, announce: false });
   }
+  const restoredTint = Number.isFinite(Number(settings.liquidTintLevel))
+    ? Math.min(1, Math.max(0, Number(settings.liquidTintLevel)))
+    : 0.5;
+  if (liquidTintLevelInput) liquidTintLevelInput.value = String(restoredTint);
+  if (typeof applyLiquidTintLevel === "function") applyLiquidTintLevel(restoredTint);
   if (typeof settings.soundEffects === "boolean") {
     soundEffectsInput.checked = settings.soundEffects;
   }

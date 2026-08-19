@@ -2,11 +2,53 @@
 
 let desktopTapHintShown = false;
 
+function liquidTintLabelKey(value) {
+  if (value < 0.34) return "liquid_tint_clear";
+  if (value > 0.67) return "liquid_tint_tinted";
+  return "liquid_tint_balance";
+}
+
+function applyLiquidTintLevel(value) {
+  if (!liquidTintLevelInput) return;
+  const raw = Number.isFinite(Number(value)) ? Number(value) : Number(liquidTintLevelInput.value);
+  const numeric = Math.min(1, Math.max(0, raw || 0));
+  liquidTintLevelInput.value = String(numeric);
+  document.documentElement.style.setProperty("--liquid-tint-level", String(numeric));
+  if (liquidTintLevelOutput) {
+    const key = liquidTintLabelKey(numeric);
+    liquidTintLevelOutput.dataset.i18n = key;
+    liquidTintLevelOutput.textContent = typeof t === "function" ? t(key) : key;
+  }
+  ensureLazySystemModule("app/core/liquid-glass-overlay.js", "AISystem6LiquidGlassOverlayLoaded")
+    .then(() => window.AISystem6LiquidGlassOverlay?.refresh?.())
+    .catch(() => {});
+}
+
+function syncLiquidTintVisibility() {
+  const field = liquidTintLevelInput?.closest?.(".liquid-tint-field");
+  if (!field) return;
+  field.hidden = window.AISystem6Theme?.getCurrentTheme?.() !== "liquid-glass";
+}
+
 function wireAppEvents() {
   installDesktopScrollLock();
   installHeldPlaceTracking();
   initializeBalloonHelp();
   initializeWelcomeFloppy();
+  const clearLiquidPress = () => document.querySelectorAll(".is-glass-pressed").forEach((node) => node.classList.remove("is-glass-pressed"));
+  addEventListener("pointerdown", (event) => {
+    if (event.pointerType === "touch") {
+      const target = event.target instanceof Element ? event.target.closest(".btn") : null;
+      if (target) target.classList.add("is-glass-pressed");
+    }
+  });
+  addEventListener("pointerup", (event) => {
+    const target = event.target instanceof Element ? event.target.closest(".is-glass-pressed") : null;
+    if (target) target.classList.remove("is-glass-pressed");
+  });
+  addEventListener("pointercancel", clearLiquidPress);
+  addEventListener("orientationchange", clearLiquidPress);
+  addEventListener("resize", clearLiquidPress);
 
   findPathResultsEl.addEventListener("click", (event) => {
     const translateButton = event.target.closest("[data-find-path-translate]");
@@ -1372,6 +1414,13 @@ function wireAppEvents() {
   modernFontsInput.addEventListener("change", applyModernFonts);
 
   appearanceThemeInput?.addEventListener("change", () => applyTheme(appearanceThemeInput.value));
+
+  liquidTintLevelInput?.addEventListener("input", () => {
+    applyLiquidTintLevel();
+    scheduleSettingsSave();
+  });
+  document.addEventListener("ai-system6-themechange", syncLiquidTintVisibility);
+  syncLiquidTintVisibility();
 
   soundEffectsInput.addEventListener("change", () => saveDeskState());
 

@@ -1,4 +1,15 @@
 body.use-liquid-glass {
+  --liquid-tint-level: 0.5;
+  --liquid-fill-tint: rgba(255, 255, 255, 0.3);
+  --liquid-toolbar-tint: rgba(255, 255, 255, 0.22);
+  --liquid-sidebar-tint: rgba(232, 240, 246, 0.46);
+  --liquid-menu-alpha: 0.88;
+  --liquid-edge-contrast: rgba(16, 17, 20, 0.14);
+  --liquid-refraction: 0.86;
+  --liquid-interaction-tint: rgba(255, 255, 255, 0.28);
+  --liquid-inactive-chrome: rgba(255, 255, 255, 0.26);
+  --liquid-content-surface: rgba(255, 255, 255, 0.12);
+  --liquid-motion-scale: 1;
   /* 苹方, the Simplified system face since El Capitan. Liquid Glass is the
      only era whose Chinese type is the current one; without this the 2026
      appearance inherits the foundation stack and sets Chinese in 宋体,
@@ -7,14 +18,26 @@ body.use-liquid-glass {
   --theme-title-font: var(--theme-ui-font);
   --window-bg: var(--glass-surface);
   --window-radius: var(--liquid-window-radius);
+  --container-radius: var(--liquid-window-radius);
   --window-shadow: var(--system-shadow);
   --window-backdrop-filter: blur(4px) saturate(160%) brightness(1.04);
-  --surface-primary: rgba(255, 255, 255, 0.3);
+  --surface-primary: var(--liquid-fill-tint);
   --surface-secondary: rgba(230, 237, 242, 0.34);
   --surface-inset: rgba(255, 255, 255, 0.18);
-  --toolbar-bg: rgba(255, 255, 255, 0.22);
+  --toolbar-bg: var(--liquid-toolbar-tint);
   --toolbar-border: 1px solid rgba(255, 255, 255, 0.46);
-  --sidebar-bg: rgba(232, 240, 246, 0.46);
+  --sidebar-bg: var(--liquid-sidebar-tint);
+  --tdi-rail-bg: var(--liquid-sidebar-tint);
+  --tdi-rail-border: 0;
+  --tdi-rail-radius: 0;
+  --tdi-rail-shadow: none;
+  --theme-lab-sidebar-icon-size: 16px;
+  --theme-lab-sidebar-icon-bg: transparent;
+  --theme-lab-sidebar-system-svg-opacity: 0;
+  --theme-lab-sidebar-startup-disk-image: url("./assets/themes/liquid-glass/startupDisk-16.svg");
+  --theme-lab-sidebar-applications-image: url("./assets/themes/liquid-glass/applications-16.svg");
+  --theme-lab-sidebar-document-image: url("./assets/themes/liquid-glass/document-16.svg");
+  --theme-lab-sidebar-trash-image: url("./assets/themes/liquid-glass/trash-16.svg");
   --selection-bg: #0071e3;
   --selection-fg: #ffffff;
   --sidebar-selection-bg: rgba(0, 113, 227, 0.78);
@@ -388,7 +411,8 @@ body.use-liquid-glass {
   --clio-file-chip-radius: 8px;
   --system-border: 1px solid rgba(255, 255, 255, 0.72);
   --window-border: var(--system-border);
-  --menu-bar-border: 1px solid rgba(16, 17, 20, 0.1);
+  --menu-bar-border-color: rgba(16, 17, 20, 0.1);
+  --menu-bar-border: 1px solid var(--menu-bar-border-color);
   --system-icon-stroke-width: 1.8;
   /* Liquid owns its line contract in both font modes: a hairline rule under
      the rounded 1.8px icon stroke, and solid symbols that are never dilated. */
@@ -406,8 +430,19 @@ body.use-liquid-glass {
   --happy-mac-backdrop: blur(8px) saturate(140%);
   --system-shadow: 0 8px 15px rgba(0, 0, 0, 0.04), 0 24px 58px rgba(18, 28, 38, 0.08);
   --system-inset: inset 1px 1px 0 rgba(255, 255, 255, 0.78);
+  --liquid-action-ink: rgba(16, 17, 20, 0.94);
+  /* One press response for every interactive glass control, so reduced motion
+     can drop the movement in one place and keep the colour change. */
+  --liquid-press-transform: translateY(1px);
   --liquid-window-radius: 18px;
   --liquid-menu-radius: 12px;
+  --liquid-card-radius-lg: 18px;
+  --liquid-card-radius-md: 16px;
+  --liquid-card-radius-sm: 12px;
+  --liquid-card-radius-xs: 14px;
+  --liquid-pill-radius: 999px;
+  --liquid-surface-radius-lg: 18px;
+  --liquid-surface-radius-sm: 12px;
   --liquid-tab-radius: var(--liquid-window-radius);
   --liquid-tab-close-width: 36px;
   --tdi-tab-close-size: 30px;
@@ -615,9 +650,17 @@ body.use-liquid-glass {
   --glass-rim:
     radial-gradient(106% 128% at 100% 100%, rgba(16, 17, 20, 0.12), transparent 44%),
     linear-gradient(180deg, transparent 40%, rgba(16, 17, 20, 0.035));
+  /* The tint slider drives the chrome material, not only the overlay uniform.
+     --liquid-tint-level 0 reads clear, 0.5 reproduces the shipped surface
+     exactly, 1 reads tinted, so an upgraded desk looks unchanged until the
+     reader moves the control. */
   --glass-title-surface:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.28)),
-    rgba(255, 255, 255, 0.34);
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, calc(0.48 + 0.48 * var(--liquid-tint-level, 0.5))),
+      rgba(255, 255, 255, calc(0.14 + 0.28 * var(--liquid-tint-level, 0.5)))
+    ),
+    rgba(255, 255, 255, calc(0.16 + 0.36 * var(--liquid-tint-level, 0.5)));
   --system-titlebar-active-bg: var(--glass-title-surface);
   --system-titlebar-inactive-bg:
     linear-gradient(180deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.22)),
@@ -1139,6 +1182,19 @@ body.use-liquid-glass {
     rgba(16, 17, 20, 0.76);
   --writing-bell-mode-active-fg: #ffffff;
   --writing-bell-mode-active-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  --dictation-capture-gap: 3px;
+  --dictation-capture-padding: 3px;
+  --dictation-capture-border: 1px solid rgba(16, 17, 20, 0.14);
+  --dictation-capture-radius: 10px;
+  --dictation-capture-bg: rgba(255, 255, 255, 0.34);
+  --dictation-capture-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  --dictation-capture-button-min-height: 30px;
+  --dictation-capture-button-border: 1px solid transparent;
+  --dictation-capture-button-border-right: 1px solid transparent;
+  --dictation-capture-button-last-border-right: 1px solid transparent;
+  --dictation-capture-button-radius: 7px;
+  --dictation-capture-button-bg: transparent;
+  --dictation-capture-button-fg: rgba(16, 17, 20, 0.82);
   --writing-bell-preset-border-color: rgba(255, 255, 255, 0.64);
   --writing-bell-preset-bg:
     linear-gradient(180deg, rgba(255, 255, 255, 0.54), rgba(255, 255, 255, 0.18)),
@@ -1337,7 +1393,9 @@ body.use-liquid-glass {
   --teachtext-preview-image-bg: rgba(255, 255, 255, 0.24);
   --teachtext-preview-blockquote-bg: rgba(255, 255, 255, 0.22);
   --reader-content-border: 1px solid rgba(16, 17, 20, 0.14);
-  --reader-content-radius: 16px;
+  /* Inset 11px inside the window corner; stay concentric with it. */
+  --reader-content-inset: 11px;
+  --reader-content-radius: max(0px, calc(var(--liquid-window-radius) - var(--reader-content-inset)));
   --reader-content-bg:
     linear-gradient(135deg, rgba(232, 238, 242, 0.045), rgba(235, 241, 247, 0.035)),
     rgba(255, 255, 255, 0.12);
@@ -1538,7 +1596,7 @@ body.use-liquid-glass {
     0 6px 16px rgba(18, 28, 38, 0.08);
   --calculator-key-hover-border-color: rgba(16, 17, 20, 0.64);
   --calculator-key-hover-bg: rgba(255, 255, 255, 0.56);
-  --calculator-key-active-transform: translateY(1px);
+  --calculator-key-active-transform: var(--liquid-press-transform);
   --calculator-key-active-bg: rgba(16, 17, 20, 0.86);
   --calculator-key-active-fg: #ffffff;
   --calculator-key-active-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
@@ -2096,7 +2154,7 @@ body.use-liquid-glass .finder-operation-layout {
 body.use-liquid-glass .finder-operation-subject {
   padding: 16px 12px;
   border: 1px solid rgba(255, 255, 255, 0.42);
-  border-radius: 18px;
+  border-radius: var(--liquid-card-radius-lg);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.38), rgba(255, 255, 255, 0.12)),
     rgba(255, 255, 255, 0.14);
@@ -2113,7 +2171,7 @@ body.use-liquid-glass .finder-operation-list {
   gap: 6px;
   padding: 8px;
   border: 1px solid rgba(255, 255, 255, 0.42);
-  border-radius: 16px;
+  border-radius: var(--liquid-card-radius-md);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.38), rgba(255, 255, 255, 0.14)),
     rgba(255, 255, 255, 0.16);
@@ -2125,7 +2183,7 @@ body.use-liquid-glass .finder-operation-list {
 body.use-liquid-glass .finder-operation-item {
   padding: 7px 10px;
   border: 1px solid rgba(255, 255, 255, 0.42);
-  border-radius: 12px;
+  border-radius: var(--liquid-card-radius-sm);
   background: rgba(255, 255, 255, 0.18);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.54);
 }
@@ -2144,7 +2202,7 @@ body.use-liquid-glass .finder-operation-result {
   margin-top: 14px;
   padding: 12px 14px;
   border: 1px solid rgba(255, 255, 255, 0.36);
-  border-radius: 14px;
+  border-radius: var(--liquid-card-radius-xs);
   background: rgba(255, 255, 255, 0.18);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.56);
 }
@@ -2181,6 +2239,22 @@ body.use-liquid-glass .docmap-markmap-svg .markmap-link {
   font-size: 17px;
   line-height: 1.45;
   text-align: center;
+}
+
+/* Golden Gate 6.1: the chrome bars stacked at the top of a window read as one
+   continuous system region -- one material, no interior hairlines -- while the
+   title bar, status strip and navigator keep their separate semantics. The one
+   divider belongs where chrome meets content, so it sits on the pane. */
+body.use-liquid-glass .window > :is(.title-bar, .details-bar, .finder-navigation-bar) {
+  border-bottom-color: transparent;
+  background: var(--glass-title-surface);
+  box-shadow: none;
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+}
+
+body.use-liquid-glass .window > .window-pane {
+  border-top: 1px solid rgba(16, 17, 20, 0.12);
 }
 
 body.use-liquid-glass .title-bar {
@@ -2220,6 +2294,27 @@ body.use-liquid-glass .window:not(.is-active) .title-bar h2 {
   border: 0;
   color: rgba(16, 17, 20, 0.72);
   font-weight: 650;
+}
+
+/* A backdrop window quietens its chrome, never its document. The status strip
+   and the buttons it carries are chrome; .window-pane keeps full contrast, so
+   the reader can still read a window that is not the current target. */
+body.use-liquid-glass .window:not(.is-active) {
+  --liquid-action-ink: rgba(16, 17, 20, 0.62);
+  /* The suggested action of a backdrop window is still the suggested action,
+     but it is not the current target: mute the blue rather than erase it, and
+     keep the label above 4.5:1 on the muted fill. */
+  --btn-default-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.03)),
+    linear-gradient(180deg, #5b87b4, #4d78a4);
+  --btn-default-active-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.02)),
+    linear-gradient(180deg, #4d78a4, #436c95);
+  --btn-default-text-shadow: none;
+}
+
+body.use-liquid-glass .window:not(.is-active) :is(.details-bar, .details-bar .sys-icon) {
+  color: rgba(16, 17, 20, 0.62);
 }
 
 html:lang(zh-Hans) body.use-liquid-glass .title-bar h1,
@@ -2267,7 +2362,7 @@ body.use-liquid-glass .resize-box::after {
   width: 8px;
   height: 2px;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--liquid-pill-radius);
   background: rgba(16, 17, 20, 0.58);
   opacity: var(--glass-lamp-mark-opacity);
   transform: translate(-50%, -50%);
@@ -2343,7 +2438,7 @@ body.use-liquid-glass input[type="number"],
 body.use-liquid-glass input[type="date"],
 body.use-liquid-glass .system-select-button {
   border: 1px solid rgba(255, 255, 255, 0.62);
-  border-radius: 12px;
+  border-radius: var(--liquid-surface-radius-sm);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.16)),
     rgba(255, 255, 255, 0.16);
@@ -2362,7 +2457,7 @@ body.use-liquid-glass .system-select-button {
    after this shorthand; now it lives here and the override is gone). */
 body.use-liquid-glass select {
   border: 1px solid rgba(255, 255, 255, 0.62);
-  border-radius: 12px;
+  border-radius: var(--liquid-surface-radius-sm);
   background:
     url("./system.css-reference/icon/select-button.svg") right 6px center / 17px 17px no-repeat,
     rgba(255, 255, 255, 0.16);
@@ -2492,10 +2587,19 @@ body.use-liquid-glass .btn:hover:not(:disabled):not(.is-disabled):not(.is-active
 }
 
 body.use-liquid-glass .btn:active:not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected) {
-  transform: translateY(1px);
+  transform: var(--liquid-press-transform);
   background: rgba(255, 255, 255, 0.64);
   color: rgba(16, 17, 20, 0.94);
   box-shadow: inset 0 2px 4px rgba(18, 28, 38, 0.12);
+}
+
+body.use-liquid-glass .btn.is-glass-pressed:not(:disabled):not(.is-disabled):not(.is-selected):not(.is-multi-selected) {
+  transform: var(--liquid-press-transform);
+  background: var(--liquid-interaction-tint);
+  color: var(--liquid-action-ink);
+  box-shadow:
+    inset 0 2px 4px rgba(18, 28, 38, 0.12),
+    0 0 0 3px var(--glass-field-focus-ring);
 }
 
 body.use-liquid-glass .btn.danger:not(:disabled):not(.is-disabled) {
@@ -2545,7 +2649,12 @@ body.use-liquid-glass .btn.default.is-disabled:active {
 
 body.use-liquid-glass .composer {
   border: var(--clio-composer-border);
-  border-radius: var(--clio-composer-radius);
+  /* The composer is flush with the window, and the window clips its children,
+     so its bottom corners must follow the window curve or the clip leaves a
+     sliver of frame in each corner. The top corners stay the composer's own. */
+  border-radius:
+    var(--clio-composer-radius) var(--clio-composer-radius)
+    var(--container-radius) var(--container-radius);
   background: var(--clio-composer-bg);
   box-shadow: var(--clio-composer-shadow);
   backdrop-filter: blur(22px) saturate(150%);
@@ -2597,7 +2706,7 @@ body.use-liquid-glass .mde-surface::before {
   width: min(100%, var(--mde-paper-width));
   transform: translateX(-50%);
   border: 1px solid rgba(255, 255, 255, 0.44);
-  border-radius: 18px;
+  border-radius: var(--liquid-surface-radius-lg);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.18)),
     rgba(255, 255, 255, 0.22);
@@ -2617,7 +2726,9 @@ body.use-liquid-glass .mde-surface > .mde-input {
 
 body.use-liquid-glass .teachtext-pane textarea {
   border: 0;
-  border-radius: 18px;
+  /* Concentric with the window corner, not a second window inside it. */
+  --container-inset: 12px;
+  border-radius: max(0px, calc(var(--container-radius) - var(--container-inset)));
   /* Transparent so the highlight overlay shows; the container holds the glass. */
   background: transparent;
   background-image: none;
@@ -2661,7 +2772,7 @@ body.use-liquid-glass .dictation-field-button {
   min-width: 52px;
   height: 30px;
   border: 1px solid rgba(255, 255, 255, 0.56);
-  border-radius: 999px;
+  border-radius: var(--liquid-pill-radius);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.3)),
     rgba(255, 255, 255, 0.34);
@@ -2702,7 +2813,7 @@ body.use-liquid-glass .chooser-panel .control-section h3 {
   margin: 0;
   padding: 0 10px;
   border: 1px solid rgba(255, 255, 255, 0.44);
-  border-radius: 999px;
+  border-radius: var(--liquid-pill-radius);
   background: rgba(255, 255, 255, 0.34);
   color: rgba(16, 17, 20, 0.92);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
@@ -2732,7 +2843,7 @@ body.use-liquid-glass .chooser-panel .system-select-button {
 body.use-liquid-glass .chooser-panel .system-select-button,
 body.use-liquid-glass .chooser-panel select {
   min-height: 34px;
-  border-radius: 999px;
+  border-radius: var(--liquid-pill-radius);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.3)),
     rgba(255, 255, 255, 0.28);
@@ -2764,7 +2875,8 @@ body.use-liquid-glass .control-panel .field-row {
 body.use-liquid-glass .control-panel .control-footer {
   padding: 10px 12px;
   border: 1px solid rgba(255, 255, 255, 0.48);
-  border-radius: 14px;
+  --container-inset: 9px;
+  border-radius: max(0px, calc(var(--container-radius) - var(--container-inset)));
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.16)),
     rgba(255, 255, 255, 0.18);
@@ -2797,7 +2909,7 @@ body.use-liquid-glass #memory-cards-status {
   margin: 0;
   padding: 6px 10px;
   border: 1px solid rgba(255, 255, 255, 0.36);
-  border-radius: 999px;
+  border-radius: var(--liquid-pill-radius);
   background: rgba(255, 255, 255, 0.22);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58);
   color: rgba(16, 17, 20, 0.86);
@@ -2834,7 +2946,17 @@ body.use-liquid-glass .compose-tools-menu button {
    disappear in glass. The values stay single-sourced through the tokens. */
 body.use-liquid-glass .compose-tools-menu button:hover,
 body.use-liquid-glass .compose-tools-menu button:focus-visible {
+  /* The bold line reads its ink from a token, so hand it the hover ink here
+     rather than restating white in two more selectors. The small line cannot
+     follow: the base sheet paints it color: var(--paper) directly, and under
+     glass --paper is half-transparent, so it keeps the pair below. */
+  --compose-tool-copy-b: var(--compose-menu-hover-fg);
   background: var(--compose-menu-hover-bg);
+  color: var(--compose-menu-hover-fg);
+}
+
+body.use-liquid-glass .compose-tools-menu button:hover .compose-tool-copy small,
+body.use-liquid-glass .compose-tools-menu button:focus-visible .compose-tool-copy small {
   color: var(--compose-menu-hover-fg);
 }
 
@@ -2845,13 +2967,6 @@ body.use-liquid-glass .compose-tool-icon {
   border-radius: 9px;
   background-color: rgba(255, 255, 255, 0.55);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.76), 0 5px 14px rgba(18, 28, 38, 0.1);
-}
-
-body.use-liquid-glass .compose-tools-menu button:hover .compose-tool-copy b,
-body.use-liquid-glass .compose-tools-menu button:focus-visible .compose-tool-copy b,
-body.use-liquid-glass .compose-tools-menu button:hover .compose-tool-copy small,
-body.use-liquid-glass .compose-tools-menu button:focus-visible .compose-tool-copy small {
-  color: #ffffff;
 }
 
 body.use-liquid-glass .memory-transfer-window .details-bar {
@@ -2898,7 +3013,7 @@ body.use-liquid-glass .file-picker .file-picker-button {
 body.use-liquid-glass .file-picker-name {
   min-height: var(--system-button-min-height);
   border: 1px solid rgba(16, 17, 20, 0.18);
-  border-radius: 12px;
+  border-radius: var(--liquid-surface-radius-sm);
   background: rgba(255, 255, 255, 0.42);
   color: rgba(16, 17, 20, 0.88);
   box-shadow: inset 0 1px 0 var(--glass-highlight), 0 6px 18px rgba(18, 28, 38, 0.06);
@@ -2929,7 +3044,7 @@ body.use-liquid-glass .backup-preview-section {
   margin-top: 8px;
   padding: 14px 16px;
   border: 1px solid rgba(16, 17, 20, 0.12);
-  border-radius: 18px;
+  border-radius: var(--liquid-surface-radius-lg);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.08)),
     rgba(255, 255, 255, 0.1);
@@ -2997,7 +3112,8 @@ body.use-liquid-glass .backup-action-row #import-project-backup {
 body.use-liquid-glass .teachtext-desk-strip {
   gap: 4px;
   border: 1px solid rgba(16, 17, 20, 0.14);
-  border-radius: 12px;
+  --container-inset: 11px;
+  border-radius: max(0px, calc(var(--container-radius) - var(--container-inset)));
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.56), rgba(255, 255, 255, 0.22)),
     rgba(255, 255, 255, 0.22);
@@ -3031,7 +3147,7 @@ body.use-liquid-glass .writing-spine-panel.is-shaded .spine-toolbox-panel::befor
 
 body.use-liquid-glass .writing-spine-panel.is-shaded .spine-title-row {
   border: 1px solid var(--glass-border);
-  border-radius: 999px;
+  border-radius: var(--liquid-pill-radius);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.76), 0 1px 3px rgba(18, 28, 38, 0.06);
 }
 
@@ -3093,7 +3209,7 @@ body.use-liquid-glass .boot-screen {
 
 body.use-liquid-glass .happy-mac {
   border: var(--happy-mac-border-width) solid var(--happy-mac-border-color);
-  border-radius: 12px;
+  border-radius: var(--liquid-surface-radius-sm);
   background:
     linear-gradient(rgba(16, 17, 20, 0.92), rgba(16, 17, 20, 0.92)) 16px 84px / 11px 4px no-repeat,
     linear-gradient(rgba(16, 17, 20, 0.92), rgba(16, 17, 20, 0.92)) 57px 84px / 40px 4px no-repeat,
@@ -3120,7 +3236,7 @@ body.use-liquid-glass .happy-mac-face {
 body.use-liquid-glass .shutdown-ledger,
 body.use-liquid-glass .boot-ledger {
   border: 1px solid rgba(16, 17, 20, 0.16);
-  border-radius: 18px;
+  border-radius: var(--liquid-surface-radius-lg);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.26)),
     rgba(255, 255, 255, 0.24);
@@ -3137,20 +3253,20 @@ body.use-liquid-glass .shutdown-ledger .btn {
 
 body.use-liquid-glass .boot-progress {
   border: 1px solid rgba(16, 17, 20, 0.18);
-  border-radius: 999px;
+  border-radius: var(--liquid-pill-radius);
   background: rgba(255, 255, 255, 0.38);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78);
 }
 
 body.use-liquid-glass .boot-progress span {
-  border-radius: 999px;
+  border-radius: var(--liquid-pill-radius);
   background: linear-gradient(90deg, var(--glass-progress-blue), var(--glass-progress-accent));
 }
 
 body.use-liquid-glass .progress-track {
   height: 14px;
   border: 1px solid rgba(16, 17, 20, 0.18);
-  border-radius: 999px;
+  border-radius: var(--liquid-pill-radius);
   background: rgba(255, 255, 255, 0.44);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.72),
@@ -3168,7 +3284,7 @@ body.use-liquid-glass .progress-bar {
 
 body.use-liquid-glass .rebuild-progress {
   border: 1px solid rgba(255, 255, 255, 0.5);
-  border-radius: 18px;
+  border-radius: var(--liquid-surface-radius-lg);
   background: rgba(255, 255, 255, 0.24);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.72),
@@ -3178,7 +3294,7 @@ body.use-liquid-glass .rebuild-progress {
 body.use-liquid-glass .rebuild-progress-meter {
   height: 12px;
   border: 1px solid rgba(16, 17, 20, 0.14);
-  border-radius: 999px;
+  border-radius: var(--liquid-pill-radius);
   background: rgba(255, 255, 255, 0.42);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78);
 }
@@ -3327,7 +3443,7 @@ body.use-liquid-glass .finder-list-header {
   padding: 7px 10px;
   border: 1px solid rgba(255, 255, 255, 0.36);
   border-bottom: 1px solid rgba(16, 17, 20, 0.12);
-  border-radius: 12px;
+  border-radius: var(--liquid-surface-radius-sm);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.46), rgba(255, 255, 255, 0.16)),
     rgba(255, 255, 255, 0.18);
@@ -3337,7 +3453,7 @@ body.use-liquid-glass .finder-list-header {
 body.use-liquid-glass .finder-list-group {
   margin: 6px 0 4px;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--liquid-pill-radius);
   background: rgba(255, 255, 255, 0.28);
   color: rgba(16, 17, 20, 0.72);
 }
@@ -3388,7 +3504,7 @@ body.use-liquid-glass .finder-item {
   gap: 5px;
   padding: 8px 7px;
   border: 1px solid transparent;
-  border-radius: 18px;
+  border-radius: var(--liquid-surface-radius-lg);
   overflow: hidden;
 }
 
@@ -3473,7 +3589,7 @@ body.use-liquid-glass .finder-marquee {
 
 body.use-liquid-glass .desktop-icon {
   width: var(--desktop-icon-width);
-  border-radius: 18px;
+  border-radius: var(--liquid-surface-radius-lg);
   padding: var(--liquid-desktop-icon-padding);
 }
 
@@ -3484,7 +3600,7 @@ body.use-liquid-glass .spine-actions button:hover,
 body.use-liquid-glass .spine-actions button:focus-visible,
 body.use-liquid-glass .spine-actions button.is-selected {
   background: rgba(255, 255, 255, 0.2);
-  border-radius: 18px;
+  border-radius: var(--liquid-surface-radius-lg);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.54), 0 8px 26px rgba(18, 28, 38, 0.12);
   backdrop-filter: blur(8px) saturate(140%);
   -webkit-backdrop-filter: blur(8px) saturate(140%);
@@ -3503,7 +3619,7 @@ body.use-liquid-glass .spine-actions .spine-step-number {
   width: 1.5rem;
   height: 1.5rem;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--liquid-pill-radius);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.34)),
     rgba(255, 255, 255, 0.22);
@@ -3699,7 +3815,7 @@ body.use-liquid-glass .video-docmap-map,
 body.use-liquid-glass .video-docmap-inspector,
 body.use-liquid-glass .video-docmap-node {
   border: 1px solid rgba(16, 17, 20, 0.12);
-  border-radius: 18px;
+  border-radius: var(--liquid-surface-radius-lg);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.48), rgba(255, 255, 255, 0.16)),
     rgba(255, 255, 255, 0.2);
@@ -3784,7 +3900,7 @@ body.use-liquid-glass .video-docmap-timeline button:focus-visible {
 body.use-liquid-glass .video-docmap-node {
   padding: 16px 18px;
   border-color: rgba(16, 17, 20, 0.1);
-  border-radius: 18px;
+  border-radius: var(--liquid-surface-radius-lg);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.52), rgba(255, 255, 255, 0.2)),
     rgba(255, 255, 255, 0.2);
@@ -4047,7 +4163,7 @@ body.use-liquid-glass .view-btn[data-view="icon"].is-active::before {
 body.use-liquid-glass .view-btn[data-view="list"]::before {
   width: 13px;
   height: 2px;
-  border-radius: 999px;
+  border-radius: var(--liquid-pill-radius);
   background: rgba(16, 17, 20, 0.84);
   box-shadow: 0 -5px 0 rgba(16, 17, 20, 0.84), 0 5px 0 rgba(16, 17, 20, 0.84);
 }
@@ -4084,7 +4200,7 @@ html:has(body.use-liquid-glass)::-webkit-scrollbar-thumb,
 body.use-liquid-glass::-webkit-scrollbar-thumb,
 body.use-liquid-glass *::-webkit-scrollbar-thumb {
   border: 2px solid rgba(255, 255, 255, 0.28);
-  border-radius: 999px;
+  border-radius: var(--liquid-pill-radius);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.56), rgba(16, 17, 20, 0.24)), rgba(16, 17, 20, 0.22);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.66), 0 2px 7px rgba(18, 28, 38, 0.12);
 }
@@ -4135,28 +4251,30 @@ body.use-liquid-glass .btn.default.is-disabled:active {
   transform: none;
 }
 
-body.use-liquid-glass .btn.default:not(:disabled):not(.is-disabled),
-body.use-liquid-glass .btn.default:not(:disabled):not(.is-disabled):hover,
-body.use-liquid-glass .btn.default:not(:disabled):not(.is-disabled):focus-visible,
-body.use-liquid-glass .btn.default:not(:disabled):not(.is-disabled):active,
-body.use-liquid-glass .shutdown-ledger .btn.default:not(:disabled):not(.is-disabled),
-body.use-liquid-glass .shutdown-ledger .btn.default:not(:disabled):not(.is-disabled):hover,
-body.use-liquid-glass .shutdown-ledger .btn.default:not(:disabled):not(.is-disabled):focus-visible,
-body.use-liquid-glass .shutdown-ledger .btn.default:not(:disabled):not(.is-disabled):active {
-  color: #ffffff;
+/* One rule, not eleven. The state variants could never change the outcome:
+   nothing sets colour on an enabled default button between this selector's
+   weight and theirs, and the .shutdown-ledger copies only out-weighed
+   .shutdown-ledger .btn, which this already beats. The :active state now falls
+   through to --btn-default-active-fg, which is the same white but reaches it
+   through the token instead of a second literal. */
+body.use-liquid-glass .btn.default:not(:disabled):not(.is-disabled) {
+  color: var(--btn-default-fg);
 }
 
 body.use-liquid-glass .btn:not(.default):not(:disabled):not(.is-disabled):active {
   color: rgba(16, 17, 20, 0.94);
 }
 
-/* Final readability guard: non-default glass action buttons stay dark on light glass. */
+/* Final readability guard: non-default glass action buttons stay dark on light
+   glass. The ink is a token so a backdrop window can quieten it by inheritance
+   -- this rule is deliberately specific, and out-specifying it would start the
+   arms race css-no-pingpong forbids. */
 body.use-liquid-glass .btn:not(.default):not(.is-active):not(.is-selected):not(.is-multi-selected):not(:disabled):not(.is-disabled),
 body.use-liquid-glass .btn:not(.default):not(.is-active):not(.is-selected):not(.is-multi-selected):not(:disabled):not(.is-disabled):hover,
 body.use-liquid-glass .btn:not(.default):not(.is-active):not(.is-selected):not(.is-multi-selected):not(:disabled):not(.is-disabled):focus-visible,
 body.use-liquid-glass .btn:not(.default):not(.is-active):not(.is-selected):not(.is-multi-selected):not(:disabled):not(.is-disabled):active {
-  color: rgba(16, 17, 20, 0.94);
-  -webkit-text-fill-color: rgba(16, 17, 20, 0.94);
+  color: var(--liquid-action-ink);
+  -webkit-text-fill-color: var(--liquid-action-ink);
   text-shadow: none;
 }
 
@@ -4290,6 +4408,16 @@ body.use-liquid-glass .btn.default.is-disabled:active {
   body.use-liquid-glass .startup-settings-modal {
     background: transparent;
     -apple-visual-effect: -apple-system-glass-material;
+  }
+}
+
+/* Golden Gate 6.7: under reduced motion an interactive glass control answers
+   with colour and border only. Zeroing the transition alone still leaves a
+   discrete 1px jump, which is the motion a reduced-motion reader asked not to
+   see, so drop the movement itself. */
+@media (prefers-reduced-motion: reduce) {
+  body.use-liquid-glass {
+    --liquid-press-transform: none;
   }
 }
 

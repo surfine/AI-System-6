@@ -61,6 +61,7 @@ internal/evidence/drafts/theme-lab-current/
 internal/evidence/drafts/theme-lab-fidelity-cache/
 internal/evidence/drafts/theme-lab-fidelity/
 internal/evidence/drafts/appearance-app-coverage/
+internal/evidence/drafts/appearance-phase5/
 # local era icon reference caches (third-party captures / scratch renders);
 # owned measurements, provenance and built icons live in apps/desktop/assets/themes/*/icons
 internal/evidence/drafts/snow-leopard-icon-reference/

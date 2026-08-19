@@ -17,7 +17,7 @@
     <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png" />
     <link rel="manifest" href="assets/app-icon/manifest.json" />
     <script src="app/core/theme-registry.js"></script>
-    <link rel="stylesheet" href="styles.bundle.css?v=20260817.1" />
+    <link rel="stylesheet" href="styles.bundle.css?v=20260819.1" />
   </head>
   <body class="is-booting">
     <script src="app/core/theme-body-init.js"></script>
@@ -741,6 +741,14 @@
                   <option value="yosemite" data-i18n="theme_yosemite">Yosemite</option>
                   <option value="liquid-glass" data-i18n="theme_liquid_glass">Liquid Glass</option>
                 </select></div>
+              </label>
+
+              <label class="control-field liquid-tint-field" for="liquid-tint-level" hidden>
+                <span data-i18n="liquid_tint">Liquid Glass appearance</span>
+                <div class="liquid-tint-row">
+                  <input id="liquid-tint-level" type="range" min="0" max="1" step="0.01" value="0.5" data-i18n-aria-label="liquid_tint_aria" />
+                  <output id="liquid-tint-level-output" for="liquid-tint-level" data-i18n="liquid_tint_balance">Balanced</output>
+                </div>
               </label>
 
               <div class="field-row">
@@ -3328,7 +3336,7 @@ Glass</textarea>
         </div>
         <div class="details-bar compact-status-bar dictation-details-bar">
           <span class="status-bar-leading" id="dictation-status" data-i18n="ready">Ready</span>
-          <span class="status-bar-trailing" id="dictation-intent-target">Target: ClioTalk</span>
+          <span class="status-bar-trailing" id="dictation-intent-target"></span>
         </div>
         <div class="window-pane dictation-pane">
           <div class="dictation-toolbar">
@@ -3348,7 +3356,7 @@ Glass</textarea>
             <span class="spacer"></span>
             <button class="btn" type="button" id="dictation-shape" data-i18n="dictation_shape" disabled>Shape</button>
             <button class="btn" type="button" id="dictation-clean" data-i18n="clean_transcript" disabled>Organize</button>
-            <button class="btn default" type="button" id="dictation-send" data-i18n="send">Send</button>
+            <button class="btn default" type="button" id="dictation-send" data-i18n="send" disabled>Send</button>
           </div>
         </div>
       </section>
@@ -3970,7 +3978,7 @@ Glass</textarea>
                       <button type="button"><span class="sys-icon" data-system-icon="applications" aria-hidden="true"></span><span>Music</span><span class="theme-lab-browser-disclosure" aria-hidden="true"></span></button>
                       <button type="button"><span class="sys-icon" data-system-icon="applications" aria-hidden="true"></span><span>Pictures</span><span class="theme-lab-browser-disclosure" aria-hidden="true"></span></button>
                       <button type="button"><span class="sys-icon" data-system-icon="applications" aria-hidden="true"></span><span>Public</span><span class="theme-lab-browser-disclosure" aria-hidden="true"></span></button>
-                      <button type="button" disabled><span class="sys-icon" data-system-icon="applications" aria-hidden="true"></span><span>Send Registration</span></button>
+                      <button type="button" disabled><span class="sys-icon" data-system-icon="document" aria-hidden="true"></span><span>Send Registration</span></button>
                       <button type="button"><span class="sys-icon" data-system-icon="applications" aria-hidden="true"></span><span>Sites</span><span class="theme-lab-browser-disclosure" aria-hidden="true"></span></button>
                     </nav>
                     <div class="theme-lab-browser-column-scrollbar" aria-hidden="true"><span class="theme-lab-browser-column-thumb is-active"></span><i class="is-decrement"></i><i class="is-increment"></i></div>
@@ -4087,7 +4095,7 @@ Glass</textarea>
                       <button class="theme-lab-toolbar-icon-button" type="button"><span class="theme-lab-toolbar-role-icon is-favorites" aria-hidden="true"></span><small>Favorites</small></button>
                       <button class="theme-lab-toolbar-icon-button" type="button"><span class="theme-lab-toolbar-role-icon is-applications" aria-hidden="true"></span><small>Applications</small></button>
                     </div>
-                    <label class="theme-lab-toolbar-search"><input type="search" value="" placeholder="Search" aria-label="Finder search" /></label>
+                    <label class="theme-lab-toolbar-search"><input type="search" value="" placeholder="Search" aria-label="Finder search" /><small>Search</small></label>
                   </div>
                   <div class="theme-lab-snow-toolbar" aria-hidden="true" lang="en" translate="no">
                     <strong class="theme-lab-snow-title">Macintosh HD</strong>
@@ -4184,7 +4192,7 @@ Glass</textarea>
       </section>
     </main>
 
-    <script src="app/generated/build-info.js?v=20260817.1"></script>
-    <script src="app.bundle.js?v=20260817.1"></script>
+    <script src="app/generated/build-info.js?v=20260819.1"></script>
+    <script src="app.bundle.js?v=20260819.1"></script>
   </body>
 </html>

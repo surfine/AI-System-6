@@ -3444,6 +3444,26 @@ select:focus {
   line-height: 1.25;
 }
 
+.liquid-tint-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+}
+
+.liquid-tint-row input[type="range"] {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+}
+
+.liquid-tint-row output {
+  font-size: 12px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
 .control-stack {
   display: grid;
   gap: 4px;

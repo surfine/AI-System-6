@@ -11,7 +11,7 @@
 // The reply lives here and is saved nowhere. One control hands the exchange to
 // the full paired split that has always existed.
 
-const sideAskPairable = new Set(["teachText", "quickDraft", "reader", "sectionDrafts", "outline", "questionSheet", "scrapbook"]);
+const sideAskPairable = new Set(["teachText", "quickDraft", "reader", "sectionDrafts", "outline", "questionSheet", "scrapbook", "imagePromptStudio"]);
 let sideAskSubject = null;
 let sideAskExchange = null;
 let sideAskBusy = false;
@@ -107,6 +107,23 @@ function sideAskFrontSubject() {
     .filter((win) => win.dataset.window && win.dataset.window !== "sideAskPad");
   const front = open.find((win) => win.classList.contains("is-active")) || open[open.length - 1];
   if (!front || !sideAskPairable.has(front.dataset.window)) return null;
+  if (front.dataset.window === "imagePromptStudio") {
+    const idea = front.querySelector("#ips-idea")?.value?.trim() || "";
+    const gptImage = front.querySelector("#ips-gpt-out")?.value?.trim() || "";
+    const universal = front.querySelector("#ips-universal-out")?.value?.trim() || "";
+    const title = front.querySelector("#ips-title")?.value?.trim() || "";
+    const text = [
+      idea ? `Idea / brief:\n${idea}` : "",
+      title ? `Title / overlay text:\n${title}` : "",
+      gptImage ? `GPT-Image prompt:\n${gptImage}` : "",
+      universal ? `Universal prompt:\n${universal}` : "",
+    ].filter(Boolean).join("\n\n");
+    return {
+      name: front.dataset.window,
+      title: front.querySelector(".title-bar h2")?.textContent?.trim() || front.dataset.window,
+      text,
+    };
+  }
   const field = front.querySelector("textarea, [contenteditable='true']");
   return {
     name: front.dataset.window,

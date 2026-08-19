@@ -687,6 +687,7 @@ function sideAskSourceDisplayLabel(appId = sideAskAnchorAppId) {
     const title = page?.reader?.title || page?.title || "";
     return title ? `${t("time_machine")} / ${title}` : t("time_machine");
   }
+  if (appId === "imagePromptStudio") return t("image_prompt_studio_label");
   return t("sideask");
 }
 
@@ -700,6 +701,7 @@ function focusSideAskSource() {
     docMap: "docMap",
     clioStage: "clioStage",
     timeMachine: "timeMachine",
+    imagePromptStudio: "imagePromptStudio",
   }[sideAskAnchorAppId];
   const sourceWindow = windowName ? getWindow(windowName) : null;
   if (sourceWindow) focusWindow(sourceWindow);
@@ -1032,7 +1034,6 @@ const mobileFinderPageWindowNames = new Set([
   "applications",
   "disk",
   "projectCd",
-  "importUtility",
   "projects",
   "documents",
   "trash",
@@ -1275,6 +1276,10 @@ const finderLocationLabelKeys = new Map([
 
 const mobileDialogWindowNames = new Set([
   "pageSetup",
+  // Write to Project Hard Disk is a task dialog -- choose files, preview,
+  // write, done -- not a Finder page to browse. As a finder-page it took the
+  // full-bleed work-area frame and filled a portrait screen.
+  "importUtility",
   "saveChat",
   "fileInfo",
   "projectInfo",
@@ -3892,6 +3897,7 @@ async function arrangeWindowAssistantSplit(sourceWindowName, options = {}) {
     docMap: "docMap",
     clioStage: "clioStage",
     timeMachine: "timeMachine",
+    imagePromptStudio: "imagePromptStudio",
   }[sourceWindowName] || sourceAppId;
   if (!isMultiFinderMode()) {
     const canOpenPair = await prepareFinderModeForApp(sourceAppId);

@@ -145,10 +145,11 @@ const index = readFileSync(path.join(siteRoot, "index.html"), "utf8");
 const argument = readFileSync(path.join(siteRoot, "js", "argument.js"), "utf8");
 const quickTime = readFileSync(path.join(siteRoot, "js", "quicktime.js"), "utf8");
 for (const needle of [
-  // The page leads with what the product protects, not with the desktop it
-  // is built on: the writing route is the product, the System 6 desk is the
-  // constraint that keeps it visible.
-  "BECOMES YOUR VOICE",
+  // The page leads with the retro-Macintosh hook, then reveals the writing
+  // desk underneath: six appearances are the promise, the route is the
+  // product, and "the AI never becomes your voice" is still the payoff.
+  "SIX APPEARANCES",
+  "becomes your voice",
   'id="route"',
   "https://system6.aaronlau.me",
   "https://www.bilibili.com/video/BV1ht3m6UEDb/",

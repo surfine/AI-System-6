@@ -231,7 +231,8 @@ body[data-theme="platinum"] {
     linear-gradient(to bottom right, #555555, #ffffff);
   --radio-checked-focus-image: var(--radio-checked-image);
   --menu-bar-bg: #dddddd;
-  --menu-bar-border: 1px solid #000000;
+  --menu-bar-border-color: #000000;
+  --menu-bar-border: 1px solid var(--menu-bar-border-color);
   --menu-bar-shadow: inset 0 1px 0 #ffffff, inset 0 -1px 0 #999999;
   --menu-panel-bg: #dddddd;
   --menu-panel-border: 1px solid #000000;
@@ -1695,7 +1696,8 @@ body[data-theme="yosemite"] {
   --theme-lab-radio-checked-bg: var(--radio-checked-image);
   --theme-lab-radio-dot-content: none;
   --menu-bar-bg: rgba(248, 248, 248, 0.9);
-  --menu-bar-border: 1px solid rgba(0, 0, 0, 0.14);
+  --menu-bar-border-color: rgba(0, 0, 0, 0.14);
+  --menu-bar-border: 1px solid var(--menu-bar-border-color);
   --menu-bar-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
   --menu-panel-bg: rgba(255, 255, 255, 0.95);
   --menu-panel-border: 1px solid rgba(0, 0, 0, 0.11);
@@ -1710,10 +1712,18 @@ body[data-theme="yosemite"] {
   --menu-button-active-fg: #ffffff;
   --menu-item-active-bg: linear-gradient(#1680f5, #1077f2 50%, #0e6bf0);
   --menu-item-active-fg: #ffffff;
-  /* Real 10.10 Finder capture (512 Pixels, 1:1): content list selection is
-     light blue ~#97ddfd with dark labels; #0e6bff stays the accent blue. */
-  --theme-lab-list-selected-bg: #97ddfd;
-  --theme-lab-list-selected-fg: #111111;
+  /* Real 10.10 Force Quit capture (512 Pixels, 2x): a focused list selection
+     is solid #116cd6 with white labels. The previous #97ddfd came from the
+     Finder capture's folder-icon tab, not from a selected row -- that capture
+     is in icon view with nothing selected. #0e6bff stays the accent blue. */
+  --theme-lab-list-selected-bg: #116cd6;
+  --theme-lab-list-selected-fg: #ffffff;
+  /* Real 10.10 Applications and Mail captures (512 Pixels, 2x): a source-list
+     row is selected with a flat #cecece fill and dark labels in both the key
+     and the backdrop window. What changes with window state is the sidebar's
+     vibrancy, not the selection colour. */
+  --theme-lab-sidebar-selected-bg: #cecece;
+  --theme-lab-sidebar-selected-fg: #1c1c1c;
   --window-frame-lane: 10px;
   --window-frame-track-bg: transparent;
   --window-frame-track-border: 0;

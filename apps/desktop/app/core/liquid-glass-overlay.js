@@ -1,7 +1,6 @@
 // Core runtime module: liquid-glass-overlay.
 (() => {
   const OVERLAY_ID = "liquid-glass-overlay";
-  const FRAME_MS = 1000 / 30;
   const MAX_WINDOWS = 12;
   const MOTION_DECAY = 0.82;
   const MOTION_BLEND = 0.3;
@@ -29,6 +28,9 @@ uniform vec2 u_motion[MAX_WINDOWS];
 uniform float u_active[MAX_WINDOWS];
 uniform float u_strength[MAX_WINDOWS];
 uniform float u_dpr;
+uniform float u_tint;
+uniform float u_contrast;
+uniform float u_reduced_transparency;
 
 out vec4 fragColor;
 
@@ -94,13 +96,15 @@ void main() {
     float d = rectSdfAt(i, p);
     float isActive = u_active[i];
     float strength = u_strength[i];
+    // Reduced transparency keeps the pre-existing 2D/WebGL translucency parity.
+    strength *= mix(1.0, 0.55, u_reduced_transparency);
     vec2 motion = u_motion[i];
     float motionPower = clamp(length(motion) / 10.0, 0.0, 1.0);
     float innerDepth = mix(48.0, 98.0, strength);
 
     if (d < 18.0 && d > -innerDepth) {
       vec2 n = rectNormal(i, p);
-      float edge = 1.0 - smoothstep(0.0, 30.0, abs(d));
+      float edge = (1.0 - smoothstep(0.0, 30.0, abs(d))) * mix(1.0, 1.22, u_contrast);
       float inner = smoothstep(-innerDepth, -6.0, d) * (1.0 - smoothstep(-12.0, 2.0, d));
       float fresnel = pow(edge, 1.35) * (0.46 + 0.3 * isActive);
       float angle = atan(n.y, n.x) + u_time * 0.0008 + motion.x * 0.05 - motion.y * 0.035;
@@ -122,6 +126,7 @@ void main() {
       color += vec3(1.0) * fresnel * 0.72;
       color += vec3(0.96, 0.98, 0.98) * glare * 0.5;
       color += mix(vec3(0.74, 0.86, 0.96), vec3(0.9, 0.94, 1.0), 0.5 + 0.5 * sin(angle)) * caustic * 0.38;
+      color += vec3(0.55, 0.78, 0.98) * ((u_tint - 0.5) * 0.14);
 
       float refractionAlpha = refEdge * (0.22 + 0.09 * isActive + 0.09 * motionPower);
       float alpha = (refractionAlpha + edge * (0.08 + 0.06 * isActive + 0.06 * motionPower) + glare * 0.12 + caustic * 0.42) * strength;
@@ -137,13 +142,16 @@ void main() {
   let ctx = null;
   let glState = null;
   let rafId = 0;
-  let lastFrame = 0;
   let resizeObserver = null;
   let mutationObserver = null;
   let enabled = false;
   let needsFrame = true;
   let renderer = "2d";
   let dpr = 1;
+  let tintLevel = 0.5;
+  let reducedMotion = false;
+  let reducedTransparency = false;
+  let increasedContrast = false;
   const motionState = new WeakMap();
 
   function makeCanvas() {
@@ -222,6 +230,9 @@ void main() {
         active: gl.getUniformLocation(program, "u_active[0]"),
         strength: gl.getUniformLocation(program, "u_strength[0]"),
         dpr: gl.getUniformLocation(program, "u_dpr"),
+        tint: gl.getUniformLocation(program, "u_tint"),
+        contrast: gl.getUniformLocation(program, "u_contrast"),
+        reducedTransparency: gl.getUniformLocation(program, "u_reduced_transparency"),
       },
     };
   }
@@ -257,7 +268,6 @@ void main() {
       if (ctx) ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       if (glState) glState.gl.viewport(0, 0, width, height);
     }
-    needsFrame = true;
   }
 
   function visibleGlassWindows() {
@@ -317,12 +327,23 @@ void main() {
     return 0.66;
   }
 
+  function readMaterialSettings() {
+    const computedTint = Number.parseFloat(
+      getComputedStyle(document.documentElement).getPropertyValue("--liquid-tint-level")
+    );
+    if (Number.isFinite(computedTint)) tintLevel = clamp(computedTint, 0, 1);
+    reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    reducedTransparency = window.matchMedia("(prefers-reduced-transparency: reduce)").matches;
+    increasedContrast = window.matchMedia("(prefers-contrast: more)").matches
+      || window.matchMedia("(forced-colors: active)").matches;
+  }
+
   function windowFrame(node, time) {
     const rect = node.getBoundingClientRect();
     const style = getComputedStyle(node);
     const radius = Number.parseFloat(style.borderTopLeftRadius) || 18;
     const active = node.classList.contains("is-active") || node.matches(".system-modal, .startup-settings-modal, .finder-operation-modal");
-    const motion = sampleMotion(node, rect, time);
+    const motion = reducedMotion ? { x: 0, y: 0 } : sampleMotion(node, rect, time);
     const strength = glassStrength(node, rect);
     return { node, rect, radius, active, motion, strength };
   }
@@ -362,6 +383,9 @@ void main() {
     gl.uniform1fv(uniforms.active, active);
     gl.uniform1fv(uniforms.strength, strength);
     gl.uniform1f(uniforms.dpr, dpr);
+    gl.uniform1f(uniforms.tint, tintLevel);
+    gl.uniform1f(uniforms.contrast, increasedContrast ? 1 : 0);
+    gl.uniform1f(uniforms.reducedTransparency, reducedTransparency ? 1 : 0);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     return moving;
   }
@@ -383,7 +407,9 @@ void main() {
 
   function drawWindow2d(frame) {
     const { rect, radius, active, motion, strength } = frame;
-    const alpha = (active ? 1 : 0.56) * strength;
+    const transparencyScale = reducedTransparency ? 0.55 : 1;
+    const contrastScale = increasedContrast ? 1.3 : 1;
+    const alpha = (active ? 1 : 0.56) * strength * transparencyScale;
     const motionPower = Math.min(1, Math.hypot(motion.x, motion.y) / MAX_MOTION_SHIFT);
     const shiftX = motion.x * 1.6;
     const shiftY = motion.y * 1.6;
@@ -419,7 +445,7 @@ void main() {
     chroma.addColorStop(0.5, "rgba(255, 255, 255, 0)");
     chroma.addColorStop(1, `rgba(238, 242, 246, ${0.08 * alpha + 0.06 * motionPower})`);
     ctx.strokeStyle = chroma;
-    ctx.lineWidth = active ? 2 + motionPower : 1;
+    ctx.lineWidth = (active ? 2 + motionPower : 1) * contrastScale;
     roundRectPath({
       left: rect.left + 1.5,
       top: rect.top + 1.5,
@@ -435,7 +461,7 @@ void main() {
     ctx.shadowColor = `rgba(255, 255, 255, ${0.38 * alpha})`;
     ctx.shadowBlur = active ? 9 : 5;
     ctx.strokeStyle = `rgba(255, 255, 255, ${0.32 * alpha})`;
-    ctx.lineWidth = 1;
+    ctx.lineWidth = contrastScale;
     roundRectPath({
       left: rect.left + 0.5,
       top: rect.top + 0.5,
@@ -472,19 +498,42 @@ void main() {
   }
 
   function render(time = 0) {
-    if (!enabled || !canvas) return;
-    rafId = window.requestAnimationFrame(render);
-    if (!needsFrame && time - lastFrame < FRAME_MS) return;
-    lastFrame = time;
+    if (!enabled || !canvas) {
+      rafId = 0;
+      return;
+    }
     needsFrame = false;
+    readMaterialSettings();
     resizeCanvas();
     const frames = visibleGlassWindows().map((node) => windowFrame(node, time));
     const moving = renderer === "webgl" && glState ? renderWebGl(frames, time) : render2d(frames);
-    if (moving) needsFrame = true;
+    rafId = moving ? window.requestAnimationFrame(render) : 0;
   }
 
   function requestFrame() {
     needsFrame = true;
+    if (enabled && !rafId) rafId = window.requestAnimationFrame(render);
+  }
+
+  function pauseFrame() {
+    if (rafId) {
+      window.cancelAnimationFrame(rafId);
+      rafId = 0;
+    }
+    needsFrame = false;
+    canvas.hidden = true;
+  }
+
+  function resumeFrame() {
+    if (!enabled) return;
+    canvas.hidden = false;
+    resizeCanvas();
+    requestFrame();
+  }
+
+  function onVisibilityChange() {
+    if (document.hidden) pauseFrame();
+    else resumeFrame();
   }
 
   function observe() {
@@ -504,6 +553,9 @@ void main() {
     }
     window.addEventListener("resize", requestFrame);
     window.addEventListener("scroll", requestFrame, true);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("pagehide", pauseFrame);
+    window.addEventListener("pageshow", resumeFrame);
   }
 
   function disconnect() {
@@ -512,6 +564,9 @@ void main() {
     mutationObserver = null;
     window.removeEventListener("resize", requestFrame);
     window.removeEventListener("scroll", requestFrame, true);
+    document.removeEventListener("visibilitychange", onVisibilityChange);
+    window.removeEventListener("pagehide", pauseFrame);
+    window.removeEventListener("pageshow", resumeFrame);
   }
 
   function clearCanvas() {
@@ -528,16 +583,13 @@ void main() {
     enabled = !!nextEnabled && window.AISystem6Theme?.getCurrentTheme?.() === "liquid-glass";
     canvas.hidden = !enabled;
     if (enabled) {
+      canvas.hidden = document.hidden;
       resizeCanvas();
       observe();
-      if (!rafId) rafId = window.requestAnimationFrame(render);
-      requestFrame();
+      if (!document.hidden) requestFrame();
     } else {
       disconnect();
-      if (rafId) {
-        window.cancelAnimationFrame(rafId);
-        rafId = 0;
-      }
+      pauseFrame();
       clearCanvas();
     }
   }
@@ -545,5 +597,17 @@ void main() {
   window.AISystem6LiquidGlassOverlay = {
     refresh: requestFrame,
     setEnabled,
+    diagnostics: () => ({
+      enabled,
+      renderer,
+      rafPending: rafId !== 0,
+      tintLevel,
+      reducedMotion,
+      reducedTransparency,
+      increasedContrast,
+      contrastReachesOverlay: true,
+      reducedTransparencyReachesOverlay: true,
+    }),
   };
+  window.AISystem6LiquidGlassOverlayLoaded = true;
 })();

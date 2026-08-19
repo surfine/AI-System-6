@@ -849,6 +849,39 @@ Version `1.0.12`, build `20260804.2`.
   short viewports the pane scrolls instead of clipping a stated fact.
 - Boot payload re-measured at 2,948,416 bytes against the two-floppy budget.
 
+## Public Beta 1.0.47 - 2026-08-17
+
+- Image Prompt Studio is a new creative lab: one short idea (and an optional
+  reference image) becomes two ready-to-paste prompts — a natural-language
+  GPT-Image paragraph and a compact universal prompt. It is a pure prompt writer
+  with no image backend, so it can never silently drop a reference image; on a
+  cloud text model it says so instead of pretending.
+- CMF Studio completes the 3D loop: every view preset renders to PNG in the
+  browser, the source USDZ previews and recolors locally, and fflate exports the
+  recolored result as USDZ for AR. Background rendering degrades gracefully when
+  a cloud image is unavailable, and high-resolution views render offscreen at 2x.
+- Classic and Platinum get a real fidelity pass: 0-blur bevels, token-level
+  chrome, and a Classic/Platinum fidelity contract pin the two oldest appearances
+  against native references, with refreshed Theme Lab baselines and fingerprints.
+- The four objects added since the era timeline — Image Prompt Studio, Micropolis,
+  OpenTTD and DOOM — now carry their own recognisable Classic line-art icons
+  (with selection masks), and a Control Panel switch can apply line-art icons
+  across every appearance. The retired inline Liquid Glass icon dictionary is
+  removed and its export/test references reconciled.
+- Help and the writing-flow help text are revisited: balloon help stays clear of
+  the next clickable target, and the window manager's lazy-attach path is fixed.
+- The website and README are re-shot from the running app and reorganized: every
+  era frame and feature proof is captured fresh (including a filled Image Prompt
+  Studio shot), the README fixes two broken image links and gains a table of
+  contents and a clearer structure, and the marketing page's contrast and type
+  sizes meet readability standards with per-era Chinese font stacks corrected.
+- Cloudflare Pages ships the shared-cloud-budget Worker, BYOK cloud keys beside
+  the shared allowance, route parity, and the deploy/release tooling that keeps
+  the public snapshot independently verifiable.
+- The runtime moves to an application registry with commands, render tasks,
+  lifecycle and state stores, plus a service-boundary contract that keeps
+  direct service access out of feature modules.
+
 ## What Changed Most In One Month
 
 - The product moved from "an AI writing prototype" to a local-first writing
@@ -860,3 +893,34 @@ Version `1.0.12`, build `20260804.2`.
 - The System 6 metaphor became stricter rather than looser: named objects,
   deliberate saving, quiet windows, lazy tools, two-floppy startup budgeting,
   and verification gates now protect the app from feature sprawl.
+
+## Public Beta 1.0.48 - 2026-08-17
+
+Historical fidelity and the Golden Gate recalibration of Liquid Glass.
+
+Aqua reaches 16 of 16 specimens and Snow Leopard 17 of 17. The Aqua work was
+four real painter defects: a disabled column-browser row that dropped its icon,
+a scrollbar lane assembled from separate boxes instead of one outline,
+incomplete row separators, and a Finder toolbar that drew its own frame on top
+of the window's, rendered no view-mode glyphs, and held "Search" as placeholder
+text where the 10.2 toolbar labels the item beneath the pill.
+
+Yosemite gains four more pinned native 10.10 captures. Six specimens had been
+measured against crops that did not contain the control they claimed to test --
+there was no push button, text field, dialog, backdrop window or selected list
+row anywhere in the three sources pinned at the time. One wrong reference had
+also produced a wrong token: the source-list selection colour was sampled from a
+folder icon's tab in a capture with nothing selected.
+
+Liquid Glass moves toward macOS 27 Golden Gate: a concentric corner ladder so
+nested objects stop repeating the window's own curve, one continuous chrome
+region at the top of a window instead of three banded strips, a backdrop window
+that quietens its chrome without fading its document, and a press response that
+drops its movement under reduced motion.
+
+Two long-standing paint bugs surfaced along the way. No appearance's menu-bar
+hairline colour had ever reached the screen -- a shared surface rule painted
+every one of them with ink -- and the pop-up button's arrow well was measured
+against the padding box, so it sat a pixel clear of the border and read as a
+separate pill. Snow Leopard's traffic lights are rescaled to the red measured
+off the native 10.6 capture.

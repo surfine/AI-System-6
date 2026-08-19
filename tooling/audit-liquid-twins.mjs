@@ -1,4 +1,4 @@
-// Classify every liquid-glass twin rule in styles/70-liquid-glass.css.
+// Classify every liquid-glass twin rule in apps/desktop/styles/70-liquid-glass.css.
 // Output a shopping list so agents can pick easy migration targets.
 //
 // Categories
@@ -26,7 +26,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
-const LIQUID = "styles/70-liquid-glass.css";
+const LIQUID = "apps/desktop/styles/70-liquid-glass.css";
 const args = new Set(process.argv.slice(2));
 const fullList = args.has("--full");
 const jsonOut = args.has("--json");

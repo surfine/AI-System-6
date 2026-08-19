@@ -1,6 +1,6 @@
 {
-  "capturedAt": "2026-08-17T00:34:58.578Z",
-  "build": "20260817.1",
+  "capturedAt": "2026-08-17T03:28:18.978Z",
+  "build": "20260817.2",
   "proofs": [
     {
       "id": "slides",
@@ -49,6 +49,42 @@
       "label": "Write Image Prompts",
       "caption": "Image Prompt Studio turns an idea into two ready-to-paste prompts.",
       "file": "image-prompt.webp"
+    },
+    {
+      "id": "calculator",
+      "label": "Calculator",
+      "caption": "Adds up, in a beveled window.",
+      "file": "calculator.webp"
+    },
+    {
+      "id": "puzzle",
+      "label": "Puzzle",
+      "caption": "The sliding-tile puzzle, mid-move.",
+      "file": "puzzle.webp"
+    },
+    {
+      "id": "writing-bell",
+      "label": "Writing Bell",
+      "caption": "A Pomodoro timer that rings like 1988.",
+      "file": "writing-bell.webp"
+    },
+    {
+      "id": "alarm-clock",
+      "label": "Alarm Clock",
+      "caption": "Winds up, goes off, looks the part.",
+      "file": "alarm-clock.webp"
+    },
+    {
+      "id": "dictation",
+      "label": "Dictation Pad",
+      "caption": "Speak into the field you are already in.",
+      "file": "dictation.webp"
+    },
+    {
+      "id": "memory-cards",
+      "label": "Memory Cards",
+      "caption": "Flip two, find the pair.",
+      "file": "memory-cards.webp"
     }
   ]
 }

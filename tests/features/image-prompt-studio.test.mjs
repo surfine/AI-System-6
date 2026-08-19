@@ -51,12 +51,35 @@ const runtime = require("../../apps/desktop/app/features/image-prompt-runtime.js
   const studio = read("app/features/image-prompt-studio.js");
   const cover = read("app/features/liquid-cover.js");
   const actions = read("app/core/actions.js");
+  const windowManager = read("app/core/window-manager.js");
+  const chatMessages = read("app/core/chat-messages.js");
+  const sideAskPad = read("app/features/sideask-pad.js");
+  const multiFinder = read("app/core/multi-finder.js");
+  const en = read("app/data/translations-en.js");
+  const zh = read("app/data/translations-zh.js");
   test.assert(studio.includes('windowName: "imagePromptStudio"'), "the studio registers its window");
   test.assert(studio.includes('"open-image-prompt-studio"'), "the studio registers its open command");
-  test.assert(studio.includes("ips_ref_cloud_ignored"), "the studio warns when a cloud model ignores the reference image");
+  test.assert(studio.includes("canUseReferenceImage"), "the studio checks whether the current model can read images");
+  test.assert(studio.includes("ips_ref_unavailable_cloud"), "the studio disables reference images on text-only cloud models");
   test.assert(actions.includes('registerLazyCommand?.("open-image-prompt-studio"'), "the lazy open command is registered");
   test.assert(!cover.includes("image.generate"), "Cover Glass no longer calls the BYOK image proxy");
   test.assert(!cover.includes("generateBg"), "Cover Glass no longer owns in-app image generation");
+  test.assert(studio.includes('id="ips-sideask"'), "the studio exposes a SideAsk entry");
+  test.assert(studio.includes('arrangeWindowAssistantSplit("imagePromptStudio")'), "the studio opens SideAsk against itself");
+  test.assert(studio.includes("wiredWindow"), "the studio does not re-bind listeners on restore");
+  test.assert(multiFinder.includes("imagePromptStudio: \"imagePromptStudio\""), "the studio has its own app id instead of falling back to Finder");
+  test.assert(multiFinder.includes("imagePromptStudio: \"Image Prompt Studio\""), "the studio has a MultiFinder app label");
+  test.assert(windowManager.includes('imagePromptStudio: "imagePromptStudio"'), "window manager maps the studio to its SideAsk source window");
+  test.assert(windowManager.includes('if (appId === "imagePromptStudio") return t("image_prompt_studio_label")'), "SideAsk source chrome names the studio");
+  test.assert(chatMessages.includes('anchor === "imagePromptStudio"'), "SideAsk context knows the studio anchor");
+  test.assert(chatMessages.includes('studio.querySelector("#ips-gpt-out")'), "SideAsk reads the generated GPT-Image prompt");
+  test.assert(chatMessages.includes('studio.querySelector("#ips-universal-out")'), "SideAsk reads the generated universal prompt");
+  test.assert(sideAskPad.includes('"imagePromptStudio"'), "the Apple menu SideAsk pad can pair with the studio");
+  test.assert(sideAskPad.includes('front.dataset.window === "imagePromptStudio"'), "the SideAsk pad extracts the studio context explicitly");
+  test.assert(en.includes("ips_sideask:"), "English SideAsk label exists");
+  test.assert(zh.includes("ips_sideask:"), "Chinese SideAsk label exists");
+  test.assert(en.includes("ips_ref_unavailable_cloud:"), "English text-only cloud reference warning exists");
+  test.assert(zh.includes("ips_ref_unavailable_cloud:"), "Chinese text-only cloud reference warning exists");
 }
 
 test.finish();

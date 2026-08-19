@@ -433,7 +433,8 @@ body[data-theme="aqua"] {
   /* The Apple menu icon is the app's own constant pixel glyph in every
      appearance (base opacity 1); no per-era Apple logo character is drawn. */
   --menu-bar-bg: repeating-linear-gradient(to bottom, #fafafa 0 1px, #ffffff 1px 2px, #fafafa 2px 3px, #e9e9e9 3px 4px);
-  --menu-bar-border: 1px solid #8e8e8e;
+  --menu-bar-border-color: #8e8e8e;
+  --menu-bar-border: 1px solid var(--menu-bar-border-color);
   --menu-bar-shadow: inset 0 1px 0 #ffffff;
   --menu-panel-bg: rgba(250, 250, 250, 0.94);
   --menu-panel-border: 1px solid #666666;
@@ -599,11 +600,12 @@ body[data-theme="aqua"] {
   --theme-lab-sidebar-system-svg-opacity: 0;
   --theme-lab-sidebar-startup-disk-image: url("./assets/themes/aqua/browser-volume-16.svg");
   --theme-lab-sidebar-applications-image: url("./assets/themes/aqua/browser-folder-16.svg");
+  --theme-lab-sidebar-document-image: url("./assets/themes/aqua/browser-document-16.svg");
   --theme-lab-sidebar-trash-image: url("./assets/themes/aqua/trash.svg");
   --theme-lab-sidebar-selected-bg: #bfd8fa;
   --theme-lab-sidebar-selected-fg: #111111;
   --theme-lab-list-frame-border: 0;
-  --theme-lab-list-row-border-bottom: 0;
+  --theme-lab-list-row-border-bottom: 1px solid #d8d8d8;
   --theme-lab-list-selected-bg: #bfd8fa;
   --theme-lab-list-selected-fg: #111111;
   --theme-lab-list-icon-display: block;
@@ -861,6 +863,7 @@ body[data-theme="aqua"] {
   --theme-lab-toolbar-gap: 16px;
   --theme-lab-toolbar-padding: 6px 10px;
   --theme-lab-toolbar-border: 1px solid #7f7f7f;
+  --theme-lab-toolbar-border-inline: 0;
   --theme-lab-toolbar-radius: 0;
   --theme-lab-toolbar-bg: var(--toolbar-bg);
   --theme-lab-toolbar-shadow: inset 0 1px 0 #ffffff;
@@ -870,7 +873,11 @@ body[data-theme="aqua"] {
   --theme-lab-separator-display: none;
   --theme-lab-toolbar-icon-strip-display: flex;
   --theme-lab-toolbar-icon-gap: 12px;
-  --theme-lab-toolbar-search-display: block;
+  /* The 10.2 Finder labels every toolbar item, search included: the pill sits
+     over a "Search" caption instead of holding the word as placeholder text. */
+  --theme-lab-toolbar-search-display: grid;
+  --theme-lab-toolbar-search-label-display: block;
+  --theme-lab-toolbar-search-placeholder-color: transparent;
   --theme-lab-toolbar-search-width: 120px;
   --theme-lab-toolbar-navigation-image-size: 24px;
   --theme-lab-toolbar-back-image: url("./assets/themes/aqua/toolbar-back.svg");
@@ -1099,8 +1106,8 @@ body[data-theme="snow-leopard"] {
   --select-control-bg-image:
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='7' height='11' viewBox='0 0 7 11'%3E%3Cpath d='m0.5 4 3-3 3 3zM0.5 7l3 3 3-3z' fill='%231c3d5f'/%3E%3C/svg%3E"),
     linear-gradient(#7ca6bf, #7ca6bf),
-    linear-gradient(#dff5ff 0%, #87cff5 43%, #3598d6 51%, #70bfe9 100%),
-    linear-gradient(#ffffff 0%, #fafafa 45%, #d1d1d1 52%, #f5f5f5 100%);
+    linear-gradient(#d2e5f5 0%, #9dd4f5 40%, #73b5e8 51%, #aedbfc 100%),
+    linear-gradient(#ffffff 0%, #fafafa 45%, #dcdcdc 52%, #f1f1f1 100%);
   --select-control-bg-position: right 7px center, right 20px top, right top, left top;
   --select-control-bg-size: 7px 11px, 1px 100%, 21px 100%, 100% 100%;
   --select-control-shadow: var(--btn-shadow);
@@ -1111,8 +1118,8 @@ body[data-theme="snow-leopard"] {
   --system-select-control-radius: var(--select-radius);
   --system-select-control-bg:
     linear-gradient(#7ca6bf, #7ca6bf) right 19px top / 1px 100% no-repeat,
-    linear-gradient(#dff5ff 0%, #87cff5 43%, #3598d6 51%, #70bfe9 100%) right top / 20px 100% no-repeat,
-    linear-gradient(#ffffff 0%, #fafafa 45%, #d1d1d1 52%, #f5f5f5 100%);
+    linear-gradient(#d2e5f5 0%, #9dd4f5 40%, #73b5e8 51%, #aedbfc 100%) right top / 20px 100% no-repeat,
+    linear-gradient(#ffffff 0%, #fafafa 45%, #dcdcdc 52%, #f1f1f1 100%);
   --system-select-control-shadow: var(--btn-shadow);
   --system-select-control-font-weight: 400;
   --field-control-padding: 3px 6px;
@@ -1472,7 +1479,8 @@ body[data-theme="snow-leopard"] {
   --theme-lab-radio-checked-bg: var(--radio-checked-image);
   --theme-lab-radio-dot-content: none;
   --menu-bar-bg: linear-gradient(#f4f4f4, #d8d8d8);
-  --menu-bar-border: 1px solid #9f9f9f;
+  --menu-bar-border-color: #9f9f9f;
+  --menu-bar-border: 1px solid var(--menu-bar-border-color);
   --menu-bar-shadow: inset 0 1px 0 #ffffff;
   --menu-panel-bg: rgba(250, 250, 250, 0.98);
   --menu-panel-border: 1px solid #9a9a9a;
@@ -1712,6 +1720,9 @@ body[data-theme="aqua"] .theme-lab-toolbar {
    leaves the round-icon buttons breathing room between groups. */
 body[data-theme="aqua"] .theme-lab-toolbar-search {
   margin-inline-start: auto;
+  /* The 10.2 capture keeps the search pill 23px clear of the window frame,
+     not flush against the toolbar's 10px inset. */
+  margin-inline-end: 12px;
 }
 
 /* The Jaguar scrollbar cap is 16px + 15px (top button taller); keep the
@@ -1720,6 +1731,7 @@ body[data-theme="aqua"] .theme-lab-toolbar-search {
 body[data-theme="aqua"] .theme-lab-scrollbar {
 
   grid-template-rows: minmax(0, 1fr) 16px 15px;
+  border-left: 1px solid #8e8e8e;
 
 }
 
@@ -2255,6 +2267,11 @@ body[data-theme="snow-leopard"] select:not([multiple]) {
   background-image: var(--select-control-bg-image);
   background-position: var(--select-control-bg-position);
   background-size: var(--select-control-bg-size);
+  /* The arrow well is a background layer pinned to 100%. Measured against the
+     padding box it lands 1px short of the border on every side, so a hairline
+     of button body shows around it and the well reads as a separate pill
+     floating outside the control. Measure it against the border box. */
+  background-origin: border-box;
   background-repeat: no-repeat;
   box-shadow: var(--select-control-shadow);
   font-family: var(--theme-ui-font);
@@ -2769,11 +2786,21 @@ body[data-theme="aqua"] .theme-lab-mini-window.is-inactive, body[data-theme="sno
 
 }
 
-body[data-theme="aqua"] :is(.theme-lab-sidebar, .theme-lab-list) button, body[data-theme="snow-leopard"] .theme-lab-sidebar button {
+body[data-theme="aqua"] :is(.theme-lab-sidebar, .theme-lab-list) button:not(:disabled), body[data-theme="snow-leopard"] .theme-lab-sidebar button {
 
   min-height: var(--theme-lab-nav-row-min-height);
   padding-block: var(--theme-lab-nav-row-padding-block);
+  border-bottom: 1px solid #d8d8d8;
 
+}
+
+/* Aqua 10.2 keeps a disabled column-browser row fully shaped: the icon and
+   label stay in place and only desaturate/grey. One :is() selector covers
+   both the row and its icon without spending a second Aqua ratchet slot. */
+body[data-theme="aqua"] :is(.theme-lab-sidebar button:disabled, .theme-lab-sidebar button:disabled .sys-icon) {
+  color: #7f7f7f;
+  filter: grayscale(1);
+  opacity: 0.65;
 }
 
 body[data-theme="snow-leopard"] .theme-lab-tabs button.is-selected {

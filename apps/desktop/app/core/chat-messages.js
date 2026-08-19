@@ -2701,6 +2701,21 @@ function formatSideAskAnchorContext() {
     const page = currentTimeMachinePage;
     return section(`${t("time_machine")} / ${page.reader.title || page.title || t("time_machine")}`, page.reader.text, 12000);
   }
+  if (anchor === "imagePromptStudio") {
+    const studio = document.querySelector('[data-window="imagePromptStudio"]');
+    if (!studio) return "";
+    const idea = studio.querySelector("#ips-idea")?.value?.trim() || "";
+    const title = studio.querySelector("#ips-title")?.value?.trim() || "";
+    const gptImage = studio.querySelector("#ips-gpt-out")?.value?.trim() || "";
+    const universal = studio.querySelector("#ips-universal-out")?.value?.trim() || "";
+    const content = [
+      idea ? `Idea / brief:\n${idea}` : "",
+      title ? `Title / overlay text:\n${title}` : "",
+      gptImage ? `GPT-Image prompt:\n${gptImage}` : "",
+      universal ? `Universal prompt:\n${universal}` : "",
+    ].filter(Boolean).join("\n\n");
+    return section(t("image_prompt_studio_label"), content, 12000);
+  }
   return "";
 }
 

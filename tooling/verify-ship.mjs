@@ -38,6 +38,7 @@ const checks = [
   { name: "theme-lab-regression", command: "npm", args: ["run", "verify:theme-lab"] },
   { name: "appearance-real-apps", command: "npm", args: ["run", "verify:appearance-apps"] },
   { name: "theme-lab-fidelity", command: "npm", args: ["run", "verify:theme-lab:fidelity"] },
+  { name: "appearance-phase5", command: "npm", args: ["run", "verify:phase5"] },
   { name: "design", command: "npm", args: ["run", "verify:design"] },
   { name: "public-tree", command: "npm", args: ["run", "verify:public"] },
   { name: "runtime-syntax", command: process.execPath, args: ["tooling/verify-ship-runtime-syntax.mjs"] },

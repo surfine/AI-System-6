@@ -11,6 +11,15 @@ The guidance adapts ideas from
 that modern controls feel responsive because material, hover, motion, and state
 all explain what the interface is about to do.
 
+## Target And Provenance
+
+Liquid Glass targets **macOS 27 Golden Gate**. macOS 26 Tahoe is only the
+first-generation implementation and is no longer the final visual target.
+Apple-derived rules come from the official macOS and HIG materials reviewed
+2026-08-17; AI System 6 keeps its own System 6 object grammar, overlay, motion
+semantics, and accessible-control contracts. Do not copy Apple icons,
+screenshots, shaders, fonts, or private assets.
+
 ## Target Feel
 
 Liquid Glass controls should feel:
@@ -110,6 +119,13 @@ when the operation can produce them.
    decoration.
 6. Reduced-transparency behavior must keep the same hierarchy with a solid or
    more opaque fill.
+7. The single Liquid Glass appearance slider (`--liquid-tint-level`, `0..1`)
+   drives both CSS material tint and the overlay tint. The default `0.5`
+   reproduces the pre-slider midpoint, `0` is clearer, and `1` is more tinted;
+   Yosemite never reads the slider.
+8. The overlay is demand-scheduled: it stops requesting frames when idle and
+   while the page is hidden, and honors reduced motion, transparency, and
+   contrast without removing the static material hierarchy.
 
 ## Motion Families
 

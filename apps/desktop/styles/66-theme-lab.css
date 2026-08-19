@@ -102,6 +102,17 @@
 .theme-lab-era-ticks {
   position: relative;
   height: 26px;
+  container-type: inline-size;
+}
+
+/* Six years do not fit a short rail: 1999 and 2002 collide first, then 2009
+   and 2014. Keep the axis endpoints and whichever era is selected, and drop
+   the labels in between. Every tick mark stays, so each era is still a jump
+   target -- only the text that could not be read is withheld. */
+@container (max-width: 340px) {
+  .theme-lab-era-tick:not(.is-active):not(:first-child):not(:last-child) > span {
+    display: none;
+  }
 }
 
 /* Each tick is its own jump target, so the axis stays keyboard- and
@@ -373,8 +384,17 @@
 /* A lab cell is not a Finder row: it owns its own stacking, label size, and
    wrapping so a four-state card reads the same in every era, whatever geometry
    that era gives its real Finder items. */
-.theme-lab-object-item.finder-item {
+.theme-lab-object-states .theme-lab-object-item.finder-item {
+  /* Weighted past the era's own Finder cell width: Liquid Glass pins
+     .finder-item to 118px, which is wider than a four-track cell, so the
+     selected state's fill spilled over the neighbouring card. A lab cell
+     follows the grid, not the era's desktop geometry. */
   width: 100%;
+  /* .finder-item carries a Finder cell's own min-width. In a four-track grid
+     that min-width wins over the track, so the selected state's fill spilled
+     past the card and over its neighbour. minmax(0, 1fr) alone cannot stop
+     that; the item has to give up its floor too. */
+  min-width: 0;
   min-height: 60px;
   flex-direction: column;
   align-items: center;
@@ -1469,6 +1489,10 @@
   background-image: var(--theme-lab-sidebar-applications-image, none);
 }
 
+.theme-lab-sidebar [data-system-icon="document"] {
+  background-image: var(--theme-lab-sidebar-document-image, none);
+}
+
 .theme-lab-sidebar [data-system-icon="trash"] {
   background-image: var(--theme-lab-sidebar-trash-image, none);
 }
@@ -2443,6 +2467,7 @@
   gap: var(--theme-lab-toolbar-gap, 8px);
   padding: var(--theme-lab-toolbar-padding, 5px 7px);
   border: var(--theme-lab-toolbar-border, var(--toolbar-border));
+  border-inline: var(--theme-lab-toolbar-border-inline, var(--theme-lab-toolbar-border, var(--toolbar-border)));
   border-radius: var(--theme-lab-toolbar-radius, var(--control-radius) var(--control-radius) 0 0);
   background: var(--theme-lab-toolbar-bg, var(--toolbar-bg));
   box-shadow: var(--theme-lab-toolbar-shadow, none);
@@ -2483,7 +2508,8 @@
 }
 
 .theme-lab-toolbar-icon-button small,
-.theme-lab-toolbar-view-control small {
+.theme-lab-toolbar-view-control small,
+.theme-lab-toolbar-search small {
   font-family: var(--theme-ui-font, inherit);
   font-size: 10px;
   line-height: 11px;
@@ -2563,16 +2589,20 @@
   background-repeat: no-repeat;
 }
 
+/* The plain .theme-lab-view-icon variants paint their glyph with a background
+   shorthand, so a bare background-image here inherits their 4px tile size and
+   corner placement. Repeat the shorthand so the toolbar segment gets the whole
+   12px artwork, centred. */
 .theme-lab-toolbar-view-buttons > i.is-icon {
-  background-image: var(--theme-lab-toolbar-view-icon-image, none);
+  background: var(--theme-lab-toolbar-view-icon-image, none) center / 12px 12px no-repeat;
 }
 
 .theme-lab-toolbar-view-buttons > i.is-list {
-  background-image: var(--theme-lab-toolbar-view-list-image, none);
+  background: var(--theme-lab-toolbar-view-list-image, none) center / 12px 12px no-repeat;
 }
 
 .theme-lab-toolbar-view-buttons > i.is-columns {
-  background-image: var(--theme-lab-toolbar-view-columns-image, none);
+  background: var(--theme-lab-toolbar-view-columns-image, none) center / 12px 12px no-repeat;
 }
 
 .theme-lab-toolbar-view-buttons > i:first-child {
@@ -2583,9 +2613,23 @@
   border-right: 0;
 }
 
+/* The search item can be a plain pill or, on toolbars that label every item,
+   a stacked pill-over-caption cell. Both come from the same markup. */
 .theme-lab-toolbar-search {
   display: var(--theme-lab-toolbar-search-display, none);
+  justify-items: center;
+  gap: 1px;
   margin-left: auto;
+}
+
+.theme-lab-toolbar-search small {
+  display: var(--theme-lab-toolbar-search-label-display, none);
+}
+
+/* Toolbars that carry the caption under the pill leave the field itself
+   empty, so the placeholder word is not printed twice. */
+.theme-lab-toolbar-search input::placeholder {
+  color: var(--theme-lab-toolbar-search-placeholder-color, inherit);
 }
 
 .theme-lab-toolbar-search input {

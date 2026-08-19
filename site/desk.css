@@ -13,8 +13,8 @@
   background: #808080;
 }
 html[data-theme] .machine-figure { border: 1px solid rgba(0, 0, 0, 0.45); }
-.machine-figure-narrow { max-width: 640px; }
-.machine-figure-strip { max-width: 760px; }
+.machine-figure-narrow { max-width: 860px; }
+.machine-figure-strip { max-width: 960px; }
 
 .machine-port {
   position: relative;
@@ -539,6 +539,19 @@ html[data-theme] .route-obj.is-active .route-ordinal {
 .temp-card { text-align: left; }
 .temp-card h3 { margin: 0 0 6px; font-size: 14px; }
 .temp-card p { margin: 0; font-size: 13.5px; line-height: 1.5; }
+/* Desk accessories put their real capture above the caption. The shot is a
+   small window with its own aspect, so it scales to fit a fixed strip instead
+   of being cropped or stretched. */
+.accessory-card { display: flex; flex-direction: column; }
+.accessory-shot {
+  display: block;
+  width: 100%;
+  height: 190px;
+  object-fit: contain;
+  object-position: center;
+  margin: 0 0 10px;
+  background: transparent;
+}
 
 /* ---------- Chat is an app: the comparison ---------- */
 

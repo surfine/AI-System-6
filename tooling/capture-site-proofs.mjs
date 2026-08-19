@@ -11,7 +11,7 @@
 // Output: site/img/proofs/<id>.webp + proofs.json
 
 import { execFileSync } from "node:child_process";
-import { mkdirSync, writeFileSync, statSync, rmSync } from "node:fs";
+import { mkdirSync, writeFileSync, statSync, rmSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
@@ -19,6 +19,8 @@ import { chromium } from "playwright";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const outDir = path.join(root, "site", "img", "proofs");
 const appUrl = process.env.APP_URL || "http://localhost:4173/";
+const onlyArg = process.argv.indexOf("--only");
+const only = onlyArg >= 0 ? String(process.argv[onlyArg + 1] || "").split(",").filter(Boolean) : null;
 
 const CHART_MARKDOWN = `| year | GWh |
 | --- | --- |
@@ -249,6 +251,84 @@ const PROOFS = [
       await page.waitForTimeout(900);
     },
   },
+  {
+    id: "calculator",
+    natural: true,
+    window: "calculator",
+    label: "Calculator",
+    caption: "Adds up, in a beveled window.",
+    async setup(page) {
+      await page.evaluate(() => {
+        openWindow("calculator");
+        pressCalculatorKey("clear");
+        ["1", "9", "8", "8", "+", "3", "8"].forEach((key) => pressCalculatorKey(key));
+        pressCalculatorKey("=");
+      });
+      await page.waitForTimeout(500);
+    },
+  },
+  {
+    id: "puzzle",
+    natural: true,
+    window: "puzzle",
+    label: "Puzzle",
+    caption: "The sliding-tile puzzle, mid-move.",
+    async setup(page) {
+      await page.evaluate(() => openWindow("puzzle"));
+      await page.waitForTimeout(800);
+    },
+  },
+  {
+    id: "writing-bell",
+    natural: true,
+    window: "writingBell",
+    label: "Writing Bell",
+    caption: "A Pomodoro timer that rings like 1988.",
+    async setup(page) {
+      await page.evaluate(() => openWindow("writingBell"));
+      await page.waitForTimeout(500);
+    },
+  },
+  {
+    id: "alarm-clock",
+    natural: true,
+    window: "alarmClock",
+    label: "Alarm Clock",
+    caption: "Winds up, goes off, looks the part.",
+    async setup(page) {
+      await page.evaluate(() => openWindow("alarmClock"));
+      await page.waitForTimeout(500);
+    },
+  },
+  {
+    id: "dictation",
+    natural: true,
+    window: "dictation",
+    label: "Dictation Pad",
+    caption: "Speak into the field you are already in.",
+    async setup(page) {
+      await page.evaluate(() => {
+        openWindow("dictation");
+        const raw = document.getElementById("dictation-raw");
+        if (raw) {
+          raw.value = "we need the 240 gigawatt figure split by source, and the real objection is cost, not engineering";
+          raw.dispatchEvent(new Event("input", { bubbles: true }));
+        }
+      });
+      await page.waitForTimeout(600);
+    },
+  },
+  {
+    id: "memory-cards",
+    natural: true,
+    window: "memoryCards",
+    label: "Memory Cards",
+    caption: "Flip two, find the pair.",
+    async setup(page) {
+      await page.evaluate(() => openWindow("memoryCards"));
+      await page.waitForTimeout(800);
+    },
+  },
 ];
 
 
@@ -277,6 +357,7 @@ mkdirSync(outDir, { recursive: true });
 const captured = [];
 
 for (const proof of PROOFS) {
+  if (only && !only.includes(proof.id)) continue;
   // One window at a time, centred and alone, so the shot is about the work.
   await page.evaluate((keep) => {
     document.querySelectorAll(".window").forEach((win) => {
@@ -291,19 +372,22 @@ for (const proof of PROOFS) {
     continue;
   }
 
-  const box = await page.evaluate((name) => {
+  const box = await page.evaluate(({ name, natural }) => {
     const win = document.querySelector(`.window[data-window="${name}"]`);
     if (!win) return null;
     win.classList.remove("is-hidden");
+    win.style.right = "auto";
     win.style.left = "120px";
     win.style.top = "80px";
-    win.style.width = "900px";
-    win.style.height = "620px";
+    if (!natural) {
+      win.style.width = "900px";
+      win.style.height = "620px";
+    }
     const r = win.getBoundingClientRect();
     return { x: r.x, y: r.y, width: r.width, height: r.height };
-  }, proof.window);
+  }, { name: proof.window, natural: !!proof.natural });
 
-  if (!box || box.width < 200) {
+  if (!box || box.width < 24 || box.height < 24) {
     console.warn(`skip ${proof.id}: window never appeared`);
     continue;
   }
@@ -331,11 +415,26 @@ const build = await page.evaluate(async () => {
   try { return (await (await fetch("/api/version")).json()).build || null; } catch (e) { return null; }
 });
 
+// A --only re-shoot updates just those proofs and keeps the rest of the
+// manifest; a full shoot replaces everything in PROOFS order.
+let priorProofs = [];
+try {
+  const prior = JSON.parse(readFileSync(path.join(outDir, "proofs.json"), "utf8"));
+  if (Array.isArray(prior.proofs)) priorProofs = prior.proofs;
+} catch {}
+const priorById = new Map(priorProofs.map((proof) => [proof.id, proof]));
+const merged = PROOFS.map((proof) => {
+  const fresh = captured.find((item) => item.id === proof.id);
+  if (fresh) return fresh;
+  if (only) return priorById.get(proof.id) || null;
+  return null;
+}).filter(Boolean);
+
 writeFileSync(path.join(outDir, "proofs.json"), JSON.stringify({
   capturedAt: new Date().toISOString(),
   build,
-  proofs: captured,
+  proofs: merged,
 }, null, 2));
-console.log(`wrote ${captured.length} proof(s); build ${build}`);
+console.log(`wrote ${merged.length} proof(s); build ${build}`);
 
 await browser.close();

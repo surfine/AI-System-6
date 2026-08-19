@@ -971,7 +971,8 @@
   --menu-item-active-bg: var(--ink);
   --menu-item-active-fg: var(--paper);
   --menu-item-active-shadow: none;
-  --menu-bar-border: 1px solid var(--ink);
+  --menu-bar-border-color: var(--ink);
+  --menu-bar-border: 1px solid var(--menu-bar-border-color);
   --menu-panel-bg: var(--paper);
   --menu-panel-border: var(--system-border);
   --menu-panel-radius: 0;
@@ -992,7 +993,19 @@
   --scrollbar-corner-bg: var(--paper);
   --window-border: 1px solid var(--ink);
   --window-bg: var(--paper);
-  --window-radius: 0;
+  --window-radius: 0px;
+  /* Concentric corner ladder: window -> toolbar/sidebar -> local group ->
+     control. A child inset by --container-inset inside a container of
+     --container-radius shares its centre of curvature. The subtraction has to
+     live in the child's own border-radius declaration: a custom property that
+     holds the finished value would be substituted on the element that declares
+     it, so a child setting --container-inset could never change it. Only
+     Liquid Glass raises --container-radius today; every other appearance leaves
+     it at 0px, so the ladder collapses and their children keep the radii they
+     already had. An era opts in by setting --container-radius beside its own
+     --window-radius. */
+  --container-radius: 0px;
+  --container-inset: 0px;
   --window-shadow: none;
   --inactive-window-shadow: 2px 2px 0 #5e5e5e;
   --window-backdrop-filter: none;
@@ -1189,6 +1202,24 @@
   --writing-bell-mode-active-bg: var(--ink);
   --writing-bell-mode-active-fg: var(--paper);
   --writing-bell-mode-active-shadow: none;
+  /* Dictation Pad's Record/Stop pair is a two-cell segmented control. It uses
+     the same Classic grammar as Writing Bell's mode switch — flat paper cells,
+     a single ink divider, no raised bevel — but keeps its own tokens so the
+     two surfaces can diverge without sharing a name. */
+  --dictation-capture-gap: 0;
+  --dictation-capture-padding: 0;
+  --dictation-capture-border: var(--system-border);
+  --dictation-capture-radius: 0;
+  --dictation-capture-bg: var(--paper);
+  --dictation-capture-shadow: none;
+  --dictation-capture-button-min-height: 26px;
+  --dictation-capture-button-border: 0;
+  --dictation-capture-button-border-right: 1px solid var(--ink);
+  --dictation-capture-button-last-border-right: 0;
+  --dictation-capture-button-radius: 0;
+  --dictation-capture-button-bg: var(--paper);
+  --dictation-capture-button-fg: var(--ink);
+  --dictation-capture-button-shadow: none;
   --writing-bell-preset-border-color: var(--ink);
   --writing-bell-preset-bg: var(--paper);
   --writing-bell-preset-fg: var(--ink);

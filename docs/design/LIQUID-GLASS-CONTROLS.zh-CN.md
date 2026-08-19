@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/design/LIQUID-GLASS-CONTROLS.md -->
-<!-- source-sha256: 1689debfef68da7ac7315bb771e8984a0f3ad2c318056c38645c1e0981940edd -->
+<!-- source-sha256: 05cafad0e8ba16ef642efd6c225fc3b3dab85224ea8004f6f519ed3f36749d8e -->
 
 # Liquid Glass 控件体验规范
 
@@ -13,6 +13,13 @@
 （2026-07-28 查阅）中适合 AI System 6 的经验。值得借鉴的不是它的视觉外形，
 而是其核心判断：现代控件之所以显得顺手，是因为材质、悬停、动效和状态会共同
 解释界面接下来要做什么。
+
+## 目标与出处
+
+Liquid Glass 的目标是 **macOS 27 Golden Gate**。macOS 26 Tahoe 只是初代实现，
+不再作为最终视觉目标。Apple 侧规则来自 2026-08-17 查阅的官方 macOS 与 HIG 材料；
+AI System 6 保留自己的 System 6 对象语法、overlay、动效语义和可访问控件契约。
+不得复制 Apple 图标、截图、shader、字体或私有资源。
 
 ## 目标感受
 
@@ -99,6 +106,11 @@ panel 内。层级是局部关系，不是固定全局颜色，也不是任意 `
    menu row、tab 和 window 不能都退化成同一种 pill。
 5. shadow 和 highlight 用于解释分离关系，不作环境装饰。
 6. reduced transparency 必须以实体或更不透明填充保持同一层级。
+7. Liquid Glass 唯一的外观滑杆（`--liquid-tint-level`，`0..1`）同时驱动 CSS 材质
+   tint 与 overlay tint。默认 `0.5` 复现滑杆出现前的中点，`0` 更清透，`1` 更
+   着色；Yosemite 永不读取该滑杆。
+8. overlay 按需调度：静止和页面隐藏时停止请求帧，并遵守 reduced motion、
+   transparency 与 contrast，但不会移除静态材质层级。
 
 ## 动效家族
 

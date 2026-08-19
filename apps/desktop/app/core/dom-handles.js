@@ -325,6 +325,8 @@ function getElements() {
   const systemHelpScopeEl = document.querySelector("#system-help-scope");
   const modernFontsInput = document.querySelector("#modern-fonts");
   const appearanceThemeInput = document.querySelector("#appearance-theme");
+  const liquidTintLevelInput = document.querySelector("#liquid-tint-level");
+  const liquidTintLevelOutput = document.querySelector("#liquid-tint-level-output");
   const soundEffectsInput = document.querySelector("#sound-effects");
   const menuClockInput = document.querySelector("#menu-clock");
   const classicLineIconsInput = document.querySelector("#classic-line-icons");
@@ -723,6 +725,8 @@ function getElements() {
     systemHelpScopeEl,
     modernFontsInput,
     appearanceThemeInput,
+    liquidTintLevelInput,
+    liquidTintLevelOutput,
     soundEffectsInput,
     menuClockInput,
     classicLineIconsInput,

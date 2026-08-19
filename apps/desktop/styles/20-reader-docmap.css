@@ -885,12 +885,19 @@ body:has(.shutdown-screen:not(.is-hidden)) .dictation-field-button {
   text-align: right;
 }
 
-.dictation-pane,
 /* One field, one answer, one row of verbs. The pad sits beside the work rather
    than over it, so it stays the size of the question it is holding. A sidecar
    states its own width; the default-width map serves the fixed accessories. */
 .sideask-pad-window {
   width: var(--da-width-pad);
+  max-height: calc(100vh - 56px);
+}
+
+/* The Dictation Pad is the two-field pad, so it fills its wide window instead
+   of pinning itself to the narrower single-field --da-width-pad. Leaving that
+   340px width here left a 40px strip of window chrome to the right of the pane
+   in every appearance. */
+.dictation-pane {
   max-height: calc(100vh - 56px);
 }
 

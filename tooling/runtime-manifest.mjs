@@ -60,7 +60,6 @@ export const appModulePaths = [
   "app/core/drag-drop.js",
   "app/core/multi-finder.js",
   "app/core/balloon-help.js",
-  "app/core/liquid-glass-overlay.js",
   "app/features/dictation.js",
   "app/features/sideask-pad.js",
   "app/core/review-sections.js",
@@ -92,6 +91,7 @@ export const appModulePaths = [
 
 export const lazyRuntimePaths = [
   "app/vendor/stream-markdown-parser.global.js",
+  "app/core/liquid-glass-overlay.js",
   "app/core/launch-intent.js",
   "app/vendor/marked.umd.js",
   "app/core/writing-tools-prompts.js",

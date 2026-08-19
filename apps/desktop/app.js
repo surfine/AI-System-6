@@ -396,6 +396,8 @@ const {
   systemHelpScopeEl,
   modernFontsInput,
   appearanceThemeInput,
+  liquidTintLevelInput,
+  liquidTintLevelOutput,
   soundEffectsInput,
   menuClockInput,
   classicLineIconsInput,
@@ -1648,7 +1650,14 @@ function applyTheme(themeId, options = {}) {
   }
   const fontStrategy = theme?.fontStrategy || "preference";
   if (modernFontsInput) modernFontsInput.disabled = fontStrategy === "theme" || fontStrategy === "modern";
-  window.AISystem6LiquidGlassOverlay?.setEnabled(theme?.overlay === "liquid-glass");
+  const liquidOverlayEnabled = theme?.overlay === "liquid-glass";
+  if (liquidOverlayEnabled) {
+    ensureLazySystemModule("app/core/liquid-glass-overlay.js", "AISystem6LiquidGlassOverlayLoaded")
+      .then(() => window.AISystem6LiquidGlassOverlay?.setEnabled(true))
+      .catch((error) => console.warn("Liquid Glass overlay unavailable.", error));
+  } else {
+    window.AISystem6LiquidGlassOverlay?.setEnabled(false);
+  }
   // Finder icon geometry changes between eras (80 px in Classic, 118 px in
   // Liquid Glass). Refit every currently visible auto-sized Finder window
   // after the new CSS wins, otherwise a live appearance switch can clip the

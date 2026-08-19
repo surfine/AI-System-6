@@ -30,7 +30,7 @@ const THEMES = [
   { id: "aqua", label: "10.2 Jaguar", dir: "aqua", family: "aqua-icon-family.json", base: "", sizes: [128], smooth: true },
   { id: "snow-leopard", label: "10.6 Snow Leopard", dir: "snow-leopard", family: "snow-leopard-icon-family.json", base: "", sizes: [128], smooth: true },
   { id: "yosemite", label: "10.10 Yosemite", dir: "yosemite", family: "yosemite-icon-family.json", base: "", sizes: [128], smooth: true },
-  { id: "liquid-glass", label: "Tahoe 26", dir: "liquid-glass", family: "liquid-glass-icon-family.json", base: "", sizes: [128], smooth: true },
+  { id: "liquid-glass", label: "Golden Gate 27", dir: "liquid-glass", family: "liquid-glass-icon-family.json", base: "", sizes: [128], smooth: true },
 ];
 
 // The objects whose lineage carries the product: system objects the historical

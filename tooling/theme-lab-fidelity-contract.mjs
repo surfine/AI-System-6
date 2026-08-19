@@ -51,6 +51,9 @@ export const REQUIRED_FIDELITY_SPECIMENS = Object.freeze({
     "menu-selected-item",
     "button-disabled",
     "list-row-disabled",
+    "titlebar-lamps",
+    "titlebar-lamps-minimize",
+    "titlebar-lamps-zoom",
     "search-field-focused",
   ]),
   "snow-leopard": Object.freeze([

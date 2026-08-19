@@ -2113,6 +2113,14 @@ body.use-modern-fonts .mde-surface * {
   font-size: var(--system-readable-min);
 }
 
+/* The surface rule above paints every listed surface with ink, and its longhand
+   outranks foundation's border-bottom shorthand -- so an appearance that sets
+   --menu-bar-border never reached the screen. Hand the menu bar its own colour
+   back; appearances that declare nothing still resolve to ink. */
+.menu-bar {
+  border-bottom-color: var(--menu-bar-border-color, var(--ink));
+}
+
 .menu-bar > .menu > button,
 .project-switcher-button,
 .multifinder-button,
