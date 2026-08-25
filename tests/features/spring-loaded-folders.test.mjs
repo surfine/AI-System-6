@@ -115,7 +115,38 @@ function makeFakeDocument() {
   };
 }
 
-function buildContext(pointerFine) {
+// A synchronous fake clock. The spring behavior only uses setTimeout/clearTimeout
+// for its 650ms delay, so the test can advance time deterministically instead
+// of sleeping ~8 real 760ms waits (the whole file previously cost ~6.4s).
+function makeClock() {
+  let nextId = 1;
+  const timers = new Map();
+  let now = 0;
+  return {
+    setTimeout(fn, ms) {
+      const id = nextId;
+      nextId += 1;
+      timers.set(id, { fn, due: now + Number(ms || 0) });
+      return id;
+    },
+    clearTimeout(id) {
+      timers.delete(id);
+    },
+    advance(ms) {
+      now += ms;
+      const due = [...timers.entries()]
+        .filter(([, timer]) => timer.due <= now)
+        .sort((a, b) => a[1].due - b[1].due);
+      for (const [id, timer] of due) {
+        if (!timers.has(id)) continue;
+        timers.delete(id);
+        timer.fn();
+      }
+    },
+  };
+}
+
+function buildContext(pointerFine, clock) {
   const fakeDocument = makeFakeDocument();
   const state = {
     opened: [],
@@ -129,8 +160,8 @@ function buildContext(pointerFine) {
       addEventListener: () => {},
     },
     document: fakeDocument,
-    setTimeout,
-    clearTimeout,
+    setTimeout: clock.setTimeout,
+    clearTimeout: clock.clearTimeout,
     activeProjectId: "p-1",
     selectedFolderId: "all",
     selectedChatFileId: null,
@@ -239,7 +270,8 @@ const folderBEl = makeFinderElement({ dragType: "document-folder", id: "f-b", pr
 const folderADragEl = makeFinderElement({ dragType: "document-folder", id: "f-a", projectId: "p-1", documentItemType: "folder", documentItemId: "f-a" });
 const foreignFileEl = makeFinderElement({ dragType: "file", id: "file-9", projectId: "p-2", documentItemType: "file", documentItemId: "file-9" });
 
-const harness = buildContext(true);
+const clock = makeClock();
+const harness = buildContext(true, clock);
 vm.runInContext(externalDrop, harness.context);
 vm.runInContext(dragDrop, harness.context);
 harness.context.initDragAndDrop();
@@ -252,13 +284,11 @@ const dragover = handlers.get("dragover")[0];
 const dragleave = handlers.get("dragleave")[0];
 const drop = handlers.get("drop")[0];
 const dragend = handlers.get("dragend")[0];
-const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
 // Under 650ms the folder must not open.
 state.opened.length = 0;
 dragstart(dragStartEvent(fileEl, filePayload));
 dragover(dragOverEvent(folderAEl, filePayload));
-await wait(300);
+clock.advance(300);
 test.assert(
   state.opened.length === 0,
   "a folder never opens before the 650ms spring delay"
@@ -270,7 +300,7 @@ state.opened.length = 0;
 dragstart(dragStartEvent(fileEl, filePayload));
 dragover(dragOverEvent(folderAEl, filePayload));
 dragleave(dragLeaveEvent(folderAEl, filePayload));
-await wait(760);
+clock.advance(760);
 test.assert(
   state.opened.length === 0,
   "dragleave cancels an unopened spring timer"
@@ -282,7 +312,7 @@ dragend(dragEndEvent(fileEl));
 state.opened.length = 0;
 dragstart(dragStartEvent(fileEl, filePayload));
 dragenter(dragOverEvent(folderAEl, filePayload));
-await wait(760);
+clock.advance(760);
 test.assert(
   state.opened.some(([surface, id]) => surface === "doc" && id === "f-a"),
   "after 650ms the documents Finder opens the target folder"
@@ -302,7 +332,7 @@ test.assert(
 
 // The drag can continue into the next layer.
 dragover(dragOverEvent(folderBEl, filePayload));
-await wait(760);
+clock.advance(760);
 test.assert(
   state.opened.some(([surface, id]) => surface === "doc" && id === "f-b"),
   "the drag can continue into the second folder level"
@@ -323,7 +353,7 @@ test.assert(
 // Cancelling (dragend) also restores the starting path.
 dragstart(dragStartEvent(fileEl, filePayload));
 dragover(dragOverEvent(folderAEl, filePayload));
-await wait(760);
+clock.advance(760);
 dragend(dragEndEvent(fileEl));
 test.assert(
   context.selectedFolderId === "all" && context.getSpringFolderState() === null,
@@ -338,7 +368,7 @@ test.assert(
 state.opened.length = 0;
 dragstart(dragStartEvent(folderADragEl, folderPayload));
 dragover(dragOverEvent(folderAEl, folderPayload));
-await wait(760);
+clock.advance(760);
 test.assert(
   state.opened.length === 0,
   "a folder never springs into itself"
@@ -349,7 +379,7 @@ dragend(dragEndEvent(folderADragEl));
 state.opened.length = 0;
 dragstart(dragStartEvent(folderADragEl, folderPayload));
 dragover(dragOverEvent(folderBEl, folderPayload));
-await wait(760);
+clock.advance(760);
 test.assert(
   state.opened.length === 0,
   "a folder never springs into its own descendant"
@@ -360,7 +390,7 @@ dragend(dragEndEvent(folderADragEl));
 state.opened.length = 0;
 dragstart(dragStartEvent(foreignFileEl, JSON.stringify({ type: "file", id: "file-9", projectId: "p-2", items: [] })));
 dragover(dragOverEvent(folderAEl, filePayload));
-await wait(760);
+clock.advance(760);
 test.assert(
   state.opened.length === 0 && context.getSpringFolderState() === null,
   "a foreign-project drag never starts a spring session"
@@ -396,7 +426,8 @@ test.assert(
 );
 
 // pointer: coarse never enables spring folders.
-const coarseHarness = buildContext(false);
+const coarseClock = makeClock();
+const coarseHarness = buildContext(false, coarseClock);
 vm.runInContext(externalDrop, coarseHarness.context);
 vm.runInContext(dragDrop, coarseHarness.context);
 coarseHarness.context.initDragAndDrop();
@@ -404,7 +435,7 @@ const coarseHandlers = coarseHarness.fakeDocument.handlers;
 coarseHandlers.get("dragstart")[0](dragStartEvent(fileEl, filePayload));
 coarseHandlers.get("dragenter")[0](dragOverEvent(folderAEl, filePayload));
 coarseHandlers.get("dragover")[0](dragOverEvent(folderAEl, filePayload));
-await wait(760);
+coarseClock.advance(760);
 test.assert(
   coarseHarness.context.getSpringFolderState() === null && coarseHarness.state.opened.length === 0,
   "pointer: coarse devices keep the existing behavior with no spring folders"

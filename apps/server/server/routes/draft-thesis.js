@@ -23,7 +23,9 @@ const {
   DEEPSEEK_API_KEY_DEFAULT,
   DEEPSEEK_BASE_URL_DEFAULT,
   resolveCloudTarget,
+  resolveCloudVisionModel,
 } = require("../cloud.js");
+const { imageBlocksFromSources } = require("../cloud-vision.js");
 const { systemIntegrityInstruction } = require("../system-integrity.js");
 const { authorThesisInstruction } = require("../author-thesis.js");
 const { chatVentIntakeInstruction } = require("../chat-vent.js");
@@ -410,7 +412,7 @@ function adjustmentMaskSummary(ranges = []) {
 }
 
 /**
- * Quick Draft adjustment-layer strength. 明明传球 / 洛洛接球 / HKRR 抬升 are
+ * Quick Draft adjustment-layer strength. 铭铭视角 / 落落接收 / HKRR 提亮 are
  * adjustment layers with a switch and a strength parameter; the strength only
  * scales this one pass (each layer reads the negative, never another layer's
  * output), so it must never weaken the guardrail messages around it.
@@ -904,7 +906,15 @@ function buildFirstDayMessages(body, sources) {
         mountedBlock ? `Additional mounted sources:\n${mountedBlock}` : "",
       ].filter(Boolean).join("\n\n");
 
-  return [...systemMessages, { role: "user", content: userMessage }];
+  // The pictures the writer imported. This prompt is built on the server, so
+  // the browser's own image routing cannot reach it — the blocks are attached
+  // here, and the model is pinned to a vision model below.
+  const pictureBlocks = imageBlocksFromSources(chatMaterials, { limit: 4, detail: "high" });
+  const userContent = pictureBlocks.length
+    ? [{ type: "text", text: userMessage }, ...pictureBlocks]
+    : userMessage;
+
+  return [...systemMessages, { role: "user", content: userContent }];
 }
 
 /**
@@ -1348,7 +1358,13 @@ async function callModel(body, messages, signal, req) {
     const temperature = typeof body.temperature === "number" ? body.temperature : 0.4;
 
   if (isCloud) {
-    const model = body._cloud_model || body.model || "";
+    // A text model drops image blocks without saying so, so a prompt that
+    // carries a picture must go to the vision model whatever was picked.
+    const carriesPicture = messages.some((message) => Array.isArray(message?.content)
+      && message.content.some((block) => block?.type === "image_url"));
+    const model = carriesPicture
+      ? resolveCloudVisionModel(body._cloud_model || body.model || "")
+      : (body._cloud_model || body.model || "");
     /** @type {any} */
     const payload = { model, messages, stream: false, temperature, max_tokens: cloudDraftMaxTokens(body) };
     let apiKey;

@@ -227,6 +227,22 @@ async function handleExternalDropOnTarget(event, dropTargetType) {
     // at the drop point, so the target window still owns its own behavior.
     if (!externalDropHasFiles(event)) return false;
     event.preventDefault();
+    // A photo dropped on the Question Sheet is that sheet's raw input, not a
+    // File Floppy document — a scribbled page belongs to the questions.
+    const questionSheetPhotos = event.target?.id === "question-sheet-body"
+      ? imageFilesFromList(event.dataTransfer?.files)
+      : [];
+    if (questionSheetPhotos.length) return addQuestionSheetPhotoFiles(questionSheetPhotos);
+    // Same rule one surface over: a picture dropped in the Scrapbook is a clip,
+    // exactly what the Clip Picture button makes — and a clip may be a picture
+    // with no text at all. Without this the only way in was that one button,
+    // while every other surface took a drop.
+    const scrapbookPictures = event.target?.closest?.("#scrap-form, #scrap-pictures")
+      ? imageFilesFromList(event.dataTransfer?.files)
+      : [];
+    if (scrapbookPictures.length && typeof clipPictureToScrapbook === "function") {
+      return clipPictureToScrapbook(scrapbookPictures);
+    }
     return routeExternalDropFilesOnly(event);
   }
 
@@ -252,11 +268,12 @@ function handleDropToTrash(data) {
     }
     moveDocumentFolderToTrashById(data.id);
   } else if (data.type === "project") {
-    if (data.id === activeProjectId) {
-      setStatus(t("cannot_trash_active_project"));
+    // The disk you are working in cannot be put away from under you; eject it
+    // first, which is the same order a Macintosh has always asked for.
+    if (data.id === activeProjectId && isProjectMounted) {
+      setStatus(t("cannot_archive_mounted_project"));
     } else {
-      selectedProjectId = data.id;
-      moveSelectedProjectToTrash();
+      archiveProjectDiskById(data.id);
     }
   } else if (data.type === "project-cd-item") {
     moveItemsToTrash((Array.isArray(data.ids) && data.ids.length ? data.ids : [data.id]).map((id) => ({ type: "projectCd", id })));

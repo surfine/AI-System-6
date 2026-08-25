@@ -30,6 +30,8 @@ uniform float u_strength[MAX_WINDOWS];
 uniform float u_dpr;
 uniform float u_tint;
 uniform float u_contrast;
+uniform float u_edge_contrast;
+uniform float u_refraction;
 uniform float u_reduced_transparency;
 
 out vec4 fragColor;
@@ -104,7 +106,7 @@ void main() {
 
     if (d < 18.0 && d > -innerDepth) {
       vec2 n = rectNormal(i, p);
-      float edge = (1.0 - smoothstep(0.0, 30.0, abs(d))) * mix(1.0, 1.22, u_contrast);
+      float edge = (1.0 - smoothstep(0.0, 30.0, abs(d))) * u_edge_contrast * mix(1.0, 1.22, u_contrast);
       float inner = smoothstep(-innerDepth, -6.0, d) * (1.0 - smoothstep(-12.0, 2.0, d));
       float fresnel = pow(edge, 1.35) * (0.46 + 0.3 * isActive);
       float angle = atan(n.y, n.x) + u_time * 0.0008 + motion.x * 0.05 - motion.y * 0.035;
@@ -120,7 +122,7 @@ void main() {
       vec2 refractOffset = -n * (10.0 + 22.0 * refEdge + 10.0 * motionPower) * strength * u_dpr + motion * (0.75 + 1.2 * refEdge);
       vec3 baseBg = desktopBg(p);
       vec3 refractedBg = desktopBg(p + refractOffset);
-      vec3 refraction = mix(baseBg, refractedBg, 0.86);
+      vec3 refraction = mix(baseBg, refractedBg, clamp(u_refraction, 0.0, 1.0));
 
       vec3 color = mix(refraction, spectralEdge(n, motion, edge, isActive), 0.26);
       color += vec3(1.0) * fresnel * 0.72;
@@ -149,6 +151,10 @@ void main() {
   let renderer = "2d";
   let dpr = 1;
   let tintLevel = 0.5;
+  let edgeContrastScale = 1;
+  let refractionLevel = 0.86;
+  let inactiveChromeScale = 1;
+  let motionScale = 1;
   let reducedMotion = false;
   let reducedTransparency = false;
   let increasedContrast = false;
@@ -232,6 +238,8 @@ void main() {
         dpr: gl.getUniformLocation(program, "u_dpr"),
         tint: gl.getUniformLocation(program, "u_tint"),
         contrast: gl.getUniformLocation(program, "u_contrast"),
+        edgeContrast: gl.getUniformLocation(program, "u_edge_contrast"),
+        refraction: gl.getUniformLocation(program, "u_refraction"),
         reducedTransparency: gl.getUniformLocation(program, "u_reduced_transparency"),
       },
     };
@@ -332,10 +340,36 @@ void main() {
       getComputedStyle(document.documentElement).getPropertyValue("--liquid-tint-level")
     );
     if (Number.isFinite(computedTint)) tintLevel = clamp(computedTint, 0, 1);
+    const material = getComputedStyle(document.body);
+    const refraction = Number.parseFloat(material.getPropertyValue("--liquid-refraction"));
+    const motion = Number.parseFloat(material.getPropertyValue("--liquid-motion-scale"));
+    refractionLevel = Number.isFinite(refraction)
+      ? clamp(refraction, 0, 1)
+      : 0.72 + 0.28 * tintLevel;
+    motionScale = Number.isFinite(motion)
+      ? clamp(motion, 0, 2)
+      : 0.8 + 0.4 * tintLevel;
+    edgeContrastScale = colorAlphaScale(
+      material.getPropertyValue("--liquid-edge-contrast"),
+      0.14,
+      (0.1 + 0.08 * tintLevel) / 0.14,
+    );
+    inactiveChromeScale = colorAlphaScale(
+      material.getPropertyValue("--liquid-inactive-chrome"),
+      0.26,
+      (0.16 + 0.2 * tintLevel) / 0.26,
+    );
     reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     reducedTransparency = window.matchMedia("(prefers-reduced-transparency: reduce)").matches;
     increasedContrast = window.matchMedia("(prefers-contrast: more)").matches
       || window.matchMedia("(forced-colors: active)").matches;
+  }
+
+  function colorAlphaScale(value, baseline, unresolvedScale = 1) {
+    const match = String(value || "").match(/(?:,|\/)\s*([0-9.]+)(%)?\s*\)$/);
+    if (!match) return clamp(unresolvedScale, 0.25, 2);
+    const alpha = Number(match[1]) / (match[2] ? 100 : 1);
+    return Number.isFinite(alpha) ? clamp(alpha / baseline, 0.25, 2) : 1;
   }
 
   function windowFrame(node, time) {
@@ -343,8 +377,9 @@ void main() {
     const style = getComputedStyle(node);
     const radius = Number.parseFloat(style.borderTopLeftRadius) || 18;
     const active = node.classList.contains("is-active") || node.matches(".system-modal, .startup-settings-modal, .finder-operation-modal");
-    const motion = reducedMotion ? { x: 0, y: 0 } : sampleMotion(node, rect, time);
-    const strength = glassStrength(node, rect);
+    const sampledMotion = reducedMotion ? { x: 0, y: 0 } : sampleMotion(node, rect, time);
+    const motion = { x: sampledMotion.x * motionScale, y: sampledMotion.y * motionScale };
+    const strength = glassStrength(node, rect) * (active ? 1 : inactiveChromeScale);
     return { node, rect, radius, active, motion, strength };
   }
 
@@ -385,6 +420,8 @@ void main() {
     gl.uniform1f(uniforms.dpr, dpr);
     gl.uniform1f(uniforms.tint, tintLevel);
     gl.uniform1f(uniforms.contrast, increasedContrast ? 1 : 0);
+    gl.uniform1f(uniforms.edgeContrast, edgeContrastScale);
+    gl.uniform1f(uniforms.refraction, refractionLevel);
     gl.uniform1f(uniforms.reducedTransparency, reducedTransparency ? 1 : 0);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     return moving;
@@ -408,11 +445,12 @@ void main() {
   function drawWindow2d(frame) {
     const { rect, radius, active, motion, strength } = frame;
     const transparencyScale = reducedTransparency ? 0.55 : 1;
-    const contrastScale = increasedContrast ? 1.3 : 1;
+    const contrastScale = (increasedContrast ? 1.3 : 1) * edgeContrastScale;
+    const refractionScale = refractionLevel / 0.86;
     const alpha = (active ? 1 : 0.56) * strength * transparencyScale;
     const motionPower = Math.min(1, Math.hypot(motion.x, motion.y) / MAX_MOTION_SHIFT);
-    const shiftX = motion.x * 1.6;
-    const shiftY = motion.y * 1.6;
+    const shiftX = motion.x * 1.6 * refractionScale;
+    const shiftY = motion.y * 1.6 * refractionScale;
 
     ctx.save();
     roundRectPath(rect, radius);
@@ -602,6 +640,10 @@ void main() {
       renderer,
       rafPending: rafId !== 0,
       tintLevel,
+      edgeContrastScale,
+      refractionLevel,
+      inactiveChromeScale,
+      motionScale,
       reducedMotion,
       reducedTransparency,
       increasedContrast,

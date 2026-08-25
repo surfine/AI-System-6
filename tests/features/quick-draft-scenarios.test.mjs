@@ -109,12 +109,12 @@ context.activeProject = {
 };
 
 const legacyNormalized = context.normalizeQuickDraftRecord(context.activeProject.quickDraft);
-test.assert(legacyNormalized.workspace.schemaVersion === 3, "legacy records migrate to schemaVersion 3");
+test.assert(legacyNormalized.workspace.schemaVersion === 4, "legacy records migrate to schemaVersion 4");
 test.assert(legacyNormalized.workspace.title === "旧稿", "legacy title survives migration");
 test.assert(legacyNormalized.workspace.body === "第一稿正文。", "legacy draft body survives migration");
 test.assert(
-  legacyNormalized.workspace.intake.setup.explanationLens?.enabled === false,
-  "legacy records default explanationLens off"
+  legacyNormalized.workspace.intake.setup.explanationLens?.enabled === true,
+  "legacy records pick up the one-pass-listening default, which is now on"
 );
 test.assert(
   legacyNormalized.workspace.intake.setup.pastedSources === "材料一\n材料二",
@@ -152,9 +152,9 @@ const v2WithDumps = context.normalizeQuickDraftWorkspace({
   ] },
 });
 const v3Again = context.normalizeQuickDraftWorkspace(v2WithDumps);
-test.assert(v2WithDumps.versions.length === 1 && v2WithDumps.versions[0].body === "旧版本正文" && v2WithDumps.versions[0].createdAt === "2026-08-01T02:00:00.000Z", "v2 dump body and timestamp migrate into Versions");
+test.assert((v2WithDumps.pendingDarkroom?.versions || []).length === 1 && (v2WithDumps.pendingDarkroom?.versions || [])[0].body === "旧版本正文" && (v2WithDumps.pendingDarkroom?.versions || [])[0].createdAt === "2026-08-01T02:00:00.000Z", "v2 dump body and timestamp migrate into Versions");
 test.assert(v2WithDumps.intake.ventLog.length === 1 && v2WithDumps.intake.ventLog[0].id === "real-vent", "migration leaves only genuine vent material in ventLog");
-test.assert(v3Again.versions.length === 1, "v2 to v3 dump migration is idempotent");
+test.assert((v3Again.pendingDarkroom?.versions || []).length === 1, "v2 to v4 dump migration is idempotent");
 
 // Open → write → save → close → reopen: the canonical workspace is
 // idempotent, so no field is lost across cycles.
@@ -165,7 +165,7 @@ const firstCycle = context.normalizeQuickDraftWorkspace({
 }, context.activeProject.quickDraft);
 const reopened = context.normalizeQuickDraftWorkspace(firstCycle, context.activeProject.quickDraft);
 test.assert(reopened.body === "第一稿正文。\n继续写第二句。", "the body survives a save/close/reopen cycle");
-test.assert(reopened.schemaVersion === 3 && reopened.title === "旧稿", "title and schema survive a save/close/reopen cycle");
+test.assert(reopened.schemaVersion === 4 && reopened.title === "旧稿", "title and schema survive a save/close/reopen cycle");
 test.assert(
   reopened.intake.setup.pastedSources === "材料一\n材料二"
     && reopened.materials.length === 1,
@@ -285,16 +285,18 @@ const layered = context.normalizeQuickDraftWorkspace({
 });
 const refreshed = context.normalizeQuickDraftWorkspace(layered, {});
 test.assert(
-  refreshed.adjustmentLayers[0]?.kind === "density"
-    && refreshed.adjustmentLayers[0]?.enabled === true
-    && refreshed.adjustmentLayers[0]?.strength === 75,
+  // The stack is the document's now, so a refresh restores it through the
+  // pending bucket until the draft has a document to file it under.
+  refreshed.pendingDarkroom?.adjustmentLayers[0]?.kind === "density"
+    && refreshed.pendingDarkroom?.adjustmentLayers[0]?.enabled === true
+    && refreshed.pendingDarkroom?.adjustmentLayers[0]?.strength === 75,
   "the layer stack restores after a refresh"
 );
 test.assert(
-  refreshed.protectedRanges.some((range) => range.start === 1 && range.end === 1),
+  (refreshed.pendingDarkroom?.protectedRanges || []).some((range) => range.start === 1 && range.end === 1),
   "protected ranges restore after a refresh"
 );
-test.assert(refreshed.versions[0]?.body === "上一稿。", "kept versions restore after a refresh");
+test.assert((refreshed.pendingDarkroom?.versions || [])[0]?.body === "上一稿。", "kept versions restore after a refresh");
 test.assert(refreshed.body === "正文." || refreshed.body === "正文。", "switching views never loses the body");
 test.assert(refreshed.title === "持久稿", "the saved project title restores after a refresh");
 

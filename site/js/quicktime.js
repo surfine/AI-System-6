@@ -2,6 +2,8 @@
 // Nothing third-party loads until the visitor presses play: the poster is a
 // local image, and the click swaps in the Bilibili embed.
 
+import { L } from "./copy.js?v=20260820a";
+
 const EMBED =
   "https://player.bilibili.com/player.html?bvid=BV1ht3m6UEDb&autoplay=1&high_quality=1&danmaku=0";
 
@@ -15,7 +17,7 @@ export function initQuickTime() {
     const frame = document.createElement("iframe");
     frame.src = EMBED;
     frame.className = "qt-frame";
-    frame.setAttribute("title", "AI System 6 - 50-second film (Bilibili)");
+    frame.setAttribute("title", L("AI System 6 - 50-second film (Bilibili)", "AI System 6 - 50 秒影片（哔哩哔哩）"));
     frame.setAttribute("allow", "autoplay; fullscreen");
     frame.setAttribute("scrolling", "no");
     body.replaceChild(frame, poster);

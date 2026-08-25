@@ -11,6 +11,19 @@
   const LEGACY_LIQUID_KEY = "ai-system-6-liquid-glass";
   const DEFAULT_THEME_ID = "classic";
 
+  function freezeAuthoringMetadata({ tokenFile, tokenSelector, art }) {
+    const zoom = Object.freeze((art.zoom || []).map((pair) => Object.freeze([...pair])));
+    return Object.freeze({
+      tokenHome: Object.freeze({ file: tokenFile, selector: tokenSelector }),
+      art: Object.freeze({
+        ...art,
+        tiers: Object.freeze([...(art.tiers || [])]),
+        zoom,
+        appearances: Object.freeze([...(art.appearances || ["default"])]),
+      }),
+    });
+  }
+
   // `year` is the release year of the system each appearance reproduces. It is
   // the axis Theme Lab's timeline is drawn on, and it matches site/js/eras.js
   // so the product and the public page date the same era the same way.
@@ -53,6 +66,16 @@
       fontStrategy: "preference",
       overlay: "none",
       capabilities: Object.freeze(["native-window-outline", "one-bit-chrome"]),
+      authoring: freezeAuthoringMetadata({
+        tokenFile: "apps/desktop/styles/00-foundation.css",
+        tokenSelector: ":root",
+        art: {
+          dir: "classic", ext: "svg", tiers: [32, 16],
+          ordinary: 32, compact: 16, large: 32,
+          zoom: [[32, 32], [32, 64], [32, 128], [32, 256]],
+          appearances: ["default"],
+        },
+      }),
     }),
     Object.freeze({
       id: "platinum",
@@ -68,6 +91,16 @@
       fontStrategy: "theme",
       overlay: "none",
       capabilities: Object.freeze(["solid-material", "grayscale-depth", "native-window-outline"]),
+      authoring: freezeAuthoringMetadata({
+        tokenFile: "apps/desktop/styles/65-appearance-themes.css",
+        tokenSelector: 'html[data-theme="platinum"],\nbody[data-theme="platinum"]',
+        art: {
+          dir: "platinum", ext: "png", tiers: [42, 32, 16],
+          ordinary: 32, compact: 16, large: 42,
+          zoom: [[42, 168], [32, 96], [16, 64]],
+          appearances: ["default"],
+        },
+      }),
     }),
     Object.freeze({
       id: "aqua",
@@ -86,6 +119,16 @@
       fontStrategy: "theme",
       overlay: "none",
       capabilities: Object.freeze(["solid-material", "pinstripe", "traffic-lights"]),
+      authoring: freezeAuthoringMetadata({
+        tokenFile: "apps/desktop/styles/67-aqua-appearance.css",
+        tokenSelector: 'html[data-theme="aqua"],\nbody[data-theme="aqua"]',
+        art: {
+          dir: "aqua", ext: "png", tiers: [128, 32, 16],
+          ordinary: 32, compact: 16, large: 128,
+          zoom: [[128, 128], [32, 96], [16, 64]],
+          appearances: ["default"],
+        },
+      }),
     }),
     Object.freeze({
       id: "snow-leopard",
@@ -104,6 +147,16 @@
       fontStrategy: "theme",
       overlay: "none",
       capabilities: Object.freeze(["solid-material", "unified-toolbar", "traffic-lights"]),
+      authoring: freezeAuthoringMetadata({
+        tokenFile: "apps/desktop/styles/67-aqua-appearance.css",
+        tokenSelector: 'html[data-theme="snow-leopard"],\nbody[data-theme="snow-leopard"]',
+        art: {
+          dir: "snow-leopard", ext: "png", tiers: [512, 128, 32, 16],
+          ordinary: 32, compact: 16, large: 128,
+          zoom: [[512, 256], [128, 128], [32, 96], [16, 64]],
+          appearances: ["default"],
+        },
+      }),
     }),
     Object.freeze({
       id: "yosemite",
@@ -119,6 +172,16 @@
       fontStrategy: "theme",
       overlay: "none",
       capabilities: Object.freeze(["vibrancy", "translucent-sidebar", "traffic-lights"]),
+      authoring: freezeAuthoringMetadata({
+        tokenFile: "apps/desktop/styles/65-appearance-themes.css",
+        tokenSelector: 'html[data-theme="yosemite"],\nbody[data-theme="yosemite"]',
+        art: {
+          dir: "yosemite", ext: "png", tiers: [128, 64, 32, 16],
+          ordinary: 32, compact: 16, large: 128,
+          zoom: [[128, 128], [64, 128], [32, 96], [16, 64]],
+          appearances: ["default"],
+        },
+      }),
     }),
     Object.freeze({
       id: "liquid-glass",
@@ -134,6 +197,17 @@
       fontStrategy: "modern",
       overlay: "liquid-glass",
       capabilities: Object.freeze(["vibrancy", "continuous-glass", "liquid-overlay", "traffic-lights"]),
+      authoring: freezeAuthoringMetadata({
+        tokenFile: "apps/desktop/styles/70-liquid-glass.css",
+        tokenSelector: "body.use-liquid-glass",
+        art: {
+          dir: "liquid-glass", ext: "png", tiers: [128, 64, 32, 16],
+          ordinary: 32, compact: 16, large: 128,
+          zoom: [[128, 128], [64, 128], [32, 96], [16, 64]],
+          variant: "-default",
+          appearances: ["default", "dark", "clear"],
+        },
+      }),
     }),
   ]);
 
@@ -171,6 +245,7 @@
   }
 
   let currentThemeId = readInitialTheme();
+  let committedThemeId = currentThemeId;
 
   function projectThemeToElement(element, theme) {
     if (!element) return;
@@ -209,14 +284,19 @@
 
   function applyTheme(value, options = {}) {
     const previousId = currentThemeId;
+    const previousCommittedId = committedThemeId;
     const experimental = options.experimental === true;
+    const committed = !experimental
+      && (options.commit === true || (options.commit !== false && options.persist !== false));
     // Experimental previews (Theme Lab / development tooling) switch for this
     // session only and never persist. The normal API accepts every release
     // theme in the registry.
     currentThemeId = experimental ? normalizeThemeId(value) : normalizeReleaseThemeId(value);
+    if (committed) committedThemeId = currentThemeId;
     const theme = syncBody();
     syncFontStrategy(options.modernFontPreference === true);
-    if (!experimental && options.persist !== false) {
+    const persisted = committed && options.persist !== false;
+    if (persisted) {
       try {
         global.localStorage?.setItem(STORAGE_KEY, theme.id);
         global.localStorage?.removeItem(LEGACY_LIQUID_KEY);
@@ -224,9 +304,19 @@
         // Appearance remains applied for this session when storage is blocked.
       }
     }
-    if (previousId !== theme.id && options.announce !== false) {
+    if ((previousId !== theme.id || previousCommittedId !== committedThemeId) && options.announce !== false) {
       global.document?.dispatchEvent?.(new CustomEvent("ai-system6-themechange", {
-        detail: Object.freeze({ previousId, themeId: theme.id, theme }),
+        detail: Object.freeze({
+          previousId,
+          previousCommittedId,
+          themeId: theme.id,
+          committedThemeId,
+          theme,
+          committed,
+          persisted,
+          saveDesk: options.saveDesk !== false,
+          source: String(options.source || "appearance"),
+        }),
       }));
     }
     return theme;
@@ -240,12 +330,20 @@
     return currentThemeId;
   }
 
+  function getCommittedTheme() {
+    return committedThemeId;
+  }
+
   function getTheme(value = currentThemeId) {
     return byId.get(normalizeThemeId(value));
   }
 
   function getReleaseReadyThemes() {
     return registry.filter((theme) => theme.releaseReady !== false);
+  }
+
+  function getAuthoringMetadata(value = currentThemeId) {
+    return getTheme(value).authoring;
   }
 
   function getRecipeChain(value = currentThemeId) {
@@ -286,8 +384,10 @@
     applyTheme,
     previewExperimentalTheme,
     getCurrentTheme,
+    getCommittedTheme,
     getTheme,
     getReleaseReadyThemes,
+    getAuthoringMetadata,
     getRecipeChain,
     hasCapability,
     getMenuBarModel,

@@ -3,7 +3,8 @@
 // six release appearances, pixel-aligned. Each viewer instance is a viewport
 // onto the same frame: full desk, one window, or one icon.
 
-import { currentEra, onEraChange } from "./eras.js?v=20260814i";
+import { currentEra, onEraChange } from "./eras.js?v=20260820a";
+import { L } from "./copy.js?v=20260820a";
 
 const doc = document;
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -94,12 +95,14 @@ export function createMachine(container, opts = {}) {
   error.className = "machine-error";
   error.setAttribute("role", "status");
   error.hidden = true;
-  error.textContent = "This desktop capture could not be loaded. Try the Live System instead.";
+  error.textContent = L("This desktop capture could not be loaded. Try the Live System instead.", "桌面截图无法载入。请改为打开运行中的系统。" );
   for (const img of [imgA, imgB]) {
     img.className = "machine-frame";
     img.decoding = "async";
-    img.alt = opts.alt ||
-      "The AI System 6 desktop, captured from the real app: Searcher, ClioTalk, Scrapbook, TeachText, and Review Desk around one manuscript.";
+    img.alt = opts.alt || L(
+      "The AI System 6 desktop, captured from the real app: Searcher, ClioTalk, Scrapbook, TeachText, and Review Desk around one manuscript.",
+      "拍摄自真实应用的 AI System 6 桌面：Searcher、ClioTalk、Scrapbook、TeachText 与审校台围绕同一份正文。",
+    );
   }
   imgB.classList.add("is-under");
   imgB.setAttribute("aria-hidden", "true");

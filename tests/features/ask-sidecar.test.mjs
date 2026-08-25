@@ -55,8 +55,16 @@ test.assertIncludes(windowManager, 'openWindow("assistant", { skipFinderMode: tr
 test.assertNotIncludes(windowManager, "writerMode || !isMultiFinderMode()", "Finder mode still receives the document + ClioTalk split");
 test.assertIncludes(windowManager, "const sourceWidth = Math.round((totalWidth - gap) * 0.6)", "document side keeps the left 6/10 of the split");
 test.assertIncludes(windowManager, "const assistantWidth = Math.max(340, totalWidth - gap - sourceWidth)", "ClioTalk keeps the right side of the split");
-test.assertMatches(windowManager, /async function toggleSideAsk\(\)[\s\S]*arrangeWindowAssistantSplit\("teachText"\)/, "TeachText enters the same source-left SideAsk layout as every other source");
-test.assertIncludes(indexHtml, 'id="teachtext-sideask"', "TeachText exposes a visible SideAsk entry action");
+// SideAsk is a capability of every writing-route window now, so it lives in the
+// Commands list rather than as one window's extra button - which also keeps all
+// five route windows to the same three controls plus one forward action.
+test.assertMatches(windowManager, /async function toggleSideAsk\(\)[\s\S]*arrangeWindowAssistantSplit\(source\)/, "SideAsk pairs with the surface it was asked from, not always the manuscript");
+test.assertIncludes(windowManager, 'currentWritingRouteStop()) || "teachText"', "the source is the stop the writer is standing on");
+test.assert(
+  (indexHtml.match(/data-action="toggle-sideask"/g) || []).length >= 6,
+  "every writing-route window offers SideAsk, plus ClioTalk's own End SideAsk control",
+);
+test.assertNotIncludes(indexHtml, 'id="teachtext-sideask"', "the manuscript has no standalone SideAsk button; the route windows stay uniform");
 test.assertIncludes(indexHtml, 'id="sideask-mode-strip"', "ClioTalk shows an explicit SideAsk mode strip");
 test.assertIncludes(indexHtml, 'data-action="focus-sideask-source"', "The SideAsk strip links back to its paired source");
 test.assertIncludes(indexHtml, 'data-i18n="sideask_end"', "The SideAsk strip exposes an explicit exit");

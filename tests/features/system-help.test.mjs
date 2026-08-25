@@ -44,7 +44,7 @@ test.assertMatches(surfaces, /\.system-help-card \{[\s\S]*grid-template-rows: au
 
 // Actions belong to the object; System Help never offers to open itself.
 test.assertIncludes(feature, 'entry.action === "open-system-help" ? "" : systemHelpActionLabel(entry)', "System Help drops the self-referential open action");
-test.assertMatches(feature, /function systemHelpActionLabel[\s\S]*actionLabelZh[\s\S]*system_help_open_feature/, "an entry may name its own verb before falling back to Open <term>");
+test.assertMatches(feature, /function systemHelpActionLabel[\s\S]*actionLabelZh[\s\S]*entry\.termZh[\s\S]*system_help_open_feature/, "an entry may name its own verb and Chinese actions use the Chinese object name");
 test.assertIncludes(dictionary, 'actionLabelZh: "插入文件软盘"', "a floppy is inserted, not opened");
 
 // The data carries the grouping, the icons, and the route.
@@ -59,11 +59,14 @@ for (const stop of [
   'id: "outline"',
   'id: "section-drafts"',
   'id: "teachtext"',
-  'id: "claim-check"',
+  'id: "review-desk"',
   'id: "project-cd"',
 ]) {
   test.assertIncludes(dictionary, stop, `the route entry ${stop} exists`);
 }
+test.assertMatches(dictionary, /id: "review-desk",[\s\S]{0,260}?category: "route",[\s\S]{0,180}?routeStop: 7/, "Review Desk owns route stop 7");
+test.assertMatches(dictionary, /id: "claim-check",[\s\S]{0,260}?category: "tools"/, "Fact Check remains a summoned Review Desk tool");
+test.assertMatches(dictionary, /id: "teachtext",[\s\S]{0,180}?term: "Manuscript"[\s\S]{0,180}?termZh: "正文"/, "the route names the Manuscript while TeachText remains its application id");
 for (const stop of [1, 2, 3, 4, 5, 6, 7, 8]) {
   test.assertIncludes(dictionary, `routeStop: ${stop},`, `route stop ${stop} is numbered`);
 }
@@ -76,6 +79,9 @@ for (const helpId of ["control-strip", "menu-bar-extras", "system-messages", "sy
 test.assertIncludes(dictionary, 'termZh: "气球帮助"', "System Help uses the product's Chinese Balloon Help name");
 test.assertIncludes(dictionary, 'id: "image-prompt-studio"', "System Help documents the Image Prompt Studio tool");
 test.assertIncludes(dictionary, 'termZh: "图片提示词工作室"', "System Help uses the product's Chinese Image Prompt Studio name");
+for (const helpId of ["quick-draft", "workspace-profiles", "working-session", "system-integrity", "provisional-ai-output"]) {
+  test.assertIncludes(dictionary, `id: "${helpId}"`, `System Help documents ${helpId}`);
+}
 test.assertIncludes(dictionary, "Project Hard Disk, model, and System Messages", "System Help scopes mutual exclusion to the three duplicated controls");
 test.assertIncludes(dictionary, "both remain in the menu bar", "System Help preserves the MultiFinder and clock exceptions");
 test.assertIncludes(dictionary, "share the same unread count", "System Help keeps System Messages tied to one source");

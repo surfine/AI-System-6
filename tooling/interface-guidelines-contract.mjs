@@ -2,8 +2,9 @@
 //
 // This file is intentionally outside the browser bundle. It makes every
 // product window declare its object role and shell before feature code can
-// treat it as a one-off layout. New data-window entries must be added here and
-// must choose the canonical shell or state why a specialized shell is needed.
+// treat it as a one-off layout. Static, dynamic, and lazy data-window entries
+// must be added here and must choose the canonical shell or state why a
+// specialized shell is needed.
 
 export const interfaceObjectRoles = Object.freeze([
   "writing-route",
@@ -21,6 +22,7 @@ export const interfaceShells = Object.freeze(["application", "finder", "desk-acc
 export const interfaceDocumentModels = Object.freeze(["none", "sdi", "tdi"]);
 export const interfaceStatusModels = Object.freeze(["none", "standard", "specialized"]);
 export const interfaceResponsiveModels = Object.freeze(["adaptive", "compact-da", "immersive"]);
+export const interfaceSourceKinds = Object.freeze(["static", "dynamic", "lazy"]);
 export const interfaceStatusLayouts = Object.freeze([
   "none",
   "three-slot",
@@ -196,7 +198,209 @@ const statusSurface = () => defineWindow({
   referenceSurface: "systemStatus",
 });
 
-export const windowInterfaceRegistry = Object.freeze({
+// The interface registry is also the tooling authority for locating and
+// exercising every product window. Runtime handlers stay in their feature
+// modules; this metadata is deliberately data-only so audits and browser gates
+// do not need a second hand-written list.
+const dynamicWindowSources = Object.freeze({
+  sideAskPad: Object.freeze({
+    sourceKind: "dynamic",
+    openCommand: "open-sideask-pad",
+    ensure: "loadLazyWindowModule",
+    mountPath: "app/features/sideask-pad.js#buildSideAskPad",
+    cssPrefixes: Object.freeze(["sideask-pad-"]),
+    iconId: "assistant",
+  }),
+  imagePromptStudio: Object.freeze({
+    sourceKind: "lazy",
+    openCommand: "open-image-prompt-studio",
+    ensure: "loadLazyWindowModule",
+    mountPath: "app/features/image-prompt-studio.js#buildStudioWindow",
+    cssPrefixes: Object.freeze(["image-prompt-studio-", "ips-"]),
+    iconId: "imagePromptStudio",
+  }),
+  // The Lab's 35,291 bytes of specimen markup left index.html: every boot was
+  // downloading a window most sessions never open, while its module and its
+  // stylesheet were already lazy. It is now built at module eval, like the games.
+  // Tier-1 windows whose markup left index.html for their own lazy modules: a
+  // boot was downloading each of them for a window the module already loads on
+  // demand. Same generic path as the games -- builtByModule plus a createWindow
+  // call at module eval.
+  liquidCover: Object.freeze({
+    sourceKind: "lazy",
+    openCommand: "open-liquid-cover",
+    ensure: "loadLazyWindowModule",
+    mountPath: "app/features/liquid-cover.js#installLiquidCoverWindow",
+    cssPrefixes: Object.freeze(["lc-", "liquid-cover-"]),
+    iconId: "liquidCover",
+  }),
+  lightroom: Object.freeze({
+    sourceKind: "lazy",
+    openCommand: "open-lightroom",
+    ensure: "loadLazyWindowModule",
+    mountPath: "app/features/draft-desk.js#installLightroomWindow",
+    cssPrefixes: Object.freeze(["lightroom-", "draft-desk-"]),
+    iconId: "lightroom",
+  }),
+  projectPeek: Object.freeze({
+    sourceKind: "lazy",
+    openCommand: "open-project-peek",
+    ensure: "loadLazyWindowModule",
+    mountPath: "app/features/project-peek.js#installProjectPeekWindow",
+    cssPrefixes: Object.freeze(["project-peek-"]),
+    iconId: "projectDisk",
+  }),
+  finishingReceipt: Object.freeze({
+    sourceKind: "lazy",
+    openCommand: "open-finishing-receipt",
+    ensure: "loadLazyWindowModule",
+    mountPath: "app/features/project-cd-print.js#installFinishingReceiptWindow",
+    cssPrefixes: Object.freeze(["finishing-receipt-"]),
+    iconId: "projectCd",
+  }),
+  holdThought: Object.freeze({
+    sourceKind: "lazy",
+    openCommand: "open-hold-thought",
+    ensure: "loadLazyWindowModule",
+    mountPath: "app/features/hold-that-thought.js#installHoldThoughtWindow",
+    cssPrefixes: Object.freeze(["hold-thought-"]),
+    iconId: "notePad",
+  }),
+  bureaucracyMeme: Object.freeze({
+    sourceKind: "lazy",
+    openCommand: "open-bureaucracy-meme",
+    ensure: "loadLazyWindowModule",
+    mountPath: "app/features/bureaucracy-meme.js#installBureaucracyMemeWindow",
+    cssPrefixes: Object.freeze(["bureaucracy-"]),
+    iconId: "bureaucracyMeme",
+  }),
+  controlStripModules: Object.freeze({
+    sourceKind: "lazy",
+    openCommand: "open-control-strip-modules",
+    ensure: "loadLazyWindowModule",
+    mountPath: "app/features/control-strip-modules-folder.js#installControlStripModulesWindow",
+    cssPrefixes: Object.freeze(["control-strip-modules-"]),
+    iconId: "folder",
+  }),
+  themeLab: Object.freeze({
+    sourceKind: "lazy",
+    openCommand: "open-theme-lab",
+    ensure: "loadLazyWindowModule",
+    mountPath: "app/features/theme-lab.js#installThemeLabWindow",
+    cssPrefixes: Object.freeze(["theme-lab-"]),
+    iconId: "themeLab",
+  }),
+  micropolis: Object.freeze({
+    sourceKind: "lazy",
+    openCommand: "open-micropolis",
+    ensure: "loadLazyWindowModule",
+    mountPath: "app/features/micropolis.js#installMicropolisWindow",
+    cssPrefixes: Object.freeze(["micropolis-"]),
+    iconId: "micropolis",
+  }),
+  openttd: Object.freeze({
+    sourceKind: "lazy",
+    openCommand: "open-openttd",
+    ensure: "loadLazyWindowModule",
+    mountPath: "app/features/openttd.js#installOpenTTDWindow",
+    cssPrefixes: Object.freeze(["openttd-"]),
+    iconId: "openttd",
+  }),
+  bonsaiCity: Object.freeze({
+    sourceKind: "lazy",
+    openCommand: "open-bonsai-city",
+    ensure: "loadLazyWindowModule",
+    mountPath: "app/features/bonsai-city.js#injectWindowFrame",
+    cssPrefixes: Object.freeze(["bonsai-"]),
+    iconId: "",
+    iconFallback: "applications",
+  }),
+  doom: Object.freeze({
+    sourceKind: "lazy",
+    openCommand: "open-doom",
+    ensure: "loadLazyWindowModule",
+    mountPath: "app/features/doom.js#installDoomWindow",
+    cssPrefixes: Object.freeze(["doom-", "openttd-"]),
+    iconId: "doom",
+  }),
+});
+
+// Prefixes that predate the registry do not always match the data-window id
+// (TeachText uses .teachtext-*, DocMap uses .docmap-*, and so on). Keep those
+// aliases here so CSS ratchets derive application ownership from the same
+// authority as window coverage instead of a separate budget-file list.
+const additionalCssPrefixes = Object.freeze({
+  assistant: Object.freeze(["clio-"]),
+  quickDraft: Object.freeze(["draft-"]),
+  lightroom: Object.freeze(["lightroom-", "draft-desk-", "quick-draft-"]),
+  cmfStudio: Object.freeze(["cmf-"]),
+  scrapbook: Object.freeze(["scrap-"]),
+  teachText: Object.freeze(["teachtext-", "manuscript-"]),
+  endfieldTerminal: Object.freeze(["endfield-"]),
+  bureaucracyMeme: Object.freeze(["bureaucracy-"]),
+  docMap: Object.freeze(["docmap-"]),
+  projects: Object.freeze(["project-disk-"]),
+  findPath: Object.freeze(["find-"]),
+  printDirectory: Object.freeze(["print-"]),
+  rebuildFlow: Object.freeze(["rebuild-"]),
+  alarmClock: Object.freeze(["alarm-"]),
+  control: Object.freeze(["control-panel-"]),
+  rag: Object.freeze(["memory-transfer-"]),
+  fileInfo: Object.freeze(["info-"]),
+  notificationCenter: Object.freeze(["notification-"]),
+  writingBell: Object.freeze(["writing-"]),
+});
+
+const appearanceRepresentatives = Object.freeze({
+  finder: ".finder-item .sys-icon",
+  teachText: "#teachtext-body",
+  reader: ".reader-pane",
+  control: ".control-settings",
+  assistant: ".clio-welcome-icon",
+  pageSetup: ".btn.default",
+  modelMeter: ".meter-stats",
+  liquidCover: ".liquid-cover-window .window-pane",
+});
+
+// These ids name system infrastructure whose shorter id stem would swallow
+// unrelated primitives (.control-strip) or the Appearance fixture itself.
+// Their owned prefixes are the explicit aliases above, not the id-derived one.
+const noDefaultCssPrefix = new Set(["control"]);
+const cssRatchetExcludedWindows = new Set(["themeLab"]);
+
+function kebabCaseWindowName(name) {
+  return String(name || "")
+    .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
+    .replace(/_/g, "-")
+    .toLowerCase();
+}
+
+function surfaceMetadata(name) {
+  const source = dynamicWindowSources[name] || {};
+  const defaultPrefix = `${kebabCaseWindowName(name)}-`;
+  const cssPrefixes = [...new Set([
+    ...(noDefaultCssPrefix.has(name) ? [] : [defaultPrefix]),
+    ...(additionalCssPrefixes[name] || []),
+    ...(source.cssPrefixes || []),
+  ])].sort();
+  const representativeSample = appearanceRepresentatives[name] || "";
+  return Object.freeze({
+    sourceKind: source.sourceKind || "static",
+    openCommand: source.openCommand || "",
+    ensure: source.ensure || "dom-present",
+    mountPath: source.mountPath || "index.html",
+    cssPrefixes: Object.freeze(cssPrefixes),
+    cssRatchet: !cssRatchetExcludedWindows.has(name),
+    appearanceProbe: Object.freeze({
+      sampleSelector: representativeSample || ".window-pane",
+      representative: Boolean(representativeSample),
+    }),
+    iconId: source.iconId || "",
+    iconFallback: source.iconFallback || "document",
+  });
+}
+
+const windowInterfaceContracts = Object.freeze({
   assistant: specializedUtility("utility", {
     documentModel: "none",
     statusLayout: "multi-receipt",
@@ -218,7 +422,6 @@ export const windowInterfaceRegistry = Object.freeze({
     rationale: "File Floppy reports mount lifetime and retrieval scope above its concrete file objects.",
   }),
   textDisk: finderSurface("core"),
-  welcomeDisk: finderSurface("system"),
   finder: finderSurface("core"),
   controlStripModules: specializedUtility("utility", {
     route: "system",
@@ -235,6 +438,12 @@ export const windowInterfaceRegistry = Object.freeze({
     referenceSurface: "teachText",
     rationale: "Quick Draft is an independent drafting application. It keeps drafting, protection, stack, save, and operation receipts visible, then offers a one-way entry into Writing Studio.",
   }),
+  lightroom: specializedUtility("utility", {
+    route: "core",
+    statusLayout: "multi-receipt",
+    referenceSurface: "teachText",
+    rationale: "文字亮室 develops a document rather than writing one: the negative, the adjustment stack, protection, the version chain and the grain views. It opens beside the draft it works on, never instead of it, and takes the pen only while it is editing.",
+  }),
   cmfStudio: creativeLab(),
   soundscape: creativeLab(),
   endfieldTerminal: creativeLab(),
@@ -243,18 +452,18 @@ export const windowInterfaceRegistry = Object.freeze({
   openttd: creativeLab(),
   bonsaiCity: creativeLab(),
   doom: creativeLab(),
+  imagePromptStudio: specializedUtility("utility", {
+    documentModel: "none",
+    statusLayout: "task-specific",
+    referenceSurface: "clioStage",
+    rationale: "Image Prompt Studio is a summoned prompt-building utility inside the shared application window and control grammar.",
+  }),
   disk: finderSurface("core"),
   projectCd: specializedUtility("writing-route", {
     route: "core",
     statusLayout: "compact",
     referenceSurface: "finder",
     rationale: "Project CD is a Finder-like collection whose bar reports item count and volume location.",
-  }),
-  finishingReceipt: specializedUtility("writing-route", {
-    route: "summoned",
-    statusLayout: "receipt",
-    referenceSurface: "finder",
-    rationale: "Finishing Receipt grades one finished work at burn time; its receipt bar is the grading surface itself and does not add a second status bar.",
   }),
   pageSetup: modalSurface("system", "specialized"),
   importUtility: modalSurface("system", "specialized"),
@@ -271,6 +480,7 @@ export const windowInterfaceRegistry = Object.freeze({
     referenceSurface: "finder",
     rationale: "Image Manager browses attachment objects with count, view mode, and owning-document location.",
   }),
+  findChange: deskAccessory("summoned"),
   reviewDesk: standardDocument("writing-route"),
   saveChat: modalSurface("summoned"),
   scrapbook: specializedUtility("utility", {
@@ -307,13 +517,6 @@ export const windowInterfaceRegistry = Object.freeze({
     referenceSurface: "reader",
     rationale: "Context Panel reserves a second receipt line for retrieval budget provenance that must not be truncated.",
   }),
-  guide: specializedUtility("utility", {
-    route: "system",
-    statusModel: "none",
-    statusLayout: "none",
-    referenceSurface: "systemHelp",
-    rationale: "Read Me First is a single system-owned orientation document opened from Welcome Floppy.",
-  }),
   rebuildFlow: specializedUtility("utility", {
     route: "core",
     statusLayout: "compact",
@@ -333,9 +536,12 @@ export const windowInterfaceRegistry = Object.freeze({
   }),
   dictation: deskAccessory("summoned"),
   translationPad: deskAccessory("summoned"),
+  sideAskPad: deskAccessory("summoned"),
   // The writing accessories share one status shell: state on the left, and on
   // the right where the content goes or what the window holds.
   notePad: deskAccessory("system", { documentModel: "sdi" }),
+  holdThought: deskAccessory("system", { documentModel: "sdi", statusLayout: "none" }),
+  projectPeek: deskAccessory("system", { documentModel: "sdi" }),
   clipboard: deskAccessory("system", { documentModel: "sdi" }),
   alarmClock: deskAccessory("system", { statusLayout: "none" }),
   calculator: deskAccessory("system", { statusLayout: "none" }),
@@ -355,3 +561,16 @@ export const windowInterfaceRegistry = Object.freeze({
   finishingReceipt: modalSurface("core"),
   about: modalSurface(),
 });
+
+export const windowInterfaceRegistry = Object.freeze(Object.fromEntries(
+  Object.entries(windowInterfaceContracts).map(([name, contract]) => [
+    name,
+    Object.freeze({ ...contract, ...surfaceMetadata(name) }),
+  ]),
+));
+
+export const applicationCssPrefixes = Object.freeze([
+  ...new Set(Object.values(windowInterfaceRegistry)
+    .filter((contract) => contract.cssRatchet)
+    .flatMap((contract) => contract.cssPrefixes)),
+].sort());

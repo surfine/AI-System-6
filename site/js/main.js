@@ -1,16 +1,17 @@
 // AI System 6 official site - entry module. Progressive enhancement only:
 // with JS off the page is a readable document with a desktop screenshot.
 
-import { ERAS, setEra, onEraChange, prefetchEras, refreshIcons } from "./eras.js?v=20260814i";
-import { initBalloons, setBalloons, balloonsEnabled, flashBalloon } from "./balloon.js?v=20260814i";
-import { loadMachine, createMachine, warmAllFrames, machineManifest } from "./machine.js?v=20260814i";
-import { createDissolve } from "./dissolve.js?v=20260814i";
-import { initRouteScene } from "./route.js?v=20260814i";
-import { initImpossible } from "./impossible.js?v=20260814i";
-import { initFloppies } from "./floppies.js?v=20260814i";
-import { initQuickTime } from "./quicktime.js?v=20260814i";
-import { initArgument } from "./argument.js?v=20260814i";
-import { initShareCard } from "./sharecard.js?v=20260814i";
+import { ERAS, setEra, onEraChange, prefetchEras, refreshIcons } from "./eras.js?v=20260820a";
+import { initBalloons, setBalloons, balloonsEnabled, flashBalloon } from "./balloon.js?v=20260820a";
+import { loadMachine, createMachine, warmAllFrames, machineManifest } from "./machine.js?v=20260820a";
+import { createDissolve } from "./dissolve.js?v=20260820a";
+import { initRouteScene } from "./route.js?v=20260820a";
+import { initImpossible } from "./impossible.js?v=20260820a";
+import { initFloppies } from "./floppies.js?v=20260820a";
+import { initQuickTime } from "./quicktime.js?v=20260820a";
+import { initArgument } from "./argument.js?v=20260820a";
+import { initShareCard } from "./sharecard.js?v=20260820a";
+import { L } from "./copy.js?v=20260820a";
 
 const doc = document;
 doc.documentElement.classList.add("js");
@@ -49,9 +50,9 @@ if (boot && !booted && !reducedMotion) {
   step(1350, () => {
     const llm = doc.getElementById("boot-check-llm");
     llm.classList.add("is-standby");
-    llm.textContent = "LLM: none required";
+    llm.textContent = L("LLM: none required", "LLM：无需连接");
     fill.style.width = "100%";
-    msg.textContent = "Welcome to AI System 6.";
+    msg.textContent = L("Welcome to AI System 6.", "欢迎使用 AI System 6。" );
   });
   step(2150, finish);
   boot.addEventListener("pointerdown", finish);
@@ -154,7 +155,7 @@ if (balloonItem) {
     e.preventDefault();
     setBalloons(!balloonsEnabled());
     balloonItem.classList.toggle("is-active", balloonsEnabled());
-    if (balloonsEnabled()) flashBalloon(doc.querySelector(".menu-title") || doc.body, "Balloons on. Point at any object.", 2400);
+    if (balloonsEnabled()) flashBalloon(doc.querySelector(".menu-title") || doc.body, L("Balloons on. Point at any object.", "气球帮助已开启。请指向任一对象。"), 2400);
   });
 }
 
@@ -170,10 +171,10 @@ try {
     const message = doc.createElement("p");
     message.className = "machine-error";
     message.setAttribute("role", "status");
-    message.append("The desktop capture is unavailable. ");
+    message.append(L("The desktop capture is unavailable. ", "桌面截图暂时无法载入。"));
     const link = doc.createElement("a");
     link.href = "https://system6.aaronlau.me";
-    link.textContent = "Boot the Live System";
+    link.textContent = L("Boot the Live System", "启动运行中的系统");
     message.appendChild(link);
     figure.appendChild(message);
   });
@@ -186,7 +187,7 @@ if (heroDissolve) {
   const prov = doc.getElementById("hero-provenance");
   const m = machineManifest();
   if (prov && m.build) {
-    prov.textContent = "REAL SYSTEM CAPTURE / BUILD " + m.build;
+    prov.textContent = L("REAL SYSTEM CAPTURE / BUILD ", "真实系统截图 / 构建 ") + m.build;
   }
 }
 
@@ -197,7 +198,7 @@ if (routeMachine && machineReady) {
   createMachine(routeMachine, {
     region: "scrapbook",
     pad: 0.03,
-    alt: "The Scrapbook window on the captured desk, holding two clips that each remember their source.",
+    alt: L("The Scrapbook window on the captured desk, holding two clips that each remember their source.", "桌面截图中的 Scrapbook 窗口，保存着两条各自记得来源的摘录。"),
   });
 }
 
@@ -206,7 +207,7 @@ if (modelMachine && machineReady) {
   createMachine(modelMachine, {
     region: "menuBar",
     pad: 0.004,
-    alt: "The captured menu bar says “Model not connected.” The desk keeps working.",
+    alt: L("The captured menu bar says “Model not connected.” The desk keeps working.", "截图中的菜单栏显示“模型未连接”，桌面仍然可以继续工作。"),
   });
 }
 

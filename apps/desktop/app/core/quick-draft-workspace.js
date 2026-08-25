@@ -74,47 +74,6 @@ function titleFromBody(body = "") {
     .slice(0, 42);
 }
 
-function blankLegacyQuickDraftCanvas() {
-  return {
-    objects: [{
-      id: "obj-1",
-      x: 120,
-      y: 72,
-      width: 560,
-      height: 0,
-      angle: 0,
-    }],
-    path: ["obj-1"],
-  };
-}
-
-/** @param {Record<string, any>} value */
-function normalizeLegacyQuickDraftCanvas(value = {}) {
-  const source = value && typeof value === "object" ? value : {};
-  const defaults = blankLegacyQuickDraftCanvas();
-  let objectIndex = 0;
-  const objects = (Array.isArray(source.objects) ? source.objects : [])
-    .map((item) => {
-      const object = item && typeof item === "object" ? item : {};
-      objectIndex += 1;
-      return {
-        id: String(object.id || `obj-${objectIndex}`),
-        x: Number.isFinite(Number(object.x)) ? Math.round(Number(object.x)) : defaults.objects[0].x,
-        y: Number.isFinite(Number(object.y)) ? Math.round(Number(object.y)) : defaults.objects[0].y,
-        width: Number.isFinite(Number(object.width)) ? Math.max(160, Math.round(Number(object.width))) : defaults.objects[0].width,
-        height: Number.isFinite(Number(object.height)) ? Math.max(0, Math.round(Number(object.height))) : 0,
-        angle: Number.isFinite(Number(object.angle)) ? Math.round(Number(object.angle)) : 0,
-      };
-    })
-    .filter((object) => object.id);
-  if (!objects.length) return defaults;
-  const ids = new Set(objects.map((object) => object.id));
-  const path = (Array.isArray(source.path) ? source.path : defaults.path)
-    .map((id) => String(id || ""))
-    .filter((id) => ids.has(id));
-  if (!path.length) path.push(objects[0].id);
-  return { objects, path };
-}
 
 function blankToolInputs() {
   return {
@@ -145,7 +104,7 @@ function blankToolInputs() {
 
 function blankQuickDraftWorkspace() {
   return {
-    schemaVersion: 3,
+    schemaVersion: 4,
     title: "",
     titleMode: "auto",
     body: "",
@@ -159,16 +118,11 @@ function blankQuickDraftWorkspace() {
     },
     materials: [],
     strategy: { ...emptyStrategy },
-    adjustmentLayers: [],
-    protectedRanges: [],
-    composition: {
-      currentKey: "",
-      composite: "",
-      generatedAt: "",
-      negative: "",
-      negativeUpdatedAt: "",
-    },
-    versions: [],
+    // The negative, the adjustment stack, the locks and the version chain are
+    // properties of the document, not of Quick Draft, so they live in the
+    // darkroom record (app/core/darkroom-record.js) keyed by document. They are
+    // deliberately absent here: a field that still existed would become a
+    // second truth the moment anything wrote to it.
     projectDocId: "",
     savedStatus: "saved",
     updatedAt: "",
@@ -249,6 +203,14 @@ function normalizeChatMaterial(entry, index = 0) {
     text: String(source.text || ""),
     platform: String(source.platform || "generic-chat"),
     sourceKind: String(source.sourceKind || "chat-screenshot"),
+    // A handle into the shared imageAttachments store, so the picture survives
+    // the import without this record carrying its bytes. Before any picture was
+    // kept at all, only the OCR text survived and a product photo with no text
+    // in it was dropped on the floor.
+    imageAttachmentId: String(source.imageAttachmentId || ""),
+    // Materials imported before the store was used carry the picture inline.
+    // Still read, never written now: an older draft keeps its photograph.
+    previewDataUrl: String(source.previewDataUrl || ""),
     createdAt: String(source.createdAt || ""),
   };
 }
@@ -326,6 +288,13 @@ function normalizeQuickDraftWorkspace(value = {}, legacy = {}) {
     generatedAt: String(compositionSource.generatedAt || ""),
     negative: String(compositionSource.negative ?? source.humanAnchor ?? legacy.humanAnchor ?? ""),
     negativeUpdatedAt: String(compositionSource.negativeUpdatedAt ?? source.humanAnchorUpdatedAt ?? legacy.humanAnchorUpdatedAt ?? ""),
+    // The body as the model last handed it back. The version chain records what
+    // each pass replaced, so it cannot tell text the writer typed after the last
+    // pass from text that pass produced. This is the missing reference; a record
+    // written before this field existed simply has none, and the grain reads as
+    // it did before.
+    modelDelivered: String(compositionSource.modelDelivered || ""),
+    modelDeliveredAt: String(compositionSource.modelDeliveredAt || ""),
   };
   const defaultTitle = typeof t === "function" ? t("quick_draft_title") : "Quick Draft";
   const title = String(
@@ -335,11 +304,36 @@ function normalizeQuickDraftWorkspace(value = {}, legacy = {}) {
     || titleFromBody(body)
     || defaultTitle
   );
-  const legacySource = source.legacy && typeof source.legacy === "object" ? source.legacy : {};
-  const legacyCanvas = source.canvas || legacy.canvas || legacySource.canvas;
+  const carried = {
+    adjustmentLayers: normalizeAdjustmentLayers(source.adjustmentLayers || legacy.adjustmentLayers),
+    protectedRanges: normalizeAdjustmentLayerMask(source.protectedRanges || legacy.protectedRanges),
+    composition,
+    versions: [...versionsById.values()].slice(-100),
+  };
+  // Whether anything is being carried is decided here, not by the darkroom
+  // module: this normalizer is eager and that module is lazy, so at boot it does
+  // not exist yet. Asking it would answer "nothing to carry" for every record
+  // loaded before Quick Draft opens, and the negative, the stack, the locks and
+  // the chain would be dropped on the floor at start-up.
+  const carriesDarkroom = Boolean(
+    carried.composition.negative
+    || carried.composition.negativeUpdatedAt
+    || carried.composition.modelDelivered
+    || carried.composition.composite
+    || carried.composition.currentKey
+    // A default stack is not content. normalizeAdjustmentLayers always returns
+    // the four layers, so counting them would make every record on earth look
+    // like it carries darkroom state and hand a bucket to blank drafts.
+    || JSON.stringify(carried.adjustmentLayers) !== JSON.stringify(defaultAdjustmentLayers())
+    || carried.protectedRanges.length
+    || carried.versions.length
+  );
+  const pendingDarkroom = source.pendingDarkroom && typeof source.pendingDarkroom === "object"
+    ? source.pendingDarkroom
+    : (carriesDarkroom ? carried : null);
   return {
     ...blankQuickDraftWorkspace(),
-    schemaVersion: 3,
+    schemaVersion: 4,
     title,
     titleMode: source.titleMode === "manual" ? "manual" : "auto",
     body: String(body || ""),
@@ -354,20 +348,32 @@ function normalizeQuickDraftWorkspace(value = {}, legacy = {}) {
         ? source.sourceMap
         : (Array.isArray(legacy.sourceMap) ? legacy.sourceMap : [])),
     strategy: normalizeStrategy(source.strategy, source.strategyReport ? { strategyReport: source.strategyReport } : legacy),
-    adjustmentLayers: normalizeAdjustmentLayers(source.adjustmentLayers || legacy.adjustmentLayers),
-    protectedRanges: normalizeAdjustmentLayerMask(source.protectedRanges || legacy.protectedRanges),
-    composition,
-    versions: [...versionsById.values()].slice(-100),
-    ...(legacyCanvas ? {
-      legacy: {
-        ...legacySource,
-        canvas: normalizeLegacyQuickDraftCanvas(legacyCanvas),
-      },
-    } : {}),
+    // A record written before the darkroom moved out still carries its state
+    // here. Dropping it now would lose it, because the normalizer runs on every
+    // load and long before the migration can, so it is handed forward in one
+    // explicit bucket and the migration drains it. Nothing reads this bucket to
+    // do work — it exists to be moved and then to disappear.
+    ...(pendingDarkroom ? { pendingDarkroom } : {}),
     projectDocId: String(source.projectDocId || legacy.projectDocId || ""),
     savedStatus: source.savedStatus === "modified" ? "modified" : "saved",
     updatedAt: String(source.updatedAt || legacy.updatedAt || ""),
   };
+}
+
+// This module is eager and the darkroom chain is lazy, so these read through a
+// guard. When the chain is not loaded there is no record to speak for, and the
+// answer is empty rather than a guess — the aliases are a compatibility shim
+// for the active draft's context, not a source of truth.
+function darkroomForWorkspace(workspace = {}) {
+  const documentId = String(workspace?.projectDocId || "");
+  const projectId = typeof activeProjectId === "string" ? activeProjectId : "";
+  const blank = window.AISystem6DarkroomRecord?.blankDarkroomRecord?.()
+    || { negative: "", negativeUpdatedAt: "", protectedRanges: [], versions: [] };
+  if (documentId) return window.AISystem6DarkroomStore?.darkroomRecord?.(projectId, documentId) || blank;
+  const pending = workspace?.pendingDarkroom;
+  return pending
+    ? (window.AISystem6DarkroomRecord?.darkroomRecordFromWorkspace?.(pending) || blank)
+    : blank;
 }
 
 function quickDraftAliases(workspace) {
@@ -395,8 +401,8 @@ function quickDraftAliases(workspace) {
     },
     draft: workspace.body || "",
     risks: annotations.followup || "",
-    humanAnchor: workspace.composition?.negative || "",
-    humanAnchorUpdatedAt: workspace.composition?.negativeUpdatedAt || "",
+    humanAnchor: darkroomForWorkspace(workspace).negative || "",
+    humanAnchorUpdatedAt: darkroomForWorkspace(workspace).negativeUpdatedAt || "",
     strategyReport: workspace.strategy || emptyStrategy,
     intake: workspace.intake || emptyIntake,
     sourceMap: workspace.materials || [],
@@ -431,6 +437,12 @@ function normalizeQuickDraftRecord(value = {}) {
 }
 
 // Public, DOM-free context contract for SideAsk and other app boundaries.
+//
+// The locks and the version count are gone from here on purpose. They belong to
+// the document now, and this snapshot is taken wherever a Quick Draft context
+// is handed out — including places the darkroom chain has not loaded. Reporting
+// "no locks, no versions" from a module that cannot know would be a claim, and
+// nothing consumed either field.
 // Consumers receive a detached snapshot so they cannot mutate Project Hard
 // Disk state by retaining references into project.quickDraft.
 /** @param {Record<string, any>} record */
@@ -445,8 +457,6 @@ function quickDraftContextSnapshot(record = {}) {
     annotations: structuredClone(workspace.intake?.annotations || {}),
     materials: structuredClone(workspace.materials || []),
     strategy: structuredClone(workspace.strategy || {}),
-    protectedRanges: structuredClone(workspace.protectedRanges || []),
-    versionCount: Array.isArray(workspace.versions) ? workspace.versions.length : 0,
     projectDocId: String(workspace.projectDocId || ""),
   };
 }

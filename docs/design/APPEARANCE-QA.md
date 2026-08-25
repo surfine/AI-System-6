@@ -30,15 +30,20 @@ declares where it stands in its `floor` ledger, so a board can never report
 "canonical" while it sits far from its reference. See
 [THEME-FAMILY-CONTRACT.md](THEME-FAMILY-CONTRACT.md) section 9.
 
-Current floor standing (2026-08-17, measured, not estimated):
+Current floor standing (derived from the committed manifests, not estimated):
 
 | Board | Specimens | Meets the floor | Recorded gap | Unusable reference |
 | --- | --- | --- | --- | --- |
-| Platinum | 20 | 12 | 5 | 3 (icon material, photo-thumbnail crops) |
-| Aqua | 16 | 16 | 0 | 0 |
-| Snow Leopard | 17 | 17 | 0 | 0 |
-| Yosemite | 19 | 6 | 13 | 0 |
-| Yosemite 2x | 5 | 4 | 1 | 0 |
+| Platinum | 20 | 12 | 2 | 6 (three photo-thumbnail crops plus three crops of the wrong object) |
+| Aqua | 19 | 19 | 0 | 0 |
+| Snow Leopard | 18 | 18 | 0 | 0 |
+| Yosemite | 19 | 6 | 11 | 2 (checkbox/radio marks pinned only to clone assets) |
+| Yosemite 2x | 5 | 4 | 0 | 1 (checkbox pinned only to a scaled clone asset) |
+
+`tests/features/appearance-qa-ledger.test.mjs` derives these counts from each
+manifest's `specimens[].floor.status` and requires both language versions of
+this table to match. Aqua's three additional specimens cover the complete
+title-bar lamp group; Snow Leopard's additional specimen covers its lamp group.
 
 ### Control-state coverage
 
@@ -132,18 +137,20 @@ placeholder against a 150pt fixture field with a left-aligned one;
 `checkbox-checked` and `radio-checked` compare against GTK-clone glyphs rather
 than native 10.10 art.
 
-Yosemite is the open fidelity debt: 13 of 19 specimens do not reach the floor.
+Yosemite is the open fidelity debt: 13 of 19 specimens do not reach the floor
+(11 measured gaps plus 2 mark comparisons whose clone references cannot
+establish native 10.10 pixels).
 Its window and control references are native 10.10 captures; only the checkbox,
 radio and title-button glyphs still compare against GTK-clone assets. System 6 and Liquid Glass have no historical screenshot target and
 keep their design contract plus regression baseline; no fake fidelity board is
 created for them.
 Liquid Glass is being recalibrated to macOS 27 Golden Gate through the existing
 theme IDs and material tokens; it does not introduce a new theme or family.
-`npm run verify:appearance-apps` separately renders Finder, Page Setup,
-TeachText, Scrapbook, Cover Glass, and Endfield Terminal under every
-appearance, proving that ordinary and visually-special apps receive the same
-system title-bar painter without conflating that propagation check with either
-pixel regression or historical fidelity.
+`npm run verify:appearance-apps` separately renders the real windows listed by
+`REPRESENTATIVE_WINDOWS` under every appearance, proving that ordinary and
+visually-special apps receive the same system title-bar painter without
+conflating that propagation check with either pixel regression or historical
+fidelity.
 
 QA criteria per surface: no clipping, no unreadable text, no wrong contrast,
 no broken focus, no wrong icon, and no malformed window chrome.

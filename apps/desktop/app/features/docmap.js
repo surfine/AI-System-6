@@ -1216,6 +1216,7 @@ function docMapMindMapPrompt(source, options = {}) {
 - 标题短、具体、自然；不要写“中心主题”。
 - 子项写信息和作用，不写空泛关键词；优先少节点、短节点、清楚分组，不要铺开所有证据。
 - 如果来源混乱，保守提取最清楚的结构。
+- 如果附了图片：图片只用来读懂上面这份来源文字（认字、看清表格和箭头）。不要把图片里有、来源文字里没有的东西写成分支。
 - 静默自检格式，不输出检查过程。
 - ${docMapOutputLanguageInstruction()}
 
@@ -1241,15 +1242,30 @@ async function repairDocMapHierarchyWithModel(source, map) {
   return data?.choices?.[0]?.message?.content || "";
 }
 
+/**
+ * @param {any} source
+ * @returns {any[]}
+ */
+function docMapSourceImages(source) {
+  return (Array.isArray(source?.images) ? source.images : [])
+    .map((id) => imageAttachmentById(id))
+    .filter(Boolean);
+}
+
 async function buildDocMapWithModel(source) {
   const prompt = docMapMindMapPrompt(source);
 
   const response = await fetchModelPayload({
     model: getLocalModelRequestName(),
-    messages: withMarkdownModelMessages([
-      { role: "system", content: resolveWritingRoutePrompt("source-apps.docmap-markdown") },
-      { role: "user", content: prompt },
-    ]),
+    // The picture is context for reading the text, not a second source. Every
+    // branch must still trace to source.text, which parseDocMapMarkdown anchors.
+    messages: attachImagesToModelMessages(
+      withMarkdownModelMessages([
+        { role: "system", content: resolveWritingRoutePrompt("source-apps.docmap-markdown") },
+        { role: "user", content: prompt },
+      ]),
+      docMapSourceImages(source)
+    ),
     temperature: 0.2,
     max_tokens: 2600,
     ai_system6_task_kind: "docmap",
@@ -1636,7 +1652,7 @@ function renderDocMapTree(map) {
               <p>${escapeHtml(selectedNode.summary || "")}</p>
               ${(selectedNode.claims || []).length ? `<div class="video-docmap-chip-row">${selectedNode.claims.map((claim) => `<span>${escapeHtml(claim)}</span>`).join("")}</div>` : ""}
               ${(selectedNode.notableLines || []).length ? `<blockquote>${escapeHtml(selectedNode.notableLines.join(" / "))}</blockquote>` : ""}
-              <button type="button" class="btn mini-btn" data-video-docmap-jump="${escapeHtml(selectedNode.id)}">Open in Reader</button>
+              <button type="button" class="btn mini-btn" data-video-docmap-jump="${escapeHtml(selectedNode.id)}">${escapeHtml(t("open_in_reader"))}</button>
             </article>
           ` : ""}
         </aside>
@@ -2044,6 +2060,7 @@ function renderDocMapTabs() {
     labelFor: (tab) => tab.title || t("docmap"),
     compactLabelFor: (tab) => tab.title || t("docmap"),
     sublabelFor: () => t("docmap"),
+    iconFor: () => "docMap",
     onOpen: (tab) => openDocMapTab(tab.id, { ensureWindow: false }),
     onClose: (tab) => closeDocMapTab(tab.id),
     onMove: (tabId, targetTabId) => {
@@ -2301,12 +2318,12 @@ async function sendDocMapNodeToQuestionSheet() {
   try {
     const rewritten = await rewriteDocMapNodeAsQuestionSheet(node);
     if (!rewritten) {
-      setStatus(t("docmap_model_failed", currentLanguage === "zh" ? "未返回可用内容。请重试。" : "Model response had no usable content. Please retry."));
+      setStatus(t("docmap_model_failed", t("model_response_had_no_usable_content")));
       return;
     }
     const nextQuestionSheet = rewritten.trim();
     if (!nextQuestionSheet) {
-      setStatus(t("docmap_model_failed", currentLanguage === "zh" ? "未返回可用内容。请重试。" : "Model response had no usable content. Please retry."));
+      setStatus(t("docmap_model_failed", t("model_response_had_no_usable_content")));
       return;
     }
 
@@ -2342,13 +2359,13 @@ async function sendDocMapNodeToQuestionSheet() {
       setStatus(t("docmap_model_failed", String(error?.message || error || "unknown error")));
     }
   } finally {
-    if (!endLongTask("docmap-question-sheet") && !sent) setStatus(t("docmap_model_failed", currentLanguage === "zh" ? "整理未完成，请重试。" : "Rewrite did not complete. Please retry."));
+    if (!endLongTask("docmap-question-sheet") && !sent) setStatus(t("docmap_model_failed", t("rewrite_did_not_complete_please_retry")));
   }
 }
 
 async function insertDocMapNodeAsOutline() {
   if (currentDocMap?.kind === "videoDocMap") {
-    setStatus(currentLanguage === "zh" ? "Video DocMap 是来源理解分析。请先送到问题单后再生成大纲。" : "Video DocMap is source analysis. Send notes to the Question Sheet before making an outline.");
+    setStatus(t("video_docmap_is_source_analysis_send"));
     return;
   }
   const node = selectedDocMapNode();
@@ -2845,7 +2862,7 @@ async function askDocMapHkrrTheoryReview() {
   const prompt = docMapHkrrTheoryReviewPrompt(currentDocMap);
   const paired = await arrangeDocMapAssistantSplit();
   if (!paired) return;
-  setStatus(currentLanguage === "zh" ? "正在让 ClioTalk 用 HKRR 理论审视这张图..." : "Asking ClioTalk to review this map with HKRR theory...");
+  setStatus(t("asking_cliotalk_to_review_this_map"));
   await submitUserText(prompt, {
     displayText: currentLanguage === "zh" ? "用 HKRR 理论审视这张图" : "Review this map with HKRR theory",
     skipContext: true,
@@ -2923,3 +2940,104 @@ window.AISystem6Runtime?.registerApplication({
     }])
   ),
 });
+
+/**
+ * Map a photographed page or whiteboard.
+ *
+ * The picture is read into text first, and that reading becomes the source, so
+ * every branch still traces to text the writer can see and correct. The picture
+ * is then sent along with the map request so the model can resolve its own
+ * reading — it never adds branches of its own.
+ */
+async function makeDocMapFromPicture() {
+  const project = getActiveProject();
+  if (!project) {
+    setStatus(t("no_project_mounted"));
+    openWindow("projects");
+    return;
+  }
+  if (typeof openTransientFilePicker !== "function") return;
+
+  openTransientFilePicker({
+    accept: IMAGE_ATTACHMENT_ACCEPT,
+    multiple: false,
+    async onSelect(files) {
+      const [attachment] = await buildImageAttachments(files, {
+        projectId: project.id,
+        surface: "docmap",
+        limit: 1,
+        maxEdge: 1600,
+      });
+      if (!attachment) return;
+      saveImageAttachments([attachment]);
+
+      openWindow("docMap");
+      setStatus(t("docmap_picture_reading", attachment.name || ""));
+      let reading = "";
+      try {
+        const result = await analyzeImageAttachment(attachment, {
+          mode: "writing-context",
+          modelName: typeof getLocalModelRequestName === "function" ? getLocalModelRequestName() : "",
+          signal: typeof getLongTaskSignal === "function" ? getLongTaskSignal() : null,
+        });
+        reading = result.text;
+      } catch (error) {
+        if (typeof isAbortError === "function" && isAbortError(error)) return;
+        setStatus(t("docmap_picture_failed", error?.message || t("connection_error")));
+        return;
+      }
+
+      if (!String(reading || "").trim()) {
+        setStatus(t("docmap_picture_empty"));
+        return;
+      }
+      // The map is not built yet. Every node anchors into this text, so a
+      // misread word does not make one wrong branch — it makes a wrong map
+      // that looks right, from a sentence the writer never saw. It stays a
+      // proposal until they have read it and said so.
+      showDocMapPictureReading(attachment, reading);
+    },
+  });
+}
+
+/** The picture whose reading is waiting on the writer, or null. */
+let docMapPictureProposal = null;
+
+function showDocMapPictureReading(attachment, reading) {
+  docMapPictureProposal = { picture: attachment, text: String(reading || "") };
+  const field = document.getElementById("docmap-picture-reading-text");
+  if (field) field.value = docMapPictureProposal.text;
+  document.getElementById("docmap-picture-reading")?.classList.remove("is-hidden");
+  setStatus(t("docmap_picture_reading_ready", attachment?.name || ""));
+  field?.focus();
+}
+
+function hideDocMapPictureReading() {
+  docMapPictureProposal = null;
+  document.getElementById("docmap-picture-reading")?.classList.add("is-hidden");
+  const field = document.getElementById("docmap-picture-reading-text");
+  if (field) field.value = "";
+}
+
+/** The writer read it, corrected it if they needed to, and asked for the map. */
+async function mapDocMapPictureReading() {
+  if (!docMapPictureProposal) return;
+  const field = document.getElementById("docmap-picture-reading-text");
+  // What the writer is looking at wins over what the model returned.
+  const text = String(field?.value ?? docMapPictureProposal.text).trim();
+  const source = text ? docMapSourceFromPicture(docMapPictureProposal.picture, text) : null;
+  if (!source) {
+    setStatus(t("docmap_picture_empty"));
+    return;
+  }
+  hideDocMapPictureReading();
+  await makeDocMapFromCurrentSource(null, {
+    readiness: { source, ready: true, reason: "picture" },
+  });
+}
+
+function discardDocMapPictureReading() {
+  if (!docMapPictureProposal) return;
+  hideDocMapPictureReading();
+  setStatus(t("docmap_picture_reading_discarded"));
+}

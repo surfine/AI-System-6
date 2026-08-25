@@ -1,6 +1,6 @@
 # Bonsai City — Original City Simulator
 
-Working name: **Bonsai City / 盆景城市** (final name not yet approved).
+Official product name: **Bonsai City / 盆景城市**.
 
 Bonsai City is an original, MIT-clean isometric city-building simulator inside
 AI System 6. It shares the long-term shape of classic city-builder experiences
@@ -33,11 +33,11 @@ persistence store, or dependencies.
 ## Current state
 
 - A headless simulation core exists at
-  `apps/desktop/app/features/bonsai-city-sim.js` (64×64 tile grid, seeded
-  terrain, zones, roads/wires/parks, power plants, population and demand,
-  funds, integer ticks, `serialize`/`deserialize`).
-- The core is committed but deferred from the public snapshot and is not
-  wired into any window or menu.
+  `apps/desktop/app/features/bonsai-city-sim.js` (64/96 tile grids, seeded
+  terrain presets, independent networks and zoning, construction, utilities,
+  services, population/demand/finance, integer ticks, and v2
+  `serialize`/`deserialize`). It is wired through the lazy Applications →
+  Games window while remaining deferred from the curated public snapshot.
 - The core's seed policy is now contract-enforced: the shell must provide an
   integer seed; the core never falls back to `Math.random()`.
 - The kernel now carries a versioned command layer (immediate and
@@ -50,8 +50,8 @@ persistence store, or dependencies.
   both are pinned by `tests/features/bonsai-save.test.mjs`.
 - Phase 3 wires the lazy System 6 shell: the `bonsaiCity` creative-lab window
   opens from Applications, runs the core at a 20 Hz pacing loop with
-  pause/slow/medium/fast, turns pointer input into commands on a flat
-  top-down preview canvas, and persists cities to the dedicated
+  pause/slow/normal/fast, turns pointer input into previews and commands, and
+  persists cities to the dedicated
   `bonsaiCities` IndexedDB store through the shared write-fence helper. Pinned
   by `tests/features/bonsai-shell.test.mjs`.
 - Phase 4 replaces the preview with the original isometric renderer: 2:1
@@ -66,16 +66,96 @@ persistence store, or dependencies.
   funding-scaled coverage, traffic and congestion that stalls growth, land
   value, a deterministic economy cycle, and a city report with a mayor
   rating. Pinned by `tests/features/bonsai-systems.test.mjs`.
-- Phase 7 replaces the flat diamond painter with a three.js isometric voxel
-  scene: voxel terrain, water, roads/wires/parks, stage-scaled R/C/I
-  buildings, trees, plants and services, a tick-driven day/night cycle, and
-  decorative traffic derived from the congestion layer. The renderer consumes
-  a pure `buildRenderSnapshot` and lazy-loads a bundled three.js vendor; the
-  original 16x16 Minecraft-style atlas is MIT-clean with a provenance record.
-  Pinned by `tests/features/bonsai-voxel.test.mjs` and
-  `tests/features/bonsai-atlas.test.mjs`.
+- Phase 8 replaces the rejected voxel showcase with the single production
+  Canvas 2D renderer: 48x24 isometric tiles, four quarter-turn views, six
+  composited layers, visible-diagonal culling, 16x16 static chunk caches, and
+  deterministic original sprite atlases. The renderer consumes a pure
+  `buildRenderSnapshot`; pointer, keyboard, and touch input still emit commands
+  only. Pinned by `tests/features/bonsai-renderer.test.mjs`,
+  `tests/features/bonsai-atlas.test.mjs`, and the real-browser
+  `verify:bonsai-acceptance` gate.
+- The atlas family grows a night variant set (M5-2c): every growable
+  building, facility, and catalog special gains a dimmed lit-window frame,
+  and the Canvas renderer's time-of-day gate swaps to those frames at dusk,
+  with the recorded window rects drawn bright on the lighting layer — the
+  SimCity 2000 night signature, generated entirely from the original
+  project recipes.
+- The voxel backend gains an original micro-voxel texture atlas (M5-2d):
+  a power-of-two 512px sheet of 40 procedural 64px tiles, loaded lazily
+  with nearest magnification and mipmaps for Retina and mobile. Paths
+  (road, rail, pipe, wire, highway, bridge, tunnel) draw direction-aware
+  continuous strips, and buildings get per-zone walls, per-variant roof
+  details, and per-facility surfaces.
+- The voxel world extrapolates the SimCity 2000 benchmark (M5-2e): three
+  tree shapes (broadleaf, conifer, sapling), gabled houses and setback
+  high-rises, bespoke landmark silhouettes (domes, civic towers, stadium
+  tiers, cranes, piers), beach-lined coasts, shimmering animated water,
+  continuous road curbs, and two-tone cars.
+- Water and disaster signatures (M5-2f): waterfalls render where water
+  meets high land, animated on both backends from the snapshot clock, and
+  active tornado and monster disasters get visible funnels and monsters.
+- Special-zone ground visuals (M5-2g): military, airport, and seaport zones
+  render as installation, runway, and dock ground — with continuous runway
+  markings on the Canvas pad — instead of invisible grass.
+- The Canvas 2D view gains SC2000-style 2.5D depth (M5-2h): lit roof
+  parapets, facade floor lines, front doors, two-tone trees with shadows,
+  richer terrain (speckle, blades, water sheen, coast foam), and soft
+  ground shadows under every building and landmark.
+- Terrain depth, water life, and zone claim (M5-2i): cliff shadow bands
+  where ground steps down (both backends), shimmering animated water on the
+  Canvas lighting layer, and a subtle hatch on R/C/I zones.
+- A zen-clean Japanese-Minecraft atmosphere (M5-2j): muted moss/ink/paper
+  palette, calmed terrain and water detail, one pale moon with sparse paper
+  lanterns at night, a tiered pagoda temple landmark, an elevation-tinted
+  SC2000 minimap, and tick-swinging construction cranes.
+- Water-edge torii on piers and marinas, a zen-garden corner in park
+  textures, and snow-capped peaks above the snow line (M5-2k) — the
+  OpenTTD benchmark is met on principles (clean terrain, one quiet detail
+  per surface), never by copying its GPL assets.
+- 2D path continuity reaches 3D parity (M5-2l): highways, onramps, and
+  bridges over water draw direction-aware mask frames that turn corners and
+  continue across tile edges, and road bores get dark tunnel overlays with
+  portal frames — the OpenTTD approach on our own original recipes.
+- Maple accents and 2D power poles (M5-2m): roughly one in five trees is a
+  red maple in both backends, and wire frames carry poles with crossarms.
+- Port signatures and moon water (M5-2n): sparse control towers on airport
+  pads, dock cranes on seaport pads, and a faint moon reflection on water
+  at night.
+- Road curbs in 2D and seasonal maples (M5-2o): streets gain quiet curb
+  edges in the atlas, and in autumn the maple share rises to about half the
+  canopy in both backends.
+- The four seasons (M5-2p): sakura blossom crowns in spring, deep greens in
+  summer, the maple forest in autumn, and snow-dusted crowns in winter —
+  cycling purely from the snapshot calendar in both backends.
+- Winter ground snow (M5-2q): in the fourth season the whole lowland snows
+  over in both backends, melting back to moss in spring.
+- Seasonal water (M5-2r): lakes freeze to pale ice in winter and brighten
+  in spring, across both backends and the minimap.
+- A warm UX pass (M5-2u): guiding bilingual copy, a gentle first-run hint
+  that fades after the player's first move, and scoped theme-token CSS.
+- Sakura petals drift in spring (M5-2s), and highways and onramps are now
+  real: divided carriageways and wide-to-narrow ramps in both backends
+  (M5-2t).
+- The simulation/save contract advances to v2: 64/96 maps, independent
+  terrain/transport/power/water/zone/building layers, atomic path and area
+  commands with pure previews, five ticks per game day, density and
+  construction states, water and service systems, policy/history/loan state,
+  and a pure v1-to-v2 migration. Existing `bonsaiCities` records remain in the
+  dedicated store; the IndexedDB schema does not change.
+- Two fixed recipes (`starter-town` and `troubled-mid-size`) replay original
+  v2 command logs through the real simulation and save codec. Their final
+  checkpoints are pinned so examples cannot drift into static scenery.
 - The GPL games (Micropolis, OpenTTD, DOOM) are separate shipped products and
   share no code with the Bonsai path.
+- Phase 9 opens the **SC2000 parity program** (owner directive, 2026-08-23):
+  Bonsai City grows into full SimCity 2000 gameplay parity with bidirectional
+  `.sc2` save compatibility (clean-room codec from attributed public format
+  facts; synthetic fixtures only), a lazy three.js voxel renderer backend
+  (Canvas 2D retained as the WebGL-unavailable fallback; both read the same
+  render snapshot), original Minecraft-style micro-voxel art generated from
+  project recipes, and original synthesized music and sound. EA expression
+  (code, art, sound, text, city files) stays fully prohibited; see
+  [LEGAL-AND-PROVENANCE.md](LEGAL-AND-PROVENANCE.md).
 
 ## Document map
 
@@ -87,6 +167,8 @@ persistence store, or dependencies.
   separation, and asset provenance rules.
 - [OPENSC2K-RESEARCH.md](OPENSC2K-RESEARCH.md) — pinned research notes and
   what may and may not be adopted.
+- [SC2-COMPAT.md](SC2-COMPAT.md) — the `.sc2` import/export status, known
+  approximations, fixture policy, and the owner's manual check protocol.
 - [AGENTS.md](AGENTS.md) — scoped working rules for agents.
 - `foundation-contract.json` — the machine-readable Phase 0 contract enforced
   by `tests/features/city-simulator-foundation.test.mjs`.

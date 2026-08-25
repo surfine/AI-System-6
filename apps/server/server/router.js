@@ -47,10 +47,12 @@ const handleReady = lazyHandler(() => require("./routes/health.js"), "./routes/h
 const handleCapabilities = lazyHandler(() => require("./routes/capabilities.js"), "./routes/capabilities.js", "handleCapabilities");
 const handleTurnstileSession = lazyHandler(() => require("./routes/public-session.js"), "./routes/public-session.js", "handleTurnstileSession");
 const handleSessionStatus = lazyHandler(() => require("./routes/public-session.js"), "./routes/public-session.js", "handleSessionStatus");
+const handleMacSharedToken = lazyHandler(() => require("./routes/public-session.js"), "./routes/public-session.js", "handleMacSharedToken");
 const handleVersion = lazyHandler(() => require("./routes/version.js"), "./routes/version.js", "handleVersion");
 const handleImporterStatus = lazyHandler(() => require("./routes/importer-status.js"), "./routes/importer-status.js", "handleImporterStatus");
 const handleCloudModels = lazyHandler(() => require("./routes/cloud-models.js"), "./routes/cloud-models.js", "handleCloudModels");
 const handleCloudStatus = lazyHandler(() => require("./routes/cloud-status.js"), "./routes/cloud-status.js", "handleCloudStatus");
+const handleCloudQuota = lazyHandler(() => require("./routes/cloud-quota.js"), "./routes/cloud-quota.js", "handleCloudQuota");
 const handleCloudCredentials = lazyHandler(() => require("./routes/cloud-credentials.js"), "./routes/cloud-credentials.js", "handleCloudCredentials");
 const handleCloudEmbeddings = lazyHandler(() => require("./routes/cloud-embeddings.js"), "./routes/cloud-embeddings.js", "handleCloudEmbeddings");
 const handleCloudChat = lazyHandler(() => require("./routes/cloud-chat.js"), "./routes/cloud-chat.js", "handleCloudChat");
@@ -60,6 +62,12 @@ const handleModels = lazyHandler(() => require("./routes/models.js"), "./routes/
 const handleModelsLoadEmbedding = lazyHandler(() => require("./routes/models-load-embedding.js"), "./routes/models-load-embedding.js", "handleModelsLoadEmbedding");
 const handleModelsLoad = lazyHandler(() => require("./routes/models-load.js"), "./routes/models-load.js", "handleModelsLoad");
 const handleLmStudioSetup = lazyHandler(() => require("./routes/lmstudio-setup.js"), "./routes/lmstudio-setup.js", "handleLmStudioSetup");
+const handleLmStudioStart = lazyHandler(() => require("./routes/lmstudio-start.js"), "./routes/lmstudio-start.js", "handleLmStudioStart");
+const handleMacSharedSessionCreate = lazyHandler(() => require("./routes/mac-shared.js"), "./routes/mac-shared.js", "handleMacSharedSessionCreate");
+const handleMacSharedSessionStatus = lazyHandler(() => require("./routes/mac-shared.js"), "./routes/mac-shared.js", "handleMacSharedSessionStatus");
+const handleMacSharedSessionDelete = lazyHandler(() => require("./routes/mac-shared.js"), "./routes/mac-shared.js", "handleMacSharedSessionDelete");
+const handleMacSharedChat = lazyHandler(() => require("./routes/mac-shared.js"), "./routes/mac-shared.js", "handleMacSharedChat");
+const handleMacSharedQuota = lazyHandler(() => require("./routes/mac-shared.js"), "./routes/mac-shared.js", "handleMacSharedQuota");
 const handleChat = lazyHandler(() => require("./routes/chat.js"), "./routes/chat.js", "handleChat");
 const handleDraftThesis = lazyHandler(() => require("./routes/draft-thesis.js"), "./routes/draft-thesis.js", "handleDraftThesis");
 const handleBureaucracyCaptions = lazyHandler(() => require("./routes/bureaucracy-captions.js"), "./routes/bureaucracy-captions.js", "handleBureaucracyCaptions");
@@ -94,10 +102,12 @@ const localExactRoutes = new Map([
   ["GET /api/capabilities", handleCapabilities],
   ["POST /api/session/turnstile", handleTurnstileSession],
   ["GET /api/session/status", handleSessionStatus],
+  ["POST /api/session/mac-token", handleMacSharedToken],
   ["GET /api/version", handleVersion],
   ["GET /api/importer-status", handleImporterStatus],
   ["GET /api/cloud/models", handleCloudModels],
   ["POST /api/cloud/status", handleCloudStatus],
+  ["GET /api/cloud/quota", handleCloudQuota],
   ["POST /api/cloud/credentials", handleCloudCredentials],
   ["POST /api/cloud/embeddings", handleCloudEmbeddings],
   ["POST /api/cloud/chat", handleCloudChat],
@@ -107,6 +117,12 @@ const localExactRoutes = new Map([
   ["POST /api/models/load-embedding", handleModelsLoadEmbedding],
   ["POST /api/models/load", handleModelsLoad],
   ["POST /api/lmstudio/setup", handleLmStudioSetup],
+  ["POST /api/lmstudio/start", handleLmStudioStart],
+  ["POST /api/mac-shared/session", handleMacSharedSessionCreate],
+  ["GET /api/mac-shared/session", handleMacSharedSessionStatus],
+  ["DELETE /api/mac-shared/session", handleMacSharedSessionDelete],
+  ["POST /api/mac-shared/chat", handleMacSharedChat],
+  ["GET /api/mac-shared/quota", handleMacSharedQuota],
   ["POST /api/chat", handleChat],
   ["POST /api/draft/thesis", handleDraftThesis],
   ["POST /api/bureaucracy/captions", handleBureaucracyCaptions],
@@ -131,10 +147,16 @@ const publicExactRouteKeys = new Set([
   "GET /api/capabilities",
   "POST /api/session/turnstile",
   "GET /api/session/status",
+  "POST /api/session/mac-token",
   "GET /api/version",
   "GET /api/cloud/models",
   "POST /api/cloud/status",
+  "GET /api/cloud/quota",
   "POST /api/cloud/chat",
+  // Vision was local-only, so the public profile hid it. The cloud vision
+  // model gives the public deployment a real image path, guarded by the same
+  // Turnstile session and shared-cloud budget as /api/cloud/chat.
+  "POST /api/vision/analyze",
   "POST /api/bureaucracy/captions",
   "POST /api/subtitles/translate",
   "POST /api/search/answer",

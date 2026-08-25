@@ -1,6 +1,6 @@
 {
   "name": "ai-system-6",
-  "version": "1.0.49",
+  "version": "1.0.50",
   "description": "A local-first, model-agnostic AI desktop inspired by Macintosh System 6.",
   "private": true,
   "license": "MIT",
@@ -58,6 +58,7 @@
     "sanitize-html": "2.17.5"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@playwright/test": "^1.62.1",
     "@types/node": "^26.2.0",
     "acorn": "^8.18.0",

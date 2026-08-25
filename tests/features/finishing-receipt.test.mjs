@@ -11,7 +11,11 @@ const test = createFeatureTest("finishing-receipt");
 
 const receiptSource = read("app/features/project-cd-print.js");
 const revisionsSource = read("app/core/document-revisions.js");
-const html = read("index.html");
+// Windows whose markup moved into their own lazy module: the boot payload no
+// longer carries a window this module already loads on demand. These
+// assertions are about what the window CONTAINS, not which file stores it,
+// so they read both surfaces and stay true wherever it is built.
+const html = `${read("index.html")}\n${read("app/features/project-cd-print.js")}`;
 const css = read("styles/30-surfaces.css");
 const responsiveCss = read("styles/60-responsive.css");
 const config = read("app/core/config.js");
@@ -123,7 +127,7 @@ test.assertIncludes(windowManager, '"finishingReceipt"',
   "the receipt is presented as a dialog on a phone in portrait");
 
 // The window reuses Get Info geometry; only the quotation block is new.
-test.assertIncludes(html, 'class="window info-window finishing-receipt-window',
+test.assertIncludes(html, 'windowClass: "info-window finishing-receipt-window"',
   "the receipt reuses the Get Info window shape");
 test.assertIncludes(css, ".receipt-kept {", "the kept-line quotation has its own block style");
 test.assertNotMatches(css, /\.finishing-receipt-window\s*\{[^}]*\bwidth\s*:/,

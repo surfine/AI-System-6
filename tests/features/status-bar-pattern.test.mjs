@@ -3,6 +3,7 @@
 // may project the same roles into their navigation chrome.
 
 import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
+import { appModulePaths, lazyRuntimePaths } from "../../tooling/runtime-manifest.mjs";
 
 const test = createFeatureTest("status-bar-pattern");
 const index = read("index.html");
@@ -63,5 +64,36 @@ test.assertIncludes(windows, ".view-controls {\n  display: flex;\n  align-items:
 test.assertIncludes(draftDeskStyles, "grid-template-columns: auto auto minmax(0, 1fr) auto auto;", "Quick Draft assigns all five receipts explicit tracks at useful widths");
 test.assertIncludes(draftDeskStyles, ".draft-desk-details > #quick-draft-protect-state,\n  .draft-desk-details > #quick-draft-stack-state {", "phone-width Quick Draft yields low-frequency guardrail receipts before live status");
 test.assertIncludes(index, 'class="time-machine-navigation"', "Time Machine retains browser navigation as the intentional status-bar analogue");
+
+// --- Saying less -------------------------------------------------------------
+//
+// Clearing the line is an intention, not a message. It used to be spelled
+// `setStatus(t("ready"))`, and the element decided to hide itself by comparing
+// its own text against the **translated** word for "Ready" — so rewording that
+// one string in either language would have quietly stopped every clear in the
+// product from working, with nothing to fail.
+const statusSource = read("app/core/persistence-status.js");
+test.assertIncludes(statusSource, "function clearStatus()", "clearing the status line has a name");
+test.assertIncludes(statusSource, 'statusEl.hidden = !String(message).trim();', "the line hides on an empty message, not on a translated word");
+test.assertNotMatches(statusSource, /statusEl\.hidden = [^\n]*t\("ready"\)/, "visibility never depends on translation content");
+
+// The sentinel hid inside ternaries and `||` chains, not just in the literal
+// call, which is why a grep for `setStatus(t("ready"))` found only some of it.
+// Nothing may hand the desk the translated word for "Ready" and hope it is
+// understood as silence — Time Machine's own comment used to say it relied on
+// exactly that.
+const shippedSources = [...appModulePaths, ...lazyRuntimePaths];
+shippedSources.forEach((path) => {
+  const source = read(path);
+  const statusCalls = source.match(/setStatus\([\s\S]{0,160}?\);/g) || [];
+  const sentinel = statusCalls.find((call) => call.includes('t("ready")'));
+  test.assert(!sentinel, `${path} clears the status line by name, not by handing it the word "Ready"`);
+});
+
+// The ruler: report what the writer cannot see. A message that repeats an act
+// they just watched happen is noise, and these four were the ones that did.
+["previewing_markdown", "editing_markdown", "dictionary_ready"].forEach((key) => {
+  test.assertNotIncludes(read("app/data/translations-en.js"), `${key}:`, `${key} is retired: the surface already shows it`);
+});
 
 test.finish();

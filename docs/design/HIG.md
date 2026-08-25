@@ -38,10 +38,13 @@ AI System 6 is a local-first writing desktop. Its interface makes sources,
 drafts, selections, saved files, review receipts, and exports into visible
 objects. It does not present AI capabilities as a dashboard inventory.
 
-The first-success route has a fixed priority: begin a Draft Desk document,
-write or generate it, save it durably, then download or share it. New controls
-must make that route easier, make saved work safer, or make resumption clearer;
-otherwise they remain out of the current Beta.
+The first finished work has two deliberate scales. **Quick Draft** is the short
+route: begin one small piece, write or develop it, save it durably, then
+download or share it. The product's complete long-writing route remains Project
+Hard Disk → File Floppy → Question Sheet → Outline → Section Drafts →
+Manuscript → Review Desk → Project CD. New controls must make one of those
+routes easier, make saved work safer, or make resumption clearer; otherwise
+they remain out of the current Beta.
 
 Default design dials remain:
 

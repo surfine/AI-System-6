@@ -45,17 +45,19 @@ function isFunctionNode(node) {
 }
 
 /**
- * Names of function declarations repeated in the same scope (nested function
- * scopes with the same name are legitimate shadowing and are ignored).
+ * Analyze top-level function declarations in one parse. Nested function
+ * scopes with the same name are legitimate shadowing and are ignored.
  * @param {string} source
- * @returns {string[]}
+ * @returns {{duplicates: string[], names: string[]}}
  */
-function duplicateNamesInSameScope(source) {
+function analyzeTopLevelFunctions(source) {
   const counts = new Map();
   const duplicates = [];
+  const names = [];
   function walk(node, inFunction) {
     if (node.type === "FunctionDeclaration" && node.id && !inFunction) {
       const name = node.id.name;
+      names.push(name);
       const next = (counts.get(name) || 0) + 1;
       counts.set(name, next);
       if (next === 2) duplicates.push(name);
@@ -64,24 +66,16 @@ function duplicateNamesInSameScope(source) {
     forEachAstChild(node, (child) => walk(child, nextInFunction));
   }
   walk(parseJsSource(source), false);
-  return duplicates;
-}
-
-/** @param {string} source */
-function topLevelFunctionNames(source) {
-  const names = [];
-  function walk(node, inFunction) {
-    if (node.type === "FunctionDeclaration" && node.id && !inFunction) names.push(node.id.name);
-    forEachAstChild(node, (child) => walk(child, inFunction || isFunctionNode(node)));
-  }
-  walk(parseJsSource(source), false);
-  return names;
+  return { duplicates, names };
 }
 
 const appFiles = [...walkFiles("app", ".js"), "app.js"];
+const analyses = new Map(
+  appFiles.map((relativePath) => [relativePath, analyzeTopLevelFunctions(read(relativePath))])
+);
 let anyDuplicate = false;
 for (const relativePath of appFiles) {
-  const duplicates = duplicateNamesInSameScope(read(relativePath));
+  const { duplicates } = analyses.get(relativePath);
   if (duplicates.length) anyDuplicate = true;
   test.assert(
     duplicates.length === 0,
@@ -90,8 +84,7 @@ for (const relativePath of appFiles) {
 }
 test.assert(anyDuplicate === false, "no app source file declares a duplicate top-level function");
 
-const maintenanceSource = read("app/core/desktop-maintenance.js");
-const maintenanceNames = topLevelFunctionNames(maintenanceSource);
+const maintenanceNames = analyses.get("app/core/desktop-maintenance.js").names;
 test.assert(
   maintenanceNames.filter((name) => name === "runDesktopMaintenance").length === 1,
   "app/core/desktop-maintenance.js declares runDesktopMaintenance exactly once"
@@ -102,7 +95,7 @@ test.assert(
 const guardedNames = ["runDesktopMaintenance", "saveDeskState", "openWritingStudio", "retrieveContext"];
 const declarationCounts = new Map(guardedNames.map((name) => [name, 0]));
 for (const relativePath of appFiles) {
-  for (const name of topLevelFunctionNames(read(relativePath))) {
+  for (const name of analyses.get(relativePath).names) {
     if (declarationCounts.has(name)) declarationCounts.set(name, declarationCounts.get(name) + 1);
   }
 }

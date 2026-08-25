@@ -1,0 +1,33 @@
+{
+  "asset": "Bonsai City Canvas 2D isometric atlas family",
+  "files": [
+    {
+      "file": "assets/bonsai/atlas-north.png",
+      "sha256": "da997a8ff4e369685e4181aa22b375e0e44218680e5e5b8b7aa87f99d4043468"
+    },
+    {
+      "file": "assets/bonsai/atlas-east.png",
+      "sha256": "41463aba8c6b27386b1d6a43048458f20762f66752fb90680fca7ba25f02a7ff"
+    },
+    {
+      "file": "assets/bonsai/atlas-south.png",
+      "sha256": "5621174c48416fd2d0e24c0eb1c7b9f4e563b0c6220227856b7beb875920dcf1"
+    },
+    {
+      "file": "assets/bonsai/atlas-west.png",
+      "sha256": "0246faa7d2134dac7e3d2c598b5e3e43fb27077a25662efc9c6c6b2d27229e3a"
+    }
+  ],
+  "metadata": "assets/bonsai/atlas-metadata.json",
+  "sourceFile": "assets/bonsai/atlas-source.json",
+  "author": "AI System 6 (original, agent-authored)",
+  "date": "2026-08-24T00:00:00.000Z",
+  "tool": "tooling/build-bonsai-atlas.mjs (JSON micro-voxel recipes + deterministic PNG encoder)",
+  "license": "MIT",
+  "source": "original",
+  "notes": [
+    "Original isometric pixel art generated from project-owned geometric recipes; no pixels copied, traced, sampled, or converted from any external game or artwork.",
+    "The generator has no network path and reads only the checked-in source recipe.",
+    "All four rotations share frame ids and dimensions; direction-specific light and small asymmetries are generated deliberately."
+  ]
+}

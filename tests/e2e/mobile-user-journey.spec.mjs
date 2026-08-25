@@ -106,9 +106,11 @@ test("mobile journey: a first-time phone user completes the whole route and down
   await realAdvance(page, "outline", "advance-outline-to-drafts");
   await page.waitForSelector('[data-window="sectionDrafts"].is-active:not(.is-hidden)', { timeout: 15_000 });
   await page.fill("#draft-body", "Mobile prose grounded in the clipped evidence.");
-  await realAdvance(page, "sectionDrafts", "advance-drafts-to-review");
-  // The drafts-to-review transition lands on the FINALIZED manuscript.
+  await realAdvance(page, "sectionDrafts", "advance-drafts-to-manuscript");
+  // The drafts-to-manuscript transition lands on the manuscript, which then
+  // takes its own step into review.
   await page.waitForSelector('[data-window="teachText"].is-active:not(.is-hidden)', { timeout: 15_000 });
+  await realAdvance(page, "teachText", "advance-manuscript-to-review");
   await page.waitForFunction(
     () => document.querySelector("#system-modal")?.hasAttribute("open")
       || document.querySelector("#teachtext-label")?.value === "final",

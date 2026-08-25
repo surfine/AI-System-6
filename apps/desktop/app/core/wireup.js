@@ -38,7 +38,7 @@ function wireAppEvents() {
   installDesktopScrollLock();
   installHeldPlaceTracking();
   initializeBalloonHelp();
-  initializeWelcomeFloppy();
+  initializeClioOnboarding();
   const clearLiquidPress = () => document.querySelectorAll(".is-glass-pressed").forEach((node) => node.classList.remove("is-glass-pressed"));
   addEventListener("pointerdown", (event) => {
     if (event.pointerType === "touch") {
@@ -201,7 +201,7 @@ function wireAppEvents() {
     const keys = {
       off: "teachtext_focus_off",
       typewriter: "teachtext_focus_typewriter",
-      paragraph: "teachtext_focus_paragraph",
+      sentence: "teachtext_focus_sentence",
     };
     const key = keys[mode] || keys.off;
     const longLabel = button.querySelector(".mobile-control-long");
@@ -232,7 +232,21 @@ function wireAppEvents() {
       syncMdeFocusButton(button, mode);
       textarea.focus();
     });
+    // Focus is how the writer works, not a property of one document, so it
+    // survives the session. The button has to open saying so.
+    const restored = typeof mdeStoredFocusMode === "function" ? mdeStoredFocusMode() : "off";
+    if (restored !== "off") syncMdeFocusButton(button, restored);
   });
+
+  // One preference, every writing surface: the menu command cycles whichever
+  // surface the writer is in, and every button that points at it follows.
+  window.AISystem6WritingFocus = {
+    syncButtons(mode) {
+      document.querySelectorAll("[data-mde-focus-cycle]").forEach((button) => {
+        syncMdeFocusButton(button, mode);
+      });
+    },
+  };
 
   teachTextImageInput?.addEventListener("change", async () => {
     await addTeachTextImageAttachments(teachTextImageInput.files);
@@ -608,7 +622,12 @@ function wireAppEvents() {
     // shell on or off.
     syncMobileAppForeground();
     syncMobileWorkAreaFrames?.();
+    syncIconColumnDensity?.();
+    requestAnimationFrame(() => reconcileVisibleSystemWindowsToViewport());
     renderMultiFinderMenu();
+  });
+  window.addEventListener("orientationchange", () => {
+    requestAnimationFrame(() => requestAnimationFrame(() => reconcileVisibleSystemWindowsToViewport()));
   });
 
   // Track how much the on-screen keyboard covers, exposed as a CSS custom
@@ -799,7 +818,11 @@ function wireAppEvents() {
   endpointInput?.addEventListener("input", invalidateLocalConnection);
   localApiTokenInput?.addEventListener("input", invalidateLocalConnection);
   localApiTokenInput?.addEventListener("input", saveLocalApiTokenForSession);
-  connectLocalModelButton?.addEventListener("click", connectOrLaunchLocalModel);
+  connectLocalModelButton?.addEventListener("click", async () => {
+    await ensureClioProviderResolver().catch(() => {});
+    window.AISystem6ClioProvider?.setPreference?.("local");
+    connectOrLaunchLocalModel();
+  });
 
   contextLengthInput?.addEventListener("input", () => {
     rememberContextLengthForCurrentModel(true);
@@ -827,11 +850,17 @@ function wireAppEvents() {
   setupLocalModelButton?.addEventListener("click", setupLocalLmStudioModel);
 
   findModelsButton?.addEventListener("click", findLmStudioModels);
-  document.getElementById("detect-local-models")?.addEventListener("click", detectLocalModelConnection);
+  document.getElementById("detect-local-models")?.addEventListener("click", async () => {
+    await ensureClioProviderResolver().catch(() => {});
+    window.AISystem6ClioProvider?.setPreference?.("local");
+    detectLocalModelConnection();
+  });
   document.getElementById("reset-ai-connection")?.addEventListener("click", resetAiConnection);
 
   loadModelButton.addEventListener("click", loadSelectedLmStudioModel);
-  localProviderEl?.addEventListener("change", () => {
+  localProviderEl?.addEventListener("change", async () => {
+    await ensureClioProviderResolver().catch(() => {});
+    window.AISystem6ClioProvider?.setPreference?.("local");
     const p = localProviderEl.value;
     const localHttp = `http:${String.fromCharCode(47, 47)}127.0.0.1:`;
     endpointInput.value = p === "lm-studio" ? `${localHttp}1234` : p === "ollama" ? `${localHttp}11434` : `${localHttp}1234`;
@@ -996,8 +1025,43 @@ function wireAppEvents() {
     handleAction(staticFinderTarget.dataset.staticFinderAction);
   });
 
+  // The Writing Flow palette reports content, so it follows typing rather than
+  // waiting for the next command that happens to refresh the menus. One frame's
+  // coalescing keeps it off the keystroke path.
+  // Moving the caret between writing surfaces re-homes the status line, so the
+  // receipt for the step you just took is readable where that step landed you.
+  document.addEventListener("focusin", (event) => {
+    if (!event.target?.matches?.("#question-sheet-body, #outline-content, #draft-body, #teachtext-body, #review-desk-body")) return;
+    syncStatusHost();
+    renderWritingSpineState();
+  }, true);
+
+  let writingSpineStateFrame = 0;
+  document.addEventListener("input", (event) => {
+    if (!event.target?.matches?.("#question-sheet-body, #outline-content, #draft-body, #teachtext-body, #review-desk-body")) return;
+    // Typing is the only signal that progress exists; the commit and the mirror
+    // both hang off it, debounced inside noteWorkingProgress.
+    noteWorkingProgress();
+    if (writingSpineStateFrame) return;
+    writingSpineStateFrame = requestAnimationFrame(() => {
+      writingSpineStateFrame = 0;
+      renderWritingSpineState();
+    });
+  }, true);
+
+  // <details> does not bubble its toggle event, so the listener runs in the
+  // capture phase - one place for every command menu, including the ones later
+  // features add.
+  document.addEventListener("toggle", (event) => {
+    const details = event.target;
+    if (!details?.matches?.(".teachtext-command-menu, .teachtext-command-submenu")) return;
+    if (details.open) positionCommandPopover(details);
+    else clearCommandPopoverPlacement(details);
+  }, true);
+
   window.addEventListener("resize", () => {
     document.querySelectorAll(".menu.is-open").forEach(positionOpenMenu);
+    document.querySelectorAll(".teachtext-command-menu[open], .teachtext-command-submenu[open]").forEach(positionCommandPopover);
   });
 
   document.querySelector(".menu-bar")?.addEventListener("scroll", () => {
@@ -1149,10 +1213,7 @@ function wireAppEvents() {
     win.dataset.app = getWindowAppId(win);
     win.addEventListener("pointerdown", () => focusWindow(win));
 
-    win.querySelector(".close-box")?.addEventListener("click", () => {
-      if (win.dataset.window === "welcomeDisk") return dismissWelcomeFloppy();
-      return closeWindow(win.dataset.window);
-    });
+    win.querySelector(".close-box")?.addEventListener("click", () => closeWindow(win.dataset.window));
 
     win.querySelector(".resize-box")?.addEventListener("click", () => {
       zoomWindow(win);

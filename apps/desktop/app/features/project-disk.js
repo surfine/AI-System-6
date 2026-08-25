@@ -359,6 +359,7 @@ function renderTdiTabStrip(container, tabs, options = {}) {
     activeId = "",
     labelFor = (tab) => tab.title || t("untitled"),
     sublabelFor = () => "",
+    iconFor = () => "",
     dirtyFor = () => false,
     closableFor = () => true,
     hideWhenEmpty = true,
@@ -384,7 +385,9 @@ function renderTdiTabStrip(container, tabs, options = {}) {
     const label = labelFor(tab, index);
     const sublabel = sublabelFor(tab, index);
     const dirtyMark = dirtyFor(tab) ? "• " : "";
-    button.innerHTML = `<span>${escapeHtml(`${dirtyMark}${label}`)}</span><small>${escapeHtml(sublabel)}</small>`;
+    const iconId = iconFor(tab, index);
+    const icon = iconId ? renderSystemIcon(iconId, { size: "mini", className: "tdi-tab-icon" }) : "";
+    button.innerHTML = `${icon}<span class="tdi-tab-copy"><span>${escapeHtml(`${dirtyMark}${label}`)}</span><small>${escapeHtml(sublabel)}</small></span>`;
     button.addEventListener("click", () => onOpen(tab));
     const close = document.createElement("button");
     close.type = "button";
@@ -727,6 +730,10 @@ function openAppDb() {
       if (!db.objectStoreNames.contains(bonsaiCitiesStoreName)) {
         db.createObjectStore(bonsaiCitiesStoreName, { keyPath: "id" });
       }
+      if (!db.objectStoreNames.contains(imageAttachmentsStoreName)) {
+        const store = db.createObjectStore(imageAttachmentsStoreName, { keyPath: "id" });
+        store.createIndex("projectId", "projectId", { unique: false });
+      }
     };
 
     request.onblocked = () => finish(
@@ -907,9 +914,16 @@ function normalizeOutlineDraftBlocks(blocks) {
 
     return {
       title,
+      // The section's own name for itself, carried in its heading. Empty only
+      // until the text next becomes sections.
+      id: String(block?.id || ""),
       body: stripOutlineHkrrMetadata(body),
-      hkrrIntent: metadata.intent,
-      hkrrNote: metadata.note,
+      // Normalizing must be idempotent. The first pass lifts the intent out of
+      // the prose and strips the line; a second pass over that result finds a
+      // body with no metadata left in it, and used to answer "no intent" --
+      // which is how a section's HKRR intent was wiped on every sync.
+      hkrrIntent: metadata.intent || normalizeHkrrIntent(block?.hkrrIntent) || "",
+      hkrrNote: metadata.note || String(block?.hkrrNote || "").trim(),
       sourceMarkdown: String(block?.source || block?.sourceMarkdown || "").trim(),
       sourceOutlineIndex: Number.isFinite(Number(block?.index)) ? Number(block.index) : index,
     };
@@ -917,12 +931,13 @@ function normalizeOutlineDraftBlocks(blocks) {
 
   return normalized.length
     ? normalized
-    : [{ title: defaultOutlineSection, body: "", sourceMarkdown: "", sourceOutlineIndex: 0 }];
+    : [{ title: defaultOutlineSection, id: "", body: "", sourceMarkdown: "", sourceOutlineIndex: 0 }];
 }
 
 function outlineDraftBlocksFromSections(sections) {
   return normalizeOutlineSections(sections).map((section, index) => ({
-    title: section,
+    title: stripMarkdownSectionId(section),
+    id: markdownSectionId(section),
     body: "",
     sourceMarkdown: `## ${section}`,
     sourceOutlineIndex: index,
@@ -1062,7 +1077,6 @@ function createProjectRecord(name) {
     outline: serializeOutlineSections(outlineSections),
     outlineSections,
     drafts: [],
-    imageAttachments: [],
     writingSurfaces: createWritingSurfaceState(),
     documentTabs: [],
     activeDocumentTabIds: { reader: null, teachText: null, docMap: null, timeMachine: null },
@@ -1138,7 +1152,7 @@ function ensureActiveProject() {
     const projectId = file.projectId || activeProjectId || startupProjectId;
     if (!projectId) return;
     if (!attachmentsByProjectId.has(projectId)) attachmentsByProjectId.set(projectId, []);
-    attachmentsByProjectId.get(projectId).push(...cloneTeachTextImageAttachments(file.imageAttachments));
+    attachmentsByProjectId.get(projectId).push(...normalizeImageAttachments(file.imageAttachments));
   });
 
   // Migration: Ensure all projects have pipeline fields
@@ -1158,7 +1172,7 @@ function ensureActiveProject() {
     if (!Array.isArray(project.dictionaryTerms)) project.dictionaryTerms = [];
     if (project.flowState === undefined) project.flowState = { topic: false, research: false, outline: false, drafting: false, check: false };
     const mergedAttachments = [
-      ...cloneTeachTextImageAttachments(project.imageAttachments),
+      ...normalizeImageAttachments(project.imageAttachments),
       ...(attachmentsByProjectId.get(project.id) || []),
     ];
     const byId = new Map();
@@ -1170,6 +1184,9 @@ function ensureActiveProject() {
       changed = true;
     }
     project.imageAttachments = normalizedAttachments;
+    // DB v5: pictures live in the imageAttachments store, not inside the
+    // project record. Idempotent, so a restored backup cannot duplicate one.
+    if (migrateLegacyProjectImageAttachments(project)) changed = true;
   });
   chatFolders.forEach((folder) => {
     if (folder.parentId === undefined) folder.parentId = null;
@@ -1430,7 +1447,10 @@ function updateProjectLabels() {
   const selectedText = selectedProject ? t("selected_project", projectDisplayName(selectedProject)) : t("no_project_mounted");
 
   if (currentProjectLabelEl) {
-    currentProjectLabelEl.textContent = t("current_project_desktop");
+    // The generic label was enough while exactly one disk could be on the desk.
+    // With the others beside it, a row of identical names is a row of nothing:
+    // the mounted disk says which project it is, like any other volume.
+    currentProjectLabelEl.textContent = project ? name : t("current_project_desktop");
     const currentProjectIcon = currentProjectLabelEl.closest(".desktop-icon");
     currentProjectIcon?.classList.remove("is-hidden");
     currentProjectIcon?.setAttribute("aria-hidden", "false");
@@ -1449,10 +1469,71 @@ function updateProjectLabels() {
   if (documentsProjectLabelEl) documentsProjectLabelEl.textContent = activeText;
   if (scrapbookProjectLabelEl) scrapbookProjectLabelEl.textContent = activeText;
   if (trashProjectLabelEl) trashProjectLabelEl.textContent = activeText;
+  renderProjectDiskDesktopIcons();
   renderProjectSwitcher();
   updateMenuStatus();
   updateProjectDiskActionVisibility();
   renderAboutMacintosh();
+}
+
+// Every project is a disk, and the desktop is where disks live.
+//
+// One project could mount at a time and the rest lived in a menu-bar popover —
+// a list of names reachable only by opening a menu, which is not how a Macintosh
+// says "you have these". System 6 puts every volume on the desk and leaves an
+// **ejected** disk behind as a dimmed icon: present, named, not currently
+// readable. That is exactly the state a project needs when it is not the one you
+// are in, so it is the state used here.
+//
+// The mounted disk keeps its static markup, because it is also the drop target
+// for filing things into the current project. The ejected ones are drawn.
+function renderProjectDiskDesktopIcons() {
+  const column = currentProjectLabelEl?.closest(".icon-column");
+  const mountedIcon = currentProjectLabelEl?.closest(".desktop-icon");
+  if (!column || !mountedIcon) return;
+
+  const mountedId = isProjectMounted ? activeProjectId : "";
+  // Archived disks are put away: off the desk, still in the switcher.
+  const ejected = projects.filter((project) => !project.archived && project.id !== mountedId);
+  const drawn = new Map(
+    [...column.querySelectorAll("[data-ejected-project-id]")].map((icon) => [icon.dataset.ejectedProjectId, icon]),
+  );
+
+  let previous = mountedIcon;
+  ejected.forEach((project) => {
+    let icon = drawn.get(project.id);
+    if (icon) {
+      drawn.delete(project.id);
+    } else {
+      icon = document.createElement("button");
+      icon.type = "button";
+      icon.className = "desktop-icon is-ejected-disk";
+      icon.dataset.ejectedProjectId = project.id;
+      icon.dataset.projectId = project.id;
+      // The same drag type the switcher rows use: dragging a disk to the Trash
+      // puts it away, which on a Macintosh is what dragging a disk there means.
+      icon.dataset.dragType = "project";
+      icon.dataset.id = project.id;
+      // Double-clicking an ejected disk looks inside it. It does not mount it:
+      // switching the disk you write on is a decision, not the by-product of
+      // going to look for something.
+      icon.dataset.action = `peek-project-disk:${project.id}`;
+      icon.draggable = true;
+      icon.append(
+        Object.assign(document.createElement("span"), { className: "sys-icon sys-icon-desktop" }),
+        document.createElement("span"),
+      );
+      icon.firstChild.setAttribute("data-system-icon", "projectDisk");
+      icon.firstChild.setAttribute("aria-hidden", "true");
+    }
+    icon.lastChild.textContent = projectDisplayName(project);
+    icon.setAttribute("title", t("ejected_project_disk", projectDisplayName(project)));
+    previous.after(icon);
+    previous = icon;
+  });
+
+  drawn.forEach((icon) => icon.remove());
+  if (typeof hydrateSystemIcons === "function") hydrateSystemIcons(column);
 }
 
 function setProjectDiskActionVisible(button, visible) {

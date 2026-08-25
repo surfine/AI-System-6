@@ -37,6 +37,7 @@ function makeContext({ readRevisionsFails = false } = {}) {
     chatFolders: [],
     chatFiles: [{ id: "doc-1", projectId: "p1", type: "text", name: "Draft.md", body: "# Draft", folderId: null }],
     scraps: [],
+    imageAttachments: [],
     trashItems: [],
     projectCdItems: [],
     projectReferences: [],
@@ -97,13 +98,49 @@ function makeContext({ readRevisionsFails = false } = {}) {
     { id: "rev-2", projectId: "p1", documentId: "doc-1", body: "v2", contentHash: "b", operation: "save", origin: "user", parentRevisionId: "rev-1", phase: "final", createdAt: "2026-08-08T00:01:00.000Z" },
   ]);
   const bundle = await context.buildProjectDiskExport(context.getActiveProject());
-  test.assert(!!bundle && bundle.formatVersion === 4, "a healthy export produces a v4 bundle");
+  test.assert(!!bundle && bundle.formatVersion === 6, "a healthy export produces a v6 bundle");
   test.assert(
     Array.isArray(bundle.documentRevisions) && bundle.documentRevisions.length === 2,
     "the bundle carries the stored revisions"
   );
   const verification = await context.window.AISystem6ProjectDiskBackup.verifyIntegrity(bundle);
   test.assert(verification.valid, "the healthy bundle passes integrity verification");
+}
+
+{
+  // 文字亮室's record is read out of keyval the same way, and this executes the
+  // real reader rather than asserting that it exists. The two halves are proven
+  // separately on purpose: that a record can be WRITTEN was verified in a
+  // browser on a cold desk, because no contract could see a module that never
+  // loaded; that a written record REACHES the backup is verified here.
+  const { context, keyval } = makeContext();
+  keyval.set("darkroom:p1:doc-1", {
+    schemaVersion: 1,
+    negative: "The sentence as the writer first wrote it.",
+    composite: "The sentence after one pass.",
+    adjustmentLayers: [{ kind: "mingming", enabled: true }],
+    protectedRanges: [{ start: 0, end: 8 }],
+    versions: [{ key: "v1", text: "The sentence as the writer first wrote it." }],
+    updatedAt: "2026-08-22T00:00:00.000Z",
+  });
+  // Another project's darkroom must not ride along in this project's backup.
+  keyval.set("darkroom:p2:doc-9", { schemaVersion: 1, negative: "Someone else's draft.", adjustmentLayers: [], protectedRanges: [], versions: [] });
+
+  const bundle = await context.buildProjectDiskExport(context.getActiveProject());
+  test.assert(
+    Array.isArray(bundle.darkroomRecords) && bundle.darkroomRecords.length === 1,
+    "the bundle carries this project's darkroom record, and only this project's"
+  );
+  const carried = bundle.darkroomRecords[0];
+  test.assert(carried.documentId === "doc-1", "the document id is recovered from the key, not trusted from inside the value");
+  test.assert(
+    carried.negative === "The sentence as the writer first wrote it." && carried.versions.length === 1,
+    "the negative and the version chain survive the export"
+  );
+  test.assert(
+    (await context.window.AISystem6ProjectDiskBackup.verifyIntegrity(bundle)).valid,
+    "and the darkroom record is covered by the integrity hash"
+  );
 }
 
 test.finish();

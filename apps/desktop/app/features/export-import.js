@@ -166,6 +166,7 @@ function countMarkdownWords(text) {
 async function buildProjectDiskExport(project = getActiveProject()) {
   if (!project) return null;
   const projectId = project.id;
+  if (typeof ensureProjectBackupAssembler === "function") await ensureProjectBackupAssembler();
   const result = await window.AISystem6ProjectBackupAssembler.assembleProjectBackup({
     projectId,
     source: {
@@ -177,6 +178,8 @@ async function buildProjectDiskExport(project = getActiveProject()) {
       getProjectCdItems: async () => projectCdItems.filter((item) => item.projectId === projectId),
       getReferences: async () => projectReferences.filter((reference) => reference.projectId === projectId),
       getDocumentRevisions: () => collectProjectDocumentRevisions(projectId),
+      getDarkroomRecords: () => collectProjectDarkroomRecords(projectId),
+      getImageAttachments: async () => imageAttachments.filter((entry) => entry?.projectId === projectId),
       getWorkingSession: () => readWorkingSessionForBackup(projectId),
     },
   });
@@ -221,6 +224,41 @@ async function collectProjectDocumentRevisions(projectId) {
     db?.close();
   }
   return revisions;
+}
+
+/**
+ * Read every darkroom record of a project out of the keyval store. Records are
+ * keyed "darkroom:<projectId>:<documentId>", one per document, so the document
+ * id is recovered from the key rather than trusted from inside the value.
+ * The negative, the adjustment stack, the writer's locks and the version chain
+ * are user work: a read failure fails the whole export, the same way version
+ * history does, rather than producing a backup that looks complete.
+ */
+async function collectProjectDarkroomRecords(projectId) {
+  const records = [];
+  let db;
+  try {
+    db = await openAppDb();
+    const store = db.transaction(keyvalStoreName, "readonly").objectStore(keyvalStoreName);
+    const keys = await idbRequest(store.getAllKeys());
+    const prefix = `darkroom:${String(projectId || "")}:`;
+    for (const key of keys) {
+      if (typeof key !== "string" || !key.startsWith(prefix)) continue;
+      const documentId = key.slice(prefix.length);
+      if (!documentId) continue;
+      const value = await idbRequest(store.get(key));
+      if (!value || typeof value !== "object" || Array.isArray(value)) continue;
+      records.push({ ...value, projectId: String(projectId || ""), documentId });
+    }
+  } catch (error) {
+    console.error("Could not read darkroom records for the Project Hard Disk backup.", error);
+    throw new ProjectBackupError(
+      `Could not read darkroom records for the Project Hard Disk backup: ${error?.message || error}`
+    );
+  } finally {
+    db?.close();
+  }
+  return records;
 }
 
 // Assemble the backup once, and report the real reason when it cannot be
@@ -673,7 +711,6 @@ function attachSelectedProjectCdToAssistantContext() {
   attachedClipIds.add(scrap.id);
   renderAttachedClips();
   openWindow("assistant");
-  setStatus(t("attach_to_assistant"));
   return scrap;
 }
 
@@ -1237,6 +1274,50 @@ async function repairImportedTextWithLocalModel(text, file, signal) {
   return repaired.join("\n\n").trim() || source;
 }
 
+// Second reading for a picture the browser could not transcribe.
+//
+// PaddleOCR runs in the browser and never sends the file anywhere, so it stays
+// first. When it finds nothing readable, the cloud vision model can still say
+// what is in the picture — but that is a different act: OCR transcribes, a
+// vision model describes. The copy says so, and it says the image leaves the
+// browser, because on the public web it does.
+async function extractImageTextWithCloudVision(file, options = {}) {
+  throwIfAborted(options.signal);
+  const originalDataUrl = await readImageAttachmentFile(file);
+  throwIfAborted(options.signal);
+  let dataUrl = originalDataUrl;
+  try {
+    // Bigger than a writing preview: small print has to survive the resize.
+    const compressed = await compressImageAttachmentDataUrl(originalDataUrl, 1600);
+    dataUrl = compressed.previewDataUrl;
+  } catch {
+    dataUrl = originalDataUrl;
+  }
+
+  throwIfAborted(options.signal);
+  const response = await window.AISystem6Capabilities.requestService("vision.analyze", {
+    init: {
+      method: "POST",
+      signal: options.signal,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        dataUrl,
+        mode: "ocr",
+        name: file.name || "",
+        detail: "high",
+        modelRoute: { cloud: { active: true, ...cloudCredentialTransportFields("status") } },
+      }),
+    },
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data?.detail || data?.error || t("import_vision_failed"));
+  }
+  const text = String(data?.text || "").trim();
+  if (!text) throw new Error(t("import_vision_failed"));
+  return text;
+}
+
 async function extractFileText(file, options = {}) {
   const signal = options.signal;
   throwIfAborted(signal);
@@ -1271,11 +1352,22 @@ async function extractFileText(file, options = {}) {
   const browserPaddleRequired =
     capabilities.public_deployment || ocrEngineInput?.value === "paddle";
   if (browserPaddleRequired && isBrowserPaddleOcrFile(file)) {
-    const text = isImageImportFile(file)
-      ? await extractImageTextWithBrowserPaddle(file, { signal })
-      : capabilities.public_deployment
-        ? (() => { throw new Error(t("public_import_unsupported", file.name)); })()
-        : await extractRenderedPagesWithBrowserPaddle(file, { signal });
+    if (isImageImportFile(file)) {
+      let text = "";
+      try {
+        text = await extractImageTextWithBrowserPaddle(file, { signal });
+      } catch (paddleError) {
+        throwIfAborted(signal);
+        if (!capabilities.features?.cloud_vision) throw paddleError;
+        if (importStatusEl) importStatusEl.textContent = t("import_vision_reading", file.name);
+        text = await extractImageTextWithCloudVision(file, { signal });
+        if (importStatusEl) importStatusEl.textContent = t("import_vision_described", file.name);
+      }
+      return { text, subtitleTranslations: null, videoTranscript: null };
+    }
+    const text = capabilities.public_deployment
+      ? (() => { throw new Error(t("public_import_unsupported", file.name)); })()
+      : await extractRenderedPagesWithBrowserPaddle(file, { signal });
     return { text, subtitleTranslations: null, videoTranscript: null };
   }
 
@@ -1307,6 +1399,13 @@ async function extractFileText(file, options = {}) {
   let extractedText = data.text || "";
   if (data.modelPostprocessRequired && !isCloud) {
     extractedText = await repairImportedTextWithLocalModel(extractedText, file, signal);
+  }
+  // Local OCR runs three engines deep before an image can reach the cloud, and
+  // it only can when the writer's own cloud switch is on. Say so anyway: the
+  // rule against claiming work that never happened reads the same in reverse,
+  // and a picture that went to a third party in silence is the worse half.
+  if (data.ocrReadBy === "cloud-vision") {
+    setStatus(t("import_read_by_cloud_vision", file?.name || ""));
   }
   return {
     text: extractedText,
@@ -1476,6 +1575,7 @@ async function commitImportedProjectAtomically(imported) {
       chatFoldersStoreName,
       chatFilesStoreName,
       referenceStoreName,
+      imageAttachmentsStoreName,
       keyvalStoreName,
     ];
     await window.AISystem6StorageTransactions.runTransaction(
@@ -1490,6 +1590,10 @@ async function commitImportedProjectAtomically(imported) {
         };
         putAll(projectsStoreName, [imported.project]);
         putAll(scrapsStoreName, imported.scraps);
+        // Pictures land in the same transaction as the manuscripts that cite
+        // them: a disk that restored its figures but not its pictures would
+        // show raw `![](aisystem6-image:...)` markdown and look corrupt.
+        putAll(imageAttachmentsStoreName, imported.imageAttachments || []);
         const trashStore = tx.objectStore(trashStoreName);
         imported.trash.forEach((item) => {
           writes.push(idbRequest(trashStore.put(item, item._storageId)));
@@ -1525,6 +1629,18 @@ async function commitImportedProjectAtomically(imported) {
             return idbRequest(settingsStore.put(merged, key));
           })());
         }
+        // A v5 backup carries the darkroom of every developed document. One
+        // record per document, so it is a put and not a merge — and the
+        // documentId is already remapped to the imported file, which is why
+        // this lands in the same transaction as the files themselves.
+        (imported.darkroomRecords || []).forEach((record) => {
+          if (!record?.documentId) return;
+          const { projectId: _projectId, documentId, ...stored } = record;
+          writes.push(idbRequest(settingsStore.put(
+            stored,
+            `darkroom:${String(imported.project.id)}:${String(documentId)}`
+          )));
+        });
         await Promise.all(writes);
       }
     );
@@ -1566,6 +1682,7 @@ async function importProjectBackupAsNewProject() {
     projects.unshift(imported.project);
     chatFolders.unshift(...imported.folders);
     chatFiles.unshift(...imported.files);
+    imageAttachments.unshift(...(imported.imageAttachments || []));
     scraps.unshift(...imported.scraps);
     trashItems.unshift(...imported.trash);
     projectCdItems.unshift(...imported.projectCdItems);

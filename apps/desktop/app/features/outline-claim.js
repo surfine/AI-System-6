@@ -16,7 +16,7 @@ function validateGeneratedWritingOutline(markdown) {
   if (!content) throw new Error("empty outline response");
   const sections = content.match(/^##\s+.+$/gm) || [];
   if (!sections.length) {
-    throw new Error(currentLanguage === "zh" ? "生成的大纲没有可写作章节（缺少 ## 标题）。" : "Generated outline has no writable ## sections.");
+    throw new Error(t("generated_outline_has_no_writable_sections"));
   }
   const forbiddenHeading = /^##\s*(?:[一二三四五六七八九十\d.、\s-]*)?(?:核验|确认|校验|资料补充|补充资料|下一步|后续行动|行动计划|风险|备注|输出规则|写作准备|读者导向|结构逻辑|数据准确性|工作清单|写作大纲总结)\b/im;
   if (forbiddenHeading.test(content)) {
@@ -215,7 +215,12 @@ async function generateOutline() {
   }
 
   const existingOutline = currentOutlineMarkdown(project).trim();
-  if (existingOutline) {
+  // Warn about losing work, not about losing the system's own placeholder. A
+  // fresh project ships "## New Section", so the old check fired an overwrite
+  // confirmation on every first outline - and a warning that cries wolf is
+  // training for clicking through the one that matters.
+  const hasWorkToLose = getMeaningfulOutlineSections(extractOutlineSections(existingOutline)).length > 0;
+  if (existingOutline && hasWorkToLose) {
     const result = await showSystemModal(t("outline_overwrite_confirm"), "confirm");
     if (result !== "yes") return;
   }
@@ -230,19 +235,45 @@ async function generateOutline() {
     if (!isAbortError(error)) {
       didFail = true;
       console.error("Generate outline failed", error);
-      setStatus(currentLanguage === "zh"
-        ? `生成大纲失败：${error?.message || error}`
-        : `Outline generation failed: ${error?.message || error}`);
-      try {
-        await showSystemModal(currentLanguage === "zh"
-          ? `生成大纲失败：${error?.message || error}`
-          : `Outline generation failed: ${error?.message || error}`, "alert");
-      } catch {
-        // Keep the status text visible if the modal cannot open.
-      }
+      // The transport's own string ("lmstudio_server_offline: ...") is a
+      // diagnostic, not product copy. Say what failed, then what to do next,
+      // and put the next step on a button instead of naming a window the
+      // writer then has to go find.
+      await reportWritingRouteModelFailure(error, t("make_outline"));
     }
   } finally {
-    if (!didFail) setStatus(didGenerateOutline ? t("outline_generated") : t("ready"));
+    if (didFail) return;
+    if (didGenerateOutline) setStatus(t("outline_generated"));
+    else clearStatus();
+  }
+}
+
+// Consumer-facing failure copy for a route command that asked a model: what
+// happened, then the action that fixes it. Diagnostics stay in the console.
+async function reportWritingRouteModelFailure(error, taskLabel) {
+  const detail = typeof explainStatusError === "function"
+    ? explainStatusError(String(error?.message || error || ""))
+    : "";
+  const headline = currentLanguage === "zh"
+    ? `「${taskLabel}」没有完成。`
+    : `${taskLabel} could not finish.`;
+  const message = [headline, detail].filter(Boolean).join(" ");
+  setStatus(message);
+  const offline = typeof modelReadyForRequests === "function" && !modelReadyForRequests();
+  try {
+    if (offline) {
+      const openControl = await showSystemModal(
+        currentLanguage === "zh"
+          ? `${message}\n\n要现在打开控制面板接一个模型吗？`
+          : `${message}\n\nOpen Control Panel to connect a model?`,
+        "confirm",
+      );
+      if (openControl === "yes") handleAction("open-control");
+      return;
+    }
+    await showSystemModal(message, "alert");
+  } catch {
+    // Keep the status text if the modal cannot open.
   }
 }
 
@@ -291,7 +322,7 @@ function questionSheetPromptLeakReason(markdown) {
 function validateOrganizedQuestionSheet(markdown) {
   const text = stripRebuildMarkdownFence(markdown).trim();
   if (!text) {
-    throw new Error(currentLanguage === "zh" ? "模型没有返回问题单内容。" : "The model returned an empty Question Sheet.");
+    throw new Error(t("the_model_returned_an_empty_question"));
   }
   const leakReason = questionSheetPromptLeakReason(text);
   if (leakReason) throw new Error(leakReason);
@@ -442,7 +473,12 @@ async function organizeQuestionSheetCore(options = {}) {
       try {
         response = await fetchModelPayload({
           model: modelName,
-          messages: withMarkdownModelMessages(messages),
+          // Photographed notes are raw input: the model reads what the writer
+          // scribbled, and the sheet's own sections are unchanged by it.
+          messages: attachImagesToModelMessages(
+            withMarkdownModelMessages(messages),
+            getQuestionSheetPhotos()
+          ),
           temperature: attempt === 0
             ? (Number.isFinite(options.temperature) ? options.temperature : 0.25)
             : (Number.isFinite(options.retryTemperature) ? options.retryTemperature : 0.12),
@@ -535,14 +571,14 @@ async function organizeQuestionSheet() {
   }
 
   if (!organized) {
-    setStatus(t("ready"));
+    clearStatus();
     return;
   }
 
   const preview = clipContextContent(organized, 1600);
   const result = await showSystemModal(t("organize_question_sheet_confirm", preview), "confirm");
   if (result !== "yes") {
-    setStatus(t("ready"));
+    clearStatus();
     return;
   }
 
@@ -614,7 +650,7 @@ ${outline}`;
   }
 
   if (!content) {
-    setStatus(t("ready"));
+    clearStatus();
     return;
   }
 
@@ -721,7 +757,7 @@ ${outline}`;
     }
   } finally {
     const cancelled = endLongTask(taskKey);
-    if (!failed && !cancelled && mode === "critique") setStatus(t("ready"));
+    if (!failed && !cancelled && mode === "critique") clearStatus();
   }
 
   if (!failed && mode !== "critique" && content) {
@@ -744,7 +780,7 @@ async function confirmAndApplyAiOutline(markdown, confirmKey, statusKey) {
   const preview = clipContextContent(nextOutline, 1800);
   const result = await showSystemModal(t(confirmKey, preview), "confirm");
   if (result !== "yes") {
-    setStatus(t("ready"));
+    clearStatus();
     return false;
   }
 
@@ -825,7 +861,7 @@ ${body}${eli5Block ? `\n\n${eli5Block}` : ""}`;
   }
 
   if (!content) {
-    setStatus(t("ready"));
+    clearStatus();
     return;
   }
 
@@ -887,14 +923,14 @@ ${currentDraft || "No draft yet. Give planning suggestions for starting this sec
   }
 
   if (!content) {
-    setStatus(t("ready"));
+    clearStatus();
     return;
   }
 
   const preview = clipContextContent(content, 1800);
   const result = await showSystemModal(t("suggest_append_confirm", preview), "confirm");
   if (result !== "yes") {
-    setStatus(t("ready"));
+    clearStatus();
     return;
   }
 
@@ -1198,7 +1234,11 @@ ${body}`;
 
     const response = await fetchModelPayload({
       model: getLocalModelRequestName(),
-      messages: withMarkdownModelMessages([{ role: "user", content: prompt }]),
+      // A claim can rest on a figure. Only figures the draft cites are sent.
+      messages: attachImagesToModelMessages(
+        withMarkdownModelMessages([{ role: "user", content: prompt }]),
+        teachTextFiguresReferencedIn(body)
+      ),
       temperature: 0.1,
       max_tokens: 3000,
       ai_system6_task_kind: "critique",
@@ -1327,7 +1367,7 @@ function jumpToTeachTextClaim(claim) {
   teachTextBodyInput.focus();
   teachTextBodyInput.selectionStart = start;
   teachTextBodyInput.selectionEnd = start + found.length;
-  setStatus(t("ready"));
+  clearStatus();
 }
 
 function renderClaimResults(markdown) {

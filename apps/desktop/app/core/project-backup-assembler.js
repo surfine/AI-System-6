@@ -1,7 +1,7 @@
 // Single Project Backup assembler.
 //
 // Normal Export and Recovery Export must produce byte-identical schema, so
-// both go through this one assembler. A `source` adapter supplies the eight
+// both go through this one assembler. A `source` adapter supplies the nine
 // project-level durable collections; the caller decides whether they come
 // from the desktop runtime's memory or straight from IndexedDB.
 //
@@ -26,6 +26,7 @@ window.AISystem6ProjectBackupAssembler = (() => {
    *   getProjectCdItems: (id: string) => Promise<any[]>,
    *   getReferences: (id: string) => Promise<any[]>,
    *   getDocumentRevisions: (id: string) => Promise<any[]>,
+   *   getDarkroomRecords: (id: string) => Promise<any[]>,
    *   getWorkingSession?: (id: string) => Promise<any>,
    * } }} options
    */
@@ -37,7 +38,7 @@ window.AISystem6ProjectBackupAssembler = (() => {
     const workingSession = await Promise.resolve()
       .then(() => source.getWorkingSession?.(projectId))
       .catch(() => null);
-    const [folders, files, scraps, trash, projectCdItems, references, documentRevisions] = await Promise.all([
+    const [folders, files, scraps, trash, projectCdItems, references, documentRevisions, darkroomRecords, imageAttachments] = await Promise.all([
       readCollection(source.getFolders, projectId),
       readCollection(source.getFiles, projectId),
       readCollection(source.getScraps, projectId),
@@ -45,6 +46,8 @@ window.AISystem6ProjectBackupAssembler = (() => {
       readCollection(source.getProjectCdItems, projectId),
       readCollection(source.getReferences, projectId),
       readCollection(source.getDocumentRevisions, projectId),
+      readCollection(source.getDarkroomRecords, projectId),
+      readCollection(source.getImageAttachments, projectId),
     ]);
     const bundle = {
       format: "ai-system-6-project-disk",
@@ -63,6 +66,8 @@ window.AISystem6ProjectBackupAssembler = (() => {
       projectCdItems,
       references,
       documentRevisions,
+      darkroomRecords,
+      imageAttachments,
     };
     if (workingSession && typeof workingSession === "object") bundle.workingSession = workingSession;
     const attached = await window.AISystem6ProjectDiskBackup.attachIntegrity(bundle);

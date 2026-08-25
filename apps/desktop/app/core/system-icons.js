@@ -331,6 +331,18 @@ const systemIconPaths = {
     <path d="M12 9h8M12 14h8M12 19h6" />
     <path d="M16 8v17" />
   `,
+  /* 文字亮室 is a proof set up to be looked at closely: a sheet standing on an
+     easel with a proof mark on it. It must not read as another page — Quick
+     Draft is a page with a bolt and TeachText is a plain ruled page — so the
+     stand is the thing that carries the meaning. */
+  lightroom: `
+    <path d="M4 6h19v14H4z" />
+    <path class="sys-icon-detail classic-ink" d="M6 8h2v2H6zM6 12h2v2H6zM6 16h2v2H6z" />
+    <path class="sys-icon-detail" d="M10 6v14" />
+    <circle class="classic-paper" cx="20" cy="20" r="6.6" />
+    <circle cx="20" cy="20" r="6" />
+    <path d="M24.3 24.3L28 28" />
+  `,
   quickDraft: `
     <path d="M8 5h16v22H8z" />
     <path d="M12 10h8M12 14h6" />
@@ -579,10 +591,12 @@ const classicPlusSystemIconPaths = {
 };
 
 const classicOnlyModernFallbackIconId = {
+  lightroom: "quickDraft",
   imagePromptStudio: "liquidCover",
   micropolis: "applications",
   openttd: "applications",
   doom: "applications",
+  bonsaiCity: "applications",
 };
 
 // Opt-in "line-art everywhere": when enabled, every non-Classic appearance
@@ -613,7 +627,19 @@ const completeEraSystemIconIds = new Set(("startupDisk hardDisk folder document 
   + "cmfStudio soundscape scrapbook systemFolder helpFolder importUtility controlPanel chooser systemHelp dictionary "
   + "teachText writingDemo chatFile chatImport systemStatus contextPanel rebuildArticle bureaucracyMeme "
   + "endfieldTerminal documents alias systemFile multiFinderApp daHandler writingBell trashFull control localModel "
-  + "controlStrip imagePromptStudio micropolis openttd doom").split(" "));
+  + "controlStrip imagePromptStudio micropolis openttd doom lightroom bonsaiCity").split(" "));
+
+// Theme Lab and other read-only inspection surfaces consume the vocabulary
+// from the painter itself. Keep a frozen array at the boundary: exposing the
+// mutable Set would let an inspector accidentally change which ids render.
+// Four classic-only compatibility ids have no independent era asset family,
+// so they stay valid renderer inputs but are not appearance-atlas entries.
+const appearanceSystemIconIds = Object.freeze(
+  [...completeEraSystemIconIds].filter((id) => !classicOnlyModernFallbackIconId[id])
+);
+window.AISystem6SystemIcons = Object.freeze({
+  ids: appearanceSystemIconIds,
+});
 
 const platinumCoreSystemIconIds = new Set([
   "startupDisk", "hardDisk", "folder", "document", "applications", "trash", "finderApp", "fileFloppy",

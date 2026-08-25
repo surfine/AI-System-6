@@ -19,6 +19,7 @@ export function createBackupVm(seed = {}) {
     chatFolders: seed.folders || [],
     chatFiles: seed.files || [],
     projectReferences: seed.references || [],
+    imageAttachments: seed.imageAttachments || [],
   };
   const dbStub = {
     close() {},
@@ -47,6 +48,7 @@ export function createBackupVm(seed = {}) {
     chatFoldersStoreName: "chatFolders",
     chatFilesStoreName: "chatFiles",
     referenceStoreName: "projectReferences",
+    imageAttachmentsStoreName: "imageAttachments",
     indexedDbVersion: 3,
     storageVersion: 2,
     window: {
@@ -101,7 +103,7 @@ export function seedComplexProject() {
     { id: "folder-2", projectId: "p1", name: "Drafts", parentId: "folder-1" },
   ];
   const files = [
-    { id: "file-1", projectId: "p1", type: "text", name: "manuscript.md", body: "正文", folderId: "folder-1", durable: true, updatedAt: now },
+    { id: "file-1", projectId: "p1", type: "text", name: "manuscript.md", body: "正文\n\n![白板照片](aisystem6-image:img-1)\n", folderId: "folder-1", durable: true, updatedAt: now },
     { id: "file-2", projectId: "p1", type: "text", name: "notes.md", body: "笔记", folderId: "folder-2", durable: true, updatedAt: now },
     {
       id: "file-3",
@@ -142,5 +144,25 @@ export function seedComplexProject() {
     scraps,
     trash,
     references: [reference],
+    // A picture, and the two ways the project points at one: a scrap that
+    // lists it by id, and a manuscript that cites it inside its own prose.
+    // The prose pointer is the one no generic remapper can see.
+    imageAttachments: [{
+      id: "img-1",
+      projectId: "p1",
+      surface: "questionSheet",
+      name: "whiteboard.png",
+      alt: "A photographed whiteboard",
+      type: "image/png",
+      size: 2048,
+      originalDataUrl: "data:image/png;base64,AAAAoriginal",
+      previewDataUrl: "data:image/jpeg;base64,AAAApreview",
+      width: 3024,
+      height: 2016,
+      previewWidth: 960,
+      previewHeight: 640,
+      previewSize: 512,
+      createdAt: now,
+    }],
   };
 }

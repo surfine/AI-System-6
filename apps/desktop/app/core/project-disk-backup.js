@@ -3,14 +3,24 @@
 
 window.AISystem6ProjectDiskBackup = (() => {
   const format = "ai-system-6-project-disk";
-  // v4 adds the project's optional desktop scene (Working Session).
-  const currentFormatVersion = 4;
+  // v6 adds the project's pictures (画片簿).
+  const currentFormatVersion = 6;
   // Version history:
   //   v1 — no SHA-256 integrity, no counts, no documentRevisions
   //   v2 — SHA-256 integrity + counts, no documentRevisions
   //   v3 — SHA-256 integrity + counts + documentRevisions
   //   v4 — + optional workingSession (that disk's windows, selection, cursors)
-  const supportedFormatVersions = [1, 2, 3, currentFormatVersion];
+  //   v5 — + darkroomRecords: the negative, the adjustment stack, the writer's
+  //        locks and the version chain. Before v5 those lived in keyval and a
+  //        backup did not carry them, so export-then-restore lost the darkroom
+  //        without saying so.
+  //   v6 — + imageAttachments: every picture the project holds, original and
+  //        preview. Before v6 a backup carried none of them, so a restored disk
+  //        lost every Question Sheet photo, left each Scrapbook clip pointing at
+  //        a picture that was not there, and turned every manuscript figure back
+  //        into raw `![](aisystem6-image:...)` markdown. Same silence the
+  //        darkroom had before v5.
+  const supportedFormatVersions = [1, 2, 3, 4, 5, currentFormatVersion];
   const maxBackupBytes = 100 * 1024 * 1024;
   const maxArrayItems = 100000;
   const maxDepth = 40;
@@ -25,6 +35,8 @@ window.AISystem6ProjectDiskBackup = (() => {
     "projectCdItems",
     "references",
     "documentRevisions",
+    "darkroomRecords",
+    "imageAttachments",
   ]);
 
   const relationFields = Object.freeze({
@@ -49,6 +61,7 @@ window.AISystem6ProjectDiskBackup = (() => {
   const workingSessionForbiddenKeyPattern = /(api[-_]?key|secret|password|passphrase|token|credential|bearer)/i;
 
   const relationArrayFields = Object.freeze({
+    images: "imageAttachment",
     childChatIds: "file",
     sourceFileIds: "file",
     referenceIds: "reference",
@@ -174,6 +187,8 @@ window.AISystem6ProjectDiskBackup = (() => {
 
     arrayKeys.forEach((key) => {
       if (key === "documentRevisions" && formatVersion < 3) return;
+      if (key === "darkroomRecords" && formatVersion < 5) return;
+      if (key === "imageAttachments" && formatVersion < 6) return;
       if (!Array.isArray(bundle[key])) {
         error(`backup.${key}`, "field must be an array");
       }
@@ -329,6 +344,37 @@ window.AISystem6ProjectDiskBackup = (() => {
       });
     }
 
+    if (formatVersion >= 5) {
+      // One record per document, keyed by the document rather than by an id of
+      // its own — the same shape the keyval store uses. A record pointing at a
+      // file this backup does not contain is a broken restore, not a warning:
+      // it would come back as a darkroom belonging to nothing.
+      const documentsSeen = new Set();
+      bundle.darkroomRecords.forEach((record, recordIndex) => {
+        const path = `backup.darkroomRecords[${recordIndex}]`;
+        if (!isPlainObject(record)) {
+          error(path, "darkroom record must be an object");
+          return;
+        }
+        const documentId = recordId(record.documentId);
+        if (!documentId) {
+          error(`${path}.documentId`, "darkroom record documentId is required");
+        } else if (!ids.file?.has(documentId)) {
+          error(`${path}.documentId`, `darkroom record references missing file ${documentId}`);
+        } else if (documentsSeen.has(documentId)) {
+          error(`${path}.documentId`, `duplicate darkroom record for document ${documentId}`);
+        } else {
+          documentsSeen.add(documentId);
+        }
+        for (const field of ["negative", "composite"]) {
+          if (typeof record[field] !== "string") error(`${path}.${field}`, "must be a string");
+        }
+        for (const field of ["adjustmentLayers", "protectedRanges", "versions"]) {
+          if (!Array.isArray(record[field])) error(`${path}.${field}`, "must be an array");
+        }
+      });
+    }
+
     const visiting = new Set();
     const visited = new Set();
     const foldersById = new Map(bundle.folders.map((folder) => [folder.id, folder]));
@@ -362,6 +408,10 @@ window.AISystem6ProjectDiskBackup = (() => {
         arrayKeys.forEach((key) => {
           // v2 ships counts without documentRevisions (revisions arrived in v3).
           if (key === "documentRevisions" && formatVersion < 3) return;
+          // Same for the darkroom, which arrived in v5.
+          if (key === "darkroomRecords" && formatVersion < 5) return;
+          if (key === "imageAttachments" && formatVersion < 6) return;
+      if (key === "imageAttachments" && formatVersion < 6) return;
           if (Number(bundle.counts[key]) !== bundle[key].length) {
             error(`backup.counts.${key}`, "count does not match the array");
           }
@@ -410,6 +460,12 @@ window.AISystem6ProjectDiskBackup = (() => {
     // v3 always carries the revision array; legacy sources migrate to an
     // explicit empty set rather than silently omitting the field.
     if (!Array.isArray(copy.documentRevisions)) copy.documentRevisions = [];
+    // v5 the same way: a disk where nothing was ever developed exports an
+    // explicit empty set, so "no darkroom" and "field forgotten" stay apart.
+    if (!Array.isArray(copy.darkroomRecords)) copy.darkroomRecords = [];
+    // v6 the same way: a disk with no pictures exports an explicit empty set, so
+    // "no pictures" and "field forgotten" stay apart.
+    if (!Array.isArray(copy.imageAttachments)) copy.imageAttachments = [];
     // The desktop scene stays optional: an absent field means "no scene", not
     // "empty scene", so re-exported legacy backups keep their exact shape.
     if (!isPlainObject(copy.workingSession)) delete copy.workingSession;
@@ -535,6 +591,7 @@ window.AISystem6ProjectDiskBackup = (() => {
       projectCdItem: new Map(),
       reference: new Map(),
       revision: new Map(),
+      imageAttachment: new Map(),
     };
     const definitions = [
       ["folder", bundle.folders],
@@ -543,6 +600,7 @@ window.AISystem6ProjectDiskBackup = (() => {
       ["trash", bundle.trash],
       ["projectCdItem", bundle.projectCdItems],
       ["reference", bundle.references],
+      ["imageAttachment", bundle.imageAttachments || []],
     ];
     definitions.forEach(([type, items]) => {
       items.forEach((item, index) => {
@@ -654,6 +712,10 @@ window.AISystem6ProjectDiskBackup = (() => {
 
     const importedFiles = remapRecords("file", bundle.files).map((file, index) => {
       const copy = { ...file, folderId: file.folderId || ensureDefaultFolder() };
+      // Figures cited in the body follow their picture to its new id.
+      if (typeof copy.body === "string" && copy.body.includes("aisystem6-image:")) {
+        copy.body = remapImageCitations(copy.body);
+      }
       // Remap receipt relations from the original record (single pass). The
       // generic walker above already handled scalar relation fields; the
       // receipt-specific object-id arrays are handled here under the
@@ -718,6 +780,36 @@ window.AISystem6ProjectDiskBackup = (() => {
       return copy;
     });
 
+    // A manuscript cites a picture by id INSIDE its body text, as
+    // `![alt](aisystem6-image:<id>)`. Every other pointer in a backup is a
+    // field the remapper can see; this one is prose. Rewriting it is what keeps
+    // a restored figure attached to its picture -- and remapping the picture
+    // ids without this step would break every figure in the disk, which is
+    // worse than not remapping at all.
+    function remapImageCitations(text) {
+      return String(text || "").replace(
+        /(\]\(aisystem6-image:)([^)]+)(\))/g,
+        (match, open, oldImageId, close) => {
+          const mapped = idMaps.imageAttachment.get(recordId(oldImageId));
+          return mapped ? `${open}${mapped}${close}` : match;
+        },
+      );
+    }
+
+    // A darkroom record has no id of its own — the document it belongs to IS
+    // its identity — so only the two pointers are remapped. Validation already
+    // refuses a record whose document is not in the bundle; the drop below is
+    // the belt for a caller that reached this without it, because a darkroom
+    // restored with a dead documentId belongs to nothing.
+    const importedDarkroomRecords = (bundle.darkroomRecords || []).flatMap((record) => {
+      const mappedDocumentId = idMaps.file.get(recordId(record?.documentId));
+      if (!mappedDocumentId) return [];
+      const copy = remapRelations(clone(record), idMaps);
+      copy.projectId = newProjectId;
+      copy.documentId = mappedDocumentId;
+      return [copy];
+    });
+
     return {
       project: importedProject,
       folders: importedFolders,
@@ -727,6 +819,8 @@ window.AISystem6ProjectDiskBackup = (() => {
       projectCdItems: remapRecords("projectCdItem", bundle.projectCdItems),
       references: importedReferences,
       documentRevisions: importedDocumentRevisions,
+      darkroomRecords: importedDarkroomRecords,
+      imageAttachments: remapRecords("imageAttachment", bundle.imageAttachments || []),
       workingSession: remapWorkingSession(bundle.workingSession, idMaps, newProjectId),
     };
   }

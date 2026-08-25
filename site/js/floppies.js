@@ -5,7 +5,8 @@
 // piles, so we count the disks out in the product's own File Floppy icon and
 // let the second pile run off the edge of the page.
 
-import { iconImg } from "./eras.js?v=20260814i";
+import { iconImg } from "./eras.js?v=20260820a";
+import { L, formatNumber } from "./copy.js?v=20260820a";
 
 const FLOPPY_BYTES = 1_474_560;       // one 1.44 MB disk
 // The payload is not a constant anybody types here: verify:floppy measures it
@@ -25,7 +26,7 @@ export async function initFloppies(wall) {
   if (!wall) return;
   let DESKTOP_BYTES = 2 * FLOPPY_BYTES;
   try {
-    const receipt = await (await fetch(RECEIPT + "?v=20260814i")).json();
+    const receipt = await (await fetch(RECEIPT + "?v=20260820a")).json();
     if (Number.isFinite(receipt?.bytes)) DESKTOP_BYTES = receipt.bytes;
   } catch (e) {
     // Without the receipt the section still reads: two disks is the claim.
@@ -42,8 +43,14 @@ export async function initFloppies(wall) {
   mineLabel.className = "floppy-label-line";
   // Two disks is the fact anybody can feel. The exact byte count is a receipt,
   // so it waits in the tooltip for the one visitor in a hundred who wants it.
-  mineLabel.innerHTML = `<strong>${Math.ceil(desktopDisks)}</strong> the whole desktop`;
-  mineLabel.title = `${DESKTOP_BYTES.toLocaleString("en-US")} bytes, checked by a build gate on every release.`;
+  mineLabel.innerHTML = L(
+    `<strong>${Math.ceil(desktopDisks)}</strong> the whole desktop`,
+    `<strong>${Math.ceil(desktopDisks)}</strong> 整套开机桌面`,
+  );
+  mineLabel.title = L(
+    `${formatNumber(DESKTOP_BYTES)} bytes, checked by a build gate on every release.`,
+    `${formatNumber(DESKTOP_BYTES)} 字节；每次发布都由构建门禁复测。`,
+  );
   mine.appendChild(mineDisks);
   mine.appendChild(mineLabel);
 
@@ -55,7 +62,10 @@ export async function initFloppies(wall) {
   for (let i = 0; i < SHOWN; i++) theirDisks.appendChild(iconImg("fileFloppy", 32));
   const theirLabel = document.createElement("p");
   theirLabel.className = "floppy-label-line";
-  theirLabel.innerHTML = `<strong>${modelDisks.toLocaleString("en-US")}</strong> one small model`;
+  theirLabel.innerHTML = L(
+    `<strong>${formatNumber(modelDisks)}</strong> one small model`,
+    `<strong>${formatNumber(modelDisks)}</strong> 一个小型模型`,
+  );
   theirs.appendChild(theirDisks);
   theirs.appendChild(theirLabel);
 
@@ -64,6 +74,6 @@ export async function initFloppies(wall) {
 
   const note = document.createElement("p");
   note.className = "scene-fine";
-  note.textContent = "Bring your own gigabytes. The desktop stays on two disks.";
+  note.textContent = L("Bring your own gigabytes. The desktop stays on two disks.", "模型可以占用数 GB；桌面的开机部分仍留在两张软盘里。" );
   wall.appendChild(note);
 }

@@ -605,6 +605,7 @@ function renderTimeMachineTabs(project = getActiveProject()) {
     activeId: project?.activeDocumentTabIds?.timeMachine,
     labelFor: (tab, index) => `${index + 1}. ${tab.title || t("time_machine_new_tab")}`,
     compactLabelFor: (tab) => tab.title || t("time_machine_new_tab"),
+    iconFor: () => "timeMachine",
     sublabelFor: (tab) => {
       const state = tab.state || {};
       if (state.archiveEnabled) return `${timeMachineProviderLabel(state.page?.archive?.provider || state.providerPreference)} · ${state.targetDate || t("time_machine_past")}`;
@@ -708,8 +709,10 @@ function timeMachineSetLoading(active, message = "") {
 // says them itself rather than relying on ClioTalk's details bar being open.
 function timeMachineSetStatus(message, options = {}) {
   if (!message) return;
-  // "Ready" is the absence of news, the same reading the desktop status line
-  // takes: no receipt, just the provenance the slot normally shows.
+  // "Ready" is the absence of news: no receipt, just the provenance the slot
+  // normally shows. This used to be passed on to the desk as the word itself,
+  // which worked only because the status line hid any message that matched the
+  // translated "Ready" — so the desk is told to clear instead.
   const idle = String(message).trim() === String(t("ready") || "").trim();
   if (timeMachineProvenanceEl) {
     window.clearTimeout(timeMachineReceiptTimer);
@@ -724,7 +727,9 @@ function timeMachineSetStatus(message, options = {}) {
   }
   // A failure is a notification, not just a line that scrolls past. Saying so
   // explicitly beats setStatus sniffing the wording for "failed" / "无法".
-  if (typeof setStatus === "function") {
+  if (idle) {
+    if (typeof clearStatus === "function") clearStatus();
+  } else if (typeof setStatus === "function") {
     setStatus(message, options.error === true ? { notify: true } : {});
   }
 }

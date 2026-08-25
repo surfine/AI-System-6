@@ -26,10 +26,13 @@ const {
   loadedModelContext,
   loadedModelName,
   normalizeModelList,
+  modelKindFromData,
   modelLoadStateFromData,
+  modelVisionSupportFromData,
   sameModelName,
 } = require("./lib/lmstudio-models.js");
 const { getTextWithFallback, postJsonWithFallback } = require("./lib/fetch.js");
+const { runLms } = require("./lib/lms-cli.js");
 
 /**
  * Optional download target for /api/lmstudio/setup when the local
@@ -376,6 +379,93 @@ async function unloadAllLoadedLmStudioModels(signal, options = {}) {
 }
 
 /**
+ * Ask LM Studio which of its models can read an image, and which one is
+ * already resident.
+ *
+ * This replaces guessing from a hard-coded list of names: the server knows
+ * the answer, reports it as `capabilities.vision` (v1) or `type: "vlm"` (v0),
+ * and a model whose weights are already in memory is both the fastest and the
+ * cheapest one to ask.
+ *
+ * @param {string} baseUrl
+ * @param {AbortSignal | null | undefined} signal
+ * @returns {Promise<{ id: string, loaded: boolean, visionKnown: boolean }[]>}
+ */
+async function discoverLmStudioVisionModels(baseUrl, signal) {
+  const discovered = await discoverLmStudioModels(baseUrl, signal);
+  return discovered
+    .map((item) => {
+      const id = String(item?.id || item?.key || item?.model || "").trim();
+      const vision = modelVisionSupportFromData(item);
+      return {
+        id,
+        loaded: modelLoadStateFromData(item).loaded,
+        vision: vision.vision,
+        visionKnown: vision.known,
+      };
+    })
+    .filter((item) => item.id && (item.vision || !item.visionKnown))
+    .map(({ id, loaded, visionKnown }) => ({ id, loaded, visionKnown }));
+}
+
+/**
+ * Whether a model is known to be unable to read images. Used to skip a
+ * candidate before paying to load it, rather than after it fails.
+ *
+ * @param {string} model
+ * @param {string} baseUrl
+ * @param {AbortSignal | null | undefined} signal
+ * @returns {Promise<boolean>}
+ */
+async function lmStudioModelRefusesImages(model, signal, baseUrl) {
+  const id = String(model || "").trim();
+  if (!id) return false;
+  const discovered = await discoverLmStudioModels(baseUrl, signal);
+  const match = discovered.find((item) =>
+    sameModelName(String(item?.id || item?.key || item?.model || ""), id));
+  if (!match) return false;
+  const vision = modelVisionSupportFromData(match);
+  return vision.known && !vision.vision;
+}
+
+/**
+ * Make room for one model by evicting every other resident model.
+ *
+ * A development machine does not have the memory to hold two vision models at
+ * once, and the load path alone will not prevent it: `loadLmStudioAuxModel`
+ * unloads only the *same* model's duplicate instances, so walking a candidate
+ * list loads a second set of weights beside the first. Measured on this
+ * machine: gemma-4-e4b-it (5.2 GB) and qwen3.5-4b-mlx (3.1 GB) both resident
+ * after one fallback step.
+ *
+ * Set AI_SYSTEM6_VISION_KEEP_MODELS=1 on a machine with memory to spare.
+ *
+ * @param {string} model The model that should be the only one left.
+ * @param {AbortSignal | null | undefined} signal
+ * @param {{ baseUrl?: string }} [options]
+ * @returns {Promise<string[]>} the models evicted
+ */
+async function evictOtherLmStudioModels(model, signal, options = {}) {
+  if (process.env.AI_SYSTEM6_VISION_KEEP_MODELS === "1") return [];
+  const keep = String(model || "").trim();
+  const baseUrl = String(options.baseUrl || LM_STUDIO_BASE_URL_DEFAULT).replace(/\/$/, "");
+  const discovered = await discoverLmStudioModels(baseUrl, signal);
+
+  const evicted = [];
+  for (const item of discovered) {
+    if (!modelLoadStateFromData(item).loaded) continue;
+    const id = String(item?.id || item?.key || item?.model || "").trim();
+    if (!id || sameModelName(id, keep)) continue;
+    // An embedding model is small and is needed by retrieval; evicting it
+    // would cost a reload on the next search for almost no memory back.
+    if (modelKindFromData(item, id, "") === "embedding") continue;
+    await unloadLmStudioModel(id, signal, { baseUrl, exactOnly: true });
+    evicted.push(id);
+  }
+  return evicted;
+}
+
+/**
  * Load an auxiliary LM Studio model (embedding or vision). Used both
  * by the dedicated /api/models/load-embedding route and as a side
  * effect of the chat-model load route. Mirrors `loadLmStudioAuxModel`
@@ -493,6 +583,51 @@ async function waitForLmStudioServer(signal, timeoutMs = 30000) {
     await new Promise((resolve) => setTimeout(resolve, 1000));
   }
   return false;
+}
+
+/**
+ * Ensure the fixed loopback LM Studio server is ready without choosing,
+ * loading, or downloading a model. The command and every argument are owned by
+ * the application; callers cannot turn this into a general process launcher.
+ *
+ * @param {AbortSignal | null | undefined} signal
+ * @param {{
+ *   probe?: (signal: AbortSignal | null | undefined) => Promise<boolean>,
+ *   runCommand?: (args: string[], options?: { timeout?: number, signal?: AbortSignal | null }) => Promise<unknown>,
+ *   wait?: (signal: AbortSignal | null | undefined, timeoutMs?: number) => Promise<boolean>,
+ *   timeoutMs?: number,
+ * }} [options]
+ * @returns {Promise<{ ready: true, started: boolean, endpoint: string }>}
+ */
+async function ensureLmStudioServer(signal, options = {}) {
+  const probe = options.probe || isLmStudioServerOnline;
+  const runCommand = options.runCommand || runLms;
+  const wait = options.wait || waitForLmStudioServer;
+  const timeoutMs = Math.min(60000, Math.max(1000, Number(options.timeoutMs) || 30000));
+  if (await probe(signal)) {
+    return { ready: true, started: false, endpoint: LM_STUDIO_BASE_URL_DEFAULT };
+  }
+
+  try {
+    await runCommand(
+      ["server", "start", "--port", "1234", "--bind", "127.0.0.1"],
+      { timeout: 60000, signal }
+    );
+  } catch (error) {
+    // A second launch can win between the first probe and `lms server start`.
+    // Treat a now-ready server as success; every other CLI failure remains an
+    // error with its original structured diagnostics.
+    if (!await probe(signal)) throw error;
+    return { ready: true, started: false, endpoint: LM_STUDIO_BASE_URL_DEFAULT };
+  }
+  if (!await wait(signal, timeoutMs)) {
+    const error = /** @type {Error & { code?: string }} */ (
+      new Error("LM Studio server did not become ready.")
+    );
+    error.code = "lmstudio_server_offline";
+    throw error;
+  }
+  return { ready: true, started: true, endpoint: LM_STUDIO_BASE_URL_DEFAULT };
 }
 
 /**
@@ -720,6 +855,7 @@ module.exports = {
   classifyLmStudioProxyError,
   chooseLmStudioAutoloadModel,
   discoverLmStudioChatModels,
+  ensureLmStudioServer,
   estimateModelBudgetTokens,
   getLmStudioBudgetModel,
   getLmStudioSdkClient,
@@ -730,6 +866,9 @@ module.exports = {
   lmStudioErrorText,
   lmStudioWebSocketBaseUrl,
   loadedModelSummary,
+  discoverLmStudioVisionModels,
+  evictOtherLmStudioModels,
+  lmStudioModelRefusesImages,
   loadLmStudioAuxModel,
   unloadAllLoadedLmStudioModels,
   unloadLmStudioModel,

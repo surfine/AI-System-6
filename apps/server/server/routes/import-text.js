@@ -255,6 +255,23 @@ function isOcrOrLayoutHeavyImport(name, mimeType) {
     [".bmp", ".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif"].includes(ext);
 }
 
+// The cloud route the OCR ladder is allowed to fall back to. It exists only
+// when the writer turned cloud on and a key is actually reachable -- the same
+// condition under which this import's extracted text already goes to the cloud
+// for repair, so the image follows the text rather than opening a new door.
+function cloudVisionRouteFromOptions(options) {
+  if (!options.cloudActive || !(options.cloudApiKey || options.cloudCredentialId)) return null;
+  return {
+    active: true,
+    apiKey: options.cloudApiKey || "",
+    credentialId: options.cloudCredentialId || "",
+    baseUrl: options.cloudBaseUrl || "",
+    model: options.cloudVisionModel || "",
+    pinnedAddress: options.cloudPinnedAddress || "",
+    pinnedFamily: options.cloudPinnedFamily,
+  };
+}
+
 /**
  * @param {string} name
  * @param {string} mimeType
@@ -268,6 +285,9 @@ function isOcrOrLayoutHeavyImport(name, mimeType) {
  *   cloudPinnedAddress?: string,
  *   cloudPinnedFamily?: number,
  *   cloudModel?: string,
+ *   cloudVisionModel?: string,
+ *   cloudCredentialId?: string,
+ *   onOcrEngine?: (engine: string) => void,
  *   language?: string,
  *   modelExecution?: "client" | "server",
  *   signal?: AbortSignal,
@@ -276,6 +296,9 @@ function isOcrOrLayoutHeavyImport(name, mimeType) {
  */
 async function extractImportedText(name, mimeType, buffer, options = {}) {
   const importerMode = options.importerMode || "auto";
+  // Forwarded, not captured here: the handler owns the variable, so two
+  // imports in flight at once cannot report each other's engine.
+  const onOcrEngine = options.onOcrEngine;
   if (canTranscribeAudioImport(name, mimeType)) {
     return extractAudioTranscript(name, mimeType, buffer, {
       language: options.language,
@@ -290,6 +313,8 @@ async function extractImportedText(name, mimeType, buffer, options = {}) {
     text = importerMode === "auto"
       ? await maybePreferNativeText(name, mimeType, buffer, markitdownText, {
           allowVisionFallback: options.modelExecution !== "client",
+          cloudVision: cloudVisionRouteFromOptions(options),
+          onOcrEngine,
         })
       : markitdownText;
   } else {
@@ -300,6 +325,8 @@ async function extractImportedText(name, mimeType, buffer, options = {}) {
       ocrEngine: options.ocrEngine,
       allowOcrFallback: options.ocrEngine !== "paddle",
       allowVisionFallback: options.modelExecution !== "client",
+      cloudVision: cloudVisionRouteFromOptions(options),
+      onOcrEngine,
     });
   }
 
@@ -368,7 +395,19 @@ async function handleImportText(req, res) {
       signal,
     };
 
-    const text = await extractImportedText(name, mimeType, buffer, options);
+    // Recorded whether or not the text survives: the disclosure is about the
+
+    // image having left the machine, not about which result was kept.
+
+    let ocrReadBy = "";
+
+    const text = await extractImportedText(name, mimeType, buffer, {
+
+      ...options,
+
+      onOcrEngine: (engine) => { ocrReadBy = engine; },
+
+    });
     let subtitleTranslations = null;
     let videoTranscript = null;
     if (ext === ".srt") {
@@ -397,6 +436,10 @@ async function handleImportText(req, res) {
       text,
       subtitleTranslations,
       videoTranscript,
+      // Names the rung that read an imported image. The browser says so in the
+      // import status when it is a cloud one, so a picture never goes to a
+      // third party with the interface silent about it.
+      ocrReadBy,
       modelPostprocessRequired: options.modelExecution === "client"
         && !options.cloudActive
         && (canTranscribeAudioImport(name, mimeType) || isOcrOrLayoutHeavyImport(name, mimeType))

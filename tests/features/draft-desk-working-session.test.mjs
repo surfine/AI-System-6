@@ -35,7 +35,7 @@ const restored = runtime.testApi.restoreWorkingSession({
 
 test.assert(restored === true, "the Draft Desk Working Session restores for its owning project");
 test.assert(project.quickDraft.workspace.body === "最新稿" && draft.value === "最新稿", "a stale session workspace cannot overwrite the durable body");
-test.assert(project.quickDraft.workspace.versions.length === 1, "a stale session cannot overwrite durable Versions");
+test.assert((project.quickDraft.workspace.pendingDarkroom?.versions || []).length === 1, "a stale session cannot overwrite durable Versions");
 test.assert(project.quickDraft.workspace.materials.length === 1, "a stale session cannot overwrite durable Materials");
 test.assert(runtime.testApi.currentQuickDraftDisplayMode() === "body", "the display mode still restores");
 test.assert(runtime.form.classList.contains("is-inspector-open"), "the drawer state still restores");

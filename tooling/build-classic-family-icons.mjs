@@ -44,10 +44,16 @@ const establishedPaths = sandbox.__classicFamilyPaths;
 // hierarchy while replacing the 1-bit staircase with Retina-safe vector
 // geometry. Product-only objects continue through their semantic path source.
 const SMOOTH_SYSTEM6_PATHS = Object.freeze({
+  // Startup Disk is the same 3.5" floppy as File Floppy -- this machine boots
+  // from one -- so the two are told apart by a mark, not by a different object.
+  // The mark is the family's own idiom, not an invention: hardDisk and
+  // projectDisk below both carry a small filled circle as a drive indicator.
+  // Here it sits in the lower-left of the label panel (x 10-23, y 20-27).
   startupDisk: `
     <path d="M5 3h20l3 3v23H5z" />
     <path d="M10 3v9h13V3M10 20h13v7H10z" />
     <path class="classic-ink" d="M20 5h2v5h-2z" />
+    <circle class="classic-ink" cx="13" cy="23.5" r="1.6" />
   `,
   hardDisk: `
     <path d="M1 18.5h30v9.5H1z" />

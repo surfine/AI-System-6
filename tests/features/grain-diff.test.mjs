@@ -25,16 +25,16 @@ vm.runInContext(source, context);
 // Calls the same composition the view calls. It must not be reimplemented
 // here: a copy would keep passing while the real one drifts, which is how a
 // record-layer defect once survived a green test run.
-function reportRuns(versions, bodyText) {
+function reportRuns(versions, bodyText, options = {}) {
   const model = context.grainBodyModel(bodyText);
   const chain = { versions, indexes: versions.map((_, index) => index), passes: versions.length };
-  return context.grainRunsFromGenerations(model, context.grainGenerations(model, chain));
+  return context.grainRunsFromGenerations(model, context.grainGenerations(model, chain, options));
 }
 
-function runsForRecord(parts, bodyText) {
+function runsForRecord(parts, bodyText, options = {}) {
   const model = context.grainBodyModel(bodyText);
   const chain = context.grainChainFromRecordParts(parts);
-  return { chain, runs: context.grainRunsFromGenerations(model, context.grainGenerations(model, chain)) };
+  return { chain, runs: context.grainRunsFromGenerations(model, context.grainGenerations(model, chain, options)) };
 }
 
 // 1. No anchor, body typed by the writer: every run has generation 0.
@@ -168,5 +168,158 @@ test.assert(capped.passes === 20, "capping the chain still reports the true numb
 test.assert(capped.versions.length === 12, "the chain is capped at twelve compared versions");
 test.assert(capped.versions[0] === many[0] && capped.indexes[0] === 0, "the negative survives capping");
 test.assert(capped.indexes[capped.indexes.length - 1] === 19, "the most recent version survives capping");
+
+// Text the writer types after the last pass. The chain records what each pass
+// replaced, never what it produced, so these tokens sit in no version and used
+// to be charged to the newest pass — the writer's own new sentence was reported
+// as the model's. The delivered body is the reference that separates them.
+const negativeText = "他要的不是流程图。";
+const deliveredText = "他需要的并不是一张流程图。";
+const afterWriterTyped = "他需要的并不是一张流程图。我后来自己补了这句。";
+
+const withoutReference = runsForRecord(
+  { humanAnchor: negativeText, humanAnchorUpdatedAt: "T1", dumps: [negativeText] },
+  afterWriterTyped
+).runs;
+const strandedRun = withoutReference.find((run) => run.text.includes("我后来自己补了这句"));
+test.assert(
+  Boolean(strandedRun) && strandedRun.source === "model",
+  "without the delivered body, a sentence typed after the pass still reads as the model's"
+);
+
+const withReference = runsForRecord(
+  { humanAnchor: negativeText, humanAnchorUpdatedAt: "T1", dumps: [negativeText] },
+  afterWriterTyped,
+  { modelDelivered: deliveredText }
+).runs;
+const ownRun = withReference.find((run) => run.text.includes("我后来自己补了这句"));
+test.assert(
+  Boolean(ownRun) && ownRun.source === "author" && ownRun.generation === 0,
+  "with the delivered body, a sentence typed after the pass belongs to the writer"
+);
+test.assert(
+  withReference.some((run) => run.source === "model" && run.generation === 1),
+  "the reference does not hand the model's own rewrite back to the writer"
+);
+
+// A record written before the field existed passes an empty reference, and the
+// reading has to stay exactly as it was rather than turning every stranded
+// token into the writer's work.
+test.assert(
+  JSON.stringify(runsForRecord(
+    { humanAnchor: negativeText, humanAnchorUpdatedAt: "T1", dumps: [negativeText] },
+    afterWriterTyped,
+    { modelDelivered: "" }
+  ).runs) === JSON.stringify(withoutReference),
+  "an empty delivered body reads exactly as before the reference existed"
+);
+
+// FatBits cells. Structure is cut before sentences: a heading and a list item
+// stay whole, and a badge is never pinned across two of them.
+const cellRuns = [
+  { text: "## 交接给谁\n\n他", source: "author", generation: 0 },
+  { text: "需要的并不是一张流程图（这点很关键）", source: "model", generation: 1 },
+  { text: "。上一版没人看。\n\n- 只写三件事\n- 出事了找谁\n\n版本号是 1.0.49 不该断开。", source: "author", generation: 0 },
+];
+const cells = context.grainSentenceCells(cellRuns);
+test.assert(cells.length === 6, "structure and sentences together produce one cell each");
+test.assert(cells[0].text === "## 交接给谁", "a heading line is one cell and is never split at a stop");
+test.assert(
+  cells[1].text === "他需要的并不是一张流程图（这点很关键）。",
+  "a closing bracket and the stop after it belong to the sentence they close"
+);
+test.assert(cells[1].generation === 1, "a cell carries the deepest generation inside it");
+test.assert(
+  cells[1].parts.length === 3 && cells[1].parts[0].source === "author" && cells[1].parts[1].source === "model",
+  "a cell keeps its parts, so one rewritten clause does not make the whole sentence the model's"
+);
+test.assert(cells[2].text === "上一版没人看。" && cells[2].line === cells[1].line, "two sentences on one line are two cells on that line");
+test.assert(cells[3].text === "- 只写三件事" && cells[4].text === "- 出事了找谁", "each list item is its own cell");
+test.assert(
+  cells[5].text === "版本号是 1.0.49 不该断开。",
+  "an ASCII stop with no space after it does not split a version number"
+);
+test.assert(
+  context.grainSentenceCells([{ text: "\n\n   \n", source: "author", generation: 0 }]).length === 0,
+  "blank lines produce no cells"
+);
+
+// The offsets are what an edited cell is spliced back by, so they have to name
+// the exact span in the body — searching for the text would hit the wrong
+// sentence in a draft that repeats one.
+const cellBody = cellRuns.map((run) => run.text).join("");
+test.assert(
+  cells.every((cell) => cellBody.slice(cell.start, cell.end) === cell.text),
+  "every cell offset names its own span of the body"
+);
+const twice = context.grainSentenceCells([{ text: "一样的话。一样的话。", source: "author", generation: 0 }]);
+test.assert(
+  twice.length === 2 && twice[0].start === 0 && twice[1].start === 5,
+  "two identical sentences keep separate offsets"
+);
+
+// The histogram. It measures, it does not judge: no threshold lives here, and
+// the evidence a writer reads is their own negative beside the current body.
+const wide = context.grainHistogramForText("他要的不是流程图。是出事了找谁。上一版没人看，因为写给了流程，不是写给人，交接的时候没人翻开过它。短。");
+const flat = context.grainHistogramForText("他需要的并不是一张流程图。他真正需要的是出事了找谁。上一版的交接文档没有人看。这次要换一个写法。");
+test.assert(wide.count === 4 && flat.count === 4, "both drafts are four sentences, so the shape is the only difference");
+test.assert(wide.spread > 0 && flat.spread === 0, "a draft pulled to one sentence length has no spread left");
+test.assert(wide.longest > flat.longest && wide.shortest < flat.shortest, "flattening cuts the long sentences and pads the short ones");
+
+const buckets = wide.buckets;
+test.assert(buckets.length === 12, "the axis is twelve buckets");
+test.assert(buckets[0].from === 0 && buckets[0].to === 4 && buckets[1].from === 5, "each bucket is five characters wide");
+test.assert(buckets[11].to === 0, "the last bucket is open-ended so a long sentence is never dropped");
+test.assert(
+  buckets.reduce((sum, bucket) => sum + bucket.total, 0) === wide.count,
+  "every sentence lands in exactly one bucket"
+);
+
+const mixed = context.grainHistogram([
+  { text: "作者写的一句话。", generation: 0 },
+  { text: "模型改过的一句。", generation: 2 },
+]);
+const mixedBucket = mixed.buckets.find((bucket) => bucket.total === 2);
+test.assert(Boolean(mixedBucket) && mixedBucket.model === 1, "a bucket counts how many of its sentences the model wrote");
+test.assert(context.grainHistogram([]).count === 0 && context.grainHistogram([]).peak === 0, "an empty draft measures zero, not NaN");
+
+// The history brush finds the sentence an earlier version had in the same
+// place in the argument, not the same place in the file.
+const older = "他要的不是流程图。上一版没人看。所以这次换个写法。";
+const rewritten = "他需要的并不是一张流程图。";
+const found = context.grainAncestorSentence(rewritten, older);
+test.assert(Boolean(found) && found.text === "他要的不是流程图。", "a rewritten sentence finds the one it was rewritten from");
+test.assert(found.unchanged === false, "an ancestor that differs is offered as a restore");
+
+const moved = context.grainAncestorSentence("所以这次换个写法。", "所以这次换个写法。他要的不是流程图。");
+test.assert(Boolean(moved) && moved.unchanged === true, "a sentence that only moved reports nothing to restore");
+
+test.assert(
+  context.grainAncestorSentence("完全无关的一句话，讲的是别的事情。", older) === null,
+  "a sentence with no ancestor returns nothing rather than the nearest thing available"
+);
+test.assert(context.grainAncestorSentence("", older) === null, "an empty sentence has no ancestor");
+test.assert(context.grainAncestorSentence("他要的不是流程图。", "") === null, "an empty version has no ancestors to give");
+
+// The canvas frame measures and marks; it never removes anything, because
+// cropping is the writer choosing what to lose, one sentence at a time.
+const frameCells = [
+  { text: "一二三四五。" },
+  { text: "六七八九十。" },
+  { text: "十一十二十三。" },
+];
+const frame = context.grainCanvasFrame(frameCells, 12);
+test.assert(frame.total === 19, "the frame measures the whole draft, including what falls outside it");
+test.assert(frame.inside === 2 && frame.edge === 2, "the edge is the first sentence that no longer fits");
+test.assert(frame.marks[0].fits && frame.marks[1].fits && !frame.marks[2].fits, "every sentence is marked inside or outside, none is dropped");
+test.assert(frame.over === 7, "the overflow is stated in the same unit as the target");
+test.assert(frame.marks.length === frameCells.length, "the frame returns one mark per sentence, always");
+
+const noTarget = context.grainCanvasFrame(frameCells, 0);
+test.assert(noTarget.marks.every((mark) => mark.fits) && noTarget.edge === -1 && noTarget.over === 0, "with no target nothing is outside");
+test.assert(
+  context.grainCanvasFrame(frameCells, 12, () => 1).inside === 3,
+  "the measure is injected, so the frame counts words or seconds without knowing which"
+);
 
 test.finish();

@@ -11,7 +11,7 @@ function writingStudioExplanationLens() {
     || window.AISystem6ExplanationLens?.blankExplanationLens?.()
     || {
       id: "eli5",
-      enabled: false,
+      enabled: true,
       audience: "general-public",
       baselineKnowledge: "secondary-school",
       medium: "spoken-video",
@@ -131,19 +131,21 @@ function toggleTeachTextSurfacePreview(surface) {
   const showPreview = config.preview.classList.contains("is-hidden");
   if (showPreview) {
     refreshTeachTextSurfacePreview(surface);
-    config.input.classList.add("is-hidden");
+    // The preview is shown before the editor is hidden: the anchor measures
+    // boxes, and a hidden element has none.
     config.preview.classList.remove("is-hidden");
     container?.classList.add("is-previewing");
+    enterPreviewAtCaret(config.input, config.preview);
+    config.input.classList.add("is-hidden");
     config.preview.focus?.();
     syncTeachTextSurfacePreviewToggle(surface);
-    setStatus(t("previewing_markdown"));
   } else {
+    leavePreviewToCaret(config.input, config.preview);
     config.preview.classList.add("is-hidden");
     container?.classList.remove("is-previewing");
     config.input.classList.remove("is-hidden");
     config.input.focus();
     syncTeachTextSurfacePreviewToggle(surface);
-    setStatus(t("editing_markdown"));
   }
 }
 
@@ -191,18 +193,28 @@ function noteWritingSurfaceEdit(surface) {
 // finalized it becomes the editable text under review at the Review Desk. Phase is
 // derived live from the manuscript state (the persisted source of truth) rather
 // than stored separately, so the two can never drift apart.
+// Three route phases, one editable owner each:
+//   drafting   - Section Drafts own project.outline; the manuscript previews it.
+//   manuscript - the manuscript owns it; Section Drafts turn read-only.
+//   review     - the finalized manuscript owns it, paired with the Review Desk.
+// The manuscript phase is the route stop between them, so "To Manuscript" hands
+// over the pen instead of jumping the writer straight into review.
 function manuscriptPhase() {
   if (typeof teachTextReviewLabel === "function" && teachTextReviewLabel()) return "review";
+  if (manuscriptOwnsProjectDraft()) return "manuscript";
   return "drafting";
 }
 
-// Whether the manuscript is currently an editable owner of project.outline. In the
-// target model only the review-phase (finalized) manuscript owns the text; during
-// the transition the drafting manuscript stays owner-eligible too (Step 2 makes it
-// read-only, after which this collapses to review-only).
+// The manuscript phase is a property of the project, not of the file label: the
+// label still reads draft/AI Assisted here, because nothing has been finalized.
+function manuscriptOwnsProjectDraft(project = getActiveProject()) {
+  if (typeof teachTextPipelineLabel === "function" && !teachTextPipelineLabel()) return false;
+  return project?.manuscriptOwnsDraft === true;
+}
+
+// Whether the manuscript is currently an editable owner of project.outline.
 function manuscriptOwnsDocument() {
-  if (typeof teachTextReviewLabel === "function" && teachTextReviewLabel()) return true;
-  return typeof teachTextPipelineLabel === "function" && teachTextPipelineLabel();
+  return manuscriptPhase() !== "drafting";
 }
 
 // Enforce the single-editable-owner rule on the manuscript surface. During the
@@ -212,16 +224,57 @@ function manuscriptOwnsDocument() {
 // divergent second copy) while still allowing programmatic project→manuscript
 // writes, so a read-only drafting manuscript also emits no input events and never
 // writes back. Non-manuscript TeachText documents keep their normal editability.
-function applyManuscriptEditability() {
-  if (!teachTextBodyInput) return;
+// Whether the manuscript is currently a second editable view of project.outline.
+// The lock exists to stop a divergent copy, so it applies only while the
+// manuscript actually projects the route document: a scratch file or a
+// brand-new TeachText document is nobody's projection and must stay writable.
+function manuscriptIsLockedProjection() {
   const isManuscript = typeof isTeachTextManuscriptRole === "function"
     ? isTeachTextManuscriptRole()
     : false;
-  const lockDrafting = isManuscript && manuscriptPhase() === "drafting";
-  teachTextBodyInput.readOnly = lockDrafting;
+  if (!isManuscript) return false;
+  if (typeof shouldSyncProjectOutlineAsManuscript === "function"
+    && !shouldSyncProjectOutlineAsManuscript()) return false;
+  return manuscriptPhase() === "drafting";
+}
+
+// The mirror image: once the manuscript owns project.outline, the Section
+// Drafts become the read-only projection - otherwise the route has two editable
+// views of one document again, and the last save silently wins.
+function sectionDraftsAreLockedProjection() {
+  return manuscriptOwnsDocument();
+}
+
+// Both locks are reasons, not writes. The write lease owns the property and
+// combines every reason, so a lease refresh can no longer unlock the drafting
+// manuscript behind the route's back.
+function writingRouteReadOnlyRule(element) {
+  if (element === teachTextBodyInput) return manuscriptIsLockedProjection();
+  if (element === draftBodyInput) return sectionDraftsAreLockedProjection();
+  return false;
+}
+
+let writingRouteReadOnlyRuleRegistered = false;
+
+function applyManuscriptEditability() {
+  if (!writingRouteReadOnlyRuleRegistered && window.AISystem6WriteLease?.registerReadOnlyRule) {
+    window.AISystem6WriteLease.registerReadOnlyRule(writingRouteReadOnlyRule);
+    writingRouteReadOnlyRuleRegistered = true;
+  }
+  applySectionDraftEditability();
+  if (!teachTextBodyInput) return;
+  const lockDrafting = manuscriptIsLockedProjection();
   teachTextBodyInput.classList.toggle("manuscript-readonly", lockDrafting);
+  window.AISystem6WriteLease?.syncReadOnlySurface?.();
   // Surface who owns the text so the read-only manuscript never looks "broken".
   if (typeof updateTeachTextDeskState === "function") updateTeachTextDeskState();
+}
+
+function applySectionDraftEditability() {
+  if (!draftBodyInput) return;
+  draftBodyInput.classList.toggle("manuscript-readonly", sectionDraftsAreLockedProjection());
+  window.AISystem6WriteLease?.syncReadOnlySurface?.();
+  if (typeof updateDraftSectionLabel === "function") updateDraftSectionLabel(getActiveProject());
 }
 
 // Resolve the source-of-truth surface for a pipeline save. Ownership follows the
@@ -230,12 +283,15 @@ function applyManuscriptEditability() {
 // to the last edited surface. The manuscript is only a candidate owner when its
 // phase actually owns the document. Default to the Outline.
 function resolvePipelineSourceSurface(project = getActiveProject()) {
-  if (document.activeElement === draftBodyInput) return "draft";
+  // A read-only Section Draft can still hold focus, so the phase decides first.
+  const draftsOwnDocument = manuscriptPhase() === "drafting";
+  if (draftsOwnDocument && document.activeElement === draftBodyInput) return "draft";
   if (document.activeElement === teachTextBodyInput) {
     return manuscriptOwnsDocument() ? "manuscript" : "outline";
   }
   if (document.activeElement === outlineContentEl) return "outline";
-  if (lastEditedWritingSurface === "draft"
+  if (draftsOwnDocument
+    && lastEditedWritingSurface === "draft"
     && selectedDraftIndex >= 0
     && project?.drafts?.[selectedDraftIndex]) {
     return "draft";
@@ -250,6 +306,16 @@ function countQuestionSheetQuestions(markdown) {
     .map((line) => stripMarkdownInlineSyntax(line.replace(/^\s*(?:[-*+]|\d+[.)])\s+/, "").trim()))
     .filter((line) => /[?？]\s*$/.test(line))
     .length;
+}
+
+// What the Question Sheet's own cell says: the count it has always shown, and
+// the one load-bearing thing this sheet has not said yet. One gap at a time --
+// five listed at once is a form with marks on it again, and a score invites
+// filling boxes to raise it.
+function questionSheetCellText(markdown) {
+  const count = t("questions_count", countQuestionSheetQuestions(markdown));
+  const gap = typeof questionSheetFirstGap === "function" ? questionSheetFirstGap(markdown) : "";
+  return gap ? `${count} · ${t(`question_sheet_gap_${gap}`)}` : count;
 }
 
 function linkedManuscriptTitle(project = getActiveProject()) {
@@ -440,6 +506,29 @@ function isOutlineLinkedDraft(draft) {
     || Boolean(draft.sourceMarkdown);
 }
 
+// Ids arrive when the text becomes sections. Not on every keystroke, which
+// would fight the caret; not never, which was the bug. A focused Outline is
+// left alone entirely -- writing back into it would move the caret, and
+// stamping the record while the DOM kept the unstamped text would hand out a
+// fresh set of ids on the very next command.
+function stampOutlineSectionIds(project) {
+  if (!project) return false;
+  if (outlineContentEl && "value" in outlineContentEl && document.activeElement === outlineContentEl) return false;
+
+  const source = currentOutlineMarkdown(project);
+  if (typeof source !== "string" || !source.trim()) return false;
+
+  const stamped = ensureMarkdownSectionIds(source);
+  if (!stamped.changed) return false;
+
+  project.outline = stamped.markdown;
+  if (outlineContentEl && "value" in outlineContentEl) {
+    outlineContentEl.value = stamped.markdown;
+    outlineContentEl.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+  return true;
+}
+
 function syncDraftsFromProjectOutline(project = getActiveProject(), { preserveCurrentDraft = false } = {}) {
   if (!project) return [];
 
@@ -448,15 +537,27 @@ function syncDraftsFromProjectOutline(project = getActiveProject(), { preserveCu
   const reusableDrafts = previousDrafts.filter(isOutlineLinkedDraft);
   const manualDrafts = previousDrafts.filter((draft) => !isOutlineLinkedDraft(draft));
   const now = new Date().toISOString();
+  stampOutlineSectionIds(project);
   const blocks = normalizeOutlineDraftBlocks(getProjectOutlineDraftBlocks(project));
+  // One section, one record. Without this a draft already claimed by id could
+  // be claimed again by a later block's title, and two sections would share it.
+  const claimed = new Set();
 
   const linkedDrafts = blocks.map((block, blockIndex) => {
     const sourceIndex = Number.isFinite(Number(block.sourceOutlineIndex)) ? Number(block.sourceOutlineIndex) : blockIndex;
-    const reusable = reusableDrafts.find((draft) => (
-      Number(draft.sourceOutlineIndex) === sourceIndex
-      && String(draft.sourceOutlineSection || draft.sectionTitle || draft.title || "").trim() === block.title
-    )) || reusableDrafts.find((draft) => Number(draft.sourceOutlineIndex) === sourceIndex)
-      || reusableDrafts.find((draft) => String(draft.sourceOutlineSection || draft.sectionTitle || draft.title || "").trim() === block.title);
+    // The id first, because it is the only one of these that is an answer
+    // rather than a guess. Title and position stay as the fallback for
+    // sections written before ids existed.
+    const blockId = String(block.id || "");
+    const free = (draft) => !claimed.has(draft);
+    const reusable = (blockId && reusableDrafts.find((draft) => free(draft) && String(draft.sectionId || "") === blockId))
+      || reusableDrafts.find((draft) => free(draft)
+        && Number(draft.sourceOutlineIndex) === sourceIndex
+        && String(draft.sourceOutlineSection || draft.sectionTitle || draft.title || "").trim() === block.title)
+      || reusableDrafts.find((draft) => free(draft) && Number(draft.sourceOutlineIndex) === sourceIndex)
+      || reusableDrafts.find((draft) => free(draft)
+        && String(draft.sourceOutlineSection || draft.sectionTitle || draft.title || "").trim() === block.title);
+    if (reusable) claimed.add(reusable);
 
     const draft = reusable || {
       id: crypto.randomUUID(),
@@ -469,6 +570,7 @@ function syncDraftsFromProjectOutline(project = getActiveProject(), { preserveCu
 
     draft.title = block.title;
     draft.sectionTitle = block.title;
+    draft.sectionId = blockId || draft.sectionId || "";
     draft.sourceType = "outline-section";
     draft.sourceOutlineSection = block.title;
     draft.sourceOutlineIndex = sourceIndex;
@@ -507,6 +609,9 @@ function syncOutlineDomFromProject(project = getActiveProject()) {
     outlineContentEl.value = nextOutline;
   }
   refreshTeachTextSurfacePreview("outline");
+  // The list is a view of the same string, so it follows it. Without this the
+  // tree keeps showing the sections of whichever project was open before.
+  if (typeof outlineTreeIsOpen === "function" && outlineTreeIsOpen()) renderOutlineTree(project);
   restoreLinkedManuscriptScroll();
 }
 
@@ -544,7 +649,7 @@ function syncProjectOutlineToTeachText(project = getActiveProject(), options = {
     openWindow("teachText");
     requestAnimationFrame(() => {
       if (teachTextPipelineLabel()) {
-        showTeachTextPreview({ announce: false, focus: options.focusPreview === true, preserveScroll: false });
+        showTeachTextPreview({ focus: options.focusPreview === true, preserveScroll: false });
         restoreLinkedManuscriptScroll();
       } else {
         teachTextBodyInput.focus();
@@ -574,7 +679,7 @@ function syncLinkedTeachTextFromProject(project = getActiveProject()) {
 function previewLinkedTeachTextManuscript({ focus = false } = {}) {
   if (!teachTextPipelineLabel()) return false;
   if (!shouldSyncProjectOutlineAsManuscript()) return false;
-  showTeachTextPreview({ announce: false, focus, preserveScroll: false });
+  showTeachTextPreview({ focus, preserveScroll: false });
   restoreLinkedManuscriptScroll();
   return true;
 }
@@ -680,6 +785,7 @@ function updateProjectOutlineFromSelectedDraft(project = getActiveProject()) {
   if (block) {
     draft.title = block.title;
     draft.sectionTitle = block.title;
+    draft.sectionId = block.id || draft.sectionId || "";
     draft.sourceOutlineSection = block.title;
     draft.sourceOutlineIndex = block.sourceOutlineIndex;
     draft.sourceMarkdown = block.sourceMarkdown;
@@ -754,7 +860,7 @@ async function confirmAndApplySectionDraft(markdown, confirmKey, statusKey) {
   const preview = clipContextContent(clean, 1600);
   const result = await showSystemModal(t(confirmKey, preview), "confirm");
   if (result !== "yes") {
-    setStatus(t("ready"));
+    clearStatus();
     return false;
   }
   return applySectionDraftMarkdown(clean, { ai: true, statusKey });
@@ -824,9 +930,17 @@ function updateDraftSectionLabel(project) {
   const sections = getProjectOutlineSections(project);
   const title = draft.sourceOutlineSection || draft.sectionTitle || draft.title || t("manual_draft_title");
   const sectionIndex = sections.findIndex((section, index) => draftMatchesSection(draft, section, index) || section === title);
-  draftSectionLabelEl.textContent = sectionIndex >= 0
-    ? t("editing_section_with_count", title, sectionIndex + 1, sections.length)
-    : t("editing_section", title);
+  // Say who holds the pen, so a read-only Section Drafts window never reads as
+  // a broken one - and never claims to be "Editing" what it cannot edit.
+  const readOnly = manuscriptOwnsDocument();
+  const countKey = readOnly ? "viewing_section_with_count" : "editing_section_with_count";
+  const plainKey = readOnly ? "viewing_section" : "editing_section";
+  const label = sectionIndex >= 0
+    ? t(countKey, title, sectionIndex + 1, sections.length)
+    : t(plainKey, title);
+  draftSectionLabelEl.textContent = readOnly
+    ? `${label} · ${t("section_draft_readonly_manuscript")}`
+    : label;
 }
 
 function ensureTeachTextSurfaceProject() {
@@ -917,7 +1031,12 @@ async function advanceQuestionSheetToOutline() {
   });
   renderPipeline();
   openWindow("outline");
-  setStatus(t("question_sheet_autosaved_to_outline"));
+  const gap = typeof questionSheetFirstGap === "function"
+    ? questionSheetFirstGap(project.questionSheet || "")
+    : "";
+  setStatus(gap
+    ? `${t("question_sheet_autosaved_to_outline")} ${t(`question_sheet_gap_${gap}`)}`
+    : t("question_sheet_autosaved_to_outline"));
   requestAnimationFrame(() => outlineContentEl?.focus());
 }
 
@@ -940,6 +1059,9 @@ async function advanceOutlineToSectionDrafts() {
   const preferredIndex = Number(draftSectionSelectEl?.value || 0);
   const draftRefs = syncDraftsFromProjectOutline(project);
   selectEnsuredDraftRef(draftRefs, Number.isFinite(preferredIndex) ? preferredIndex : 0);
+  // Stepping forward into the drafting phase hands the pen back to the sections.
+  project.manuscriptOwnsDraft = false;
+  applyManuscriptEditability();
   renderPipeline();
   await openWindow("sectionDrafts");
   // 起草台 = Section Drafts (editable owner) beside the read-only draft manuscript.
@@ -955,11 +1077,11 @@ async function advanceOutlineToSectionDrafts() {
   requestAnimationFrame(() => draftBodyInput?.focus());
 }
 
-// 起草台 -> 审校台: hand the drafted document into the review phase. The route
-// manuscript becomes the finalized, editable owner under review, paired beside the
-// Review Desk. Reuses the existing finalize flow (confirm + save + relink) via
-// setTeachTextFileLabel("final"); the manuscript stays open and is no longer closed.
-async function advanceDraftsToReview() {
+// 起草台 -> 正文: the drafted sections become one manuscript, and the pen moves
+// with them. This is a route stop, not a shortcut into review: nothing is
+// finalized, the file label still reads draft/AI Assisted, and the Review Desk
+// stays shut until the writer asks for it from the manuscript.
+async function advanceDraftsToManuscript() {
   const project = ensureTeachTextSurfaceProject();
   if (!project) {
     setStatus(t("no_project_mounted"));
@@ -980,27 +1102,93 @@ async function advanceDraftsToReview() {
   if (typeof createDocumentRevision === "function") {
     createDocumentRevision({ origin: "system", operation: "phase-advance" });
   }
+  project.manuscriptOwnsDraft = true;
+  project.updatedAt = new Date().toISOString();
+  applyManuscriptEditability();
+  saveDeskState();
+  renderPipeline();
   if (typeof activateTeachTextManuscriptTab === "function") {
     activateTeachTextManuscriptTab({ focus: false });
   }
-  // This transition's destination IS the finalized manuscript: it must own
-  // the phone screen, not stay a hidden preview behind Section Drafts.
+  // The manuscript is the destination, so on a phone it owns the screen instead
+  // of staying a hidden preview behind Section Drafts.
   mobileManuscriptForegroundRequested = true;
+  await openWindow("teachText");
+  hideTeachTextPreviewForManuscriptEditing();
+  setStatus(t("drafts_autosaved_to_manuscript"));
+  requestAnimationFrame(() => teachTextBodyInput?.focus());
+}
+
+// 正文 -> 审校台: hand the finished manuscript into the review phase. Reuses the
+// existing finalize flow (confirm + save + relink) via setTeachTextFileLabel,
+// which pairs the Review Desk beside the finalized manuscript.
+async function advanceManuscriptToReview() {
+  const project = ensureTeachTextSurfaceProject();
+  if (!project) {
+    setStatus(t("no_project_mounted"));
+    openWindow("projects");
+    return;
+  }
+
+  savePipelineData();
+  if (typeof teachTextReviewLabel === "function" && teachTextReviewLabel()) {
+    // Already finalized: this is a way back to the desk, not a second finalize.
+    if (typeof openReviewDesk === "function") openReviewDesk("style");
+    return;
+  }
+  if (!teachTextBodyInput?.value.trim()) {
+    setStatus(t("review_desk_requires_final"));
+    await openWindow("teachText");
+    requestAnimationFrame(() => teachTextBodyInput?.focus());
+    return;
+  }
+
+  if (typeof createDocumentRevision === "function") {
+    createDocumentRevision({ origin: "system", operation: "phase-advance" });
+  }
   await openWindow("teachText");
   if (typeof setTeachTextFileLabel === "function") {
     await setTeachTextFileLabel("final", { persist: true });
   }
-  // Finalization opens the paired Review Desk, which becomes the last raised
-  // surface. Restore the route's documented destination on phones only after
-  // the confirmation and save have completed; otherwise the finalized,
-  // editable manuscript is immediately hidden behind the review surface.
-  if (typeof isPortraitDocumentFlow === "function"
-    && isPortraitDocumentFlow()
-    && typeof teachTextReviewLabel === "function"
-    && teachTextReviewLabel()) {
-    mobileManuscriptForegroundRequested = true;
-    await openWindow("teachText");
+}
+
+// The way back out of the manuscript phase. Ownership returns to the sections,
+// so the writer is never stuck looking at a read-only Section Drafts window with
+// no command that explains how to type in it again.
+async function returnDocumentToSectionDrafts() {
+  const project = ensureTeachTextSurfaceProject();
+  if (!project) {
+    setStatus(t("no_project_mounted"));
+    openWindow("projects");
+    return;
   }
+
+  if (manuscriptPhase() !== "manuscript") {
+    // A finalized manuscript is owned by the review phase; the way back out of
+    // review is the document status control, not this command.
+    setStatus(t("manuscript_final_owns_document"));
+    return;
+  }
+
+  savePipelineData();
+  project.manuscriptOwnsDraft = false;
+  project.updatedAt = new Date().toISOString();
+  syncDraftsFromProjectOutline(project);
+  syncDraftDomFromProject(project);
+  applyManuscriptEditability();
+  saveDeskState();
+  renderPipeline();
+  await openWindow("sectionDrafts");
+  setStatus(t("manuscript_returned_to_drafts"));
+  requestAnimationFrame(() => draftBodyInput?.focus());
+}
+
+// Opening the manuscript to write in it must not leave the drafting preview on
+// screen: the preview is the read-only projection this phase just replaced.
+function hideTeachTextPreviewForManuscriptEditing() {
+  if (!teachTextPreviewEl || teachTextPreviewEl.classList.contains("is-hidden")) return;
+  if (typeof showTeachTextEditor === "function") showTeachTextEditor({ focus: false });
+  else teachTextPreviewEl.classList.add("is-hidden");
 }
 
 async function openWritingFlowWindows() {
@@ -1075,7 +1263,9 @@ function showAdjacentSectionDraft(direction) {
 function updateOutlineSectionStatus(outlineSections) {
   const sectionCount = Array.isArray(outlineSections) ? outlineSections.length : 0;
   const label = t("outline_sections_count", sectionCount);
-  if (outlineStatusEl) outlineStatusEl.textContent = label;
+  const sheet = getActiveProject()?.questionSheet || "";
+  const gap = typeof questionSheetFirstGap === "function" ? questionSheetFirstGap(sheet) : "";
+  if (outlineStatusEl) outlineStatusEl.textContent = gap ? `${label} · ${t(`question_sheet_gap_${gap}`)}` : label;
 }
 
 function estimateVoiceoverSeconds(text) {
@@ -1114,11 +1304,11 @@ function renderPipeline() {
   // Surfaces are about to be repopulated from project state; any stale
   // last-edited marker from a previous project no longer applies.
   lastEditedWritingSurface = null;
-  syncWritingStudioEli5Ui();
   if (!project) {
     questionSheetBodyInput.value = "";
     if (questionCountEl) questionCountEl.textContent = t("questions_count", 0);
     updateQuestionSheetManuscriptTitle(null);
+    renderQuestionSheetPhotos();
     if (outlineNotesEl) {
       outlineNotesEl.classList.add("is-hidden");
       outlineNotesEl.replaceChildren();
@@ -1138,8 +1328,9 @@ function renderPipeline() {
   }
 
   questionSheetBodyInput.value = project.questionSheet || "";
-  if (questionCountEl) questionCountEl.textContent = t("questions_count", countQuestionSheetQuestions(project.questionSheet || ""));
+  if (questionCountEl) questionCountEl.textContent = questionSheetCellText(project.questionSheet || "");
   updateQuestionSheetManuscriptTitle(project);
+  renderQuestionSheetPhotos();
 
   syncDraftsFromProjectOutline(project, { preserveCurrentDraft: document.activeElement === draftBodyInput });
   syncLinkedTeachTextFromProject(project);
@@ -1393,7 +1584,6 @@ function setRebuildFlowSource(text, label) {
 }
 
 function openRebuildFlow() {
-  closeWindow("guide", true);
   renderRebuildFlow();
   openWindow("rebuildFlow");
   rebuildFlowSourceInput?.focus();
@@ -2461,14 +2651,15 @@ ${context.outlineMarkdown || context.outlineBody || cleanSectionTitle}${eli5Bloc
     if (!isAbortError(error)) {
       console.error("Drafting failed", error);
       content = "";
-      setStatus(error?.message || t("ready"));
+      if (error?.message) setStatus(error.message);
+      else clearStatus();
     }
   } finally {
     endLongTask("draft-section");
   }
 
   if (!content) {
-    setStatus(t("ready"));
+    clearStatus();
     return;
   }
 
@@ -2531,12 +2722,15 @@ async function eli5RewriteSection() {
     const result = await response.json().catch(() => ({}));
     content = stripRebuildMarkdownFence(String(result?.choices?.[0]?.message?.content || "").trim());
   } catch (error) {
-    if (!isAbortError(error)) setStatus(error?.message || t("ready"));
+    if (!isAbortError(error)) {
+      if (error?.message) setStatus(error.message);
+      else clearStatus();
+    }
   } finally {
     endLongTask("eli5-rewrite-section");
   }
   if (!content) {
-    setStatus(t("ready"));
+    clearStatus();
     return false;
   }
   return confirmAndApplySectionDraft(content, "section_draft_eli5_replace_confirm", "section_draft_eli5_applied");
@@ -2579,7 +2773,7 @@ async function eli5ReviewSection() {
     const raw = String(result?.choices?.[0]?.message?.content || "").trim();
     const data = window.AISystem6ModelTaskRuntime.parseJsonText(raw);
     if (!data || typeof data !== "object") {
-      throw new Error(currentLanguage === "zh" ? "ELI5 检查没有返回可解析的 JSON。" : "ELI5 review did not return parseable JSON.");
+      throw new Error(t("eli5_review_did_not_return_parseable"));
     }
     const markdown = window.AISystem6ModelTaskRuntime.eli5ReviewMarkdown(data, currentLanguage);
     if (typeof arrangeWindowAssistantSplit === "function") {
@@ -2590,14 +2784,483 @@ async function eli5ReviewSection() {
     if (typeof addMessage === "function") {
       addMessage("assistant", markdown);
     }
-    setStatus(t("ready"));
+    clearStatus();
     return true;
   } catch (error) {
-    if (!isAbortError(error)) setStatus(error?.message || t("ready"));
+    if (!isAbortError(error)) {
+      if (error?.message) setStatus(error.message);
+      else clearStatus();
+    }
     return false;
   } finally {
     endLongTask("eli5-review-section");
   }
+}
+
+// Every structural edit takes the same road: stamp ids so each node is
+// addressable, parse to a tree, mutate the tree, serialise, and write through
+// the one funnel the outline string already had. The string is an output now,
+// not a thing to perform surgery on.
+//
+// The tree is derived rather than stored. Markdown round-trips losslessly
+// (tests/features/outline-tree.test.mjs proves it on eleven documents), so
+// there is no second copy to migrate, to go stale, or to disagree with what
+// every other part of the route reads.
+// --- The outline as a list -----------------------------------------------
+//
+// Finder's own grammar for a tree: a row per section, subsections indented
+// under it, a disclosure triangle where there is something to disclose, and
+// reverse video for what is selected. Selection reuses the shared .is-selected
+// state class, so every appearance's own selected twin applies to it -- a
+// bespoke class here would tie on specificity and lose on source order.
+//
+// The rows are a rendering of the tree, and the tree is a reading of the
+// string. Nothing here holds state except which id is selected and which
+// sections are collapsed, both of which are about looking, not about content.
+
+let outlineTreeSelectedId = "";
+const outlineTreeCollapsed = new Set();
+
+// A section's own words plus its subsections', so a collapsed section still
+// says what is under it rather than reading as empty.
+function outlineNodeWordCount(node) {
+  const own = typeof countTextWords === "function" ? countTextWords(node.lead || "") : 0;
+  return (node.children || []).reduce((total, child) => total + outlineNodeWordCount(child), own);
+}
+
+function outlineTreeRowMarkup(node, selectedId, hasChildren, collapsed) {
+  const classes = ["outline-tree-row"];
+  if (node.level === 3) classes.push("is-child");
+  if (node.id && node.id === selectedId) classes.push("is-selected");
+
+  const twisty = hasChildren
+    ? `<span class="outline-tree-twisty" aria-hidden="true">${collapsed ? "▶" : "▼"}</span>`
+    : `<span class="outline-tree-twisty" aria-hidden="true"></span>`;
+  const title = escapeHtml(node.title || t("new_outline_section"));
+  // Finder's Size column, and for the same reason: it says which section is
+  // still a shell. A count, never a target -- the target was dropped because a
+  // deficit meter multiplies pressure, and this is a fact about what is there.
+  const words = outlineNodeWordCount(node);
+  const size = words ? `<span class="outline-tree-size">${escapeHtml(t("outline_tree_words", words))}</span>`
+    : `<span class="outline-tree-size outline-tree-size-empty">${escapeHtml(t("outline_tree_shell"))}</span>`;
+
+  return `<button type="button" class="${classes.join(" ")}" role="treeitem" data-outline-id="${escapeHtml(node.id)}"`
+    + ` aria-level="${node.level - 1}"${hasChildren ? ` aria-expanded="${collapsed ? "false" : "true"}"` : ""}>`
+    + `${twisty}<span class="outline-tree-grip" aria-hidden="true"></span>`
+    + `<span class="outline-tree-title">${title}</span>${size}</button>`;
+}
+
+function renderOutlineTree(project = getActiveProject()) {
+  if (!outlineTreeEl) return;
+
+  const tree = markdownOutlineTree(currentOutlineMarkdown(project) || "");
+  if (!tree.sections.length) {
+    outlineTreeEl.innerHTML = `<p class="empty-folder-note">${escapeHtml(t("outline_tree_empty"))}</p>`;
+    return;
+  }
+
+  const rows = [];
+  tree.sections.forEach((section) => {
+    const children = section.children || [];
+    const collapsed = outlineTreeCollapsed.has(section.id);
+    rows.push(outlineTreeRowMarkup(section, outlineTreeSelectedId, children.length > 0, collapsed));
+    if (collapsed) return;
+    children.forEach((child) => rows.push(outlineTreeRowMarkup(child, outlineTreeSelectedId, false, false)));
+  });
+  outlineTreeEl.innerHTML = rows.join("");
+}
+
+function outlineTreeVisibleIds() {
+  return Array.from(outlineTreeEl?.querySelectorAll("[data-outline-id]") || [])
+    .map((row) => row.dataset.outlineId)
+    .filter(Boolean);
+}
+
+function selectOutlineTreeRow(id) {
+  outlineTreeSelectedId = String(id || "");
+  renderOutlineTree();
+  outlineTreeEl?.querySelector(".outline-tree-row.is-selected")?.scrollIntoView({ block: "nearest" });
+}
+
+function moveOutlineTreeSelection(step) {
+  const ids = outlineTreeVisibleIds();
+  if (!ids.length) return;
+  const at = ids.indexOf(outlineTreeSelectedId);
+  const next = at < 0 ? 0 : Math.max(0, Math.min(ids.length - 1, at + step));
+  selectOutlineTreeRow(ids[next]);
+}
+
+// Restructuring goes through the same road every other structural edit takes.
+// The selection follows the node rather than the position: after a move, the
+// writer is still on the thing they moved.
+function restructureOutlineTree(operation) {
+  const project = getActiveProject();
+  if (!project || !outlineTreeSelectedId) return false;
+
+  const id = outlineTreeSelectedId;
+  const edit = applyOutlineTreeEdit(project, (tree) => operation(tree, id));
+  if (!edit) {
+    setStatus(t("outline_tree_refused"));
+    return false;
+  }
+
+  saveDeskState();
+  renderPipeline();
+  // A node demoted into a collapsed section would otherwise vanish: the writer
+  // moves something and it is simply not there any more. Whatever it landed
+  // inside gets opened, so a move is always visible.
+  const landed = outlineTreeFind(markdownOutlineTree(currentOutlineMarkdown(project) || ""), id);
+  if (landed?.parent?.id) outlineTreeCollapsed.delete(landed.parent.id);
+  selectOutlineTreeRow(id);
+  return true;
+}
+
+// Switching views is not switching documents: the same Markdown is behind
+// both, so the tree can be opened and closed without anything being saved,
+// converted, or lost.
+function outlineEditorShell() {
+  return outlineContentEl?.closest(".mde-surface") || outlineContentEl;
+}
+
+function outlineTreeIsOpen() {
+  return Boolean(outlineTreeEl && !outlineTreeEl.classList.contains("is-hidden"));
+}
+
+// Which view the Outline opens in. The list is the default now: the sections
+// are the thing, and the text is how they are stored. A writer who prefers the
+// text keeps it -- the preference is theirs, not the document's, so it lives
+// beside the focus mode rather than in the project record.
+const OUTLINE_VIEW_STORAGE_KEY = "ai-system6-outline-view";
+
+function storedOutlineView() {
+  let stored = "";
+  try {
+    stored = String(localStorage.getItem(OUTLINE_VIEW_STORAGE_KEY) || "").trim();
+  } catch {}
+  return stored === "text" ? "text" : "tree";
+}
+
+function rememberOutlineView(view) {
+  try {
+    localStorage.setItem(OUTLINE_VIEW_STORAGE_KEY, view);
+  } catch {}
+}
+
+function setOutlineTreeOpen(open, { remember = true, focus = true } = {}) {
+  if (!outlineTreeEl || !outlineContentEl) return;
+
+  const container = outlineTreeEl.closest(".teachtext-editor-container");
+  if (open) {
+    if (outlinePreviewEl && !outlinePreviewEl.classList.contains("is-hidden")) {
+      toggleTeachTextSurfacePreview("outline");
+    }
+    renderOutlineTree();
+    outlineTreeEl.classList.remove("is-hidden");
+    // The shell, not the textarea. The ink is painted on a sibling overlay
+    // inside .mde-surface, so hiding the textarea alone leaves the words on
+    // screen with the tree underneath them.
+    outlineEditorShell().classList.add("is-hidden");
+    container?.classList.add("is-outlining");
+    if (focus) outlineTreeEl.focus();
+  } else {
+    outlineTreeEl.classList.add("is-hidden");
+    outlineEditorShell().classList.remove("is-hidden");
+    container?.classList.remove("is-outlining");
+    if (focus) outlineContentEl.focus();
+  }
+  if (remember) rememberOutlineView(open ? "tree" : "text");
+  if (typeof updateMenuState === "function") updateMenuState();
+}
+
+function toggleOutlineTreeView() {
+  setOutlineTreeOpen(!outlineTreeIsOpen());
+  setStatus(t(outlineTreeIsOpen() ? "outline_tree_opened" : "outline_tree_closed"));
+}
+
+// Enter and a double click take the writer to that section in the text view.
+// The two views are the same document, so "go to it" is a scroll, not a
+// conversion.
+function revealOutlineSectionInText(id) {
+  const markdown = currentOutlineMarkdown() || "";
+  const node = outlineTreeFind(markdownOutlineTree(markdown), id)?.node;
+  if (!node) return;
+
+  setOutlineTreeOpen(false);
+  const heading = markdownOutlineHeading(node);
+  const at = markdown.indexOf(heading);
+  if (at < 0 || !outlineContentEl) return;
+  outlineContentEl.selectionStart = at;
+  outlineContentEl.selectionEnd = at + heading.length;
+  outlineContentEl.dispatchEvent(new Event("select"));
+}
+
+// Every structural move is a menu command as well as a gesture. Dragging is a
+// desktop accelerator; the commands are the path that works with a keyboard,
+// with a screen reader, and on a phone -- which has no Option key to hold, and
+// where a list that scrolls cannot also have rows that drag.
+function outlineTreeCommand(operation) {
+  if (!outlineTreeSelectedId) {
+    setStatus(t("outline_tree_select_first"));
+    return;
+  }
+  restructureOutlineTree(operation);
+}
+
+// A list that scrolls under a finger cannot also have rows that drag it:
+// touch-action is decided when the gesture begins, not when we work out what
+// the finger meant. So the row carries a grip. The grip alone takes the
+// gesture (touch-action: none); the rest of the row keeps panning, so the list
+// still scrolls. A mouse or a pen may drag from anywhere on the row, having no
+// such conflict.
+//
+// The four commands above remain the path for a keyboard and a screen reader,
+// and the one that needs no aim at all.
+let outlineDrag = null;
+
+function outlineTreeRows() {
+  return Array.from(outlineTreeEl?.querySelectorAll("[data-outline-id]") || []);
+}
+
+// Which gap the pointer is in: the number of rows whose middle is above it.
+function outlineTreeDropSlot(clientY) {
+  const rows = outlineTreeRows();
+  for (let index = 0; index < rows.length; index += 1) {
+    const rect = rows[index].getBoundingClientRect();
+    if (clientY < rect.top + (rect.height / 2)) return { rows, slot: index };
+  }
+  return { rows, slot: rows.length };
+}
+
+// A section can only land among sections; a subsection only among the children
+// of some section. The dragged row is still in the list while it is being
+// dragged, so the index counts it -- outlineTreeMoveTo takes that off again.
+function outlineTreeDropTarget(rows, slot, level) {
+  const isChild = (row) => row.classList.contains("is-child");
+
+  if (level === 2) {
+    let index = 0;
+    for (let at = 0; at < slot; at += 1) if (!isChild(rows[at])) index += 1;
+    return { parentId: "", index };
+  }
+
+  let parentId = "";
+  let index = 0;
+  for (let at = 0; at < slot; at += 1) {
+    if (isChild(rows[at])) index += 1;
+    else {
+      parentId = rows[at].dataset.outlineId;
+      index = 0;
+    }
+  }
+  return parentId ? { parentId, index } : null;
+}
+
+function paintOutlineDropLine(clientY) {
+  const { rows, slot } = outlineTreeDropSlot(clientY);
+  rows.forEach((row) => row.classList.remove("is-drop-before", "is-drop-after"));
+  if (!rows.length) return;
+  if (slot >= rows.length) rows[rows.length - 1].classList.add("is-drop-after");
+  else rows[slot].classList.add("is-drop-before");
+}
+
+function endOutlineDrag() {
+  outlineTreeRows().forEach((row) => row.classList.remove("is-drop-before", "is-drop-after"));
+  outlineTreeEl?.classList.remove("is-dragging");
+  outlineDrag = null;
+}
+
+function dropOutlineDrag(id, clientY) {
+  const level = outlineTreeFind(markdownOutlineTree(currentOutlineMarkdown() || ""), id)?.node?.level || 2;
+  const { rows, slot } = outlineTreeDropSlot(clientY);
+  const target = outlineTreeDropTarget(rows, slot, level);
+  if (!target) {
+    setStatus(t("outline_tree_refused"));
+    return;
+  }
+  restructureOutlineTree((tree, nodeId) => outlineTreeMoveTo(tree, nodeId, target.parentId, target.index));
+}
+
+function wireOutlineTreeDrag() {
+  if (!outlineTreeEl) return;
+
+  outlineTreeEl.addEventListener("pointerdown", (event) => {
+    const row = event.target.closest?.("[data-outline-id]");
+    if (!row || event.target.closest(".outline-tree-twisty")) return;
+    // A finger has to start on the grip; anything else it does here is a scroll.
+    if (event.pointerType === "touch" && !event.target.closest(".outline-tree-grip")) return;
+    outlineDrag = { id: row.dataset.outlineId, from: event.clientY, active: false };
+  });
+
+  outlineTreeEl.addEventListener("pointermove", (event) => {
+    if (!outlineDrag) return;
+    if (!outlineDrag.active) {
+      if (Math.abs(event.clientY - outlineDrag.from) < 4) return;
+      outlineDrag.active = true;
+      // Capture on the container: selecting re-renders the rows, and a capture
+      // held by a row would die with the element that held it.
+      outlineTreeEl.setPointerCapture(event.pointerId);
+      outlineTreeEl.classList.add("is-dragging");
+      selectOutlineTreeRow(outlineDrag.id);
+    }
+    paintOutlineDropLine(event.clientY);
+  });
+
+  outlineTreeEl.addEventListener("pointerup", (event) => {
+    const drag = outlineDrag;
+    const y = event.clientY;
+    endOutlineDrag();
+    if (drag?.active) dropOutlineDrag(drag.id, y);
+  });
+
+  outlineTreeEl.addEventListener("pointercancel", endOutlineDrag);
+
+  outlineTreeEl.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && outlineDrag) endOutlineDrag();
+  });
+}
+
+// Pasting into the list. The free-text outline could take a block of Markdown
+// and sort it out later; the list must not be where that stops working.
+//
+// Pasted sections land after whatever is selected, or at the end when nothing
+// is. A subsection cannot be first at the top level, so a pasted subsection
+// arriving with no section to belong to is raised to one rather than dropped.
+function pasteOutlineMarkdown(text) {
+  const project = getActiveProject();
+  const nodes = markdownOutlineNodesFromPaste(String(text || ""));
+  if (!project || !nodes.length) return 0;
+
+  const edit = applyOutlineTreeEdit(project, (tree) => {
+    const found = outlineTreeSelectedId ? outlineTreeFind(tree, outlineTreeSelectedId) : null;
+    const anchorSection = found?.parent || found?.node || null;
+    let at = anchorSection ? tree.sections.indexOf(anchorSection) + 1 : tree.sections.length;
+
+    nodes.forEach((node) => {
+      if (node.level === 3) {
+        node.level = 2;
+        node.children = node.children || [];
+      }
+      tree.sections.splice(at, 0, node);
+      at += 1;
+    });
+    return nodes.length;
+  });
+
+  if (!edit) return 0;
+  saveDeskState();
+  renderPipeline();
+  renderOutlineTree();
+  setStatus(t("outline_tree_pasted", nodes.length));
+  return nodes.length;
+}
+
+// From the list to the desk. Section Drafts are one per `##`, so a subsection
+// takes the writer to the section that holds it -- that is where its words are
+// written. Matching by id is the whole point of ids: no title, no position.
+function writeSelectedOutlineSection() {
+  const project = getActiveProject();
+  if (!project || !outlineTreeSelectedId) {
+    setStatus(t("outline_tree_select_first"));
+    return;
+  }
+
+  const found = outlineTreeFind(markdownOutlineTree(currentOutlineMarkdown(project) || ""), outlineTreeSelectedId);
+  const sectionId = found?.parent?.id || found?.node?.id || "";
+  const refs = syncDraftsFromProjectOutline(project);
+  const index = refs.findIndex((ref) => String(ref.draft?.sectionId || "") === sectionId);
+  if (index < 0) {
+    setStatus(t("outline_tree_no_draft"));
+    return;
+  }
+
+  selectEnsuredDraftRef(refs, index);
+  if (draftSectionSelectEl) draftSectionSelectEl.value = String(index);
+  renderPipeline();
+  openWindow("sectionDrafts");
+  requestAnimationFrame(() => draftBodyInput?.focus());
+}
+
+let outlineTreeWired = false;
+function wireOutlineTree() {
+  if (outlineTreeWired || !outlineTreeEl) return;
+  outlineTreeWired = true;
+  wireOutlineTreeDrag();
+  if (storedOutlineView() === "tree") setOutlineTreeOpen(true, { remember: false, focus: false });
+
+  outlineTreeEl.addEventListener("click", (event) => {
+    const row = event.target.closest?.("[data-outline-id]");
+    if (!row) return;
+    const id = row.dataset.outlineId;
+    if (event.target.closest(".outline-tree-twisty") && row.hasAttribute("aria-expanded")) {
+      if (outlineTreeCollapsed.has(id)) outlineTreeCollapsed.delete(id);
+      else outlineTreeCollapsed.add(id);
+      renderOutlineTree();
+      return;
+    }
+    selectOutlineTreeRow(id);
+  });
+
+  outlineTreeEl.addEventListener("dblclick", (event) => {
+    const row = event.target.closest?.("[data-outline-id]");
+    if (row) revealOutlineSectionInText(row.dataset.outlineId);
+  });
+
+  outlineTreeEl.addEventListener("paste", (event) => {
+    const text = event.clipboardData?.getData("text/plain") || "";
+    if (!text.trim()) return;
+    event.preventDefault();
+    pasteOutlineMarkdown(text);
+  });
+
+  outlineTreeEl.addEventListener("keydown", (event) => {
+    const structural = event.altKey;
+    switch (event.key) {
+      case "ArrowDown":
+        event.preventDefault();
+        if (structural) restructureOutlineTree((tree, id) => outlineTreeMove(tree, id, 1));
+        else moveOutlineTreeSelection(1);
+        return;
+      case "ArrowUp":
+        event.preventDefault();
+        if (structural) restructureOutlineTree((tree, id) => outlineTreeMove(tree, id, -1));
+        else moveOutlineTreeSelection(-1);
+        return;
+      case "ArrowRight":
+        if (!structural) return;
+        event.preventDefault();
+        restructureOutlineTree(outlineTreeDemote);
+        return;
+      case "ArrowLeft":
+        if (!structural) return;
+        event.preventDefault();
+        restructureOutlineTree(outlineTreePromote);
+        return;
+      case "Enter":
+        event.preventDefault();
+        if (outlineTreeSelectedId) revealOutlineSectionInText(outlineTreeSelectedId);
+        return;
+      default:
+    }
+  });
+}
+
+function applyOutlineTreeEdit(project, mutate) {
+  if (!project || typeof mutate !== "function") return null;
+
+  const stamped = ensureMarkdownSectionIds(currentOutlineMarkdown(project) || "");
+  const tree = markdownOutlineTree(stamped.markdown);
+  const result = mutate(tree);
+  if (result === false || result === null || result === undefined) return result;
+
+  // Stamped on the way out as well as in. Pasted sections can arrive carrying
+  // an id from wherever they were copied from, and two sections answering to
+  // one id is the exact failure ids were added to end. Re-stamping is
+  // idempotent, so every other edit pays nothing for it.
+  const written = ensureMarkdownSectionIds(serializeMarkdownOutlineTree(tree)).markdown;
+  const sections = setProjectOutlineMarkdown(project, written);
+  project.updatedAt = new Date().toISOString();
+  syncOutlineDomFromProject(project);
+  return { result, sections };
 }
 
 function addOutlineSection() {
@@ -2609,11 +3272,10 @@ function addOutlineSection() {
   }
 
   const nextSection = nextOutlineSectionName(project);
-  const currentMarkdown = currentOutlineMarkdown(project).trimEnd();
-  const nextMarkdown = `${currentMarkdown}${currentMarkdown ? "\n\n" : ""}## ${nextSection}`;
-  const outlineSections = setProjectOutlineMarkdown(project, nextMarkdown);
+  const edit = applyOutlineTreeEdit(project, (tree) => outlineTreeInsert(tree, { heading: nextSection }));
+  if (!edit) return;
+  const outlineSections = edit.sections;
   project.flowState = { ...(project.flowState || {}), outline: getMeaningfulOutlineSections(outlineSections).length > 0 };
-  project.updatedAt = new Date().toISOString();
   saveDeskState();
   renderPipeline();
   openWindow("outline");
@@ -2689,7 +3351,7 @@ function savePipelineData() {
   if (!project) return;
 
   project.questionSheet = questionSheetBodyInput.value;
-  if (questionCountEl) questionCountEl.textContent = t("questions_count", countQuestionSheetQuestions(project.questionSheet || ""));
+  if (questionCountEl) questionCountEl.textContent = questionSheetCellText(project.questionSheet || "");
   updateQuestionSheetManuscriptTitle(project);
   let outlineSections;
   const sourceSurface = resolvePipelineSourceSurface(project);
@@ -2737,6 +3399,31 @@ function getQuestionSheetTemplate() {
   return buildQuestionSheetTemplate();
 }
 
+// The explanation lens shapes what the model is told to produce, so the route
+// exposes it the way the route exposes its other switches: one toggle in the
+// Commands menu, beside SideAsk, showing its state through aria-pressed rather
+// than by rewriting its own label. The three canned audience levels do not
+// come with it -- "接收者 / 受众" is already one of the Question Sheet's own
+// sections, and the writer's own sentence about who this is for beats a
+// dropdown of three.
+async function toggleWritingExplanationLens() {
+  const project = getActiveProject();
+  if (!project) {
+    setStatus(t("no_project_mounted"));
+    openWindow("projects");
+    return;
+  }
+
+  const current = project.explanationLens || {};
+  const next = current.enabled === false;
+  project.explanationLens = window.AISystem6ExplanationLens?.normalizeExplanationLens?.({ ...current, enabled: next })
+    || { ...current, enabled: next };
+  project.updatedAt = new Date().toISOString();
+  saveDeskState();
+  if (typeof updateMenuState === "function") updateMenuState();
+  setStatus(t(next ? "quick_draft_eli5_enabled" : "quick_draft_eli5_title"));
+}
+
 function insertQuestionTemplate() {
   const project = getActiveProject();
   if (!project) {
@@ -2772,48 +3459,4 @@ function updateFlowGuideChecklist({ render = true } = {}) {
   if (render) renderPipeline();
 }
 
-function syncWritingStudioEli5Ui() {
-  const lens = writingStudioExplanationLens();
-  const toggle = document.querySelector("[data-writing-eli5-enabled]");
-  const baseline = document.querySelector("[data-writing-eli5-baseline]");
-  const baselineWrap = document.querySelector("[data-writing-eli5-baseline-wrap]");
-  const menu = document.querySelector(".writing-eli5-menu");
-  const summary = document.querySelector(".writing-eli5-menu > summary");
-  if (toggle) toggle.checked = lens.enabled === true;
-  if (baseline) baseline.value = lens.baselineKnowledge || "secondary-school";
-  if (baselineWrap) baselineWrap.hidden = lens.enabled !== true;
-  if (summary) summary.textContent = lens.enabled ? t("quick_draft_eli5_enabled") : t("quick_draft_eli5_title");
-  if (menu) menu.classList.toggle("is-on", lens.enabled === true);
-  document.querySelectorAll(".writing-eli5-action").forEach((button) => {
-    button.hidden = lens.enabled !== true;
-  });
-}
-
-async function updateWritingStudioEli5Lens(nextLens = {}) {
-  const project = getActiveProject();
-  if (!project) return false;
-  const current = project.explanationLens || {};
-  project.explanationLens = window.AISystem6ExplanationLens?.normalizeExplanationLens?.({
-    ...current,
-    ...nextLens,
-  }) || { ...current, ...nextLens };
-  project.updatedAt = new Date().toISOString();
-  saveDeskState();
-  syncWritingStudioEli5Ui();
-  return true;
-}
-
-let writingStudioEli5Wired = false;
-function wireWritingStudioEli5Controls() {
-  if (writingStudioEli5Wired) return;
-  writingStudioEli5Wired = true;
-  document.querySelector("[data-writing-eli5-enabled]")?.addEventListener("change", (event) => {
-    void updateWritingStudioEli5Lens({ enabled: event.target.checked === true });
-  });
-  document.querySelector("[data-writing-eli5-baseline]")?.addEventListener("change", (event) => {
-    void updateWritingStudioEli5Lens({ baselineKnowledge: event.target.value });
-  });
-  syncWritingStudioEli5Ui();
-}
-
-wireWritingStudioEli5Controls();
+wireOutlineTree();

@@ -1,4 +1,4 @@
-import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
+import { createFeatureTest, read, windowApp } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("soundscape");
 const source = read("app/features/soundscape.js");
@@ -12,6 +12,7 @@ const runtimeManifest = read("tooling/runtime-manifest.mjs");
 const config = read("app/core/config.js");
 const actions = read("app/core/actions.js");
 const windowManager = read("app/core/window-manager.js");
+const windowRegistrySource = read("app/core/window-registry.js");
 const multiFinder = read("app/core/multi-finder.js");
 const menus = read("app/data/menus.js");
 const app = read("app.js");
@@ -27,15 +28,21 @@ const zh = read("app/data/translations-zh.js");
 test.assertIncludes(html, 'data-window="soundscape"', "Soundscape has a real System 6 window");
 test.assertIncludes(html, 'data-action="open-soundscape"', "Applications has a static Soundscape launcher");
 test.assertIncludes(app, 'action: "open-soundscape"', "dynamic Applications listings include Soundscape");
-test.assertIncludes(multiFinder, 'soundscape: "soundscape"', "the window owns a MultiFinder application");
+test.assert(windowApp("soundscape") === "soundscape", "the window owns a MultiFinder application");
 test.assertIncludes(menus, "soundscape: soundscapeMenus", "Soundscape owns its menu set");
 test.assertIncludes(source, '"open-soundscape"', "the launcher opens the System 6 window through its registered command");
 test.assertIncludes(source, "SOUNDSCAPE_COMMAND_NAMES", "the Soundscape menu commands are registered with the application");
 test.assertIncludes(actions, 'registerLazyCommand?.("open-soundscape",{ensure:ensureSoundscapeModule})', "the launcher loads Soundscape before dispatching");
 test.assertIncludes(runtimeManifest, '"app/features/soundscape.js"', "the module is a lazy runtime path");
 test.assertNotIncludes(html, 'src="app/features/soundscape.js"', "the lazy feature does not inflate startup");
-test.assertIncludes(config, 'createLazyModuleLoader("AISystem6SoundscapeLoaded", ["app/features/soundscape.js"])', "the feature has one guarded lazy loader");
-test.assertIncludes(windowManager, "attach: () => window.AISystem6Soundscape?.attach?.()", "session restore reattaches the feature");
+// The stylesheet travels with the module: Soundscape is summoned, and every
+// selector left in its sheet is scoped to the window (the shared level controls
+// moved to styles/30-surfaces.css, because Quick Draft's Listen tab draws them
+// too and would have lost its styling).
+test.assertIncludes(config, 'createLazyModuleLoader("AISystem6SoundscapeLoaded", ["app/features/soundscape.js"], false, ["styles.soundscape.css"])', "the feature has one guarded lazy loader that also brings its stylesheet");
+test.assertIncludes(styleManifest, 'output: "styles.soundscape.css"', "the lazy style bundle is declared");
+test.assertNotIncludes(styleManifest, '"styles/88-soundscape.css",\n  "styles/89', "the sheet has left the boot bundle");
+test.assertIncludes(windowRegistrySource, "attach: () => window.AISystem6Soundscape?.attach?.()", "session restore reattaches the feature");
 test.assertIncludes(icons, "soundscape:", "Soundscape has a system icon in both visual languages");
 test.assertIncludes(icons, 'M8 16h3l2-6 3 12 3-10 2 7h3', "the icon uses a sound-wave landscape instead of a decorative disc");
 test.assertIncludes(icons, "const transportIconPaths = {", "transport keys share one set of 1-bit paths across both themes");

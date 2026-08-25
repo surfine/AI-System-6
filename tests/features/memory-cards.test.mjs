@@ -41,7 +41,7 @@ test.assertNotIncludes(feature, "partsByIcon", "feature code no longer assembles
 test.assertNotIncludes(feature, "sfSymbol", "hidden platform-symbol fallbacks are gone");
 
 test.assertIncludes(
-  windowManager,
+  read("app/core/window-registry.js"),
   'if (!memoryCardsHasGame()) newMemoryCardsGame();',
   "closing and reopening preserves the current game",
 );

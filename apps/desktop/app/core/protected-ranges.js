@@ -220,10 +220,80 @@ function remapLineRangesAfterSentinels(ranges = [], protectedRanges = []) {
   return merged;
 }
 
+// MacPaint shipped two selection tools and the difference is the whole idea:
+// the marquee takes the rectangle you dragged, the lasso shrink-wraps to the
+// ink inside it. A rough drag over a draft behaves like the marquee — it keeps
+// the blank line above the paragraph and the line below that the cursor only
+// grazed on its way to stopping. Protection is a promise about the writer's
+// words, so it has to snap to the words: a line joins the range only when the
+// drag actually caught text on it, not only whitespace or a line break.
+//
+// Only the edges are trimmed. A blank line in the middle of the selection was
+// deliberately swept over and stays inside the range, because the range is
+// shown to the writer as text to read and correct, and one contiguous range
+// reads while three ranges around two blank lines do not.
+function lassoLineRanges(text = "", selectionStart = 0, selectionEnd = 0) {
+  const value = String(text || "");
+  if (!value) return [];
+  const start = Math.min(Math.max(Math.floor(Number(selectionStart) || 0), 0), value.length);
+  const end = Math.min(Math.max(Math.floor(Number(selectionEnd) || 0), start), value.length);
+  if (end <= start) return [];
+  const lines = value.split("\n");
+  let firstInk = 0;
+  let lastInk = 0;
+  let offset = 0;
+  for (let index = 0; index < lines.length; index += 1) {
+    const lineStart = offset;
+    const lineEnd = lineStart + lines[index].length;
+    offset = lineEnd + 1;
+    if (lineEnd < start || lineStart > end) continue;
+    const caught = value.slice(Math.max(lineStart, start), Math.min(lineEnd, end));
+    if (!caught.trim()) continue;
+    if (!firstInk) firstInk = index + 1;
+    lastInk = index + 1;
+  }
+  return firstInk ? [{ start: firstInk, end: lastInk }] : [];
+}
+
+// A citation is a link, not a copy. Quick Draft already marks quoted material
+// in the body with the source's own id in brackets, which makes the paragraph
+// around that tag a smart object: its words came from somewhere else, so no
+// model pass may reword them, and the surface has to be able to name where
+// they came from.
+//
+// The tag marks the paragraph it sits in, because that is the unit the writer
+// pasted and the unit a citation covers.
+function citationLineRanges(text = "", sourceIds = []) {
+  const value = String(text || "");
+  if (!value) return [];
+  const lines = value.split("\n");
+  const seen = new Set();
+  const ranges = [];
+  for (const raw of sourceIds || []) {
+    const id = String(raw || "").trim();
+    if (!id) continue;
+    const tag = `[${id}]`;
+    lines.forEach((line, index) => {
+      if (!line.includes(tag)) return;
+      let first = index;
+      while (first > 0 && lines[first - 1].trim()) first -= 1;
+      let last = index;
+      while (last < lines.length - 1 && lines[last + 1].trim()) last += 1;
+      const key = `${first}:${last}:${id}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      ranges.push({ start: first + 1, end: last + 1, sourceId: id });
+    });
+  }
+  return ranges.sort((left, right) => left.start - right.start || left.end - right.end);
+}
+
 window.AISystem6ProtectedRanges = Object.freeze({
   PROTECTED_TOKEN_OPEN,
   PROTECTED_TOKEN_CLOSE,
+  citationLineRanges,
   isProtectedToken,
+  lassoLineRanges,
   protectTextWithSentinels,
   protectedToken,
   protectedTokenId,

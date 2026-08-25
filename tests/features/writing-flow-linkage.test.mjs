@@ -1,10 +1,18 @@
-// Writing-route phase ownership. Outline, Section Drafts, and the Manuscript are
-// linked views of one Markdown document (project.outline). Each route phase has
+// Writing-route phase ownership. Outline, Section Drafts, and the Manuscript
+// are views of one Markdown document (project.outline). `##` and `###` are
+// both records now, each carrying its id in its heading, and the Outline shows
+// them as a list or as text -- see tests/features/outline-tree.test.mjs. What
+// that changed is how the document is EDITED, not who owns it: Section Drafts
+// are still one per `##`, and each route phase still has
 // exactly one editable owner; every other surface showing the same text is a
 // read-only projection:
 //
 //   - drafting (manuscript state draft/ai): Section Drafts is the editable owner;
 //     the manuscript is a read-only preview (readOnly).
+//   - manuscript (project.manuscriptOwnsDraft): the manuscript is the editable
+//     owner and Section Drafts become the read-only projection. This is the route
+//     stop the spine used to skip - "To Review" from Section Drafts jumped past
+//     the manuscript and finalized it in one press.
 //   - review (manuscript state final): the finalized manuscript is the editable
 //     owner under review, paired beside the Review Desk.
 //
@@ -43,7 +51,17 @@ test.assertNotIncludes(
 // --- Drafting manuscript is a read-only preview; Section Drafts is sole owner ---
 test.assertIncludes(writingFlow, "function applyManuscriptEditability", "manuscript editability is enforced by phase");
 test.assertIncludes(writingFlow, "manuscriptPhase() === \"drafting\"", "the drafting manuscript is the read-only case");
-test.assertIncludes(writingFlow, "teachTextBodyInput.readOnly = lockDrafting;", "drafting manuscript is read-only so it cannot become a divergent second copy");
+// The route states a reason; the write lease owns the property. Two owners of
+// element.readOnly meant the last one to run won, and a lease refresh silently
+// unlocked the drafting manuscript the whole contract exists to protect.
+test.assertIncludes(writingFlow, "function writingRouteReadOnlyRule", "the route registers its lock as a reason instead of assigning readOnly");
+test.assertIncludes(writingFlow, "registerReadOnlyRule(writingRouteReadOnlyRule)", "the reason is registered with the single owner of the property");
+test.assertNotIncludes(writingFlow, "teachTextBodyInput.readOnly =", "the route never assigns the manuscript's readOnly directly");
+test.assertNotIncludes(writingFlow, "draftBodyInput.readOnly =", "the route never assigns the Section Drafts' readOnly directly");
+test.assertIncludes(writingFlow, "function manuscriptIsLockedProjection", "drafting manuscript is read-only so it cannot become a divergent second copy");
+// A scratch file is nobody's projection: the lock applied to any manuscript-role
+// document, so File > New Document opened a TeachText you could not type into.
+test.assertIncludes(writingFlow, "shouldSyncProjectOutlineAsManuscript()", "the lock applies only while the manuscript actually projects the route document");
 test.assertIncludes(documentsChat, "if (typeof applyManuscriptEditability === \"function\") applyManuscriptEditability();", "changing workflow state re-applies manuscript editability");
 
 // --- Visible owner indicator (answers the silent-divergence complaint) ---
@@ -55,16 +73,35 @@ test.assertMatches(
 );
 test.assertIncludes(writingFlow, "if (typeof updateTeachTextDeskState === \"function\") updateTeachTextDeskState();", "owner indicator refreshes when editability changes");
 
+// --- The manuscript is its own phase, not a stop the spine skips ---
+test.assertIncludes(writingFlow, 'if (manuscriptOwnsProjectDraft()) return "manuscript";', "the manuscript phase sits between drafting and review");
+test.assertIncludes(writingFlow, "function manuscriptOwnsProjectDraft", "the manuscript phase is a project fact, not a file label");
+test.assertIncludes(writingFlow, 'return manuscriptPhase() !== "drafting";', "ownership leaves Section Drafts as soon as the manuscript phase starts");
+test.assertIncludes(writingFlow, "function applySectionDraftEditability", "the drafts get the mirror-image read-only rule");
+test.assertIncludes(writingFlow, "function sectionDraftsAreLockedProjection", "a manuscript-owned document makes Section Drafts read-only, so there is never a second editable copy");
+test.assertIncludes(writingFlow, "section_draft_readonly_manuscript", "the locked Section Drafts window says who holds the text");
+test.assertIncludes(writingFlow, "const draftsOwnDocument = manuscriptPhase() === \"drafting\";", "a read-only draft holding focus cannot claim the pipeline source");
+
 // --- Next-button spine + paired workspaces ---
-test.assertIncludes(html, 'data-action="advance-drafts-to-review"', "Section Drafts has a To Review forward button");
-test.assertIncludes(actions, '"advance-drafts-to-review": advanceDraftsToReview', "the forward action is wired");
-test.assertIncludes(config, '"advanceDraftsToReview"', "the To Review action is lazy-loaded before the action table references it");
-test.assertIncludes(writingFlow, "async function advanceDraftsToReview", "advancing to review finalizes the manuscript into the review phase");
+test.assertIncludes(html, 'data-action="advance-drafts-to-manuscript"', "Section Drafts forwards to the manuscript, the route's next stop");
+test.assertIncludes(html, 'data-action="advance-manuscript-to-review"', "the manuscript carries the step into review");
+test.assertIncludes(html, 'data-action="return-document-to-section-drafts"', "the manuscript phase has a way back to the sections");
+test.assertIncludes(actions, '"advance-drafts-to-manuscript": advanceDraftsToManuscript', "the forward action is wired");
+test.assertIncludes(actions, '"advance-manuscript-to-review": advanceManuscriptToReview', "the review step is wired");
+test.assertIncludes(actions, '"return-document-to-section-drafts": returnDocumentToSectionDrafts', "the way back is wired");
+test.assertIncludes(config, '"advanceDraftsToManuscript"', "the To Manuscript action is lazy-loaded before the action table references it");
+test.assertIncludes(config, '"advanceManuscriptToReview"', "the To Review action is lazy-loaded before the action table references it");
+test.assertIncludes(writingFlow, "async function advanceDraftsToManuscript", "advancing to the manuscript hands over ownership");
+test.assertIncludes(writingFlow, "project.manuscriptOwnsDraft = true;", "advancing to the manuscript records the phase on the project");
+test.assertNotIncludes(writingFlow, 'setTeachTextFileLabel("final", { persist: true });\n  }\n  // Finalization opens', "advancing to the manuscript no longer finalizes on the way");
+test.assertIncludes(writingFlow, "async function advanceManuscriptToReview", "review finalization is its own step, taken from the manuscript");
 test.assertMatches(
   writingFlow,
-  /await setTeachTextFileLabel\("final", \{ persist: true \}\);[\s\S]*isPortraitDocumentFlow\(\)[\s\S]*teachTextReviewLabel\(\)[\s\S]*mobileManuscriptForegroundRequested = true;[\s\S]*await openWindow\("teachText"\);/,
-  "after review finalization raises its paired desk, the phone route restores the finalized manuscript foreground",
+  /async function advanceManuscriptToReview\(\)[\s\S]*await setTeachTextFileLabel\("final", \{ persist: true \}\);/,
+  "only the manuscript's own step marks the document Final and opens the paired desk",
 );
+test.assertIncludes(writingFlow, "async function returnDocumentToSectionDrafts", "the manuscript phase is reversible");
+test.assertIncludes(writingFlow, "project.manuscriptOwnsDraft = false;", "returning to the sections gives the pen back");
 test.assertIncludes(windowManager, "function arrangeActiveWritingWorkspace", "openWindow arranges whichever phase workspace is open as a manuscript pair");
 test.assertIncludes(windowManager, "function arrangeDraftingWorkspaceSplit", "drafting pairs Section Drafts beside the manuscript");
 test.assertIncludes(windowManager, "function arrangeReviewWorkspaceSplit", "review pairs the Review Desk beside the finalized manuscript");

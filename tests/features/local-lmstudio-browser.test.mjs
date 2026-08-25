@@ -29,7 +29,8 @@ const quickDraft = [
 const meme = read("app/features/bureaucracy-meme.js");
 const endfield = read("app/features/endfield-terminal.js");
 const reader = read("app/features/reader.js");
-const vision = read("app/features/teachtext-accessories.js");
+// Vision request assembly moved to the shared image-attachment module.
+const vision = read("app/core/image-attachments.js");
 const serverModelRoute = read("apps/server/server/routes/models.js");
 const serverLmStudio = read("apps/server/server/lmstudio.js");
 

@@ -26,26 +26,25 @@ let sideAskAbort = null;
 // keeps that habit and builds itself, which is also why its markup is not sitting
 // in index.html on every boot for a window most sessions never summon.
 function buildSideAskPad() {
-  const win = document.createElement("section");
-  win.className = "window sideask-pad-window is-hidden";
-  win.dataset.window = "sideAskPad";
-  win.setAttribute("aria-labelledby", "sideask-pad-title");
-  win.innerHTML = `<div class="title-bar">
-      <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
-      <h2 id="sideask-pad-title" data-i18n="sideask">SideAsk</h2>
-    </div>
-    <div class="details-bar compact-status-bar">
+  if (!window.AISystem6ApplicationShell) return null;
+  const win = window.AISystem6ApplicationShell.createWindow({
+    windowName: "sideAskPad",
+    windowClass: "sideask-pad-window",
+    labelledBy: "sideask-pad-title",
+    titleKey: "sideask",
+    title: "SideAsk",
+    resizable: false,
+    shade: false,
+    statusClass: "compact-status-bar",
+    statusHtml: `
       <span class="status-bar-leading" id="sideask-pad-status" data-i18n="ready"></span>
       <!-- The right slot of a details bar is a real control here, the same
            shape the Review Desk and Writing Flow use. It used to print this
            label while an identical button sat in the row below, which cost the
            row the width that truncated its neighbours. -->
-      <button class="btn details-bar-button status-bar-trailing" type="button" id="sideask-pad-promote" data-action="sideask-pad-promote" data-i18n="sideask_pad_promote"></button>
-    </div>
-    <div class="da-origin" id="sideask-pad-origin" hidden>
-      <span id="sideask-pad-subject"></span>
-    </div>
-    <div class="window-pane sideask-pad-pane">
+      <button class="btn details-bar-button status-bar-trailing" type="button" id="sideask-pad-promote" data-action="sideask-pad-promote" data-i18n="sideask_pad_promote"></button>`,
+    paneClass: "sideask-pad-pane",
+    paneHtml: `
       <textarea id="sideask-pad-question" rows="2" data-i18n-placeholder="sideask_pad_placeholder"></textarea>
       <div class="sideask-pad-answer" id="sideask-pad-answer" hidden>
         <p class="sideask-pad-temporary" data-i18n="sideask_pad_temporary"></p>
@@ -62,8 +61,14 @@ function buildSideAskPad() {
         <span class="spacer"></span>
         <button class="btn default" type="button" id="sideask-pad-ask" data-action="sideask-pad-ask" data-i18n="ask"></button>
       </div>
-    </div>`;
-  document.querySelector(".desktop")?.append(win);
+    `,
+  });
+  const origin = document.createElement("div");
+  origin.className = "da-origin";
+  origin.id = "sideask-pad-origin";
+  origin.hidden = true;
+  origin.innerHTML = '<span id="sideask-pad-subject"></span>';
+  win.insertBefore(origin, win.applicationPane);
   // The field drives its own buttons, and Enter asks.
   const field = win.querySelector("#sideask-pad-question");
   field.addEventListener("input", syncSideAskPad);
@@ -174,7 +179,8 @@ function showSideAskReply(text) {
   if (!text) pad.answer.querySelector(".message-grounding-strip")?.remove();
 }
 
-function openSideAskPad() {
+async function openSideAskPad() {
+  if (typeof ensureApplicationShell === "function") await ensureApplicationShell().catch(() => {});
   sideAskPad();
   openWindow("sideAskPad");
   syncSideAskPad();
@@ -384,4 +390,4 @@ async function promoteSideAskPad() {
   setStatus(t("sideask_pad_promoted"));
 }
 
-window.AISystem6Runtime?.registerApplication({id:"sideAskPad",windowName:"sideAskPad",mount:()=>sideAskPad(),restore:()=>sideAskPad(),commands:{"open-sideask-pad":{handler:()=>openSideAskPad(),isAvailable:()=>!0},"sideask-pad-ask":{handler:()=>askSideAskPad(),isAvailable:()=>!0},"sideask-pad-clear":{handler:()=>clearSideAskPad(),isAvailable:()=>!0},"sideask-pad-promote":{handler:()=>promoteSideAskPad(),isAvailable:()=>!0},"sideask-pad-interview":{handler:()=>interviewQuestionSheet(),isAvailable:()=>!0}}});
+window.AISystem6Runtime?.registerApplication({id:"sideAskPad",windowName:"sideAskPad",mount:async()=>{if(typeof ensureApplicationShell==="function")await ensureApplicationShell().catch(()=>{});return sideAskPad();},restore:async()=>{if(typeof ensureApplicationShell==="function")await ensureApplicationShell().catch(()=>{});return sideAskPad();},commands:{"open-sideask-pad":{handler:()=>openSideAskPad(),isAvailable:()=>!0},"sideask-pad-ask":{handler:()=>askSideAskPad(),isAvailable:()=>!0},"sideask-pad-clear":{handler:()=>clearSideAskPad(),isAvailable:()=>!0},"sideask-pad-promote":{handler:()=>promoteSideAskPad(),isAvailable:()=>!0},"sideask-pad-interview":{handler:()=>interviewQuestionSheet(),isAvailable:()=>!0}}});

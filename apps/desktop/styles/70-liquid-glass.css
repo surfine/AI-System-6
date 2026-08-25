@@ -3,16 +3,16 @@ body.use-liquid-glass {
      root element, and a value declared on the body would shadow that
      inherited value, so the chrome below never moved with the control.
      Every reader carries the 0.5 default in its var() fallback. */
-  --liquid-fill-tint: rgba(255, 255, 255, 0.3);
-  --liquid-toolbar-tint: rgba(255, 255, 255, 0.22);
-  --liquid-sidebar-tint: rgba(232, 240, 246, 0.46);
-  --liquid-menu-alpha: 0.88;
-  --liquid-edge-contrast: rgba(16, 17, 20, 0.14);
-  --liquid-refraction: 0.86;
-  --liquid-interaction-tint: rgba(255, 255, 255, 0.28);
-  --liquid-inactive-chrome: rgba(255, 255, 255, 0.26);
-  --liquid-content-surface: rgba(255, 255, 255, 0.12);
-  --liquid-motion-scale: 1;
+  --liquid-fill-tint: rgba(255, 255, 255, calc(0.18 + 0.24 * var(--liquid-tint-level, 0.5)));
+  --liquid-toolbar-tint: rgba(255, 255, 255, calc(0.12 + 0.2 * var(--liquid-tint-level, 0.5)));
+  --liquid-sidebar-tint: rgba(232, 240, 246, calc(0.31 + 0.3 * var(--liquid-tint-level, 0.5)));
+  --liquid-menu-alpha: calc(0.76 + 0.24 * var(--liquid-tint-level, 0.5));
+  --liquid-edge-contrast: rgba(16, 17, 20, calc(0.1 + 0.08 * var(--liquid-tint-level, 0.5)));
+  --liquid-refraction: calc(0.72 + 0.28 * var(--liquid-tint-level, 0.5));
+  --liquid-interaction-tint: rgba(255, 255, 255, calc(0.18 + 0.2 * var(--liquid-tint-level, 0.5)));
+  --liquid-inactive-chrome: rgba(255, 255, 255, calc(0.16 + 0.2 * var(--liquid-tint-level, 0.5)));
+  --liquid-content-surface: rgba(255, 255, 255, calc(0.08 + 0.08 * var(--liquid-tint-level, 0.5)));
+  --liquid-motion-scale: calc(0.8 + 0.4 * var(--liquid-tint-level, 0.5));
   /* 苹方, the Simplified system face since El Capitan. Liquid Glass is the
      only era whose Chinese type is the current one; without this the 2026
      appearance inherits the foundation stack and sets Chinese in 宋体,
@@ -62,14 +62,14 @@ body.use-liquid-glass {
   --choice-border: 1px solid rgba(16, 17, 20, 0.32);
   --choice-radius: 6px;
   --choice-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78), 0 6px 14px rgba(18, 28, 38, 0.08);
-  --scrollbar-track: rgba(255, 255, 255, 0.12);
+  --scrollbar-track: var(--liquid-content-surface);
   --scrollbar-thumb: rgba(16, 17, 20, 0.32);
   --scrollbar-button: transparent;
   --resize-affordance-clearance: 10px;
   --writing-editor-focus-bg: transparent;
-  --pane-bg: var(--liquid-pane-bg-color, rgba(255, 255, 255, 0.12));
-  --messages-bg: var(--liquid-pane-bg-color, rgba(255, 255, 255, 0.12));
-  --details-bar-bg: var(--liquid-pane-bg-color, rgba(255, 255, 255, 0.12));
+  --pane-bg: var(--liquid-pane-bg-color, var(--liquid-content-surface));
+  --messages-bg: var(--liquid-pane-bg-color, var(--liquid-content-surface));
+  --details-bar-bg: var(--liquid-pane-bg-color, var(--liquid-content-surface));
   --details-bar-border: rgba(16, 17, 20, 0.1);
   --context-panel-budget-border-top: 1px solid rgba(16, 17, 20, 0.1);
   --clio-file-chip-disabled-border: 1px solid rgba(16, 17, 20, 0.14);
@@ -162,7 +162,7 @@ body.use-liquid-glass {
     linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.28)),
     rgba(255, 255, 255, 0.28);
   --meta-label-border: 1px solid rgba(16, 17, 20, 0.16);
-  --control-section-bg: var(--liquid-pane-bg-color, rgba(255, 255, 255, 0.12));
+  --control-section-bg: var(--liquid-pane-bg-color, var(--liquid-content-surface));
   --source-info-panel-border: 0;
   --teachtext-editor-bg: transparent;
   --teachtext-editor-border: 1px solid transparent;
@@ -331,9 +331,6 @@ body.use-liquid-glass {
   --alarm-clock-mode-active-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
   --alarm-clock-section-gap: 2px;
   --clio-assistant-message-bg: transparent;
-  --clio-assistant-message-border: rgba(16, 17, 20, 0.1);
-  --clio-assistant-message-radius: 0;
-  --clio-assistant-message-shadow: none;
   /* Kept vs temporary, said in glass. A dotted 1px rule is weak and dirty on
      this material, so the distinction moves from border style to elevation:
      a temporary reply has not landed (no fill, broken hairline, no shadow and
@@ -361,16 +358,11 @@ body.use-liquid-glass {
   --clio-entry-field-radius: 14px;
   --clio-entry-field-bg: rgba(255, 255, 255, 0.55);
   --clio-entry-field-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
-  --clio-user-message-bg: rgba(255, 255, 255, 0.48);
-  --clio-user-message-border: 1px solid rgba(16, 17, 20, 0.1);
-  --clio-user-message-radius: 18px;
   --clio-user-message-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.72),
     0 6px 18px rgba(30, 43, 62, 0.06);
   --clio-welcome-bg: transparent;
   --clio-welcome-shadow: none;
-  --clio-welcome-object-bg: rgba(255, 255, 255, 0.44);
-  --clio-welcome-object-border: 1px solid rgba(255, 255, 255, 0.8);
   --clio-welcome-object-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.9),
     0 10px 24px rgba(30, 43, 62, 0.12);
@@ -400,18 +392,10 @@ body.use-liquid-glass {
   --clio-action-shadow:
     0 14px 36px rgba(30, 43, 62, 0.18),
     inset 0 1px 0 rgba(255, 255, 255, 0.86);
-  --clio-context-control-bg: rgba(255, 255, 255, 0.34);
-  --clio-context-control-border: 1px solid rgba(16, 17, 20, 0.08);
   --clio-context-control-radius: 10px;
-  --clio-context-control-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.68);
-  --clio-assembly-bg: rgba(247, 250, 255, 0.94);
-  --clio-assembly-border: 1px solid rgba(255, 255, 255, 0.74);
-  --clio-assembly-radius: 18px;
-  --clio-assembly-row-radius: 10px;
   --clio-assembly-shadow:
     0 18px 46px rgba(30, 43, 62, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.86);
-  --clio-assembly-row-bg: rgba(255, 255, 255, 0.38);
   --clio-file-chip-bg: rgba(255, 255, 255, 0.2);
   --clio-file-chip-border: 1px solid rgba(16, 17, 20, 0.06);
   --clio-file-chip-radius: 8px;
@@ -439,7 +423,7 @@ body.use-liquid-glass {
   --liquid-action-ink: rgba(16, 17, 20, 0.94);
   /* One press response for every interactive glass control, so reduced motion
      can drop the movement in one place and keep the colour change. */
-  --liquid-press-transform: translateY(1px);
+  --liquid-press-transform: translateY(calc(1px * var(--liquid-motion-scale)));
   --liquid-window-radius: 18px;
   --liquid-menu-radius: 12px;
   --liquid-card-radius-lg: 18px;
@@ -450,7 +434,6 @@ body.use-liquid-glass {
   --liquid-surface-radius-lg: 18px;
   --liquid-surface-radius-sm: 12px;
   --liquid-tab-radius: var(--liquid-window-radius);
-  --liquid-tab-close-width: 36px;
   --tdi-tab-close-size: 30px;
   --tdi-tab-close-gutter: 8px;
   --tdi-tab-close-mark-opacity: 0;
@@ -608,10 +591,10 @@ body.use-liquid-glass {
     linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.24)),
     rgba(255, 255, 255, 0.26);
   --large-mini-icon-border: 1px solid rgba(255, 255, 255, 0.58);
-  --glass-tint: rgba(255, 255, 255, 0.12);
+  --glass-tint: var(--liquid-content-surface);
   --glass-tint-strong: rgba(255, 255, 255, 0.32);
   --glass-border: rgba(255, 255, 255, 0.72);
-  --glass-edge: rgba(16, 17, 20, 0.14);
+  --glass-edge: var(--liquid-edge-contrast);
   --glass-highlight: rgba(255, 255, 255, 0.82);
   --liquid-menu-active:
     linear-gradient(180deg, rgba(16, 17, 20, 0.82), rgba(16, 17, 20, 0.64)),
@@ -622,7 +605,7 @@ body.use-liquid-glass {
   --liquid-menu-panel:
     radial-gradient(118% 150% at 8% 0%, rgba(255, 255, 255, 0.76), transparent 43%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(243, 248, 251, 0.78)),
-    rgba(248, 251, 252, 0.88);
+    rgba(248, 251, 252, var(--liquid-menu-alpha));
   --liquid-menu-panel-shadow:
     0 12px 30px rgba(18, 28, 38, 0.12),
     0 2px 8px rgba(18, 28, 38, 0.06),
@@ -670,7 +653,7 @@ body.use-liquid-glass {
   --system-titlebar-active-bg: var(--glass-title-surface);
   --system-titlebar-inactive-bg:
     linear-gradient(180deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.22)),
-    rgba(255, 255, 255, 0.26);
+    var(--liquid-inactive-chrome);
   --system-titlebar-background-origin: padding-box;
   --system-titlebar-background-clip: border-box;
   --system-titlebar-control-focus-outline: 0;
@@ -822,9 +805,7 @@ body.use-liquid-glass {
   --clio-chart-spatial-cell-height: 76px;
   --clio-chart-spatial-label-size: 11px;
   --clio-chart-spatial-value-size: 16px;
-  --stripe: linear-gradient(90deg, rgba(255, 255, 255, 0.48), rgba(255, 255, 255, 0.06));
   --mde-scrollbar-offset: 16px;
-  --system-scrollbar-button-display: none;
   --desktop-icon-column-gap: 4px;
   --desktop-icon-width: 84px;
   /* Liquid Glass desktop labels are the glass chip; values live here so the
@@ -861,52 +842,17 @@ body.use-liquid-glass {
   --liquid-disabled-control-bg:
     linear-gradient(180deg, rgba(255, 255, 255, 0.54), rgba(255, 255, 255, 0.2)),
     rgba(255, 255, 255, 0.2);
-  --liquid-disabled-control-fg: rgba(16, 17, 20, 0.42);
+  /* 0.42 measured 2.68:1 on the glass control face; 0.52 clears 3:1 and still
+     reads clearly lighter than enabled ink. */
+  --liquid-disabled-control-fg: rgba(16, 17, 20, 0.52);
   --liquid-disabled-control-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.62);
   --tdi-tab-wrap-dragging-opacity: 1;
-  --reader-tab-dragging-opacity: 1;
-  --reader-tab-active-open-border-color: rgba(16, 17, 20, 0.74);
   --reader-tab-active-open-bg:
     linear-gradient(180deg, rgba(16, 17, 20, 0.84), rgba(16, 17, 20, 0.68)),
     rgba(16, 17, 20, 0.76);
-  --reader-tab-active-open-fg: #ffffff;
-  --reader-tab-active-open-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.16),
-    0 8px 18px rgba(18, 28, 38, 0.12);
-  --reader-tab-active-open-child-fg: #ffffff;
-  --reader-tab-active-small-color: rgba(255, 255, 255, 0.72);
-  --reader-tab-drop-border-color: rgba(255, 255, 255, 0.66);
-  --reader-tab-drop-bg: rgba(255, 255, 255, 0.3);
-  --reader-tab-drop-shadow:
-    inset 3px 0 0 rgba(0, 122, 255, 0.82),
-    inset 0 1px 0 rgba(255, 255, 255, 0.66),
-    0 0 0 3px rgba(0, 122, 255, 0.08);
-  --reader-tab-dragging-open-border-color: rgba(0, 122, 255, 0.48);
-  --reader-tab-dragging-open-bg:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.48), rgba(255, 255, 255, 0.18)),
-    rgba(0, 122, 255, 0.1);
-  --reader-tab-dragging-open-fg: rgba(16, 17, 20, 0.86);
-  --reader-tab-dragging-open-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.66),
-    0 0 0 3px rgba(0, 122, 255, 0.1);
-  --reader-tab-dragging-open-transform: translateY(1px);
-  --reader-tab-active-dragging-open-border-color: rgba(0, 122, 255, 0.56);
-  --reader-tab-active-dragging-open-bg:
-    linear-gradient(180deg, rgba(16, 17, 20, 0.8), rgba(16, 17, 20, 0.62)),
-    rgba(16, 17, 20, 0.72);
-  --reader-tab-active-dragging-open-fg: #ffffff;
-  --reader-tab-active-remove-border-color: rgba(255, 255, 255, 0.28);
   --reader-tab-active-remove-bg:
     linear-gradient(180deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.12)),
     rgba(255, 255, 255, 0.18);
-  --reader-tab-active-remove-fg: rgba(255, 255, 255, 0.9);
-  --reader-tab-active-remove-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.44),
-    0 4px 12px rgba(18, 28, 38, 0.18);
-  --reader-tab-remove-hover-bg: rgba(16, 17, 20, 0.1);
-  --reader-tab-remove-hover-fg: rgba(16, 17, 20, 0.92);
-  --reader-tab-active-remove-hover-bg: rgba(255, 255, 255, 0.12);
-  --reader-tab-active-remove-hover-fg: #ffffff;
   --docmap-node-circle-fill: rgba(255, 255, 255, 0.88);
   --docmap-node-circle-stroke-width: 2.2px;
   --video-chip-border: 1px solid rgba(47, 157, 179, 0.2);
@@ -943,54 +889,12 @@ body.use-liquid-glass {
     inset 0 1px 0 rgba(255, 255, 255, 0.72),
     0 10px 28px rgba(18, 28, 38, 0.07);
   --empty-note-fg: rgba(16, 17, 20, 0.78);
-  --reader-tabs-label-padding: 4px 2px 6px;
-  --reader-tabs-label-color: rgba(16, 17, 20, 0.88);
-  --reader-tabs-label-font-size: 18px;
-  --reader-tabs-label-font-weight: 800;
-  --reader-tab-open-min-height: 58px;
-  --reader-tab-open-columns: 34px minmax(0, 1fr);
-  --reader-tab-open-gap: 12px;
-  --reader-tab-open-padding: 7px 48px 7px 16px;
-  --reader-tab-open-max-width: none;
-  --reader-tab-open-border-color: rgba(255, 255, 255, 0.58);
-  --reader-tab-open-radius: 999px;
   --reader-tab-open-bg:
     linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.22)),
     rgba(255, 255, 255, 0.26);
   --reader-tab-open-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.72),
     0 8px 22px rgba(18, 28, 38, 0.08);
-  --reader-tab-icon-width: 24px;
-  --reader-tab-icon-height: 24px;
-  --reader-tab-icon-border-color: currentColor;
-  --reader-tab-icon-bg: rgba(255, 255, 255, 0.16);
-  --reader-tab-icon-font-size: 14px;
-  --reader-tab-text-gap: 3px;
-  --reader-tab-title-font-size: 14px;
-  --reader-tab-title-font-weight: 800;
-  --reader-tab-title-line-height: 1.08;
-  --reader-tab-small-color: rgba(16, 17, 20, 0.58);
-  --reader-tab-small-font-family: var(--ui-font);
-  --reader-tab-small-font-size: 12px;
-  --reader-tab-small-opacity: 1;
-  --reader-tab-remove-right: 8px;
-  --reader-tab-remove-width: 30px;
-  --reader-tab-remove-max-width: 30px;
-  --reader-tab-remove-height: 30px;
-  --reader-tab-remove-min-height: 30px;
-  --reader-tab-remove-border: 1px solid rgba(255, 255, 255, 0.48);
-  --reader-tab-remove-radius: 999px;
-  --reader-tab-remove-bg:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0.18)),
-    rgba(255, 255, 255, 0.22);
-  --reader-tab-remove-fg: rgba(16, 17, 20, 0.78);
-  --reader-tab-remove-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.72),
-    0 4px 12px rgba(18, 28, 38, 0.16);
-  --reader-tab-remove-font-size: 18px;
-  --reader-tab-remove-font-weight: 700;
-  --reader-tab-remove-line-height: 1.2;
-  --reader-tab-remove-backdrop-filter: blur(10px) saturate(150%);
   --scrollbar-corner-bg: rgba(255, 255, 255, 0.16);
   --active-window-shadow: 0 8px 15px rgba(0, 0, 0, 0.045), 0 28px 68px rgba(18, 28, 38, 0.1);
   --card-caption-color: rgba(16, 17, 20, 0.58);
@@ -1015,7 +919,6 @@ body.use-liquid-glass {
   --menu-bar-height: 30px;
   /* Glass popovers tuck 3px under the bar's lip. */
   --menu-popover-top: calc(var(--menu-bar-height) + var(--safe-area-top) - 3px);
-  --guide-pane-gap: 12px;
   --tab-radius: 10px;
   --tab-overlap: 0px;
   --tab-bg: rgba(16, 17, 20, 0.06);
@@ -1051,7 +954,6 @@ body.use-liquid-glass {
   --memory-card-match-ring:
     inset 0 0 0 3px rgba(255, 255, 255, 0.86),
     inset 0 0 0 5px rgba(16, 17, 20, 0.62);
-  --memory-cards-muted: rgba(16, 17, 20, 0.62);
   --guide-start-card-padding: 14px 16px;
   --startup-settings-modal-padding: 28px 32px 24px;
   --startup-settings-form-gap: 18px;
@@ -1464,7 +1366,6 @@ body.use-liquid-glass {
   --time-machine-popover-divider: rgba(16, 17, 20, 0.14);
   --time-machine-calendar-day-bg: rgba(255, 255, 255, 0.74);
   --time-machine-calendar-day-border: rgba(16, 17, 20, 0.26);
-  --time-machine-time-bg: rgba(255, 255, 255, 0.18);
   --time-machine-time-active-bg:
     linear-gradient(135deg, rgba(0, 122, 255, 0.16), rgba(122, 92, 255, 0.1)),
     rgba(255, 255, 255, 0.28);
@@ -1475,7 +1376,6 @@ body.use-liquid-glass {
   --time-machine-frame-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.74),
     0 12px 32px rgba(18, 28, 38, 0.08);
-  --time-machine-live-color: rgba(16, 17, 20, 0.58);
   --time-machine-archive-color: rgba(0, 92, 210, 0.94);
   --time-machine-loading-bg: rgba(240, 246, 252, 0.78);
   --scrap-selection-actions-border: 1px solid rgba(16, 17, 20, 0.1);
@@ -1826,7 +1726,6 @@ body.use-liquid-glass {
   --cmf-thumb-active-fg: rgba(255, 255, 255, 0.96);
   --cmf-thumb-active-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 8px 18px rgba(18, 28, 38, 0.12);
   --cmf-row-divider: 1px solid rgba(16, 17, 20, 0.1);
-  --cmf-pill-bg: rgba(255, 255, 255, 0.24);
   --cmf-chip-bg: rgba(255, 255, 255, 0.22);
   --cmf-chip-selected-shadow: inset 0 0 0 2px rgba(16, 17, 20, 0.72), 0 6px 14px rgba(18, 28, 38, 0.1);
   --cmf-chip-focus-outline: 2px solid rgba(0, 122, 255, 0.56);
@@ -1899,8 +1798,6 @@ body.use-liquid-glass {
     inset 0 1px 0 rgba(255, 255, 255, 0.58),
     0 8px 20px rgba(18, 28, 38, 0.06);
   --quick-draft-sidebar-border: 1px solid rgba(255, 255, 255, 0.34);
-  --quick-draft-status-bg: rgba(255, 255, 255, 0.28);
-  --quick-draft-status-border: 1px solid rgba(16, 17, 20, 0.1);
   --quick-draft-divider-border: 1px solid rgba(16, 17, 20, 0.1);
   --quick-draft-actions-bg: rgba(255, 255, 255, 0.28);
   --quick-draft-secondary-fg: rgba(16, 17, 20, 0.68);
@@ -1930,16 +1827,9 @@ body.use-liquid-glass {
   --quick-draft-protected-fg: rgba(47, 157, 179, 0.8);
   /* 拼台 canvas overrides: quiet glass object on a faint dot grid; handles
      and the rotation handle stay the same object grammar. */
-  --quick-draft-canvas-dot: rgba(16, 17, 20, 0.12);
-  --quick-draft-canvas-object-bg: rgba(255, 255, 255, 0.72);
-  --quick-draft-canvas-object-border: 1px solid rgba(255, 255, 255, 0.62);
   --quick-draft-canvas-object-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.72),
     0 14px 34px rgba(18, 28, 38, 0.1);
-  --quick-draft-canvas-handle-bg: rgba(255, 255, 255, 0.92);
-  --quick-draft-canvas-handle-border: 1px solid rgba(47, 157, 179, 0.9);
-  --quick-draft-canvas-rotate-fg: rgba(47, 157, 179, 0.9);
-  --quick-draft-view-switch-border: 1px solid rgba(16, 17, 20, 0.22);
 
   background:
     linear-gradient(135deg, rgba(255, 255, 255, 0.56), rgba(212, 221, 228, 0.5)),
@@ -2014,7 +1904,6 @@ body.use-liquid-glass .menu-sub-popover button {
   --liquid-disabled-control-fg: rgba(16, 17, 20, 0.38);
   --liquid-disabled-control-shadow: none;
   width: calc(100% - 10px);
-  min-height: 30px;
   margin: 1px 5px;
   border-radius: 8px;
   padding-top: 5px;
@@ -2023,6 +1912,7 @@ body.use-liquid-glass .menu-sub-popover button {
   background: var(--menu-item-bg);
   color: var(--menu-item-fg);
   box-shadow: var(--menu-item-shadow);
+  min-height: 30px;
 }
 
 body.use-liquid-glass .menu-section-label {
@@ -2050,16 +1940,9 @@ body.use-liquid-glass .spine-toolbox-panel {
 }
 
 body.use-liquid-glass .writing-spine-panel {
-  border: 0;
   background: transparent;
   box-shadow: none;
-  overflow: visible;
 }
-
-body.use-liquid-glass .window {
-  overflow: hidden;
-}
-
 /* Specificity-only twin: the generic body.use-liquid-glass .window rule above
    sets box-shadow at (0,0,2,0), same as base .window.is-active, so we restate
    the active-state shadow at higher specificity. Value still lives in the
@@ -2107,7 +1990,6 @@ body.use-liquid-glass .system-modal p {
   color: rgba(16, 17, 20, 0.92);
   font-size: 16px;
   line-height: 1.45;
-  white-space: pre-line;
   overflow-wrap: break-word;
 }
 
@@ -2128,11 +2010,6 @@ body.use-liquid-glass .system-modal p::before {
   font-family: var(--title-font);
   font-size: 28px;
 }
-
-body.use-liquid-glass .system-modal p::after {
-  content: none;
-}
-
 body.use-liquid-glass .system-modal .button-row {
   justify-content: flex-end;
   gap: 10px;
@@ -2145,7 +2022,6 @@ body.use-liquid-glass .system-modal .btn {
 
 body.use-liquid-glass .finder-operation-modal {
   width: min(680px, calc(100vw - 32px));
-  padding: 0;
 }
 
 body.use-liquid-glass .finder-operation-modal form {
@@ -2230,7 +2106,6 @@ body.use-liquid-glass .docmap-markmap-svg {
 }
 
 body.use-liquid-glass .docmap-markmap-svg .markmap-link {
-  stroke-width: 3px;
   stroke-opacity: 0.9;
 }body.use-liquid-glass .reader-content > .empty-folder-note {
   --empty-note-max-width: 760px;
@@ -2265,7 +2140,6 @@ body.use-liquid-glass .window > .window-pane {
 
 body.use-liquid-glass .title-bar {
   height: auto;
-  display: grid;
   min-height: 34px;
   grid-template-columns: 18px minmax(0, 1fr) 18px;
   gap: 7px;
@@ -2281,23 +2155,18 @@ body.use-liquid-glass .title-bar {
 
 body.use-liquid-glass .title-bar h1,
 body.use-liquid-glass .title-bar h2 {
-  align-self: center;
-  justify-self: center;
   min-height: 0;
   height: auto;
-  margin: 0;
   padding: 0 10px;
   background: transparent;
   border: 0;
   color: rgba(16, 17, 20, 0.82);
-  font-size: 13px;
-  font-weight: 700;
   line-height: 18px;
+  font-weight: 700;
 }
 
 body.use-liquid-glass .window:not(.is-active) .title-bar h1,
 body.use-liquid-glass .window:not(.is-active) .title-bar h2 {
-  border: 0;
   color: rgba(16, 17, 20, 0.72);
   font-weight: 650;
 }
@@ -2334,10 +2203,8 @@ body.use-liquid-glass .resize-box {
   height: 15px;
   align-self: center;
   margin: 0;
-  padding: 0;
   border: 1px solid rgba(16, 17, 20, 0.28);
   border-radius: 50%;
-  transform: none;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.5),
     0 1px 2px rgba(18, 28, 38, 0.08);
@@ -2387,26 +2254,24 @@ body.use-liquid-glass .resize-box::after {
 }
 
 body.use-liquid-glass .window.alarm-clock-window {
-  border: var(--alarm-clock-frame-border);
   border-radius: var(--alarm-clock-frame-radius);
   background: var(--alarm-clock-surface-bg);
   box-shadow: var(--alarm-clock-frame-shadow);
   backdrop-filter: blur(12px) saturate(150%);
   -webkit-backdrop-filter: blur(12px) saturate(150%);
+  border: var(--alarm-clock-frame-border);
 }
 
 body.use-liquid-glass .grow-box {
-  right: 0;
-  bottom: 0;
   width: 28px;
   height: 28px;
-  border: 0;
   border-radius: 0;
   background: transparent;
   box-shadow: none;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   z-index: var(--z-local-chrome);
+  border: 0;
 }
 
 body.use-liquid-glass .grow-box::before {
@@ -2505,7 +2370,6 @@ body.use-liquid-glass input[type="radio"] {
   min-width: 18px;
   height: 18px;
   min-height: 18px;
-  margin: 0;
   border: 1px solid rgba(16, 17, 20, 0.32);
   border-radius: 6px;
   background:
@@ -2654,7 +2518,6 @@ body.use-liquid-glass .btn.default.is-disabled:active {
 }
 
 body.use-liquid-glass .composer {
-  border: var(--clio-composer-border);
   /* The composer is flush with the window, and the window clips its children,
      so its bottom corners must follow the window curve or the clip leaves a
      sliver of frame in each corner. The top corners stay the composer's own. */
@@ -2662,6 +2525,7 @@ body.use-liquid-glass .composer {
     var(--clio-composer-radius) var(--clio-composer-radius)
     var(--container-radius) var(--container-radius);
   background: var(--clio-composer-bg);
+  border: var(--clio-composer-border);
   box-shadow: var(--clio-composer-shadow);
   backdrop-filter: blur(22px) saturate(150%);
   -webkit-backdrop-filter: blur(22px) saturate(150%);
@@ -2669,7 +2533,6 @@ body.use-liquid-glass .composer {
 
 body.use-liquid-glass .assistant-window .composer-action-row {
   box-sizing: border-box;
-  padding-right: 0;
 }
 
 body.use-liquid-glass .window:has(> .grow-box) .window-pane > .button-row:last-child,
@@ -2677,14 +2540,12 @@ body.use-liquid-glass .window:has(> .grow-box) .teachtext-actions:last-child,
 body.use-liquid-glass .window:has(> .grow-box) .dictation-bottom-actions,
 body.use-liquid-glass .window:has(> .grow-box) .translation-pad-actions {
   box-sizing: border-box;
-  padding-right: 0;
 }
 
 body.use-liquid-glass .assistant-window .composer label {
   width: fit-content;
   min-height: auto;
   display: block;
-  padding: 0;
   border-radius: 0;
   background: transparent;
   color: rgba(16, 17, 20, 0.86);
@@ -2731,7 +2592,6 @@ body.use-liquid-glass .mde-surface > .mde-input {
 }
 
 body.use-liquid-glass .teachtext-pane textarea {
-  border: 0;
   /* Concentric with the window corner, not a second window inside it. */
   --container-inset: 12px;
   border-radius: max(0px, calc(var(--container-radius) - var(--container-inset)));
@@ -2743,7 +2603,6 @@ body.use-liquid-glass .teachtext-pane textarea {
 }
 
 body.use-liquid-glass .teachtext-pane textarea:focus {
-  border: 0;
   outline: 0;
   background: transparent;
   box-shadow: none;
@@ -2752,7 +2611,6 @@ body.use-liquid-glass .teachtext-pane textarea:focus {
 body.use-liquid-glass .question-sheet-pane textarea,
 body.use-liquid-glass .outline-content,
 body.use-liquid-glass .draft-editor textarea {
-  border: 0;
   background: rgba(255, 255, 255, 0.16);
   box-shadow: none;
   outline: 0;
@@ -2766,7 +2624,6 @@ body.use-liquid-glass .draft-editor textarea {
    on specificity, so they need no priority override. */
 body.use-liquid-glass .specialized-teachtext-preview,
 body.use-liquid-glass .review-desk-preview {
-  border: 0;
   background: var(--glass-reading-surface);
   box-shadow: none;
   outline: 0;
@@ -2827,10 +2684,7 @@ body.use-liquid-glass .chooser-panel .control-section h3 {
 }
 
 body.use-liquid-glass .chooser-source {
-  display: grid;
   grid-template-columns: 42px minmax(0, 1fr);
-  gap: 10px;
-  align-items: center;
 }
 
 body.use-liquid-glass .chooser-source .sys-icon {
@@ -2842,7 +2696,6 @@ body.use-liquid-glass .chooser-source .sys-icon {
 body.use-liquid-glass .chooser-panel .select-wrap,
 body.use-liquid-glass .chooser-panel .system-select-button {
   grid-column: 2;
-  min-width: 0;
   width: 100%;
 }
 
@@ -2874,10 +2727,6 @@ body.use-liquid-glass .find-file-pane .button-row {
   gap: 10px;
 }
 
-body.use-liquid-glass .control-panel .field-row {
-  gap: 10px;
-}
-
 body.use-liquid-glass .control-panel .control-footer {
   padding: 10px 12px;
   border: 1px solid rgba(255, 255, 255, 0.48);
@@ -2897,22 +2746,12 @@ body.use-liquid-glass .control-panel .control-footer {
 body.use-liquid-glass .memory-card:hover:not([aria-disabled="true"]) {
   border-color: rgba(16, 17, 20, 0.28);
 }
-
-body.use-liquid-glass .memory-card::after {
-  content: none;
-}
-
-body.use-liquid-glass .memory-card-back::after {
-  content: none;
-}
-
 body.use-liquid-glass .memory-card.is-face-up,
 body.use-liquid-glass .memory-card.is-matched {
   border-color: rgba(16, 17, 20, 0.28);
 }
 
 body.use-liquid-glass #memory-cards-status {
-  margin: 0;
   padding: 6px 10px;
   border: 1px solid rgba(255, 255, 255, 0.36);
   border-radius: var(--liquid-pill-radius);
@@ -2937,11 +2776,7 @@ body.use-liquid-glass .compose-tools-menu {
 }
 
 body.use-liquid-glass .compose-tools-menu button {
-  min-height: 48px;
-  grid-template-columns: 34px minmax(0, 1fr);
-  gap: 9px;
   padding: 7px 9px;
-  border: 0;
   border-radius: 10px;
   background: transparent;
   box-shadow: none;
@@ -3017,7 +2852,6 @@ body.use-liquid-glass .file-picker .file-picker-button {
 }
 
 body.use-liquid-glass .file-picker-name {
-  min-height: var(--system-button-min-height);
   border: 1px solid rgba(16, 17, 20, 0.18);
   border-radius: var(--liquid-surface-radius-sm);
   background: rgba(255, 255, 255, 0.42);
@@ -3074,7 +2908,6 @@ body.use-liquid-glass .backup-preview-section > span {
 
 body.use-liquid-glass .backup-action-row {
   grid-template-columns: minmax(0, 1fr) minmax(180px, auto);
-  align-items: center;
   gap: 12px;
 }
 
@@ -3132,6 +2965,21 @@ body.use-liquid-glass .teachtext-desk-strip span {
   border-right: 0;
   border-radius: 9px;
   background: rgba(255, 255, 255, 0.28);
+  color: rgba(16, 17, 20, 0.86);
+}
+
+/* The route's status strip is the same instrument as the desk strip above it,
+   so it takes the same glass rather than the raw paper token - otherwise the
+   two sit on each other as visibly different materials. */
+body.use-liquid-glass .window-status-strip.has-message {
+  border: 1px solid rgba(16, 17, 20, 0.14);
+  --container-inset: 11px;
+  border-radius: max(0px, calc(var(--container-radius) - var(--container-inset)));
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.56), rgba(255, 255, 255, 0.22)),
+    rgba(255, 255, 255, 0.22);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  font-family: var(--text-font);
   color: rgba(16, 17, 20, 0.86);
 }
 
@@ -3214,7 +3062,6 @@ body.use-liquid-glass .boot-screen {
 }
 
 body.use-liquid-glass .happy-mac {
-  border: var(--happy-mac-border-width) solid var(--happy-mac-border-color);
   border-radius: var(--liquid-surface-radius-sm);
   background:
     linear-gradient(rgba(16, 17, 20, 0.92), rgba(16, 17, 20, 0.92)) 16px 84px / 11px 4px no-repeat,
@@ -3227,13 +3074,11 @@ body.use-liquid-glass .happy-mac {
 }
 
 body.use-liquid-glass .happy-mac::after {
-  border: var(--happy-mac-border-width) solid var(--happy-mac-border-color);
   border-radius: 0 0 4px 4px;
   background: rgba(255, 255, 255, 0.36);
 }
 
 body.use-liquid-glass .happy-mac-face {
-  border: var(--happy-mac-face-border-width) solid var(--happy-mac-border-color);
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.62);
   box-shadow: var(--happy-mac-face-shadow);
@@ -3338,9 +3183,7 @@ body.use-liquid-glass .rebuild-progress-steps li.is-skipped::before {
 }
 
 body.use-liquid-glass .scrapbook-pane {
-  gap: 20px;
   padding: 18px 24px 22px;
-  overflow: hidden;
 }
 
 body.use-liquid-glass .scrap-editor {
@@ -3363,11 +3206,11 @@ body.use-liquid-glass .scrap-title-display {
    glass and strip the rounded transparent material. Values are single-sourced
    through the tokens. */
 body.use-liquid-glass .teachtext-editor-container {
-  overflow: hidden;
-  border: var(--teachtext-editor-border);
   border-radius: var(--teachtext-editor-radius);
   background: var(--teachtext-editor-bg);
   box-shadow: var(--teachtext-editor-shadow);
+  overflow: hidden;
+  border: var(--teachtext-editor-border);
 }
 
 body.use-liquid-glass #scrap-body-input:focus {
@@ -3394,8 +3237,8 @@ body.use-liquid-glass .finder-list-row:not(:hover):not(.is-selected) {
    The values are single-sourced through the scrap tokens in :root + the
    body.use-liquid-glass token block. */
 body.use-liquid-glass .scrap-empty-card {
-  border: var(--scrap-empty-card-border);
   background: var(--scrap-empty-card-bg);
+  border: var(--scrap-empty-card-border);
 }
 
 body.use-liquid-glass .message {
@@ -3408,7 +3251,6 @@ body.use-liquid-glass .message-content h3 {
   display: block;
   margin: 8px 0 8px;
   padding: 0 0 7px;
-  border: 0;
   border-bottom: 1px solid rgba(16, 17, 20, 0.18);
   background: transparent;
   color: rgba(16, 17, 20, 0.94);
@@ -3416,7 +3258,6 @@ body.use-liquid-glass .message-content h3 {
 }
 
 body.use-liquid-glass .message-content hr {
-  border: 0;
   border-top: 1px solid rgba(16, 17, 20, 0.14);
   margin: 10px 0;
 }
@@ -3439,11 +3280,6 @@ body.use-liquid-glass .message-content :not(pre) > code {
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.28);
 }
-
-body.use-liquid-glass .message-actions {
-  border-top: 0;
-}
-
 body.use-liquid-glass .finder-list-header {
   margin: 2px 0 6px;
   padding: 7px 10px;
@@ -3458,7 +3294,6 @@ body.use-liquid-glass .finder-list-header {
 
 body.use-liquid-glass .finder-list-group {
   margin: 6px 0 4px;
-  border: 0;
   border-radius: var(--liquid-pill-radius);
   background: rgba(255, 255, 255, 0.28);
   color: rgba(16, 17, 20, 0.72);
@@ -3527,9 +3362,7 @@ body.use-liquid-glass .finder-item.is-selected span:last-of-type,
 body.use-liquid-glass .finder-item small {
   width: 100%;
   max-width: 100%;
-  min-width: 0;
   display: block;
-  margin: 0;
   border-radius: 9px;
   background: rgba(255, 255, 255, 0.5);
   overflow: hidden;
@@ -3594,9 +3427,9 @@ body.use-liquid-glass .finder-marquee {
 }
 
 body.use-liquid-glass .desktop-icon {
-  width: var(--desktop-icon-width);
   border-radius: var(--liquid-surface-radius-lg);
   padding: var(--liquid-desktop-icon-padding);
+  width: var(--desktop-icon-width);
 }
 
 body.use-liquid-glass .desktop-icon:hover,
@@ -3617,6 +3450,13 @@ body.use-liquid-glass .spine-actions b {
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.54);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+body.use-liquid-glass .spine-actions button.holds-pen .spine-step-number {
+  background: rgba(16, 17, 20, 0.84);
+  color: #ffffff;
+  -webkit-text-fill-color: #ffffff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28);
 }
 
 body.use-liquid-glass .spine-actions .spine-step-number {
@@ -3643,7 +3483,6 @@ body.use-liquid-glass .spine-actions .spine-step-number {
 body.use-liquid-glass .desktop-app-icon span[data-liquid-label] {
   width: fit-content;
   max-width: min(104px, calc(100vw - 24px));
-  white-space: normal;
   line-height: var(--liquid-desktop-icon-label-line-height);
 }
 
@@ -3699,7 +3538,8 @@ body.use-liquid-glass .desktop-icon:hover span:last-child,
 body.use-liquid-glass .desktop-icon:focus span:last-child,
 body.use-liquid-glass .desktop-icon.is-selected span:last-child,
 body.use-liquid-glass .spine-actions button:hover b,
-body.use-liquid-glass .spine-actions button:focus-visible b {
+body.use-liquid-glass .spine-actions button:focus-visible b,
+body.use-liquid-glass .spine-actions button.is-selected b {
   background: rgba(16, 17, 20, 0.84);
   color: #ffffff;
   -webkit-text-fill-color: #ffffff;
@@ -3708,10 +3548,6 @@ body.use-liquid-glass .spine-actions button:focus-visible b {
 body.use-liquid-glass .icon,
 body.use-liquid-glass .mini-icon {
   filter: drop-shadow(0 4px 8px rgba(18, 28, 38, 0.16));
-}
-
-.sys-icon-liquid {
-  display: none;
 }
 
 body.use-liquid-glass .sys-icon-classic {
@@ -3794,13 +3630,7 @@ body.use-liquid-glass .spine-actions button:focus-visible .sys-icon {
   box-shadow: none;
   filter: drop-shadow(0 5px 9px rgba(18, 28, 38, 0.2)) saturate(1.08);
 }
-
-body.use-liquid-glass .teachtext-tabs.tdi-tabs + .details-bar {
-  border-top: 0;
-}
-
 body.use-liquid-glass .docmap-pane {
-  border-top: 0;
   background:
     linear-gradient(135deg, rgba(232, 238, 242, 0.12), rgba(235, 241, 247, 0.1)),
     rgba(255, 255, 255, 0.14);
@@ -3852,7 +3682,6 @@ body.use-liquid-glass .docmap-tree {
 }
 
 body.use-liquid-glass .docmap-markmap-frame {
-  border: 0;
   border-radius: 0;
   background: transparent;
   box-shadow: none;
@@ -3874,7 +3703,6 @@ body.use-liquid-glass .video-docmap-workbench {
 }
 
 body.use-liquid-glass .video-docmap-map {
-  border: 0;
   padding: 10px 6px 10px 10px;
   background: transparent;
   box-shadow: none;
@@ -3883,7 +3711,6 @@ body.use-liquid-glass .video-docmap-map {
 body.use-liquid-glass .video-docmap-inspector {
   gap: 12px;
   padding: 0 0 0 10px;
-  border: 0;
   border-left: 1px solid rgba(16, 17, 20, 0.1);
   border-radius: 0;
   background: transparent;
@@ -3971,9 +3798,7 @@ html:lang(zh-Hans) body.use-liquid-glass .section-drafts-window .teachtext-comma
 }
 
 body.use-liquid-glass .docmap-command-popover {
-  width: max-content;
   min-width: 300px;
-  max-width: min(420px, calc(100vw - 48px));
 }
 
 body.use-liquid-glass .teachtext-command-popover .btn,
@@ -3981,7 +3806,6 @@ body.use-liquid-glass .teachtext-command-subpopover .btn {
   min-height: 34px;
   min-width: 0;
   padding: 4px 12px;
-  justify-content: flex-start;
   border: 0;
   border-radius: 10px;
   background: transparent;
@@ -3992,9 +3816,7 @@ body.use-liquid-glass .teachtext-command-subpopover .btn {
 }
 
 body.use-liquid-glass .docmap-command-popover .btn {
-  white-space: normal;
   overflow-wrap: anywhere;
-  line-height: 1.2;
 }
 
 body.use-liquid-glass .teachtext-command-popover .btn:hover,
@@ -4035,10 +3857,8 @@ html:not(:lang(zh-Hans)) body.use-liquid-glass .section-drafts-window .details-b
 
 html:not(:lang(zh-Hans)) body.use-liquid-glass .section-draft-nav .btn {
   min-height: 46px;
-  min-width: 0;
   padding-inline: 14px;
   line-height: 1.12;
-  white-space: normal;
   overflow-wrap: normal;
 }
 
@@ -4047,8 +3867,6 @@ html:not(:lang(zh-Hans)) body.use-liquid-glass .section-draft-nav {
 }
 
 body.use-liquid-glass .specialized-command-menu .teachtext-command-popover {
-  left: 0;
-  right: auto;
   width: min(360px, calc(100vw - 48px));
   min-width: 250px;
   padding: 8px;
@@ -4071,7 +3889,6 @@ html:lang(zh-Hans) body.use-liquid-glass .section-drafts-window .specialized-com
 }
 
 body.use-liquid-glass .review-desk-actions .specialized-command-menu .teachtext-command-popover {
-  left: 0;
   right: auto;
   width: min(300px, calc(100vw - 56px));
   min-width: 220px;
@@ -4099,7 +3916,6 @@ body.use-liquid-glass .review-desk-window.is-review-locked .specialized-command-
 body.use-liquid-glass .teachtext-command-popover hr {
   width: auto;
   margin: 3px 10px;
-  border: 0;
   border-top: 1px solid rgba(16, 17, 20, 0.12);
 }
 
@@ -4147,9 +3963,6 @@ body.use-liquid-glass .view-btn.is-active {
 }
 
 body.use-liquid-glass .view-btn[data-view="icon"]::before {
-  width: 4px;
-  height: 4px;
-  border: 0;
   border-radius: 1px;
   background: rgba(16, 17, 20, 0.84);
   box-shadow:
@@ -4168,7 +3981,6 @@ body.use-liquid-glass .view-btn[data-view="icon"].is-active::before {
 
 body.use-liquid-glass .view-btn[data-view="list"]::before {
   width: 13px;
-  height: 2px;
   border-radius: var(--liquid-pill-radius);
   background: rgba(16, 17, 20, 0.84);
   box-shadow: 0 -5px 0 rgba(16, 17, 20, 0.84), 0 5px 0 rgba(16, 17, 20, 0.84);
@@ -4197,7 +4009,6 @@ body.use-liquid-glass *::-webkit-scrollbar {
 html:has(body.use-liquid-glass)::-webkit-scrollbar-track,
 body.use-liquid-glass::-webkit-scrollbar-track,
 body.use-liquid-glass *::-webkit-scrollbar-track {
-  border: 0;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.1));
   box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.42);
 }
@@ -4254,7 +4065,6 @@ body.use-liquid-glass .btn.default.is-disabled:active {
   box-shadow: var(--liquid-disabled-control-shadow);
   cursor: default;
   opacity: 1;
-  transform: none;
 }
 
 /* One rule, not eleven. The state variants could never change the outcome:
@@ -4329,7 +4139,6 @@ body.use-liquid-glass button:focus-visible:not(.menu-bar button):not(:disabled):
 
 body.use-liquid-glass .btn:active:not(:disabled):not(.is-disabled):not(.tdi-tab-close):not(.view-switch-option):not(.system-help-related-link),
 body.use-liquid-glass button:active:not(.menu-bar button):not(:disabled):not(.tdi-tab-close):not(.tdi-stack-open):not(.tdi-stack-close):not(.view-switch-option):not(.system-help-related-link) {
-  transform: none;
   border-color: rgba(0, 122, 255, 0.56);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.82),
@@ -4372,38 +4181,6 @@ body.use-liquid-glass .btn.default.is-disabled:active {
   color: var(--liquid-disabled-control-fg);
   -webkit-text-fill-color: var(--liquid-disabled-control-fg);
   text-shadow: none;
-}
-
-.multifinder-popover .multifinder-app {
-  display: grid;
-  grid-template-columns: 18px minmax(0, 1fr) auto;
-  align-items: center;
-  justify-items: stretch;
-  gap: 8px;
-  padding-left: 30px;
-  text-align: left;
-}
-
-.multifinder-popover .multifinder-app .multifinder-mark {
-  grid-column: 1;
-  justify-self: center;
-  width: 18px;
-}
-
-.multifinder-popover .multifinder-app > span:not(.multifinder-mark) {
-  grid-column: 2;
-  justify-self: start;
-  min-width: 0;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.multifinder-popover .multifinder-app small {
-  grid-column: 3;
-  justify-self: end;
-  text-align: right;
 }
 
 @supports (-apple-visual-effect: -apple-system-glass-material) {

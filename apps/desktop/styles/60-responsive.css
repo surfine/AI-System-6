@@ -274,8 +274,6 @@ body.is-writer-mode .context-panel-window {
 .info-comments textarea {
   width: 100%;
   resize: none;
-  font-family: var(--text-font);
-  font-size: 13px;
   border: 1px solid var(--ink);
   padding: 6px;
   background: var(--paper);
@@ -315,15 +313,11 @@ body.is-writer-mode .context-panel-window {
 /* body { background: var(--desktop) } — already in styles/00-foundation.css.
    Audited DEAD on 2026-05-28. */
 
-/* The 1-bit desktop grid is the System 6 desktop default; era wallpapers
-   override it from the theme layer (styles/65-appearance-themes.css). */
+/* Era wallpapers override the desktop from the theme layer
+   (styles/65-appearance-themes.css). The 1-bit grid itself is painted by the
+   later .desktop rule in this file, not here. */
 .desktop {
   padding: 18px;
-  background:
-    linear-gradient(90deg, rgba(255, 255, 255, 0.28) 1px, transparent 1px) 0 0 / 22px 22px,
-    linear-gradient(rgba(255, 255, 255, 0.28) 1px, transparent 1px) 0 0 / 22px 22px,
-    radial-gradient(#878787 1px, transparent 1.4px) 5px 5px / 11px 11px,
-    var(--desktop);
 }
 
 .menu-bar {
@@ -338,19 +332,14 @@ body.use-liquid-glass .menu-bar {
 }
 
 .menu-bar > .menu > button {
-  height: 22px;
-  padding: 0 8px;
-  line-height: 22px;
   border-radius: var(--menu-button-radius);
   transition: var(--menu-button-transition);
 }
 
 .menu-popover,
 .menu-sub-popover {
-  top: 22px;
   max-height: min(560px, calc(100vh - 34px));
   overflow: auto;
-  padding: 3px 0;
 }
 
 .menu-bar > .menu > .menu-popover {
@@ -377,13 +366,6 @@ body.use-liquid-glass .menu-bar {
   display: block;
 }
 
-.menu-popover button,
-.menu-sub-popover button {
-  min-height: 22px;
-  padding-top: 2px;
-  padding-bottom: 2px;
-}
-
 .menu-popover hr {
   margin: 3px 0;
   border-bottom: 1px solid var(--menu-divider-color);
@@ -408,60 +390,12 @@ body.use-liquid-glass .menu-bar {
 }
 
 .window {
-  border: var(--window-border);
-  background: var(--window-bg);
   border-radius: var(--window-radius);
-  box-shadow: var(--active-window-shadow);
-}
-
-.window:not(.is-active) {
-  box-shadow: var(--inactive-window-shadow);
-}
-
-.title-bar {
-  height: var(--system-titlebar-height);
-  min-height: var(--system-titlebar-height);
-  display: grid;
-  grid-template-columns:
-    var(--titlebar-gutter)
-    minmax(0, 1fr)
-    var(--titlebar-gutter);
-  margin: var(--system-titlebar-margin-y) 0;
-  padding: var(--system-titlebar-padding-y) var(--system-titlebar-padding-x);
-  border-bottom: var(--titlebar-border);
-  background-color: var(--paper);
-  background-image:
-    linear-gradient(
-      to bottom,
-      var(--ink) 0 var(--system-titlebar-stripe-line),
-      transparent var(--system-titlebar-stripe-line) var(--system-titlebar-stripe-size)
-    );
-  background-size: 100% var(--system-titlebar-stripe-size);
-  background-repeat: repeat-y;
-  background-origin: content-box;
-  background-clip: content-box;
-}
-
-.window:not(.is-active) .title-bar {
-  background: var(--system-titlebar-inactive-bg);
-  background-origin: var(--system-titlebar-background-origin);
-  background-clip: var(--system-titlebar-background-clip);
 }
 
 .title-bar h1,
 .title-bar h2 {
-  max-width: min(100%, 36ch);
-  min-height: 0;
-  margin: 0 auto;
-  padding: 0 0.5em;
-  background: var(--titlebar-title-bg);
   color: var(--titlebar-title-fg);
-  line-height: 1.1;
-}
-
-.window:not(.is-active) .title-bar h1,
-.window:not(.is-active) .title-bar h2 {
-  color: var(--system-titlebar-inactive-title-color);
 }
 
 .window:not(.is-active) .close-box,
@@ -485,10 +419,6 @@ body.use-liquid-glass .menu-bar {
     calc(4px + var(--details-bar-optical-rise));
   border-bottom: 1px solid var(--details-bar-border);
   background: var(--details-bar-bg);
-}
-
-.window-pane {
-  padding: 11px;
 }
 
 /* .writing-spine-panel max-height + overflow merged into base (styles/10-windows.css);
@@ -547,13 +477,6 @@ body.use-liquid-glass .menu-bar {
   outline: 0;
 }
 
-.assistant-window {
-  left: clamp(28px, 6vw, 96px);
-  top: 18px;
-  width: min(920px, calc(100vw - 248px));
-  min-width: 380px;
-  height: min(700px, calc(100vh - 76px));
-}
 
 /* .assistant-window.is-desklet right moved to base (styles/10-windows.css). */
 
@@ -729,40 +652,11 @@ select:focus {
   }
 }
 
-.btn,
-.file-picker .file-picker-button {
-  min-height: 28px;
-  border: var(--system-control-line) solid var(--btn-border-color);
-  border-radius: var(--control-radius);
-  background: var(--btn-bg);
-  box-shadow: var(--btn-shadow);
-  color: var(--btn-fg);
-}
-
 /* .btn.default box-shadow merged into base (styles/10-windows.css);
    border-width was already in base. */
 
-.btn:hover:not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected) {
-  background: var(--btn-hover-bg);
-  color: var(--btn-hover-fg);
-  box-shadow: var(--btn-hover-shadow);
-}
-
 /* .btn:active transform + box-shadow moved to base (styles/10-windows.css);
    background and color were already in base. */
-
-.btn:disabled,
-.btn.is-disabled {
-  color: var(--shade-dark);
-  background:
-    repeating-linear-gradient(
-      45deg,
-      var(--paper) 0,
-      var(--paper) 3px,
-      #ededed 3px,
-      #ededed 6px
-    );
-}
 
 .file-preview-body,
 .document-icon-grid,
@@ -773,19 +667,7 @@ select:focus {
   box-shadow: var(--system-inset);
 }
 
-.reader-content {
-  background: var(--reader-content-bg);
-  border: var(--reader-content-border);
-  border-radius: var(--reader-content-radius);
-  box-shadow: var(--reader-content-shadow);
-}
 
-.model-state-panel {
-  background: var(--model-state-panel-bg);
-  border: var(--model-state-panel-border);
-  border-radius: var(--model-state-panel-radius);
-  box-shadow: var(--model-state-panel-shadow);
-}
 
 /* .control-section h3 padding moved to base (styles/10-windows.css). */
 
@@ -853,9 +735,6 @@ select:focus {
   padding: var(--writing-editor-padding-y) var(--writing-editor-padding-x);
   background: var(--paper);
   background-image: none;
-  font-family: var(--text-font);
-  font-size: var(--writing-editor-font-size);
-  line-height: var(--writing-editor-line-height);
   resize: none;
 }
 
@@ -1050,7 +929,7 @@ select:focus {
     transform: none;
   }
 
-  body:not(.is-writer-mode) .window:is(.find-file-window, .note-pad-window, .clipboard-window, .dictation-window, .translation-pad-window, .dictionary-window, .key-caps-window, .system-status-window, .notification-center-window, .writing-bell-window, .alarm-clock-window, .calculator-window, .puzzle-window, .memory-cards-window, .model-meter-window):not(.is-hidden):not(.is-collapsed) {
+  body:not(.is-writer-mode) .window:is(.find-file-window, .note-pad-window, .hold-thought-window, .clipboard-window, .dictation-window, .translation-pad-window, .dictionary-window, .key-caps-window, .system-status-window, .notification-center-window, .writing-bell-window, .alarm-clock-window, .calculator-window, .puzzle-window, .memory-cards-window, .model-meter-window):not(.is-hidden):not(.is-collapsed) {
     min-width: 0;
     max-width: calc(100vw - 28px);
     height: auto;
@@ -1073,6 +952,21 @@ select:focus {
 
   body:not(.is-writer-mode) .window.clipboard-window:not(.is-hidden):not(.is-collapsed) {
     width: min(340px, calc(100vw - 28px));
+  }
+
+  /* Catching a thought is two lines and wants a slip. Going through a pile
+     wants the screen. Same window and same DOM — the mode decides how much
+     room it asks for, which is the one place a phone differs here. */
+  body:not(.is-writer-mode) .window.hold-thought-window:not(.is-hidden):not(.is-collapsed) {
+    width: min(340px, calc(100vw - 28px));
+  }
+
+  body:not(.is-writer-mode) .window.hold-thought-window.is-picking-up:not(.is-hidden):not(.is-collapsed) {
+    width: calc(100vw - 28px);
+  }
+
+  .hold-thought-window.is-picking-up .hold-thought-list {
+    max-height: min(50vh, 320px);
   }
 
   body:not(.is-writer-mode) .window:is(.dictation-window, .translation-pad-window, .key-caps-window):not(.is-hidden):not(.is-collapsed) {
@@ -1136,14 +1030,6 @@ select:focus {
   body:not(.is-writer-mode) .window.is-collapsed > :not(.title-bar),
   body:not(.is-writer-mode) .writing-spine-panel.is-shaded .spine-shade-body {
     display: none;
-  }
-
-  /* Compact widths only narrow the window; placement stays with the shared
-     centred pass (portrait keeps its own .is-mobile-system-page rule). */
-  .guide-window {
-    width: min(430px, calc(100vw - 32px));
-    max-height: calc(100vh - 48px);
-    overflow: auto;
   }
 
   .spine-actions {
@@ -1390,9 +1276,6 @@ select:focus {
   display: none;
 }
 
-.window.is-collapsed .grow-box {
-  display: none;
-}
 
 body.is-writer-mode .window.is-collapsed,
 body.is-writer-mode .assistant-window.is-collapsed,
@@ -1492,8 +1375,8 @@ body.is-writer-mode .system-help-window .system-help-pane {
 }
 
 @media (max-width: 860px) {
-  body:not(.is-writer-mode) .window.assistant-window:not(.about-window):not(.save-chat-window):not(.guide-window):not(.is-collapsed):not(.is-mobile-fullscreen),
-  body:not(.is-writer-mode) .window.assistant-window.is-desklet:not(.about-window):not(.save-chat-window):not(.guide-window):not(.is-collapsed):not(.is-mobile-fullscreen) {
+  body:not(.is-writer-mode) .window.assistant-window:not(.about-window):not(.save-chat-window):not(.is-collapsed):not(.is-mobile-fullscreen),
+  body:not(.is-writer-mode) .window.assistant-window.is-desklet:not(.about-window):not(.save-chat-window):not(.is-collapsed):not(.is-mobile-fullscreen) {
     min-height: 72vh;
   }
 
@@ -1786,25 +1669,6 @@ body.is-writer-mode .system-help-window .system-help-pane {
     overflow: hidden;
   }
 
-  /* Read Me First stays a Macintosh window on phones so the desktop remains
-     visible around it; System Help keeps the full-page system presentation. */
-  body:not(.is-writer-mode) .guide-window.is-mobile-system-page:not(.is-hidden):not(.is-collapsed) {
-    inset: auto;
-    left: 50%;
-    top: 50%;
-    width: min(430px, calc(100vw - 32px));
-    height: auto;
-    max-width: calc(100vw - 32px);
-    max-height: calc(100vh - 48px);
-    border: var(--window-border);
-    border-radius: var(--window-radius, 0);
-    transform: translate(-50%, -50%);
-  }
-
-  body:not(.is-writer-mode) .guide-window.is-mobile-system-page > .window-pane {
-    flex: 0 1 auto;
-  }
-
   /* Home = clear this state; the desktop launcher underneath returns. While an
      app is foregrounded, the launcher column and writing spine stay out of the
      way behind it. */
@@ -1861,6 +1725,14 @@ body.is-writer-mode .system-help-window .system-help-pane {
 
   body:not(.is-writer-mode) .window:is(.clipboard-window):not(.is-hidden):not(.is-collapsed) {
     width: min(340px, 100%);
+  }
+
+  body:not(.is-writer-mode) .window.hold-thought-window:not(.is-hidden):not(.is-collapsed) {
+    width: min(340px, 100%);
+  }
+
+  body:not(.is-writer-mode) .window.hold-thought-window.is-picking-up:not(.is-hidden):not(.is-collapsed) {
+    width: 100%;
   }
 
   body:not(.is-writer-mode) .window:is(.dictation-window, .translation-pad-window, .key-caps-window):not(.is-hidden):not(.is-collapsed) {
@@ -2057,7 +1929,6 @@ body.use-modern-fonts {
   --system-control-size: 14px;
   --system-text-size: 14px;
   --system-caption-size: 12px;
-  --system-micro-size: 11px;
   --system-leading: 1.45;
   --system-window-padding: 11px;
   --system-control-min-height: 30px;
@@ -2152,6 +2023,13 @@ body.use-modern-fonts .mde-surface * {
   font-weight: 400;
 }
 
+
+
+/* Kept in this layer on purpose: tests/features/window-frame.test.mjs pins both
+   rules here. They were added after a combined
+   `.window, .writing-spine-panel, .spine-toolbox-panel` rule gave all three the
+   two-pixel panel border, and the contract watches THIS layer for that
+   regression. Both duplicate 10-windows.css, but the duplicate is the guard. */
 .writing-spine-panel {
   border: 0;
   box-shadow: none;
@@ -2475,8 +2353,11 @@ button:disabled {
   box-shadow: none;
 }
 
+/* .teachtext-preview is deliberately NOT in this list. It is the writer's
+   paper turned over, not chrome, and it takes the writing face and the writing
+   size from styles/50-apps.css. Listing it here set it two points smaller in
+   the system sans, alongside .hint and .tag. */
 .message-content,
-.teachtext-preview,
 .print-directory-preview,
 .reader-content,
 .scrap-preview,
@@ -2634,6 +2515,24 @@ input[type="radio"] {
 
   .mobile-control-short {
     display: inline;
+  }
+}
+
+/* The writing action row is designed for one command cluster plus one primary
+   action. The manuscript now also carries SideAsk and the route's next step, so
+   at phone width five controls squeezed every label into an ellipsis. Wrap
+   instead of shrinking: the primary action takes its own line and every label
+   stays readable. The window is the query container, so a narrow window on a
+   wide screen wraps too. */
+@container (max-width: 470px) {
+  .teachtext-actions {
+    flex-wrap: wrap;
+    row-gap: var(--teachtext-action-gap);
+  }
+
+  .teachtext-actions > .btn.default {
+    flex: 1 0 100%;
+    margin-left: 0;
   }
 }
 
@@ -3050,5 +2949,14 @@ input[type="radio"] {
 
   body.mobile-immersive-landscape .window.is-mobile-fullscreen .window-pane {
     padding-bottom: var(--safe-area-bottom);
+  }
+
+  /* A foregrounded immersive app owns the landscape screen exactly as it owns
+     portrait: the launcher column and writing spine yield behind it. Without
+     this counterpart the spine's floating layer keeps intercepting the app's
+     left toolbar in the writing workspace profile. */
+  body.mobile-immersive-landscape:not(.is-writer-mode) .icon-column,
+  body.mobile-immersive-landscape:not(.is-writer-mode) .writing-spine-panel {
+    display: none;
   }
 }

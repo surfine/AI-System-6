@@ -1059,7 +1059,7 @@ function discardTemporaryClioTalkConversation() {
   clioTalkTemporaryMode = false;
   resetClioTalkRuntimeState({ clearPrompt: true });
   resetNextClioTalkRunSelection();
-  setStatus(t("ready"));
+  clearStatus();
   if (typeof scheduleWorkingSessionSave === "function") scheduleWorkingSessionSave();
   return true;
 }
@@ -1245,7 +1245,7 @@ function renderChatLineage(file) {
     lineage.append(parentButton);
   } else if (missingParentId) {
     const missing = document.createElement("span");
-    missing.textContent = currentLanguage === "zh" ? "父对话文件不可用" : "Parent chat file unavailable";
+    missing.textContent = t("parent_chat_file_unavailable");
     lineage.append(missing);
   }
   children.forEach((child) => {
@@ -1501,7 +1501,7 @@ async function acceptSelectedTeachTextModificationSuggestion() {
   const suggestion = file.suggestion;
   const target = getProjectFiles().find((item) => item.id === suggestion.targetFileId && item.type === "text");
   if (!target || contentHash(target.body) !== suggestion.originalHash) {
-    setStatus(currentLanguage === "zh" ? "正文已变化，不能盲目套用建议；请重新生成或人工处理。" : "The manuscript changed; do not apply this suggestion blindly. Regenerate it or handle it manually.");
+    setStatus(t("the_manuscript_changed_do_not_apply"));
     return false;
   }
   const oldHash = contentHash(target.body);
@@ -2379,6 +2379,12 @@ function syncTeachTextLabelControl() {
     teachTextFileLabel = normalizeFileLabel(teachTextFileLabel) || "draft";
   }
 
+  // The route's next step belongs to the route manuscript. An ordinary TeachText
+  // document, a mounted file or a help page has no review phase to enter, so the
+  // button is absent there rather than present and inert.
+  const toReviewButton = document.querySelector("#teachtext-to-review");
+  if (toReviewButton) toReviewButton.hidden = !canEditLabel;
+
   teachTextLabelSelect.value = normalizeTeachTextWorkflowState(teachTextWorkflowState);
   teachTextLabelSelect.disabled = !canEditLabel;
   teachTextLabelSelect.hidden = !canEditLabel;
@@ -2834,21 +2840,23 @@ function toggleTeachTextPreview() {
   }
 }
 
-function showTeachTextEditor({ announce = true, focus = true } = {}) {
+function showTeachTextEditor({ focus = true } = {}) {
+  const followedReading = leavePreviewToCaret(teachTextBodyInput, teachTextPreviewEl);
   teachTextPreviewState.scrollTop = teachTextPreviewEl.scrollTop;
   teachTextPreviewEl.classList.add("is-hidden");
   teachTextPreviewEl.closest(".teachtext-editor-container")?.classList.remove("is-previewing");
   teachTextBodyInput.classList.remove("is-hidden");
-  teachTextBodyInput.scrollTop = teachTextPreviewState.editorScrollTop || 0;
-  teachTextBodyInput.selectionStart = teachTextPreviewState.selectionStart || 0;
-  teachTextBodyInput.selectionEnd = teachTextPreviewState.selectionEnd || teachTextPreviewState.selectionStart || 0;
+  if (!followedReading) {
+    teachTextBodyInput.scrollTop = teachTextPreviewState.editorScrollTop || 0;
+    teachTextBodyInput.selectionStart = teachTextPreviewState.selectionStart || 0;
+    teachTextBodyInput.selectionEnd = teachTextPreviewState.selectionEnd || teachTextPreviewState.selectionStart || 0;
+  }
   teachTextTogglePreviewButton.textContent = t("preview");
   updateTeachTextDeskState();
   if (focus) teachTextBodyInput.focus();
-  if (announce) setStatus(t("editing_markdown"));
 }
 
-function showTeachTextPreview({ announce = true, focus = false, preserveScroll = true } = {}) {
+function showTeachTextPreview({ focus = false, preserveScroll = true } = {}) {
   const previewScrollTop = preserveScroll ? (teachTextPreviewState.scrollTop || 0) : 0;
   teachTextPreviewState = {
     editorScrollTop: teachTextBodyInput.scrollTop,
@@ -2860,6 +2868,7 @@ function showTeachTextPreview({ announce = true, focus = false, preserveScroll =
   teachTextPreviewEl.classList.remove("is-hidden");
   teachTextPreviewEl.closest(".teachtext-editor-container")?.classList.add("is-previewing");
   teachTextPreviewEl.scrollTop = previewScrollTop;
+  if (preserveScroll) enterPreviewAtCaret(teachTextBodyInput, teachTextPreviewEl);
   teachTextBodyInput.classList.add("is-hidden");
   teachTextTogglePreviewButton.textContent = t("edit");
   updateTeachTextDeskState();
@@ -2867,7 +2876,6 @@ function showTeachTextPreview({ announce = true, focus = false, preserveScroll =
     teachTextPreviewEl.tabIndex = 0;
     teachTextPreviewEl.focus();
   }
-  if (announce) setStatus(t("previewing_markdown"));
 }
 
 async function saveTextDocument({ asCopy = false, revealInDocuments = false, promptForFolder = true } = {}) {

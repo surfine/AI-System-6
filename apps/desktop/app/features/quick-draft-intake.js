@@ -18,7 +18,7 @@ function strategySnapshot(record = activeProjectQuickDraft({ create: false })?.r
 
 function humanAnchorSnapshot(record = activeProjectQuickDraft({ create: false })?.record) {
   const workspace = normalizeQuickDraftWorkspace(record?.workspace, record);
-  return workspace.composition?.negative || workspace.versions?.[0]?.body || "";
+  return darkroomOf(record).negative || darkroomOf(record).versions?.[0]?.body || "";
 }
 
 function textExcerpt(text = "", limit = 240) {
@@ -81,7 +81,7 @@ function renderStanceCandidates(items = []) {
 
 function renderIntake(record = activeProjectQuickDraft({ create: false })?.record || blankQuickDraft()) {
   const intake = normalizeQuickDraftRecord(record).workspace.intake;
-  const dumps = normalizeQuickDraftRecord(record).workspace.versions || [];
+  const dumps = darkroomOf(record).versions || [];
   listSlot(
     refs.ventLog,
     nonDumpVentEntries(intake),
@@ -482,7 +482,7 @@ function selectQuickDraftMaterial(sourceId = "") {
     return false;
   }
   closeQuickDraftDrawer({ restoreFocus: false });
-  setQuickDraftPaperSurface("editor", { manual: true });
+  applyQuickDraftPaperSurface();
   leaveQuickDraftPreview();
   requestAnimationFrame(() => {
     refs.draft.focus();
@@ -807,6 +807,70 @@ function isVentIntakeActive() {
   return isLaunchDayFormat(workspace?.intake?.setup?.scenario) && workspace?.intake?.ventMode === true;
 }
 
+/**
+ * Keep an imported picture, so it survives the save and can be shown to a
+ * vision model later. The attachment goes into the shared store and the record
+ * that follows carries only its id. Video frames and non-images return null.
+ *
+ * @param {File} file
+ * @returns {Promise<any | null>}
+ */
+async function quickDraftMaterialPreview(file) {
+  if (typeof buildImageAttachments !== "function") return null;
+  if (!imageFilesFromList([file]).length) return null;
+  try {
+    const [built] = await buildImageAttachments([file], {
+      projectId: activeProjectId,
+      surface: "quickDraft",
+      limit: 1,
+      maxEdge: 1280,
+    });
+    if (!built) return null;
+    // The picture goes into the shared store, the way every other surface keeps
+    // one, and the material carries only its id. It used to be inlined as
+    // base64 on the workspace record: those records then grew without bound and
+    // the picture was invisible to anything that reads the store.
+    saveImageAttachments([built]);
+    return built;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The picture a chat material points at, wherever it lives. New materials carry
+ * an id into the shared store; ones imported before that carry the bytes
+ * inline, and those keep working — a writer's older draft does not lose its
+ * photograph because the storage moved.
+ *
+ * @param {Record<string, any>} material
+ * @returns {string}
+ */
+function quickDraftMaterialPictureUrl(material) {
+  const stored = typeof imageAttachmentById === "function"
+    ? imageAttachmentById(material?.imageAttachmentId)
+    : null;
+  if (stored && typeof imageAttachmentVisionDataUrl === "function") {
+    return imageAttachmentVisionDataUrl(stored) || "";
+  }
+  return String(material?.previewDataUrl || "");
+}
+
+/**
+ * Chat materials with their pictures materialized, for the moment they leave
+ * the browser. The id is a client-side handle, so a model request has to carry
+ * the bytes; they are resolved here rather than kept on the record.
+ *
+ * @param {any[]} materials
+ * @returns {any[]}
+ */
+function quickDraftMaterialsForModel(materials) {
+  return (Array.isArray(materials) ? materials : []).map((material) => {
+    const previewDataUrl = quickDraftMaterialPictureUrl(material);
+    return previewDataUrl ? { ...material, previewDataUrl } : material;
+  });
+}
+
 async function importChatScreenshots() {
   if (!getActiveProject()) {
     setQuickDraftStatus(t("quick_draft_no_project"));
@@ -839,16 +903,28 @@ async function importChatScreenshots() {
             ? await extractChatRecordingFrames(file)
             : [file];
           for (const frame of frameFiles) {
-            const extracted = await extractFileText(frame);
-            const text = cleanChatScreenshotText(extracted.text || "");
-            if (!text) continue;
-            const fingerprint = chatTextFingerprint(text);
-            if (!fingerprint || seen.has(fingerprint)) continue;
-            seen.add(fingerprint);
+            // Keep the picture, not only the words in it. A product photo has
+            // no text at all, and used to be dropped here; the vision model can
+            // read the thing itself.
+            const picture = await quickDraftMaterialPreview(frame);
+            let text = "";
+            try {
+              const extracted = await extractFileText(frame);
+              text = cleanChatScreenshotText(extracted.text || "");
+            } catch (error) {
+              if (!picture) throw error;
+            }
+            if (!text && !picture) continue;
+            const fingerprint = text ? chatTextFingerprint(text) : "";
+            if (text && (!fingerprint || seen.has(fingerprint))) continue;
+            if (fingerprint) seen.add(fingerprint);
             imported.push(normalizeChatMaterial({
               id: stableId("chat"),
               name: frame.name || file.name || `chat-${imported.length + 1}`,
               text,
+              // The id, not the bytes. The picture itself is in the shared
+              // store; see quickDraftMaterialPreview above.
+              imageAttachmentId: picture?.id || "",
               platform: inferChatPlatform(file.name, text),
               sourceKind: isChatRecordingFile(file) ? "chat-recording-frame" : "chat-screenshot",
               createdAt: new Date().toISOString(),

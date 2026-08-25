@@ -119,6 +119,9 @@ test.assertIncludes(multiFinder, "requestAnimationFrame", "window class bursts a
 test.assertIncludes(boot, "installApplicationLifecycleWatch();", "boot installs the lifecycle watch");
 test.assertIncludes(windowManager, 'scheduleApplicationLifecycleRefresh?.("open-window")', "opening a window reconciles the lifecycle");
 test.assertIncludes(windowManager, 'disposeApplication?.(appId, "quit")', "quitting an app disposes it");
+test.assertIncludes(windowManager, "const lifecycleDisposed = await", "Quit awaits lifecycle disposal before hiding application windows");
+test.assertIncludes(windowManager, 'appId === "bonsaiCity" && !lifecycleDisposed', "Bonsai uses its direct detach only as an unregistered-lifecycle fallback");
+test.assertIncludes(windowManager, "if (detached === false) return", "Quit keeps Bonsai open when its fallback save cannot complete");
 
 // --- the seven applications --------------------------------------------------
 

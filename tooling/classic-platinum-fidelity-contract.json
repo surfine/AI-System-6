@@ -1,5 +1,38 @@
 {
-  "$comment": "Machine-readable Classic/Platinum fidelity contract. Companion to docs/design/CLASSIC_PLATINUM_FIDELITY.md. Ranges are targets, not hard absolutes; real values follow the repo's existing working touch sizes. The doc authority order is: product usability > CLAUDE.md > repo theme architecture > historical evidence > this file.",
+  "schemaVersion": 1,
+  "canonicalSource": "docs/design/CLASSIC_PLATINUM_FIDELITY.md",
+  "$comment": "Machine-readable Classic/Platinum fidelity contract. verify-design validates this file and its live semantic-role tokens. Numerical ranges and proposed token-name patterns remain reference material; they never require an unused token or override CLAUDE.md's current product decisions.",
+  "enforcement": {
+    "owner": "tooling/verify-design.mjs",
+    "requiredLiveRoleTokens": [
+      { "name": "--system-control-line", "minOccurrences": 2 },
+      { "name": "--control-radius", "minOccurrences": 2 },
+      { "name": "--system-menu-height", "minOccurrences": 2 },
+      { "name": "--details-bar-bg", "minOccurrences": 2 },
+      { "name": "--details-bar-border", "minOccurrences": 2 },
+      { "name": "--system-primary-divider", "minOccurrences": 2 },
+      { "name": "--system-secondary-divider", "minOccurrences": 2 },
+      { "name": "--selection-bg", "minOccurrences": 2 },
+      { "name": "--selection-fg", "minOccurrences": 2 },
+      { "name": "--btn-bg", "minOccurrences": 2 },
+      { "name": "--field-bg", "minOccurrences": 2 },
+      { "name": "--field-border", "minOccurrences": 2 },
+      { "name": "--window-bg", "minOccurrences": 2 },
+      { "name": "--window-border", "minOccurrences": 2 },
+      { "name": "--toolbar-bg", "minOccurrences": 2 },
+      { "name": "--toolbar-border", "minOccurrences": 2 },
+      { "name": "--sidebar-bg", "minOccurrences": 2 }
+    ],
+    "referenceOnlySections": [
+      "finePointer",
+      "coarsePointer",
+      "touchTarget",
+      "geometryTokens",
+      "windowPaddingTokens",
+      "mobile.viewports"
+    ],
+    "rule": "A proposed token becomes enforceable only after a real component consumes it. verify-design must not create or require declarations merely to satisfy this contract."
+  },
   "principles": {
     "productFirst": true,
     "museumMode": false,
@@ -30,9 +63,11 @@
   "touchTarget": {
     "minHitSize": 44,
     "unit": "px",
-    "rule": "Hit target is at least 44x44 on coarse pointer; visible artwork may be smaller but must stay clear and discoverable. Never use an oversized invisible hit layer that covers adjacent controls."
+    "referenceOnly": true,
+    "rule": "This is historical planning guidance, not a blanket size gate. Current visible and hit geometry follows CLAUDE.md and the owning component's tested responsive contract; never add an unused token or an oversized invisible layer just to satisfy this number."
   },
   "geometryTokens": {
+    "referenceOnly": true,
     "visualSize": "--*-visual-size",
     "hitSize": "--*-hit-size",
     "layoutSlot": "--*-layout-slot",
@@ -105,8 +140,8 @@
     "priority": [
       "disabled",
       "loading",
-      "selected/open",
-      "pressed/dragging",
+      "selected",
+      "pressed",
       "focus-visible",
       "hover-preview",
       "default"
@@ -155,7 +190,7 @@
     "hardcodedThemeColorWithoutToken": true,
     "appLevelBodyDataThemeSelector": "only app-specific misuse is flagged; the sanctioned html/body[data-theme] theme blocks are exempt",
     "hoverChangingButtonGeometry": true,
-    "coarseHitBelow44px": true,
+    "coarseHitRegressionAgainstOwnedContract": true,
     "unsafeAreaBottomFixedActionWithoutInset": true,
     "iconOnlyButtonWithoutAriaLabel": true,
     "hoverOnlyCriticalAction": true,

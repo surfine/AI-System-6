@@ -42,6 +42,7 @@
     deepseek: [
       { id: "deepseek-v4-flash", name: "DeepSeek V4 Flash", context_length: 1000000 },
       { id: "deepseek-v4-pro", name: "DeepSeek V4 Pro", context_length: 1000000 },
+      { id: "deepseek-v4-flash-vision-exp", name: "DeepSeek V4 Flash Vision (experimental)", context_length: 1000000, vision: true },
     ],
   };
 
@@ -551,7 +552,9 @@
 
   // Provider change
   cloudProviderEl.addEventListener("change", async function () {
+    await ensureClioProviderResolver().catch(() => {});
     const provider = cloudProviderEl.value;
+    if (provider) window.AISystem6ClioProvider?.setPreference?.("byok");
     if (!provider) {
       const credentialId = cloudConfig?.credentialId || "";
       cloudConfig = null;
@@ -610,7 +613,7 @@
   });
 
   // API key change
-  cloudApiKeyEl.addEventListener("input", function () {
+  cloudApiKeyEl.addEventListener("input", async function () {
     if (!cloudConfig) cloudConfig = {};
     setCloudRuntimeApiKey(cloudApiKeyEl.value.trim());
     cloudConfig.credentialMode = cloudRuntimeApiKey
@@ -619,6 +622,8 @@
         ? "shared"
         : "";
     cloudConfig.active = false;
+    await ensureClioProviderResolver().catch(() => {});
+    if (cloudRuntimeApiKey) window.AISystem6ClioProvider?.setPreference?.("byok");
     saveCloudConfig();
     updateCheckButtonState();
     cloudStatusEl.hidden = true;
@@ -727,9 +732,84 @@
     return connected;
   }
 
-  websiteAiButton?.addEventListener("click", connectWebsiteAi);
+  async function readMacSharedSession() {
+    const response = await window.AISystem6Capabilities.requestService("macShared.session", {
+      init: { method: "GET", cache: "no-store" },
+    });
+    if (!response.ok) throw new Error(serviceErrorDetail(response.status, await response.text()));
+    return response.json();
+  }
 
-  localAiButton?.addEventListener("click", function () {
+  async function connectSharedWebsiteFallback() {
+    let session = await readMacSharedSession();
+    if (!session.connected) {
+      const sitekey = String(session.turnstile_site_key || session.sitekey || "");
+      const action = String(session.turnstile_action || "turnstile-spin-v2");
+      if (!session.available || !sitekey) return false;
+      await window.AISystem6PublicAccess?.verifyExternalSession?.({
+        sitekey,
+        action,
+        exchange: async (turnstileToken) => {
+          const response = await window.AISystem6Capabilities.requestService("macShared.session", {
+            init: {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ turnstile_token: turnstileToken }),
+            },
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok || data.connected !== true) {
+            const error = new Error(data.error || "Website AI verification failed.");
+            error.code = data.code || "mac_shared_session_failed";
+            throw error;
+          }
+        },
+      });
+      session = await readMacSharedSession();
+    }
+    if (!session.connected) return false;
+
+    cloudConfig = {
+      ...(cloudConfig || {}),
+      provider: "deepseek",
+      model: cloudConfig?.model || BUILTIN_PROVIDER_MODELS.deepseek[0].id,
+      baseUrl: DEEPSEEK_BASE_URL,
+      credentialMode: "shared-remote",
+      active: true,
+    };
+    saveCloudConfig();
+    if (cloudProviderEl) cloudProviderEl.value = "deepseek";
+    populateCloudModelDropdown(BUILTIN_PROVIDER_MODELS.deepseek);
+    setCloudModelControlValue(cloudConfig.model);
+    applyCloudActiveState();
+    setSimpleAiStatus("cloud_connected_shared", "Connected · Site allowance");
+    syncClioTalkModelAvailability?.();
+    try {
+      const quotaResponse = await window.AISystem6Capabilities.requestService("cloud.quota", {
+        init: { method: "GET", cache: "no-store" },
+      });
+      if (quotaResponse.ok) {
+        const quota = await quotaResponse.json();
+        await ensureClioProviderResolver().catch(() => {});
+        window.AISystem6ClioProvider?.updateQuota?.({
+          state: quota.pool_state,
+          remainingSessionRequests: quota.remaining_session_requests,
+          resetAt: quota.resets_at,
+        });
+      }
+    } catch {}
+    return true;
+  }
+
+  websiteAiButton?.addEventListener("click", async function () {
+    await ensureClioProviderResolver().catch(() => {});
+    window.AISystem6ClioProvider?.setPreference?.("website");
+    connectWebsiteAi();
+  });
+
+  localAiButton?.addEventListener("click", async function () {
+    await ensureClioProviderResolver().catch(() => {});
+    window.AISystem6ClioProvider?.setPreference?.("local");
     if (typeof setControlTab === "function") setControlTab("local");
     document.getElementById("detect-local-models")?.focus();
   });
@@ -791,7 +871,6 @@
     applyCloudActiveState();
     setSimpleAiStatus("cloud_connected_shared", "Connected · Site allowance");
     if (typeof syncClioTalkModelAvailability === "function") syncClioTalkModelAvailability();
-    if (typeof syncWelcomeFloppyState === "function") syncWelcomeFloppyState();
     return true;
   }
 
@@ -806,6 +885,8 @@
   // the settled result here instead of clicking a Control Panel control.
   window.AISystem6CloudModel = Object.freeze({
     connectWebsiteAi,
+    connectSharedWebsiteFallback,
+    enableWebsiteAiByDefault,
     websiteAiAvailable: () => publicSharedCloudAvailable,
     revealOwnKeyFields() {
       if (ownKeyDetails) ownKeyDetails.open = true;

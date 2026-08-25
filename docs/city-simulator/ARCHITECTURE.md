@@ -22,17 +22,17 @@ with `createCity`, `advanceTicks`, `applyTool`, `tileInfo`, `ensureDerived`,
 
 ### Renderer and input
 
-Implemented in Phase 4 as the pure projection module `bonsai-renderer.js` and
-replaced visually in Phase 7 by `bonsai-renderer-voxel.js`. The pure module
-keeps the 2:1 isometric projection, its inverse, and deterministic painter
-order as VM-testable view math. The voxel renderer consumes the pure
-`buildRenderSnapshot` and draws an orthographic isometric three.js scene
-(voxel terrain, water, roads/wires/parks, stage-scaled buildings, trees,
-plants, services, day/night, decorative traffic) while lazy-loading a bundled
-three.js vendor. The renderer reads snapshots only — pointer, keyboard, and
-touch produce commands through `submitCommand`, never direct mutation. Camera
-and lighting are view state and never enter the save; the pacing loop draws
-and never advances rules.
+Implemented first as the pure projection module `bonsai-renderer.js` and now
+owned visually by `bonsai-renderer-canvas.js`. The pure module keeps the 48x24
+2:1 projection, inverse picking, four quarter-turn transforms, visible-diagonal
+range, and deterministic multi-tile painter order as VM-testable view math.
+The Canvas renderer consumes `buildRenderSnapshot` and draws six same-size
+layers: terrain; transport/utilities/zones; buildings/trees; agents/effects;
+selection/preview/errors; and day/night lighting. Static content uses 16x16
+offscreen chunk caches. The renderer reads snapshots only — pointer, keyboard,
+and touch produce previews or commands, never direct mutation. Camera and
+lighting are view state and never enter the city save; drawing never advances
+rules.
 
 ### AI System 6 shell
 
@@ -43,8 +43,8 @@ generates seeds via `crypto.getRandomValues` and paces ticks.
 ## Determinism contract
 
 - **Tick model.** The core advances whole integer ticks (`advanceTicks(state,
-  count)`); the shell paces a logical 20 Hz tick rate. Speed settings scale
-  ticks per shell frame, never wall-clock catch-up.
+  count)`); five ticks make one game day and the shell paces a logical 20 Hz
+  rate. Speed settings scale ticks per shell frame, never wall-clock catch-up.
 - **Seed.** The shell provides an integer seed at `createCity`. A missing or
   non-integer seed throws `bonsai-required-seed`; the core never invents
   randomness.
@@ -65,31 +65,36 @@ generates seeds via `crypto.getRandomValues` and paces ticks.
 { "schemaVersion": 1, "type": "road", "payload": { "x": 5, "y": 8 }, "targetTick": 120, "clientCommandId": "c-1" }
 ```
 
-Implemented in Phase 1. The core assigns a monotonically increasing `sequence`
-to every accepted command (immediate or queued); rejected commands consume no
-sequence and never mutate state. Future-dated commands wait in a
-`(targetTick, sequence)` ordered queue and apply exactly at their target tick.
-The shell never mutates state directly — it always submits commands.
+Schema v2 adds atomic `build-path`, `zone-area`, `place-facility`,
+`terraform-area`, `demolish-area`, and `set-policy` transactions. The pure
+`previewCommand` and mutating `submitCommand` share the same validator, so a
+drag preview cannot disagree with commit-time bounds, terrain, occupancy,
+connectivity, or cost. Accepted commands receive one monotonic sequence and
+one transaction id; rejected commands consume neither, charge nothing, and
+leave the checkpoint unchanged. Future-dated commands remain ordered by
+`(targetTick, sequence)`.
 
 ## Events
 
 ```json
-{ "schemaVersion": 1, "tick": 120, "sequence": 41, "type": "milestone", "payload": { "threshold": 250 } }
+{ "schemaVersion": 2, "tick": 120, "sequence": 41, "type": "milestone", "payload": { "threshold": 250 } }
 ```
 
-Implemented in Phase 1. Events are committed domain facts: no DOM references,
+Schema v2 events are committed domain facts: no DOM references,
 no translated strings, no wall-clock timestamps. The shell drains them with
 `drainEvents`; they are derived from the simulation and never persisted. UI
 localizes at render time.
 
 ## Save format
 
-See [SAVE-FORMAT.md](SAVE-FORMAT.md). Durable layers are saved; derived
-layers (`powered`, `roadOk`, `plantAt`, counts) are rebuilt on load.
+See [SAVE-FORMAT.md](SAVE-FORMAT.md). Format/ruleset v2 stores 64/96 map
+geometry and all durable independent layers. Derived networks, coverage,
+counts, agents, and renderer caches are rebuilt on load. A pure v1-to-v2
+migration preserves date by multiplying the old day tick by five.
 
 ## Shell contract
 
-The future window contract (not yet registered):
+The registered window contract:
 
 | Decision | Value |
 | --- | --- |

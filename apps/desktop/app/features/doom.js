@@ -12,19 +12,16 @@ window.AISystem6DoomLoaded = true;
   function installDoomWindow() {
     if (typeof document === "undefined") return;
     if (document.querySelector('[data-window="doom"]')) return;
-    document.querySelector(".desktop")?.insertAdjacentHTML("beforeend", `
-      <section class="window doom-window openttd-window is-hidden" data-window="doom" aria-labelledby="doom-title">
-        <div class="title-bar">
-          <button class="close-box" aria-label="${t("close")}" data-i18n-aria-label="close"></button>
-          <h2 id="doom-title" data-i18n="doom_title">${t("doom_title")}</h2>
-          <button class="resize-box" aria-label="${t("zoom")}" data-i18n-aria-label="zoom"></button>
-          <button class="shade-box" aria-label="${t("collapse")}" data-i18n-aria-label="collapse"></button>
-        </div>
-        <div class="details-bar doom-details-bar openttd-details-bar">
-          <span class="doom-status openttd-status" data-doom-status role="status" aria-live="polite"></span>
-        </div>
-        <div class="window-pane doom-pane openttd-pane"></div>
-      </section>`);
+    window.AISystem6ApplicationShell.createWindow({
+      windowName: "doom",
+      windowClass: "doom-window openttd-window",
+      labelledBy: "doom-title",
+      titleKey: "doom_title",
+      title: t("doom_title"),
+      statusClass: "doom-details-bar openttd-details-bar",
+      statusHtml: '<span class="doom-status openttd-status" data-doom-status role="status" aria-live="polite"></span>',
+      paneClass: "doom-pane openttd-pane",
+    });
   }
 
   installDoomWindow();

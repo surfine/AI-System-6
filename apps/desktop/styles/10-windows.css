@@ -1,6 +1,6 @@
 .window {
   background: var(--window-bg);
-  border: var(--window-border);
+  border: var(--system-frame-border, var(--window-border));
   border-radius: var(--window-radius);
   box-shadow: var(--window-shadow);
   backdrop-filter: var(--window-backdrop-filter);
@@ -155,7 +155,8 @@ body.quick-draft-focus .writing-spine-panel {
 }
 
 .spine-actions button:hover b,
-.spine-actions button:focus-visible b {
+.spine-actions button:focus-visible b,
+.spine-actions button.is-selected b {
   background: var(--ink);
   color: var(--paper);
 }
@@ -165,6 +166,36 @@ body.quick-draft-focus .writing-spine-panel {
   border-color: var(--paper);
   background: var(--ink);
   color: var(--paper);
+}
+
+/* Writing Flow palette as a status board. Three 1-bit marks, each carrying one
+   fact: the reversed label is the stop the writer is in (the shared
+   .is-selected state, so every appearance's twin applies), the filled step
+   badge is the stop that owns the manuscript text, and the diamond is the
+   classic Application-menu mark for "this one has something in it". */
+.spine-actions button.holds-pen .spine-step-number {
+  border-color: var(--paper);
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.spine-step-mark {
+  position: absolute;
+  top: 1px;
+  right: calc(50% - 29px);
+  width: 7px;
+  height: 7px;
+  background: var(--ink);
+  transform: rotate(45deg);
+  display: none;
+}
+
+.spine-actions button.has-content .spine-step-mark {
+  display: block;
+}
+
+.writing-spine-panel.is-small-icons .spine-step-mark {
+  right: calc(50% - 20px);
 }
 
 .writing-spine-panel.is-small-icons .spine-actions button {
@@ -361,26 +392,206 @@ body.quick-draft-focus .writing-spine-panel {
   text-overflow: unset;
 }
 
-/* Read Me First is an ordinary Macintosh window: the shared centred-placement
-   pass resolves its corner once, so it keeps the standard drag and WindowShade
-   behaviour. A standing translate(-50%, -50%) here would re-centre the window
-   on every height change, which is what rolled the shade to a new spot instead
-   of shading in place. */
-.guide-window {
-  width: min(430px, calc(100vw - 32px));
-  max-height: calc(100vh - 48px);
-  z-index: var(--z-window-pinned);
-}
-
-.guide-window .window-pane {
-  overflow: auto;
-  background-color: var(--pane-bg);
-}
-
 .note-pad-window {
   top: 76px;
   right: 150px;
   width: var(--da-width-pad);
+}
+
+/* Looking inside a disk you have not mounted. Same list-over-detail figure as
+   Hold That Thought's pile, because both are ways of going through something
+   rather than working in it. The read-only state is the window's, not a
+   property each control has to remember. */
+.project-peek-window {
+  top: 96px;
+  right: 132px;
+  width: 420px;
+}
+
+.project-peek-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.project-peek-list {
+  max-height: 150px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+  border: 1px solid var(--shade-dark);
+}
+
+.project-peek-row {
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+  width: 100%;
+  padding: 2px 5px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+}
+
+/* A developed document carries a second label beside its kind, and
+   space-between would spread the two apart -- the kind label drifting to the
+   middle on exactly the rows that have a darkroom mark, and staying at the edge
+   everywhere else. Pushing the first label right keeps them together, and a row
+   with only one label lands where it always did. */
+.project-peek-row small:first-of-type {
+  margin-left: auto;
+}
+
+.project-peek-row b {
+  overflow: hidden;
+  font-weight: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-peek-row small {
+  flex: none;
+  color: var(--shade-dark);
+}
+
+.project-peek-row.is-current {
+  background: var(--system-selection-bg, var(--selection-bg));
+  color: var(--system-selection-fg, var(--selection-fg));
+}
+
+.project-peek-row.is-current small {
+  color: inherit;
+}
+
+.project-peek-body {
+  min-height: 120px;
+  resize: none;
+}
+
+/* Hold That Thought.
+
+   The mode row borrows the Alarm Clock's figure — equal cells, dividers
+   between, the current one inverted — as a layout only. Black/white inversion
+   is what a System 6 control does with the selected cell, so the two modes use
+   the same selection tokens the Finder's rows do rather than a new colour.
+
+   Sits below and left of the Note Pad, because the two are read together while
+   the slips move across. */
+.hold-thought-window {
+  top: 84px;
+  right: 158px;
+  width: var(--da-width-pad);
+}
+
+.hold-thought-modes {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  border-bottom: var(--details-bar-border-bottom, 0);
+}
+
+.hold-thought-mode {
+  min-width: 0;
+  padding: 3px 2px;
+  border: 0;
+  border-right: 1px solid var(--shade-dark);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: center;
+}
+
+.hold-thought-mode:last-child {
+  border-right: 0;
+}
+
+.hold-thought-mode:focus-visible {
+  outline: 1px dotted var(--ink);
+  outline-offset: -3px;
+}
+
+.hold-thought-mode.is-active {
+  background: var(--system-selection-bg, var(--selection-bg));
+  color: var(--system-selection-fg, var(--selection-fg));
+}
+
+.hold-thought-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* The pile. Fixed height so the window does not resize itself as thoughts
+   arrive — a Desk Accessory opens at one size. */
+.hold-thought-list {
+  max-height: 132px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+  border: 1px solid var(--shade-dark);
+}
+
+.hold-thought-row {
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+  width: 100%;
+  padding: 2px 5px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+}
+
+.hold-thought-row b {
+  overflow: hidden;
+  font-weight: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hold-thought-row small {
+  flex: none;
+  color: var(--shade-dark);
+}
+
+.hold-thought-row.is-current {
+  background: var(--system-selection-bg, var(--selection-bg));
+  color: var(--system-selection-fg, var(--selection-fg));
+}
+
+.hold-thought-row.is-current small {
+  color: inherit;
+}
+
+/* Only lines the desk actually captured are drawn, so this list is short and
+   its length is information. */
+.hold-thought-context {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 1px 8px;
+  margin: 0;
+  color: var(--shade-dark);
+  font-size: 11px;
+}
+
+.hold-thought-context dt {
+  white-space: nowrap;
+}
+
+.hold-thought-context dd {
+  margin: 0;
+  overflow: hidden;
+  color: var(--ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .alarm-clock-window {
@@ -1206,7 +1417,7 @@ html:lang(zh-Hans) .title-bar h2 {
     calc(4px - var(--details-bar-optical-rise)) 8px
     calc(4px + var(--details-bar-optical-rise));
   border-bottom: 1px solid var(--details-bar-border);
-  background: var(--details-bar-bg);
+  background: var(--system-status-surface, var(--details-bar-bg));
   flex-shrink: 0;
 }
 
@@ -1544,13 +1755,13 @@ html:lang(zh-Hans) .title-bar h2 {
 }
 
 .finder-list-row:hover {
-  background: var(--selection-bg);
-  color: var(--selection-fg);
+  background: var(--system-selection-bg, var(--selection-bg));
+  color: var(--system-selection-fg, var(--selection-fg));
 }
 
 .finder-list-row.is-selected {
-  background: var(--selection-bg);
-  color: var(--selection-fg);
+  background: var(--system-selection-bg, var(--selection-bg));
+  color: var(--system-selection-fg, var(--selection-fg));
 }
 
 .finder-citation-jump {
@@ -2752,6 +2963,14 @@ html:lang(zh-Hans) .title-bar h2 {
   min-height: 36px;
   place-items: center;
   padding: 0;
+  /* Aqua paints .btn's frame with background gradients and declares `border: 0`,
+     which zeroes border-style as well. This button blanks that gradient with
+     `background: transparent`, so on Aqua alone it rendered as a bare glyph
+     while the other five appearances drew a framed button. Declare the style
+     here so the frame never depends on which shorthand an era's .btn used;
+     an era that wants no visible frame sets --clio-composer-tool-border to
+     transparent, which is what Liquid Glass already does. */
+  border-style: solid;
   border-width: 1px;
   border-radius: var(--clio-composer-control-radius);
   box-shadow: none;
@@ -3252,26 +3471,33 @@ select:focus {
   box-shadow: var(--btn-active-shadow);
 }
 
+/* Dimmed once, by ink. These rules used to set a disabled colour AND an
+   opacity on top of it, and the pair fell to 2.30:1 in Classic, 2.06 in Snow
+   Leopard and 1.55 in Yosemite -- measured on the real .system-select-button,
+   not a synthetic probe. Each era already declares --system-disabled-fg; the
+   opacity was a second dim over an ink that was grey by design. Alpha
+   compositing is also not a period technique: a System 6 control reads as
+   disabled through dimmed and dithered ink, never through translucency.
+   Platinum, Aqua and Liquid Glass already ran at opacity 1, so only the three
+   failing eras change. */
 .btn:disabled {
-  color: var(--shade-dark);
+  color: var(--system-disabled-fg, var(--shade-dark));
   cursor: default;
-  opacity: var(--control-disabled-opacity);
 }
 
 .btn.is-disabled {
-  color: var(--shade-dark);
+  color: var(--system-disabled-fg, var(--shade-dark));
   cursor: default;
-  opacity: var(--control-disabled-opacity);
 }
 
 .btn:disabled:active {
-  background: var(--paper);
-  color: var(--shade-dark);
+  background: var(--system-raised-surface, var(--paper));
+  color: var(--system-disabled-fg, var(--shade-dark));
 }
 
 .btn.is-disabled:active {
-  background: var(--paper);
-  color: var(--shade-dark);
+  background: var(--system-raised-surface, var(--paper));
+  color: var(--system-disabled-fg, var(--shade-dark));
 }
 
 /* The default button is emphasised by the outer ring, not by a fatter border:
@@ -4124,13 +4350,6 @@ body.is-cloud-configured .cloud-state-panel {
   align-items: start;
   justify-items: center;
   background-color: var(--pane-bg);
-}
-
-/* This volume has only three or four teaching objects. On a phone its Finder
-   pane grows to the available height; pin the short grid to the top instead of
-   stretching its second row into the middle of an otherwise empty disk. */
-.welcome-disk-grid {
-  align-content: start;
 }
 
 .disk-grid {

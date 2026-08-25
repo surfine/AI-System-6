@@ -55,8 +55,7 @@
   display: grid;
   grid-template-columns:
     var(--quick-draft-shelf-width)
-    minmax(0, 1fr)
-    var(--quick-draft-inspector-width);
+    minmax(0, 1fr);
   min-width: 0;
   min-height: 0;
   overflow: hidden;
@@ -124,6 +123,13 @@
 
 .draft-desk-paper-body {
   display: grid;
+  /* Row one is the paper: the intake well and the editor both claim it and
+     swap, so it takes the height. The ELI5 strip declares no row and is
+     auto-placed into the next one, which had no size of its own and therefore
+     stretched to whatever was left over — 355 empty pixels under a control
+     strip that needs 88. Implicit rows are content-sized now. */
+  grid-template-rows: minmax(0, 1fr);
+  grid-auto-rows: min-content;
   min-height: 0;
   overflow: hidden;
 }
@@ -133,6 +139,14 @@
   grid-area: 1 / 1;
   min-width: 0;
   min-height: 0;
+}
+
+/* The draft is the subject of this window, so the paper takes the room. The
+   surface is a flex item that never asked to grow, which left it at its content
+   height and put everything below it in an empty field — the writing sat in a
+   box in the middle of the window while the rest of the window was nothing. */
+.draft-desk-editor > .mde-surface {
+  flex: 1;
 }
 
 .draft-desk-intake[hidden],
@@ -268,7 +282,6 @@
 
 .draft-desk-shelf,
 .draft-desk-inspector {
-  grid-row: 1;
   display: grid;
   min-width: 0;
   min-height: 0;
@@ -277,14 +290,19 @@
 }
 
 .draft-desk-shelf {
-  grid-column: 1;
+  grid-area: 1 / 1 / 2 / 2;
   grid-template-rows: auto minmax(0, 1fr) auto;
   border-right: var(--quick-draft-sidebar-border);
 }
 
 .draft-desk-inspector {
-  grid-column: 3;
-  grid-template-rows: minmax(0, 1fr) auto;
+  /* Both sections take the height their content needs and stack from the top.
+     The stack used to be 1fr with Versions pinned under it, which put the
+     leftover height *between* two panels — and empty space between two things
+     reads as something missing, while empty space under the last one reads as
+     nothing more to show. */
+  grid-template-rows: auto auto;
+  align-content: start;
   border-left: var(--quick-draft-sidebar-border);
   overflow-y: auto;
 }
@@ -483,11 +501,30 @@
   gap: 6px;
 }
 
+/* The inspector and the view switches are shown and hidden by the hidden
+   attribute, and an author display rule outvotes the browser's [hidden] rule
+   whatever the specificity — the defect that made Draft Desk claim it needed a
+   project over a working workspace, twice. */
+.draft-desk-inspector[hidden],
+.draft-desk-display-switch[hidden],
+.draft-desk-drawer-switch[hidden] {
+  display: none;
+}
+
 .draft-desk-eli5-actions,
 .draft-desk-eli5-candidate {
   display: inline-flex;
   flex-wrap: wrap;
   gap: 6px;
+}
+
+/* These two rows are shown and hidden by the hidden attribute, and an author
+   display rule beats the browser's [hidden] rule whatever the specificity.
+   Without this the ELI5 Cancel button clears the state and the row stays on
+   screen, so the writer presses Cancel and nothing appears to happen. */
+.draft-desk-eli5-actions[hidden],
+.draft-desk-eli5-candidate[hidden] {
+  display: none;
 }
 
 .draft-desk-eli5-select {
@@ -675,29 +712,253 @@
   grid-column: 1;
 }
 
-.draft-desk-layout.is-empty-draft .draft-desk-shelf,
-.draft-desk-layout.is-empty-draft .draft-desk-inspector {
+.draft-desk-layout.is-empty-draft .draft-desk-shelf {
   display: none;
 }
 
-.draft-desk-layout.is-shelf-hidden:not(.is-inspector-hidden):not(.is-empty-draft) .draft-desk-workspace {
-  grid-template-columns: 0 minmax(0, 1fr) var(--quick-draft-inspector-width);
+.draft-desk-layout.is-shelf-hidden:not(.is-empty-draft) .draft-desk-workspace {
+  grid-template-columns: 0 minmax(0, 1fr);
 }
 
-.draft-desk-layout.is-inspector-hidden:not(.is-shelf-hidden):not(.is-empty-draft) .draft-desk-workspace {
-  grid-template-columns: var(--quick-draft-shelf-width) minmax(0, 1fr) 0;
-}
-
-.draft-desk-layout.is-shelf-hidden.is-inspector-hidden:not(.is-empty-draft) .draft-desk-workspace {
-  grid-template-columns: 0 minmax(0, 1fr) 0;
-}
-
-.draft-desk-layout.is-shelf-hidden .draft-desk-shelf,
-.draft-desk-layout.is-inspector-hidden .draft-desk-inspector {
+.draft-desk-layout.is-shelf-hidden .draft-desk-shelf {
   display: none;
+}
+
+/* ---- Listen (听稿): a teleprompter over the raw body. The beat list reads
+   top to bottom, the transport sits under it, and the current beat reuses the
+   shared selected-state surface so both appearances stay themed by token. ---- */
+
+.draft-desk-listen {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 100%;
+}
+
+.draft-desk-listen-beats {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 2px;
+}
+
+.draft-desk-listen-beat {
+  margin: 0 0 10px;
+  padding: 2px 4px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  cursor: pointer;
+}
+
+.draft-desk-listen-beat.is-dim {
+  color: var(--quick-draft-secondary-fg);
+}
+
+.draft-desk-listen-beat.is-current {
+  background: var(--quick-draft-state-selected-surface);
+  outline: var(--quick-draft-state-selected-outline);
+}
+
+.draft-desk-listen-beat.is-lost {
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+
+.draft-desk-listen-empty {
+  margin: 8px 4px;
+  color: var(--quick-draft-secondary-fg);
+}
+
+.draft-desk-listen-transport {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 2px 2px;
+  border-top: var(--quick-draft-divider-border);
+}
+
+.draft-desk-listen-progress {
+  flex: 1;
+  min-width: 72px;
+}
+
+.draft-desk-listen-rate,
+.draft-desk-listen-voice {
+  width: max-content;
+}
+
+/* ---- Listening-risk findings: object rows under the audience bar, one row
+   per finding, with the candidate fix unfolding inside its own row. ---- */
+
+.draft-desk-findings {
+  padding: 4px 8px 6px;
+  border-bottom: var(--quick-draft-divider-border);
+}
+
+.draft-desk-findings > .draft-desk-region-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.draft-desk-finding-kept .draft-desk-finding-quote {
+  border-left-style: double;
+  text-decoration: none;
+}
+
+.draft-desk-finding-spoken {
+  margin: 3px 0;
+  padding: 0 0 0 8px;
+  font-weight: 500;
+}
+
+.draft-desk-findings-stale {
+  margin: 2px 0 4px;
+  color: var(--quick-draft-secondary-fg);
+  font-size: 11px;
+}
+
+.draft-desk-finding-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.draft-desk-finding-row {
+  padding: 5px 0 7px;
+  border-bottom: var(--quick-draft-divider-border);
+}
+
+.draft-desk-finding-row:last-child {
+  border-bottom: 0;
+}
+
+.draft-desk-finding-type {
+  font-weight: 700;
+  font-size: 11px;
+}
+
+.draft-desk-finding-quote {
+  margin: 3px 0;
+  padding: 0 0 0 8px;
+  border-left: var(--quick-draft-sidebar-border);
+  color: var(--quick-draft-secondary-fg);
+}
+
+.draft-desk-finding-why,
+.draft-desk-finding-change {
+  margin: 2px 0;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.draft-desk-finding-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.draft-desk-fix-diff {
+  margin-top: 5px;
+  padding: 5px 0 0;
+  border-top: var(--quick-draft-divider-border);
+}
+
+.draft-desk-fix-original {
+  margin: 0 0 4px;
+  color: var(--quick-draft-secondary-fg);
+  text-decoration: line-through;
+}
+
+.draft-desk-fix-candidate {
+  margin: 0 0 4px;
+}
+
+.draft-desk-fix-changed {
+  background: var(--quick-draft-state-selected-surface);
+  color: inherit;
+}
+
+/* ---- 文字亮室 -------------------------------------------------------------
+   The darkroom reads one draft, so the draft is the subject: the negative
+   fills the window, the instruments that measure it hold a fixed column
+   beside it, and the four ways of looking sit under both. The view is the
+   scroller, so it carries the reading surface rather than staying
+   transparent over the window material. */
+.lightroom-window {
+  left: var(--lightroom-window-left);
+  top: var(--lightroom-window-top);
+  width: var(--lightroom-window-width);
+  height: var(--lightroom-window-height);
+  min-width: 300px;
+  min-height: 280px;
+}
+
+.lightroom-pane {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.lightroom-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--quick-draft-inspector-width);
+  grid-template-rows: auto minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.lightroom-layout > .draft-desk-eli5-bar {
+  grid-area: 1 / 1 / 2 / -1;
+  border-bottom: var(--quick-draft-divider-border);
+}
+
+.lightroom-view {
+  grid-area: 2 / 1 / 3 / 2;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  background: var(--teachtext-preview-bg);
+}
+
+.lightroom-layout > .draft-desk-inspector {
+  grid-area: 2 / 2 / 3 / 3;
+}
+
+.lightroom-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 7px 9px;
+  border-top: var(--quick-draft-sidebar-border);
+  background: var(--quick-draft-actions-bg);
 }
 
 @container (max-width: 800px) {
+  /* A narrow darkroom puts the instruments under the negative rather than
+     squeezing the thing being read. */
+  .lightroom-layout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+  }
+
+  .lightroom-view {
+    grid-area: 2 / 1 / 3 / -1;
+  }
+
+  .lightroom-layout > .draft-desk-inspector {
+    grid-area: 3 / 1 / 4 / -1;
+    border-top: var(--quick-draft-sidebar-border);
+    border-left: 0;
+  }
+
   .draft-desk-details {
     grid-template-columns: auto auto minmax(0, 1fr) auto;
     gap: 8px;
@@ -744,8 +1005,7 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .draft-desk-layout.is-shelf-hidden .draft-desk-workspace,
-  .draft-desk-layout.is-inspector-hidden .draft-desk-workspace {
+  .draft-desk-layout.is-shelf-hidden .draft-desk-workspace {
     grid-template-columns: minmax(0, 1fr);
   }
 

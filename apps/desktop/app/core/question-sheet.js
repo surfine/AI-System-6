@@ -35,7 +35,6 @@ const QUESTION_SHEET_SPECS = {
       handoff: "交付减摩擦",
       outputRules: "输出规则",
     },
-    outputRuleDefault: "我给 AI 的意图要多于我要求它输出的文字。",
     emptyMarker: "（空）",
   },
   en: {
@@ -56,7 +55,6 @@ const QUESTION_SHEET_SPECS = {
       handoff: "Handoff Friction",
       outputRules: "Output Rules",
     },
-    outputRuleDefault: "My input intent should be richer than the AI output I ask for.",
     emptyMarker: "(empty)",
   },
 };
@@ -106,15 +104,14 @@ function buildQuestionSheetMarkdown({
   return lines.join("\n").replace(/\n{3,}/g, "\n\n").trim();
 }
 
+// The template is blank, all of it. The one line that used to arrive
+// pre-filled -- "my input intent should be richer than the AI output I ask
+// for" -- is a rule ABOUT this sheet, and it was sitting INSIDE it as though
+// the writer had written it. It is the sheet's own hint text now, and the
+// "output rules" section is left for the writer's rules: do not use that word,
+// do not summarise at the end, keep my "roughly".
 function buildQuestionSheetTemplate(language = currentLanguage) {
-  const spec = questionSheetSpec(language);
-  return buildQuestionSheetMarkdown({
-    includeEmpty: true,
-    language,
-    sections: {
-      outputRules: spec.outputRuleDefault,
-    },
-  });
+  return buildQuestionSheetMarkdown({ includeEmpty: true, language, sections: {} });
 }
 
 function questionSheetFieldList(language = currentLanguage) {
@@ -233,10 +230,266 @@ function buildQuestionSheetRewriteMessages({
   ];
 }
 
+// --- Reading the sheet, rather than scoring it ---------------------------
+//
+// CLAUDE.md names what this sheet exists to protect: "real recipient, raw
+// questions, personal observations, objections, usage details, pressure
+// points, handoff friction". Five of the eleven sections carry those. The
+// other six are useful; these five are load-bearing, so these are the ones
+// the sheet reports on -- in the order the charter names them.
+//
+// It reports one gap, not a score. "4 of 11" turns the sheet back into a form
+// with marks on it, and invites filling boxes to raise the number.
+const QUESTION_SHEET_LOAD_BEARING = ["recipient", "originalQuestions", "rawInput", "objections", "handoff"];
+
+// Headings the writer may already have, from earlier versions of the template.
+// A section written under an old heading must not read as unwritten.
+const QUESTION_SHEET_HEADING_ALIASES = {
+  recipient: ["接收者", "受众", "Recipient", "Audience"],
+  originalQuestions: ["原始问题", "Original Questions"],
+  rawInput: ["原始输入", "碎念", "Raw Input", "Stray Thoughts"],
+  objections: ["反对意见", "张力", "Objections", "Tensions"],
+  handoff: ["交付减摩擦", "交付摩擦", "Handoff", "Handoff Friction"],
+  terms: ["需要区分的概念", "Terms to distinguish"],
+  outputRules: ["Output Rule"],
+};
+
+function questionSheetHeadingKeyMap() {
+  const map = new Map();
+  const add = (text, key) => {
+    const normalized = String(text || "").replace(/\s+/g, "").toLowerCase();
+    if (normalized && !map.has(normalized)) map.set(normalized, key);
+  };
+  QUESTION_SHEET_SECTION_KEYS.forEach((key) => {
+    add(questionSheetSectionLabel(key, "zh"), key);
+    add(questionSheetSectionLabel(key, "en"), key);
+    (QUESTION_SHEET_HEADING_ALIASES[key] || []).forEach((alias) => add(alias, key));
+  });
+  return map;
+}
+
+// A section counts as said when something is written under its heading. An
+// empty bullet, the template's "- ", and the empty marker do not count -- they
+// are what the form left behind, not what the writer put there.
+function questionSheetCoveredSections(markdown) {
+  const headings = questionSheetHeadingKeyMap();
+  const covered = new Set();
+  const emptyMarkers = new Set(["（空）", "(empty)"]);
+  let current = "";
+
+  normalizeMarkdownText(markdown).split("\n").forEach((line) => {
+    const heading = line.match(/^\s{0,3}#{1,6}\s+(.+?)\s*$/);
+    if (heading) {
+      current = headings.get(heading[1].replace(/\s+/g, "").toLowerCase()) || "";
+      return;
+    }
+    if (!current || covered.has(current)) return;
+    const content = line.replace(/^\s*(?:[-*+]|\d+[.)])\s*/, "").trim();
+    if (content && !emptyMarkers.has(content)) covered.add(current);
+  });
+
+  return covered;
+}
+
+// The first load-bearing section this sheet has not said anything about, or ""
+// when it has said something about all five.
+function questionSheetFirstGap(markdown) {
+  const covered = questionSheetCoveredSections(markdown);
+  return QUESTION_SHEET_LOAD_BEARING.find((key) => !covered.has(key)) || "";
+}
+
+// --- The sheet as a specification ----------------------------------------
+//
+// The sheet writes down constraints and, until now, nothing at the end of the
+// route ever read them back. Two channels carry them, split by what kind of
+// rule each is rather than by what is cheap:
+//
+//   exact   a word the writer put in quotes is a hard rule. String matching
+//           cannot miss one and cannot invent one, and it can point at the
+//           line. A model asked the same question can do neither reliably.
+//   judged  everything else -- tone, whether the personal detail survived,
+//           "do not summarise at the end" -- needs reading, so it goes to the
+//           style check along with the rest of the sheet's constraints.
+
+// The text under one section heading, or "".
+function questionSheetSectionBody(markdown, key) {
+  const headings = questionSheetHeadingKeyMap();
+  const lines = [];
+  let current = "";
+
+  normalizeMarkdownText(markdown).split("\n").forEach((line) => {
+    const heading = line.match(/^\s{0,3}#{1,6}\s+(.+?)\s*$/);
+    if (heading) {
+      current = headings.get(heading[1].replace(/\s+/g, "").toLowerCase()) || "";
+      return;
+    }
+    if (current === key) lines.push(line);
+  });
+
+  return lines.join("\n").trim();
+}
+
+// Words the writer quoted inside their own output rules. Quoting is not a
+// syntax anyone has to learn: a writer naming a word they do not want already
+// puts it in quotes.
+function questionSheetQuotedRules(markdown) {
+  const body = questionSheetSectionBody(markdown, "outputRules");
+  if (!body) return [];
+
+  const found = [];
+  const pattern = /[「『“"']([^」』”"'\n]{1,40})[」』”"']/g;
+  let match = pattern.exec(body);
+  while (match) {
+    const term = match[1].trim();
+    if (term && !found.includes(term)) found.push(term);
+    match = pattern.exec(body);
+  }
+  return found;
+}
+
+// Where each quoted term appears in the manuscript. Exact, so it reports a
+// line rather than an impression.
+function outputRuleBreaches(terms, body) {
+  const lines = normalizeMarkdownText(body).split("\n");
+  const breaches = [];
+
+  (terms || []).forEach((term) => {
+    if (!term) return;
+    lines.forEach((line, index) => {
+      if (!line.includes(term)) return;
+      breaches.push({ term, line: index + 1, text: line.trim().slice(0, 160) });
+    });
+  });
+
+  return breaches;
+}
+
+// The constraints the writer stated, for the check that needs to read them.
+// Not the whole sheet: these five sections are the ones a reviewer has to hold
+// in mind, and the rest would only spend context.
+function questionSheetReviewContext(markdown, limit = 1200) {
+  const keys = ["recipient", "mustRemember", "objections", "toneStyle", "outputRules"];
+  const parts = keys
+    .map((key) => {
+      const body = questionSheetSectionBody(markdown, key);
+      return body ? `## ${questionSheetSectionLabel(key)}\n${body}` : "";
+    })
+    .filter(Boolean);
+  return parts.join("\n\n").slice(0, limit);
+}
+
 function questionSheetSectionHeadingPattern(keys = QUESTION_SHEET_SECTION_KEYS, language = currentLanguage) {
   const labels = keys.map((key) => questionSheetSectionLabel(key, language).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
   const legacy = language === "zh"
     ? ["问题单", "原始问题", "原始输入", "碎念", "接收者", "受众", "必须记住", "反对意见", "需要区分的概念", "需要区分的术语", "来源线索", "语气 / 风格目标", "交付减摩擦", "输出规则"]
     : ["Question Sheet", "Original Questions", "Raw Input", "Stray Thoughts", "Recipient", "Audience", "Recipient / Audience", "Must Remember", "Objections", "Objections / Tensions", "Terms to distinguish", "Terms To Distinguish", "Source Leads", "Tone / Style target", "Tone / Style Target", "Handoff", "Handoff Friction", "Output Rule", "Output Rules"];
   return new RegExp(`^##\\s+(?:${[...labels, ...legacy.map((item) => item.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))].join("|")})\\s*$`, "im");
+}
+
+// --- Photographed input -----------------------------------------------------
+//
+// The Question Sheet asks for the messy human material before prose: real
+// questions, raw notes, objections. A photograph of a scribbled page is the
+// messiest and most human of those, and it was the one kind the sheet could not
+// take. Photos are raw input, not an AI-written section: they ride along with
+// the Organize pass so the model can read what the writer scribbled, and the
+// sheet's own sections stay exactly as they were.
+
+const QUESTION_SHEET_PHOTO_LIMIT = 8;
+const QUESTION_SHEET_PHOTO_SURFACE = "questionSheet";
+
+/**
+ * @returns {any[]}
+ */
+function getQuestionSheetPhotos() {
+  const project = typeof getActiveProject === "function" ? getActiveProject() : null;
+  if (!project) return [];
+  return imageAttachmentsForProject(project.id, {
+    surface: QUESTION_SHEET_PHOTO_SURFACE,
+    limit: QUESTION_SHEET_PHOTO_LIMIT,
+  });
+}
+
+function renderQuestionSheetPhotos() {
+  const strip = document.getElementById("question-sheet-photos");
+  if (!strip) return;
+  const photos = getQuestionSheetPhotos();
+  strip.classList.toggle("is-hidden", !photos.length);
+  strip.replaceChildren();
+  if (!photos.length) return;
+
+  photos.forEach((photo) => {
+    const item = document.createElement("span");
+    item.className = "question-sheet-photo";
+    const thumb = document.createElement("img");
+    thumb.className = "question-sheet-photo-thumb";
+    thumb.src = imageAttachmentVisionDataUrl(photo);
+    thumb.alt = photo.alt || photo.name || "";
+    const label = document.createElement("span");
+    label.className = "question-sheet-photo-name";
+    label.textContent = photo.name || "";
+    const remove = document.createElement("button");
+    remove.className = "btn mini-btn question-sheet-photo-remove";
+    remove.type = "button";
+    remove.textContent = t("remove");
+    remove.addEventListener("click", () => removeQuestionSheetPhoto(photo.id));
+    item.append(thumb, label, remove);
+    strip.append(item);
+  });
+}
+
+/**
+ * @param {ArrayLike<File>} files
+ */
+async function addQuestionSheetPhotoFiles(files) {
+  const project = typeof getActiveProject === "function" ? getActiveProject() : null;
+  if (!project) {
+    setStatus(t("no_project_mounted"));
+    openWindow("projects");
+    return;
+  }
+  const incoming = imageFilesFromList(files);
+  if (!incoming.length) return;
+
+  const openSlots = Math.max(0, QUESTION_SHEET_PHOTO_LIMIT - getQuestionSheetPhotos().length);
+  if (!openSlots) {
+    setStatus(t("question_sheet_photo_limit", QUESTION_SHEET_PHOTO_LIMIT));
+    return;
+  }
+
+  const built = await buildImageAttachments(incoming.slice(0, openSlots), {
+    projectId: project.id,
+    surface: QUESTION_SHEET_PHOTO_SURFACE,
+    limit: openSlots,
+  });
+  if (!built.length) return;
+  saveImageAttachments(built);
+  project.updatedAt = new Date().toISOString();
+  renderQuestionSheetPhotos();
+  setStatus(incoming.length > built.length
+    ? t("question_sheet_photo_limit", QUESTION_SHEET_PHOTO_LIMIT)
+    : t("question_sheet_photos_added", built.length));
+  saveDeskState();
+}
+
+function addQuestionSheetPhotos() {
+  if (typeof openTransientFilePicker !== "function") return;
+  // One Choose-button picker, no permanent file input in the markup.
+  openTransientFilePicker({
+    accept: IMAGE_ATTACHMENT_ACCEPT,
+    multiple: true,
+    onSelect: (files) => addQuestionSheetPhotoFiles(files),
+  });
+}
+
+/**
+ * @param {string} id
+ */
+function removeQuestionSheetPhoto(id) {
+  if (!removeImageAttachment(id)) return;
+  const project = typeof getActiveProject === "function" ? getActiveProject() : null;
+  if (project) project.updatedAt = new Date().toISOString();
+  renderQuestionSheetPhotos();
+  setStatus(t("question_sheet_photo_removed"));
+  saveDeskState();
 }

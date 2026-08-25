@@ -13,13 +13,14 @@
 // and fails when a newly added lazy window forgets to register.
 
 import { existsSync, readFileSync } from "node:fs";
-import { createFeatureTest, read, resolveProjectPath } from "../helpers/feature-test-harness.mjs";
+import { createFeatureTest, read, resolveProjectPath, windowRegistryRecords } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("lazy-window-restore");
 const html = read("index.html");
 const manifest = read("tooling/runtime-manifest.mjs");
 const dictionaryHelp = read("app/features/dictionary-help.js");
 const windowManager = read("app/core/window-manager.js");
+const windowRegistry = read("app/core/window-registry.js");
 const actions = read("app/core/actions.js");
 const selectionServices = read("app/features/selection-services.js");
 const wireup = read("app/core/wireup.js");
@@ -59,7 +60,18 @@ const allModules = [...new Set([
   ...lazyModules,
 ])].filter((path) => existsSync(resolveProjectPath(path)));
 
-const moduleSources = new Map(allModules.map((path) => [path, readFileSync(resolveProjectPath(path), "utf8")]));
+// Index each module's literal #id selectors once. The previous implementation
+// rescanned every module source for every id in every window, which made this
+// single static contract one of the suite's longest tests as the runtime grew.
+// This preserves the exact single/double-quoted selector rule while making
+// ownership scoring a set intersection instead of repeated full-text scans.
+const moduleSelectorIds = new Map(allModules.map((path) => {
+  const source = readFileSync(resolveProjectPath(path), "utf8");
+  const selectorIds = new Set(
+    [...source.matchAll(/(["'])#([a-z0-9-]+)\1/g)].map((match) => match[2])
+  );
+  return [path, selectorIds];
+}));
 const lazySet = new Set(lazyModules);
 
 const ownership = [];
@@ -67,8 +79,8 @@ windowSections.forEach(({ name, ids }) => {
   if (!ids.length) return;
   let owner = null;
   let best = 0;
-  moduleSources.forEach((source, path) => {
-    const hits = ids.filter((id) => source.includes(`"#${id}"`) || source.includes(`'#${id}'`)).length;
+  moduleSelectorIds.forEach((selectorIds, path) => {
+    const hits = ids.filter((id) => selectorIds.has(id)).length;
     if (hits > best) {
       best = hits;
       owner = path;
@@ -80,18 +92,15 @@ windowSections.forEach(({ name, ids }) => {
 test.assert(ownership.length > 0, "at least one window is owned by a lazy module");
 
 // --- the registry ------------------------------------------------------------
-const registryBlock = windowManager.slice(
-  windowManager.indexOf("const lazyWindowModules = {"),
-  windowManager.indexOf("async function loadLazyWindowModule")
-);
-test.assert(!!registryBlock, "window-manager declares a lazyWindowModules registry");
+const registryBlock = windowRegistry;
+test.assert(registryBlock.includes("const windowRegistry = Object.freeze({"), "one registry declares every window");
 test.assertIncludes(
   windowManager,
   "await loadLazyWindowModule(name);",
   "openWindow loads the lazy module for the window it is opening"
 );
 test.assertIncludes(
-  windowManager,
+  windowRegistry,
   "await ensureDictionaryHelpModule();",
   "Dictionary and System Help restore their behavior module as well as their data"
 );
@@ -136,9 +145,8 @@ ownership.forEach(({ name, owner, hits }) => {
     );
     return;
   }
-  test.assertMatches(
-    registryBlock,
-    new RegExp(`\\b${name}:\\s*\\{[\\s\\S]{0,200}?ensure:`),
+  test.assert(
+    /ensure:/.test(windowRegistryRecords()[name]?.lazy || ""),
     `${name} is registered as a lazy window, so restore cannot leave it inert (owned by ${owner}, ${hits} ids)`
   );
 });

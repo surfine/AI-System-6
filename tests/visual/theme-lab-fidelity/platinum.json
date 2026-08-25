@@ -870,12 +870,12 @@
         "edgeErrorPx": 1.6,
         "materialError": 30
       },
-      "floor": {
-        "status": "gap",
-        "failing": [
-          "materialError"
-        ],
-        "note": "Palette not yet calibrated against the native 9.0 document icon; silhouette meets the floor."
+    "floor": {
+      "status": "unreliable-reference",
+      "exempt": [
+        "materialError"
+      ],
+      "note": "The pinned desktop crop at x=577/y=220 is the QuickTime Player application icon, not a generic document. It cannot calibrate document material; a clean native Mac OS 9 generic-document crop is the open evidence task."
       }
     },
     {
@@ -952,12 +952,12 @@
         "edgeErrorPx": 1,
         "materialError": 85
       },
-      "floor": {
-        "status": "gap",
-        "failing": [
-          "materialError"
-        ],
-        "note": "Palette not yet calibrated against the native 9.0 floppy icon; silhouette meets the floor."
+    "floor": {
+      "status": "unreliable-reference",
+      "exempt": [
+        "materialError"
+      ],
+      "note": "The pinned desktop crop at x=576/y=350 is the Sherlock 2 application icon, not a floppy disk. It cannot calibrate floppy material; a clean native Mac OS 9 floppy crop is the open evidence task."
       }
     },
     {
@@ -993,12 +993,12 @@
         "edgeErrorPx": 1,
         "materialError": 55
       },
-      "floor": {
-        "status": "gap",
-        "failing": [
-          "materialError"
-        ],
-        "note": "The generic application left the sixteen-object priority lineage; its retained top-set 16 px runtime glyph has stable geometry but is not yet palette-calibrated to the pinned Mac OS 9 crop."
+    "floor": {
+      "status": "unreliable-reference",
+      "exempt": [
+        "materialError"
+      ],
+      "note": "The pinned Open-dialog crop at x=124/y=37 is an Applications-folder list icon, not the generic application glyph rendered by the fixture. It cannot calibrate application material; a matching native 16 px application crop is the open evidence task."
       }
     },
     {

@@ -244,6 +244,24 @@
   filter: invert(1);
 }
 
+/* A menu title reverses while its menu is pulled down, and System 6 reverses
+   everything the title contains. The classic menu-bar icons are black art on
+   transparency, so the reversed title swallows them: the model and project
+   icons went black-on-black and only the label stayed readable. The art is
+   1-bit, so inverting it is the reversal - the transparent ground keeps its
+   alpha, and the silhouette mask stays hidden because the title already
+   paints the black field the mask would draw. */
+.menu.is-open > button .sys-icon-svg.has-classic-mask .sys-icon-classic-art,
+.menu-bar > .menu > button:focus-visible .sys-icon-svg.has-classic-mask .sys-icon-classic-art {
+  filter: invert(1);
+}
+
+@media (hover: hover) {
+  .menu-bar > .menu > button:hover .sys-icon-svg.has-classic-mask .sys-icon-classic-art {
+    filter: invert(1);
+  }
+}
+
 .finder-item.is-archived {
   color: var(--shade-dark);
 }
@@ -777,6 +795,19 @@
 /* Desktop icons shrink with the Finder View > Small Icons command. The
    .desktop.is-small-icons prefix out-specifies the liquid-glass desktop icon
    sizing rule (which loads later), so one selector works in both themes. */
+/* An ejected disk stays on the desk, dimmed.
+
+   Dimmed here is the native thing rather than a modern approximation of it:
+   System 6 greyed a 1-bit icon by dropping every other pixel, so the mask is a
+   real 50% checker at the icon's own pixel pitch, not a lowered opacity. The
+   name keeps its ink — the disk is unreadable, not unnamed. */
+.desktop-icon.is-ejected-disk .sys-icon {
+  -webkit-mask-image: repeating-conic-gradient(#000 0% 25%, transparent 0% 50%);
+  mask-image: repeating-conic-gradient(#000 0% 25%, transparent 0% 50%);
+  -webkit-mask-size: 2px 2px;
+  mask-size: 2px 2px;
+}
+
 .desktop.is-small-icons .desktop-icon {
   width: 60px;
   gap: 3px;

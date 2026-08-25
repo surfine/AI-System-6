@@ -1,9 +1,15 @@
-<!-- canonical-source: docs/ESM-MIGRATION-PLAN.md -->
-<!-- source-sha256: 7dabdaef25aa6f25aefb9c137c5e7fa57391fa6fc3f0edd87e80c9557e847759 -->
+<!-- canonical-source: docs/archive/ESM-MIGRATION-PLAN.md -->
+<!-- source-sha256: 53ab84a5f1f71e86e2c7640a7b8e2696a4a225905f635b2dbf45af801c4c5e63 -->
 
 > 英文版为准 ・ 仅供人类参考
 
 # 渐进式 ESM 迁移方案
+
+> **已归档，未排期。** 本方案不执行。`apps/desktop/app/` 下没有任何 import：
+> 零个 `import ... from`，零个 `type="module"`；而 CLAUDE.md 的「不要引入」
+> 清单明确排除「前端框架，或给 app JS 加转译/构建步骤——它按设计就是纯拼接的
+> JS」，而本方案正需要那一步。保留它是为了其中的推理，不是当作待办。
+> 归档于 2026-08-22。
 
 这是后续方案，不属于安全、额度、持久化或渲染修复的一部分，也不授权迁移框架或重做 UI。
 

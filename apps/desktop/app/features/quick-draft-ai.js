@@ -137,7 +137,7 @@ async function requestQuickDraft(stage = "brief", options = {}) {
     const targetDuration = normalizeDuration(refs.duration?.value, targetFormat);
     const existingHumanAnchor = humanAnchorSnapshot();
     const humanAnchor = existingHumanAnchor || currentBody;
-    const protectedRanges = protectedRangesSnapshot();
+    const protectedRanges = modelProtectedRanges();
     const protectedTools = window.AISystem6ProtectedRanges;
     const sentinelized = protectedTools.protectTextWithSentinels(currentBody, protectedRanges);
     const setup = quickDraftSetupSnapshot();
@@ -174,7 +174,9 @@ async function requestQuickDraft(stage = "brief", options = {}) {
       userNotes: `${taskPrefix}${options.userNotes || ""}`.trim(),
       intake,
       ventLog: intake.ventLog,
-      chatMaterials: intake.chatMaterials,
+      // Pictures are materialized here, at the edge. The record keeps only an
+      // id into the shared store; a model request has to carry the bytes.
+      chatMaterials: quickDraftMaterialsForModel(intake.chatMaterials),
       outlineSeed: intake.outlineSeed,
       strategyReport: strategySnapshot(),
       sources: sourceRecords,
@@ -196,7 +198,12 @@ async function requestQuickDraft(stage = "brief", options = {}) {
       const result = await sendLocalModelTask({
         payload: {
           model: payload.model || getLocalModelRequestName(),
-          messages: window.AISystem6ModelTaskRuntime.buildQuickDraftMessages(payload),
+          // Same pictures the cloud path sends, attached in the browser because
+          // this prompt is built here.
+          messages: attachImagesToModelMessages(
+            window.AISystem6ModelTaskRuntime.buildQuickDraftMessages(payload),
+            payload.chatMaterials
+          ),
           temperature: 0.35,
           max_tokens: 5200,
           stream: false,
@@ -291,15 +298,18 @@ async function requestQuickDraft(stage = "brief", options = {}) {
           reason: "before-ai",
           source: "quick-draft",
         });
-        patch.workspace.versions = [...requestRecord.workspace.versions, version].slice(-100);
+        patch.workspace.versions = [...darkroomOf(requestRecord, requestProjectId).versions, version].slice(-100);
       }
-      if (!hasRecordedNegative()) {
-        patch.workspace.composition = {
-          ...requestRecord.workspace.composition,
-          negative: previousBody,
-          negativeUpdatedAt: new Date().toISOString(),
-        };
-      }
+      // One composition patch: the negative is stamped once, and every pass
+      // records the body it handed back so later writer edits are not charged
+      // to it.
+      const deliveredAt = new Date().toISOString();
+      patch.workspace.composition = {
+        ...darkroomOf(requestRecord, requestProjectId),
+        ...(hasRecordedNegative() ? {} : { negative: previousBody, negativeUpdatedAt: deliveredAt }),
+        modelDelivered: finalBody,
+        modelDeliveredAt: deliveredAt,
+      };
       refs.draft.value = finalBody;
       patch.draft = refs.draft.value;
       patch.workspace.body = refs.draft.value;
@@ -473,7 +483,7 @@ async function requestMingmingQuickDraft() {
     const previousBody = currentBody;
     const humanAnchor = humanAnchorSnapshot() || previousBody;
     const explanationLens = quickDraftSetupSnapshot(slot.record).explanationLens;
-    const protectedRanges = protectedRangesSnapshot(slot.record);
+    const protectedRanges = modelProtectedRanges(slot.record);
     const protectedTools = window.AISystem6ProtectedRanges;
     const sentinelized = protectedTools.protectTextWithSentinels(previousBody, protectedRanges);
     const prompt = buildQuickDraftMingmingPrompt({
@@ -545,11 +555,11 @@ async function requestMingmingQuickDraft() {
         reason: "before-ai",
         source: "quick-draft",
       });
-      patch.workspace.versions = [...currentRecord.workspace.versions, version].slice(-100);
+      patch.workspace.versions = [...darkroomOf(currentRecord).versions, version].slice(-100);
     }
     if (!hasRecordedNegative()) {
       patch.workspace.composition = {
-        ...currentRecord.workspace.composition,
+        ...darkroomOf(currentRecord),
         negative: previousBody,
         negativeUpdatedAt: new Date().toISOString(),
       };
@@ -798,7 +808,7 @@ async function requestEli5Rewrite() {
   setBusy(true);
   setQuickDraftStatus(t("quick_draft_eli5_rewriting"));
   try {
-    const protectedRanges = protectedRangesSnapshot(slot.record);
+    const protectedRanges = modelProtectedRanges(slot.record);
     const protectedTools = window.AISystem6ProtectedRanges;
     const sentinelized = protectedTools.protectTextWithSentinels(currentBody, protectedRanges);
     const baseline = explanationLens?.baselineKnowledge || "secondary-school";
@@ -887,11 +897,11 @@ async function applyQuickDraftEli5Rewrite() {
       reason: "before-eli5-rewrite",
       source: "quick-draft",
     });
-    patch.workspace.versions = [...currentRecord.workspace.versions, version].slice(-100);
+    patch.workspace.versions = [...darkroomOf(currentRecord).versions, version].slice(-100);
   }
   if (!hasRecordedNegative()) {
     patch.workspace.composition = {
-      ...currentRecord.workspace.composition,
+      ...darkroomOf(currentRecord),
       negative: previousBody,
       negativeUpdatedAt: new Date().toISOString(),
     };
@@ -918,16 +928,6 @@ async function cancelQuickDraftEli5Rewrite() {
   hideQuickDraftEli5Candidate();
   setQuickDraftStatus(t("quick_draft_eli5_cancelled"));
   return true;
-}
-
-async function appendEli5ReviewToClioTalk(markdown = "") {
-  if (!markdown) return false;
-  await ensureQuickDraftClioTalk();
-  if (typeof addMessage === "function") {
-    addMessage("assistant", markdown);
-    return true;
-  }
-  return false;
 }
 
 async function requestEli5Review() {
@@ -979,16 +979,19 @@ async function requestEli5Review() {
     const raw = String(result?.choices?.[0]?.message?.content || "").trim();
     const data = window.AISystem6ModelTaskRuntime.parseJsonText(raw);
     if (!data || typeof data !== "object") {
-      throw new Error(currentLanguage === "zh" ? "ELI5 检查没有返回可解析的 JSON。" : "ELI5 review did not return parseable JSON.");
+      throw new Error(t("eli5_review_did_not_return_parseable"));
     }
-    const markdown = window.AISystem6ModelTaskRuntime.eli5ReviewMarkdown(data, currentLanguage);
     if (activeProjectId !== projectId) return false;
-    const appended = await appendEli5ReviewToClioTalk(markdown);
-    if (!appended) {
+    // Findings return to the draft as anchored rows, not as a ClioTalk report.
+    const findings = Array.isArray(data.findings)
+      ? data.findings.filter((finding) => finding && typeof finding === "object")
+      : [];
+    const shown = window.AISystem6QuickDraftListen?.setQuickDraftFindings?.(findings, data.keep);
+    if (typeof shown !== "number") {
       setQuickDraftStatus(t("quick_draft_command_empty"));
       return false;
     }
-    setQuickDraftStatus(t("quick_draft_done"));
+    setQuickDraftStatus(findings.length ? t("quick_draft_done") : t("quick_draft_eli5_review_none"));
     window.AISystem6ModelUserErrors?.clearRetryable?.("quickDraft-eli5-review");
     return true;
   } catch (error) {

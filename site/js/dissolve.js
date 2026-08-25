@@ -6,8 +6,9 @@
 // The page chrome follows the nearest era, so the whole document ages with
 // the photograph.
 
-import { ERAS, setEra, currentEra, fontLabel, onEraChange } from "./eras.js?v=20260814i";
-import { frameSrc, machineManifest } from "./machine.js?v=20260814i";
+import { ERAS, setEra, currentEra, fontLabel, onEraChange } from "./eras.js?v=20260820a";
+import { frameSrc, machineManifest } from "./machine.js?v=20260820a";
+import { L } from "./copy.js?v=20260820a";
 
 const doc = document;
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -82,7 +83,10 @@ export function createDissolve(container, opts = {}) {
     img.decoding = "async";
     img.src = frameSrc(era.id);
     img.alt = index === 0
-      ? "One AI System 6 desktop, captured from the real app, dissolving from its 1988 System 6 appearance to 2026 Liquid Glass. The windows, the manuscript, and the files never move."
+      ? L(
+        "One AI System 6 desktop, captured from the real app, dissolving from its 1988 System 6 appearance to 2026 Liquid Glass. The windows, the manuscript, and the files never move.",
+        "同一张 AI System 6 桌面的真实截图，从 1988 年的 System 6 渐变到 2026 年的 Liquid Glass；窗口、正文和文件始终留在原位。",
+      )
       : "";
     if (index > 0) img.setAttribute("aria-hidden", "true");
     img.style.opacity = index === 0 ? "1" : "0";
@@ -97,8 +101,8 @@ export function createDissolve(container, opts = {}) {
   readout.className = "dissolve-readout";
   readout.innerHTML = `<span class="dissolve-year">1988</span>`
     + `<span class="dissolve-era">System 6</span>`
-    + `<span class="dissolve-role">The claim</span>`
-    + `<span class="dissolve-font">Set in Chicago</span>`;
+    + `<span class="dissolve-role">${ERAS[0].role}</span>`
+    + `<span class="dissolve-font">${L("Set in Chicago", "字体：Chicago")}</span>`;
   const yearEl = readout.querySelector(".dissolve-year");
   const eraEl = readout.querySelector(".dissolve-era");
   // Each stop on the axis has a job in the argument. Naming it here is what
@@ -121,8 +125,8 @@ export function createDissolve(container, opts = {}) {
   range.max = "1000";
   range.step = "1";
   range.value = "0";
-  range.setAttribute("aria-label", "Drag from 1988 to 2026");
-  range.setAttribute("aria-valuetext", "1988, System 6");
+  range.setAttribute("aria-label", L("Drag from 1988 to 2026", "在 1988 到 2026 年之间拖动"));
+  range.setAttribute("aria-valuetext", L("1988, System 6", "1988，System 6"));
   const ticks = doc.createElement("div");
   ticks.className = "dissolve-ticks";
   stops.forEach(({ era, t }) => {
@@ -164,8 +168,11 @@ export function createDissolve(container, opts = {}) {
     eraEl.textContent = near.label;
     roleEl.textContent = near.role;
     const face = fontLabel(near);
-    fontEl.textContent = `Set in ${face}`;
-    range.setAttribute("aria-valuetext", `${year}, ${near.label}, ${near.role}, set in ${face}`);
+    fontEl.textContent = L(`Set in ${face}`, `字体：${face}`);
+    range.setAttribute("aria-valuetext", L(
+      `${year}, ${near.label}, ${near.role}, set in ${face}`,
+      `${year}，${near.label}，${near.role}，字体 ${face}`,
+    ));
     ticks.querySelectorAll(".dissolve-tick").forEach((tick) =>
       tick.classList.toggle("is-near", tick.dataset.era === near.id));
     // The document itself ages with the photograph.

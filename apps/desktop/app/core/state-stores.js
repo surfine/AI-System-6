@@ -37,6 +37,7 @@ function projectStateBindings() {
     ["chatFiles", chatFiles],
     ["chatFolders", chatFolders],
     ["scraps", scraps],
+    ["imageAttachments", imageAttachments],
     ["projectCdItems", projectCdItems],
     ["trashItems", trashItems],
     ["projectReferences", projectReferences],

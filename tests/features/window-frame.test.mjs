@@ -307,6 +307,14 @@ test.assertMatches(themes, /--system-titlebar-control-size: 11px;\s*\n\s*--syste
 test.assertMatches(themes, /--system-titlebar-close-art-offset-x: 0px;\s*\n\s*--system-titlebar-resize-art-offset-x: 0px;/, "Platinum glyph offsets remain valid CSS lengths inside calc()");
 test.assertMatches(wireup, /win\.querySelector\("\.shade-box"\)\?\.addEventListener\("click", \(\) => \{\s*toggleCollapsed\(win\);/, "The collapse box invokes WindowShade");
 test.assertNotMatches(wireup, /shade-box[\s\S]{0,120}zoomWindow/, "The collapse box never falls back to Zoom");
+// A missing closing brace once left this rule nested inside the classic
+// grow-box rule — valid-looking CSS that never painted (salvaged guard,
+// stash@{2} "mark optics").
+test.assertNotMatches(
+  themes,
+  /body\[data-theme-family="classic"\]:not\(\[data-theme="classic"\]\) \.grow-box \{[^}]*body\[data-theme="platinum"\] \.title-bar \.shade-box::after/,
+  "The Platinum WindowShade mark is a top-level painter, not an unreachable rule nested inside the grow box"
+);
 test.assertMatches(themes, /body\[data-theme="platinum"\] \.title-bar \.resize-box::after \{[^}]*width: 6px;[^}]*height: 6px;[^}]*right top \/ 1px 6px no-repeat,[^}]*left bottom \/ 6px 1px no-repeat;/, "Platinum draws the real six-pixel lower-left Zoom corner");
 test.assertMatches(themes, /body\[data-theme="platinum"\] \.title-bar \.shade-box::after \{[^}]*width: 9px;[^}]*height: 3px;[^}]*left top \/ 9px 1px no-repeat,[^}]*left bottom \/ 9px 1px no-repeat;/, "Platinum draws WindowShade's two native nine-pixel rules");
 test.assertIncludes(themes, "right top / calc(var(--system-titlebar-control-slot) + var(--system-titlebar-shade-slot)) 100% no-repeat", "Platinum clears the striped title field behind both right-side Zoom and WindowShade boxes");

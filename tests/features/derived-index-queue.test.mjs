@@ -77,9 +77,12 @@ const boot = read("app/core/boot.js");
 const adapter = read("app/core/derived-index-queue.js");
 test.assertIncludes(manifest, '"app/shared/derived-index-runtime.js"', "the pure queue runtime loads with the app");
 test.assertIncludes(manifest, '"app/core/derived-index-queue.js"', "the post-commit browser adapter loads with the app");
+// The guard is what matters, not whether it is a single statement: other work
+// now shares the same `if (saved)` block (see live-progress: whatever is
+// persisted is announced).
 test.assertMatches(
   persistence,
-  /persistDeskState\(\)\)\s*\.then\(\(saved\) => \{\s*if \(saved\) window\.AISystem6DerivedIndexQueue\?\.afterProjectCommit\(\)/,
+  /persistDeskState\(\)\)\s*\.then\(\(saved\) => \{\s*if \(saved\) \{?\s*(?:\/\/[^\n]*\n\s*)*window\.AISystem6DerivedIndexQueue\?\.afterProjectCommit\(\)/,
   "derived work starts only after the source transaction succeeds"
 );
 test.assertIncludes(boot, "AISystem6DerivedIndexQueue.restore()", "durable pending jobs resume at startup");
@@ -87,5 +90,19 @@ test.assertIncludes(adapter, 'const derivedIndexStorageKey = "derived-index:v1"'
 test.assertIncludes(adapter, "fromDerivedIndex: true", "ready derived chunks are published to retrieval");
 test.assertIncludes(adapter, "rebuildDerivedIndexProject", "the queue exposes an explicit project rebuild path");
 test.assertNotIncludes(adapter, "saveDeskState(", "derived products cannot recursively save or mutate source stores");
+
+// A picture the writer had read is searchable material.
+//
+// The album has stored that reading on the picture record for a long time, and
+// nothing ever read it back: visionNotes was written in exactly one place and
+// consumed in none. A photographed whiteboard sat in the project as an untitled
+// thumbnail while the only description of it that existed could not be found.
+const queueSource = read("app/core/derived-index-queue.js");
+test.assertIncludes(queueSource, 'sourceKind: "picture"',
+  "a picture is a kind of source the index knows about");
+test.assertIncludes(queueSource, "content: picture.visionNotes",
+  "and what it indexes is the reading, which is the only text a picture has");
+test.assertIncludes(queueSource, 'String(picture?.visionNotes || "").trim()',
+  "a picture with no reading stays out of the index, because there is nothing to match on");
 
 test.finish();

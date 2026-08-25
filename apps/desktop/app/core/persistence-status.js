@@ -206,7 +206,8 @@ function settingsSnapshotPayload() {
     language: currentLanguage,
     writerMode: false,
     projectMounted: isProjectMounted,
-    guideSeen,
+    clioOnboardingCompleted,
+    clioProviderPreference,
     multiFinderSwitcherHintSeen,
     writingBell: getWritingBellState(),
     alarmClock: typeof getAlarmClockState === "function" ? getAlarmClockState() : null,
@@ -275,6 +276,10 @@ async function switchLanguage() {
   await ensureLanguageFor(next).catch(() => {});
   currentLanguage = next;
   applyLanguage();
+  // applyLanguage() only reaches [data-i18n]. The accessory draws its captured
+  // context from the record, so its labels are generated and have to be drawn
+  // again. `typeof`, because the module is lazy.
+  if (typeof renderHoldThought === "function") renderHoldThought();
   scheduleWorkspaceRender({
     readerTabs: true,
     projectReferences: true,
@@ -287,6 +292,186 @@ async function switchLanguage() {
   saveDeskState();
 }
 
+// Live progress: two guarantees that used to be one problem.
+//
+//   B  the route's working text becomes durable while you type, so losing the
+//      write lease (or the tab) costs nothing.
+//   C  every other window of the same project shows that text as it lands, so
+//      a window without the pen is a second monitor rather than a frozen one.
+//
+// Deliberate saving is untouched, and the distinction is the point: this
+// protects PROGRESS (the project record), while an explicit Save makes a FILE
+// (the TeachText document). Nothing here ever reports "Saved" - claiming a
+// document was filed because progress was committed would be exactly the kind
+// of lie the status line was built to stop telling.
+//
+// C rides on B rather than mirroring keystrokes: savePipelineData() has already
+// normalised every surface into the project record, so one payload after each
+// commit is always coherent, and the receiver repaints through the same
+// project-to-DOM sync functions the route already uses - which is where the
+// "never overwrite the surface being typed in" guards already live.
+const liveProgressChannelName = "ai-system6-content";
+const liveProgressIdleMs = 900;
+const liveProgressMaxMs = 6000;
+let liveProgressChannel = null;
+let liveProgressTimer = 0;
+let liveProgressDeadline = 0;
+let applyingMirroredText = false;
+
+function liveProgressInstanceId() {
+  return window.AISystem6WriteLease?.instanceId || "";
+}
+
+function openLiveProgressChannel() {
+  if (liveProgressChannel) return liveProgressChannel;
+  try {
+    liveProgressChannel = new BroadcastChannel(liveProgressChannelName);
+    liveProgressChannel.addEventListener("message", handleLiveProgressMessage);
+  } catch {
+    liveProgressChannel = null;
+  }
+  return liveProgressChannel;
+}
+
+function broadcastWorkingText(project) {
+  if (!project?.id) return;
+  try {
+    openLiveProgressChannel()?.postMessage({
+      type: "working-text",
+      from: liveProgressInstanceId(),
+      projectId: project.id,
+      questionSheet: project.questionSheet || "",
+      outline: project.outline || "",
+      drafts: (project.drafts || []).map((draft) => ({
+        id: draft?.id || "",
+        title: draft?.title || "",
+        body: draft?.body || "",
+      })),
+    });
+  } catch {}
+}
+
+function applyMirroredWorkingText(message) {
+  const project = typeof getActiveProject === "function" ? getActiveProject() : null;
+  if (!project || project.id !== message.projectId) return;
+  project.questionSheet = message.questionSheet;
+  project.outline = message.outline;
+  const byId = new Map((message.drafts || []).map((draft) => [draft.id, draft]));
+  (project.drafts || []).forEach((draft) => {
+    const next = byId.get(draft?.id);
+    if (!next) return;
+    draft.title = next.title || draft.title;
+    draft.body = next.body;
+  });
+
+  // Repaint. The route's own sync helpers refuse to touch a FOCUSED editor,
+  // which is the right guard for the window holding the pen and the wrong one
+  // here: a mirror window keeps focus from the last time it was clicked, and
+  // would then sit stale forever - the exact thing the mirror exists to fix.
+  // A window without the lease cannot be the one being typed into, so it
+  // repaints regardless of focus, keeping its scroll position so the reader's
+  // place on the page does not jump on every keystroke elsewhere.
+  const isWriter = window.AISystem6WriteLease?.canMutate?.() === true;
+  if (isWriter) {
+    if (questionSheetBodyInput && document.activeElement !== questionSheetBodyInput) {
+      setMirroredEditorValue(questionSheetBodyInput, message.questionSheet);
+    }
+    if (typeof syncOutlineDomFromProject === "function") syncOutlineDomFromProject(project);
+    if (typeof syncDraftDomFromProject === "function") syncDraftDomFromProject(project);
+    if (typeof syncLinkedTeachTextFromProject === "function") syncLinkedTeachTextFromProject(project);
+  } else {
+    setMirroredEditorValue(questionSheetBodyInput, message.questionSheet);
+    setMirroredEditorValue(outlineContentEl, message.outline);
+    const draft = selectedDraftIndex >= 0 ? project.drafts?.[selectedDraftIndex] : null;
+    if (draft) setMirroredEditorValue(draftBodyInput, draft.body || "");
+    if (typeof syncLinkedTeachTextFromProject === "function") syncLinkedTeachTextFromProject(project);
+  }
+  if (typeof renderWritingSpineState === "function") renderWritingSpineState();
+}
+
+// A mirrored write goes through the input event so the markdown overlay
+// repaints with it; a silent value assignment would leave the painted layer
+// showing the previous text under a correct textarea.
+function setMirroredEditorValue(element, text) {
+  if (!element || element.value === text) return;
+  const scrollTop = element.scrollTop;
+  element.value = text;
+  element.scrollTop = scrollTop;
+  element.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+function handleLiveProgressMessage(event) {
+  const message = event?.data;
+  if (!message || message.type !== "working-text") return;
+  if (!message.from || message.from === liveProgressInstanceId()) return;
+  // The guard stops the repaint's own input events from bouncing straight back
+  // out as a new broadcast.
+  applyingMirroredText = true;
+  try {
+    applyMirroredWorkingText(message);
+  } catch (error) {
+    console.warn("Mirrored working text could not be applied.", error);
+  } finally {
+    applyingMirroredText = false;
+  }
+}
+
+function commitWorkingProgress() {
+  liveProgressTimer = 0;
+  liveProgressDeadline = 0;
+  if (window.AISystem6WriteLease?.canMutate?.() !== true) return;
+  if (typeof savePipelineData !== "function") return;
+  savePipelineData();
+  // Through the same announcement as every other persist, so one dedupe covers
+  // both roads and the mirror never repaints text it already has.
+  announceWorkingText();
+}
+
+// Commit after a short pause, and never later than liveProgressMaxMs into a
+// continuous run - so a writer who does not stop still cannot outrun the disk.
+function noteWorkingProgress() {
+  if (applyingMirroredText) return;
+  if (window.AISystem6WriteLease?.canMutate?.() !== true) return;
+  const now = Date.now();
+  if (!liveProgressDeadline) liveProgressDeadline = now + liveProgressMaxMs;
+  clearTimeout(liveProgressTimer);
+  liveProgressTimer = setTimeout(commitWorkingProgress, Math.max(0, Math.min(liveProgressIdleMs, liveProgressDeadline - now)));
+}
+
+function flushWorkingProgress() {
+  if (!liveProgressTimer) return;
+  clearTimeout(liveProgressTimer);
+  commitWorkingProgress();
+}
+
+// Subscribe at load, not on the first send. A window without the pen never
+// broadcasts, so a channel opened lazily by broadcastWorkingText() would leave
+// exactly the windows that need the mirror as the ones not listening for it.
+openLiveProgressChannel();
+
+// Leaving is the one moment a pending commit cannot wait for its timer.
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") flushWorkingProgress();
+});
+window.addEventListener("pagehide", () => flushWorkingProgress());
+
+// Deduped on the payload: saveDeskState is called from many places and often
+// twice for one action, and a mirror that repaints identical text for no
+// reason is a scroll position lost for no reason.
+let lastAnnouncedWorkingText = "";
+
+function announceWorkingText() {
+  if (window.AISystem6WriteLease?.canMutate?.() !== true) return;
+  const project = typeof getActiveProject === "function" ? getActiveProject() : null;
+  if (!project?.id) return;
+
+  const fingerprint = `${project.id}\u0000${project.questionSheet || ""}\u0000${project.outline || ""}`
+    + `\u0000${(project.drafts || []).map((draft) => `${draft?.id || ""}:${draft?.body || ""}`).join("\u0001")}`;
+  if (fingerprint === lastAnnouncedWorkingText) return;
+  lastAnnouncedWorkingText = fingerprint;
+  broadcastWorkingText(project);
+}
+
 function saveDeskState() {
   if (!deskPersistenceWritable) return Promise.resolve(false);
   if (window.AISystem6WriteLease?.isReadOnly?.()) return Promise.resolve(false);
@@ -295,7 +480,17 @@ function saveDeskState() {
     .catch(() => {})
     .then(() => persistDeskState())
     .then((saved) => {
-      if (saved) window.AISystem6DerivedIndexQueue?.afterProjectCommit();
+      if (saved) {
+        window.AISystem6DerivedIndexQueue?.afterProjectCommit();
+        // Whatever is persisted is announced. Persistence and the mirror used
+        // to be two roads and only one of them told the other windows: the
+        // live-progress commit broadcast, saveDeskState did not. So every
+        // command that saves without typing -- adding a section, any structural
+        // edit of the outline, a toggle -- put the store ahead of every other
+        // window's memory of it, and the next window to take the pen wrote its
+        // older copy back over the top.
+        announceWorkingText();
+      }
       return saved;
     });
   return saveDeskStatePromise;
@@ -307,7 +502,13 @@ function saveDeskState() {
 // a saved era (e.g. Platinum) survives a restart instead of reverting to
 // Classic. restoreDeskState() re-applies with announce:false, so this
 // listener never loops.
-document.addEventListener("ai-system6-themechange", () => {
+document.addEventListener("ai-system6-themechange", (event) => {
+  // Theme Lab, deep links, and development previews repaint the same semantic
+  // desktop but do not become the user's saved Appearance. The registry marks
+  // the one transition that committed; only that transition may update the
+  // desk record. `saveDesk:false` is used by restore/boot paths that already
+  // own persistence ordering.
+  if (event.detail?.committed !== true || event.detail?.saveDesk === false) return;
   saveDeskState();
 });
 
@@ -832,7 +1033,14 @@ async function connectLocalLmStudio(options = {}) {
     const embeddingModels = Array.isArray(data.embeddingModels) ? data.embeddingModels : [];
     setModelPickerOptions(chatModels, embeddingModels);
     const loadedModel = syncLoadedLocalModel(data, chatModels);
-    let selectedModel = findMatchingModel(chatModels, modelInput.value.trim());
+    let selectedModel = loadedModel
+      || findMatchingModel(chatModels, activeChatModelIdentifier)
+      || findMatchingModel(chatModels, modelInput.value.trim());
+    if (selectedModel && loadedModel) {
+      modelInput.value = selectedModel.id;
+      if (localModelSelectEl()) localModelSelectEl().value = selectedModel.id;
+      updateContextMaxForCurrentModel();
+    }
     // A previous endpoint can leave its model id in the shared input. Normal
     // picker mode must select from the new endpoint's actual inventory or the
     // connection looks successful while every composer remains disabled.
@@ -1097,6 +1305,7 @@ async function detectLocalModelConnection() {
 }
 
 async function resetAiConnection() {
+  window.AISystem6ClioProvider?.setPreference?.("auto", { persist: false });
   localLmStudioConnectionEnabled = false;
   const provider = document.getElementById("local-provider");
   if (provider) provider.value = "lm-studio";
@@ -1358,6 +1567,7 @@ async function persistDeskState() {
       { key: "trash", storeName: trashStoreName, items: trashItems },
       { key: "chatFolders", storeName: chatFoldersStoreName, items: chatFolders },
       { key: "chatFiles", storeName: chatFilesStoreName, items: chatFiles },
+      { key: "imageAttachments", storeName: imageAttachmentsStoreName, items: imageAttachments },
     ].map(deskCollectionPlan);
     const changedPlans = plans.filter((plan) => plan.puts.length || plan.deletes.length);
     const settingsPayload = settingsSnapshotPayload();
@@ -1441,6 +1651,18 @@ async function persistDeskState() {
   }
 }
 
+function hasMeaningfulClioOnboardingWork() {
+  if (chatFiles.some((file) => Array.isArray(file?.messages) && file.messages.length)) return true;
+  if (scraps.length || projectReferences.length) return true;
+  return projects.some((project) => (
+    String(project?.questionSheet || "").trim()
+    || (Array.isArray(project?.drafts) && project.drafts.some((draft) => String(draft?.body || "").trim()))
+    || (Array.isArray(project?.documentTabs) && project.documentTabs.some((tab) => (
+      String(tab?.state?.body || tab?.state?.markdown || "").trim()
+    )))
+  ));
+}
+
 async function loadDeskState() {
   lastMigrationNote = t("migration_clean");
   let db;
@@ -1451,7 +1673,8 @@ async function loadDeskState() {
     db = await openAppDb();
     tx = db.transaction([
       projectsStoreName, scrapsStoreName, trashStoreName,
-      chatFoldersStoreName, chatFilesStoreName, keyvalStoreName
+      chatFoldersStoreName, chatFilesStoreName, imageAttachmentsStoreName,
+      keyvalStoreName
     ], "readonly");
     transactionCompletion = window.AISystem6StorageTransactions.transactionDone(tx);
 
@@ -1462,6 +1685,7 @@ async function loadDeskState() {
       storedTrashKeys,
       storedChatFolders,
       storedChatFiles,
+      storedImageAttachments,
       settings,
     ] = await Promise.all([
       idbRequest(tx.objectStore(projectsStoreName).getAll()),
@@ -1470,17 +1694,20 @@ async function loadDeskState() {
       idbRequest(tx.objectStore(trashStoreName).getAllKeys()),
       idbRequest(tx.objectStore(chatFoldersStoreName).getAll()),
       idbRequest(tx.objectStore(chatFilesStoreName).getAll()),
+      idbRequest(tx.objectStore(imageAttachmentsStoreName).getAll()),
       idbRequest(tx.objectStore(keyvalStoreName).get("settings")),
     ]);
     await transactionCompletion;
 
     applySettings(settings || {});
-    shouldRewriteSanitizedSettings = Object.prototype.hasOwnProperty.call(
-      settings || {},
-      "localApiToken"
-    );
+    shouldRewriteSanitizedSettings = Object.prototype.hasOwnProperty.call(settings || {}, "localApiToken")
+      || (
+        !Object.prototype.hasOwnProperty.call(settings || {}, "clioOnboardingCompleted")
+        && Object.prototype.hasOwnProperty.call(settings || {}, "guideSeen")
+      );
     projects.splice(0, projects.length, ...storedProjects);
     scraps.splice(0, scraps.length, ...storedScraps);
+    imageAttachments.splice(0, imageAttachments.length, ...(storedImageAttachments || []));
     storedTrashItems.forEach((item, index) => {
       if (item._storageId === undefined || item._storageId === null || item._storageId === "") {
         item._storageId = storedTrashKeys[index] ?? crypto.randomUUID();
@@ -1489,6 +1716,13 @@ async function loadDeskState() {
     trashItems.splice(0, trashItems.length, ...storedTrashItems);
     chatFolders.splice(0, chatFolders.length, ...storedChatFolders);
     chatFiles.splice(0, chatFiles.length, ...storedChatFiles);
+    if (
+      !Object.prototype.hasOwnProperty.call(settings || {}, "clioOnboardingCompleted")
+      && hasMeaningfulClioOnboardingWork()
+    ) {
+      clioOnboardingCompleted = true;
+      shouldRewriteSanitizedSettings = true;
+    }
     deskPersistenceWritable = true;
     storageSnapshotCache.clear();
     storageRecordFingerprintCache.clear();
@@ -1498,6 +1732,7 @@ async function loadDeskState() {
       { key: "trash", storeName: trashStoreName, items: trashItems },
       { key: "chatFolders", storeName: chatFoldersStoreName, items: chatFolders },
       { key: "chatFiles", storeName: chatFilesStoreName, items: chatFiles },
+      { key: "imageAttachments", storeName: imageAttachmentsStoreName, items: imageAttachments },
     ].forEach((definition) => {
       const plan = deskCollectionPlan(definition);
       storageRecordFingerprintCache.set(definition.key, plan.current);
@@ -1695,7 +1930,13 @@ function applySettings(settings) {
   }
   if (settings.language === "zh" || settings.language === "en") currentLanguage = settings.language;
   writerMode = false;
-  if (typeof settings.guideSeen === "boolean") guideSeen = settings.guideSeen;
+  guideSeen = settings.guideSeen === true;
+  clioOnboardingCompleted = typeof settings.clioOnboardingCompleted === "boolean"
+    ? settings.clioOnboardingCompleted
+    : guideSeen;
+  clioProviderPreference = ["auto", "local", "website", "byok"].includes(settings.clioProviderPreference)
+    ? settings.clioProviderPreference
+    : "auto";
   if (typeof settings.multiFinderSwitcherHintSeen === "boolean") {
     multiFinderSwitcherHintSeen = settings.multiFinderSwitcherHintSeen;
   }
@@ -1707,6 +1948,10 @@ function applySettings(settings) {
     notePadPages = normalizeNotePadPages(settings.notePadPages);
   } else if (typeof settings.notePadText === "string") {
     notePadPages = normalizeNotePadPages([settings.notePadText]);
+  }
+  // Interruption slips leave; pages you typed stay. Once, on the way in.
+  if (typeof carryNotePadSlipsToHeldThoughts === "function") {
+    notePadPages = carryNotePadSlipsToHeldThoughts(notePadPages);
   }
   if (Number.isInteger(settings.notePadPageIndex)) notePadPageIndex = settings.notePadPageIndex;
   if (typeof settings.notePadDestination === "string") notePadDestination = settings.notePadDestination;
@@ -2279,10 +2524,52 @@ function markActiveLongTaskFailed(message) {
   });
 }
 
+// The status line belongs to the window doing the work. There is still exactly
+// one #status element - two elements would mean two truths - and it moves into
+// the active window's own host. Its home host lives in ClioTalk's info bar,
+// which is where it used to be permanently: with ClioTalk closed, which is the
+// normal writing layout, every message the product sent was written into an
+// element with a zero-sized box. A refused Save then looked like a dead key.
+function statusHostForActiveWindow() {
+  // The window the writer is working in, which is not always the window in
+  // front: the route raises the manuscript beside the surface being edited, so
+  // a message about the Question Sheet would otherwise appear in the manuscript.
+  const stop = typeof currentWritingRouteStop === "function" ? currentWritingRouteStop() : "";
+  const active = (stop && typeof getWindow === "function" ? getWindow(stop) : null)
+    || document.querySelector(".window.is-active:not(.is-hidden)");
+  const own = active?.querySelector?.("[data-status-host]");
+  if (own && !own.closest(".is-hidden")) return own;
+  return document.querySelector("[data-status-home]") || null;
+}
+
+function syncStatusHost() {
+  if (!statusEl) return;
+  const host = statusHostForActiveWindow();
+  if (!host || statusEl.parentElement === host) return;
+  host.append(statusEl);
+}
+
+// Clearing the status line is an intention, not a message. It used to be
+// spelled `clearStatus()`, and the element decided whether to hide
+// itself by comparing its own text against the **translated** word for
+// "Ready" — so rewording that one string in either language would have quietly
+// stopped every clear in the product from working, with nothing to fail.
+function clearStatus() {
+  setStatus("");
+}
+
 function setStatus(text, options = {}) {
   const message = decorateStatusMessage(text);
+  syncStatusHost();
   statusEl.textContent = message;
-  statusEl.hidden = String(text || "").trim() === String(t("ready") || "").trim();
+  statusEl.hidden = !String(message).trim();
+  // An always-drawn empty box is dead chrome: it asks a question ("what is
+  // this for?") and never answers it. The row keeps its height so a receipt
+  // never shoves the layout, but the frame is only drawn when there is
+  // something to read.
+  document.querySelectorAll(".window-status-strip").forEach((strip) => {
+    strip.classList.toggle("has-message", strip.contains(statusEl) && !statusEl.hidden);
+  });
   const shouldNotify = options.notify === true || (options.notify !== false && isSystemReceiptStatusMessage(message));
   if (!shouldNotify) return;
   const updatedTaskNotification = isSystemReceiptStatusMessage(message) ? markActiveLongTaskFailed(message) : "";
@@ -2490,9 +2777,11 @@ function decorateStatusMessage(text) {
   return `${message} · ${explanation}`;
 }
 
+// Messages that are already plain: nothing is appended to them. "Ready" is not
+// in the list any more because it is no longer a message — clearStatus() passes
+// an empty string, which never reaches here.
 function isPlainStatusMessage(message) {
   return [
-    t("ready"),
     t("saved"),
     t("thinking"),
     t("stopped"),

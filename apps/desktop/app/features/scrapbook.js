@@ -22,7 +22,7 @@ function autoGenerateScrapTitle(body, createdAt = new Date()) {
   const seed = getScrapTitleSeed(body);
   let title = seed.slice(0, 30).trim();
   if (seed.length > 30) title += "...";
-  if (!title) title = "Untitled Scrap";
+  if (!title) title = t("untitled_scrap");
 
   const timeStr = getScrapTimestamp({ createdAt }).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   return `${title} (${timeStr})`;
@@ -120,6 +120,9 @@ function createScrap(title, body, options = {}) {
     translationSource: options.translationSource || "",
     translationModel: options.translationModel || "",
     context: options.context || null,
+    // Ids into the shared image store. A clip may be a picture with no text at
+    // all; see the un-indexed note below for why that is allowed and honest.
+    images: Array.isArray(options.images) ? options.images.slice(0, SCRAP_IMAGE_LIMIT) : [],
     createdAt,
   };
   refreshScrapMetadata(scrap, { updateTitle: !title });
@@ -336,12 +339,9 @@ function toggleClipAttachment() {
     if (allAttached) attachedClipIds.delete(scrap.id);
     else attachedClipIds.add(scrap.id);
   });
-  if (allAttached) {
-    setStatus(t("detach"));
-  } else {
-    setStatus(t("attach_to_assistant"));
-    openWindow("assistant");
-  }
+  // No status: the clip appears in ClioTalk's attached list, and the window is
+  // opened here so the writer watches it land.
+  if (!allAttached) openWindow("assistant");
   renderAttachedClips();
   scheduleRenderTasks("contextPanel");
   if (typeof scheduleWorkingSessionSave === "function") scheduleWorkingSessionSave();
@@ -723,12 +723,13 @@ function renderScraps() {
     empty.disabled = true;
     fragment.append(empty);
     scrapListEl.append(fragment);
-    scrapTitleDisplay.textContent = "Untitled Scrap";
+    scrapTitleDisplay.textContent = t("untitled_scrap");
     scrapTagsEl.replaceChildren();
     showingScrapTranslation = false;
     scrapTranslationViewMode = "original";
     updateScrapTranslationControls(null);
     renderScrapSourceInfo(null);
+    renderScrapPictures(null);
     if (openScrapSourceButton) openScrapSourceButton.disabled = true;
     scrapBodyInput.value = "";
     renderScrapbookPager(visibleScraps);
@@ -782,6 +783,7 @@ function renderScraps() {
     scrapBodyInput.value = selectedScrapDisplayBody(selected);
     renderScrapTags(selected);
     renderScrapSourceInfo(selected);
+    renderScrapPictures(selected);
     if (openScrapSourceButton) {
       openScrapSourceButton.disabled = !canOpenScrapSource(selected);
     }
@@ -939,7 +941,7 @@ function renderContextPanel() {
   if (loadout?.entries?.length) {
     const title = document.createElement("div");
     title.className = "context-section-title";
-    title.textContent = currentLanguage === "zh" ? "本次实际装载（估算）" : "Actual request loadout (estimate)";
+    title.textContent = t("actual_request_loadout_estimate");
     listEl.append(title);
     loadout.entries.forEach((entry) => {
       const item = document.createElement("div");
@@ -953,7 +955,7 @@ function renderContextPanel() {
         retrospective: currentLanguage === "zh" ? "本次附加复盘" : "Attached retrospective",
         "retrieved-context": currentLanguage === "zh" ? "来源与项目文件" : "Sources and project files",
       };
-      item.innerHTML = `<div class="context-header"><strong>${escapeHtml(labels[entry.kind] || entry.kind)}</strong><span>${entry.estimatedTokens} ${currentLanguage === "zh" ? "估算 tokens" : "estimated tokens"}</span></div>`;
+      item.innerHTML = `<div class="context-header"><strong>${escapeHtml(labels[entry.kind] || entry.kind)}</strong><span>${entry.estimatedTokens} ${t("estimated_tokens")}</span></div>`;
       const body = document.createElement("div");
       body.className = "context-body";
       body.textContent = entry.content.slice(0, 900);
@@ -961,7 +963,7 @@ function renderContextPanel() {
       if (entry.kind === "project-memory") {
         const disable = document.createElement("button");
         disable.className = "btn";
-        disable.textContent = currentLanguage === "zh" ? "停用项目记忆" : "Disable Project Memory";
+        disable.textContent = t("disable_project_memory");
         disable.onclick = () => {
           const ids = [...entry.content.matchAll(/\[memory:([^\]]+)\]/g)].map((match) => match[1]);
           getProjectFiles().filter((file) => ids.includes(file.id)).forEach((file) => { file.memoryStatus = "disabled"; file.updatedAt = new Date().toISOString(); });
@@ -975,14 +977,14 @@ function renderContextPanel() {
     loadout.skipped?.forEach((entry) => {
       const item = document.createElement("div");
       item.className = "context-item is-dropped";
-      item.textContent = `${entry.label} — ${currentLanguage === "zh" ? "未装入：" : "Not loaded: "}${entry.reason}`;
+      item.textContent = `${entry.label} — ${t("not_loaded")}${entry.reason}`;
       listEl.append(item);
     });
   }
   if (window.lastTaskSkillReceipt?.length) {
     const receipt = document.createElement("div");
     receipt.className = "context-item";
-    receipt.textContent = `${currentLanguage === "zh" ? "技能采用顺序：" : "Skill adoption order: "}${window.lastTaskSkillReceipt.map((item) => `${item.id} v${item.version}`).join(" → ")}`;
+    receipt.textContent = `${t("skill_adoption_order")}${window.lastTaskSkillReceipt.map((item) => `${item.id} v${item.version}`).join(" → ")}`;
     listEl.append(receipt);
   }
 
@@ -1379,7 +1381,7 @@ ${sourceText}
       saveDeskState();
       openWindow("outline");
     }
-    setStatus(t("ready"));
+    clearStatus();
   } catch (error) {
     setStatus(t("project_reference_error", error.message));
   }
@@ -1411,7 +1413,7 @@ function deleteSelectedScrap() {
   selectedScrapId = getProjectScraps()[0]?.id || null;
   renderScraps();
   if (!selectedScrapId) {
-    scrapTitleDisplay.textContent = "Untitled Scrap";
+    scrapTitleDisplay.textContent = t("untitled_scrap");
     scrapBodyInput.value = "";
   }
   renderTrash();
@@ -1424,3 +1426,160 @@ function swin(){return document.querySelector(".window.is-active")?.dataset.wind
 const sav={"open-scrapbook":()=>!0,"scrapbook-open-source":()=>sctrl("#open-scrap-source"),"scrapbook-page-previous":()=>!0,"scrapbook-page-next":()=>!0,"scrapbook-toggle-translation":()=>sctrl("#toggle-scrap-translation"),"scrapbook-insert":()=>sctrl("#insert-scrap"),"scrapbook-attach":()=>sctrl("#attach-scrap-to-assistant"),"scrapbook-send-question":()=>sctrl("#send-scraps-to-question"),"scrapbook-outline":()=>sctrl("#outline-scraps"),"scrapbook-export-bilingual":()=>sctrl("#download-scraps-bilingual"),"scrapbook-delete":()=>sctrl("#delete-scrap"),"focus-scrapbook-question":()=>getSelectedScraps().length>0};
 const slist=[["open-scrapbook",()=>openWindow("scrapbook")],["scrapbook-open-source",openSelectedScrapSourceInReader],["scrapbook-page-previous",showPreviousScrapbookPage],["scrapbook-page-next",showNextScrapbookPage],["scrapbook-toggle-translation",toggleScrapTranslationView],["scrapbook-insert",insertScrapIntoPrompt],["scrapbook-attach",toggleClipAttachment],["scrapbook-send-question",sendSelectedScrapsToQuestionSheet],["scrapbook-outline",outlineSelectedScraps],["scrapbook-export-bilingual",downloadSelectedScrapsBilingualMarkdown],["scrapbook-delete",deleteSelectedScrap],["focus-scrapbook-question",()=>scrapbookQuestionInput?.focus()]];
 window.AISystem6Runtime?.registerApplication({id:"scrapbook",windowName:"scrapbook",mount:mountScrapbookRuntime,restore:()=>mountScrapbookRuntime(),commands:Object.fromEntries(slist.map(([a,h])=>[a,{handler:h,isAvailable:()=>a==="open-scrapbook"?!0:swin()&&(sav[a]||(()=>!0))()}]))});
+
+// --- Clipped pictures -------------------------------------------------------
+//
+// Scrapbook is curated material the writer chose, not a notepad, so a picture
+// arrives the same way a quotation does: the writer clips it.
+//
+// A clip with a picture and no text is allowed to exist, because "clip now,
+// describe later" is how people actually work. But an empty body means the
+// clip is invisible to Searcher and to every project-context build, and the
+// window says so plainly instead of quietly filling the body with generated
+// text. Reading a picture produces a proposal; the writer keeps it or drops it.
+
+const SCRAP_IMAGE_LIMIT = 4;
+let scrapReadingProposal = null;
+
+/**
+ * @param {any} scrap
+ * @returns {any[]}
+ */
+function scrapPictures(scrap) {
+  return (Array.isArray(scrap?.images) ? scrap.images : [])
+    .map((id) => imageAttachmentById(id))
+    .filter(Boolean);
+}
+
+/**
+ * A clip the writer can see but Searcher cannot.
+ * @param {any} scrap
+ * @returns {boolean}
+ */
+function scrapIsPictureOnly(scrap) {
+  return scrapPictures(scrap).length > 0 && !String(scrap?.body || "").trim();
+}
+
+async function clipPictureToScrapbook(files) {
+  const project = getActiveProject();
+  if (!project) {
+    setStatus(t("no_project_mounted"));
+    openWindow("projects");
+    return;
+  }
+  const incoming = imageFilesFromList(files);
+  if (!incoming.length) return;
+
+  const built = await buildImageAttachments(incoming.slice(0, SCRAP_IMAGE_LIMIT), {
+    projectId: project.id,
+    surface: "scrapbook",
+    limit: SCRAP_IMAGE_LIMIT,
+  });
+  if (!built.length) return;
+  saveImageAttachments(built);
+  createScrap(built[0].name || "", "", {
+    images: built.map((attachment) => attachment.id),
+    sourceKind: "picture",
+  });
+  setStatus(t("scrap_picture_clipped", built.length));
+}
+
+function clipPictureToScrapbookFromPicker() {
+  if (typeof openTransientFilePicker !== "function") return;
+  openTransientFilePicker({
+    accept: IMAGE_ATTACHMENT_ACCEPT,
+    multiple: true,
+    onSelect: (files) => clipPictureToScrapbook(files),
+  });
+}
+
+function renderScrapPictures(scrap) {
+  const strip = document.getElementById("scrap-pictures");
+  const note = document.getElementById("scrap-unindexed-note");
+  const readButton = document.getElementById("read-scrap-picture");
+  const pictures = scrapPictures(scrap);
+
+  if (strip) {
+    strip.classList.toggle("is-hidden", !pictures.length);
+    strip.replaceChildren();
+    pictures.forEach((picture) => {
+      const thumb = document.createElement("img");
+      thumb.className = "scrap-picture-thumb";
+      thumb.src = imageAttachmentVisionDataUrl(picture);
+      thumb.alt = picture.alt || picture.name || "";
+      strip.append(thumb);
+    });
+  }
+  if (note) note.classList.toggle("is-hidden", !scrapIsPictureOnly(scrap));
+  if (readButton) readButton.disabled = !pictures.length;
+  renderScrapReadingProposal();
+}
+
+function renderScrapReadingProposal() {
+  const panel = document.getElementById("scrap-reading-proposal");
+  const output = document.getElementById("scrap-reading-proposal-text");
+  if (!panel || !output) return;
+  const active = scrapReadingProposal && scrapReadingProposal.scrapId === selectedScrapId
+    ? scrapReadingProposal
+    : null;
+  panel.classList.toggle("is-hidden", !active);
+  output.textContent = active ? active.text : "";
+}
+
+async function readSelectedScrapPicture() {
+  const scrap = getProjectScraps().find((item) => item.id === selectedScrapId);
+  const picture = scrapPictures(scrap)[0];
+  if (!picture) return;
+
+  setStatus(t("scrap_reading_picture", picture.name || ""));
+  try {
+    const result = await analyzeImageAttachment(picture, {
+      mode: "writing-context",
+      modelName: typeof getLocalModelRequestName === "function" ? getLocalModelRequestName() : "",
+      signal: typeof getLongTaskSignal === "function" ? getLongTaskSignal() : null,
+    });
+    if (!result.text) throw new Error(t("image_vision_empty"));
+    // Held in memory only. Nothing reaches the clip until the writer keeps it.
+    scrapReadingProposal = {
+      scrapId: scrap.id,
+      text: result.text,
+      model: result.model,
+      picture,
+      mode: result.mode,
+    };
+    renderScrapReadingProposal();
+    setStatus(t("scrap_reading_ready"));
+  } catch (error) {
+    if (typeof isAbortError === "function" && isAbortError(error)) return;
+    setStatus(t("image_vision_failed", error?.message || t("connection_error")));
+  }
+}
+
+function keepScrapReadingProposal() {
+  if (!scrapReadingProposal) return;
+  const scrap = getProjectScraps().find((item) => item.id === scrapReadingProposal.scrapId);
+  if (!scrap) return;
+  const existing = String(scrap.body || "").trim();
+  // Keep the provenance with the text. Months later the writer must still be
+  // able to tell a model's reading of a picture from their own words.
+  const evidence = imageAttachmentEvidenceMarkdown(scrapReadingProposal.picture, {
+    mode: scrapReadingProposal.mode,
+    model: scrapReadingProposal.model,
+  });
+  const kept = evidence
+    ? `${evidence}\n\n${scrapReadingProposal.text}`
+    : scrapReadingProposal.text;
+  scrap.body = existing ? `${existing}\n\n${kept}` : kept;
+  refreshScrapMetadata(scrap, { updateTitle: !scrap.title });
+  scrapReadingProposal = null;
+  renderScraps();
+  saveDeskState();
+  setStatus(t("scrap_reading_kept"));
+}
+
+function discardScrapReadingProposal() {
+  if (!scrapReadingProposal) return;
+  scrapReadingProposal = null;
+  renderScrapReadingProposal();
+  setStatus(t("scrap_reading_discarded"));
+}

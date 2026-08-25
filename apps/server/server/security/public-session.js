@@ -8,6 +8,7 @@ const { isPublicDeployment } = require("../runtime-profile.js");
 
 const SESSION_COOKIE = "ai_system6_public_session";
 const SESSION_TTL_SECONDS = 4 * 60 * 60;
+const MAC_SHARED_TOKEN_TTL_SECONDS = 30 * 60;
 // Rendered as data-action on the widget and echoed back by siteverify. Keep
 // the client, the capabilities payload, and the verification check in step:
 // changing this on one side alone rejects every token.
@@ -30,6 +31,9 @@ const unprotectedPaths = new Set([
   "/api/cloud/models",
   "/api/session/turnstile",
   "/api/session/status",
+]);
+const selfAuthenticatedPaths = new Set([
+  "/api/session/mac-token",
 ]);
 
 class TtlLruWindows {
@@ -78,6 +82,11 @@ const activeByGroup = new Map([
   ["cloud", 0],
   ["reader", 0],
   ["cmf", 0],
+]);
+const macSharedPaths = new Set([
+  "/api/cloud/chat",
+  "/api/cloud/quota",
+  "/api/cloud/status",
 ]);
 
 function base64urlJson(value) {
@@ -138,6 +147,69 @@ function sessionFromRequest(req) {
   } catch {
     return null;
   }
+}
+
+function bearerToken(req) {
+  const authorization = String(req.headers.authorization || "").trim();
+  const match = authorization.match(/^Bearer\s+(\S+)$/i);
+  return match?.[1] || "";
+}
+
+function macSharedSessionFromRequest(req) {
+  if (!sessionSecretConfigured()) return null;
+  const token = bearerToken(req);
+  const parts = token.split(".");
+  if (parts.length !== 3 || parts[0] !== "m1") return null;
+  const encoded = parts[1];
+  const suppliedSignature = parts[2];
+  const expectedSignature = sign(`mac-shared.${encoded}`);
+  const suppliedBuffer = Buffer.from(suppliedSignature);
+  const expectedBuffer = Buffer.from(expectedSignature);
+  if (
+    suppliedBuffer.length !== expectedBuffer.length
+    || !crypto.timingSafeEqual(suppliedBuffer, expectedBuffer)
+  ) {
+    return null;
+  }
+  try {
+    const payload = JSON.parse(Buffer.from(encoded, "base64url").toString("utf8"));
+    const now = Math.floor(Date.now() / 1000);
+    if (
+      payload?.v !== 1
+      || payload.scope !== "mac-shared"
+      || typeof payload.nonce !== "string"
+      || payload.nonce.length < 16
+      || !Number.isFinite(payload.exp)
+      || payload.exp <= now
+    ) {
+      return null;
+    }
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
+function sharedSessionFromRequest(req) {
+  return sessionFromRequest(req) || macSharedSessionFromRequest(req);
+}
+
+function issueMacSharedToken(session) {
+  if (!sessionSecretConfigured() || !session?.nonce) return null;
+  const now = Math.floor(Date.now() / 1000);
+  const payload = {
+    v: 1,
+    scope: "mac-shared",
+    iat: now,
+    exp: now + MAC_SHARED_TOKEN_TTL_SECONDS,
+    nonce: String(session.nonce),
+  };
+  const encoded = base64urlJson(payload);
+  return {
+    token: `m1.${encoded}.${sign(`mac-shared.${encoded}`)}`,
+    expiresIn: MAC_SHARED_TOKEN_TTL_SECONDS,
+    expiresAt: new Date(payload.exp * 1000).toISOString(),
+  };
 }
 
 function issueSessionCookie() {
@@ -215,7 +287,7 @@ function validateRequestOrigin(req) {
   return String(req.headers.origin || "").replace(/\/$/, "") === PUBLIC_ORIGIN;
 }
 
-async function validateTurnstileToken(token, req) {
+async function validateTurnstileToken(token, req, allowedHostnames = [PUBLIC_HOST.split(":")[0]]) {
   const secret = String(process.env.TURNSTILE_SECRET || "");
   if (!secret) throw new Error("Turnstile is not configured.");
   const timeout = withTimeoutSignal(null, 10000);
@@ -240,11 +312,53 @@ async function validateTurnstileToken(token, req) {
     if (!response.ok || result?.success !== true) return false;
     // Defence in depth: the token must also have been solved on this host and
     // carry the action our widget renders with.
-    return result.hostname === PUBLIC_HOST.split(":")[0]
+    const hostname = String(result.hostname || "").trim().toLowerCase();
+    const allowed = new Set(allowedHostnames.map((value) => String(value || "").trim().toLowerCase()));
+    return allowed.has(hostname)
       && result.action === TURNSTILE_ACTION;
   } finally {
     timeout.cleanup();
   }
+}
+
+async function verifyTurnstileAttempt(token, req, allowedHostnames) {
+  if (!process.env.TURNSTILE_SECRET) {
+    return {
+      ok: false,
+      status: 503,
+      code: "turnstile_not_configured",
+      error: "Turnstile is not configured.",
+      retryAfter: 0,
+    };
+  }
+  if (!consumeFixedWindow(turnstileWindows, clientIp(req), 10, 10 * 60 * 1000)) {
+    return {
+      ok: false,
+      status: 429,
+      code: "rate_limited",
+      error: "Too many verification attempts",
+      retryAfter: 60,
+    };
+  }
+  let valid = false;
+  try {
+    valid = !!token
+      && token.length <= 2048
+      && await validateTurnstileToken(token, req, allowedHostnames);
+  } catch (error) {
+    console.error("Turnstile validation failed:", /** @type {Error} */ (error).message);
+  }
+  return valid
+    ? { ok: true, status: 200, code: "", error: "", retryAfter: 0 }
+    : { ok: false, status: 403, code: "turnstile_failed", error: "Verification failed", retryAfter: 0 };
+}
+
+function macTurnstileHostnames() {
+  return [PUBLIC_HOST.split(":")[0], "localhost", "127.0.0.1"];
+}
+
+function anonymousSessionIdentity() {
+  return { nonce: crypto.randomBytes(18).toString("base64url") };
 }
 
 async function handleTurnstileSession(req, res) {
@@ -256,22 +370,14 @@ async function handleTurnstileSession(req, res) {
     sendJson(res, 403, { error: "Invalid request origin", code: "invalid_origin" });
     return;
   }
-  if (!consumeFixedWindow(turnstileWindows, clientIp(req), 10, 10 * 60 * 1000)) {
-    sendJson(res, 429, { error: "Too many verification attempts", code: "rate_limited" }, {
-      "Retry-After": "60",
-    });
-    return;
-  }
   const body = await readJsonBody(req, { limitBytes: 4096 });
   const token = String(body.token || "");
-  let valid = false;
-  try {
-    valid = !!token && token.length <= 2048 && await validateTurnstileToken(token, req);
-  } catch (error) {
-    console.error("Turnstile validation failed:", /** @type {Error} */ (error).message);
-  }
-  if (!valid) {
-    sendJson(res, 403, { error: "Verification failed", code: "turnstile_failed" });
+  const verification = await verifyTurnstileAttempt(token, req, [PUBLIC_HOST.split(":")[0]]);
+  if (!verification.ok) {
+    sendJson(res, verification.status, {
+      error: verification.error,
+      code: verification.code,
+    }, verification.retryAfter ? { "Retry-After": String(verification.retryAfter) } : {});
     return;
   }
   const sessionCookie = issueSessionCookie();
@@ -302,8 +408,10 @@ async function runWithPublicGuard(req, res, handler) {
     sendJson(res, 403, { error: "Invalid request origin", code: "invalid_origin" });
     return;
   }
+  if (selfAuthenticatedPaths.has(pathname)) return handler();
 
-  const session = sessionFromRequest(req);
+  const session = sessionFromRequest(req)
+    || (macSharedPaths.has(pathname) ? macSharedSessionFromRequest(req) : null);
   if (!session) {
     sendJson(res, 401, {
       error: "Verification required",
@@ -367,11 +475,19 @@ module.exports = {
   PUBLIC_ORIGIN,
   PUBLIC_HOST,
   SESSION_TTL_SECONDS,
+  MAC_SHARED_TOKEN_TTL_SECONDS,
   TURNSTILE_ACTION,
   handleTurnstileSession,
   runWithPublicGuard,
   publicReadiness,
   sessionFromRequest,
+  sharedSessionFromRequest,
+  macSharedSessionFromRequest,
+  issueMacSharedToken,
+  issueSessionCookie,
+  verifyTurnstileAttempt,
+  macTurnstileHostnames,
+  anonymousSessionIdentity,
   clientIp,
   normalizeClientIp,
   TtlLruWindows,

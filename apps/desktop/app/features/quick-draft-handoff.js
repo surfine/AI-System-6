@@ -333,8 +333,28 @@ if (typeof registerWorkingSessionAdapter === "function") {
 }
 
 window.AISystem6QuickDraftLoaded = true;
+// Entering 文字亮室 as a destination lands on the draft as it reads; the
+// negative is one tab away. The display-mode switch opens this window too, so
+// the opening view is chosen here, at the door. Choosing it inside
+// openLightroomWindow would make the two call each other — they did, once, and
+// the renderer stopped answering.
+async function enterLightroom() {
+  // The durable half loads here, at the door, because only ONE of the two
+  // branches below reaches ensureDarkroomReady(). Putting the loader only
+  // there left the desk-icon route — the cold-start route a first-time visitor
+  // takes — opening the darkroom with its store never loaded, which is the
+  // whole defect: it answers every read from a blank record and writes
+  // nothing, silently. Found by opening it in a browser on a cold desk; the
+  // contract could not see it, because it tested the wiring and not the path.
+  if (typeof ensureDarkroomModule === "function") await ensureDarkroomModule();
+  if (currentQuickDraftDisplayMode() === "body") setQuickDraftDisplayMode("read");
+  else await openLightroomWindow();
+}
+
 window.AISystem6QuickDraft = Object.freeze({
+  developDocument,
   open,
+  openLightroom: enterLightroom,
   render: renderQuickDraft,
   request: requestQuickDraft,
   askClioTalk,
@@ -353,8 +373,7 @@ window.AISystem6QuickDraft = Object.freeze({
   togglePanel: toggleQuickDraftPanel,
   hasInput: () => quickDraftInteractionState().hasInput,
   hasOrganizableMaterial: () => quickDraftInteractionState().hasOrganizableMaterial,
-  paperSurface: () => quickDraftPaperSurface,
-  setPaperSurface: (surface) => setQuickDraftPaperSurface(surface, { manual: true }),
+  paperSurface: () => quickDraftPhase(),
   protectSelection: protectSelectionFromTextarea,
   applyAdjustments: applyAdjustmentLayers,
   develop: developAdjustmentLayers,
@@ -395,6 +414,7 @@ const QUICK_DRAFT_COMMAND_NAMES = [
   "quick-draft-view-body",
   "quick-draft-view-grain",
   "quick-draft-view-read",
+  "quick-draft-view-listen",
   "quick-draft-toggle-materials",
   "quick-draft-toggle-adjustments",
   "quick-draft-toggle-sideask",
@@ -421,7 +441,7 @@ function quickDraftCommandAvailable(action) {
   if (action === "quick-draft-compose") return !!quickDraft.modelAvailable?.() && !!quickDraft.hasInput?.();
   if (action === "quick-draft-apply") return !!quickDraft.canPreviewAdjustments?.();
   if (action === "quick-draft-develop") return !!quickDraft.hasBody?.() && !!quickDraft.canDevelop?.();
-  if (["quick-draft-view-grain", "quick-draft-view-read"].includes(action)) return !!quickDraft.hasBody?.();
+  if (["quick-draft-view-grain", "quick-draft-view-read", "quick-draft-view-listen"].includes(action)) return !!quickDraft.hasBody?.();
   if (action === "quick-draft-view-body") return true;
   if (["quick-draft-toggle-materials", "quick-draft-toggle-adjustments"].includes(action)) return !!quickDraft.hasBody?.();
   if (action === "quick-draft-toggle-sideask") return !(typeof isMultiFinderMode === "function" && isMultiFinderMode());
@@ -463,6 +483,7 @@ function runQuickDraftRuntimeCommand(action) {
   if (command === "view-body") return quickDraft.setDisplayMode?.("body");
   if (command === "view-grain") return quickDraft.setDisplayMode?.("grain");
   if (command === "view-read") return quickDraft.setDisplayMode?.("read");
+  if (command === "view-listen") return quickDraft.setDisplayMode?.("listen");
   if (command === "toggle-materials") return quickDraft.togglePanel?.("shelf");
   if (command === "toggle-adjustments") return quickDraft.togglePanel?.("inspector");
   if (command === "save-project") return quickDraft.saveQuickDraftAsProjectDocument?.();
@@ -472,15 +493,43 @@ function runQuickDraftRuntimeCommand(action) {
   return quickDraft.runClioTalkAction?.(command === "talk-points" ? "organize" : command);
 }
 
+// 文字亮室 answers the develop intent for any text document, so Writing Studio
+// can hand a manuscript to the darkroom the same way Quick Draft hands one to
+// TeachText: through the registry, not through a private call.
+async function developActiveDocumentInLightroom() {
+  const id = typeof activeTextFileId === "string" ? activeTextFileId : "";
+  const file = id && typeof chatFiles !== "undefined"
+    ? chatFiles.find((item) => item.id === id && item.type === "text")
+    : null;
+  if (!file || !String(file.body || "").trim()) {
+    setStatus(t("lightroom_no_document"));
+    return false;
+  }
+  const dispatch = window.AISystem6ApplicationRegistry?.dispatchApplicationIntent;
+  if (typeof dispatch !== "function") return false;
+  // Whichever route stop handed it over -- Outline and Section Drafts can too,
+  // and they are views onto this same document. Saying "teachText" regardless
+  // would tell the darkroom something that is not true.
+  const sourceAppId = (typeof currentWritingRouteStop === "function" && currentWritingRouteStop()) || "teachText";
+  const result = await dispatch("lightroom", { intent: "develop", items: [file], sourceAppId });
+  return Boolean(result?.ok);
+}
+
+window.AISystem6Runtime?.registerLazyCommand?.("develop-in-lightroom", {
+  ensure: () => window.AISystem6QuickDraft?.ensure?.() || Promise.resolve(),
+});
+
 window.AISystem6Runtime?.registerApplication({
   id: "quickDraft",
   windowName: "quickDraft",
   mount: () => window.AISystem6QuickDraft.open(),
   restore: () => window.AISystem6QuickDraft.render?.(),
   commands: Object.fromEntries(
-    ["open-quick-draft", ...QUICK_DRAFT_COMMAND_NAMES].map((action) => [action, {
-      handler: () => runQuickDraftRuntimeCommand(action),
-      isAvailable: () => quickDraftCommandAvailable(action),
+    ["open-quick-draft", "develop-in-lightroom", ...QUICK_DRAFT_COMMAND_NAMES].map((action) => [action, {
+      handler: () => (action === "develop-in-lightroom"
+        ? developActiveDocumentInLightroom()
+        : runQuickDraftRuntimeCommand(action)),
+      isAvailable: () => (action === "develop-in-lightroom" ? true : quickDraftCommandAvailable(action)),
     }])
   ),
 });

@@ -13,6 +13,7 @@ const lmstudio = read("apps/server/server/lmstudio.js");
 const setupRoute = read("apps/server/server/routes/lmstudio-setup.js");
 const persistence = read("app/core/persistence-status.js");
 const teachText = read("app/features/teachtext-accessories.js");
+const imageAttachments = read("app/core/image-attachments.js");
 const en = read("app/data/translations-en.js");
 const zh = read("app/data/translations-zh.js");
 const css = read("styles/50-apps.css");
@@ -41,8 +42,9 @@ test.assertIncludes(setupRoute, "No default download model is bundled", "empty-m
 test.assertNotIncludes(persistence, "download_model: \"qwen/qwen3-vl-4b\"", "client setup request no longer sends a fixed Qwen download model");
 test.assertNotIncludes(persistence, "|| \"qwen/qwen3-vl-4b\"", "client setup display does not fall back to a fixed Qwen label");
 
-test.assertIncludes(teachText, "AISystem6ModelTaskRuntime.buildVisionMessages", "TeachText Picture Album builds the shared browser vision request");
-test.assertIncludes(teachText, "sendLocalModelTask", "TeachText Picture Album calls the selected local model directly");
+test.assertIncludes(imageAttachments, "AISystem6ModelTaskRuntime.buildVisionMessages", "the shared image module builds the browser vision request");
+test.assertIncludes(imageAttachments, "sendLocalModelTask", "the shared image module calls the selected model directly");
+test.assertIncludes(teachText, "analyzeImageAttachment(attachment", "TeachText Picture Album reads images through the shared module");
 test.assertNotIncludes(teachText, "fetch(\"/api/vision/analyze\"", "TeachText Picture Album never sends local vision content through the VPS");
 test.assertIncludes(teachText, "analyzeTeachTextImageAttachment(attachment, \"writing-context\")", "TeachText exposes grounded image-note reading");
 test.assertIncludes(teachText, "analyzeTeachTextImageAttachment(attachment, \"ocr\")", "TeachText exposes image OCR");
@@ -51,5 +53,36 @@ test.assertIncludes(teachText, "storedAttachment.visionModel", "TeachText stores
 test.assertIncludes(en, "image_read", "English copy includes the image read command");
 test.assertIncludes(zh, "image_read", "Chinese copy includes the image read command");
 test.assertIncludes(css, "grid-template-columns: repeat(4, auto)", "list view accommodates Insert, Read, OCR, and Remove actions");
+
+// --- One model in memory at a time --------------------------------------
+//
+// The development machine cannot hold two vision models at once, and the load
+// path alone will not stop it: loadLmStudioAuxModel evicts only the SAME
+// model's duplicate instances, so one fallback step used to leave both sets of
+// weights resident. Measured on this machine before the fix:
+// gemma-4-e4b-it (5.2 GB) and qwen3.5-4b-mlx (3.1 GB) loaded together.
+
+const lmstudioModels = read("apps/server/server/lib/lmstudio-models.js");
+
+test.assertIncludes(lmstudio, "function evictOtherLmStudioModels", "loading one vision model evicts the others");
+test.assertIncludes(lmstudio, "AI_SYSTEM6_VISION_KEEP_MODELS", "a machine with memory to spare can opt out");
+test.assertIncludes(lmstudio, "modelKindFromData(item, id, \"\") === \"embedding\"", "the embedding model is spared, since retrieval needs it and it is small");
+test.assertIncludes(vision, "evictOtherLmStudioModels(model", "the vision walk makes room before it loads a candidate");
+test.assertIncludes(vision, "unloadLmStudioModel(model", "a candidate that loaded and then failed is unloaded before the next one loads");
+
+// --- Ask which models can see, do not guess -----------------------------
+//
+// LM Studio reports capabilities.vision (v1) and type "vlm" (v0). Using that
+// means a model that cannot read an image is skipped before we pay to load
+// it, and a vision model already in memory is preferred over any load at all.
+
+test.assertIncludes(lmstudioModels, "function modelVisionSupportFromData", "the server is asked which models read images");
+test.assertIncludes(lmstudioModels, "type === \"vlm\"", "the v0 vlm kind is recognised");
+test.assertIncludes(lmstudioModels, "capabilities?.vision", "the v1 capability flag is recognised");
+test.assertIncludes(lmstudioModels, "return { known: false, vision: false };", "an older build that reports nothing stays unknown rather than false");
+test.assertIncludes(lmstudio, "function discoverLmStudioVisionModels", "vision-capable models are discovered, not hard-coded");
+test.assertIncludes(vision, "function resolveLocalVisionModelCandidates", "the try order is resolved against what the machine actually has");
+test.assertIncludes(vision, "discovered.find((item) => item.loaded)", "a vision model already in memory is tried first, so the common case swaps nothing");
+test.assertIncludes(vision, "return staticOrder;", "discovery failure falls back to the static list instead of breaking");
 
 test.finish();

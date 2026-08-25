@@ -136,7 +136,10 @@ test("journey A: a first-time user completes the whole route and downloads", asy
   await page.waitForSelector('[data-window="sectionDrafts"]:not(.is-hidden)', { timeout: 15_000 });
   await page.click('[data-window="sectionDrafts"] .title-bar');
   await page.fill("#draft-body", "Section one manual prose grounded in the clipped evidence.");
-  await page.click('[data-window="sectionDrafts"] [data-action="advance-drafts-to-review"]');
+  await page.click('[data-window="sectionDrafts"] [data-action="advance-drafts-to-manuscript"]');
+  await page.waitForSelector('[data-window="teachText"]:not(.is-hidden)', { timeout: 15_000 });
+  await page.click('[data-window="teachText"] [data-action="advance-manuscript-to-review"]');
+  await acceptConfirmModalIfPresent(page);
 
   // Review Desk -> Manuscript tab -> mark Final -> type -> save.
   await page.waitForTimeout(800);

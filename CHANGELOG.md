@@ -961,3 +961,126 @@ every width again, and the tick axis now takes the same half-thumb inset the
 range thumb travels within, so the knob lands exactly on the year mark it
 selects.
 
+
+## Public Beta 1.0.50 - 2026-08-23
+
+A convergence release. Eight lanes of work that had been running beside each
+other for a day came back together, and what the merge exposed is as much a
+part of this version as what the lanes built.
+
+文字亮室 became its own application rather than a drawer inside Quick Draft.
+The negative, the adjustment stack, the writer's locks and the version chain
+moved out of the Quick Draft workspace and into a record of their own, keyed by
+document, so the same manuscript can be developed whichever surface it came
+from. The boundary is one sentence: Quick Draft writes, 文字亮室 looks. Finder
+mode is single-task, so seeing the grain beside the sentence is a MultiFinder
+arrangement -- a real second application costs a real second window, and that
+was chosen with the cost known.
+
+That record now travels with the disk. It lived in keyval, outside the seven
+collections a Project Hard Disk backup carried, so exporting a project and
+restoring it lost the negative, the stack, the locks and the chain without
+saying anything. The backup format is v5 and carries it; a record pointing at a
+document the backup does not contain is refused rather than restored as a
+darkroom belonging to nothing. Project CD is unchanged, because a CD is a
+read-only handoff of finished text and not a restore path.
+
+Every project shows on the desktop as a disk. The mounted one is solid, the
+others are dimmed and ejected; double-clicking an ejected disk opens it
+read-only, and dragging one to the Trash archives it instead of trashing it --
+Erase Disk is still the door that destroys. The mounted disk wears the
+project's own name rather than the generic one.
+
+Hold That Thought arrived as a Desk Accessory: a pause for an interruption that
+gives the writer their window and their caret back, rather than a note to
+write later.
+
+A picture became material the writing route can read. Question Sheet photos,
+File Floppy imports, Review Desk figure checking, Scrapbook picture clips,
+Quick Draft product photos and DocMap from a picture all reach one shared
+layer. A Scrapbook clip may now be a picture with no text at all, and the
+window says plainly that Searcher cannot find it; a model's reading of a
+picture is a proposal the writer must keep before it is saved.
+
+The web host stopped throwing away its own cache. It served the two bundles
+`no-cache, no-store, must-revalidate`, so the edge bypassed and every visit
+re-downloaded about 430 KB. The rule now splits the way the original incident
+warrants: a success carrying the build stamp gets a long lifetime, an
+unversioned URL gets a day, and a 404 is explicitly no-store.
+
+Four low-frequency stylesheets -- ClioChart, Time Machine, Endfield Terminal
+and the Bureaucracy meme -- now travel with their window instead of the startup
+disk, which is what paid for everything above staying inside two floppies.
+
+The appearance sheets went from 848 geometry declarations to 719, with a
+ratchet that only lets the count fall. Layout carried by an appearance is what
+makes the verification matrix multiply, so draining it is not tidying.
+
+Bonsai City had six real defects: the city oscillated instead of growing, zone
+dragging was unusable, and roads, wires and rails drew as disconnected studs
+with an axis-aligned blob at every intersection. All six are fixed.
+
+Two failures are worth recording because the gates could not see them. An
+action handler written as a bare identifier, naming a function that only exists
+once a lazy module loads, threw while the command registry was being built and
+took every menu command and every data-action button down in silence -- with
+240 executable contracts and a green release gate saying nothing, because no
+static assertion executes that path. It now has a gate that resolves the name
+rather than matching the shape. And the Mac payload had never learned about the
+four stylesheets that went lazy, so it would have shipped four windows with no
+styling and nothing local would have complained.
+
+
+Two more days of work landed under the same version number, and the heaviest
+item is a defect the export format had been carrying in silence.
+
+**A project disk now travels with its pictures.** Export a disk, import it
+somewhere else, and the Question Sheet photographs were gone, Scrapbook clips
+pointed at images that no longer existed, and every figure in the manuscript
+fell back to a bare image tag pointing at an `aisystem6-image:` id that the
+disc no longer carried. Each of those failed
+without saying anything. The backup format is now version 6 and carries both the
+original and the preview. The hard part had no precedent in the format: the
+manuscript refers to its pictures by id from inside prose, and every other
+pointer in a backup is a field a remapper can walk. Remapping the picture ids
+without rewriting those references would have broken every figure on the disk,
+which is worse than not remapping at all.
+
+**A picture the writer has read is searchable.** The Picture Album had been
+storing the model's reading of an image and nothing in the entire repository
+ever read it back — one write, no readers. Those readings now enter the search
+index alongside documents and clips, so a photograph can be found by what it
+says.
+
+**The cloud can read an imported image.** OCR gained a cloud rung underneath all
+three local engines and behind the existing switch, and the app says plainly
+when the cloud is the one reading, rather than leaving the writer to guess where
+their picture went.
+
+**Nineteen menu commands can be run again.** A menu migration three months ago
+moved the menu bar into its own module and dropped 88 labelled controls on the
+way; nineteen of them had a handler, a translation and a shortcut, and no way to
+reach any of it. They are restored, five names that had outlived their handlers
+are deleted, and a gate now resolves command names rather than matching their
+shape.
+
+**文字亮室 is reachable from the whole drafting route**, not only from the
+Manuscript, and its window carries its own Classic line art on the desk. The
+Picture Album, Quick Draft and DocMap all keep a picture the same way now.
+
+Writer Mode lost its menu switch. It could be entered once, from a clean desk,
+and that still works — but toggling it in the middle of a session arranged the
+desk differently each time, and one of those arrangements closed the manuscript
+the writer was in. A control that can close the writer's work is worse than no
+control, so it is deleted rather than shipped uncertain. The mode itself, and
+everything it arranges, stays.
+
+Smaller repairs: the Trash is no longer flung into a column of its own, Theme
+Lab can be resized, two people's names are spelled with their own characters
+rather than homophones, and the games — which had been shipping to the web host
+with their frames blocked — actually run there.
+
+The startup payload dropped again, by about 140 KB: seven more windows build
+their own markup instead of carrying it in the boot document. Moving them lost
+three pieces of markup in silence along the way, each caught by counting
+elements rather than by reading the diff.

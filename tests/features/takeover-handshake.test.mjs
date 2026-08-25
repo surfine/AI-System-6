@@ -3,6 +3,14 @@
 // still able to finish pending durable writes), re-checks the stored owner
 // before releasing, and restores writer mode on a failed flush. Read-only
 // bystanders never interfere.
+//
+// Because that protocol is lossless - the old writer saves everything BEFORE it
+// releases, and refuses outright if it cannot - the common case needs no human
+// arbitration. Opening a second window, returning to a window, or trying to
+// write in one all take the pen silently. A dialog appears only for the answer
+// a person actually has to give: the other window is holding work it could not
+// save. The old behaviour stopped every second window with a modal before the
+// writer had typed anything, which is how a permission prompt stops being read.
 
 import { createFeatureTest } from "../helpers/feature-test-harness.mjs";
 import { connectWriteLeaseChannels, createWriteLeaseInstance } from "../helpers/write-lease-vm.mjs";
@@ -39,8 +47,10 @@ const test = createFeatureTest("takeover-handshake");
   await b.lease.release();
 }
 
-// Handoff freezes new mutations: while A is flushing, its mutating surfaces
-// are disabled, and the flushed body is exactly what survives.
+// Handoff freezes new mutations: while A is flushing, its mutating surfaces are
+// frozen - text surfaces go read-only and stay enabled so the writer can still
+// read and copy what is on screen, everything else disables - and the flushed
+// body is exactly what survives.
 {
   const storage = new Map();
   const a = createWriteLeaseInstance(storage);
@@ -62,7 +72,9 @@ const test = createFeatureTest("takeover-handshake");
   let flushedBody = "";
   a.context.flushPendingQuickDraftCommit = async () => {
     // While the flush is in flight the UI must already be frozen.
-    test.assert(controls.every((control) => control.disabled === true), "handoff disables every mutating surface during the flush");
+    test.assert(controls.every((control) => (control.tagName === "TEXTAREA"
+      ? control.readOnly === true && control.disabled === false
+      : control.disabled === true)), "handoff freezes every mutating surface during the flush");
     test.assert(controls.find((control) => control.id === "quick-draft-draft").readOnly === true, "handoff makes the Draft Desk textarea read-only during the flush");
     flushedBody = "before";
     return true;
@@ -144,6 +156,25 @@ const test = createFeatureTest("takeover-handshake");
   test.assert(b.lease.isReadOnly() === true, "bystander B stays read-only and uninvolved");
   await c.lease.release();
   await a.lease.release();
+}
+
+// --- The handover is silent unless a person must decide ---
+{
+  const leaseSource = (await import("node:fs")).readFileSync(
+    new URL("../../apps/desktop/app/core/write-lease.js", import.meta.url), "utf8");
+  test.assertIncludes(leaseSource, "async function takeOverSilentlyOrAsk", "one path decides between a silent handover and a question");
+  test.assertMatches(
+    leaseSource,
+    /async function acquireWriteLeaseAtBoot\(\)[\s\S]*?takeOverSilentlyOrAsk\(\)/,
+    "a second window takes the pen silently at boot instead of opening with a modal",
+  );
+  const bootBody = leaseSource.slice(
+    leaseSource.indexOf("async function acquireWriteLeaseAtBoot()"),
+  ).split("\n}")[0];
+  test.assertNotIncludes(bootBody, "showWriteLeaseDialog", "boot no longer arbitrates a conflict that the protocol can settle itself");
+  test.assertIncludes(leaseSource, "async function reclaimWriteLeaseOnFocus", "the pen follows the window the writer is looking at");
+  test.assertIncludes(leaseSource, 'document.visibilityState === "hidden"', "a hidden window never takes the pen; that is the whole guard");
+  test.assertIncludes(leaseSource, "showWriteLeaseDialog({ denied: true })", "the surviving dialog is the refusal, which names unsaved work");
 }
 
 test.finish();

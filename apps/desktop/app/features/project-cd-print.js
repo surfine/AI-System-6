@@ -1,5 +1,34 @@
 // Lazy feature module: project-cd-print.
 
+// finishingReceipt's markup lived in index.html, downloaded by every boot for a
+// window this module already loads on demand. Built here at module eval,
+// before anything below queries its own elements. openWindow() installs
+// the grow box.
+function installFinishingReceiptWindow() {
+  if (typeof document === "undefined") return;
+  if (document.querySelector('[data-window="finishingReceipt"]')) return;
+  window.AISystem6ApplicationShell.createWindow({
+    windowName: "finishingReceipt",
+    windowClass: "info-window finishing-receipt-window",
+    labelledBy: "finishing-receipt-title",
+    titleKey: "finishing_receipt",
+    title: "Finishing Receipt",
+    paneClass: "info-pane",
+    paneHtml: `
+          <div class="info-header">
+            <span class="large-mini-icon sys-icon" data-system-icon="projectDisc" aria-hidden="true"></span>
+            <div class="info-main">
+              <h3 id="finishing-receipt-name">--</h3>
+              <p class="hint" id="finishing-receipt-kind">--</p>
+            </div>
+          </div>
+          <hr />
+          <dl class="info-stats" id="finishing-receipt-stats"></dl>
+          <div class="receipt-kept" id="finishing-receipt-kept" hidden></div>`,
+  });
+}
+
+installFinishingReceiptWindow();
 // Loaded during boot as a classic script; shares the AI System 6 global scope.
 
 

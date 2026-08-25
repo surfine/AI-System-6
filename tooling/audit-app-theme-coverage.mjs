@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 // Registry-driven appearance coverage audit for AI System 6.
 //
-// The window registry lives in index.html (data-window entries); the app CSS
-// lives in the numbered styles/ files. This script answers the section-10 /
-// section-22 question without maintaining a hand-written app list:
+// The window registry lives in interface-guidelines-contract.mjs and covers
+// static, dynamic, and lazy windows; app CSS lives in the numbered styles/
+// files. This script answers the section-10 / section-22 question without
+// maintaining a second hand-written app list:
 //
 //   For every registered window, which of its app-specific classes/prefixes
 //   have CSS rules, do those rules consume semantic tokens, and do any of
@@ -22,6 +23,10 @@
 import { readdirSync, readFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  applicationCssPrefixes,
+  windowInterfaceRegistry,
+} from "./interface-guidelines-contract.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const STYLES_DIR = join(root, "apps", "desktop", "styles");
@@ -120,18 +125,32 @@ function windowPrefix(className) {
 }
 
 const html = readFileSync(join(root, "apps/desktop/index.html"), "utf8");
-const windows = [];
+const staticWindows = new Map();
 for (const match of html.matchAll(/class="([^"]+)"[^>]*data-window="([^"]+)"[^>]*aria-labelledby="([^"]+)"/g)) {
   const classes = match[1].split(/\s+/).filter(Boolean);
   const id = match[2];
   const appClasses = classes.filter((c) => c !== "window" && !c.startsWith("is-"));
-  windows.push({
+  staticWindows.set(id, {
     id,
     classes: appClasses,
-    prefixes: Array.from(new Set(appClasses.map(windowPrefix))).sort(),
     label: match[3],
   });
 }
+
+const windows = Object.entries(windowInterfaceRegistry).map(([id, contract]) => {
+  const staticWindow = staticWindows.get(id);
+  return {
+    id,
+    classes: staticWindow?.classes || [],
+    prefixes: [...new Set([
+      ...(contract.cssPrefixes || []),
+      ...(staticWindow?.classes || []).map(windowPrefix),
+    ])].sort(),
+    label: staticWindow?.label || id,
+    sourceKind: contract.sourceKind,
+    mountPath: contract.mountPath,
+  };
+});
 
 const cssFiles = readdirSync(STYLES_DIR)
   .filter((name) => name.endsWith(".css"))
@@ -146,7 +165,7 @@ for (const fileName of cssFiles) {
 const THEME_SELECTOR = /(?:html|body)\[data-theme(?:-family)?=["']|body\.use-liquid-glass/;
 const CHILD_THEME_SELECTOR = /\[data-theme="(?:platinum|snow-leopard|yosemite)"\]/;
 const budget = JSON.parse(readFileSync(join(root, "tooling/css-budget.json"), "utf8"));
-const childAppPrefixes = budget.childAppSpecificPrefixes || [];
+const childAppPrefixes = applicationCssPrefixes;
 const childAppAllowlist = new Set(budget.childAppSpecificAllowlist || []);
 const sharedPrimitives = new Set([".window", ".window-pane"]);
 
@@ -207,6 +226,8 @@ function analyzeWindow(window) {
   return {
     id: window.id,
     label: window.label,
+    sourceKind: window.sourceKind,
+    mountPath: window.mountPath,
     classes: window.classes,
     prefixes: window.prefixes,
     ruleCount: matched.length,
@@ -228,8 +249,12 @@ const results = windows.map(analyzeWindow);
 const summary = {
   schemaVersion: 1,
   generatedAt: new Date().toISOString(),
-  registrySource: "index.html data-window entries",
+  registrySource: "tooling/interface-guidelines-contract.mjs windowInterfaceRegistry",
   windowCount: windows.length,
+  sourceKinds: Object.fromEntries(["static", "dynamic", "lazy"].map((kind) => [
+    kind,
+    windows.filter((window) => window.sourceKind === kind).length,
+  ])),
   windowsWithCss: results.filter((w) => w.ruleCount > 0).length,
   windowsWithChildAppSpecific: results.filter((w) => w.childAppSpecific > 0).map((w) => w.id),
   windowsWithFamilySelectors: results.filter((w) => w.familySelectors > 0).map((w) => ({

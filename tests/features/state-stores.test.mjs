@@ -33,6 +33,7 @@ const context = vm.createContext({
   chatFiles: [],
   chatFolders: [],
   scraps: [],
+  imageAttachments: [],
   projectCdItems: [],
   trashItems: [],
   projectReferences: [],

@@ -11,6 +11,7 @@ const {
   imageBufferToDataUrl,
   postLocalVisionAnalysis,
 } = require("../vision.js");
+const { postCloudVisionAnalysis } = require("../cloud-vision.js");
 
 const execFileAsync = promisify(execFile);
 const ocrImageMaxBytes = 10 * 1024 * 1024;
@@ -293,6 +294,56 @@ async function extractImageTextWithVision(buffer, mimeType) {
   }
 }
 
+// The last rung, and the only one that leaves the machine.
+//
+// Local OCR is three engines deep before this is reached, so getting here
+// means Tesseract, PaddleOCR and the local VLM all failed on an image the
+// writer is trying to read. Sending it to the cloud is still not automatic:
+// the caller has to hand over an active cloud route, which on this path means
+// the writer turned cloud on in Control Panel -- the same switch that already
+// sends this import's extracted text to the cloud for repair. With the switch
+// off, no cloud route arrives and this rung does not exist.
+// Which rung produced the text. The caller needs this to tell the writer when
+// an image left the machine -- a cloud read that nothing says out loud is the
+// same defect as claiming work that never happened, pointed the other way.
+function report(options, engine, text) {
+  options.onOcrEngine?.(engine);
+  return text;
+}
+
+async function extractImageTextWithCloudVision(buffer, mimeType, cloud) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 45000);
+  try {
+    const data = await postCloudVisionAnalysis({
+      dataUrl: imageBufferToDataUrl(buffer, mimeType),
+      mode: "ocr",
+      model: cloud.model || "",
+      apiKey: cloud.apiKey || "",
+      credentialId: cloud.credentialId || "",
+      baseUrl: cloud.baseUrl || "",
+      signal: controller.signal,
+    });
+    const extracted = cleanOcrText(data.text || "");
+    if (!isLikelyUsefulOcrText(extracted, NaN)) {
+      throw new Error("Cloud Vision OCR did not return enough readable text.");
+    }
+    return extracted;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+// An active route means an api key or a stored credential is actually present.
+// A route that only says "active" cannot reach anything, and treating it as a
+// usable rung turns a clean local failure into a confusing cloud one.
+function cloudVisionRoute(options) {
+  const cloud = options.cloudVision;
+  if (!cloud || typeof cloud !== "object" || cloud.active !== true) return null;
+  if (!cloud.apiKey && !cloud.credentialId) return null;
+  return cloud;
+}
+
 async function extractImageText(buffer, mimeType, options = {}) {
   if (buffer.length > ocrImageMaxBytes) {
     throw new Error("This image is too large for local OCR. Use a smaller image or OCR it before importing.");
@@ -303,18 +354,26 @@ async function extractImageText(buffer, mimeType, options = {}) {
     const engine = normalizeOcrEngine(options.ocrEngine);
     if (engine === "paddle") {
       try {
-        return await extractImageTextWithPaddle(image.buffer);
+        return report(options, "paddle", await extractImageTextWithPaddle(image.buffer));
       } catch (paddleError) {
         if (options.allowOcrFallback === false) throw paddleError;
         try {
-          return await extractImageTextWithTesseract(image.buffer);
+          return report(options, "tesseract", await extractImageTextWithTesseract(image.buffer));
         } catch (tesseractError) {
           if (options.allowVisionFallback === false) {
             throw new Error(`${paddleError.message} Tesseract OCR also failed: ${tesseractError.message}`);
           }
           try {
-            return await extractImageTextWithVision(image.buffer, image.mimeType);
+            return report(options, "local-vision", await extractImageTextWithVision(image.buffer, image.mimeType));
           } catch (visionError) {
+            const cloud = cloudVisionRoute(options);
+            if (cloud) {
+              try {
+                return report(options, "cloud-vision", await extractImageTextWithCloudVision(image.buffer, image.mimeType, cloud));
+              } catch (cloudError) {
+                throw new Error(`${paddleError.message} Tesseract OCR also failed: ${tesseractError.message}. AI Vision OCR also failed: ${visionError.message}. Cloud Vision OCR also failed: ${cloudError.message}`);
+              }
+            }
             throw new Error(`${paddleError.message} Tesseract OCR also failed: ${tesseractError.message}. AI Vision OCR also failed: ${visionError.message}`);
           }
         }
@@ -323,23 +382,31 @@ async function extractImageText(buffer, mimeType, options = {}) {
     try {
       if (engine === "auto") {
         try {
-          return await extractImageTextWithPaddle(image.buffer);
+          return report(options, "paddle", await extractImageTextWithPaddle(image.buffer));
         } catch {
           // PaddleOCR Tiny is optional and browser-backed; Auto keeps the stable local path.
         }
       }
-      return await extractImageTextWithTesseract(image.buffer);
+      return report(options, "tesseract", await extractImageTextWithTesseract(image.buffer));
     } catch (tesseractError) {
       try {
         const enhanced = await enhanceImageForLocalOcr(image.buffer);
-        return await extractImageTextWithTesseract(enhanced);
+        return report(options, "tesseract-enhanced", await extractImageTextWithTesseract(enhanced));
       } catch {
         // Keep the first Tesseract error; it describes the original input.
       }
       if (options.allowVisionFallback === false) throw tesseractError;
       try {
-        return await extractImageTextWithVision(image.buffer, image.mimeType);
+        return report(options, "local-vision", await extractImageTextWithVision(image.buffer, image.mimeType));
       } catch (visionError) {
+        const cloud = cloudVisionRoute(options);
+        if (cloud) {
+          try {
+            return report(options, "cloud-vision", await extractImageTextWithCloudVision(image.buffer, image.mimeType, cloud));
+          } catch (cloudError) {
+            throw new Error(`${tesseractError.message} AI Vision OCR also failed: ${visionError.message} Cloud Vision OCR also failed: ${cloudError.message}`);
+          }
+        }
         throw new Error(`${tesseractError.message} AI Vision OCR also failed: ${visionError.message}`);
       }
     }

@@ -5,7 +5,7 @@
 # AI System 6
 
 **A local-first writing desk where the AI never becomes your voice.**<br>
-One route from your raw questions to a finished piece. No framework. No database. Two floppy disks.
+One route from your raw questions to a finished piece. Projects in your browser. A stateless server. Two floppy disks.
 
 [![License](https://img.shields.io/badge/license-MIT-000000?style=flat-square)](LICENSE)
 [![Node](https://img.shields.io/badge/node-24%2B-000000?style=flat-square)](package.json)
@@ -33,7 +33,7 @@ THERE ARE FOUR MORE INSIDE. NO MODEL REQUIRED TO LOOK AROUND.</sub>
 - [Run it in 60 seconds](#run-it-in-60-seconds)
 - [The route is the product](#the-route-is-the-product)
 - [Chat is an app. Not the whole computer.](#chat-is-an-app-not-the-whole-computer)
-- [Software a 1988 desktop should not be able to run](#software-a-1988-desktop-should-not-be-able-to-run)
+- [What the constraint still leaves room for](#what-the-constraint-still-leaves-room-for)
 - [It also runs DOOM](#it-also-runs-doom)
 - [One desk. Six systems.](#one-desk-six-systems)
 - [Built under a 1988 constraint](#built-under-a-1988-constraint)
@@ -109,7 +109,7 @@ Everything else in this repository is a tool you summon onto that route.
 | **Section Drafts** | one section at a time, with the editable owner made explicit |
 | **Manuscript** | TeachText; read-only while drafting, so nothing rewrites it |
 | **Review Desk** | facts, structure, and whether it still sounds like you |
-| **Project CD** | the finished work, exported with its sources attached |
+| **Project CD** | finished Markdown and other explicit, read-only handoff exports |
 
 <table>
   <tr>
@@ -164,10 +164,11 @@ flowchart LR
 > A disk tells you what lasts. A floppy tells you what is temporary. A
 > Scrapbook contains only what you chose to keep.
 
-## Software a 1988 desktop should not be able to run
+## What the constraint still leaves room for
 
-The route runs on a real computer, and the point of a real computer is that it
-does not only do the one thing.
+The route stays primary, but a real computer can make room for other kinds of
+work without turning them into mandatory stops. These tools load only when
+summoned, and the writing objects keep the same meaning underneath them.
 
 <table>
   <tr>
@@ -207,9 +208,10 @@ manuscript you were writing.
 </table>
 
 They are not GIFs of games. They are the games, compiled to WebAssembly and
-running in the same MultiFinder that holds Searcher and Review Desk. A computer
-you can put a game on is a computer — which is the same reason the writing route
-can trust it.
+running in the same MultiFinder that holds Searcher and Review Desk. They prove
+the constraint can contain real software; the writing route earns trust
+separately, through visible objects, deliberate saving, and receipts for what
+actually happened.
 
 ## One desk. Six systems.
 
@@ -243,8 +245,8 @@ is a mockup, because a script re-shoots all of it from the running app.
 ## Built under a 1988 constraint
 
 ```text
-boot-critical payload   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,945,420 bytes
-two 1.44 MB floppies    ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  2,945,420 bytes
+boot-critical payload   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,797,963 bytes
+two 1.44 MB floppies    ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  2,949,120 bytes
 heavy tools             load lazily, from a third disk
 ```
 

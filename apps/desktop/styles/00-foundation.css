@@ -190,9 +190,6 @@
   /* ClioTalk keeps one conversational layout across themes. Theme-specific
      material swaps happen here rather than through duplicate selectors. */
   --clio-assistant-message-bg: transparent;
-  --clio-assistant-message-border: var(--shade-dark);
-  --clio-assistant-message-radius: 0;
-  --clio-assistant-message-shadow: none;
   /* A reply is a slip of paper whose edge says whether it was kept. Classic
      carries that in the border style; Liquid Glass carries it in whether the
      slip has landed on the surface (see 70-liquid-glass.css). Same sentence,
@@ -216,25 +213,19 @@
   --clio-entry-field-radius: 0;
   --clio-entry-field-bg: var(--paper);
   --clio-entry-field-shadow: inset 1px 1px 0 var(--shade);
-  --clio-user-message-bg: var(--quiet-panel);
-  --clio-user-message-border: 1px solid var(--ink);
-  --clio-user-message-radius: 0;
-  --clio-user-message-shadow: none;
   --clio-welcome-bg: transparent;
   --clio-welcome-shadow: none;
-  --clio-welcome-object-bg: var(--paper);
-  --clio-welcome-object-border: var(--system-border);
-  --clio-welcome-object-shadow: 2px 2px 0 var(--shade-dark);
   --clio-muted-copy: var(--shade-dark);
-  --clio-copy-font: var(--text-font);
-  --clio-title-font: var(--title-font);
-  --clio-control-font: var(--ui-font);
   --clio-title-size: clamp(24px, 4vw, 30px);
   --clio-title-weight: 500;
-  --clio-title-leading: 1.45;
+  /* Display leading, not body leading. At 1.45 the 30px heading opened a 14px
+     chasm the moment it wrapped -- which it does in all five bitmap eras at
+     the default window width, where the faces are widest. 1.3 keeps enough
+     room for bitmap ascenders while closing the gap; the modern-font branch
+     below already runs 1.22. */
+  --clio-title-leading: 1.3;
   --clio-title-tracking: -0.025em;
   --clio-transcript-width: 820px;
-  --clio-speaker-gutter: 72px;
   --clio-grounding-rule: var(--shade);
   --clio-composer-bg: var(--paper);
   --clio-composer-border: var(--system-border);
@@ -252,17 +243,7 @@
   --clio-action-radius: 0;
   --clio-action-item-radius: 0;
   --clio-action-shadow: 2px 2px 0 var(--shade-dark);
-  --clio-context-control-bg: var(--quiet-panel);
-  --clio-context-control-border: 1px solid var(--shade-dark);
   --clio-context-control-radius: 0;
-  --clio-context-control-shadow: none;
-  --clio-assembly-bg: var(--paper);
-  --clio-assembly-border: 1px solid var(--ink);
-  --clio-assembly-radius: 0;
-  --clio-assembly-row-radius: 0;
-  --clio-assembly-shadow: 2px 2px 0 var(--shade-dark);
-  --clio-assembly-row-bg: var(--quiet-panel);
-  --clio-assembly-divider: var(--system-secondary-divider);
   --clio-file-chip-bg: transparent;
   --clio-file-chip-border: 1px solid transparent;
   --clio-file-chip-radius: 0;
@@ -404,6 +385,15 @@
   /* Secondary (light/dotted) separators: one role per family, so app
      dividers stop carrying per-app values (Theme Family Contract §5). */
   --system-secondary-divider: 1px dotted var(--shade-dark);
+  /* New applications consume these object roles instead of inventing one
+     material token per window. The active appearance rebinds them on body in
+     65-appearance-themes.css, so the same app shell receives all six painters. */
+  --system-raised-surface: var(--paper);
+  --system-frame-border: var(--system-border);
+  --system-selection-bg: var(--ink);
+  --system-selection-fg: var(--paper);
+  --system-disabled-fg: var(--shade-dark);
+  --system-status-surface: var(--paper);
   --system-shadow: 2px 2px 0 var(--ink);
   --system-inset: inset 1px 1px 0 #777777, inset -1px -1px 0 #ffffff;
   --control-radius: 0;
@@ -449,7 +439,6 @@
   --system-control-size: 13px;
   --system-text-size: 13px;
   --system-caption-size: 11px;
-  --system-micro-size: 10px;
   --system-icon-stroke-width: 1;
   --system-icon-pixel-run-expansion: 0;
   --menu-system-icon-stroke-width: 1;
@@ -467,13 +456,10 @@
   --system-button-padding-y: 2px;
   --system-button-padding-x: 12px;
   --control-hit-target: 28px;
-  --control-icon-slot: 20px;
   --control-motion-fast-in: 80ms;
   --control-motion-fast-out: 60ms;
   --control-motion-medium-in: 160ms;
   --control-motion-medium-out: 120ms;
-  --control-motion-slow-in: 240ms;
-  --control-motion-slow-out: 160ms;
   --control-motion-ease: cubic-bezier(0.2, 0, 0, 1);
   --control-focus-outline: var(--system-border);
   --control-focus-offset: 2px;
@@ -513,7 +499,6 @@
   --memory-card-back-mark-bg: rgba(0, 0, 0, 0.14);
   --memory-card-face-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.42);
   --memory-card-match-ring: inset 0 0 0 4px var(--paper), inset 0 0 0 6px var(--ink);
-  --memory-cards-muted: var(--shade-dark);
   --system-select-radius: 6px;
   --system-select-option-margin: 0;
   --system-select-option-min-height: 28px;
@@ -599,7 +584,6 @@
   --tdi-tab-active-dragging-bg: var(--tdi-tab-dragging-bg);
   --tdi-tab-active-dragging-fg: var(--tdi-tab-dragging-fg);
   --tdi-tab-active-dragging-shadow: var(--tdi-tab-dragging-shadow);
-  --tdi-tab-drop-shadow: inset 4px 0 0 var(--ink), inset 1px 1px 0 var(--shade);
   --tdi-tab-close-top: var(--tdi-tab-close-gutter);
   --tdi-tab-close-right: var(--tdi-tab-close-gutter);
   --tdi-tab-close-width: var(--tdi-tab-close-size);
@@ -636,11 +620,6 @@
   --tdi-grabber-mark-active-bg: var(--ink);
   --tdi-grabber-mark-active-shadow: 4px 0 0 var(--ink);
   --tdi-grabber-mark-active-opacity: 0.9;
-  --reader-tab-active-open-border-color: var(--ink);
-  --reader-tab-active-open-bg: var(--ink);
-  --reader-tab-active-open-fg: var(--paper);
-  --reader-tab-active-remove-bg: var(--paper);
-  --reader-tab-active-remove-fg: var(--ink);
   --docmap-node-circle-fill: var(--paper);
   --docmap-node-circle-stroke-width: 1px;
   --video-chip-border: 1px solid var(--ink);
@@ -676,9 +655,6 @@
     );
   --empty-note-shadow: none;
   --empty-note-fg: var(--ink);
-  --reader-tab-open-border-color: var(--btn-border-color);
-  --reader-tab-open-bg: var(--btn-bg);
-  --reader-tab-open-shadow: var(--btn-shadow);
   --system-menu-height: 24px;
   --z-local-base: 0;
   --z-local-control: 1;
@@ -893,20 +869,6 @@
      pointer-coarse overrides in 60-responsive.css to consume.
      Visual size, hit size, and layout slot stay separate — never reuse one for
      another (see tooling/classic-platinum-fidelity-contract.json). */
-  --fine-pointer-menu-height: var(--menu-button-height);
-  --fine-pointer-button-min-height: var(--system-button-min-height);
-  --fine-pointer-field-min-height: var(--system-control-min-height);
-  --fine-pointer-scrollbar-width: 16px;
-  --coarse-pointer-menu-height: 34px;
-  --coarse-pointer-button-min-height: 40px;
-  --coarse-pointer-field-min-height: 44px;
-  --coarse-pointer-scrollbar-width: 22px;
-  --coarse-pointer-hit-min: 44px;
-  --titlebar-control-visual-size: var(--system-titlebar-control-art-size);
-  --titlebar-control-hit-size: var(--system-titlebar-control-size);
-  --titlebar-control-layout-slot: var(--system-titlebar-control-slot);
-  --titlebar-control-optical-offset-x: 0px;
-  --titlebar-control-optical-offset-y: 0px;
 
   /* Window and content spacing roles. Chrome stays compact; reading and
      editing surfaces get their own gutters. */
@@ -1033,7 +995,6 @@
   --separator: var(--rule);
   --selection-bg: var(--ink);
   --selection-fg: var(--paper);
-  --focus-ring: var(--control-focus-outline);
   /* Document-window frame: the two scroll bar lanes and the grow box are one
      16px chrome band, so the corner where they meet is exactly one cell wide
      and the grow box can never drift onto content. */
@@ -1058,8 +1019,6 @@
   --scrollbar-track: var(--window-frame-track-bg);
   --scrollbar-thumb: var(--window-frame-thumb-bg);
   --scrollbar-button: var(--window-frame-arrow-bg);
-  --window-control-size: var(--system-titlebar-control-art-size);
-  --window-control-gap: var(--system-titlebar-control-margin-x);
   --active-window-shadow: none;
   --card-caption-color: var(--shade-dark);
   --finder-navigation-border: 1px solid var(--ink);
@@ -1093,7 +1052,6 @@
   --menu-bar-height: var(--system-menu-height);
   /* Where a menu-bar popover hangs from: the bar's real bottom, inset included. */
   --menu-popover-top: calc(var(--menu-bar-height) + var(--safe-area-top));
-  --guide-pane-gap: 10px;
   --tab-radius: 0;
   --tab-overlap: 0px;
   --tab-bg: var(--shade);
@@ -1442,14 +1400,12 @@
   --time-machine-popover-divider: var(--shade);
   --time-machine-calendar-day-bg: var(--shade);
   --time-machine-calendar-day-border: var(--shade-dark);
-  --time-machine-time-bg: repeating-linear-gradient(135deg, var(--paper) 0 6px, #e8e8e8 6px 7px);
   --time-machine-time-active-bg: repeating-linear-gradient(135deg, #d8d8d8 0 5px, var(--paper) 5px 7px);
   --time-machine-time-border: var(--system-border);
   --time-machine-frame-border: var(--system-border);
   --time-machine-frame-radius: 0;
   --time-machine-frame-bg: var(--paper);
   --time-machine-frame-shadow: var(--system-inset);
-  --time-machine-live-color: var(--shade-dark);
   --time-machine-archive-color: var(--ink);
   --time-machine-loading-bg: rgba(255, 255, 255, 0.9);
   --scrap-selection-actions-border: 1px dotted var(--shade-dark);
@@ -1722,7 +1678,7 @@
   --clio-stage-viewport-shadow: inset 1px 1px 0 var(--shade);
   --clio-stage-viewport-padding: 24px;
   --clio-stage-viewport-active-border-color: var(--ink);
-  --clio-stage-viewport-active-bg: repeating-linear-gradient(45deg, var(--paper) 0, var(--paper) 7px, var(--shade-light) 7px, var(--shade-light) 14px);
+  --clio-stage-viewport-active-bg: repeating-linear-gradient(45deg, var(--paper) 0, var(--paper) 7px, var(--shade) 7px, var(--shade) 14px);
   --clio-stage-slide-mode-min-height: 0;
   --clio-stage-slide-mode-padding: 12px;
   --clio-stage-slide-mode-bg: var(--desktop);
@@ -1782,10 +1738,14 @@
   --cmf-panel-border: var(--system-border);
   --cmf-panel-bg: var(--paper);
   --cmf-panel-radius: 0;
-  --cmf-panel-shadow: var(--inset-shadow);
+  --cmf-panel-shadow: var(--system-inset);
   --cmf-window-width: 1120px;
   --cmf-window-height: 720px;
   --cmf-inspector-width: 286px;
+  --ips-window-width: min(620px, calc(100vw - 72px));
+  --ips-window-height: min(680px, calc(100vh - 88px));
+  --bonsai-window-width: min(1040px, calc(100vw - 72px));
+  --bonsai-window-height: min(720px, calc(100vh - 88px));
   --cmf-toolbar-bg: var(--panel);
   --cmf-toolbar-border: 1px solid var(--ink);
   --cmf-toolbar-radius: 0;
@@ -1813,7 +1773,6 @@
   --cmf-thumb-active-fg: var(--ink);
   --cmf-thumb-active-shadow: inset 0 0 0 2px var(--ink);
   --cmf-row-divider: 1px solid rgba(0, 0, 0, 0.12);
-  --cmf-pill-bg: rgba(255, 255, 255, 0.55);
   --cmf-chip-bg: var(--paper);
   --cmf-chip-selected-shadow: inset 0 0 0 2px var(--ink);
   --cmf-chip-focus-outline: var(--system-border);
@@ -1869,6 +1828,12 @@
   --draft-desk-window-top: 38px;
   --draft-desk-window-width: min(1000px, calc(100vw - 88px));
   --draft-desk-window-height: min(720px, calc(100vh - 72px));
+  /* 文字亮室 opens staggered off the draft it reads, so both frames stay
+     findable when the desk shows them together. */
+  --lightroom-window-left: 84px;
+  --lightroom-window-top: 58px;
+  --lightroom-window-width: min(1000px, calc(100vw - 116px));
+  --lightroom-window-height: min(720px, calc(100vh - 92px));
   --quick-draft-shelf-width: 168px;
   --quick-draft-inspector-width: 210px;
   /* The strip of paper a drawer never covers. */
@@ -1878,8 +1843,6 @@
   --quick-draft-panel-radius: 0;
   --quick-draft-panel-shadow: none;
   --quick-draft-sidebar-border: 1px solid var(--shade-dark);
-  --quick-draft-status-bg: var(--panel);
-  --quick-draft-status-border: 1px dotted var(--shade-dark);
   --quick-draft-divider-border: 1px dotted var(--shade-dark);
   --quick-draft-actions-bg: var(--panel);
   --quick-draft-secondary-fg: var(--shade-dark);
@@ -1930,14 +1893,6 @@
      the visual transform; the text is the same Markdown as the article view.
      The canvas is an empty-state surface (more material than article), never
      a required stop on the fast path, and it does not exist on a phone. */
-  --quick-draft-canvas-dot: var(--ink);
-  --quick-draft-canvas-object-bg: var(--paper);
-  --quick-draft-canvas-object-border: var(--system-border);
-  --quick-draft-canvas-object-shadow: var(--system-shadow);
-  --quick-draft-canvas-handle-bg: var(--paper);
-  --quick-draft-canvas-handle-border: var(--system-border);
-  --quick-draft-canvas-rotate-fg: var(--ink);
-  --quick-draft-view-switch-border: var(--system-border);
 }
 
 html:lang(zh-Hans) {
@@ -2008,6 +1963,17 @@ body.use-modern-fonts .reader-content {
 }
 
 body {
+  /* These three alias the era typeface tokens, and an alias resolves var() at
+     the element it is DECLARED on. Declared on :root they read --text-font /
+     --title-font / --ui-font before the era mapping — which lives on
+     body[data-theme] — has applied, so they froze at the System 6 bitmap face
+     for every appearance: Platinum, Aqua, Snow Leopard and Yosemite all drew
+     ClioTalk's welcome heading in Chicago while their own body copy was
+     Charcoal, Lucida Grande and Helvetica Neue. Declared here they resolve
+     after the era wins. */
+  --clio-copy-font: var(--text-font);
+  --clio-title-font: var(--title-font);
+  --clio-control-font: var(--ui-font);
   margin: 0;
   height: 100vh;
   display: flex;
@@ -2050,6 +2016,21 @@ label,
 .details-bar,
 .finder-list-header {
   user-select: none;
+}
+
+/* The writing workspace keeps the spine column pinned top-left of the desk.
+   While the spine is visible, the Bonsai window width token reserves that
+   column (spine right edge 138px + 18px gap + 24px right margin = 180px), so
+   window placement never has to choose between covering the spine (which
+   floats above every window and intercepts the toolbox) and clamping the
+   frame off-screen. The token is redefined whole here because var() inside a
+   custom property resolves where the property is declared, so a :root formula
+   would freeze a reserve variable at its :root value. :has() reads the
+   spine's real visibility class — the same signal the window manager's
+   desktop-avoidance insets use; writer mode and Quick Draft focus hide the
+   spine with body classes instead, so they keep the base token. */
+body:has(.writing-spine-panel:not(.is-hidden)):not(.is-writer-mode):not(.quick-draft-focus) {
+  --bonsai-window-width: min(1040px, calc(100vw - 180px));
 }
 
 /* A field is where text lives, even when a non-selectable label wraps it. */
@@ -2705,6 +2686,44 @@ body[data-menu-bar-model="system-owned"] {
   color: var(--shade-dark);
 }
 
+/* The MultiFinder popover's row layout. It lived in 70-liquid-glass.css with
+   no theme prefix, so it shipped to all six appearances from inside a theme
+   sheet — invisible to the appearance ratchet and to the twin audit, which
+   only reason about prefixed selectors. Nothing between this file and the
+   theme layer targets .multifinder-app, so this is a relocation, not a
+   change. */
+.multifinder-popover .multifinder-app {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  align-items: center;
+  justify-items: stretch;
+  gap: 8px;
+  padding-left: 30px;
+  text-align: left;
+}
+
+.multifinder-popover .multifinder-app .multifinder-mark {
+  grid-column: 1;
+  justify-self: center;
+  width: 18px;
+}
+
+.multifinder-popover .multifinder-app > span:not(.multifinder-mark) {
+  grid-column: 2;
+  justify-self: start;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.multifinder-popover .multifinder-app small {
+  grid-column: 3;
+  justify-self: end;
+  text-align: right;
+}
+
 .shutdown-screen {
   --boot-mac-scale: 1.72;
   position: fixed;
@@ -3284,62 +3303,6 @@ body[data-menu-bar-model="system-owned"] {
 
 body.is-balloon-help [data-balloon-help] {
   cursor: help;
-}
-
-/* The Hold My Place slip. Bottom left, because the icon column owns the bottom
-   right, and low enough that it never sits over the sentence it is about. It
-   is a slip of paper on the desk, not a window: no title bar, no close box,
-   nothing to manage. */
-.held-place-slip {
-  position: fixed;
-  left: max(22px, var(--safe-area-left));
-  bottom: max(22px, var(--safe-area-bottom));
-  z-index: 60;
-  width: min(300px, calc(100vw - 44px));
-  padding: 8px 10px;
-  display: grid;
-  gap: 6px;
-  border: var(--window-border);
-  background: var(--window-bg);
-  box-shadow: var(--window-shadow);
-  color: var(--ink);
-  font-family: var(--ui-font);
-  font-size: 12px;
-  line-height: 1.4;
-}
-
-.held-place-slip-where {
-  margin: 0;
-  font-weight: bold;
-}
-
-/* The sentence is quoted, not retyped: it is evidence of where you were, so it
-   keeps its own shape and never grows past two lines. */
-.held-place-slip-sentence {
-  margin: 0;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-  font-family: var(--text-font);
-  opacity: 0.8;
-}
-
-.held-place-slip-note {
-  width: 100%;
-  font-size: 12px;
-}
-
-.held-place-slip-actions {
-  margin: 0;
-  justify-content: flex-end;
-}
-
-/* [hidden] is a user-agent default, and .button-row's own `display: flex`
-   overrides it — so the outgoing slip grew a button row it had switched off.
-   The row states its own hidden case rather than trusting the attribute. */
-.held-place-slip-actions[hidden] {
-  display: none;
 }
 
 .finder-operation-modal {

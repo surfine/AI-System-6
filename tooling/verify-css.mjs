@@ -22,6 +22,10 @@ import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { resolveProjectPath } from "./lib/paths.mjs";
 import { styleLayerByPath } from "./style-manifest.mjs";
+import {
+  applicationCssPrefixes,
+  windowInterfaceRegistry,
+} from "./interface-guidelines-contract.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const budget = JSON.parse(readFileSync(join(root, "tooling/css-budget.json"), "utf8"));
@@ -651,15 +655,8 @@ if (appearanceOrphans.length) {
 // budget.childAppSpecificAllowlist with a justification.
 const CHILD_THEME_IDS = ["platinum", "snow-leopard", "yosemite"];
 const SHARED_WINDOW_PRIMITIVES = new Set([".window", ".window-pane"]);
-const indexText = readFileSync(join(root, "apps/desktop/index.html"), "utf8");
-const registeredWindowClasses = new Set();
-for (const match of indexText.matchAll(/class="([^"]+)"[^>]*data-window=/g)) {
-  for (const className of match[1].split(/\s+/)) {
-    if (className) registeredWindowClasses.add(`.${className}`);
-  }
-}
 const childAppAllowlist = new Set(budget.childAppSpecificAllowlist || []);
-const childAppPrefixes = budget.childAppSpecificPrefixes || [];
+const childAppPrefixes = applicationCssPrefixes;
 const childAppViolations = [];
 let childAppSpecificCount = 0;
 for (const themeId of CHILD_THEME_IDS) {
@@ -672,8 +669,7 @@ for (const themeId of CHILD_THEME_IDS) {
       if (SHARED_WINDOW_PRIMITIVES.has(token) || /^\.is-/.test(token)) return false;
       if (childAppAllowlist.has(token) || childAppAllowlist.has(`${themeId}:${token}`)) return false;
       const className = token.replace(/^[.#]/, "");
-      return registeredWindowClasses.has(token)
-        || childAppPrefixes.some((appPrefix) => className.startsWith(appPrefix));
+      return childAppPrefixes.some((appPrefix) => className.startsWith(appPrefix));
     });
     if (!appTokens.length) continue;
     childAppSpecificCount += 1;
@@ -693,7 +689,7 @@ if (typeof childAppBudget !== "number") {
   });
   fail("  Add a justified allowlist entry in tooling/css-budget.json only for a system-level historical exception.");
 } else {
-  ok(`${APPEARANCE_FILE}: child+app-specific selectors ${childAppSpecificCount}/${childAppBudget}`);
+  ok(`${APPEARANCE_FILE}: child+app-specific selectors ${childAppSpecificCount}/${childAppBudget} across ${Object.keys(windowInterfaceRegistry).length} registered windows`);
 }
 
 const OUTSIDE_THEME_SELECTOR_PATTERN = /\b(?:body(?:\.use-liquid-glass|:not\(\.use-liquid-glass\))|(?:html|body)\[data-theme(?:-family)?=)/;
@@ -721,6 +717,214 @@ cssFiles
       ok(`${path}: theme selectors outside ${LIQUID_FILE} ${count}/${allowed}`);
     }
   });
+
+// --- Appearance geometry ratchet ---------------------------------------------
+//
+// Six appearances only multiply the verification matrix where they carry
+// LAYOUT. A declaration that recolors or re-materials a surface cannot move
+// anything, so its correctness is a token diff — cheap, deterministic, and
+// already covered by tests/visual-snapshot.json. A declaration that sets
+// geometry makes that appearance a separate layout at that spot, and only an
+// eye or a pixel snapshot can check it.
+//
+// Measured 2026-08-21: of 5,969 declarations across the three appearance files,
+// 846 set geometry. Those are the entire reason the matrix multiplies — not the
+// six appearances, and not the 10,166 lines. This ratchet freezes that number
+// and lets it only fall, so a new feature can never add a cell to the matrix.
+//
+// Draining it is follow-up work, and it is NOT a sweep. The obvious candidate —
+// rewriting `border: 1px solid <color>` as border-color — was tried and rejected:
+// base .btn draws `var(--system-control-line) solid`, and that token is 1.5px
+// under body.use-modern-fonts, so Platinum's literal 1px is a deliberate
+// override rather than a duplicate. Converting it blindly would have changed
+// Platinum + modern fonts silently, which is the exact failure this budget
+// exists to stop. Drain a site when you are touching it anyway and can show the
+// base rule it inherits; the honest form is usually a per-appearance token
+// override, which this counter does not charge for. An era typeface or an era
+// title-bar height is real geometry and stays.
+
+const GEOMETRY_PROPERTIES = new Set([
+  "width", "height", "min-width", "max-width", "min-height", "max-height",
+  "padding", "padding-top", "padding-right", "padding-bottom", "padding-left",
+  "padding-inline", "padding-block", "padding-inline-start", "padding-inline-end",
+  "margin", "margin-top", "margin-right", "margin-bottom", "margin-left",
+  "margin-inline", "margin-block", "margin-inline-start", "margin-inline-end",
+  "position", "top", "right", "bottom", "left", "inset",
+  "display", "flex", "flex-basis", "flex-direction", "flex-wrap", "flex-grow", "flex-shrink",
+  "grid", "grid-template", "grid-template-columns", "grid-template-rows",
+  "grid-auto-flow", "grid-auto-rows", "grid-auto-columns", "grid-column", "grid-row",
+  "gap", "row-gap", "column-gap",
+  "align-items", "align-self", "align-content",
+  "justify-content", "justify-items", "justify-self", "place-items", "place-content",
+  "order", "font-size", "font-family", "font-weight", "font", "line-height",
+  "letter-spacing", "word-spacing",
+  "border-width", "border-top-width", "border-right-width", "border-bottom-width", "border-left-width",
+  "overflow", "overflow-x", "overflow-y", "white-space", "columns",
+  "aspect-ratio", "transform", "translate", "scale", "rotate",
+  "box-sizing", "content", "float", "vertical-align", "text-indent",
+  "writing-mode", "container-type",
+]);
+
+const BORDER_SHORTHAND = /^border(-(top|right|bottom|left))?$/;
+
+/**
+ * Count the declarations in one stylesheet that can move something on screen.
+ *
+ * Custom properties are never charged: a token is a value, and swapping a value
+ * is what an appearance is allowed to do. A border shorthand is charged only
+ * when it changes the hairline's width — every appearance draws 1px and merely
+ * recolors it, so those are reported separately as the drainable pile.
+ */
+function countAppearanceGeometry(relPath) {
+  const css = stripComments(readFileSync(resolveProjectPath(relPath), "utf8"));
+  let geometry = 0;
+  let hairline = 0;
+  const tally = new Map();
+  for (const block of css.match(/\{[^{}]*\}/g) || []) {
+    for (const declaration of block.slice(1, -1).split(";")) {
+      const colon = declaration.indexOf(":");
+      if (colon < 0) continue;
+      const property = declaration.slice(0, colon).trim();
+      const value = declaration.slice(colon + 1).trim();
+      if (!value || property.startsWith("--")) continue;
+      if (!/^[a-zA-Z][-a-zA-Z0-9]*$/.test(property)) continue;
+      if (BORDER_SHORTHAND.test(property)) {
+        // `border: 0` removes the hairline, which is a layout decision.
+        if (/^0(\s|$)/.test(value)) { geometry += 1; tally.set(property, (tally.get(property) || 0) + 1); }
+        else if (/^1px\b/.test(value)) hairline += 1;
+        else { geometry += 1; tally.set(property, (tally.get(property) || 0) + 1); }
+        continue;
+      }
+      if (!GEOMETRY_PROPERTIES.has(property)) continue;
+      geometry += 1;
+      tally.set(property, (tally.get(property) || 0) + 1);
+    }
+  }
+  const worst = [...tally.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3)
+    .map(([property, count]) => `${property} ${count}`).join(", ");
+  return { geometry, hairline, worst };
+}
+
+/**
+ * Top-level rules in an appearance sheet that carry no appearance prefix.
+ *
+ * Such a rule ships to all six appearances from inside a theme file, where
+ * neither this ratchet nor the liquid-glass twin audit can say it does not
+ * belong — both only reason about prefixed selectors. Twenty geometry
+ * declarations reached every appearance that way before anyone noticed.
+ *
+ * A rule that declares nothing but custom properties is exempt: the sprite-cell
+ * mappings (`[data-system-icon="…"] { --sx: 0 }`) are theme-independent data by
+ * design, and a token cannot lay anything out. Only a real property authored
+ * without a prefix is the shape this looks for.
+ */
+function countUnprefixedRules(relPath) {
+  const css = stripComments(readFileSync(resolveProjectPath(relPath), "utf8"));
+  const offenders = [];
+  let index = 0;
+  let depth = 0;
+  let selectorStart = 0;
+  while (index < css.length) {
+    const char = css[index];
+    if (char === "{") {
+      if (depth === 0) {
+        const selectorText = css.slice(selectorStart, index).trim();
+        let braces = 0;
+        let end = index;
+        for (let scan = index; scan < css.length; scan += 1) {
+          if (css[scan] === "{") braces += 1;
+          else if (css[scan] === "}") { braces -= 1; if (!braces) { end = scan; break; } }
+        }
+        if (selectorText && !selectorText.startsWith("@")) {
+          const selectors = selectorText.split(",").map((one) => one.trim()).filter(Boolean);
+          const body = css.slice(index + 1, end);
+          const declaresRealProperty = body.split(";").some((declaration) => {
+            const colon = declaration.indexOf(":");
+            if (colon < 0) return false;
+            const property = declaration.slice(0, colon).trim();
+            return /^[a-zA-Z-]+$/.test(property) && !property.startsWith("--");
+          });
+          if (declaresRealProperty
+            && selectors.length
+            && selectors.every((one) => !/use-liquid-glass|\[data-theme/.test(one))) {
+            offenders.push(selectors[0].replace(/\s+/g, " ").slice(0, 70));
+          }
+        }
+        index = end + 1;
+        selectorStart = index;
+        continue;
+      }
+      depth += 1;
+    } else if (char === "}") {
+      depth -= 1;
+      if (depth <= 0) { depth = 0; selectorStart = index + 1; }
+    }
+    index += 1;
+  }
+  return offenders;
+}
+
+const APPEARANCE_GEOMETRY_FILES = [
+  APPEARANCE_FILE,
+  "styles/67-aqua-appearance.css",
+  LIQUID_FILE,
+];
+
+const geometryBudgets = budget.appearanceGeometry;
+if (!geometryBudgets || typeof geometryBudgets !== "object") {
+  const measured = Object.fromEntries(
+    APPEARANCE_GEOMETRY_FILES.map((relPath) => {
+      const { geometry, hairline } = countAppearanceGeometry(relPath);
+      return [relPath, { geometry, hairline }];
+    })
+  );
+  fail(
+    "tooling/css-budget.json is missing appearanceGeometry. Measured now:\n"
+      + JSON.stringify(measured, null, 2)
+  );
+} else if (!scopedCssCheck || APPEARANCE_GEOMETRY_FILES.some((f) => cssFiles.includes(f))) {
+  for (const relPath of APPEARANCE_GEOMETRY_FILES) {
+    const allowed = geometryBudgets[relPath];
+    if (!allowed || typeof allowed.geometry !== "number" || typeof allowed.hairline !== "number") {
+      fail(`${relPath} has no appearanceGeometry budget entry; add one in tooling/css-budget.json`);
+      continue;
+    }
+    const { geometry, hairline, worst } = countAppearanceGeometry(relPath);
+    if (geometry > allowed.geometry) {
+      fail(
+        `${relPath}: geometry declarations = ${geometry}, budget = ${allowed.geometry}. `
+          + `An appearance that sets layout becomes its own layout to verify — that is what makes the `
+          + `matrix multiply. Move the value to a token, or put the rule in the base sheet. `
+          + `Heaviest here: ${worst}.`
+      );
+    } else {
+      ok(`${relPath}: appearance geometry ${geometry}/${allowed.geometry}`);
+    }
+    const unprefixed = countUnprefixedRules(relPath);
+    const unprefixedBudget = allowed.unprefixed;
+    if (typeof unprefixedBudget !== "number") {
+      fail(`${relPath} has no appearanceGeometry.unprefixed budget; measured ${unprefixed.length}`);
+    } else if (unprefixed.length > unprefixedBudget) {
+      fail(
+        `${relPath}: unprefixed top-level rules = ${unprefixed.length}, budget = ${unprefixedBudget}. `
+          + `A rule with no appearance prefix ships to all six appearances from inside a theme sheet, `
+          + `where neither this ratchet nor the twin audit can see that it does not belong. `
+          + `Move it to the base sheet that owns its selector. First: ${unprefixed.slice(0, 3).join(" | ")}`
+      );
+    } else {
+      ok(`${relPath}: unprefixed top-level rules ${unprefixed.length}/${unprefixedBudget}`);
+    }
+
+    if (hairline > allowed.hairline) {
+      fail(
+        `${relPath}: 1px border shorthands = ${hairline}, budget = ${allowed.hairline}. `
+          + `Set border-color and leave the width in the base sheet, so the hairline stays one layout.`
+      );
+    } else {
+      ok(`${relPath}: 1px border shorthands ${hairline}/${allowed.hairline}`);
+    }
+  }
+}
 
 if (failures.length) {
   console.error(`\nCSS budget verification failed: ${failures.length} issue(s).`);

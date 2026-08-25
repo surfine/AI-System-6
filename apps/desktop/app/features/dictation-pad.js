@@ -11,7 +11,7 @@
 function startDictation() {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SpeechRecognition) {
-    setStatus("Speech recognition not supported in this browser.");
+    setStatus(t("speech_recognition_unsupported"));
     return;
   }
 

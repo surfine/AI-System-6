@@ -466,6 +466,7 @@ function stripReaderBoilerplate(markdown, { title = "", description = "" } = {})
     .map((block) => cleanText(block))
     .filter(Boolean)
     .filter((block) => {
+      if (isReaderFigureBlock(block)) return true;
       const plain = block.replace(/^#{1,6}\s+/, "").replace(/^[-*+]\s+/, "").trim();
       const key = normalizeReaderComparable(plain);
       if (!key || key === titleKey || key === descriptionKey) return false;
@@ -492,21 +493,94 @@ function stripReaderBoilerplate(markdown, { title = "", description = "" } = {})
   );
   if (endMatterIndex > 0) blocks = blocks.slice(0, endMatterIndex);
 
+  // These two loops shave short opening and closing blocks. A figure is short
+  // by nature, so it stops the trim rather than being eaten by it.
   while (blocks.length > 1) {
     const plain = blocks[0].replace(/^#{1,6}\s+/, "").replace(/^[-*+]\s+/, "").trim();
     const bodyLength = normalizeReaderComparable(plain).length;
-    if (bodyLength >= 24 || /[。！？.!?]/.test(plain)) break;
+    if (isReaderFigureBlock(blocks[0]) || bodyLength >= 24 || /[。！？.!?]/.test(plain)) break;
     blocks.shift();
   }
 
   while (blocks.length > 1) {
-    const plain = blocks[blocks.length - 1].replace(/^#{1,6}\s+/, "").replace(/^[-*+]\s+/, "").trim();
+    const last = blocks[blocks.length - 1];
+    const plain = last.replace(/^#{1,6}\s+/, "").replace(/^[-*+]\s+/, "").trim();
     const bodyLength = normalizeReaderComparable(plain).length;
-    if (bodyLength >= 24 || /[。！？.!?]/.test(plain)) break;
+    if (isReaderFigureBlock(last) || bodyLength >= 24 || /[。！？.!?]/.test(plain)) break;
     blocks.pop();
   }
 
   return blocks.join("\n\n");
+}
+
+// A clipped page keeps its figures, but a page is not a gallery: past a
+// dozen, what arrives is furniture rather than evidence.
+const READER_MAX_FIGURES = 12;
+// The cloud vision route refuses a longer address, so a link that could never
+// be read is not worth carrying.
+const READER_MAX_IMAGE_URL_LENGTH = 8192;
+const READER_TRACKING_PIXEL_PATTERN = /(^|[/_-])(1x1|pixel|spacer|blank|beacon|tracker)([._-]|$)/i;
+
+/**
+ * @param {string} fragment
+ * @returns {string}
+ */
+function readerImageSource(fragment) {
+  const direct = fragment.match(/\ssrc\s*=\s*["']([^"']+)["']/i)?.[1]
+    || fragment.match(/\sdata-src\s*=\s*["']([^"']+)["']/i)?.[1]
+    || "";
+  if (direct) return direct.trim();
+  // A responsive set lists "url width" pairs; the first entry is enough,
+  // because the model rescales whatever it is given anyway.
+  const srcset = fragment.match(/\s(?:data-)?srcset\s*=\s*["']([^"']+)["']/i)?.[1] || "";
+  return srcset.split(",")[0]?.trim().split(/\s+/)[0] || "";
+}
+
+/**
+ * Turn one figure, picture, or image element into Markdown the writer can see
+ * and the vision route can read. Returns "" for anything not worth keeping.
+ *
+ * @param {string} fragment
+ * @param {string} [baseUrl]
+ * @returns {string}
+ */
+function readerFigureMarkdown(fragment, baseUrl = "") {
+  const source = readerImageSource(fragment);
+  // An inline data URI is a sprite or an icon, never the article's evidence.
+  if (!source || /^data:/i.test(source)) return "";
+
+  let absolute;
+  try {
+    absolute = new URL(source, baseUrl || undefined).toString();
+  } catch {
+    return "";
+  }
+  if (!/^https:\/\//i.test(absolute)) return "";
+  if (absolute.length > READER_MAX_IMAGE_URL_LENGTH) return "";
+  if (READER_TRACKING_PIXEL_PATTERN.test(absolute)) return "";
+
+  // Publishers mark counting pixels with explicit 1x1 geometry.
+  const width = Number(fragment.match(/\swidth\s*=\s*["']?(\d+)/i)?.[1] || 0);
+  const height = Number(fragment.match(/\sheight\s*=\s*["']?(\d+)/i)?.[1] || 0);
+  if (width && height && width <= 2 && height <= 2) return "";
+
+  const caption = cleanText(stripTags(
+    fragment.match(/<figcaption\b[^>]*>([\s\S]*?)<\/figcaption>/i)?.[1] || ""
+  ));
+  const alt = cleanText(fragment.match(/\salt\s*=\s*["']([^"']*)["']/i)?.[1] || "");
+  const label = (caption || alt).replace(/[\[\]\n\r]/g, " ").replace(/\s+/g, " ").trim();
+  return `![${label}](${absolute})`;
+}
+
+/**
+ * A kept figure is one Markdown line with no sentence punctuation, which is
+ * exactly the shape stripReaderBoilerplate prunes. It has to be told.
+ *
+ * @param {string} block
+ * @returns {boolean}
+ */
+function isReaderFigureBlock(block) {
+  return /^!\[[^\]]*\]\(https:\/\/\S+\)$/.test(String(block || "").trim());
 }
 
 /**
@@ -515,17 +589,30 @@ function stripReaderBoilerplate(markdown, { title = "", description = "" } = {})
  * `htmlToReaderMarkdown`.
  *
  * @param {string} html
- * @param {{ title?: string, description?: string }} [context]
+ * @param {{ title?: string, description?: string, baseUrl?: string }} [context]
  * @returns {string}
  */
 function htmlToReaderMarkdown(html, context = {}) {
+  let figureBudget = READER_MAX_FIGURES;
+  const keepFigure = (fragment) => {
+    if (figureBudget <= 0) return "\n\n";
+    const markdown = readerFigureMarkdown(fragment, context.baseUrl);
+    if (!markdown) return "\n\n";
+    figureBudget -= 1;
+    return `\n\n${markdown}\n\n`;
+  };
+
   const withoutChrome = html
     .replace(/<!--[\s\S]*?-->/g, "")
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
     .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, "")
     .replace(/<svg\b[^<]*(?:(?!<\/svg>)<[^<]*)*<\/svg>/gi, "")
-    .replace(/<picture\b[^<]*(?:(?!<\/picture>)<[^<]*)*<\/picture>/gi, "")
-    .replace(/<figure\b[^<]*(?:(?!<\/figure>)<[^<]*)*<\/figure>/gi, "")
+    // A clipped article's chart or diagram is often the evidence itself, so a
+    // figure becomes a Markdown image instead of being deleted. Only the
+    // address travels; the bytes stay where the publisher put them.
+    .replace(/<figure\b[^<]*(?:(?!<\/figure>)<[^<]*)*<\/figure>/gi, keepFigure)
+    .replace(/<picture\b[^<]*(?:(?!<\/picture>)<[^<]*)*<\/picture>/gi, keepFigure)
+    .replace(/<img\b[^>]*>/gi, keepFigure)
     .replace(/<form\b[^<]*(?:(?!<\/form>)<[^<]*)*<\/form>/gi, "")
     .replace(/<button\b[^<]*(?:(?!<\/button>)<[^<]*)*<\/button>/gi, "")
     .replace(/<nav\b[^<]*(?:(?!<\/nav>)<[^<]*)*<\/nav>/gi, "")
@@ -632,7 +719,7 @@ async function extractWithArticleExtractor(html, url, fallback = {}) {
     const title = cleanText(article.title || fallback.title || "Untitled Page");
     const description = cleanText(article.description || fallback.description || "");
     const text = stripReaderBoilerplate(
-      cleanText(decodeHtml(htmlToReaderMarkdown(article.content, { title, description }))),
+      cleanText(decodeHtml(htmlToReaderMarkdown(article.content, { title, description, baseUrl: article.url || url }))),
       { title, description }
     );
     if (!validReaderText(text)) return null;
@@ -714,7 +801,7 @@ async function cleanHtmlForReader(html, url) {
   }
 
   const jsonLdText = stripReaderBoilerplate(readerJsonLdArticleBody(html), { title, description });
-  let text = jsonLdText || htmlToReaderMarkdown(bodyContent, { title, description });
+  let text = jsonLdText || htmlToReaderMarkdown(bodyContent, { title, description, baseUrl: url });
   text = cleanText(decodeHtml(text));
 
   if (!validReaderText(text)) {
@@ -766,6 +853,10 @@ module.exports = {
   bestReaderContentCandidate,
   stripReaderBoilerplate,
   htmlToReaderMarkdown,
+  READER_MAX_FIGURES,
+  isReaderFigureBlock,
+  readerFigureMarkdown,
+  readerImageSource,
   substantialReaderTextLength,
   validReaderText,
   cleanHtmlForReader,

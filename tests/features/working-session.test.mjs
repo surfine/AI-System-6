@@ -438,8 +438,8 @@ test.assertIncludes(
 );
 test.assertIncludes(
   source,
-  'new Set(["about", "saveChat", "guide", "welcomeDisk"])',
-  "Welcome Floppy never replaces the user's recoverable Working Session"
+  'new Set(["about", "saveChat"])',
+  "only transient system sheets are excluded from the recoverable Working Session"
 );
 test.assertIncludes(
   bootSource,
@@ -464,8 +464,8 @@ test.assertMatches(
 );
 test.assertMatches(
   bootSource,
-  /if \(!guideSeen && !resumedWorkingSession\) \{\s*openStartupItems\(\);/,
-  "the Welcome Floppy still owns a true first launch, and only a first launch"
+  /if \(!clioOnboardingCompleted && !resumedWorkingSession\) \{\s*openStartupItems\(\);/,
+  "the Clio introduction still owns a true first launch, and only a true first launch"
 );
 
 test.finish();

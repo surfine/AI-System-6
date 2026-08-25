@@ -476,17 +476,19 @@ const controlStripBuiltinModules = Object.freeze([
   {
     // Your Place: one home for the desk's pause button.
     //
-    // Two commands used to live only as Apple-menu rows. Hold My Place (⌥⌘P)
-    // writes down the window, the field, the character and the sentence around
-    // it; Hold That Thought (⌥⌘N) lands a passing line on a Note Pad slip.
-    // They are the same movement — you are leaving this sentence and you mean
-    // to come back — so the desk carries one object for them, and a small piece
-    // of always-there desk state is what a Control Strip module is for. The
-    // menu rows stay where they are: Balloon Help and Key Caps both name them.
+    // Hold That Thought (⌥⌘N) writes down the window, the character, the
+    // sentence around it, what was open in Reader and what was on the
+    // clipboard; the way back returns to that sentence. One movement — you are
+    // leaving this sentence and you mean to come back — and a small piece of
+    // always-there desk state is what a Control Strip module is for.
+    //
+    // On a phone this tile is not a convenience, it is the way in: there is no
+    // ⌥⌘N to press, and hunting through the Apple menu mid-interruption is the
+    // interruption. That is the reason it survived the merge.
     //
     // The module owns no state and no command of its own. It reads the eager
     // held-place helpers and dispatches the existing actions, so the tile, the
-    // menu rows and the key equivalents can never disagree about what is held.
+    // menu rows and the key equivalent can never disagree about what is held.
     id: "heldPlace",
     labelKey: "control_strip_held_place",
     // Two states from two icons already in the vocabulary, no new art: an alias
@@ -497,9 +499,9 @@ const controlStripBuiltinModules = Object.freeze([
     finderIcon: "alias",
     defaultOrder: 10,
     defaultEnabled: true,
-    // A held thought is carried on a Note Pad slip, so that is the window this
+    // A held thought lives in its own accessory now, so that is the window this
     // module file opens from the Control Strip Modules folder.
-    openOwner: "notePad",
+    openOwner: "holdThought",
     state: () => {
       if (typeof hasHeldPlace !== "function") return { state: "unknown", detail: "", source: "held-place" };
       // How long ago stays off the tile: a strip button that rewrites itself
@@ -516,22 +518,15 @@ const controlStripBuiltinModules = Object.freeze([
       // changes, and only because it names the place it would take you back to.
       items.push({
         type: "action",
-        label: t("held_place_hold"),
-        disabled: !controlStripActionAvailable("hold-my-place"),
-        run: () => handleAction("hold-my-place"),
+        label: t("hold_that_thought"),
+        disabled: !controlStripActionAvailable("hold-that-thought"),
+        run: () => handleAction("hold-that-thought"),
       });
       items.push({
         type: "action",
         label: heldPlaceResumeLabel(),
         disabled: !held,
         run: () => handleAction("resume-my-place"),
-      });
-      items.push({ type: "separator" });
-      items.push({
-        type: "action",
-        label: t("hold_that_thought"),
-        disabled: !controlStripActionAvailable("hold-that-thought"),
-        run: () => handleAction("hold-that-thought"),
       });
       return items;
     },

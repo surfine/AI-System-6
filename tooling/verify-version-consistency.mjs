@@ -208,8 +208,11 @@ if (
   fail("index.html cache-busters do not match the generated build (rerun npm run build:app)");
 }
 
-const buildInfoScriptIndex = indexSource.indexOf("app/generated/build-info.js");
-const bundleScriptIndex = indexSource.indexOf("app.bundle.js");
+// Execution order, not fetch order: the head also carries a
+// <link rel="preload"> for the bundle, which downloads early and runs nothing.
+// Compare the script tags themselves, or the preload reads as a violation.
+const buildInfoScriptIndex = indexSource.indexOf(buildInfoTag);
+const bundleScriptIndex = indexSource.indexOf(bundleTag);
 if (
   buildInfoScriptIndex >= 0 &&
   bundleScriptIndex > buildInfoScriptIndex
@@ -279,7 +282,19 @@ if (!pkg.macPackagedAssets) {
 }
 
 if (!skipServerCheck) {
-  const port = await findFreePort();
+  let port;
+  try {
+    port = await findFreePort();
+  } catch (error) {
+    // The no-network sandbox rejects binding a localhost port with EPERM.
+    // Fail immediately with the actionable fix instead of crashing after every
+    // static check has already printed OK.
+    console.error(
+      `\nNO  cannot bind a localhost port (${error && error.code || error.message}); `
+      + "re-run this check with network access / escalation."
+    );
+    process.exit(1);
+  }
   const serverProcess = spawn(process.execPath, ["apps/server/server.js"], {
     cwd: root,
     env: { ...process.env, PORT: String(port) },

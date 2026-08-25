@@ -91,10 +91,10 @@ function lmsCommandCandidates() {
  * Run `lms` with the given args. Mirrors `runLms` from root.
  *
  * @param {string[]} args
- * @param {{ timeout?: number }} [options]
+ * @param {{ timeout?: number, signal?: AbortSignal | null }} [options]
  * @returns {Promise<{ stdout: string, stderr: string }>}
  */
-async function runLms(args, { timeout = 30000 } = {}) {
+async function runLms(args, { timeout = 30000, signal = null } = {}) {
   const candidates = lmsCommandCandidates();
   const missing = [];
   /** @type {any} */
@@ -105,6 +105,7 @@ async function runLms(args, { timeout = 30000 } = {}) {
     try {
       const result = await execFileAsync(command, args, {
         timeout,
+        signal: signal || undefined,
         maxBuffer: 8 * 1024 * 1024,
         windowsHide: true,
       });
@@ -114,6 +115,9 @@ async function runLms(args, { timeout = 30000 } = {}) {
       };
     } catch (error) {
       const e = /** @type {any} */ (error);
+      if (signal?.aborted || e?.name === "AbortError" || e?.code === "ABORT_ERR") {
+        throw e;
+      }
       if (e.code === "ENOENT") {
         missing.push(command);
         continue;

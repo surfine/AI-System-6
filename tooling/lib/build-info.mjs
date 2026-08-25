@@ -33,11 +33,24 @@ import { desktopRoot, repositoryRoot } from "./paths.mjs";
 
 export const repoRoot = repositoryRoot;
 
-/** Assets in index.html whose ?v= query must carry the current build stamp. */
+/**
+ * Assets in index.html whose ?v= query must carry the current build stamp.
+ *
+ * The stamp is what makes an immutable cache safe: a versioned URL dies with
+ * its build number, so a bad build can never outlive its own release. Every
+ * URL the serving layer marks immutable must appear here — the lazy module
+ * loader stamps its own requests (app/core/config.js lazyScriptUrl), but the
+ * head references are stamped here or not at all.
+ */
 export const stampedIndexAssets = [
   "styles.bundle.css",
   "app.bundle.js",
   "app/generated/build-info.js",
+  "app/core/theme-registry.js",
+  "app/core/theme-body-init.js",
+  "assets/app-icon/manifest.json",
+  "assets/app-icon/app-icon-180.png",
+  "assets/app-icon/app-icon-192.png",
 ];
 
 export const generatedJsPath = "app/generated/build-info.js";

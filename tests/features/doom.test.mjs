@@ -7,7 +7,7 @@ import { createHash, webcrypto } from "node:crypto";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import vm from "node:vm";
-import { createFeatureTest, desktopRoot, read, readAppSurface, exists } from "../helpers/feature-test-harness.mjs";
+import { createFeatureTest, desktopRoot, exists, read, readAppSurface, windowApp } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("doom");
 const index = read("index.html");
@@ -61,16 +61,17 @@ const app = readAppSurface([
 // --- application registration and one shared entry path --------------------
 
 test.assertNotIncludes(index, 'data-window="doom"', "the DOOM window frame stays off the startup disk");
-test.assertIncludes(host, 'data-window="doom" aria-labelledby="doom-title"', "the lazy module installs the window frame");
+test.assertIncludes(host, 'windowName: "doom"', "the lazy module declares its managed window identity");
+test.assertIncludes(host, "AISystem6ApplicationShell.createWindow", "the lazy module installs its frame through the shared six-appearance shell");
 test.assertNotIncludes(index, 'data-action="open-doom"', "the dynamic Games folder avoids a duplicate boot-time launcher");
 test.assertIncludes(appJs, 'action: "open-doom"', "the dynamic Games folder includes DOOM");
 test.assertIncludes(read("app/features/doom.js"), '"open-doom":{handler:()=>openWindow("doom")', "every launcher enters through openWindow");
 test.assertIncludes(multiFinder, 'doom: "DOOM"', "MultiFinder labels the app");
-test.assertIncludes(multiFinder, 'doom: "doom"', "the window declares its own app id");
+test.assert(windowApp("doom") === "doom", "the window declares its own app id");
 test.assertIncludes(host, 'AISystem6RegisterApplicationMenuSet?.("doom"', "the lazy module registers its menu set");
 test.assertNotIncludes(menus, "const doomMenus", "DOOM menu declarations stay off the startup floppy");
 test.assertIncludes(interfaceContract, "doom: creativeLab()", "DOOM remains a summoned immersive creative lab");
-test.assertMatches(windowManager, /doom:\s*\{\s*ensure:\s*\(\)\s*=>\s*ensureDoomModule\(\)/,
+test.assertMatches(read("app/core/window-registry.js"), /doom:[\s\S]{0,200}?ensure: \(\) => ensureDoomModule\(\)/,
   "session restore and direct opens share the lazy loader");
 test.assertMatches(windowManager, /mobileFullScreenAppIds = new Set\(\[[^\]]*"doom"/,
   "phones give the game one foreground work area");

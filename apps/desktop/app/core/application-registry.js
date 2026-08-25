@@ -8,7 +8,12 @@
 // The droplets keep their declared command contract; this registry only
 // owns the object -> app routing decision.
 
-const applicationIntents = Object.freeze(["open", "read", "edit", "review", "map", "present", "attach", "export"]);
+// "develop" is 文字亮室's intent, and it is its own rather than a reuse: edit
+// belongs to TeachText, which is the default opener for a text object, and
+// review belongs to the Review Desk. A document is developed, not edited, when
+// the negative is left alone and the change is a stack of adjustments the
+// writer can switch off again.
+const applicationIntents = Object.freeze(["open", "read", "edit", "review", "develop", "map", "present", "attach", "export"]);
 const applicationsById = new Map();
 
 function normalizeApplicationIntent(intent) {
@@ -436,6 +441,27 @@ registerApplication({
       outputObjectIds: [createdFile.id],
       affectedObjectIds: [file.id],
     };
+  },
+});
+
+registerApplication({
+  id: "lightroom",
+  labelKey: "lightroom_title",
+  windowName: "lightroom",
+  acceptedItemKinds: ["text"],
+  acceptedIntents: ["develop"],
+  // Opening the darkroom produces nothing on its own: it reads a document and
+  // shows what earlier passes did to it. Develop, the action that writes, keeps
+  // its own receipt where it happens.
+  recordsRuns: [],
+  handler: async (items) => {
+    const file = items[0];
+    if (!file) return { ok: false, reason: "missing" };
+    const runtime = window.AISystem6QuickDraft;
+    if (typeof runtime?.developDocument !== "function") return { ok: false, reason: "no-handler" };
+    const opened = await runtime.developDocument(file.id);
+    if (!opened) return { ok: false, reason: "develop-failed" };
+    return { ok: true, affectedObjectIds: [file.id], destination: "lightroom" };
   },
 });
 

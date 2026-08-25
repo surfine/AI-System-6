@@ -121,7 +121,7 @@
       "metrics": {
         "16": {
           "art": {
-            "pixels": 132,
+            "pixels": 136,
             "bbox": {
               "minX": 1,
               "minY": 0,
@@ -138,12 +138,12 @@
               "maxY": 15
             }
           },
-          "inkPixels": 132,
-          "inkCoverage": 0.5156
+          "inkPixels": 136,
+          "inkCoverage": 0.5313
         },
         "32": {
           "art": {
-            "pixels": 380,
+            "pixels": 393,
             "bbox": {
               "minX": 3,
               "minY": 1,
@@ -160,8 +160,8 @@
               "maxY": 30
             }
           },
-          "inkPixels": 380,
-          "inkCoverage": 0.3711
+          "inkPixels": 393,
+          "inkCoverage": 0.3838
         }
       }
     },

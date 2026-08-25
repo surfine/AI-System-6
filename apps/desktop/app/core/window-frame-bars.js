@@ -17,7 +17,6 @@ const finderContinuationWindowNames = new Set([
   "helpFolder",
   "applications",
   "disk",
-  "welcomeDisk",
   "projects",
   "documents",
   "projectCd",
@@ -379,11 +378,20 @@ const frameHostSelectors = {
   clioStage: "#clio-stage-viewport",
 };
 
+// Every sync installed so far, across every call. Windows arrive in two waves
+// now -- the ones in index.html at boot, and the ones a module builds when it
+// is first opened -- so this cannot be a local that the second wave replaces.
+const installedFrameSyncs = [];
+let frameThemeObserver = null;
+
+// Safe to call again for a window that arrived after boot. Windows already
+// carrying bars are skipped by their own dataset flag, the syncs accumulate
+// rather than replace, and the theme observer is installed once.
 function installWindowFrameBars() {
   // The bars are always built, in every theme: Liquid Glass and phones hide
   // them by token, and a theme switched at runtime must not need a reload to
   // get them back.
-  const allSyncs = [];
+  const allSyncs = installedFrameSyncs;
   document.querySelectorAll(".window").forEach((win) => {
     if (win.dataset.frameBars === "true") return;
     const selector = frameHostSelectors[win.dataset.window] || ".window-frame-scroller";
@@ -398,7 +406,9 @@ function installWindowFrameBars() {
   });
 
   // Switching themes changes the lane width and whether the bars show at all.
-  new MutationObserver(() => allSyncs.forEach((sync) => sync()))
-    .observe(document.body, { attributes: true, attributeFilter: ["class"] });
-  window.refreshFinderContinuationIndicators = () => allSyncs.forEach((sync) => sync());
+  if (!frameThemeObserver) {
+    frameThemeObserver = new MutationObserver(() => installedFrameSyncs.forEach((sync) => sync()));
+    frameThemeObserver.observe(document.body, { attributes: true, attributeFilter: ["class"] });
+  }
+  window.refreshFinderContinuationIndicators = () => installedFrameSyncs.forEach((sync) => sync());
 }

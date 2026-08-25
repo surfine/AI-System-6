@@ -48,6 +48,7 @@ const {
   chatFilesStoreName,
   citiesStoreName,
   bonsaiCitiesStoreName,
+  imageAttachmentsStoreName,
 } = storageConfig;
 const {
   defaultProjectName,
@@ -231,7 +232,6 @@ const {
   teachTextAttachmentDocumentEl,
   teachTextAttachmentsListEl,
   teachTextTogglePreviewButton,
-  teachTextSideAskButton,
   teachTextTranslateButton,
   teachTextDocMapButton,
   teachTextClipSelectionButton,
@@ -340,6 +340,7 @@ const {
   questionManuscriptTitleEl,
   outlineNotesEl,
   outlineContentEl,
+  outlineTreeEl,
   outlinePreviewEl,
   outlineStatusEl,
   outlinePipelineLabelSelect,
@@ -462,6 +463,8 @@ const {
   fileInfoLocationEl,
   fileInfoFolderEl,
   fileInfoSourceEl,
+  fileInfoDescriptionLabelEl,
+  fileInfoDescriptionEl,
   fileInfoContextEl,
   fileInfoCreatedEl,
   fileInfoModifiedEl,
@@ -548,20 +551,52 @@ function staticFinderBuildDate() {
   return match ? `${match[1]}-${match[2]}-${match[3]}T00:00:00.000Z` : "";
 }
 
+const applicationDescriptionKeys = Object.freeze({
+  "open-writing-studio": "app_desc_writing_studio",
+  "open-quick-draft": "app_desc_draft_desk",
+  "open-assistant": "app_desc_cliotalk",
+  "open-reader": "app_desc_reader",
+  "open-find-path": "app_desc_searcher",
+  "open-teachtext": "app_desc_teachtext",
+  "open-scrapbook": "app_desc_scrapbook",
+  "open-docmap": "app_desc_docmap",
+  "open-clio-stage": "app_desc_clio_stage",
+  "open-clio-chart": "app_desc_clio_chart",
+  "open-liquid-cover": "app_desc_cover_glass",
+  "open-cmf-studio": "app_desc_cmf_studio",
+  "open-image-prompt-studio": "app_desc_image_prompt_studio",
+  "open-soundscape": "app_desc_soundscape",
+  "open-endfield-terminal": "app_desc_endfield",
+  "open-bureaucracy-meme": "app_desc_bureaucracy",
+  "open-time-machine": "app_desc_time_machine",
+  "open-rebuild-flow": "app_desc_rebuild",
+  "play-writing-demo": "app_desc_live_demo",
+  "play-teaser-demo": "app_desc_teaser_demo",
+  "open-micropolis": "app_desc_micropolis",
+  "open-openttd": "app_desc_openttd",
+  "open-doom": "app_desc_doom",
+  "open-bonsai-city": "app_desc_bonsai_city",
+});
+
 function withStaticFinderMetadata(items, location) {
   const buildDate = staticFinderBuildDate();
-  return items.map((item) => ({
-    virtual: true,
-    canDuplicate: false,
-    canTrash: false,
-    canOpen: item.canOpen !== false,
-    sizeLabel: item.sizeLabel || t("built_in"),
-    createdAt: item.createdAt || buildDate,
-    updatedAt: item.updatedAt || buildDate,
-    version: item.version || appVersionInfo.version,
-    location,
-    ...item,
-  }));
+  return items.map((item) => {
+    const descriptionKey = item.descriptionKey || applicationDescriptionKeys[item.action] || "";
+    return {
+      virtual: true,
+      canDuplicate: false,
+      canTrash: false,
+      canOpen: item.canOpen !== false,
+      sizeLabel: item.sizeLabel || t("built_in"),
+      createdAt: item.createdAt || buildDate,
+      updatedAt: item.updatedAt || buildDate,
+      version: item.version || appVersionInfo.version,
+      location,
+      descriptionKey,
+      description: descriptionKey ? t(descriptionKey) : "",
+      ...item,
+    };
+  });
 }
 
 function getSystemFolderItems() {
@@ -721,7 +756,7 @@ function getSystemPromptFinderItems() {
     (window.AISystem6PromptFiles || [])
       .filter((prompt) => prompt.category === definition.promptCategory)
       .map((prompt) => ({
-        name: prompt.name,
+        name: window.AISystem6PromptFilesRuntime?.promptDisplayName?.(prompt, currentLanguage) || prompt.name,
         iconId: "document",
         icon: "doc-icon",
         action: `open-system-prompt-file:${prompt.id}`,
@@ -735,10 +770,10 @@ function getSystemPromptFinderItems() {
 
 function getHelpFolderItems() {
   return withStaticFinderMetadata([
-    { name: t("start_here"), iconId: "document", icon: "doc-icon", action: "open-guide", kind: t("system_component"), workspaceCapability: workspaceCapabilityStudio },
+    { name: t("replay_clio_introduction"), iconId: "document", icon: "doc-icon", action: "replay-clio-introduction", kind: t("system_component") },
     { name: t("system_help"), iconId: "systemHelp", icon: "doc-icon", action: "open-system-help", kind: t("system_component") },
     { name: t("read_me"), iconId: "document", icon: "doc-icon", action: "open-read-me", kind: t("system_component") },
-    { name: t("flow_readme"), iconId: "document", icon: "doc-icon", action: "open-flow-readme", kind: t("system_component"), workspaceCapability: workspaceCapabilityStudio },
+    { name: t("flow_readme"), iconId: "document", icon: "doc-icon", action: "open-flow-readme", kind: t("system_component") },
     { name: t("memory_readme"), iconId: "document", icon: "doc-icon", action: "open-memory-readme", kind: t("system_component") },
     { name: t("concepts_docmap"), iconId: "docMap", icon: "doc-icon", action: "open-system-concepts-docmap", kind: t("system_component") },
     { name: t("concepts_clio_stage"), iconId: "clioStage", icon: "doc-icon", action: "open-system-concepts-clio-stage", kind: t("system_component") },
@@ -762,7 +797,7 @@ function getApplicationsItems() {
       { name: t("micropolis_label"), iconId: "micropolis", action: "open-micropolis", type: "application", kind: t("application") },
       { name: t("openttd_label"), iconId: "openttd", action: "open-openttd", type: "application", kind: t("application") },
       { name: t("doom_label"), iconId: "doom", action: "open-doom", type: "application", kind: t("application") },
-      { name: t("bonsai_city_label"), iconId: "applications", action: "open-bonsai-city", type: "application", kind: t("application") },
+      { name: t("bonsai_city_label"), iconId: "bonsaiCity", action: "open-bonsai-city", type: "application", kind: t("application") },
     ], location);
   }
   if (applicationsFinderPath === "extras") {
@@ -1247,6 +1282,7 @@ let fileDiskImportController = null;
 const projects = [];
 const projectReferences = [];
 const scraps = [];
+const imageAttachments = [];
 let lastRetrievedContextItems = [];
 let lastContextBudget = null;
 const excludedContextKeys = new Set();
@@ -1319,7 +1355,12 @@ let lastUserText = "";
 let claimCitationContextItems = [];
 let currentReaderPage = null;
 let currentReaderClipCount = 0;
+// `guideSeen` remains a one-release read-only migration source. New builds
+// persist only the Clio-first completion flag below.
 let guideSeen = false;
+let clioOnboardingCompleted = false;
+let clioIntroductionReplay = false;
+let clioProviderPreference = "auto";
 let multiFinderSwitcherHintSeen = false;
 let calculatorExpression = "0";
 let writingBellMode = "work";
@@ -1365,7 +1406,7 @@ function isPublicCloudCredentialMode() {
 }
 
 function cloudCredentialReady(config = cloudConfig) {
-  return !!(config?.credentialId || cloudRuntimeApiKey || (
+  return !!(config?.credentialMode === "shared-remote" || config?.credentialId || cloudRuntimeApiKey || (
     isPublicCloudCredentialMode()
     && publicSharedCloudAvailable
     && config?.provider
@@ -1373,6 +1414,7 @@ function cloudCredentialReady(config = cloudConfig) {
 }
 
 function cloudCredentialMode(config = cloudConfig) {
+  if (config?.credentialMode === "shared-remote") return "shared-remote";
   if (isPublicCloudCredentialMode()) {
     if (cloudRuntimeApiKey) return "byok";
     if (publicSharedCloudAvailable && config?.provider) return "shared";
@@ -1570,6 +1612,92 @@ async function ensureSystemDictionaryData() {
   return systemDictionaryLoadPromise;
 }
 
+let productHelpRuntimeLoadPromise = null;
+
+async function ensureProductHelpRuntime() {
+  if (window.AISystem6ProductContext && window.AISystem6ProductHelpRuntime) return true;
+  productHelpRuntimeLoadPromise ||= loadClassicScriptOnce("app/core/product-context.js")
+    .then(() => loadClassicScriptOnce("app/core/product-help-runtime.js"))
+    .catch((error) => {
+      productHelpRuntimeLoadPromise = null;
+      throw error;
+    });
+  return productHelpRuntimeLoadPromise;
+}
+
+let clioProviderResolverLoadPromise = null;
+
+async function ensureClioProviderResolver() {
+  if (window.AISystem6ClioProvider) return true;
+  clioProviderResolverLoadPromise ||= loadClassicScriptOnce("app/core/clio-provider-resolver.js")
+    .catch((error) => {
+      clioProviderResolverLoadPromise = null;
+      throw error;
+    });
+  return clioProviderResolverLoadPromise;
+}
+
+let explanationLensLoadPromise = null;
+
+async function ensureExplanationLens() {
+  if (window.AISystem6ExplanationLens) return true;
+  explanationLensLoadPromise ||= loadClassicScriptOnce("app/core/explanation-lens.js")
+    .catch((error) => {
+      explanationLensLoadPromise = null;
+      throw error;
+    });
+  return explanationLensLoadPromise;
+}
+
+let modelUserErrorsLoadPromise = null;
+
+async function ensureModelUserErrors() {
+  if (window.AISystem6ModelUserErrors) return true;
+  modelUserErrorsLoadPromise ||= loadClassicScriptOnce("app/core/model-user-errors.js")
+    .catch((error) => {
+      modelUserErrorsLoadPromise = null;
+      throw error;
+    });
+  return modelUserErrorsLoadPromise;
+}
+
+let projectBackupAssemblerLoadPromise = null;
+
+async function ensureProjectBackupAssembler() {
+  if (window.AISystem6ProjectBackupAssembler) return true;
+  projectBackupAssemblerLoadPromise ||= loadClassicScriptOnce("app/core/project-backup-assembler.js")
+    .catch((error) => {
+      projectBackupAssemblerLoadPromise = null;
+      throw error;
+    });
+  return projectBackupAssemblerLoadPromise;
+}
+
+let recoveryStorageLoadPromise = null;
+
+async function ensureRecoveryStorage() {
+  if (window.AISystem6RecoveryStorage) return true;
+  recoveryStorageLoadPromise ||= ensureProjectBackupAssembler()
+    .then(() => loadClassicScriptOnce("app/core/recovery-storage.js"))
+    .catch((error) => {
+      recoveryStorageLoadPromise = null;
+      throw error;
+    });
+  return recoveryStorageLoadPromise;
+}
+
+let applicationShellLoadPromise = null;
+
+async function ensureApplicationShell() {
+  if (window.AISystem6ApplicationShell) return true;
+  applicationShellLoadPromise ||= loadClassicScriptOnce("app/core/application-shell.js")
+    .catch((error) => {
+      applicationShellLoadPromise = null;
+      throw error;
+    });
+  return applicationShellLoadPromise;
+}
+
 function t(key, ...args) {
   const tables = translations || window.AISystem6Data?.translations || {};
   const table = tables[currentLanguage || "en"] || tables.zh || tables.en || {};
@@ -1639,10 +1767,18 @@ function syncThemeLabEvidence(theme) {
 }
 
 function applyTheme(themeId, options = {}) {
+  const experimental = options.experimental === true;
+  const persist = options.persist !== false;
+  const commit = !experimental
+    && (options.commit === true || (options.commit !== false && persist));
   const theme = window.AISystem6Theme?.applyTheme(themeId, {
-    persist: options.persist !== false,
+    persist,
     announce: options.announce !== false,
     modernFontPreference: modernFontsInput?.checked === true,
+    experimental,
+    commit,
+    saveDesk: options.saveDesk !== false,
+    source: options.source || "application",
   });
   const resolvedTheme = theme?.id || "classic";
   syncThemeLabEvidence(theme);
@@ -1685,7 +1821,6 @@ function applyTheme(themeId, options = {}) {
     if (typeof updateMenuState === "function") updateMenuState();
     if (typeof refreshStrip === "function") refreshStrip("appearance");
   }
-  if (options.saveDesk !== false && options.persist !== false) saveDeskState();
   return resolvedTheme;
 }
 
@@ -1693,6 +1828,48 @@ function applyMenuClock(options = {}) {
   renderSystemClock();
   if (options.persist !== false) saveDeskState();
 }
+
+// The declarative half of applyLanguage(), scoped to one subtree.
+//
+// A window that its module builds arrives after boot, so it misses the boot
+// sweep and opens with the English text baked into its template. It cannot
+// call applyLanguage() to catch up: that function also re-renders Note Pad,
+// TeachText, the ask bars, the alarm clock and the cloud panel, and running
+// all of it as a side effect of opening an unrelated window moved 9-23% of
+// the pixels in four Appearance cells.
+//
+// The loops below are deliberately a copy rather than an extraction: inside
+// applyLanguage() they are interleaved with renderKeyCapsShortcuts(), which
+// emits i18n attributes of its own, so the sweeps there cannot be reordered
+// into one call without leaving that output untranslated.
+function translateWithin(root) {
+  if (!root || typeof root.querySelectorAll !== "function") return;
+  root.querySelectorAll("[data-i18n]").forEach((el) => {
+    const value = t(el.dataset.i18n);
+    if (el.dataset.shortcut && typeof writeShortcutRowLabel === "function") writeShortcutRowLabel(el, value);
+    else if (value.includes("<")) el.innerHTML = value;
+    else el.textContent = value;
+  });
+  root.querySelectorAll("[data-i18n-count]").forEach((el) => {
+    el.textContent = t(el.dataset.i18nCount, Number(el.dataset.i18nCountValue || 0));
+  });
+  root.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
+    el.placeholder = t(el.dataset.i18nPlaceholder);
+  });
+  root.querySelectorAll("[data-i18n-aria-label]").forEach((el) => {
+    el.setAttribute("aria-label", t(el.dataset.i18nAriaLabel));
+  });
+  root.querySelectorAll("[data-i18n-title]").forEach((el) => {
+    el.title = t(el.dataset.i18nTitle);
+  });
+  root.querySelectorAll("[data-i18n-drop-label]").forEach((el) => {
+    el.dataset.dropLabel = t(el.dataset.i18nDropLabel);
+  });
+  root.querySelectorAll("[data-status-key]").forEach((el) => {
+    el.textContent = t(el.dataset.statusKey);
+  });
+}
+window.AISystem6TranslateWithin = translateWithin;
 
 function applyLanguage() {
   document.documentElement.lang = currentLanguage === "zh" ? "zh-Hans" : "en";
@@ -1712,9 +1889,6 @@ function applyLanguage() {
     }
   });
   if (typeof renderKeyCapsShortcuts === "function") renderKeyCapsShortcuts();
-  // Welcome Floppy owns a live item count and AI-readiness label.
-  if (typeof syncWelcomeFloppyState === "function") syncWelcomeFloppyState();
-
   document.querySelectorAll("[data-i18n-count]").forEach((el) => {
     const count = Number(el.dataset.i18nCountValue || 0);
     el.textContent = t(el.dataset.i18nCount, count);
@@ -1766,6 +1940,9 @@ function applyLanguage() {
   if (typeof window.syncCloudCredentialUi === "function") window.syncCloudCredentialUi();
   renderWritingBell();
   renderAlarmClock();
+  // 文字亮室 paints its subject from a record, not from data-i18n, so a language
+  // switch left the old word on screen. typeof: draft-desk.js is lazy.
+  if (typeof renderLightroomSubject === "function") renderLightroomSubject();
   if (typeof refreshBureaucracyMemeLanguage === "function") refreshBureaucracyMemeLanguage();
   window.AISystem6Doom?.refreshLanguage?.();
   window.AISystem6ThemeLab?.refreshLanguage?.();
@@ -2051,6 +2228,12 @@ function initSystemSelectControls() {
       }
     });
     select.addEventListener("change", () => refreshSystemSelectControl(select));
+    // The button carries the only label a user can read, and the native select
+    // it mirrors is hidden. A programmatic value write fires no "change", so
+    // the harness used to keep printing the previous option while the control
+    // already held the new one — the same drift that left the writing paper
+    // blank.
+    watchControlWrites(select, HTMLSelectElement.prototype, "value", refreshSystemSelectControl);
     refreshSystemSelectControl(select);
   });
 }
@@ -2157,6 +2340,60 @@ function positionOpenMenu(menu) {
   const maxLeft = Math.max(margin, window.innerWidth - popoverWidth - margin);
   const left = Math.min(Math.max(menuRect.left, margin), maxLeft);
   menu.style.setProperty("--menu-popover-left", `${Math.round(left)}px`);
+}
+
+// What actually clips a pulled-down command menu is not always the screen. The
+// window pane and the desktop each hide their overflow, so a menu anchored to a
+// button near a window's right edge is cut by the window while still sitting
+// inside the viewport. Collect every clipping ancestor and keep the narrowest
+// box: that is the region the menu has to land in.
+function popoverClipBounds(element) {
+  const bounds = {
+    left: 0,
+    top: 0,
+    right: window.innerWidth,
+    bottom: window.innerHeight,
+  };
+  for (let node = element.parentElement; node && node !== document.documentElement; node = node.parentElement) {
+    const style = window.getComputedStyle(node);
+    if (style.overflowX === "visible" && style.overflowY === "visible") continue;
+    const rect = node.getBoundingClientRect();
+    if (!rect.width || !rect.height) continue;
+    bounds.left = Math.max(bounds.left, rect.left);
+    bounds.top = Math.max(bounds.top, rect.top);
+    bounds.right = Math.min(bounds.right, rect.right);
+    bounds.bottom = Math.min(bounds.bottom, rect.bottom);
+  }
+  return bounds;
+}
+
+function commandPopoverFor(details) {
+  return details?.querySelector(":scope > .teachtext-command-popover, :scope > .teachtext-command-subpopover") || null;
+}
+
+// The CSS anchors a command popover to its summary; this only nudges the
+// anchored box back inside the clip region, so the pointer never has to chase a
+// menu whose commands are off the edge. A shift, not a re-anchor: the popover
+// keeps pointing at the button that opened it.
+function positionCommandPopover(details) {
+  const popover = commandPopoverFor(details);
+  if (!popover) return;
+  popover.style.removeProperty("translate");
+  const rect = popover.getBoundingClientRect();
+  if (!rect.width || !rect.height) return;
+  const margin = 4;
+  const bounds = popoverClipBounds(details);
+  let shiftX = 0;
+  let shiftY = 0;
+  if (rect.right > bounds.right - margin) shiftX = bounds.right - margin - rect.right;
+  if (rect.left + shiftX < bounds.left + margin) shiftX = bounds.left + margin - rect.left;
+  if (rect.bottom > bounds.bottom - margin) shiftY = bounds.bottom - margin - rect.bottom;
+  if (rect.top + shiftY < bounds.top + margin) shiftY = bounds.top + margin - rect.top;
+  if (shiftX || shiftY) popover.style.translate = `${Math.round(shiftX)}px ${Math.round(shiftY)}px`;
+}
+
+function clearCommandPopoverPlacement(details) {
+  commandPopoverFor(details)?.style.removeProperty("translate");
 }
 
 async function importFilesToMountedTextDisk(files, options = {}) {

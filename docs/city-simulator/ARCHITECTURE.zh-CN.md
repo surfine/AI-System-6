@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/city-simulator/ARCHITECTURE.md -->
-<!-- source-sha256: 1bf78b6549650cc044eabb76e3dd39517215ada385095ad8bef001a45aea81e0 -->
+<!-- source-sha256: 10dac20e19964a18f1b8d83aed237c05adb36a72afaf594c4679c453ee65b5e0 -->
 
 > 英文版为准 ・ 仅供人类参考
 
@@ -27,14 +27,13 @@ IndexedDB、翻译表、墙钟、定时器或 `Math.random()`。它以经典脚�
 
 ### 渲染与输入
 
-Phase 4 实现为纯投影模块 `bonsai-renderer.js`，Phase 7 再由
-`bonsai-renderer-voxel.js` 完成视觉替换。纯模块保留 2:1 等距投影、其逆
-投影与确定性画家序，作为可在 VM 中测试的视图数学。体素渲染器消费纯
-`buildRenderSnapshot`，懒加载打包后的 three.js vendor，绘制正交等距场景
-（体素地形、水面、道路/电线/公园、按阶段缩放的分区建筑、树木、电厂、服务
-设施、昼夜、装饰性交通）。渲染器只读快照——指针、键盘、触摸都通过
-`submitCommand` 产生命令，绝不直接改状态。相机与光照是视图状态，绝不入档；
-循环只绘图，不推进规则。
+纯投影模块为 `bonsai-renderer.js`，正式视觉由
+`bonsai-renderer-canvas.js` 拥有。纯模块保留 48x24 的 2:1 投影、逆向拾取、
+四个 90° 变换、可见对角线范围和确定性多格画家序，作为可在 VM 中测试的
+视图数学。Canvas 渲染器消费 `buildRenderSnapshot`，绘制六个同尺寸层：地形；
+交通/公用事业/区域；建筑/树；代理/效果；选择/预览/错误；昼夜光照。静态内容
+使用 16x16 离屏分块缓存。渲染器只读快照——指针、键盘、触摸只产生预览或
+命令，绝不直接改状态。相机与光照不进城市存档；绘制绝不推进规则。
 
 ### AI System 6 外壳
 
@@ -44,8 +43,9 @@ Working Session 与持久化适配器。它用 `crypto.getRandomValues` 生成�
 
 ## 确定性契约
 
-- **tick 模型。** 核心只推进整数 tick（`advanceTicks(state, count)`）；外壳按
-  逻辑 20 Hz 节奏调度。速度档缩放每帧 tick 数，绝不按墙钟补算。
+- **tick 模型。** 核心只推进整数 tick（`advanceTicks(state, count)`）；每五个
+  tick 为一个游戏日，外壳按逻辑 20 Hz 节奏调度。速度档缩放每帧 tick 数，
+  绝不按墙钟补算。
 - **种子。** 外壳在 `createCity` 时提供整数种子。缺失或非整数种子抛出
   `bonsai-required-seed`；核心绝不自行产生随机性。
 - **PRNG。** `mulberry32-v1`，32 位状态，随存档序列化。只使用整数运算
@@ -62,29 +62,32 @@ Working Session 与持久化适配器。它用 `crypto.getRandomValues` 生成�
 { "schemaVersion": 1, "type": "road", "payload": { "x": 5, "y": 8 }, "targetTick": 120, "clientCommandId": "c-1" }
 ```
 
-Phase 1 已实现。核心给每个被接受命令（即时或排队）分配单调递增 `sequence`；
-被拒绝命令不消耗序号、绝不改变状态。未来定时命令进入
-`(targetTick, sequence)` 有序队列，并恰好在其目标 tick 应用。外壳绝不直接
-改状态——只提交命令。
+Schema v2 增加原子的 `build-path`、`zone-area`、`place-facility`、
+`terraform-area`、`demolish-area` 与 `set-policy` 事务。纯
+`previewCommand` 与会改状态的 `submitCommand` 共用验证器，因此拖拽预览不会
+在边界、地形、占用、连通或费用上与提交结果分叉。接受命令只分配一个
+sequence 与一个 transaction id；拒绝命令二者都不占、不收费，检查点不变。
+未来命令仍按 `(targetTick, sequence)` 排序。
 
 ## 事件
 
 ```json
-{ "schemaVersion": 1, "tick": 120, "sequence": 41, "type": "milestone", "payload": { "threshold": 250 } }
+{ "schemaVersion": 2, "tick": 120, "sequence": 41, "type": "milestone", "payload": { "threshold": 250 } }
 ```
 
-Phase 1 已实现。事件是已提交的领域事实：不携带 DOM 引用、翻译字符串或墙钟
+Schema v2 事件是已提交的领域事实：不携带 DOM 引用、翻译字符串或墙钟
 时间。外壳用 `drainEvents` 取出；它们由模拟派生且从不持久化。UI 在渲染时
 本地化。
 
 ## 存档格式
 
-见 [SAVE-FORMAT.md](SAVE-FORMAT.zh-CN.md)。只保存持久层；派生层
-（`powered`、`roadOk`、`plantAt`、计数）加载时重建。
+见 [SAVE-FORMAT.md](SAVE-FORMAT.zh-CN.md)。格式/规则集 v2 保存 64/96
+地图几何与全部耐久独立层；派生网络、覆盖、计数、代理和渲染缓存加载时重建。
+纯 v1→v2 迁移把旧日 tick 乘以五，以保留日期。
 
 ## 外壳契约
 
-未来窗口契约（尚未注册）：
+已注册窗口契约：
 
 | 决定 | 值 |
 | --- | --- |

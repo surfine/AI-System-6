@@ -23,9 +23,21 @@ When evidence conflicts, resolve in this order:
 Historical dimensions are calibration evidence, never a hard acceptance value on
 every device.
 
+## Enforced contract vs. reference targets
+
+`npm run verify:design` reads the machine contract, validates its current
+principles and state ordering, and proves that each token listed under
+`enforcement.requiredLiveRoleTokens` has a real declaration and consumer.
+Numerical fine/coarse ranges, wildcard token-name patterns, and proposed spacing
+tokens remain reference material. They do not require a declaration with no
+consumer and never override newer product decisions in `CLAUDE.md`. Promote a
+reference token into the enforced list only when a real shared component uses it.
+
 ## Product is not a museum
 
-- Do not shrink current touch targets to match historical size.
+- Do not reduce a component's current tested interaction geometry merely to
+  match historical size, and do not enlarge visible System 6 art solely to hit
+  an old planning number.
 - Do not turn mobile into a scaled-down desktop screenshot.
 - Do not restore obsolete input limits (precise drag, hover-only, right-click).
 - Do not compress reading, editing, Markdown preview, charts, or media into
@@ -56,7 +68,7 @@ Never adapt the whole UI with `transform: scale()`. Use theme and input-method
 tokens so the menu bar, title bar, controls, icon slots, status bar, and spacing
 get explicit values per input environment.
 
-Reference ranges (targets, not limits):
+Reference ranges (historical planning targets, not automated limits):
 
 | Item | historical | fine pointer | coarse pointer |
 | --- | ---: | ---: | ---: |
@@ -68,27 +80,31 @@ Reference ranges (targets, not limits):
 | Scrollbar visible width | ~15–16px | 16–18px | 20–26px |
 | Min touch hit | n/a | ≥ current | 44×44px |
 
-Preserve currently working touch sizes and only fix clearly imbalanced,
-visually heavy, or space-wasting spots.
+Preserve currently working touch behavior and follow `CLAUDE.md` when its
+current mobile decisions differ from this historical planning table.
 
 ## Visual size / hit size / layout slot
 
 Title-bar button artwork, clickable range, and layout slot may use different
-scales, but each needs an explicit token:
+scales. The following names describe the conceptual roles; introduce a concrete
+token only when more than one real consumer needs the role:
 
 - `--*-visual-size` — how large the artwork appears.
 - `--*-hit-size` — how easy the control is to click.
 - `--*-layout-slot` — how chrome distributes space.
 - `--*-optical-offset-x` / `--*-optical-offset-y` — optical corrections.
 
-A 40px slot must not pointlessly push a title off-center. On coarse pointer, hit
-is at least 44px while visible artwork may be smaller but must remain clear and
-stable. No hidden oversized hit layer may cover adjacent controls.
+A large slot must not pointlessly push a title off-center. Coarse-pointer hit
+geometry follows the owning component's tested responsive contract while the
+visible artwork remains clear and stable. No hidden oversized hit layer may
+cover adjacent controls.
 `focus-visible` is drawn on the real control bounds.
 
 ## Window / content spacing tokens
 
-`.window-pane` must not hardcode one padding for every app. Use semantic tokens:
+`.window-pane` must not hardcode one padding for every app. These are candidate
+semantic roles, not mandatory declarations; reuse an existing live role first
+and add one of these only with a real consumer:
 
 ```css
 --window-pane-padding

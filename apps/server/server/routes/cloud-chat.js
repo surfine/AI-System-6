@@ -47,7 +47,7 @@ const {
 } = require("../cloud.js");
 const { isPublicDeployment } = require("../runtime-profile.js");
 const { resolveCloudCredential } = require("../credential-vault.js");
-const { sessionFromRequest } = require("../security/public-session.js");
+const { sharedSessionFromRequest } = require("../security/public-session.js");
 const {
   pseudonymousCloudUserId,
   reserveSharedCloudRequest,
@@ -355,7 +355,7 @@ async function handleCloudChat(req, res) {
     if (isPublicDeployment) {
       const publicAnswerBudget = Math.min(8192, answerBudget);
       payload.max_tokens = publicAnswerBudget + reasoningAllowance;
-      const publicSession = sessionFromRequest(req);
+      const publicSession = sharedSessionFromRequest(req);
       payload.user_id = pseudonymousCloudUserId(publicSession?.nonce || "");
       if (usingSharedCloud) {
         payload.max_tokens = Math.min(
@@ -487,7 +487,7 @@ async function handleCloudChat(req, res) {
         transportOptions,
         reserveSharedCall: usingSharedCloud
           ? (retryPayload) => {
-              const publicSession = sessionFromRequest(req);
+              const publicSession = sharedSessionFromRequest(req);
               const reservation = reserveSharedCloudRequest({
                 sessionNonce: publicSession?.nonce || "",
                 payload: retryPayload,
@@ -531,7 +531,7 @@ async function handleCloudChat(req, res) {
       initialUsageTokens: initialUsageTokens || 0,
       reserveSharedCall: usingSharedCloud
         ? (repairPayload) => {
-            const publicSession = sessionFromRequest(req);
+            const publicSession = sharedSessionFromRequest(req);
             const reservation = reserveSharedCloudRequest({
               sessionNonce: publicSession?.nonce || "",
               payload: repairPayload,

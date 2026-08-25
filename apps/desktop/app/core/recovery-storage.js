@@ -35,6 +35,28 @@ window.AISystem6RecoveryStorage = (() => {
     return revisions;
   }
 
+  async function readProjectDarkroomRecords(projectId) {
+    const records = [];
+    let db;
+    try {
+      db = await openAppDb();
+      const tx = db.transaction(keyvalStoreName, "readonly");
+      const keys = await idbRequest(tx.objectStore(keyvalStoreName).getAllKeys());
+      const prefix = `darkroom:${String(projectId || "")}:`;
+      for (const key of keys) {
+        if (typeof key !== "string" || !key.startsWith(prefix)) continue;
+        const documentId = key.slice(prefix.length);
+        if (!documentId) continue;
+        const value = await idbRequest(tx.objectStore(keyvalStoreName).get(key));
+        if (!value || typeof value !== "object" || Array.isArray(value)) continue;
+        records.push({ ...value, projectId: String(projectId || ""), documentId });
+      }
+    } finally {
+      db?.close();
+    }
+    return records;
+  }
+
   async function listRecoverableProjects() {
     let db;
     try {
@@ -57,13 +79,14 @@ window.AISystem6RecoveryStorage = (() => {
     let db;
     try {
       db = await openAppDb();
-      const [storedProjects, storedScraps, storedTrash, storedFolders, storedFiles, storedReferences, settings] = await Promise.all([
+      const [storedProjects, storedScraps, storedTrash, storedFolders, storedFiles, storedReferences, storedImageAttachments, settings] = await Promise.all([
         readStoreAll(db, projectsStoreName),
         readStoreAll(db, scrapsStoreName),
         readStoreAll(db, trashStoreName),
         readStoreAll(db, chatFoldersStoreName),
         readStoreAll(db, chatFilesStoreName),
         readStoreAll(db, referenceStoreName),
+        readStoreAll(db, imageAttachmentsStoreName),
         window.AISystem6StorageTransactions.runTransaction(
           db,
           [keyvalStoreName],
@@ -85,6 +108,9 @@ window.AISystem6RecoveryStorage = (() => {
           getReferences: async () => (Array.isArray(storedReferences) ? storedReferences : [])
             .filter((entry) => entry?.projectId === projectId),
           getDocumentRevisions: () => readProjectDocumentRevisions(projectId),
+          getDarkroomRecords: () => readProjectDarkroomRecords(projectId),
+          getImageAttachments: async () => (Array.isArray(storedImageAttachments) ? storedImageAttachments : [])
+            .filter((entry) => entry?.projectId === projectId),
           getWorkingSession: () => readWorkingSessionForBackup(projectId),
         },
       });

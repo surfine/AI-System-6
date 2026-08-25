@@ -408,22 +408,120 @@ function mdeParagraphRange(text, caret) {
   return { start, end: Math.max(start, end) };
 }
 
-function mdeLineFocusClass(lineStart, lineEnd, focusRange) {
+// The sentence the caret is in, never wider than its paragraph.
+//
+// Chinese sentences end in full-width marks, and the mark is followed by any
+// closing quotes or brackets that belong to it -- 「说完了。」 ends after the
+// bracket, not before it. Latin marks are accepted too, so a mixed paragraph
+// breaks the same way in both scripts.
+const mdeSentenceEnders = /[。！？!?…；;]/;
+const mdeSentenceClosers = /[”’」』》）)\]"']/;
+
+function mdeSentenceRange(text, caret, bounds) {
+  const start = Math.max(bounds?.start ?? 0, 0);
+  const end = Math.min(bounds?.end ?? text.length, text.length);
+  if (end <= start) return null;
+
+  const pos = Math.min(Math.max(caret ?? 0, start), end);
+  let from = start;
+
+  for (let index = start; index < end; index += 1) {
+    if (!mdeSentenceEnders.test(text[index])) continue;
+    let stop = index + 1;
+    while (stop < end && mdeSentenceClosers.test(text[stop])) stop += 1;
+    if (pos <= stop) return { start: from, end: stop };
+    from = stop;
+    // Newlines too, not only spaces. A hard line break inside a paragraph
+    // would otherwise start the next sentence ON the break, and the line
+    // above would test as overlapping and light up with it.
+    while (from < end && /\s/.test(text[from])) from += 1;
+  }
+
+  return { start: from, end };
+}
+
+// Three tiers, and only opacity separates them -- the overlay must stay
+// width-neutral or the caret drifts off the glyph it stands on.
+//
+// Opacity cannot nest brighter: a child of a 0.55 line can never reach full
+// ink. So the tier that carries the light is the LINE, and the dim runs are
+// what gets wrapped. The caret's line is lit whole, then everything on it
+// outside the sentence is stepped back down.
+function mdeLineFocusClass(lineStart, lineEnd, focusRange, sentenceRange) {
   if (!focusRange) return "";
   if (lineEnd < focusRange.start || lineStart > focusRange.end) return " md-focus-muted";
+  if (!sentenceRange) return " md-focus-active";
+  if (lineEnd < sentenceRange.start || lineStart > sentenceRange.end) return " md-focus-near";
   return " md-focus-active";
 }
 
-function mdeHighlightHtml(text, focusRange) {
+// Which parts of the lit line are not the sentence, in line-relative offsets.
+function mdeLineDimRuns(lineStart, lineEnd, sentenceRange) {
+  if (!sentenceRange) return "";
+  const head = Math.min(Math.max(sentenceRange.start - lineStart, 0), lineEnd - lineStart);
+  const tail = Math.min(Math.max(sentenceRange.end - lineStart, 0), lineEnd - lineStart);
+  const runs = [];
+  if (head > 0) runs.push(`0,${head}`);
+  if (tail < lineEnd - lineStart) runs.push(`${tail},${lineEnd - lineStart}`);
+  return runs.join(";");
+}
+
+// Wrap a character range of a rendered line without disturbing the markup it
+// already carries. Walking text nodes is the only safe way in: the line's HTML
+// has nested syntax spans, and slicing that string by character offset would
+// cut them in half.
+function mdeWrapTextRange(container, from, to, className) {
+  if (!container || to <= from) return;
+
+  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+  const targets = [];
+  let offset = 0;
+  let node = walker.nextNode();
+
+  while (node) {
+    const length = node.nodeValue.length;
+    const nodeFrom = Math.max(from - offset, 0);
+    const nodeTo = Math.min(to - offset, length);
+    if (nodeTo > nodeFrom) targets.push({ node, from: nodeFrom, to: nodeTo });
+    offset += length;
+    if (offset >= to) break;
+    node = walker.nextNode();
+  }
+
+  targets.forEach((target) => {
+    const middle = target.from > 0 ? target.node.splitText(target.from) : target.node;
+    const span = document.createElement("span");
+    span.className = className;
+    if (target.to - target.from < middle.nodeValue.length) middle.splitText(target.to - target.from);
+    middle.parentNode.replaceChild(span, middle);
+    span.append(middle);
+  });
+}
+
+function mdeApplyDimRuns(overlay) {
+  overlay?.querySelectorAll?.("[data-mde-dim]").forEach((line) => {
+    const runs = line.dataset.mdeDim.split(";").filter(Boolean);
+    // Later runs first: wrapping the head would shift the tail's offsets.
+    runs.reverse().forEach((run) => {
+      const [from, to] = run.split(",").map(Number);
+      mdeWrapTextRange(line, from, to, "md-focus-near");
+    });
+  });
+}
+
+function mdeHighlightHtml(text, focusRange, sentenceRange) {
   const state = { fence: false };
   let offset = 0;
   return text.split("\n").map((line) => {
     const lineStart = offset;
     const lineEnd = lineStart + line.length;
     offset = lineEnd + 1;
-    const cls = mdeLineFocusClass(lineStart, lineEnd, focusRange);
+    const cls = mdeLineFocusClass(lineStart, lineEnd, focusRange, sentenceRange);
     const html = mdeLineHtml(line, state);
-    return cls ? `<span class="${cls.trim()}">${html || " "}</span>` : html;
+    if (!cls) return html;
+    const dim = cls === " md-focus-active" ? mdeLineDimRuns(lineStart, lineEnd, sentenceRange) : "";
+    const dimAttribute = dim ? ` data-mde-dim="${dim}"` : "";
+    return `<span class="${cls.trim()}"${dimAttribute}>${html || " "}</span>`;
   }).join("\n");
 }
 
@@ -498,20 +596,22 @@ function attachMarkdownHighlight(textarea) {
   surface.append(overlay, textarea);
   textarea.classList.add("mde-input");
 
-  let composing = false;
   let frame = 0;
 
   const paint = () => {
     frame = 0;
-    const focusRange = surface.classList.contains("is-focus-mode")
-      ? mdeParagraphRange(textarea.value, textarea.selectionStart)
+    const focused = surface.classList.contains("is-focus-mode");
+    const focusRange = focused ? mdeParagraphRange(textarea.value, textarea.selectionStart) : null;
+    const sentenceRange = focused
+      ? mdeSentenceRange(textarea.value, textarea.selectionStart, focusRange)
       : null;
-    overlay.innerHTML = mdeHighlightHtml(textarea.value, focusRange);
+    overlay.innerHTML = mdeHighlightHtml(textarea.value, focusRange, sentenceRange);
+    if (sentenceRange) mdeApplyDimRuns(overlay);
     overlay.scrollTop = textarea.scrollTop;
     overlay.scrollLeft = textarea.scrollLeft;
   };
   const schedulePaint = () => {
-    if (composing || frame) return;
+    if (frame) return;
     frame = requestAnimationFrame(paint);
   };
   const syncScroll = () => {
@@ -530,18 +630,55 @@ function attachMarkdownHighlight(textarea) {
   textarea.addEventListener("select", scheduleSelectionPaint);
   textarea.addEventListener("focus", scheduleSelectionPaint);
   textarea.addEventListener("scroll", syncScroll, { passive: true });
-  textarea.addEventListener("compositionstart", () => { composing = true; });
-  textarea.addEventListener("compositionend", () => { composing = false; paint(); });
+  // The overlay paints every glyph, so it must also paint the characters an
+  // IME is still composing. Skipping the repaint here left the pinyin and the
+  // candidate characters invisible: the transparent textarea holds them, the
+  // overlay still showed the text from before the composition started.
+  textarea.addEventListener("compositionupdate", schedulePaint);
+  textarea.addEventListener("compositionend", paint);
+
+  // The overlay carries the ink, so a value the code writes must repaint it
+  // just like a keystroke does. Session restore, AI results, revisions, and
+  // clipping inserts all write the textarea straight and fire no "input"
+  // event; the paper used to stay blank while the text was there to select.
+  watchControlWrites(textarea, HTMLTextAreaElement.prototype, "value", schedulePaint);
+
   paint();
+
+  // The preference is the writer's, not the document's, so a surface that
+  // opens later opens in the mode they were last working in.
+  const restored = mdeStoredFocusMode();
+  if (restored !== "off") mdeSetFocusMode(textarea, restored, { remember: false });
 }
 
-function mdeSetFocusMode(textarea, mode) {
+const MDE_FOCUS_STORAGE_KEY = "ai-system6-writing-focus";
+
+function mdeStoredFocusMode() {
+  let stored = "";
+  try {
+    stored = String(localStorage.getItem(MDE_FOCUS_STORAGE_KEY) || "").trim();
+  } catch {}
+  if (stored === "paragraph") return "sentence";
+  return stored === "sentence" || stored === "typewriter" ? stored : "off";
+}
+
+function mdeStoreFocusMode(mode) {
+  try {
+    localStorage.setItem(MDE_FOCUS_STORAGE_KEY, mode);
+  } catch {}
+}
+
+function mdeSetFocusMode(textarea, mode, { remember = true } = {}) {
   const surface = textarea?.closest(".mde-surface");
   if (!surface) return "off";
-  const next = mode === "paragraph" || mode === "typewriter" ? mode : "off";
+  // "paragraph" is the name the third state carried before it dimmed by
+  // sentence. Stored preferences still say it.
+  const asked = mode === "paragraph" ? "sentence" : mode;
+  const next = asked === "sentence" || asked === "typewriter" ? asked : "off";
   surface.dataset.mdeFocusMode = next;
-  surface.classList.toggle("is-typewriter-mode", next === "typewriter" || next === "paragraph");
-  surface.classList.toggle("is-focus-mode", next === "paragraph");
+  surface.classList.toggle("is-typewriter-mode", next === "typewriter" || next === "sentence");
+  surface.classList.toggle("is-focus-mode", next === "sentence");
+  if (remember) mdeStoreFocusMode(next);
   if (next === "off") {
     surface.style.removeProperty("--mde-typewriter-pad");
   } else {
@@ -555,6 +692,6 @@ function mdeSetFocusMode(textarea, mode) {
 function mdeCycleFocusMode(textarea) {
   const surface = textarea?.closest(".mde-surface");
   const current = surface?.dataset.mdeFocusMode || "off";
-  const next = current === "off" ? "typewriter" : current === "typewriter" ? "paragraph" : "off";
+  const next = current === "off" ? "typewriter" : current === "typewriter" ? "sentence" : "off";
   return mdeSetFocusMode(textarea, next);
 }

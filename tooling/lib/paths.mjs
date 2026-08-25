@@ -31,9 +31,19 @@ const desktopEntryFiles = new Set([
   "styles.css",
   "styles.bundle.css",
   "styles.theme-lab.css",
+  "styles.draft-desk.css",
+  "styles.control-strip.css",
   "styles.micropolis.css",
   "styles.openttd.css",
   "styles.bonsai.css",
+  "styles.cmf-studio.css",
+  "styles.endfield-terminal.css",
+  "styles.bureaucracy-meme.css",
+  "styles.time-machine.css",
+  "styles.clio-chart.css",
+  "styles.soundscape.css",
+  "styles.liquid-cover.css",
+  "styles.image-prompt-studio.css",
 ]);
 
 /** Resolve a browser-logical source path to its physical repository file. */

@@ -32,7 +32,26 @@ declare function arrangeWindowAssistantSplit(name: string): Promise<boolean>;
 declare function isMultiFinderMode(): boolean;
 declare function addMessage(role: string, body: string): void;
 declare function markdownToSystemHtml(markdown: string): string;
+// Preview anchoring lives in app/core/markdown.js; Quick Draft's reading view
+// calls it the same way the writing route's surfaces do.
+declare function enterPreviewAtCaret(input: any, preview: any): boolean;
+declare function leavePreviewToCaret(input: any, preview: any): boolean;
 declare function escapeHtml(text: string): string;
+declare const translations: Record<string, Record<string, any>>;
+declare function titleFromBody(body?: string): string;
+// 文字亮室's durable half is lazy, so the darkroom loads it before reading for
+// it. Declared here for the same reason as the image helpers below: the loader
+// is eager in config.js, which this typecheck's include list does not cover.
+declare function ensureDarkroomModule(): Promise<void>;
+// Photographed material lives in app/core/image-attachments.js, one layer that
+// every surface which can take a picture shares, so the Quick Draft chain
+// reaches it the way it reaches the other classic-script globals.
+declare function imageFilesFromList(files: any): File[];
+declare function saveImageAttachments(records: any[]): void;
+declare function imageAttachmentById(id: any): any;
+declare function imageAttachmentVisionDataUrl(attachment: any): string;
+declare function buildImageAttachments(files: any, options?: any): Promise<any[]>;
+declare function attachImagesToModelMessages(messages: any, attachments: any, options?: any): any;
 declare function attachMarkdownEditor(target: any): void;
 declare function attachMarkdownHighlight(target: any): void;
 declare function showSystemModal(message: string, kind?: string, options?: any): Promise<string>;
@@ -46,10 +65,28 @@ declare function ensureRunningApp(appId: string, windowName: string): void;
 declare function registerWorkingSessionAdapter(adapter: any): void;
 declare function createDefaultProjectForDraftDesk(): Promise<any>;
 declare function openWritingStudio(): Promise<any>;
+// Which route stop the writer is at. The handoff asks so it can tell 文字亮室
+// who handed a document over; window-manager.js owns the answer.
+declare function currentWritingRouteStop(): string;
 declare function toggleQuickDraftSideAsk(): Promise<any>;
+// Length measures for the canvas frame. countTextWords and estimateVoiceoverSeconds
+// live in lazy chains that may not be loaded, so the call sites guard on typeof
+// and fall back to estimateBilibiliVoiceoverSeconds, which is eager.
+// Preview/caret helpers from app/core/markdown.js. The Writing Studio lane
+// started calling them from this chain; the declaration was missing, so checkJs
+// was already reporting them before this branch. Declared, not repaired.
+declare function enterPreviewAtCaret(input: any, preview: any): void;
+declare function leavePreviewToCaret(input: any, preview: any): void;
+declare function countTextWords(text: string): number;
+declare function estimateVoiceoverSeconds(text: string): number;
+declare function estimateBilibiliVoiceoverSeconds(text: string): number;
 
 interface Window {
+  AISystem6ApplicationShell?: any;
+  AISystem6DarkroomRecord?: any;
+  AISystem6DarkroomStore?: any;
   AISystem6ProtectedRanges?: any;
+  AISystem6WriteLease?: any;
   AISystem6PasteMarkdown?: any;
   AISystem6DraftDeskPresetsLoaded?: boolean;
   AISystem6DraftDeskPresets?: any;
@@ -63,6 +100,7 @@ interface Window {
   AISystem6QuickDraftEditor?: any;
   AISystem6QuickDraftComposition?: any;
   AISystem6QuickDraftAI?: any;
+  AISystem6QuickDraftListen?: any;
   AISystem6QuickDraftHandoff?: any;
   AISystem6ModelUserErrors?: any;
   AISystem6WebPlatform?: any;
@@ -72,6 +110,9 @@ interface Window {
     blankExplanationLens?: (options?: any) => any;
     normalizeExplanationLens?: (lens?: any) => any;
   };
+  // The translation tables, by language. Read to tell a title the product
+  // wrote from one the writer chose — see isDerivedQuickDraftTitle.
+  AISystem6Data?: { translations?: Record<string, Record<string, any>> };
   AISystem6PromptFilesRuntime?: {
     resolvePromptFile?: (id: string, args?: any, language?: string) => { body?: string } | undefined;
   };

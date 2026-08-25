@@ -547,7 +547,13 @@ async function duplicateSelectedProjectDisk() {
 }
 
 function archiveSelectedProjectDisk() {
-  const project = getSelectedProject();
+  archiveProjectDiskById(getSelectedProject()?.id);
+}
+
+// Putting a disk away is one act with two doors: the menu command and dragging
+// the disk to the Trash. Both land here so they cannot drift apart.
+function archiveProjectDiskById(projectId) {
+  const project = projects.find((item) => item.id === projectId);
   if (!project) return;
 
   project.archived = true;
@@ -684,17 +690,14 @@ async function handleStartupSettingsClose() {
 }
 
 function openStartupItems() {
-  if (!guideSeen) {
-    // Welcome Floppy belongs to Finder, not Writing Studio. First launch gives
-    // the desktop back immediately and mounts one read-only orientation disk.
+  if (!clioOnboardingCompleted) {
+    // First launch stays on the ordinary Desktop; ClioTalk is the front door,
+    // not a route-only writing surface.
     setWorkspaceProfile(workspaceProfileDesktop, { persist: false });
   }
   quietStartup();
-  if (!guideSeen) {
-    const assistant = getWindow("assistant");
-    assistant?.classList.add("is-hidden");
-    if (assistant) forgetWindowFromRunningApps("assistant");
-    openWelcomeFloppy();
+  if (!clioOnboardingCompleted) {
+    openFirstRunClioTalk();
     return;
   }
   if (workspaceProfile === workspaceProfileDesktop) {
@@ -939,6 +942,10 @@ function openFileInfo() {
       ? item.location
       : folder ? getProjectFolderPathLabel(folder.id, item.projectId || activeProjectId) : getProjectFolderPathLabel(null, item.projectId || activeProjectId);
   fileInfoSourceEl.textContent = sourceMatch?.[1] || t("local_source");
+  const description = String(item.description || "").trim();
+  fileInfoDescriptionLabelEl.hidden = !description;
+  fileInfoDescriptionEl.hidden = !description;
+  fileInfoDescriptionEl.textContent = description;
   fileInfoContextEl.textContent = item.virtual
     ? t("local_desktop")
     : item.type === "mountedFile"

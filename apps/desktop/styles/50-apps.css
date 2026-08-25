@@ -11,6 +11,17 @@
   text-align: center;
 }
 
+/* The empty-object card sets its own display, and an author display rule beats
+   the browser's [hidden] rule whatever the specificity. Without this the card
+   stays on screen after the code has already hidden it — the Draft Desk showed
+   "Quick Draft needs a project to save your work." next to a status bar
+   reading "Saved · 1 protected". Liquid Glass only re-skins border and
+   background here, so it needs no twin. */
+.finder-empty-object[hidden],
+.scrap-empty-card[hidden] {
+  display: none;
+}
+
 .finder-empty-object b,
 .finder-empty-object small,
 .scrap-empty-card b,
@@ -107,12 +118,8 @@
   text-overflow: ellipsis;
 }
 
-.quick-draft-task,
 .quick-draft-intake,
-.quick-draft-editor,
-.quick-draft-strategy,
-.quick-draft-shortcuts,
-.quick-draft-tool-actions {
+.quick-draft-editor {
   display: grid;
   gap: 8px;
   min-height: 0;
@@ -134,15 +141,13 @@
   position: relative;
 }
 
-.quick-draft-task textarea,
-.quick-draft-first-day-setup textarea,
 .quick-draft-editor textarea {
   min-height: 0;
   resize: none;
 }
 
 .quick-draft-editor textarea {
-  font: 15px/1.55 var(--system-font);
+  font: 15px/1.55 var(--ui-font);
 }
 
 .quick-draft-tools {
@@ -152,13 +157,8 @@
   overflow: auto;
 }
 
-.quick-draft-extra,
 .quick-draft-tools,
-.quick-draft-evidence,
-.quick-draft-first-day-setup,
 .quick-draft-intake,
-.quick-draft-strategy,
-.quick-draft-shortcuts,
 .quick-draft-handoff {
   padding: 6px;
   border: var(--quick-draft-panel-border);
@@ -167,47 +167,28 @@
   box-shadow: var(--quick-draft-panel-shadow);
 }
 
-.quick-draft-extra:not([open]),
 .quick-draft-tools:not([open]),
-.quick-draft-evidence:not([open]),
-.quick-draft-first-day-setup:not([open]),
 .quick-draft-intake:not([open]),
-.quick-draft-strategy:not([open]),
-.quick-draft-shortcuts:not([open]),
 .quick-draft-handoff:not([open]) {
   background: transparent;
   padding: 4px 6px;
 }
 
-.quick-draft-extra[open],
 .quick-draft-tools[open],
-.quick-draft-first-day-setup[open],
 .quick-draft-intake[open],
-.quick-draft-strategy[open],
-.quick-draft-shortcuts[open],
 .quick-draft-handoff[open] {
   display: grid;
   gap: 8px;
 }
 
-.quick-draft-extra:not([open]) > :not(summary),
 .quick-draft-tools:not([open]) > :not(summary),
-.quick-draft-evidence:not([open]) > :not(summary),
-.quick-draft-first-day-setup:not([open]) > :not(summary),
 .quick-draft-intake:not([open]) > :not(summary),
-.quick-draft-strategy:not([open]) > :not(summary),
-.quick-draft-shortcuts:not([open]) > :not(summary),
 .quick-draft-handoff:not([open]) > :not(summary) {
   display: none;
 }
 
-.quick-draft-extra summary,
 .quick-draft-tools summary,
-.quick-draft-evidence summary,
-.quick-draft-first-day-setup summary,
 .quick-draft-intake summary,
-.quick-draft-strategy summary,
-.quick-draft-shortcuts summary,
 .quick-draft-handoff summary {
   cursor: pointer;
   display: flex;
@@ -222,29 +203,14 @@
   font-weight: normal;
 }
 
-.quick-draft-extra[open] summary,
 .quick-draft-tools[open] summary,
-.quick-draft-evidence[open] summary,
-.quick-draft-first-day-setup[open] summary,
 .quick-draft-intake[open] summary,
-.quick-draft-strategy[open] summary,
-.quick-draft-shortcuts[open] summary,
 .quick-draft-handoff[open] summary {
   margin-bottom: 6px;
 }
 
-.quick-draft-first-day-subject,
-.quick-draft-primary-actions {
+.quick-draft-first-day-subject {
   grid-column: 1 / -1;
-}
-
-.quick-draft-intake .quick-draft-result-group {
-  min-height: 0;
-}
-
-.quick-draft-result-text.is-empty,
-.quick-draft-source-empty {
-  color: var(--shade-dark);
 }
 
 .quick-draft-source-map {
@@ -256,16 +222,9 @@
   overflow: auto;
 }
 
-.quick-draft-layout.is-busy {
-  cursor: progress;
-}
-
 @container (max-width: 760px) {
-
-	  .quick-draft-task,
 	  .quick-draft-intake,
-	  .quick-draft-strategy,
-	  .quick-draft-editor {
+	  .quick-draft-editor{
     align-content: stretch;
   }
 
@@ -278,85 +237,19 @@
   }
 }
 
-.quick-draft-shelf,
-.quick-draft-inspector {
-  display: grid;
-  align-content: start;
-  gap: 6px;
-  min-width: 0;
-  min-height: 0;
-  overflow-y: auto;
-}
-
 /* The paper comes first in the source so it reads first and, on a phone,
    the two drawers paint over it without a z-index of their own. Grid
    placement puts the shelf back on the left. */
-.quick-draft-shelf {
-  grid-column: 1;
-  grid-row: 1;
-  grid-template-rows: auto minmax(0, 1fr) auto;
-  padding-right: 6px;
-  border-right: var(--quick-draft-sidebar-border);
-}
 
 /* The drawer close is a phone control; on a desk both regions are on screen. */
-.quick-draft-drawer-close {
-  display: none;
-}
-
-.quick-draft-region-head > b,
-.quick-draft-shelf > b,
-.quick-draft-inspector-section > b,
-.quick-draft-well-field > span,
-.quick-draft-advanced summary,
-.quick-draft-advanced-field > span {
-  min-width: 0;
-  overflow: hidden;
-  color: var(--ink);
-  font: 13px/1.25 var(--title-font);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.quick-draft-shelf .quick-draft-source-map {
-  min-height: 0;
-  overflow-y: auto;
-}
-
-.quick-draft-material-row.is-selected {
-  background: var(--ink);
-  color: var(--paper);
-}
-
-.quick-draft-paper {
-  display: grid;
-  grid-column: 2;
-  grid-row: 1;
-  grid-template-rows: auto minmax(0, 1fr);
-  gap: 6px;
-  min-width: 0;
-  min-height: 0;
-}
 
 /* Empty state, not a phase: the intake well and the body live on the same
    paper and only one of them is on screen. */
-.quick-draft-intake-well {
-  display: grid;
-  grid-template-rows: minmax(0, 1.2fr) minmax(0, 1fr) auto auto;
-  gap: 8px;
-  min-height: 0;
-  overflow-y: auto;
-}
-
-.quick-draft-intake-well[hidden],
-.quick-draft-paper-body > [hidden] {
-  display: none;
-}
 
 .quick-draft-versions-list {
   min-height: 0;
   overflow-y: auto;
-  font: 12px/1.4 var(--system-font);
+  font: 12px/1.4 var(--ui-font);
   color: var(--shade-dark);
 }
 
@@ -379,63 +272,16 @@
    phone — same DOM, same task order, one breakpoint. */
 @container (max-width: 800px) {
 
-  .quick-draft-paper {
-    grid-column: 1;
-  }
-
-  .quick-draft-shelf,
-  .quick-draft-inspector {
-    display: none;
-  }
-
-  .quick-draft-region-head > .quick-draft-drawer-close {
-    display: inline-flex;
-  }
-
   /* A drawer covers the paper but never all of it: the exposed edge says the
      paper is still there, and it is the easiest place to tap to come back. */
-  #quick-draft-form.is-shelf-open .quick-draft-shelf,
-  #quick-draft-form.is-inspector-open .quick-draft-inspector {
-    display: grid;
-    position: absolute;
-    inset: 0 var(--quick-draft-drawer-edge) 0 0;
-    padding: 8px;
-    background: var(--paper);
-    overflow-y: auto;
-  }
-
-  #quick-draft-form.is-inspector-open .quick-draft-inspector {
-    inset: 0 0 0 var(--quick-draft-drawer-edge);
-    padding-left: 10px;
-  }
 
   /* The editor stack inside the paper carries its own layers (the markdown
      overlay sits at 2). Isolating the paper keeps those layers local, so the
      drawer covers the text by document order and needs no z-index of its own. */
-  #quick-draft-form.is-shelf-open .quick-draft-paper,
-  #quick-draft-form.is-inspector-open .quick-draft-paper {
-    isolation: isolate;
-    cursor: pointer;
-  }
 
   /* Two rows, because none of these eight controls belongs in a menu: the
      display gears are high traffic, delivery ends the route, and the primary
      button keeps one position. */
-  .teachtext-actions.quick-draft-editor-actions {
-    display: grid;
-    grid-template-columns: auto auto minmax(0, 1fr) auto;
-    grid-template-areas:
-      "sideask sideask sideask sideask"
-      "display display display drawers"
-      "tools deliver . primary";
-    gap: 6px;
-  }
-
-  .quick-draft-editor-actions > .btn.default {
-    grid-area: primary;
-    justify-self: end;
-    flex: 0 0 auto;
-  }
 }
 
 .quick-draft-ai-cards {
@@ -470,147 +316,12 @@
   white-space: normal;
 }
 
-.quick-draft-card-status.is-missing {
-  color: var(--shade-dark);
-}
-
-.quick-draft-boundary-card.has-hands-on-choice {
-  border-style: solid;
-}
-
-.quick-draft-layout.is-format-hands-on-review .quick-draft-hands-on-card {
-  order: -1;
-}
-
-.quick-draft-layout.is-format-first-day .quick-draft-classify-card {
-  border-style: solid;
-}
-
-.quick-draft-layout.is-format-bili-dynamic .quick-draft-settings-card {
-  border-style: solid;
-}
-
 .quick-draft-editor {
   grid-template-rows: auto auto minmax(0, 1fr) auto;
 }
 
 .quick-draft-start-writing {
   min-width: 9rem;
-}
-
-/* 文字亮室 four-state language (tokens in 00-foundation, values overridden by
-   Liquid Glass): default no border; input material already ships; selected is
-   a bounding box with corner control points; AI working is a slow travelling
-   edge light (Liquid) or moving 50% dither (Classic), never a spinner on top
-   of the text. The overlays are window-local and never touch global layers. */
-.quick-draft-editor-container.is-selected {
-  outline: var(--quick-draft-state-selected-outline);
-  outline-offset: -1px;
-}
-
-.quick-draft-editor-container.is-selected::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: var(--quick-draft-state-selected-surface);
-  animation: var(--quick-draft-state-selected-animation);
-  pointer-events: none;
-  z-index: var(--z-local-control);
-}
-
-.quick-draft-editor-container.is-working::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: var(--quick-draft-state-working-surface);
-  animation: var(--quick-draft-state-working-animation);
-  pointer-events: none;
-  z-index: var(--z-local-control);
-}
-
-@keyframes quickDraftMarchingAnts {
-  to {
-    background-position:
-      20px 0, -20px 100%, 0 -20px, 100% 20px,
-      0 0, 100% 0, 0 100%, 100% 100%;
-  }
-}
-
-@keyframes quickDraftWorkingDither {
-  to {
-    background-position: 2px 2px, 3px 3px;
-  }
-}
-
-@keyframes quickDraftWorkingSweep {
-  to {
-    background-position: 165% 0;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .quick-draft-editor-container.is-selected::before,
-  .quick-draft-editor-container.is-working::after {
-    animation: none;
-  }
-}
-
-.quick-draft-canvas-object-text.is-empty {
-  color: var(--shade-dark);
-}
-
-.quick-draft-canvas-object.is-selected .quick-draft-canvas-handle,
-.quick-draft-canvas-object.is-selected .quick-draft-canvas-rotate,
-.quick-draft-canvas-object.is-selected .quick-draft-canvas-angle {
-  display: block;
-}
-
-.quick-draft-canvas-handle.is-nw { left: -5px; top: -5px; cursor: nwse-resize; }
-.quick-draft-canvas-handle.is-n { left: calc(50% - 5px); top: -5px; cursor: ns-resize; }
-.quick-draft-canvas-handle.is-ne { right: -5px; top: -5px; cursor: nesw-resize; }
-.quick-draft-canvas-handle.is-e { right: -5px; top: calc(50% - 5px); cursor: ew-resize; }
-.quick-draft-canvas-handle.is-se { right: -5px; bottom: -5px; cursor: nwse-resize; }
-.quick-draft-canvas-handle.is-s { left: calc(50% - 5px); bottom: -5px; cursor: ns-resize; }
-.quick-draft-canvas-handle.is-sw { left: -5px; bottom: -5px; cursor: nesw-resize; }
-.quick-draft-canvas-handle.is-w { left: -5px; top: calc(50% - 5px); cursor: ew-resize; }
-
-.quick-draft-view-switch,
-.quick-draft-display-switch,
-.quick-draft-drawer-switch {
-  display: inline-flex;
-  flex: 0 0 auto;
-  gap: 2px;
-  padding: 2px;
-  border: var(--quick-draft-view-switch-border);
-}
-
-.quick-draft-view-switch .mini-btn,
-.quick-draft-display-switch .mini-btn,
-.quick-draft-drawer-switch .mini-btn {
-  flex: 0 0 auto;
-  min-width: 0;
-  min-height: 20px;
-  padding: 1px 7px;
-  font-size: 11px;
-}
-
-.quick-draft-view-switch .mini-btn.is-active,
-.quick-draft-display-switch .mini-btn.is-active,
-.quick-draft-drawer-switch .mini-btn.is-active {
-  background: var(--ink);
-  color: var(--paper);
-}
-
-/* The two side panels stay on screen on a desk, so their drawer switch is a
-   phone control only (see 60-responsive.css). */
-.quick-draft-drawer-switch {
-  display: none;
-}
-
-.quick-draft-editor-container > .mde-surface {
-  min-height: 0;
 }
 
 /* Compression grain: a read-only provenance view of the body. It reuses the
@@ -681,6 +392,220 @@
   white-space: nowrap;
 }
 
+/* FatBits — the grain view zoomed in until one sentence is one cell. A list,
+   not a grid: sentences run from four characters to sixty, and a grid of those
+   is unreadable at any cell size. Colours and rules are the grain view's own
+   tokens, because this is the same canvas at a different magnification. */
+.quick-draft-fatbits {
+  /* Same measure as the writing windows. The page width is the editable box
+     width there, and a sentence cell is an editable box, so it uses the same
+     token rather than a second number that can drift away from it. */
+  max-width: var(--mde-page-width);
+  margin: 0 auto;
+  padding: 0;
+  list-style: none;
+}
+
+.quick-draft-fatbit {
+  display: grid;
+  grid-template-columns: 2.5em minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: baseline;
+  padding: 4px 2px;
+  border-bottom: var(--quick-draft-grain-border);
+}
+
+.quick-draft-fatbit-index,
+.quick-draft-fatbit-badge {
+  font-family: var(--ui-font);
+  font-size: 11px;
+  color: var(--quick-draft-grain-model-fg);
+}
+
+.quick-draft-fatbit-index {
+  text-align: right;
+}
+
+/* A cell is a field, and it has to read as one before it is clicked: the
+   TeachText editor's own paper, rule and inset, so the two surfaces say
+   "you can type here" the same way. */
+.quick-draft-fatbit-text {
+  overflow-wrap: anywhere;
+  padding: 2px 6px;
+  border: var(--teachtext-editor-border);
+  background: var(--teachtext-editor-bg);
+  box-shadow: var(--teachtext-editor-shadow);
+  cursor: text;
+}
+
+.quick-draft-fatbit-text:focus {
+  outline: var(--system-control-line) solid var(--ink);
+  outline-offset: 1px;
+}
+
+.quick-draft-fatbit-undo {
+  padding: 0 4px;
+  border: var(--quick-draft-grain-generation-border);
+  background: var(--paper);
+  color: var(--quick-draft-grain-model-fg);
+  font: inherit;
+  cursor: pointer;
+}
+
+.quick-draft-fatbit-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+/* The same left rule the unzoomed grain line uses for a protected line, so the
+   two magnifications say "locked" with one mark. */
+.quick-draft-fatbit.is-protected {
+  box-shadow: inset 6px 0 0 var(--quick-draft-protected-fg);
+}
+
+.quick-draft-fatbit-lock {
+  width: 7px;
+  height: 8px;
+  border: var(--system-control-line) solid var(--quick-draft-protected-fg);
+  border-top-width: 3px;
+}
+
+.quick-draft-grain-zoom {
+  margin-left: auto;
+}
+
+/* The history brush picks one source state and then paints from it, so the
+   picker sits above the cells rather than repeating inside every one. */
+.quick-draft-brush-picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: var(--mde-page-width);
+  margin: 0 auto 8px;
+  font-family: var(--ui-font);
+  font-size: 11px;
+}
+
+.quick-draft-brush-picker .select-wrap {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* The canvas frame. What falls outside it is still there and still readable —
+   cropping is the writer's decision, so the surface marks the edge and says
+   nothing more. */
+.quick-draft-canvas-note {
+  max-width: var(--mde-page-width);
+  margin: 0 auto 6px;
+  font-family: var(--ui-font);
+  font-size: 11px;
+  color: var(--quick-draft-grain-model-fg);
+}
+
+.quick-draft-fatbit.is-canvas-edge {
+  border-top: var(--system-control-line) dashed var(--ink);
+}
+
+.quick-draft-fatbit.is-outside-canvas .quick-draft-fatbit-index,
+.quick-draft-fatbit.is-outside-canvas .quick-draft-fatbit-text {
+  opacity: 0.55;
+}
+
+/* A citation badge names the source a sentence came from. It is not a lock
+   mark: the writer may still edit a quotation, and the model may not — two
+   different bans that must not wear one symbol. */
+.quick-draft-fatbit-cite {
+  padding: 0 3px;
+  border: var(--quick-draft-grain-generation-border);
+  font-style: normal;
+  color: var(--quick-draft-grain-model-fg);
+}
+
+.quick-draft-fatbit-brush {
+  padding: 0 4px;
+  border: var(--quick-draft-grain-generation-border);
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+
+/* The histogram — the same canvas zoomed out. Bars are drawn from a custom
+   property rather than a positioned inline style, so the geometry stays in the
+   stylesheet and the data stays in the markup. */
+.quick-draft-histograms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  max-width: var(--mde-page-width);
+  margin: 0 auto 10px;
+}
+
+.quick-draft-histogram {
+  flex: 1 1 200px;
+  min-width: 0;
+  margin: 0;
+}
+
+.quick-draft-histogram figcaption,
+.quick-draft-histogram-summary {
+  font-family: var(--ui-font);
+  font-size: 11px;
+  margin: 0;
+}
+
+.quick-draft-histogram-summary {
+  color: var(--quick-draft-grain-model-fg);
+  margin-top: 4px;
+}
+
+.quick-draft-histogram-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 96px;
+  margin: 4px 0 0;
+  padding: 0 0 14px;
+  list-style: none;
+  border-bottom: var(--quick-draft-grain-border);
+}
+
+.quick-draft-histogram-bar {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+}
+
+.quick-draft-histogram-column {
+  position: relative;
+  width: 100%;
+  height: var(--grain-bar-height, 0%);
+  background: var(--quick-draft-grain-swatch-author);
+}
+
+/* The model's share of a bar carries the same dither the legend swatch uses,
+   so one pattern means one thing at every magnification. */
+.quick-draft-histogram-model {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: var(--grain-bar-model, 0%);
+  background: var(--quick-draft-grain-swatch-model);
+}
+
+.quick-draft-histogram-tick {
+  position: absolute;
+  inset: 100% 0 auto 0;
+  font-family: var(--ui-font);
+  font-size: 9px;
+  text-align: center;
+  color: var(--quick-draft-grain-model-fg);
+}
+
 .quick-draft-grain-legend {
   display: flex;
   flex-wrap: wrap;
@@ -717,67 +642,11 @@
   background: var(--quick-draft-protected-fg);
 }
 
-.quick-draft-protect,
-.quick-draft-adjustment-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 5px;
-  padding: 2px 2px 4px;
-  font-size: 12px;
-  color: var(--shade-dark);
-}
-
-.quick-draft-protect input {
-  width: 84px;
-  min-width: 0;
-  padding: 2px 5px;
-  font: inherit;
-}
-
-.quick-draft-adjustment-actions .btn {
-  flex: 1 1 0;
-}
-
-.quick-draft-editor-actions .teachtext-command-group {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.quick-draft-editor-actions > .btn.default {
-  flex: 0 0 10rem;
-  margin-left: 0;
-}
-
-.quick-draft-command-section > .btn {
-  display: flex;
-  width: 100%;
-  text-align: left;
-}
-
 /* The stack order and the scope both stay on the closed row. */
-.quick-draft-layer-order {
-  font-style: normal;
-  color: var(--shade-dark);
-}
-
-.quick-draft-adjustment-layer:has(.quick-draft-layer-detail:not([hidden])) .quick-draft-layer-scope {
-  display: none;
-}
-
-.quick-draft-adjustment-row .select-wrap-inline {
-  justify-self: end;
-}
 
 /* One layer reads as one row: switch and name, strength, disclosure. The
    description and the scope line live behind the triangle, the way a Finder
    list row opens. */
-.quick-draft-adjustment-layer {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  align-items: center;
-  gap: 2px 6px;
-}
 
 .quick-draft-layer-detail {
   grid-column: 1 / -1;
@@ -791,23 +660,7 @@
   display: none;
 }
 
-.quick-draft-adjustment-layer .quick-draft-adjustment-mask {
-  flex-wrap: wrap;
-}
-
-.quick-draft-adjustment-layer .quick-draft-adjustment-mask input {
-  width: 3.5rem;
-}
-
 /* No hard cap: the label has to fit the bitmap face and the glass face. */
-.quick-draft-adjustment-layer .select-wrap-inline {
-  min-width: 0;
-}
-
-.quick-draft-adjustment-move .mini-btn {
-  min-width: 20px;
-  padding: 2px 4px;
-}
 
 .quick-draft-source-map {
   min-height: 2rem;
@@ -828,15 +681,6 @@
   display: none;
 }
 
-@container (max-width: 1120px) {
-}
-
-@container (max-width: 520px) {
-}
-
-@container (max-width: 760px) {
-}
-
 .teachtext-pane {
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto max-content;
@@ -844,9 +688,16 @@
   min-height: 0;
 }
 
+/* One bar under the paper: the document's four state cells, then the status
+   message. It used to be two stacked boxes pulled together with a negative
+   margin so they would read as one instrument -- so they are one now. */
 .teachtext-desk-strip {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  /* The state cells take the width their words need; the message takes what is
+     left. Four equal columns plus a fifth squeezed "Read-only, edit in Section
+     Drafts" down to an ellipsis -- and that cell is the one that says why the
+     writer cannot type. */
+  grid-template-columns: repeat(4, minmax(0, auto)) minmax(0, 1fr);
   gap: 0;
   border: 1px solid var(--ink);
   background: var(--paper);
@@ -897,25 +748,110 @@
   max-height: none;
 }
 
-/* 看片 — the composite reading mode: full window width, no controls, no
-   provenance colour. Hiding the material pane gives the paper the whole
-   window, so the writer can stop being an operator for a minute. */
-.quick-draft-window.is-reading .quick-draft-material-pane {
-  display: none;
+/* The outline as a list, in Finder's grammar: a row per section, subsections
+   indented under it, a triangle where there is something to disclose, and
+   reverse video for what is selected. The row is its own small grid rather
+   than .finder-list-row's four columns -- a tree has one column that matters.
+   Selection reuses the shared .is-selected state and the system selection
+   tokens, so each appearance's own selected twin applies to it. */
+.outline-tree {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 6px 0;
+  background: var(--paper);
+  font-size: 12px;
 }
 
-.quick-draft-window.is-reading .quick-draft-two-pane {
-  grid-template-columns: minmax(0, 1fr);
+.outline-tree-row {
+  display: grid;
+  grid-template-columns: 14px 10px minmax(0, 1fr) max-content;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  padding: 3px 10px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
 }
 
-/* 拼台 canvas gets the whole article column: the material pane is the drawer
-   and steps aside so the one object has room. */
-.quick-draft-window.is-canvas .quick-draft-material-pane {
-  display: none;
+.outline-tree-row.is-child {
+  padding-left: 30px;
 }
 
-.quick-draft-window.is-canvas .quick-draft-two-pane {
-  grid-template-columns: minmax(0, 1fr);
+.outline-tree-row.is-selected {
+  background: var(--system-selection-bg, var(--selection-bg));
+  color: var(--system-selection-fg, var(--selection-fg));
+}
+
+.outline-tree-twisty {
+  font-size: 9px;
+  line-height: 1;
+  text-align: center;
+}
+
+.outline-tree-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Finder's Size column. A fact about what is there, never a target: the word
+   count target was dropped because a deficit meter multiplies pressure, and
+   this is the one thing under it that was worth keeping -- which section is
+   still a shell. */
+.outline-tree-size {
+  padding-left: 10px;
+  color: var(--shade-dark);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.outline-tree-size-empty {
+  font-style: italic;
+}
+
+.outline-tree-row.is-selected .outline-tree-size {
+  color: inherit;
+}
+
+/* The grip. A finger has to start the drag here: touch-action is decided when
+   the gesture begins, so the row cannot both scroll under a finger and be
+   dragged by one. The grip takes the gesture; the rest of the row keeps
+   panning, and the list still scrolls. A mouse drags from anywhere.
+
+   Two columns of 1px dots, drawn on the pixel grid rather than smoothed --
+   later Classic Mac OS used exactly this pattern to say "take hold of me". */
+.outline-tree-grip {
+  align-self: stretch;
+  margin: 3px 0;
+  background-image: radial-gradient(currentColor 0.5px, transparent 0.5px);
+  background-size: 3px 3px;
+  background-position: 1px 1px;
+  opacity: 0.55;
+  cursor: grab;
+  touch-action: none;
+}
+
+.outline-tree-row:hover .outline-tree-grip,
+.outline-tree-row.is-selected .outline-tree-grip {
+  opacity: 1;
+}
+
+.outline-tree.is-dragging .outline-tree-grip {
+  cursor: grabbing;
+}
+
+/* Where it will land. A 1-bit rule between rows, not a shadow under a card. */
+.outline-tree-row.is-drop-before {
+  box-shadow: inset 0 2px 0 var(--ink);
+}
+
+.outline-tree-row.is-drop-after {
+  box-shadow: inset 0 -2px 0 var(--ink);
 }
 
 .teachtext-preview {
@@ -923,12 +859,26 @@
   min-height: 0;
   padding: 40px 60px;
   overflow-y: auto;
-  font-family: var(--preview-font);
+  /* The preview is the same sheet turned over, so it is set in the same face
+     and at the same size as the paper. It used to render two points smaller in
+     a sans face, which put 38 CJK columns on a line the writer had composed at
+     28 -- a measure that holds on only one side of the paper is not locked. */
+  font-family: var(--editor-font);
+  font-size: var(--mde-font-size);
   line-height: 1.8;
   user-select: text;
   background: var(--teachtext-preview-bg);
   color: var(--ink);
   word-break: break-word;
+}
+
+/* The reading column is the writing measure. A help document overrides this
+   with its own wider column further down: it is a manual, not the writer's
+   paper. */
+.teachtext-preview > * {
+  max-width: var(--editor-measure);
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .teachtext-preview h1 {
@@ -1296,9 +1246,20 @@
 
 /* Focus mode used to own the whole inked-overlay arrangement. It is the
    default now, so all that remains here is what focus mode actually means:
-   the paragraph you are in stays lit and the rest steps back. */
+   three tiers of attention. The sentence you are writing carries full ink,
+   the rest of its paragraph stays readable so you can hear the run-up to it,
+   and the other paragraphs step well back.
+
+   Opacity cannot nest brighter -- a child of a dimmed run can never reach
+   full ink again -- so the LINE carries the light and the dim runs are what
+   gets wrapped. Nothing here may change width: the overlay sits under a
+   transparent textarea, and a metric that shifts takes the caret with it. */
 .mde-surface.is-focus-mode .md-focus-muted {
   opacity: 0.24;
+}
+
+.mde-surface.is-focus-mode .md-focus-near {
+  opacity: 0.55;
 }
 
 .mde-surface.is-focus-mode .md-focus-active {
@@ -1456,20 +1417,6 @@
   margin: 3px 0;
   border: 0;
   border-top: var(--teachtext-popover-hr-border);
-}
-
-.writing-eli5-popover {
-  min-width: 240px;
-}
-
-.writing-eli5-toggle {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.writing-eli5-select {
-  width: 100%;
 }
 
 .teachtext-command-submenu {
@@ -1653,6 +1600,101 @@
 
 .image-manager-list.is-small-icons {
   grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+}
+
+/* Photographed notes on the Question Sheet. A thin strip under the sheet, so a
+   scribbled page reads as raw input the writer dropped in — not as an album.
+   Every value here is a shared token, and 70-liquid-glass.css names none of
+   these classes, so nothing can win a specificity tie against them. That is a
+   static check, not an eye: these surfaces and the Scrapbook picture blocks
+   below have not been looked at in Liquid Glass. */
+.question-sheet-photos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px;
+  border-top: var(--system-control-line) solid var(--ink);
+  background: var(--paper);
+}
+
+.question-sheet-photo {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 2px 4px;
+  border: var(--system-control-line) solid var(--ink);
+  background: var(--paper);
+}
+
+.question-sheet-photo-thumb {
+  width: 32px;
+  height: 32px;
+  object-fit: cover;
+  border: var(--system-control-line) solid var(--ink);
+}
+
+.question-sheet-photo-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 14ch;
+}
+
+/* Clipped pictures in Scrapbook, plus the note that says a picture-only clip
+   is not searchable. Tokens only, so both appearances follow. */
+.scrap-pictures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.scrap-picture-thumb {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border: var(--system-control-line) solid var(--ink);
+}
+
+.scrap-unindexed-note {
+  margin: 0;
+}
+
+.scrap-reading-proposal {
+  display: grid;
+  gap: 6px;
+  padding: 6px;
+  border: var(--system-control-line) solid var(--ink);
+  background: var(--paper);
+  box-shadow: var(--system-inset);
+}
+
+.scrap-reading-proposal-text {
+  display: block;
+  max-height: 12em;
+  overflow: auto;
+  white-space: pre-wrap;
+}
+
+/* The same proposal figure in DocMap, with one difference that is the whole
+   point: this one is editable. Every node in the map anchors into this text, so
+   the writer has to be able to correct a misread word before the map is built,
+   not only accept or reject the reading whole. Same tokens as the Scrapbook
+   block above; no liquid-glass twin is needed for either, and 70-liquid-glass
+   names neither class. */
+.docmap-picture-reading {
+  display: grid;
+  gap: 6px;
+  padding: 6px;
+  border: var(--system-control-line) solid var(--ink);
+  background: var(--paper);
+  box-shadow: var(--system-inset);
+}
+
+.docmap-picture-reading-text {
+  display: block;
+  width: 100%;
+  resize: vertical;
 }
 
 .image-manager-list-header {
@@ -2674,6 +2716,20 @@ input[type="radio"]:checked:disabled {
   margin-top: auto;
 }
 
+/* Set by syncIconColumnDensity() in window-manager.js, which lays the column
+   out at the natural spacing and asks whether it actually wrapped -- the real
+   condition, not a guessed screen height. When it did, the gap closes so every
+   icon fits one column again and the Trash keeps its place at the foot instead
+   of being flung alone into a second column on the left. Measured at 1366x768:
+   nine icons stack to 753px in a 704px column at 10px, and to 673px at 4px. */
+.icon-column.is-tight {
+  --desktop-icon-column-gap: 4px;
+}
+
+.icon-column.is-tight [data-open="trash"] {
+  margin-top: 0;
+}
+
 .desktop-icon {
   width: var(--desktop-icon-width);
   border: 0;
@@ -2859,6 +2915,19 @@ body:not(.use-liquid-glass) .desktop-app-icon span[data-liquid-label="DAA Meme"]
 .sys-icon-snow-leopard,
 .sys-icon-yosemite {
   display: none;
+}
+
+/* Painter dispatch defaults, moved out of the theme sheets. Both rules are
+   unprefixed — they always applied to all six appearances — so keeping them in
+   65/70 hid them from the appearance ratchet and the twin audit, which only
+   reason about prefixed selectors. The per-theme opt-ins that re-show these
+   variants live in the theme sheets at higher specificity and still win. */
+.sys-icon-liquid {
+  display: none;
+}
+
+.sys-icon-platinum-raster {
+  image-rendering: pixelated;
 }
 
 /* Reviewed Platinum PNGs are native 32/16 px pixel art. Preserve each
@@ -3124,6 +3193,6 @@ body:not(.use-liquid-glass) .desktop-app-icon span[data-liquid-label="DAA Meme"]
    interior loads with the lazy module, but the frame must never collapse to a
    sliver while (or if) the lazy stylesheet is still on its way. */
 .bonsai-window {
-  width: min(760px, calc(100vw - 72px));
-  height: min(680px, calc(100vh - 88px));
+  width: var(--bonsai-window-width);
+  height: var(--bonsai-window-height);
 }

@@ -1,5 +1,93 @@
 // Feature module: British Bureaucracy Meme Generator.
 
+// bureaucracyMeme's markup lived in index.html, downloaded by every boot for a
+// window this module already loads on demand. Built here at module eval,
+// before anything below queries its own elements. openWindow() installs
+// the grow box.
+function installBureaucracyMemeWindow() {
+  if (typeof document === "undefined") return;
+  if (document.querySelector('[data-window="bureaucracyMeme"]')) return;
+  window.AISystem6ApplicationShell.createWindow({
+    windowName: "bureaucracyMeme",
+    windowClass: "bureaucracy-meme-window",
+    labelledBy: "bureaucracy-meme-title",
+    titleKey: "bureaucracy_meme_title",
+    title: "British Bureaucracy Meme Generator",
+    statusClass: "bureaucracy-status-bar",
+    statusHtml: `<span id="bureaucracy-provider-note" role="status" aria-live="polite" data-i18n="bureaucracy_meme_preview_note">Choose a caption to generate a PNG.</span>
+          <details class="bureaucracy-safety">
+            <summary data-i18n="bureaucracy_meme_source_note">Source note</summary>
+            <p data-i18n="bureaucracy_meme_safe">This tool does not include copyrighted TV stills or recreate real actors. Upload your own image locally, or use original fictional templates.</p>
+          </details>`,
+    paneClass: "bureaucracy-meme-pane",
+    paneHtml: `
+          <section class="bureaucracy-composer" aria-labelledby="bureaucracy-topic-title">
+            <label class="bureaucracy-topic-field" for="bureaucracy-topic-input">
+              <span id="bureaucracy-topic-title" data-i18n="bureaucracy_meme_topic">How shall we pretend everything is normal this time?</span>
+              <input id="bureaucracy-topic-input" type="text" data-i18n-placeholder="bureaucracy_meme_placeholder" placeholder="For example: the system is not broken, it is refusing the era" />
+            </label>
+            <div class="bureaucracy-tone-section" aria-labelledby="bureaucracy-tone-title">
+              <h3 id="bureaucracy-tone-title" data-i18n="bureaucracy_meme_tone">Tone</h3>
+              <div id="bureaucracy-tone-list" class="bureaucracy-tone-list" role="group" aria-label="Caption tone" data-i18n-aria-label="bureaucracy_meme_tone"></div>
+            </div>
+            <label class="bureaucracy-vision-row"><input type="checkbox" id="bureaucracy-vision" /> <span data-i18n="bureaucracy_meme_vision">Read the image (needs a vision model)</span></label>
+            <button id="bureaucracy-generate-button" class="btn default" type="button" data-i18n="bureaucracy_meme_generate">Draft captions</button>
+            <div id="bureaucracy-error" class="bureaucracy-error" role="alert"></div>
+          </section>
+          <div class="bureaucracy-layout">
+            <aside class="bureaucracy-assets" aria-labelledby="bureaucracy-assets-title">
+                <div class="bureaucracy-panel-head">
+                  <div>
+                    <h3 id="bureaucracy-assets-title" data-i18n="bureaucracy_meme_templates">Template / Upload</h3>
+                    <p id="bureaucracy-upload-status" class="bureaucracy-status"></p>
+                  </div>
+                  <button id="bureaucracy-upload-button" class="btn bureaucracy-upload-button" type="button" data-i18n="bureaucracy_meme_upload">Upload Image</button>
+                </div>
+                <div id="bureaucracy-template-list" class="bureaucracy-template-list" role="group" aria-label="Image templates" data-i18n-aria-label="bureaucracy_meme_templates"></div>
+            </aside>
+            <section class="bureaucracy-preview-panel" aria-labelledby="bureaucracy-preview-title">
+                <div class="bureaucracy-panel-head">
+                  <div>
+                    <h3 id="bureaucracy-preview-title" data-i18n="preview">Preview</h3>
+                    <p class="bureaucracy-status" data-i18n="bureaucracy_meme_preview_help">Choose a caption on the right to apply it.</p>
+                  </div>
+                  <button id="bureaucracy-download-link" class="btn bureaucracy-download" type="button" disabled data-i18n="bureaucracy_meme_download" data-balloon-help-disabled="balloon_bureaucracy_download_disabled">Download PNG</button>
+                </div>
+                <div class="bureaucracy-canvas-wrap">
+                  <canvas id="bureaucracy-preview-canvas" width="1200" height="900" role="img" aria-label="Meme preview" data-i18n-aria-label="bureaucracy_meme_canvas"></canvas>
+                </div>
+            </section>
+            <aside class="bureaucracy-copy-panel">
+              <section class="bureaucracy-candidates-panel" aria-labelledby="bureaucracy-candidates-title">
+                <h3 id="bureaucracy-candidates-title" data-i18n="bureaucracy_meme_candidates">Caption Candidates</h3>
+                <div id="bureaucracy-candidates" class="bureaucracy-candidates">
+                  <p class="bureaucracy-empty" data-i18n="bureaucracy_meme_candidates_empty">Enter a topic to generate caption candidates.</p>
+                </div>
+              </section>
+              <section class="bureaucracy-caption-editor" aria-labelledby="bureaucracy-caption-editor-title">
+                <div class="bureaucracy-caption-editor-head">
+                  <h3 id="bureaucracy-caption-editor-title" data-i18n="bureaucracy_meme_current_caption">Current caption</h3>
+                  <div class="bureaucracy-language" id="bureaucracy-language" role="group" aria-label="Caption language" data-i18n-aria-label="bureaucracy_meme_language">
+                    <button type="button" data-caption-language="zh" data-i18n="bureaucracy_meme_language_zh">中文</button>
+                    <button type="button" data-caption-language="en" data-i18n="bureaucracy_meme_language_en">English</button>
+                    <button type="button" data-caption-language="bilingual" data-i18n="bureaucracy_meme_language_bilingual">Both</button>
+                  </div>
+                </div>
+                <label>
+                  <span data-i18n="bureaucracy_meme_caption_zh">Chinese</span>
+                  <textarea id="bureaucracy-caption-zh" rows="2"></textarea>
+                </label>
+                <label>
+                  <span data-i18n="bureaucracy_meme_caption_en">English</span>
+                  <textarea id="bureaucracy-caption-en" rows="2"></textarea>
+                </label>
+              </section>
+            </aside>
+          </div>`,
+  });
+}
+
+installBureaucracyMemeWindow();
 // Loaded on demand as a classic script; shares the AI System 6 global scope.
 
 

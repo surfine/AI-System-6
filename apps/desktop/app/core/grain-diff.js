@@ -234,14 +234,219 @@ function grainChainFromRecordParts({ humanAnchor = "", humanAnchorUpdatedAt = ""
   };
 }
 
+// FatBits — the grain view zoomed in until one sentence is one cell.
+//
+// MacPaint's FatBits magnified the canvas until a pixel was a rectangle you
+// could hit. The text equivalent needs a unit the writer actually edits, so the
+// cell is a sentence rather than a character: a 200-character paragraph would
+// otherwise become 200 boxes of nothing.
+//
+// Structure is cut before sentences are. A line break always ends a cell, so a
+// heading, a list item and a quote line each stay whole and a rewrite badge is
+// never pinned across two of them.
+const GRAIN_CELL_TAIL = /[」』”’）)》】]/;
+
+// A Chinese full stop ends a sentence on its own. An ASCII stop only ends one
+// when whitespace or the end of the text follows, so "1.0.49" and "Mr." do not
+// split a cell.
+function grainIsCellStop(char = "", next = null) {
+  if (/[。！？…]/.test(char)) return true;
+  if (!/[.!?]/.test(char)) return false;
+  return !next || /\s/.test(next.char);
+}
+
+// One cell carries the deepest generation inside it — the same one-way rounding
+// the rest of this module uses, so a sentence is never reported as less rewritten
+// than it is. The parts survive alongside it, because a sentence whose second
+// clause alone was rewritten should not read as wholly the model's.
+function grainSentenceCells(runs = []) {
+  // The runs partition the body exactly, so a running cursor over them gives
+  // each cell its offset into the body. An edited cell is spliced back by that
+  // offset rather than by searching for its text, which would hit the wrong
+  // sentence whenever a draft repeats one.
+  const chars = [];
+  let cursor = 0;
+  for (const run of runs || []) {
+    const source = run?.source === "model" ? "model" : "author";
+    const generation = Number(run?.generation) || 0;
+    for (const char of String(run?.text || "")) {
+      chars.push({ char, source, generation, at: cursor });
+      cursor += char.length;
+    }
+  }
+  const cells = [];
+  let line = 1;
+  let current = null;
+  const push = (item) => {
+    if (!current) current = { line, text: "", generation: 0, parts: [], start: item.at, end: item.at };
+    const last = current.parts[current.parts.length - 1];
+    if (last && last.source === item.source && last.generation === item.generation) last.text += item.char;
+    else current.parts.push({ text: item.char, source: item.source, generation: item.generation });
+    current.text += item.char;
+    current.end = item.at + item.char.length;
+    current.generation = Math.max(current.generation, item.generation);
+  };
+  const close = () => {
+    if (current && current.text.trim()) cells.push(current);
+    current = null;
+  };
+  for (let index = 0; index < chars.length; index += 1) {
+    const item = chars[index];
+    if (item.char === "\n") {
+      close();
+      line += 1;
+      continue;
+    }
+    push(item);
+    if (!grainIsCellStop(item.char, chars[index + 1])) continue;
+    // The closing quote or bracket belongs to the sentence it closes, and a
+    // doubled stop (?! or ……) is one ending, not two.
+    while (index + 1 < chars.length) {
+      const next = chars[index + 1];
+      if (!GRAIN_CELL_TAIL.test(next.char) && !grainIsCellStop(next.char, chars[index + 2])) break;
+      index += 1;
+      push(next);
+    }
+    close();
+  }
+  close();
+  return cells;
+}
+
+// The histogram — the same canvas zoomed out until the whole draft is one
+// picture. FatBits answers "what happened to this sentence"; this answers
+// "what shape is this draft".
+//
+// Sentence length is the measure because an over-regular rhythm is the tell
+// this product already watches for: a model pass tends to pull every sentence
+// toward one comfortable length, and a distribution that has collapsed onto a
+// single bar is that pull made visible. Nothing here judges — there is no
+// threshold and no warning, because the honest evidence is the writer's own
+// negative next to the current body, not a number this module invented.
+const GRAIN_HISTOGRAM_BUCKET = 5;
+const GRAIN_HISTOGRAM_BUCKETS = 12;
+
+function grainHistogram(cells = []) {
+  const buckets = Array.from({ length: GRAIN_HISTOGRAM_BUCKETS }, (unused, index) => ({
+    from: index * GRAIN_HISTOGRAM_BUCKET,
+    to: index === GRAIN_HISTOGRAM_BUCKETS - 1 ? 0 : ((index + 1) * GRAIN_HISTOGRAM_BUCKET) - 1,
+    total: 0,
+    model: 0,
+  }));
+  const lengths = [];
+  for (const cell of cells || []) {
+    const length = grainVisibleLength(cell?.text);
+    if (!length) continue;
+    lengths.push(length);
+    const index = Math.min(Math.floor(length / GRAIN_HISTOGRAM_BUCKET), GRAIN_HISTOGRAM_BUCKETS - 1);
+    buckets[index].total += 1;
+    if (Number(cell?.generation) > 0) buckets[index].model += 1;
+  }
+  lengths.sort((left, right) => left - right);
+  const middle = Math.floor(lengths.length / 2);
+  return {
+    buckets,
+    count: lengths.length,
+    peak: buckets.reduce((most, bucket) => Math.max(most, bucket.total), 0),
+    shortest: lengths[0] || 0,
+    longest: lengths[lengths.length - 1] || 0,
+    median: lengths.length
+      ? (lengths.length % 2 ? lengths[middle] : Math.round((lengths[middle - 1] + lengths[middle]) / 2))
+      : 0,
+    // How wide the middle half of the draft is. One number for "how much the
+    // sentence length still varies", and the one that collapses when every
+    // sentence has been pulled toward the same size.
+    spread: lengths.length
+      ? lengths[Math.floor(lengths.length * 0.75)] - lengths[Math.floor(lengths.length * 0.25)]
+      : 0,
+  };
+}
+
+// A plain text has no runs yet; it is all the writer's, which is what the
+// negative is by definition.
+function grainHistogramForText(text = "") {
+  return grainHistogram(grainSentenceCells([{ text: String(text || ""), source: "author", generation: 0 }]));
+}
+
+// The history brush. Photoshop's works by choosing one source state and then
+// painting from it, and that is the shape here too: the writer picks a version,
+// and each sentence can be taken back from it one at a time. No model is asked
+// anything — every word this returns is a word the writer or an earlier pass
+// already wrote.
+//
+// Sentences move between versions, so the match is by content, not position.
+// The threshold is the same overlap the paragraph matcher uses: below it the
+// answer is "no ancestor found", which the surface has to say out loud rather
+// than paint the nearest thing it could find.
+function grainAncestorSentence(text = "", olderText = "") {
+  const target = grainTokenBag(grainTokenize(String(text || "")));
+  if (!target.size) return null;
+  let best = null;
+  let bestScore = 0;
+  for (const cell of grainSentenceCells([{ text: String(olderText || ""), source: "author", generation: 0 }])) {
+    const score = grainOverlap(grainTokenBag(grainTokenize(cell.text)), target);
+    if (score > bestScore) {
+      bestScore = score;
+      best = cell;
+    }
+  }
+  if (!best || bestScore < GRAIN_PARAGRAPH_MATCH) return null;
+  return { text: best.text, score: bestScore, unchanged: best.text === String(text || "") };
+}
+
+// Canvas size, not image size. Photoshop keeps the two apart and the
+// difference matters more in text than in pictures: changing the canvas crops,
+// and every pixel that stays is untouched; changing the image size resamples,
+// and every pixel changes. Quick Draft already has the resample — the density
+// layer, which asks a model to rewrite the whole draft denser. This is the
+// other one, and it needs no model at all: the frame says where the target
+// length falls, and the writer decides what to drop.
+//
+// Nothing here removes anything. It measures and marks; cutting is the
+// writer's hand, one sentence at a time.
+function grainCanvasFrame(cells = [], target = 0, measure = grainVisibleLength) {
+  const limit = Math.max(0, Math.floor(Number(target) || 0));
+  const size = typeof measure === "function" ? measure : grainVisibleLength;
+  let used = 0;
+  let inside = 0;
+  const marks = (cells || []).map((cell) => {
+    const length = Math.max(0, Math.floor(Number(size(cell?.text || "")) || 0));
+    used += length;
+    // A sentence is inside the frame when the draft still fits with it. The
+    // first one that does not fit is the edge, and everything after it is
+    // outside — it is not deleted, only outside.
+    const fits = !limit || used <= limit;
+    if (fits) inside += 1;
+    return { fits, length, running: used };
+  });
+  return {
+    marks,
+    total: used,
+    target: limit,
+    inside,
+    over: limit ? Math.max(0, used - limit) : 0,
+    edge: limit && inside < marks.length ? inside : -1,
+  };
+}
+
 // A span carries the number of model passes that wrote it out: the pass that
 // introduced it, plus every later pass that read it and wrote it out again.
 // Text that was already in the negative belongs to the writer — generation 0.
-function grainGenerations(model, chain) {
+function grainGenerations(model, chain, { modelDelivered = "" } = {}) {
   const masks = chain.versions.map((version) => grainPresenceMask(version, model));
+  // A token in none of the versions used to be charged to the newest pass,
+  // because the chain holds only what each pass replaced — it never holds what
+  // the last pass produced. So a sentence the writer typed after that pass read
+  // as the model's work. The delivered body is the missing reference: absent
+  // from every version and from it too means the writer wrote it afterwards.
+  // Without the reference (older records) the reading stays as it was.
+  const delivered = String(modelDelivered || "").trim()
+    ? grainPresenceMask(modelDelivered, model)
+    : null;
   return model.tokens.map((token, index) => {
     const found = masks.findIndex((mask) => mask[index]);
     if (found === 0) return 0;
+    if (found < 0 && delivered && !delivered[index]) return 0;
     const introduced = found < 0 ? chain.passes : chain.indexes[found];
     return chain.passes - introduced + 1;
   });

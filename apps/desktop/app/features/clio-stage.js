@@ -365,7 +365,7 @@ async function loadClioStageSource(source) {
 
   clioStageState.parsed = parsed;
   renderClioStage();
-  setStatus(currentLanguage === "zh" ? `讲演台已打开：${title}` : `ClioStage opened: ${title}`);
+  setStatus(t("cliostage_opened", title));
   return true;
 }
 

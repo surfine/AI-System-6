@@ -4,7 +4,11 @@
 import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("creative-labs-control-reform");
-const index = read("index.html");
+// Windows whose markup moved into their own lazy module: the boot payload no
+// longer carries a window this module already loads on demand. These
+// assertions are about what the window CONTAINS, not which file stores it,
+// so they read both surfaces and stay true wherever it is built.
+const index = `${read("index.html")}\n${read("app/features/bureaucracy-meme.js")}`;
 const cmf = read("app/features/cmf-studio.js");
 const bureaucracy = read("app/features/bureaucracy-meme.js");
 const endfield = read("app/features/endfield-terminal.js");

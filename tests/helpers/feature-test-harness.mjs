@@ -63,6 +63,60 @@ export function exists(path) {
   return existsSync(resolveProjectPath(path));
 }
 
+// The window registry, read as data rather than grepped as text.
+//
+// Contracts used to assert that a window was declared by searching
+// window-manager.js for a substring, which pinned the *spelling* of a data
+// structure rather than the fact it holds. When the declaration moved into
+// core/window-registry.js, twenty-one contracts failed for the one reason a
+// contract should never fail: the truth was unchanged and the text was not.
+//
+// Each record carries the literal fields as values, and the behavioural fields
+// (hooks, lazy loaders) as their source text, so a test can still assert which
+// call a hook makes without also pinning where the hook lives.
+let windowRegistryCache = null;
+
+export function windowRegistryRecords() {
+  if (windowRegistryCache) return windowRegistryCache;
+  const source = read("app/core/window-registry.js");
+  const ast = parseJsSource(source);
+  let table = null;
+  const visit = (node) => {
+    if (
+      node.type === "VariableDeclarator"
+      && node.id?.name === "windowRegistry"
+      && node.init?.type === "CallExpression"
+      && node.init.arguments[0]?.type === "ObjectExpression"
+    ) {
+      table = node.init.arguments[0];
+      return;
+    }
+    forEachAstChild(node, visit);
+  };
+  visit(ast);
+  if (!table) throw new Error("window-registry.js does not declare a windowRegistry object");
+
+  const records = {};
+  for (const property of table.properties) {
+    const name = property.key.name || property.key.value;
+    const record = {};
+    for (const field of property.value.properties) {
+      const key = field.key.name || field.key.value;
+      const value = field.value;
+      if (value.type === "Literal") record[key] = value.value;
+      else record[key] = source.slice(value.start, value.end);
+    }
+    records[name] = record;
+  }
+  windowRegistryCache = records;
+  return records;
+}
+
+/** Which application owns a window, as the product itself declares it. */
+export function windowApp(name) {
+  return windowRegistryRecords()[name]?.app || null;
+}
+
 export function createFeatureTest(feature) {
   const failures = [];
 

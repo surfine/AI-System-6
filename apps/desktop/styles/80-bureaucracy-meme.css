@@ -139,9 +139,9 @@
   font: inherit;
   cursor: pointer;
   transition:
-    background var(--duration-fast) var(--ease-standard),
-    color var(--duration-fast) var(--ease-standard),
-    transform var(--duration-fast) var(--ease-standard);
+    background var(--control-motion-fast-in) var(--control-motion-ease),
+    color var(--control-motion-fast-in) var(--control-motion-ease),
+    transform var(--control-motion-fast-in) var(--control-motion-ease);
 }
 
 .bureaucracy-tone:first-child {

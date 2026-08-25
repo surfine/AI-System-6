@@ -13,6 +13,8 @@ import { createServer } from "node:net";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
+import { windowInterfaceRegistry } from "./interface-guidelines-contract.mjs";
+import { lazyStyleBundles } from "./style-manifest.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const require = createRequire(import.meta.url);
@@ -27,25 +29,31 @@ const THEME_IDS = Object.freeze([
   "liquid-glass",
 ]);
 
-const REPRESENTATIVE_WINDOWS = Object.freeze([
-  { id: "finder", sample: ".finder-item .sys-icon" },
-  { id: "assistant", sample: ".clio-welcome-icon" },
-  { id: "pageSetup", sample: ".btn.default" },
-  { id: "teachText", sample: "#teachtext-body" },
-  { id: "scrapbook", sample: "#scrap-body-input" },
-  { id: "liquidCover", sample: ".liquid-cover-window .title-bar, .title-bar" },
-  { id: "endfieldTerminal", sample: ".endfield-terminal-window .title-bar, .title-bar" },
-  { id: "quickDraft", sample: ".draft-desk-sheet-head" },
-  { id: "questionSheet", sample: ".writing-eli5-menu" },
-  { id: "sectionDrafts", sample: ".section-draft-nav" },
-]);
+const REGISTERED_WINDOWS = Object.freeze(Object.entries(windowInterfaceRegistry).map(([id, contract]) => Object.freeze({
+  id,
+  role: contract.role,
+  sourceKind: contract.sourceKind,
+  ensure: contract.ensure,
+  mountPath: contract.mountPath,
+  sample: contract.appearanceProbe.sampleSelector,
+  representative: contract.appearanceProbe.representative,
+})));
+const REPRESENTATIVE_WINDOW_IDS = new Set(
+  REGISTERED_WINDOWS.filter(({ representative }) => representative).map(({ id }) => id),
+);
+const representedRoles = new Set(
+  REGISTERED_WINDOWS.filter(({ representative }) => representative).map(({ role }) => role),
+);
+for (const role of new Set(REGISTERED_WINDOWS.map(({ role }) => role))) {
+  if (!representedRoles.has(role)) throw new Error(`Appearance coverage has no screenshot representative for role: ${role}`);
+}
 
 const outputArgument = process.argv.indexOf("--output");
 if (process.argv.includes("--help")) {
-  console.log("Usage: node tooling/verify-appearance-app-coverage.mjs [--output DIR]");
+  console.log("Usage: node tooling/verify-appearance-app-coverage.mjs [--output DIR] [--all]");
   process.exit(0);
 }
-if (process.argv.slice(2).some((argument, index, args) => argument !== "--output" && args[index - 1] !== "--output")) {
+if (process.argv.slice(2).some((argument, index, args) => argument !== "--output" && argument !== "--all" && args[index - 1] !== "--output")) {
   throw new Error(`Unknown option: ${process.argv.slice(2).join(" ")}`);
 }
 if (outputArgument >= 0 && (!process.argv[outputArgument + 1] || process.argv[outputArgument + 1].startsWith("--"))) {
@@ -59,8 +67,19 @@ function wait(ms) {
   return new Promise((resolveWait) => setTimeout(resolveWait, ms));
 }
 
+// `--all` collects every finding instead of stopping at the first.
+//
+// A gate that throws on finding one hides how big the field is: this one had
+// been red on a single WindowShade for long enough that nobody knew whether
+// three findings were behind it or thirty. Deciding whether to drain a lane or
+// ship past it needs that number, and one run should be enough to get it.
+const reportAll = process.argv.includes("--all");
+const findings = [];
+
 function assert(condition, message) {
-  if (!condition) throw new Error(message);
+  if (condition) return;
+  if (!reportAll) throw new Error(message);
+  findings.push(message);
 }
 
 function httpReady(url) {
@@ -125,8 +144,38 @@ async function stopProcess(child) {
   });
 }
 
-function titleSignature(titleBar) {
-  return JSON.stringify({
+// Windows allowed to differ from the shared painter on named properties, each
+// with the reason. Everything not named here is still asserted, so a window
+// that keeps its own height cannot quietly also take its own typeface.
+//
+// Alarm Clock is the only entry, and it is not a desk accessory bending the
+// rules -- it is the one window here whose strip is NOT a window title bar.
+//
+// Native evidence, from `WIND -16000` in the bundled System 6.0.8 image
+// (.claude/skills/system6-ui-review): content rect 129x18, procID 3
+// (altDBoxProc -- a shadowed box with no system title bar), goAwayFlag true.
+// The Alarm Clock's top strip is the DA's own 18px content: close box, time
+// readout, fold lever. The product builds it with the `.title-bar` class as a
+// carrier and hides the real title, and 30-surfaces.css says why the era fill
+// is suppressed there -- "the readout is the Alarm Clock's window title, so it
+// masks the bar the way a window title does", and Platinum's stripes otherwise
+// ran straight through the digits.
+//
+// So the four properties below are the object, not drift. The Alarm Clock does
+// wear every era: 54 token redefinitions in the base appearance sheet, 52 in
+// Aqua, 33 in Liquid Glass, including its own --alarm-clock-title-bg per era.
+// What replaces the dropped comparison is the assertion below, which holds the
+// strip to the native 18 and to the era's own ink and typeface.
+const TITLE_METRIC_EXCEPTIONS = new Map([
+  ["alarmClock", ["height", "backgroundColor", "boxShadow", "backdropFilter"]],
+]);
+
+// The height the native content rect gives, asserted rather than assumed.
+const ALARM_CLOCK_NATIVE_STRIP_HEIGHT = 18;
+
+function titleSignature(titleBar, windowId) {
+  const exceptions = TITLE_METRIC_EXCEPTIONS.get(windowId) || [];
+  const signature = {
     height: titleBar.rect.height,
     backgroundColor: titleBar.style.backgroundColor,
     color: titleBar.style.color,
@@ -137,7 +186,9 @@ function titleSignature(titleBar) {
     backdropFilter: titleBar.style.backdropFilter,
     fontFamily: titleBar.style.fontFamily,
     fontSize: titleBar.style.fontSize,
-  });
+  };
+  for (const key of exceptions) delete signature[key];
+  return JSON.stringify(signature);
 }
 
 mkdirSync(outputDir, { recursive: true });
@@ -173,7 +224,35 @@ try {
     }
   });
   page.on("console", (message) => {
-    if (message.type() === "error") diagnostics.push(`console: ${message.text()}`);
+    if (message.type() !== "error") return;
+    // The console twin of the request above arrives without a URL, so it cannot
+    // be filtered by target; the requestfailed handler is the one that reports.
+    if (message.text().includes("Failed to load resource")) return;
+    diagnostics.push(`console: ${message.text()}`);
+  });
+  // A console error says a request failed; only the request event says which.
+  // "Failed to load resource: net::ERR_CONNECTION_REFUSED" with no URL is a
+  // finding nobody can act on.
+  //
+  // One loopback failure is expected and is not a finding: the app probes for a
+  // local model at boot (LM Studio on 127.0.0.1:1234, Ollama on 11434), and a
+  // build machine has none running. The product is designed to say "Model not
+  // connected" and carry on, so a gate that fails on it would be asserting the
+  // opposite of the contract. Any OTHER failed request is still a finding,
+  // including a loopback one to the app's own origin.
+  const isAbsentLocalModel = (url) => {
+    try {
+      const target = new URL(url);
+      const ownOrigin = new URL(server.url).origin;
+      const loopback = target.hostname === "127.0.0.1" || target.hostname === "localhost" || target.hostname === "[::1]";
+      return loopback && target.origin !== ownOrigin;
+    } catch {
+      return false;
+    }
+  };
+  page.on("requestfailed", (request) => {
+    if (isAbsentLocalModel(request.url())) return;
+    diagnostics.push(`requestfailed: ${request.url()} (${request.failure()?.errorText || "unknown"})`);
   });
   page.on("response", (response) => {
     if (response.status() >= 400) diagnostics.push(`response ${response.status()}: ${response.url()}`);
@@ -189,6 +268,56 @@ try {
     document.head.append(style);
   });
   await page.evaluate(() => document.fonts?.ready);
+
+  // Mount every dynamic/lazy window through the same window-manager path the
+  // product uses. Once mounted, subsequent theme passes only toggle visibility;
+  // the gate therefore covers the real DOM without reopening expensive apps six
+  // times or maintaining a second feature-module list.
+  for (const contract of REGISTERED_WINDOWS) {
+    const mounted = await page.evaluate(async ({ id, ensure }) => {
+      if (!document.querySelector(`.window[data-window="${id}"]`)
+        && ensure === "loadLazyWindowModule"
+        && typeof loadLazyWindowAppearanceShell === "function") {
+        await loadLazyWindowAppearanceShell(id);
+      }
+      return Boolean(document.querySelector(`.window[data-window="${id}"]`));
+    }, contract);
+    assert(mounted, `Registered window did not mount: ${contract.id} (${contract.mountPath})`);
+  }
+
+  // Ask for every lazy stylesheet before measuring anything.
+  //
+  // A window's markup and its layout can live on opposite sides of the lazy
+  // line: CMF Studio, Soundscape, Endfield Terminal, Image Prompt Studio, Time
+  // Machine and ClioChart are `sourceKind: "static"` -- their markup ships in
+  // index.html -- while their width and grid live in a lazy bundle that only
+  // arrives when the module loads. Revealing such a window by class, which is
+  // what this gate does, never triggers that load, so the gate was measuring
+  // six unstyled windows: 2px wide in Classic, 10px in Platinum, 0 in Liquid
+  // Glass. Only the zero was loud enough to fail, which is why this stood.
+  // CMF Studio is 1120x720 once its sheet applies.
+  await page.evaluate((bundles) => {
+    for (const output of bundles) {
+      if (document.querySelector(`link[rel="stylesheet"][href*="${output}"]`)) continue;
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = output;
+      document.head.append(link);
+    }
+  }, lazyStyleBundles.map((bundle) => bundle.output));
+
+  await page.waitForFunction(
+    () => [...document.querySelectorAll('link[rel="stylesheet"]')].every((link) => link.sheet),
+    null,
+    { timeout: 15000 },
+  ).catch(() => {});
+  const unloadedSheets = await page.evaluate(() => [...document.querySelectorAll('link[rel="stylesheet"]')]
+    .filter((link) => !link.sheet)
+    .map((link) => link.getAttribute("href")));
+  assert(
+    unloadedSheets.length === 0,
+    `Stylesheet(s) never applied, so every measurement below would be of an unstyled window: ${unloadedSheets.join(", ")}`,
+  );
 
   const registry = await page.evaluate(() => window.AISystem6Theme.themes.map((theme) => ({
     id: theme.id,
@@ -314,7 +443,7 @@ try {
     }
 
     const windows = [];
-    for (const contract of REPRESENTATIVE_WINDOWS) {
+    for (const contract of REGISTERED_WINDOWS) {
       const snapshot = await page.evaluate(({ id, sample }) => {
         for (const windowElement of document.querySelectorAll(".window")) {
           windowElement.classList.add("is-hidden");
@@ -322,7 +451,13 @@ try {
         }
         const target = document.querySelector(`.window[data-window="${id}"]`);
         if (!target) return { missing: true };
-        target.classList.remove("is-hidden");
+        // Control Panel, Chooser and Memory Transfer are authored rolled up
+        // (`is-collapsed` in index.html) and expand when the product opens
+        // them. Revealing by class alone measured a WindowShade: the pane is
+        // display:none under `.window.is-collapsed`, so the sample had no
+        // geometry and this gate has been red since before 1.0.50. What the
+        // gate is for is the appearance of an OPEN window.
+        target.classList.remove("is-hidden", "is-collapsed");
         target.classList.add("is-active");
         const capture = (element) => {
           if (!element) return null;
@@ -351,7 +486,7 @@ try {
             },
           };
         };
-        const sampleElement = target.querySelector(sample);
+        const sampleElement = target.querySelector(sample) || target;
         return {
           missing: false,
           devicePixelRatio: window.devicePixelRatio,
@@ -373,34 +508,66 @@ try {
       }
       if (["aqua", "snow-leopard", "yosemite", "liquid-glass"].includes(theme.id)
         && snapshot.sampleModernSourceSize) {
-        const requiredPixels = Math.max(snapshot.sample.rect.width, snapshot.sample.rect.height) * 2 * 0.9;
+        // The floor is the ICON's declared display size, not the sample
+        // container's box. Most samples are a whole window pane, and measuring
+        // the pane asked a 128px icon to cover 90% of a 416px pane at 2x --
+        // impossible, and the reason every modern era failed on every window
+        // with a pane sample. The message always printed the right number
+        // ("declared 34px"); only the arithmetic used the wrong one.
+        const requiredPixels = snapshot.sampleModernDisplaySize * 2 * 0.9;
         assert(
           snapshot.sampleModernSourceSize >= requiredPixels,
           `${theme.id}/${contract.id}: ${snapshot.sampleModernSourceSize}px raster (${snapshot.sampleClassName}, declared ${snapshot.sampleModernDisplaySize}px) is below the Retina rendering floor ${requiredPixels.toFixed(1)}px`,
         );
       }
-      const screenshot = `${theme.id}-${contract.id}.png`;
-      await page.locator(`.window[data-window="${contract.id}"]`).screenshot({
-        path: join(outputDir, screenshot),
-        animations: "disabled",
+      let screenshot = "";
+      if (REPRESENTATIVE_WINDOW_IDS.has(contract.id)) {
+        screenshot = `${theme.id}-${contract.id}.png`;
+        await page.locator(`.window[data-window="${contract.id}"]`).screenshot({
+          path: join(outputDir, screenshot),
+          animations: "disabled",
+        });
+      }
+      windows.push({
+        id: contract.id,
+        role: contract.role,
+        sourceKind: contract.sourceKind,
+        mountPath: contract.mountPath,
+        screenshot,
+        ...snapshot,
       });
-      windows.push({ id: contract.id, screenshot, ...snapshot });
     }
 
-    const systemTitle = titleSignature(windows.find(({ id }) => id === "finder").titleBar);
+    const systemTitleBar = windows.find(({ id }) => id === "finder").titleBar;
     for (const windowResult of windows) {
+      // Both sides drop the same keys, so an exception narrows what is compared
+      // rather than comparing two different things.
       assert(
-        titleSignature(windowResult.titleBar) === systemTitle,
+        titleSignature(windowResult.titleBar, windowResult.id)
+          === titleSignature(systemTitleBar, windowResult.id),
         `${theme.id}/${windowResult.id}: app stylesheet overrode the shared system title-bar painter`,
       );
+      // What the Alarm Clock gives up above, it owes here: its strip stays the
+      // native 18 in every era, and still takes the era's ink and typeface.
+      if (windowResult.id === "alarmClock") {
+        assert(
+          windowResult.titleBar.rect.height === ALARM_CLOCK_NATIVE_STRIP_HEIGHT,
+          `${theme.id}/alarmClock: strip is ${windowResult.titleBar.rect.height}px, not the native ${ALARM_CLOCK_NATIVE_STRIP_HEIGHT}px of WIND -16000`,
+        );
+        assert(
+          windowResult.titleBar.style.fontFamily === systemTitleBar.style.fontFamily
+            && windowResult.titleBar.style.color === systemTitleBar.style.color,
+          `${theme.id}/alarmClock: strip stopped taking the era's own ink and title typeface`,
+        );
+      }
     }
     results.push({ theme, projection, windows });
-    console.log(`OK  ${theme.id}: ${windows.length} representative real windows share system chrome`);
+    console.log(`OK  ${theme.id}: ${windows.length} registered windows share system chrome; ${REPRESENTATIVE_WINDOW_IDS.size} role screenshots captured`);
   }
 
   const titleSignatures = new Map(results.map((result) => [
     result.theme.id,
-    titleSignature(result.windows.find(({ id }) => id === "finder").titleBar),
+    titleSignature(result.windows.find(({ id }) => id === "finder").titleBar, "finder"),
   ]));
   assert(titleSignatures.get("yosemite") !== titleSignatures.get("liquid-glass"), "Yosemite and Liquid Glass collapsed to the same real-window painter");
   assert(diagnostics.length === 0, `Real-app coverage emitted runtime errors:\n${diagnostics.join("\n")}`);
@@ -410,10 +577,15 @@ try {
     generatedAt: new Date().toISOString(),
     themes: results,
     diagnostics,
-    representativeWindows: REPRESENTATIVE_WINDOWS,
+    registeredWindows: REGISTERED_WINDOWS,
+    representativeWindowIds: [...REPRESENTATIVE_WINDOW_IDS],
   };
   writeFileSync(join(outputDir, "report.json"), `${JSON.stringify(report, null, 2)}\n`);
-  console.log(`OK  Appearance real-app propagation passed: ${results.length} themes × ${REPRESENTATIVE_WINDOWS.length} windows`);
+  if (findings.length) {
+    console.error(`\nNO  Appearance real-app propagation: ${findings.length} finding(s)`);
+    for (const finding of findings) console.error(`    ${finding}`);
+    process.exitCode = 1;
+  } else console.log(`OK  Appearance real-app propagation passed: ${results.length} themes × ${REGISTERED_WINDOWS.length} registered windows`);
   console.log(`    artifacts: ${outputDir}`);
 } catch (error) {
   console.error(`Appearance real-app propagation failed: ${error.stack || error.message}`);

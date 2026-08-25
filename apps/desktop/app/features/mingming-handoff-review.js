@@ -282,7 +282,11 @@ async function runMingmingHandoffReview(options = {}) {
 
     const response = await fetchModelPayload({
       model: getLocalModelRequestName(),
-      messages: withMarkdownModelMessages([{ role: "user", content: prompt }]),
+      // Handoff friction is often visual. Only figures the draft cites are sent.
+      messages: attachImagesToModelMessages(
+        withMarkdownModelMessages([{ role: "user", content: prompt }]),
+        teachTextFiguresReferencedIn(fullContext)
+      ),
       temperature: isBackstage ? 0.25 : 0.2,
       max_tokens: isBackstage ? 3200 : 1600,
       ai_system6_task_kind: isBackstage ? "mingming_handoff_backstage_review" : "mingming_handoff_card",
@@ -296,7 +300,7 @@ async function runMingmingHandoffReview(options = {}) {
       : (currentLanguage === "zh" ? "没有生成若是落落会怎么接结果。" : "No How Luoluo Would Receive It result was generated.")));
 
     if (isBackstage) {
-      setStatus(currentLanguage === "zh" ? "交付后台审校完成。" : "Backstage handoff review ready.");
+      setStatus(t("backstage_handoff_review_ready"));
     } else {
       const copied = copyMingmingHandoffCardToClipboard(visibleContent);
       setStatus(copied

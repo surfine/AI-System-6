@@ -13,14 +13,19 @@
     <meta name="apple-mobile-web-app-title" content="AI System 6" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="theme-color" content="#000000" />
-    <link rel="apple-touch-icon" href="assets/app-icon/app-icon-180.png" />
-    <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png" />
-    <link rel="manifest" href="assets/app-icon/manifest.json" />
-    <script src="app/core/theme-registry.js"></script>
-    <link rel="stylesheet" href="styles.bundle.css?v=20260819.2" />
+    <link rel="apple-touch-icon" href="assets/app-icon/app-icon-180.png?v=20260823.15" />
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png?v=20260823.15" />
+    <link rel="manifest" href="assets/app-icon/manifest.json?v=20260823.15" />
+    <script src="app/core/theme-registry.js?v=20260823.15"></script>
+    <link rel="stylesheet" href="styles.bundle.css?v=20260823.15" />
+    <!-- The app bundle is referenced at the end of a ~340 KB body, so the
+         preload scanner reaches it late. This starts the download beside the
+         stylesheet instead. Both URLs carry the same build stamp, so the
+         browser serves the script tag from this one request. -->
+    <link rel="preload" as="script" href="app.bundle.js?v=20260823.15" />
   </head>
   <body class="is-booting">
-    <script src="app/core/theme-body-init.js"></script>
+    <script src="app/core/theme-body-init.js?v=20260823.15"></script>
     <header class="menu-bar" aria-label="System menu" data-i18n-aria-label="system_menu">
       <div class="menu">
         <button class="apple" aria-label="Apple menu" data-i18n-aria-label="apple_menu" data-balloon-help="balloon_apple_menu">
@@ -34,20 +39,21 @@
           <button data-action="switch-language" data-i18n="switch_language">简体中文</button>
           <hr />
           <div class="menu-section-label" data-i18n="apple_menu_start">Start</div>
-          <button data-action="open-guide" data-i18n="start_here">Start Here</button>
+          <button data-action="replay-clio-introduction" data-i18n="replay_clio_introduction">Replay Clio Introduction</button>
           <button data-action="open-system-help" data-i18n="system_help" data-balloon-help="balloon_system_help">System Help</button>
           <button data-workspace-capability="studio" data-action="guide-start-route" data-i18n="guide_start_route">Start Writing Route</button>
           <!-- The Start section keeps items in every workspace profile, so its
                closing rule is not the writing route's to hide. -->
           <hr />
-          <!-- Commands, not a Desk Accessory: hunting for a window to record an
-               interruption is itself the interruption. Two ways to hold one --
-               Hold My Place keeps the caret, Hold That Thought also brings a
-               slip -- and one way back. -->
+          <!-- One command, one way back, and the accessory they share. Holding
+               a thought captures where you were, what you were reading and what
+               was on the clipboard before it opens anything, so Escape one
+               keystroke later still costs nothing. The middle row names the
+               place it would take you to, which is the reminder itself. -->
           <div class="menu-section-label" data-i18n="apple_menu_place">Your Place</div>
-          <button data-action="hold-my-place" data-i18n="held_place_hold">Hold My Place</button>
           <button data-action="hold-that-thought" data-i18n="hold_that_thought">Hold That Thought</button>
           <button data-action="resume-my-place" data-i18n="held_place_resume">Where I Left Off</button>
+          <button data-action="open-hold-thought" data-i18n="held_thought_pile_open">Held Thoughts…</button>
           <hr />
           <div class="menu-section-label" data-i18n="apple_menu_writing_da">Writing DA</div>
           <!-- The order is the moment you reach for each one: catch a thought,
@@ -187,26 +193,31 @@
             </button>
             <button type="button" data-action="open-question-sheet" data-balloon-help="balloon_question_sheet">
               <span class="spine-step-number" aria-hidden="true">1</span>
+              <span class="spine-step-mark" aria-hidden="true"></span>
               <span class="sys-icon sys-icon-desktop" data-system-icon="questionSheet" aria-hidden="true"></span>
               <b data-i18n="question_sheet">Question Sheet</b>
             </button>
             <button type="button" data-action="open-outline">
               <span class="spine-step-number" aria-hidden="true">2</span>
+              <span class="spine-step-mark" aria-hidden="true"></span>
               <span class="sys-icon sys-icon-desktop" data-system-icon="outline" aria-hidden="true"></span>
               <b data-i18n="outline">Outline</b>
             </button>
             <button type="button" data-action="open-section-drafts">
               <span class="spine-step-number" aria-hidden="true">3</span>
+              <span class="spine-step-mark" aria-hidden="true"></span>
               <span class="sys-icon sys-icon-desktop" data-system-icon="sectionDrafts" aria-hidden="true"></span>
               <b data-i18n="section_drafts">Section Drafts</b>
             </button>
             <button type="button" data-action="open-teachtext">
               <span class="spine-step-number" aria-hidden="true">4</span>
+              <span class="spine-step-mark" aria-hidden="true"></span>
               <span class="sys-icon sys-icon-desktop" data-system-icon="manuscript" aria-hidden="true"></span>
               <b data-i18n="manuscript">Manuscript</b>
             </button>
             <button type="button" data-action="open-review-desk" data-balloon-help="balloon_review_desk">
               <span class="spine-step-number" aria-hidden="true">5</span>
+              <span class="spine-step-mark" aria-hidden="true"></span>
               <span class="sys-icon sys-icon-desktop" data-system-icon="reviewDesk" aria-hidden="true"></span>
               <b data-i18n="review_desk">Review Desk</b>
             </button>
@@ -441,7 +452,10 @@
              first message rather than after it. -->
         <div class="details-bar assistant-details-bar">
           <span class="clio-tally" id="clio-tally" hidden></span>
-          <span id="status" data-i18n="ready" hidden>Ready</span>
+          <span class="clio-status-host" data-status-host data-status-home><!-- No data-i18n: setStatus owns this line's text. The element used to
+               carry data-i18n="ready", so applyLanguage() rewrote it to the
+               translated "Ready" behind setStatus's back — a second, silent
+               declaration of what the line says. --><span id="status" hidden></span></span>
           <span id="quick-draft-cliotalk-hint" class="quick-draft-cliotalk-hint is-hidden"></span>
           <div class="sideask-mode-strip" id="sideask-mode-strip" hidden>
             <button class="sideask-source-link" id="sideask-source-link" type="button" data-action="focus-sideask-source">
@@ -470,9 +484,12 @@
               <span class="sys-icon sys-icon-ordinary clio-welcome-icon" data-system-icon="assistant" aria-hidden="true"></span>
               <div class="speaker" data-i18n="assistant">ClioTalk</div>
               <div class="message-content">
-                <p data-i18n="clio_model_required_message"><strong>Connect AI to send a message</strong><span>ClioTalk needs a ready local or cloud model. You can keep exploring the desktop and connect one when you need it.</span></p>
+                <p data-i18n="clio_first_welcome_message"><strong>Hi. I’m Clio.</strong><span>What are you working on?</span></p>
                 <div class="clio-welcome-actions">
-                  <button class="btn default" type="button" data-action="open-clio-model-settings" data-i18n="clio_connect_ai">Connect AI…</button>
+                  <button class="btn" type="button" data-clio-starter="idea" data-i18n="clio_starter_idea">I have an idea</button>
+                  <button class="btn" type="button" data-clio-starter="notes" data-i18n="clio_starter_notes">I have some notes</button>
+                  <button class="btn" type="button" data-clio-starter="file" data-i18n="clio_starter_file">I have a file</button>
+                  <button class="btn" type="button" data-clio-starter="explore" data-i18n="clio_starter_explore">Just looking around</button>
                 </div>
               </div>
             </article>
@@ -485,7 +502,7 @@
         <form id="chat-form" class="composer">
           <div id="attached-clips" class="attached-clips is-hidden"></div>
           <label class="visually-hidden" for="prompt" data-i18n="message">Message</label>
-          <textarea id="prompt" rows="1" placeholder="Ask the local model something..." data-i18n-placeholder="prompt_placeholder" required></textarea>
+          <textarea id="prompt" rows="1" placeholder="Ask the local model something..." data-requires-write data-i18n-placeholder="prompt_placeholder" required></textarea>
           <div class="composer-action-row">
             <div class="compose-tools-anchor">
               <button class="btn composer-file-button composer-icon-button" id="compose-tools-toggle" type="button" data-action="toggle-compose-tools" aria-expanded="false" aria-haspopup="menu" aria-controls="compose-tools-menu" data-i18n-aria-label="compose_tools" data-i18n-title="compose_tools">
@@ -541,7 +558,7 @@
               <button class="btn" type="button" id="retry" data-i18n="retry" hidden>Retry</button>
             </div>
             <button class="assistant-meter is-hidden" id="assistant-meter" type="button" data-action="open-model-meter">-- tok/s</button>
-            <button class="btn default composer-submit-button composer-icon-button" id="send" type="submit" data-mode="send" data-i18n-aria-label="send" data-i18n-title="send" data-balloon-help="balloon_clio_send" data-balloon-help-disabled="balloon_clio_send_disabled" disabled>
+            <button class="btn default composer-submit-button composer-icon-button" id="send" type="submit" data-requires-write data-mode="send" data-i18n-aria-label="send" data-i18n-title="send" data-balloon-help="balloon_clio_send" data-balloon-help-disabled="balloon_clio_send_disabled" disabled>
               <svg class="composer-send-glyph" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
                 <path d="M10 16V4M4.5 9.5 10 4l5.5 5.5"></path>
               </svg>
@@ -772,6 +789,7 @@
               </div>
 
             </div>
+            <button class="btn control-wide-button" type="button" data-action="replay-clio-introduction" data-i18n="replay_clio_introduction">Replay Clio Introduction</button>
           </section>
 
           <details class="control-section control-advanced">
@@ -991,69 +1009,6 @@
         </div>
       </section>
 
-      <section class="window finder-window is-hidden" data-window="controlStripModules" aria-labelledby="control-strip-modules-title">
-        <div class="title-bar">
-          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
-          <h2 id="control-strip-modules-title" data-i18n="control_strip_modules_folder">Control Strip Modules</h2>
-          <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
-          <button class="shade-box" aria-label="Collapse" data-i18n-aria-label="collapse"></button>
-        </div>
-        <div class="details-bar">
-          <span id="control-strip-modules-count" data-i18n="eleven_items">11 items</span>
-          <div class="view-controls" data-view-window="controlStripModules" aria-label="View" data-i18n-aria-label="view_controls">
-            <button class="view-btn is-active" type="button" data-view="icon" aria-label="Icon view" data-i18n-aria-label="view_icon"></button>
-            <button class="view-btn" type="button" data-view="list" aria-label="List view" data-i18n-aria-label="view_list"></button>
-          </div>
-          <span data-i18n="system_folder">System Folder</span>
-        </div>
-        <div class="window-pane finder-grid control-strip-modules-grid window-frame-scroller">
-          <button class="finder-item" data-control-strip-module="soundscape" draggable="true">
-            <span class="sys-icon" data-system-icon="soundscape" aria-hidden="true"></span>
-            <span data-i18n="control_strip_soundscape">Soundscape</span>
-          </button>
-          <button class="finder-item" data-control-strip-module="projectDisk" draggable="true">
-            <span class="sys-icon" data-system-icon="projectDisk" aria-hidden="true"></span>
-            <span data-i18n="control_strip_project_disk">Project Hard Disk</span>
-          </button>
-          <button class="finder-item" data-control-strip-module="model" draggable="true">
-            <span class="sys-icon" data-system-icon="cloudModel" aria-hidden="true"></span>
-            <span data-i18n="control_strip_model">Model</span>
-          </button>
-          <button class="finder-item" data-control-strip-module="writingBell" draggable="true">
-            <span class="sys-icon" data-system-icon="writingBell" aria-hidden="true"></span>
-            <span data-i18n="control_strip_writing_bell">Writing Bell</span>
-          </button>
-          <button class="finder-item" data-control-strip-module="appearance" draggable="true">
-            <span class="sys-icon" data-system-icon="control" aria-hidden="true"></span>
-            <span data-i18n="control_strip_desk_appearance">Appearance</span>
-          </button>
-          <button class="finder-item" data-control-strip-module="balloonHelp" draggable="true">
-            <span class="sys-icon" data-system-icon="systemHelp" aria-hidden="true"></span>
-            <span data-i18n="control_strip_balloon_help">Balloon Help</span>
-          </button>
-          <button class="finder-item" data-control-strip-module="nowPlaying" draggable="true">
-            <span class="sys-icon" data-system-icon="soundscape" aria-hidden="true"></span>
-            <span data-i18n="control_strip_now_playing">Now Playing</span>
-          </button>
-          <button class="finder-item" data-control-strip-module="finderEnvironment" draggable="true">
-            <span class="sys-icon" data-system-icon="systemStatus" aria-hidden="true"></span>
-            <span data-i18n="control_strip_finder_environment">Finder / MultiFinder</span>
-          </button>
-          <button class="finder-item" data-control-strip-module="notifications" draggable="true">
-            <span class="sys-icon" data-system-icon="systemStatus" aria-hidden="true"></span>
-            <span data-i18n="control_strip_notifications">System Messages</span>
-          </button>
-          <button class="finder-item" data-control-strip-module="clock" draggable="true">
-            <span class="sys-icon" data-system-icon="systemStatus" aria-hidden="true"></span>
-            <span data-i18n="control_strip_clock">Clock</span>
-          </button>
-          <button class="finder-item" data-control-strip-module="heldPlace" draggable="true">
-            <span class="sys-icon" data-system-icon="alias" aria-hidden="true"></span>
-            <span data-i18n="control_strip_held_place">Your Place</span>
-          </button>
-        </div>
-      </section>
-
       <section class="window finder-window is-hidden" data-window="helpFolder" aria-labelledby="help-folder-title">
         <div class="title-bar">
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
@@ -1070,9 +1025,9 @@
           <span data-i18n="startup_disk">Startup Disk</span>
         </div>
         <div class="window-pane finder-grid help-folder-grid window-frame-scroller">
-          <button class="finder-item" data-action="open-guide">
+          <button class="finder-item" data-action="replay-clio-introduction">
             <span class="sys-icon" data-system-icon="document" aria-hidden="true"></span>
-            <span data-i18n="start_here">Start Here</span>
+            <span data-i18n="replay_clio_introduction">Replay Clio Introduction</span>
           </button>
           <button class="finder-item" data-action="open-system-help">
             <span class="sys-icon" data-system-icon="systemHelp" aria-hidden="true"></span>
@@ -1201,6 +1156,9 @@
         </div>
       </section>
 
+      <!-- 文字亮室 — the darkroom. It develops a document; Quick Draft writes one.
+           The paper stays where the writing happens and this window looks at it,
+           so the two are side by side rather than one replacing the other. -->
       <section class="window draft-desk-window is-hidden" data-window="quickDraft" aria-labelledby="quick-draft-title">
         <div class="title-bar">
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
@@ -1248,28 +1206,7 @@
                   </span>
                 </header>
 
-                <div id="quick-draft-paper-view" class="draft-desk-paper-body" role="tabpanel" aria-labelledby="quick-draft-display-body">
-                  <div class="draft-desk-eli5-bar" data-quick-draft-eli5-bar hidden>
-                    <label class="draft-desk-eli5-toggle">
-                      <input type="checkbox" data-quick-draft-eli5-enabled />
-                      <span data-i18n="quick_draft_eli5_enabled">Explain like a five-year-old</span>
-                    </label>
-                    <span class="select-wrap draft-desk-eli5-select" data-quick-draft-eli5-baseline-wrap hidden>
-                      <select data-quick-draft-eli5-baseline-select data-i18n-aria-label="quick_draft_eli5_baseline">
-                        <option value="secondary-school" data-i18n="quick_draft_eli5_baseline_general">General public</option>
-                        <option value="some-familiarity" data-i18n="quick_draft_eli5_baseline_some">Knows a little</option>
-                        <option value="familiar" data-i18n="quick_draft_eli5_baseline_familiar">Familiar with the topic</option>
-                      </select>
-                    </span>
-                    <span class="draft-desk-eli5-actions" data-quick-draft-eli5-actions hidden>
-                      <button class="btn mini-btn" type="button" data-quick-draft-eli5-rewrite data-i18n="quick_draft_eli5_rewrite">Make it listenable</button>
-                      <button class="btn mini-btn" type="button" data-quick-draft-eli5-review data-i18n="quick_draft_eli5_review">Find where it gets lost</button>
-                    </span>
-                    <span class="draft-desk-eli5-candidate" data-quick-draft-eli5-candidate hidden>
-                      <button class="btn mini-btn default" type="button" data-quick-draft-eli5-apply data-i18n="quick_draft_eli5_apply">Apply</button>
-                      <button class="btn mini-btn" type="button" data-quick-draft-eli5-cancel data-i18n="quick_draft_eli5_cancel">Cancel</button>
-                    </span>
-                  </div>
+                <div id="quick-draft-paper-view" class="draft-desk-paper-body">
                   <section class="draft-desk-intake" data-quick-draft-intake-well>
                     <label class="draft-desk-intake-field draft-desk-intake-primary" for="quick-draft-say">
                       <span data-i18n="quick_draft_say_label">What I want to say</span>
@@ -1296,7 +1233,6 @@
 
                   <div class="teachtext-editor-container draft-desk-editor" data-quick-draft-body-surface hidden>
                     <textarea id="quick-draft-draft" rows="24" data-requires-write data-i18n-placeholder="quick_draft_draft_placeholder"></textarea>
-                    <div id="quick-draft-preview" class="teachtext-preview is-hidden"></div>
                   </div>
                 </div>
               </section>
@@ -1310,95 +1246,20 @@
                 <button class="btn mini-btn draft-desk-add-material" type="button" data-quick-draft-to-start data-i18n="quick_draft_add_material" data-balloon-help="balloon_qd_add_material">Add Material…</button>
               </aside>
 
-              <aside id="quick-draft-adjustments-drawer" class="draft-desk-inspector" aria-labelledby="quick-draft-adjustments-title">
-                <section class="draft-desk-inspector-section">
-                  <div class="draft-desk-region-head">
-                    <b id="quick-draft-adjustments-title" data-i18n="quick_draft_command_adjustment">Adjustment Layers</b>
-                    <button class="btn mini-btn draft-desk-drawer-close" type="button" data-quick-draft-drawer-close="inspector" data-i18n="quick_draft_drawer_close" data-i18n-aria-label="quick_draft_close_adjustments">Close</button>
-                  </div>
-                  <span id="quick-draft-adjustment-strength-label" class="visually-hidden" data-i18n="quick_draft_adjustment_strength">Adjustment layer strength</span>
-                  <div class="draft-desk-layer-stack">
-                    <div class="draft-desk-layer" data-quick-draft-adjustment-layer="mingming" data-balloon-help="quick_draft_layer_mingming_desc">
-                      <label class="draft-desk-layer-row">
-                        <input type="checkbox" data-requires-write data-quick-draft-adjustment-enabled="mingming" checked />
-                        <i data-quick-draft-layer-order="mingming" aria-hidden="true"></i>
-                        <span id="quick-draft-layer-mingming-label" data-i18n="quick_draft_chip_mingming">Mingming Pass</span>
-                      </label>
-                      <span class="select-wrap-inline"><select data-requires-write data-quick-draft-adjustment-strength="mingming" aria-labelledby="quick-draft-layer-mingming-label quick-draft-adjustment-strength-label"><option value="25" data-i18n="quick_draft_adjustment_light">Light</option><option value="50" selected data-i18n="quick_draft_adjustment_standard">Normal</option><option value="75" data-i18n="quick_draft_adjustment_heavy">Strong</option></select></span>
-                      <button class="btn mini-btn draft-desk-layer-disclosure" type="button" data-quick-draft-layer-disclosure="mingming" aria-expanded="false" aria-controls="quick-draft-layer-detail" data-i18n-aria-label="quick_draft_scope_edit">▶</button>
-                    </div>
-                    <div class="draft-desk-layer" data-quick-draft-adjustment-layer="luoluo" data-balloon-help="quick_draft_layer_luoluo_desc">
-                      <label class="draft-desk-layer-row"><input type="checkbox" data-requires-write data-quick-draft-adjustment-enabled="luoluo" checked /><i data-quick-draft-layer-order="luoluo" aria-hidden="true"></i><span id="quick-draft-layer-luoluo-label" data-i18n="quick_draft_chip_luoluo">Luoluo Receive</span></label>
-                      <span class="select-wrap-inline"><select data-requires-write data-quick-draft-adjustment-strength="luoluo" aria-labelledby="quick-draft-layer-luoluo-label quick-draft-adjustment-strength-label"><option value="25" data-i18n="quick_draft_adjustment_light">Light</option><option value="50" selected data-i18n="quick_draft_adjustment_standard">Normal</option><option value="75" data-i18n="quick_draft_adjustment_heavy">Strong</option></select></span>
-                      <button class="btn mini-btn draft-desk-layer-disclosure" type="button" data-quick-draft-layer-disclosure="luoluo" aria-expanded="false" aria-controls="quick-draft-layer-detail" data-i18n-aria-label="quick_draft_scope_edit">▶</button>
-                    </div>
-                    <div class="draft-desk-layer" data-quick-draft-adjustment-layer="hkrr" data-balloon-help="quick_draft_layer_hkrr_desc">
-                      <label class="draft-desk-layer-row"><input type="checkbox" data-requires-write data-quick-draft-adjustment-enabled="hkrr" checked /><i data-quick-draft-layer-order="hkrr" aria-hidden="true"></i><span id="quick-draft-layer-hkrr-label" data-i18n="quick_draft_chip_hkrr">HKRR Lift</span></label>
-                      <span class="select-wrap-inline"><select data-requires-write data-quick-draft-adjustment-strength="hkrr" aria-labelledby="quick-draft-layer-hkrr-label quick-draft-adjustment-strength-label"><option value="25" data-i18n="quick_draft_adjustment_light">Light</option><option value="50" selected data-i18n="quick_draft_adjustment_standard">Normal</option><option value="75" data-i18n="quick_draft_adjustment_heavy">Strong</option></select></span>
-                      <button class="btn mini-btn draft-desk-layer-disclosure" type="button" data-quick-draft-layer-disclosure="hkrr" aria-expanded="false" aria-controls="quick-draft-layer-detail" data-i18n-aria-label="quick_draft_scope_edit">▶</button>
-                    </div>
-                    <div class="draft-desk-layer" data-quick-draft-adjustment-layer="density" data-balloon-help="quick_draft_layer_density_desc">
-                      <label class="draft-desk-layer-row"><input type="checkbox" data-requires-write data-quick-draft-adjustment-enabled="density" checked /><i data-quick-draft-layer-order="density" aria-hidden="true"></i><span id="quick-draft-layer-density-label" data-i18n="quick_draft_adjustment_density">Density</span></label>
-                      <span class="select-wrap-inline"><select data-requires-write data-quick-draft-adjustment-strength="density" aria-labelledby="quick-draft-layer-density-label quick-draft-adjustment-strength-label"><option value="25" data-i18n="quick_draft_adjustment_density_light">Less</option><option value="50" selected data-i18n="quick_draft_adjustment_density_standard">Normal</option><option value="75" data-i18n="quick_draft_adjustment_density_heavy">More</option></select></span>
-                      <button class="btn mini-btn draft-desk-layer-disclosure" type="button" data-quick-draft-layer-disclosure="density" aria-expanded="false" aria-controls="quick-draft-layer-detail" data-i18n-aria-label="quick_draft_scope_edit">▶</button>
-                    </div>
-                  </div>
-                  <div class="draft-desk-layer-scope-row">
-                    <span data-quick-draft-active-layer-scope></span>
-                    <button class="btn mini-btn" type="button" data-quick-draft-layer-toggle aria-expanded="false" aria-controls="quick-draft-layer-detail" data-i18n="quick_draft_scope_edit">Edit…</button>
-                  </div>
-                  <div class="draft-desk-layer-detail" id="quick-draft-layer-detail" hidden>
-                    <p data-quick-draft-active-layer-description></p>
-                    <div class="draft-desk-layer-edit-controls">
-                      <input type="text" inputmode="text" data-quick-draft-active-layer-mask data-i18n-placeholder="quick_draft_adjustment_mask_placeholder" data-i18n-aria-label="quick_draft_adjustment_mask_aria" />
-                      <button type="button" class="btn mini-btn" data-quick-draft-active-layer-scope-selection data-i18n="quick_draft_scope_selection">Sel</button>
-                      <button type="button" class="btn mini-btn" data-quick-draft-active-layer-move data-direction="-1" data-i18n-aria-label="quick_draft_adjustment_move_up">▲</button>
-                      <button type="button" class="btn mini-btn" data-quick-draft-active-layer-move data-direction="1" data-i18n-aria-label="quick_draft_adjustment_move_down">▼</button>
-                    </div>
-                  </div>
-                  <div class="draft-desk-protect">
-                    <b data-i18n="quick_draft_protected_label">Protection</b>
-                    <div class="draft-desk-protect-summary">
-                      <span data-quick-draft-protected-summary></span>
-                      <button type="button" class="btn mini-btn" data-quick-draft-protect-toggle aria-expanded="false" aria-controls="quick-draft-protect-detail" data-i18n="quick_draft_protect_view">View</button>
-                    </div>
-                    <div class="draft-desk-protect-detail" id="quick-draft-protect-detail" hidden>
-                      <input type="text" inputmode="text" data-quick-draft-protected-ranges data-i18n-placeholder="quick_draft_protected_placeholder" data-i18n-aria-label="quick_draft_protected_aria" />
-                    </div>
-                    <button type="button" class="btn mini-btn" data-requires-write data-quick-draft-protect-selection data-i18n="quick_draft_protect_selection" data-balloon-help="balloon_qd_protect">Protect Selection</button>
-                  </div>
-                  <div class="draft-desk-mobile-inspector-actions">
-                    <button type="button" class="btn mini-btn" data-requires-write data-quick-draft-adjustment-apply data-i18n="quick_draft_preview_adjustments">Preview</button>
-                    <button type="button" class="btn mini-btn default" data-requires-write data-quick-draft-adjustment-develop data-i18n="quick_draft_develop" data-balloon-help="balloon_qd_develop">Develop</button>
-                  </div>
-                </section>
-                <section class="draft-desk-inspector-section draft-desk-versions-section" data-balloon-help="balloon_qd_versions">
-                  <div class="draft-desk-region-head"><b data-i18n="quick_draft_versions">Versions</b></div>
-                  <div id="quick-draft-versions-list" class="draft-desk-versions-list"></div>
-                </section>
-              </aside>
             </div>
 
             <footer class="draft-desk-actions">
-              <span class="draft-desk-display-switch" role="tablist" data-i18n-aria-label="quick_draft_view_label">
-                <button class="btn mini-btn is-active" id="quick-draft-display-body" type="button" role="tab" data-quick-draft-display="body" aria-controls="quick-draft-paper-view" aria-selected="true">
-                  <span class="draft-desk-display-label-wide" data-i18n="quick_draft_display_body">Body</span>
-                  <span class="draft-desk-display-label-narrow" data-i18n="quick_draft_display_body_mobile">Body</span>
-                </button>
-                <button class="btn mini-btn" type="button" role="tab" id="quick-draft-toggle-grain" data-quick-draft-display="grain" aria-controls="quick-draft-paper-view" aria-selected="false" data-i18n="quick_draft_grain" data-balloon-help="quick_draft_grain_balloon">Grain</button>
-                <button class="btn mini-btn" type="button" role="tab" id="quick-draft-toggle-composite" data-quick-draft-display="read" aria-controls="quick-draft-paper-view" aria-selected="false" data-i18n="quick_draft_composite" data-balloon-help="quick_draft_composite_balloon">Read</button>
-              </span>
               <span class="draft-desk-drawer-switch" role="group" data-i18n-aria-label="quick_draft_panels">
                 <button class="btn mini-btn" type="button" data-quick-draft-drawer="shelf" aria-controls="quick-draft-materials-drawer" aria-expanded="false" data-i18n="quick_draft_materials_label">Materials</button>
-                <button class="btn mini-btn" type="button" data-quick-draft-drawer="inspector" aria-controls="quick-draft-adjustments-drawer" aria-expanded="false" data-i18n="quick_draft_drawer_adjust">Adjust</button>
+                <button class="btn mini-btn" type="button" data-quick-draft-drawer="inspector" aria-controls="quick-draft-adjustments-drawer" aria-expanded="false" data-i18n="quick_draft_adjustments_label">Adjustments</button>
               </span>
               <span class="draft-desk-action-gap"></span>
+              <button class="btn" type="button" data-action="open-lightroom" data-i18n="quick_draft_open_lightroom" data-balloon-help="balloon_qd_lightroom">Lightroom</button>
               <details id="quick-draft-tools" class="teachtext-command-menu draft-desk-command-menu">
                 <summary class="btn" role="button" aria-haspopup="menu" aria-expanded="false" aria-controls="quick-draft-tools-menu"><span class="mobile-control-long" data-i18n="quick_draft_tools">Tools…</span><span class="mobile-control-short" data-i18n="quick_draft_more">More…</span></summary>
                 <div id="quick-draft-tools-menu" class="teachtext-command-popover draft-desk-command-popover" role="menu">
                   <section class="draft-desk-command-section"><b data-i18n="quick_draft_command_vent">Vent</b><button class="btn" role="menuitem" type="button" data-quick-draft-chat-action="vent-on" data-i18n="quick_draft_vent_start">Start Vent Mode</button><button class="btn" role="menuitem" type="button" data-quick-draft-chat-action="vent-off" data-i18n="quick_draft_vent_stop">End Vent Mode</button><button class="btn" role="menuitem" type="button" data-quick-draft-chat-action="vent-summary" data-quick-draft-ai-action data-i18n="quick_draft_vent_summarize">Summarize Vents</button></section>
-                  <section class="draft-desk-command-section"><b data-i18n="quick_draft_command_write">Write</b><button class="btn" type="button" data-quick-draft-chat-action="organize" data-quick-draft-ai-action data-i18n="quick_draft_chip_talk_points">Talk Points</button></section>
-                  <section class="draft-desk-command-section"><b data-i18n="quick_draft_command_review">Fast Review</b><button class="btn" type="button" data-quick-draft-chat-action="mingming" data-quick-draft-ai-action data-i18n="quick_draft_chip_mingming">Mingming Pass</button><button class="btn" type="button" data-quick-draft-chat-action="luoluo" data-quick-draft-ai-action data-i18n="quick_draft_chip_luoluo">Luoluo Receive</button><button class="btn" type="button" data-quick-draft-chat-action="hkrr" data-quick-draft-ai-action data-i18n="quick_draft_chip_hkrr">HKRR Lift</button><button class="btn" type="button" data-quick-draft-chat-action="praise" data-quick-draft-ai-action data-i18n="quick_draft_chip_praise">Encourage Me</button></section>
+                  <section class="draft-desk-command-section"><b data-i18n="quick_draft_command_write">Write</b><button class="btn" type="button" data-quick-draft-chat-action="organize" data-quick-draft-ai-action data-i18n="quick_draft_chip_talk_points">Talk Points</button><button class="btn" type="button" data-quick-draft-chat-action="praise" data-quick-draft-ai-action data-i18n="quick_draft_chip_praise">Encourage Me</button></section>
                   <section class="draft-desk-command-section"><button class="btn draft-desk-return-sideask" type="button" id="quick-draft-return-sideask" data-i18n="quick_draft_show_sideask">Show SideAsk</button><button class="btn" type="button" data-mde-focus-cycle data-mde-target="#quick-draft-draft" data-i18n-aria-label="teachtext_focus_off"><span class="mobile-control-long" data-i18n="teachtext_focus_off">Focus: Off</span><span class="mobile-control-short" data-i18n="focus">Focus</span></button></section>
                 </div>
               </details>
@@ -1690,87 +1551,6 @@
         </div>
       </section>
 
-      <section class="window bureaucracy-meme-window is-hidden" data-window="bureaucracyMeme" aria-labelledby="bureaucracy-meme-title">
-        <div class="title-bar">
-          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
-          <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
-          <button class="shade-box" aria-label="Collapse" data-i18n-aria-label="collapse"></button>
-          <h2 id="bureaucracy-meme-title" data-i18n="bureaucracy_meme_title">British Bureaucracy Meme Generator</h2>
-        </div>
-        <div class="details-bar bureaucracy-status-bar">
-          <span id="bureaucracy-provider-note" role="status" aria-live="polite" data-i18n="bureaucracy_meme_preview_note">Choose a caption to generate a PNG.</span>
-          <details class="bureaucracy-safety">
-            <summary data-i18n="bureaucracy_meme_source_note">Source note</summary>
-            <p data-i18n="bureaucracy_meme_safe">This tool does not include copyrighted TV stills or recreate real actors. Upload your own image locally, or use original fictional templates.</p>
-          </details>
-        </div>
-        <div class="window-pane bureaucracy-meme-pane">
-          <section class="bureaucracy-composer" aria-labelledby="bureaucracy-topic-title">
-            <label class="bureaucracy-topic-field" for="bureaucracy-topic-input">
-              <span id="bureaucracy-topic-title" data-i18n="bureaucracy_meme_topic">How shall we pretend everything is normal this time?</span>
-              <input id="bureaucracy-topic-input" type="text" data-i18n-placeholder="bureaucracy_meme_placeholder" placeholder="For example: the system is not broken, it is refusing the era" />
-            </label>
-            <div class="bureaucracy-tone-section" aria-labelledby="bureaucracy-tone-title">
-              <h3 id="bureaucracy-tone-title" data-i18n="bureaucracy_meme_tone">Tone</h3>
-              <div id="bureaucracy-tone-list" class="bureaucracy-tone-list" role="group" aria-label="Caption tone" data-i18n-aria-label="bureaucracy_meme_tone"></div>
-            </div>
-            <label class="bureaucracy-vision-row"><input type="checkbox" id="bureaucracy-vision" /> <span data-i18n="bureaucracy_meme_vision">Read the image (needs a vision model)</span></label>
-            <button id="bureaucracy-generate-button" class="btn default" type="button" data-i18n="bureaucracy_meme_generate">Draft captions</button>
-            <div id="bureaucracy-error" class="bureaucracy-error" role="alert"></div>
-          </section>
-          <div class="bureaucracy-layout">
-            <aside class="bureaucracy-assets" aria-labelledby="bureaucracy-assets-title">
-                <div class="bureaucracy-panel-head">
-                  <div>
-                    <h3 id="bureaucracy-assets-title" data-i18n="bureaucracy_meme_templates">Template / Upload</h3>
-                    <p id="bureaucracy-upload-status" class="bureaucracy-status"></p>
-                  </div>
-                  <button id="bureaucracy-upload-button" class="btn bureaucracy-upload-button" type="button" data-i18n="bureaucracy_meme_upload">Upload Image</button>
-                </div>
-                <div id="bureaucracy-template-list" class="bureaucracy-template-list" role="group" aria-label="Image templates" data-i18n-aria-label="bureaucracy_meme_templates"></div>
-            </aside>
-            <section class="bureaucracy-preview-panel" aria-labelledby="bureaucracy-preview-title">
-                <div class="bureaucracy-panel-head">
-                  <div>
-                    <h3 id="bureaucracy-preview-title" data-i18n="preview">Preview</h3>
-                    <p class="bureaucracy-status" data-i18n="bureaucracy_meme_preview_help">Choose a caption on the right to apply it.</p>
-                  </div>
-                  <button id="bureaucracy-download-link" class="btn bureaucracy-download" type="button" disabled data-i18n="bureaucracy_meme_download" data-balloon-help-disabled="balloon_bureaucracy_download_disabled">Download PNG</button>
-                </div>
-                <div class="bureaucracy-canvas-wrap">
-                  <canvas id="bureaucracy-preview-canvas" width="1200" height="900" role="img" aria-label="Meme preview" data-i18n-aria-label="bureaucracy_meme_canvas"></canvas>
-                </div>
-            </section>
-            <aside class="bureaucracy-copy-panel">
-              <section class="bureaucracy-candidates-panel" aria-labelledby="bureaucracy-candidates-title">
-                <h3 id="bureaucracy-candidates-title" data-i18n="bureaucracy_meme_candidates">Caption Candidates</h3>
-                <div id="bureaucracy-candidates" class="bureaucracy-candidates">
-                  <p class="bureaucracy-empty" data-i18n="bureaucracy_meme_candidates_empty">Enter a topic to generate caption candidates.</p>
-                </div>
-              </section>
-              <section class="bureaucracy-caption-editor" aria-labelledby="bureaucracy-caption-editor-title">
-                <div class="bureaucracy-caption-editor-head">
-                  <h3 id="bureaucracy-caption-editor-title" data-i18n="bureaucracy_meme_current_caption">Current caption</h3>
-                  <div class="bureaucracy-language" id="bureaucracy-language" role="group" aria-label="Caption language" data-i18n-aria-label="bureaucracy_meme_language">
-                    <button type="button" data-caption-language="zh" data-i18n="bureaucracy_meme_language_zh">中文</button>
-                    <button type="button" data-caption-language="en" data-i18n="bureaucracy_meme_language_en">English</button>
-                    <button type="button" data-caption-language="bilingual" data-i18n="bureaucracy_meme_language_bilingual">Both</button>
-                  </div>
-                </div>
-                <label>
-                  <span data-i18n="bureaucracy_meme_caption_zh">Chinese</span>
-                  <textarea id="bureaucracy-caption-zh" rows="2"></textarea>
-                </label>
-                <label>
-                  <span data-i18n="bureaucracy_meme_caption_en">English</span>
-                  <textarea id="bureaucracy-caption-en" rows="2"></textarea>
-                </label>
-              </section>
-            </aside>
-          </div>
-        </div>
-      </section>
-
       <section class="window disk-window is-hidden" data-window="disk" aria-labelledby="disk-title">
         <div class="title-bar">
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
@@ -1846,25 +1626,6 @@
            in the Get Info shape: labelled facts about one object, nothing that
            grades the work. Rows are built by openFinishingReceipt() because a
            fact with no stored source is left out, not estimated. -->
-      <section class="window info-window finishing-receipt-window is-hidden" data-window="finishingReceipt" aria-labelledby="finishing-receipt-title">
-        <div class="title-bar">
-          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
-          <h2 id="finishing-receipt-title" data-i18n="finishing_receipt">Finishing Receipt</h2>
-        </div>
-        <div class="window-pane info-pane">
-          <div class="info-header">
-            <span class="large-mini-icon sys-icon" data-system-icon="projectDisc" aria-hidden="true"></span>
-            <div class="info-main">
-              <h3 id="finishing-receipt-name">--</h3>
-              <p class="hint" id="finishing-receipt-kind">--</p>
-            </div>
-          </div>
-          <hr />
-          <dl class="info-stats" id="finishing-receipt-stats"></dl>
-          <div class="receipt-kept" id="finishing-receipt-kept" hidden></div>
-        </div>
-      </section>
-
       <section class="window page-setup-window is-hidden" data-window="pageSetup" aria-labelledby="page-setup-title">
         <div class="title-bar">
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
@@ -2069,14 +1830,15 @@
             <span id="teachtext-source-count" data-i18n="teachtext_source_empty">No text</span>
             <span id="teachtext-selection-state" data-i18n="teachtext_selection_empty">No selection</span>
             <span id="teachtext-export-state" data-i18n="teachtext_export_empty">Not exported</span>
+            <span class="window-status-slot" data-status-host aria-live="polite"></span>
           </div>
 
           <div class="teachtext-actions teachtext-surface-actions">
-            <div class="teachtext-command-group" data-workspace-capability="studio" aria-label="Writing commands" data-i18n-aria-label="writing_commands">
+            <div class="teachtext-command-group" aria-label="Writing commands" data-i18n-aria-label="writing_commands">
               <button class="btn" type="button" id="teachtext-toggle-preview" data-i18n="preview">Preview</button>
               <button class="btn" type="button" data-mde-focus-cycle data-mde-target="#teachtext-body" data-i18n="teachtext_focus_off">Focus: Off</button>
               <details class="teachtext-command-menu">
-                <summary class="btn" data-i18n="teachtext_commands">Commands</summary>
+                <summary class="btn"><span class="mobile-control-long" data-i18n="teachtext_commands">Commands</span><span class="mobile-control-short" data-i18n="commands_short">Cmds</span></summary>
                 <div class="teachtext-command-popover">
                   <button class="btn" type="button" id="teachtext-docmap" data-i18n="docmap">DocMap</button>
                   <button class="btn" type="button" data-action="make-docmap-selection" data-i18n="docmap_from_selection">Map Selection</button>
@@ -2087,10 +1849,12 @@
                   <button class="btn" type="button" data-action="copy-active-markdown" data-i18n="copy_markdown">Copy Markdown</button>
                   <button class="btn" type="button" data-action="download-active-markdown" data-i18n="download_markdown">Download Markdown</button>
                   <button class="btn" type="button" data-action="share-active-markdown" data-web-share-action data-i18n="share_ellipsis" hidden>Share…</button>
-                </div>
+                <hr />
+                    <button class="btn" type="button" data-action="toggle-sideask" aria-pressed="false" data-i18n="sideask">SideAsk</button>
+                  </div>
               </details>
             </div>
-            <button class="btn sideask-launch-button" type="button" id="teachtext-sideask" data-action="toggle-sideask" aria-pressed="false" data-i18n="sideask">SideAsk</button>
+            <button class="btn default" type="button" id="teachtext-to-review" data-workspace-capability="studio" data-action="advance-manuscript-to-review" data-i18n="to_review" hidden>To Review</button>
           </div>
         </form>
         </div>
@@ -2141,7 +1905,7 @@
             <button class="btn" type="button" id="review-section-next" data-action="next-style-section" data-i18n="next_section">Next section</button>
           </div>
           <div class="review-desk-results" aria-label="Review reports" data-i18n-aria-label="review_reports">
-            <textarea id="review-desk-body" class="review-desk-markdown" rows="12" spellcheck="true" data-i18n-placeholder="review_desk_markdown_hint" placeholder="Review the final manuscript in Markdown..."></textarea>
+            <textarea id="review-desk-body" data-requires-write class="review-desk-markdown" rows="12" spellcheck="true" data-i18n-placeholder="review_desk_markdown_hint" placeholder="Review the final manuscript in Markdown..."></textarea>
             <div id="review-desk-preview" class="review-desk-preview teachtext-preview is-hidden"></div>
             <button id="review-desk-splitter" class="review-desk-splitter" type="button" aria-label="Resize review panes" data-i18n-aria-label="resize_review_panes"></button>
             <section class="review-result-column is-active" aria-labelledby="review-result-title">
@@ -2155,13 +1919,14 @@
               </div>
             </section>
           </div>
-          <div id="review-desk-empty-note" class="empty-folder-note review-desk-empty-note is-hidden" data-i18n="review_desk_requires_final">Mark TeachText as Final before using Review Desk.</div>
+          <div id="review-desk-empty-note" class="empty-folder-note review-desk-empty-note is-hidden"><p data-i18n="review_desk_requires_final">The Review Desk reviews a finished manuscript. Mark the Manuscript as Final to start.</p><button class="btn default" type="button" data-action="advance-manuscript-to-review" data-i18n="to_review">To Review</button></div>
+          <div class="window-status-strip" aria-live="polite"><span class="window-status-slot" data-status-host></span></div>
           <div class="teachtext-actions teachtext-surface-actions review-desk-actions">
             <div class="teachtext-command-group" aria-label="Review commands" data-i18n-aria-label="review_commands">
               <button class="btn" type="button" data-action="toggle-review-preview" data-i18n="preview">Preview</button>
               <button class="btn" type="button" data-mde-focus-cycle data-mde-target="#review-desk-body" data-i18n="teachtext_focus_off">Focus: Off</button>
               <details class="teachtext-command-menu specialized-command-menu">
-                <summary class="btn" data-i18n="review_commands">Reviews</summary>
+                <summary class="btn"><span class="mobile-control-long" data-i18n="teachtext_commands">Commands</span><span class="mobile-control-short" data-i18n="commands_short">Cmds</span></summary>
                 <div class="teachtext-command-popover">
                   <button class="btn" type="button" data-action="review-style-section" data-i18n="review_style_section">Style Check This Section</button>
                   <button class="btn" type="button" data-action="review-facts-section" data-i18n="review_facts_section">Fact Check This Section</button>
@@ -2172,12 +1937,46 @@
                   <button class="btn" type="button" data-action="review-mingming-handoff" data-i18n="review_mingming_handoff">How Luoluo Would Receive It</button>
                   <button class="btn" type="button" data-action="review-mingming-handoff-backstage" data-i18n="review_mingming_handoff_backstage">Backstage Handoff Review</button>
                   <button class="btn" type="button" data-action="ai-praise" data-i18n="praise">Praise Me</button>
-                </div>
+                <hr />
+                    <button class="btn" type="button" data-action="toggle-sideask" aria-pressed="false" data-i18n="sideask">SideAsk</button>
+                  </div>
               </details>
             </div>
             <button class="btn default" type="button" data-action="review-export" data-i18n="review_export">Export</button>
           </div>
         </div>
+      </section>
+
+      <!-- Find / Change. Modeless on purpose: MacWrite's was, and a writer needs
+           to keep looking at the text while stepping through matches. It edits
+           whichever writing surface was last in front, named in its own status
+           row so the target is never a guess. -->
+      <section class="window find-change-window is-hidden" data-window="findChange" aria-labelledby="find-change-title">
+        <div class="title-bar">
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
+          <h2 id="find-change-title" data-i18n="find_change">Find</h2>
+        </div>
+        <div class="details-bar compact-status-bar">
+          <span id="find-change-target" class="status-bar-leading" data-i18n="find_no_target">No writing text in front. Open a writing window, or leave Preview.</span>
+        </div>
+        <form id="find-change-form" class="window-pane find-change-pane">
+          <label class="find-change-label" for="find-change-query" data-i18n="find_what">Find what</label>
+          <input id="find-change-query" type="text" autocomplete="off" spellcheck="false" />
+
+          <label class="find-change-label" for="find-change-replacement" data-i18n="change_to">Change to</label>
+          <input id="find-change-replacement" type="text" autocomplete="off" spellcheck="false" data-requires-write />
+
+          <div class="field-row find-change-options">
+            <input id="find-change-match-case" type="checkbox" />
+            <label for="find-change-match-case" data-i18n="find_match_case">Match upper/lowercase</label>
+          </div>
+
+          <div class="button-row find-change-actions">
+            <button class="btn" type="button" id="find-change-all" data-action="find-change-all" data-requires-write data-i18n="change_all">Change All</button>
+            <button class="btn" type="button" id="find-change-current" data-action="find-change-current" data-requires-write data-i18n="change_find">Change, then Find</button>
+            <button class="btn default" type="submit" id="find-change-next" data-i18n="find_next">Find Next</button>
+          </div>
+        </form>
       </section>
 
       <section class="window save-chat-window is-hidden" data-window="saveChat" aria-labelledby="save-chat-title">
@@ -2222,7 +2021,7 @@
         <div class="window-pane scrapbook-pane">
           <div id="scrap-list" class="scrap-list"></div>
           <form id="scrap-form" class="scrap-editor">
-            <div id="scrap-title-display" class="scrap-title-display">Untitled Scrap</div>
+            <div id="scrap-title-display" class="scrap-title-display" data-i18n="untitled_scrap">Untitled Scrap</div>
             <div id="scrap-source-info" class="source-info-panel">
               <span data-i18n="source_no_origin">No saved source yet.</span>
             </div>
@@ -2232,7 +2031,19 @@
               <button class="btn mini-btn" type="button" id="toggle-scrap-translation" data-i18n="show_translation" hidden>Show Translation</button>
             </div>
             <textarea id="scrap-body-input" rows="7"></textarea>
+            <div id="scrap-pictures" class="scrap-pictures is-hidden" aria-label="Clipped pictures" data-i18n-aria-label="scrap_pictures"></div>
+            <p id="scrap-unindexed-note" class="small-muted scrap-unindexed-note is-hidden" data-i18n="scrap_image_unindexed">This clip is a picture with no text, so Searcher and project context cannot find it. Read it, then keep the reading to make it searchable.</p>
+            <div id="scrap-reading-proposal" class="scrap-reading-proposal is-hidden">
+              <p class="small-muted" data-i18n="scrap_reading_proposal_hint">Proposed reading — nothing is saved until you keep it.</p>
+              <output id="scrap-reading-proposal-text" class="scrap-reading-proposal-text"></output>
+              <div class="button-row">
+                <button class="btn default" type="button" data-action="scrapbook-keep-reading" data-i18n="scrap_reading_keep">Keep Reading</button>
+                <button class="btn" type="button" data-action="scrapbook-discard-reading" data-i18n="scrap_reading_discard">Discard</button>
+              </div>
+            </div>
             <div class="button-row">
+              <button class="btn" type="button" data-action="scrapbook-clip-picture" data-i18n="scrap_clip_picture">Clip Picture</button>
+              <button class="btn" type="button" id="read-scrap-picture" data-action="scrapbook-read-picture" data-i18n="scrap_read_picture">Read Picture</button>
               <button class="btn" type="button" id="open-scrap-source" data-action="scrapbook-open-source" data-i18n="open_source">Open Source</button>
               <button class="btn" type="button" id="insert-scrap" data-action="scrapbook-insert" data-i18n="insert">Insert</button>
               <button class="btn danger" type="button" id="delete-scrap" data-action="scrapbook-delete" data-i18n="delete">Delete</button>
@@ -2493,40 +2304,30 @@
           <span class="status-bar-leading" id="question-count">0 questions</span>
           <span class="status-bar-context linked-manuscript-title" id="question-manuscript-title">Untitled</span>
           <div class="status-bar-trailing writing-eli5-trailing">
-            <details class="teachtext-command-menu command-menu-opens-down writing-eli5-menu">
-              <summary class="btn mini-btn" type="button" role="button" aria-haspopup="menu" aria-expanded="false">Audience Threshold</summary>
-              <div class="teachtext-command-popover writing-eli5-popover" role="menu">
-                <label class="writing-eli5-toggle">
-                  <input type="checkbox" data-writing-eli5-enabled />
-                  <span data-i18n="quick_draft_eli5_enabled">Explain like a five-year-old</span>
-                </label>
-                <span class="select-wrap writing-eli5-select" data-writing-eli5-baseline-wrap>
-                  <select data-writing-eli5-baseline data-i18n-aria-label="quick_draft_eli5_baseline">
-                    <option value="secondary-school" data-i18n="quick_draft_eli5_baseline_general">General public</option>
-                    <option value="some-familiarity" data-i18n="quick_draft_eli5_baseline_some">Knows a little</option>
-                    <option value="familiar" data-i18n="quick_draft_eli5_baseline_familiar">Familiar with the topic</option>
-                  </select>
-                </span>
-              </div>
-            </details>
             <button class="btn details-bar-button" type="button" data-action="open-writing-flow-windows" data-i18n="open_writing_flow">Open Flow</button>
           </div>
         </div>
         <div class="window-pane teachtext-surface-pane question-sheet-pane">
           <div class="teachtext-editor-container specialized-teachtext-editor window-frame-scroller">
-            <textarea id="question-sheet-body" rows="12" placeholder="What are we trying to solve? List key terms and must-remember points." data-i18n-placeholder="question_sheet_hint" data-drop-target="editor-insert" data-editor-surface="questionSheet"></textarea>
+            <textarea id="question-sheet-body" data-requires-write rows="12" placeholder="What are we trying to solve? List key terms and must-remember points." data-i18n-placeholder="question_sheet_hint" data-drop-target="editor-insert" data-editor-surface="questionSheet"></textarea>
             <div id="question-sheet-preview" class="specialized-teachtext-preview teachtext-preview is-hidden"></div>
           </div>
+          <div id="question-sheet-photos" class="question-sheet-photos is-hidden" aria-label="Photographed notes" data-i18n-aria-label="question_sheet_photos"></div>
+          <div class="window-status-strip" aria-live="polite"><span class="window-status-slot" data-status-host></span></div>
           <div class="teachtext-actions teachtext-surface-actions">
             <div class="teachtext-command-group" aria-label="Question Sheet commands" data-i18n-aria-label="question_sheet_commands">
               <button class="btn" type="button" data-action="toggle-question-preview" data-i18n="preview">Preview</button>
               <button class="btn" type="button" data-mde-focus-cycle data-mde-target="#question-sheet-body" data-i18n="teachtext_focus_off">Focus: Off</button>
               <details class="teachtext-command-menu specialized-command-menu">
-                <summary class="btn" data-i18n="teachtext_commands">Commands</summary>
+                <summary class="btn"><span class="mobile-control-long" data-i18n="teachtext_commands">Commands</span><span class="mobile-control-short" data-i18n="commands_short">Cmds</span></summary>
                 <div class="teachtext-command-popover">
-                  <button class="btn" type="button" data-action="insert-question-template" data-i18n="insert_question_template">Insert Template</button>
-                  <button class="btn" type="button" data-action="organize-question-sheet" data-i18n="organize_question_sheet">Organize Questions</button>
+                  <button class="btn" type="button" data-action="add-question-sheet-photo" data-i18n="question_sheet_add_photo">Add Photo</button>
+                  <button class="btn" type="button" data-action="organize-question-sheet" data-i18n="organize_question_sheet">Sort Into Sections</button>
                   <button class="btn" type="button" data-action="generate-outline" data-i18n="make_outline">Make Outline</button>
+                  <button class="btn" type="button" data-action="insert-question-template" data-i18n="insert_question_template">Insert Template</button>
+                  <hr />
+                  <button class="btn" type="button" data-action="toggle-writing-eli5" aria-pressed="false" data-i18n="quick_draft_eli5_enabled">Write for one-pass listening</button>
+                  <button class="btn" type="button" data-action="toggle-sideask" aria-pressed="false" data-i18n="sideask">SideAsk</button>
                 </div>
               </details>
             </div>
@@ -2553,21 +2354,32 @@
         <div class="window-pane teachtext-surface-pane outline-pane">
           <div id="outline-notes" class="outline-notes is-hidden"></div>
           <div class="teachtext-editor-container specialized-teachtext-editor window-frame-scroller">
-            <textarea id="outline-content" class="outline-content" rows="12" spellcheck="true" data-i18n-placeholder="outline_markdown_hint" placeholder="Write Markdown freely. Use ## for draftable sections.">## New Section</textarea>
+            <textarea id="outline-content" class="outline-content" rows="12" spellcheck="true" data-requires-write data-i18n-placeholder="outline_markdown_hint" placeholder="Write Markdown freely. Use ## for draftable sections.">## New Section</textarea>
+            <div id="outline-tree" class="outline-tree is-hidden" role="tree" tabindex="0" aria-label="Outline tree" data-i18n-aria-label="outline_tree"></div>
             <div id="outline-preview" class="specialized-teachtext-preview teachtext-preview is-hidden"></div>
           </div>
+          <div class="window-status-strip" aria-live="polite"><span class="window-status-slot" data-status-host></span></div>
           <div class="teachtext-actions teachtext-surface-actions">
             <div class="teachtext-command-group" aria-label="Outline commands" data-i18n-aria-label="outline_commands">
               <button class="btn" type="button" data-action="toggle-outline-preview" data-i18n="preview">Preview</button>
               <button class="btn" type="button" data-mde-focus-cycle data-mde-target="#outline-content" data-i18n="teachtext_focus_off">Focus: Off</button>
               <details class="teachtext-command-menu specialized-command-menu">
-                <summary class="btn" data-i18n="teachtext_commands">Commands</summary>
+                <summary class="btn"><span class="mobile-control-long" data-i18n="teachtext_commands">Commands</span><span class="mobile-control-short" data-i18n="commands_short">Cmds</span></summary>
                 <div class="teachtext-command-popover">
                   <button class="btn" type="button" data-action="add-outline-section" data-i18n="add_outline_section">Add Section</button>
+                  <button class="btn" type="button" data-action="outline-tree-up" data-i18n="outline_tree_up">Move Section Up</button>
+                  <button class="btn" type="button" data-action="outline-tree-down" data-i18n="outline_tree_down">Move Section Down</button>
+                  <button class="btn" type="button" data-action="outline-tree-promote" data-i18n="outline_tree_promote">Raise a Level</button>
+                  <button class="btn" type="button" data-action="outline-tree-demote" data-i18n="outline_tree_demote">Lower a Level</button>
+                  <button class="btn" type="button" data-action="outline-tree-write" data-i18n="outline_tree_write">Write This Section</button>
                   <button class="btn" type="button" data-action="mingming-outline" data-i18n="mingming_outline">What Would Mingming Write?</button>
                   <button class="btn" type="button" data-action="structure-outline" data-i18n="structure_outline">Structure</button>
                   <button class="btn" type="button" data-action="expand-outline" data-i18n="expand_weak_topic">Expand Weak Topic</button>
-                </div>
+                <hr />
+                  <button class="btn" type="button" data-action="toggle-outline-tree" aria-pressed="false" data-i18n="outline_tree_view">Outline Tree</button>
+                  
+                    <button class="btn" type="button" data-action="toggle-sideask" aria-pressed="false" data-i18n="sideask">SideAsk</button>
+                  </div>
               </details>
             </div>
             <button class="btn default" type="button" data-action="advance-outline-to-drafts" data-i18n="to_section_drafts">To Section Drafts</button>
@@ -2601,25 +2413,30 @@
               <button class="btn" type="button" data-action="next-section-draft" data-i18n="next_section" data-i18n-aria-label="next_section">Next section</button>
             </div>
             <div class="teachtext-editor-container specialized-teachtext-editor window-frame-scroller">
-              <textarea id="draft-body" class="section-draft-markdown" rows="12" spellcheck="true" data-i18n-placeholder="section_draft_markdown_hint" placeholder="Write this section in Markdown..."></textarea>
+              <textarea id="draft-body" data-requires-write class="section-draft-markdown" rows="12" spellcheck="true" data-i18n-placeholder="section_draft_markdown_hint" placeholder="Write this section in Markdown..."></textarea>
               <div id="draft-preview" class="specialized-teachtext-preview teachtext-preview is-hidden"></div>
             </div>
+            <div class="window-status-strip" aria-live="polite"><span class="window-status-slot" data-status-host></span></div>
             <div class="teachtext-actions teachtext-surface-actions">
               <div class="teachtext-command-group" aria-label="Section Draft commands" data-i18n-aria-label="section_draft_commands">
                 <button class="btn" type="button" data-action="toggle-draft-preview" data-i18n="preview">Preview</button>
                 <button class="btn" type="button" data-mde-focus-cycle data-mde-target="#draft-body" data-i18n="teachtext_focus_off">Focus: Off</button>
                 <details class="teachtext-command-menu specialized-command-menu">
-                  <summary class="btn" data-i18n="teachtext_commands">Commands</summary>
+                  <summary class="btn"><span class="mobile-control-long" data-i18n="teachtext_commands">Commands</span><span class="mobile-control-short" data-i18n="commands_short">Cmds</span></summary>
                   <div class="teachtext-command-popover">
                     <button class="btn" type="button" data-action="draft-current-section" data-i18n="draft_section">Draft Section</button>
                     <button class="btn" type="button" data-action="polish-draft" data-i18n="polish_draft">AI Polish</button>
                     <button class="btn" type="button" data-action="suggest-draft" data-i18n="suggest_draft">AI Suggestions</button>
                     <button class="btn writing-eli5-action" type="button" data-action="eli5-rewrite-section" data-i18n="quick_draft_eli5_rewrite" hidden>Make it listenable</button>
                     <button class="btn writing-eli5-action" type="button" data-action="eli5-review-section" data-i18n="quick_draft_eli5_review" hidden>Find where it gets lost</button>
+                    <hr />
+                    <button class="btn" type="button" data-action="return-document-to-section-drafts" data-i18n="edit_sections_again">Edit Sections Again</button>
+                  <hr />
+                    <button class="btn" type="button" data-action="toggle-sideask" aria-pressed="false" data-i18n="sideask">SideAsk</button>
                   </div>
                 </details>
               </div>
-              <button class="btn default" type="button" data-action="advance-drafts-to-review" data-i18n="to_review">To Review</button>
+              <button class="btn default" type="button" data-action="advance-drafts-to-manuscript" data-i18n="to_manuscript">To Manuscript</button>
             </div>
           </div>
         </div>
@@ -2699,64 +2516,6 @@
         </div>
       </section>
 
-      <section class="window finder-window welcome-disk-window is-hidden" data-window="welcomeDisk" aria-labelledby="welcome-disk-title">
-        <div class="title-bar">
-          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
-          <h2 id="welcome-disk-title" data-i18n="welcome_floppy">Welcome Floppy</h2>
-          <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
-          <button class="shade-box" aria-label="Collapse" data-i18n-aria-label="collapse"></button>
-        </div>
-        <div class="details-bar">
-          <span id="welcome-disk-count">3 items</span>
-          <span data-i18n="welcome_floppy_read_only">Read only</span>
-        </div>
-        <div class="window-pane finder-grid welcome-disk-grid window-frame-scroller">
-          <button class="finder-item is-selected" type="button" data-action="open-welcome-read-me">
-            <span class="sys-icon" data-system-icon="document" aria-hidden="true"></span>
-            <span data-i18n="welcome_read_me">Read Me First</span>
-          </button>
-          <button class="finder-item" type="button" data-action="play-teaser-demo">
-            <span class="sys-icon" data-system-icon="writingDemo" aria-hidden="true"></span>
-            <span data-i18n="guide_play_teaser_demo">30-Second Tour</span>
-          </button>
-          <button class="finder-item" type="button" data-action="open-clio-model-settings">
-            <span class="sys-icon" data-system-icon="cloudModel" aria-hidden="true"></span>
-            <span id="welcome-ai-label" data-i18n="welcome_ai_setup">Set Up AI</span>
-          </button>
-          <button class="finder-item" id="welcome-iphone-item" type="button" data-action="welcome-iphone-help" hidden>
-            <span class="sys-icon" data-system-icon="alias" aria-hidden="true"></span>
-            <span data-i18n="welcome_keep_on_iphone">Keep on iPhone</span>
-          </button>
-        </div>
-        <button class="grow-box" type="button" aria-label="Resize window" data-i18n-aria-label="grow_box_aria"></button>
-      </section>
-
-      <section class="window guide-window is-hidden" data-window="guide" aria-labelledby="guide-title">
-        <div class="title-bar">
-          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
-          <h2 id="guide-title" data-i18n="welcome_read_me">Read Me First</h2>
-        </div>
-        <div class="window-pane guide-pane">
-          <h3 data-i18n="guide_welcome_heading">This Macintosh did not stop in 1988.</h3>
-          <p data-i18n="guide_welcome_body">This is a computer for writing. You bring the material; it reads, asks, builds the structure, and writes with you section by section. It never speaks for you.</p>
-          <ol class="guide-route">
-            <li data-i18n="guide_route_step_material">Material goes onto a File Floppy.</li>
-            <li data-i18n="guide_route_step_question">The Question Sheet asks who it is for.</li>
-            <li data-i18n="guide_route_step_write">Outline, Section Drafts, then the manuscript.</li>
-            <li data-i18n="guide_route_step_review">The Review Desk looks for weak spots.</li>
-          </ol>
-          <p class="hint" data-i18n="welcome_read_me_hint">Nothing here makes you start a project. Close this file when you are ready; the desktop remains yours.</p>
-          <div class="guide-actions">
-            <button class="btn default" type="button" data-action="play-teaser-demo" data-i18n="guide_play_teaser_demo">30-Second Tour</button>
-          </div>
-          <div class="guide-links">
-            <button class="btn mini-btn" type="button" data-action="open-project-site" data-i18n="guide_project_site">Project Site</button>
-            <button class="btn mini-btn" type="button" data-action="open-github-repo" data-i18n="guide_source_code">Source Code</button>
-            <button class="btn mini-btn" type="button" data-action="open-guide-promo" data-i18n="guide_promo_short">The Film</button>
-          </div>
-        </div>
-      </section>
-
       <section class="window rebuild-flow-window is-hidden" data-window="rebuildFlow" aria-labelledby="rebuild-flow-title">
         <div class="title-bar">
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
@@ -2804,6 +2563,7 @@
             <details class="teachtext-command-menu command-menu-opens-down docmap-command-menu is-disabled" id="docmap-command-menu">
               <summary class="btn" id="docmap-command-summary" data-i18n="docmap_commands">Commands...</summary>
               <div class="teachtext-command-popover docmap-command-popover">
+                <button class="btn" type="button" data-action="docmap-from-picture" data-i18n="docmap_from_picture">Map a Picture</button>
                 <button class="btn" type="button" id="docmap-send-question" data-i18n="send_to_question_sheet">Send to Question Sheet</button>
                 <button class="btn" type="button" id="docmap-ask-hkrr" data-i18n="docmap_hkrr_review_map">Review This Map with HKRR Theory</button>
                 <button class="btn" type="button" id="docmap-insert-outline" data-i18n="insert_as_outline">Replace Outline</button>
@@ -2845,6 +2605,14 @@
                   <span class="mobile-control-long" data-i18n="docmap_zoom_in">放大</span>
                   <span class="mobile-control-short" aria-hidden="true">+</span>
                 </button>
+              </div>
+            </div>
+            <div id="docmap-picture-reading" class="docmap-picture-reading is-hidden">
+              <p class="small-muted" data-i18n="docmap_picture_reading_hint">A model's reading of the picture. Every branch will anchor to this text, so correct it before you map it.</p>
+              <textarea id="docmap-picture-reading-text" class="docmap-picture-reading-text" rows="8" data-requires-write></textarea>
+              <div class="button-row">
+                <button class="btn default" type="button" data-action="docmap-map-picture-reading" data-i18n="docmap_picture_reading_map">Map This</button>
+                <button class="btn" type="button" data-action="docmap-discard-picture-reading" data-i18n="docmap_picture_reading_discard">Discard</button>
               </div>
             </div>
             <div id="docmap-drop-zone" class="docmap-drop-zone drop-target" data-i18n-drop-label="docmap_drop_files">
@@ -2974,330 +2742,6 @@
               </div>
               <p class="clio-chart-missing" id="clio-chart-missing"></p>
             </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="window liquid-cover-window is-hidden" data-window="liquidCover" aria-labelledby="liquid-cover-title">
-        <div class="title-bar">
-          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
-          <h2 id="liquid-cover-title" data-i18n="liquid_cover_title">Cover Glass</h2>
-          <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
-          <button class="shade-box" aria-label="Collapse" data-i18n-aria-label="collapse"></button>
-        </div>
-        <div class="details-bar lc-status-bar">
-          <span class="lc-ask-status" id="lc-ai-status" role="status" aria-live="polite" data-i18n="ready">Ready</span>
-          <span class="lc-status-meta" id="lc-status-meta">16:9 · 1 layer</span>
-        </div>
-        <div class="lc-toolbar" role="toolbar" aria-label="Cover tools" data-i18n-aria-label="liquid_cover_tools">
-          <div class="lc-toolbar-create">
-            <button class="btn" type="button" id="lc-add-layer" data-i18n-aria-label="liquid_cover_add">
-              <span class="mobile-control-long" data-i18n="liquid_cover_add">Add Text</span>
-              <span class="mobile-control-short" data-i18n="liquid_cover_add_short">+ Text</span>
-            </button>
-            <button class="btn" type="button" id="lc-add-shape" data-i18n-aria-label="liquid_cover_add_shape">
-              <span class="mobile-control-long" data-i18n="liquid_cover_add_shape">Add Shape</span>
-              <span class="mobile-control-short" data-i18n="liquid_cover_add_shape_short">+ Shape</span>
-            </button>
-            <input type="file" id="lc-shape-file" accept="image/png,image/webp,image/svg+xml,image/jpeg" hidden>
-          </div>
-          <div class="lc-toolbar-history" role="group" aria-label="Edit history" data-i18n-aria-label="liquid_cover_history">
-            <button class="btn lc-history-button" type="button" id="lc-undo" aria-label="Undo" data-i18n-aria-label="liquid_cover_undo" title="Undo" data-i18n-title="liquid_cover_undo" disabled>
-              <span class="lc-control-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M9 3 3 9l6 6"></path><path d="M3.5 9H15a6 6 0 0 1 0 12h-3"></path></svg></span>
-            </button>
-            <button class="btn lc-history-button is-redo" type="button" id="lc-redo" aria-label="Redo" data-i18n-aria-label="liquid_cover_redo" title="Redo" data-i18n-title="liquid_cover_redo" disabled>
-              <span class="lc-control-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M9 3 3 9l6 6"></path><path d="M3.5 9H15a6 6 0 0 1 0 12h-3"></path></svg></span>
-            </button>
-          </div>
-          <div class="lc-toolbar-modes" role="tablist" aria-label="Inspector" data-i18n-aria-label="liquid_cover_inspector">
-            <button class="lc-inspector-tab" type="button" id="lc-tab-media" data-lc-inspector-tab="media" role="tab" aria-selected="false" aria-controls="lc-panel-media" data-i18n-aria-label="liquid_cover_media">
-              <span class="mobile-control-long" data-i18n="liquid_cover_media">Background</span>
-              <span class="mobile-control-short" data-i18n="liquid_cover_media_short">BG</span>
-            </button>
-            <button class="lc-inspector-tab is-active" type="button" id="lc-tab-layers" data-lc-inspector-tab="layers" role="tab" aria-selected="true" aria-controls="lc-panel-layers" data-i18n-aria-label="liquid_cover_text">
-              <span class="mobile-control-long" data-i18n="liquid_cover_text">Type</span>
-              <span class="mobile-control-short" data-i18n="liquid_cover_text_short">Type</span>
-            </button>
-            <button class="lc-inspector-tab" type="button" id="lc-tab-glass" data-lc-inspector-tab="glass" role="tab" aria-selected="false" aria-controls="lc-panel-glass" data-i18n-aria-label="liquid_cover_tab_glass">
-              <span class="mobile-control-long" data-i18n="liquid_cover_tab_glass">Glass</span>
-              <span class="mobile-control-short" data-i18n="liquid_cover_glass_short">Glass</span>
-            </button>
-          </div>
-          <div class="lc-toolbar-aspect">
-            <span data-i18n="liquid_cover_aspect">Aspect</span>
-            <div class="lc-aspect" role="group" aria-label="Aspect ratio" data-i18n-aria-label="liquid_cover_aspect">
-              <button type="button" data-k="16:9" aria-pressed="true">16:9</button>
-              <button type="button" data-k="3:2" aria-pressed="false">3:2</button>
-              <button type="button" data-k="4:3" aria-pressed="false">4:3</button>
-              <button type="button" data-k="3:4" aria-pressed="false">3:4</button>
-            </div>
-          </div>
-          <button class="btn default lc-toolbar-export" type="button" id="lc-tab-export" data-lc-inspector-tab="export" aria-pressed="false" aria-controls="lc-panel-export" data-i18n-aria-label="liquid_cover_tab_export">
-            <span class="mobile-control-long" data-i18n="liquid_cover_tab_export">Export</span>
-            <span class="mobile-control-short" data-i18n="liquid_cover_export_short">Export</span>
-          </button>
-        </div>
-        <div class="liquid-cover-body">
-          <aside class="lc-sidebar" aria-label="Scene layers" data-i18n-aria-label="liquid_cover_scene">
-            <div class="lc-sidebar-head">
-              <span class="lc-panel-kicker" data-i18n="liquid_cover_scene">Scene</span>
-              <strong data-i18n="liquid_cover_layers">Layers</strong>
-            </div>
-            <div class="lc-layer-list" id="lc-layer-list" aria-label="Cover layers" data-i18n-aria-label="liquid_cover_layers"></div>
-            <p class="lc-selection-help" id="lc-selection-help" role="status" aria-live="polite" data-i18n="liquid_cover_selection_help">Shift-click or drag a box to select multiple layers. Drag layers to reorder.</p>
-            <details class="lc-arrange-panel">
-              <summary id="lc-arrange-title" data-i18n="liquid_cover_arrange">Arrange &amp; align</summary>
-              <div class="lc-order-row" role="group" aria-label="Layer order" data-i18n-aria-label="liquid_cover_layer_order">
-                <button class="btn" type="button" id="lc-layer-bottom" data-i18n="liquid_cover_send_bottom">Bottom</button>
-                <button class="btn" type="button" id="lc-layer-down" data-i18n="liquid_cover_send_down">Down</button>
-                <button class="btn" type="button" id="lc-layer-up" data-i18n="liquid_cover_bring_up">Up</button>
-                <button class="btn" type="button" id="lc-layer-top" data-i18n="liquid_cover_bring_top">Top</button>
-              </div>
-              <div class="lc-align-grid" role="group" aria-label="Align to artboard" data-i18n-aria-label="liquid_cover_align_artboard">
-                <button class="btn" type="button" id="lc-align-left" data-i18n="liquid_cover_align_left">Left</button>
-                <button class="btn" type="button" id="lc-align-center" data-i18n="liquid_cover_align_center">Center</button>
-                <button class="btn" type="button" id="lc-align-right" data-i18n="liquid_cover_align_right">Right</button>
-                <button class="btn" type="button" id="lc-align-top" data-i18n="liquid_cover_align_top">Top</button>
-                <button class="btn" type="button" id="lc-align-middle" data-i18n="liquid_cover_align_middle">Middle</button>
-                <button class="btn" type="button" id="lc-align-bottom" data-i18n="liquid_cover_align_bottom">Bottom</button>
-              </div>
-            </details>
-            <div class="lc-sidebar-actions">
-              <button class="btn" type="button" id="lc-add-inside-text" data-i18n="liquid_cover_add_inside_text">Text in shape</button>
-              <button class="btn" type="button" id="lc-duplicate-layer" data-i18n="liquid_cover_duplicate">Duplicate</button>
-              <button class="btn" type="button" id="lc-del-layer" data-i18n="liquid_cover_del">Delete</button>
-            </div>
-            <details class="lc-shape-library">
-              <summary data-i18n="liquid_cover_shape_library">Quick shapes</summary>
-              <div class="lc-shape-tray">
-                <button class="btn" type="button" id="lc-shape-circle" data-i18n="liquid_cover_shape_circle">Circle</button>
-                <button class="btn" type="button" id="lc-shape-squircle" data-i18n="liquid_cover_shape_squircle">Rounded Rect</button>
-                <button class="btn" type="button" id="lc-shape-capsule" data-i18n="liquid_cover_shape_capsule">Capsule</button>
-              </div>
-            </details>
-          </aside>
-          <div class="lc-stage">
-            <div class="lc-stage-head">
-              <span class="lc-stage-kicker" data-i18n="liquid_cover_artboard">Artboard</span>
-              <output class="lc-stage-format" id="lc-stage-format">16:9 · 1280 × 720</output>
-            </div>
-            <div class="lc-canvas-shell">
-              <canvas id="lc-canvas" class="lc-canvas" tabindex="0" role="application" aria-label="Select directly, Shift-click or box-select multiple layers, then drag to move and snap. Drag the handles to scale or rotate." data-i18n-aria-label="liquid_cover_canvas_label"></canvas>
-              <div class="lc-selection-box" id="lc-selection-box">
-                <button class="lc-transform-handle is-rotate" type="button" id="lc-transform-rotate" aria-label="Rotate layer" data-i18n-aria-label="liquid_cover_rotate_layer" title="Rotate layer" data-i18n-title="liquid_cover_rotate_layer">↻</button>
-                <button class="lc-transform-handle is-scale" type="button" id="lc-transform-scale" aria-label="Scale layer" data-i18n-aria-label="liquid_cover_scale_layer" title="Scale layer" data-i18n-title="liquid_cover_scale_layer"></button>
-              </div>
-              <div class="lc-selection-marquee" id="lc-selection-marquee" aria-hidden="true"></div>
-              <div class="lc-alignment-guides" id="lc-alignment-guides" aria-hidden="true">
-                <span class="lc-alignment-guide is-vertical"></span>
-                <span class="lc-alignment-guide is-horizontal"></span>
-              </div>
-            </div>
-            <div class="lc-stage-foot">
-              <span class="lc-stage-selection" id="lc-stage-selection">Liquid</span>
-              <span class="lc-stage-hint" data-i18n="liquid_cover_stage_hint">Auto-snap · Shift multi-select · Drag handles to scale or rotate</span>
-            </div>
-            <button type="button" class="btn lc-stage-expand" id="lc-stage-expand" aria-label="Fullscreen preview" aria-pressed="false" data-i18n-aria-label="liquid_cover_stage_expand" title="Fullscreen preview" data-i18n-title="liquid_cover_stage_expand">⤢</button>
-          </div>
-          <div class="lc-panel window-frame-scroller" id="liquid-cover-app">
-            <div class="lc-panel-intro">
-              <span class="lc-panel-kicker" data-i18n="liquid_cover_inspector">Inspector</span>
-              <strong id="lc-inspector-title" data-i18n="liquid_cover_type_properties">Type properties</strong>
-              <span id="lc-inspector-hint" data-i18n="liquid_cover_type_hint">Select a layer, then change only what matters to it.</span>
-            </div>
-
-            <div class="lc-inspector-panel is-active" id="lc-panel-layers" data-lc-inspector-panel="layers" role="tabpanel" aria-labelledby="lc-tab-layers">
-            <div class="lc-group lc-text-group">
-              <div class="lc-group-title" data-i18n="liquid_cover_text">Text</div>
-              <textarea id="lc-text" class="lc-textarea" rows="2">Liquid
-Glass</textarea>
-              <label class="lc-row"><span data-i18n="liquid_cover_font">Font</span>
-                <div class="select-wrap"><select id="lc-font">
-                  <optgroup label="Apple">
-                    <option value='-apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", system-ui, sans-serif' data-font-system="true">SF Pro · System</option>
-                    <option value='"SF Pro Rounded", ui-rounded, -apple-system, sans-serif' data-font-family="SF Pro Rounded">SF Pro Rounded</option>
-                    <option value='"SF Compact", "SF Compact Display", "SF Compact Text", -apple-system, sans-serif' data-font-family="SF Compact">SF Compact</option>
-                    <option value='"SF Compact Rounded", "SF Compact", ui-rounded, -apple-system, sans-serif' data-font-family="SF Compact Rounded">SF Compact Rounded</option>
-                    <option value='"SF Mono", ui-monospace, monospace' data-font-family="SF Mono">SF Mono</option>
-                    <option value='"New York", "New York Small", "New York Medium", "New York Large", serif' data-font-family="New York">New York</option>
-                  </optgroup>
-                  <optgroup label="中文">
-                    <option value='"PingFang SC", -apple-system, sans-serif' data-font-family="PingFang SC">苹方简体 · PingFang SC</option>
-                    <option value='"PingFang TC", -apple-system, sans-serif' data-font-family="PingFang TC">蘋方繁體 · PingFang TC</option>
-                    <option value='"Songti SC", STSong, serif' data-font-family="Songti SC">宋体简体 · Songti SC</option>
-                    <option value='"Songti TC", "Songti SC", STSong, serif' data-font-family="Songti TC">宋體繁體 · Songti TC</option>
-                    <option value='"Smiley Sans", "PingFang SC", sans-serif' data-font-bundled="true">得意黑 · Smiley Sans</option>
-                  </optgroup>
-                </select></div>
-              </label>
-              <div class="lc-font-import-row">
-                <button class="btn" type="button" id="lc-font-import" data-i18n="liquid_cover_import_font">Import Font…</button>
-                <input hidden type="file" id="lc-font-file" tabindex="-1" aria-hidden="true" accept=".ttf,.otf,.woff,.woff2,font/ttf,font/otf,font/woff,font/woff2">
-                <span class="lc-font-status" id="lc-font-status" role="status" aria-live="polite" data-i18n="liquid_cover_font_import_hint">Uses installed Apple fonts · imports last for this page only</span>
-                <a class="lc-font-source-link" href="https://developer.apple.com/fonts/" target="_blank" rel="noopener" data-i18n="liquid_cover_apple_fonts">Apple fonts</a>
-              </div>
-              <label class="lc-row"><span data-i18n="liquid_cover_size">Size</span><input type="range" id="lc-font-size" min="20" max="600" step="1" value="170"><span class="lc-val" id="lc-font-size-v"></span></label>
-              <label class="lc-row"><span data-i18n="liquid_cover_weight">Weight</span><input type="range" id="lc-font-weight" min="100" max="900" step="100" value="800"><span class="lc-val" id="lc-font-weight-v"></span></label>
-              <details class="lc-object-advanced">
-                <summary data-i18n="liquid_cover_more_type_controls">More type controls</summary>
-                <div class="lc-layer-advanced">
-                <label class="lc-row"><span data-i18n="liquid_cover_tracking">Tracking</span><input type="range" id="lc-letter-spacing" min="-10" max="40" step="1" value="0"><span class="lc-val" id="lc-letter-spacing-v"></span></label>
-                <label class="lc-row"><span data-i18n="liquid_cover_rotation">Rotation</span><input type="range" id="lc-rotation" min="-180" max="180" step="1" value="0"><span class="lc-val" id="lc-rotation-v"></span></label>
-                </div>
-              </details>
-            </div>
-            </div>
-
-            <div class="lc-inspector-panel" id="lc-panel-media" data-lc-inspector-panel="media" role="tabpanel" aria-labelledby="lc-tab-media" hidden>
-            <details class="lc-media-ai">
-              <summary data-i18n="liquid_cover_generate_background">Generate a background</summary>
-            <div class="lc-group lc-t2i-group">
-              <div class="lc-group-title" data-i18n="liquid_cover_t2i_title">Background Prompt</div>
-              <div class="lc-note" data-i18n="liquid_cover_t2i_hint">Write a text-to-image prompt for the background (uses the mood box below).</div>
-              <div class="lc-button-row">
-                <button class="btn" type="button" id="lc-t2i-go" data-i18n="liquid_cover_t2i_go">Write Image Prompt</button>
-              </div>
-              <textarea id="lc-t2i-out" class="lc-textarea" rows="4" readonly hidden></textarea>
-              <div class="lc-button-row">
-                <button class="btn" type="button" id="lc-t2i-copy" data-i18n="liquid_cover_t2i_copy" hidden>Copy</button>
-              </div>
-            </div>
-
-            </details>
-
-            <div class="lc-group lc-bg-group">
-              <div class="lc-group-title" data-i18n="liquid_cover_background">Background</div>
-              <div class="lc-bg-row" id="lc-bg-row"></div>
-              <div class="file-picker">
-                <button class="btn file-picker-button" type="button" id="lc-bg-choose" data-i18n="liquid_cover_choose_bg">Choose Background…</button>
-                <span class="file-picker-name" id="lc-bg-name" data-i18n="no_files_selected">No files selected</span>
-              </div>
-              <input id="lc-bg-input" class="visually-hidden" type="file" accept="image/*" />
-            </div>
-
-            <details class="lc-media-extras">
-              <summary data-i18n="liquid_cover_media_extras">Motion and foreground</summary>
-            <div class="lc-group lc-motion-group">
-              <div class="lc-group-title" data-i18n="liquid_cover_motion">Motion Video</div>
-              <div class="file-picker">
-                <button class="btn file-picker-button" type="button" id="lc-motion-choose" data-i18n="liquid_cover_choose_motion">Choose Motion Video…</button>
-                <button class="btn" type="button" id="lc-motion-clear" data-i18n="liquid_cover_clear" hidden>Clear</button>
-                <span class="file-picker-name" id="lc-motion-name" data-i18n="no_files_selected">No files selected</span>
-              </div>
-              <input id="lc-motion-input" class="visually-hidden" type="file" accept="video/quicktime,video/mp4,video/*,.mov,.mp4,.m4v" />
-              <p class="lc-note" data-i18n="liquid_cover_motion_note">Use the MOV/MP4 side of a Live Photo as the animated background.</p>
-            </div>
-
-            <div class="lc-group lc-fg-group">
-              <div class="lc-group-title" data-i18n="liquid_cover_subject">Subject (Foreground)</div>
-              <div class="file-picker">
-                <button class="btn file-picker-button" type="button" id="lc-fg-choose" data-i18n="liquid_cover_choose_subject">Choose Subject…</button>
-                <button class="btn" type="button" id="lc-fg-clear" data-i18n="liquid_cover_clear" hidden>Clear</button>
-                <span class="file-picker-name" id="lc-fg-name" data-i18n="no_files_selected">No files selected</span>
-              </div>
-              <input id="lc-fg-input" class="visually-hidden" type="file" accept="image/*" />
-              <label class="lc-row"><span data-i18n="liquid_cover_scale">Scale</span><input type="range" id="lc-fg-scale" min="10" max="200" step="1" value="100"><span class="lc-val" id="lc-fg-scale-v"></span></label>
-              <label class="lc-row"><span data-i18n="liquid_cover_drag_subject">Drag Subject</span><input type="checkbox" id="lc-fg-drag" class="lc-check"></label>
-            </div>
-            </details>
-            </div>
-
-            <div class="lc-inspector-panel" id="lc-panel-glass" data-lc-inspector-panel="glass" role="tabpanel" aria-labelledby="lc-tab-glass" hidden>
-            <div class="lc-group lc-material-group">
-              <div class="lc-group-title" data-i18n="liquid_cover_material">Glass Mix</div>
-              <label class="lc-row"><span data-i18n="liquid_cover_material_scale">Clear / Tinted</span><input type="range" id="lc-material-mix" min="0" max="100" step="1" value="0"><span class="lc-val" id="lc-material-mix-v"></span></label>
-            </div>
-            <div class="lc-group lc-layer-glass-group">
-              <div class="lc-group-title" data-i18n="liquid_cover_selected_layer">Selected layer</div>
-              <label class="lc-row"><span data-i18n="liquid_cover_layer_solid">Solid Layer</span><input type="checkbox" id="lc-layer-solid" class="lc-check"></label>
-              <label class="lc-row"><span data-i18n="liquid_cover_thickness">Thickness</span><input type="range" id="lc-thickness" min="0" max="100" step="1" value="20"><span class="lc-val" id="lc-thickness-v"></span></label>
-              <label class="lc-row"><span data-i18n="liquid_cover_tint">Tint</span><input type="color" id="lc-tint-color" class="lc-color" value="#ffffff"></label>
-              <label class="lc-row"><span data-i18n="liquid_cover_tint_strength">Tint Strength</span><input type="range" id="lc-tint-alpha" min="0" max="100" step="1" value="0"><span class="lc-val" id="lc-tint-alpha-v"></span></label>
-            </div>
-            <div class="lc-group lc-presets-group">
-              <div class="lc-group-title" data-i18n="liquid_cover_presets">Glass Presets</div>
-              <div class="lc-preset-row" id="lc-preset-row"></div>
-              <p class="lc-note" data-i18n="liquid_cover_presets_hint">Choose a proven material; the cover updates immediately.</p>
-            </div>
-
-            <details class="lc-look-assistant">
-              <summary data-i18n="liquid_cover_ai_director">AI art director</summary>
-              <form id="lc-ask-form" class="lc-ask-bar">
-                <label for="lc-ask-input" class="lc-ask-label" data-i18n="liquid_cover_ask_label">Describe a look</label>
-                <div class="lc-ask-row">
-                  <input id="lc-ask-input" type="text" data-i18n-placeholder="liquid_cover_ask_hint" placeholder="e.g. calm tech blue, cinematic…" />
-                  <button class="btn default" type="submit" id="lc-ask-go" data-i18n="liquid_cover_ask_go">Apply</button>
-                </div>
-                <label class="lc-row lc-ai-vision-setting"><span data-i18n="liquid_cover_ai_vision">Read background</span><input type="checkbox" id="lc-ask-vision" class="lc-check" checked></label>
-              </form>
-            </details>
-
-            <details class="lc-finetune">
-              <summary data-i18n="liquid_cover_finetune">Fine-tune (manual)</summary>
-            <details class="lc-group lc-tune-group">
-              <summary data-i18n="liquid_cover_refraction">Refraction (Global)</summary>
-              <label class="lc-row"><span data-i18n="liquid_cover_ior">Index</span><input type="range" id="lc-ref-factor" min="1" max="4" step="0.01" value="1.5"><span class="lc-val" id="lc-ref-factor-v"></span></label>
-              <label class="lc-row"><span data-i18n="liquid_cover_lens">Magnify</span><input type="range" id="lc-lens" min="0" max="30" step="0.5" value="11"><span class="lc-val" id="lc-lens-v"></span></label>
-              <label class="lc-row"><span data-i18n="liquid_cover_dispersion">Dispersion</span><input type="range" id="lc-dispersion" min="0" max="50" step="0.5" value="2"><span class="lc-val" id="lc-dispersion-v"></span></label>
-              <label class="lc-row"><span data-i18n="liquid_cover_blur_edge">Blur Edge</span><input type="checkbox" id="lc-blur-edge" class="lc-check" checked></label>
-            </details>
-
-            <details class="lc-group lc-tune-group">
-              <summary data-i18n="liquid_cover_highlight">Fresnel &amp; Glare</summary>
-              <label class="lc-row"><span data-i18n="liquid_cover_fresnel_range">Fresnel Range</span><input type="range" id="lc-fresnel-range" min="1" max="100" step="1" value="32"><span class="lc-val" id="lc-fresnel-range-v"></span></label>
-              <label class="lc-row"><span data-i18n="liquid_cover_fresnel_strength">Fresnel Strength</span><input type="range" id="lc-fresnel-factor" min="0" max="100" step="1" value="90"><span class="lc-val" id="lc-fresnel-factor-v"></span></label>
-              <label class="lc-row"><span data-i18n="liquid_cover_glare_strength">Glare Strength</span><input type="range" id="lc-glare-factor" min="0" max="120" step="1" value="100"><span class="lc-val" id="lc-glare-factor-v"></span></label>
-              <label class="lc-row"><span data-i18n="liquid_cover_glare_range">Glare Range</span><input type="range" id="lc-glare-range" min="1" max="100" step="1" value="42"><span class="lc-val" id="lc-glare-range-v"></span></label>
-              <label class="lc-row"><span data-i18n="liquid_cover_glare_converge">Glare Converge</span><input type="range" id="lc-glare-convergence" min="0" max="100" step="1" value="58"><span class="lc-val" id="lc-glare-convergence-v"></span></label>
-              <label class="lc-row"><span data-i18n="liquid_cover_glare_angle">Glare Angle</span><input type="range" id="lc-glare-angle" min="-180" max="180" step="1" value="-50"><span class="lc-val" id="lc-glare-angle-v"></span></label>
-            </details>
-
-            <details class="lc-group lc-tune-group">
-              <summary data-i18n="liquid_cover_blur_shadow">Blur &amp; Shadow</summary>
-              <label class="lc-row"><span data-i18n="liquid_cover_bg_blur">Background Blur</span><input type="range" id="lc-blur-radius" min="0" max="80" step="1" value="24"><span class="lc-val" id="lc-blur-radius-v"></span></label>
-              <label class="lc-row"><span data-i18n="liquid_cover_shadow_strength">Shadow Strength</span><input type="range" id="lc-shadow-factor" min="0" max="100" step="1" value="22"><span class="lc-val" id="lc-shadow-factor-v"></span></label>
-              <label class="lc-row"><span data-i18n="liquid_cover_shadow_spread">Shadow Spread</span><input type="range" id="lc-shadow-expand" min="2" max="100" step="1" value="20"><span class="lc-val" id="lc-shadow-expand-v"></span></label>
-            </details>
-            </details>
-
-            </div>
-
-            <div class="lc-inspector-panel" id="lc-panel-export" data-lc-inspector-panel="export" role="tabpanel" aria-labelledby="lc-tab-export" hidden>
-            <div class="lc-group lc-export-group">
-              <label class="lc-export-choice"><span data-i18n="liquid_cover_export_res">Export size</span>
-                <div class="select-wrap"><select id="lc-export-res">
-                  <option value="source" selected data-i18n="liquid_cover_res_source">Match photo</option>
-                  <option value="4" data-i18n="liquid_cover_res_4x">4× preview</option>
-                  <option value="2" data-i18n="liquid_cover_res_2x">2× preview</option>
-                  <option value="1" data-i18n="liquid_cover_res_1x">1× preview</option>
-                </select></div>
-              </label>
-              <p class="lc-note" id="lc-export-dim" data-i18n="liquid_cover_export_dim_note">PNG is rendered at full resolution — no downscaling.</p>
-              <div class="lc-button-row">
-                <button class="btn default" type="button" id="lc-export" data-i18n="liquid_cover_export">Export PNG</button>
-              </div>
-              <p class="lc-note" data-i18n="liquid_cover_aspect_note">Exported at the chosen aspect — never cropped.</p>
-            </div>
-
-            <div class="lc-group lc-animation-group">
-              <div class="lc-group-title" data-i18n="liquid_cover_animation">Animation</div>
-              <label class="lc-row"><span data-i18n="liquid_cover_motion_preset">Preset</span>
-                <div class="select-wrap"><select id="lc-motion-preset">
-                  <option value="none" data-i18n="liquid_cover_motion_none">None</option>
-                  <option value="condense" data-i18n="liquid_cover_motion_condense">Glass Forming</option>
-                  <option value="push" data-i18n="liquid_cover_motion_push">Live Push</option>
-                </select></div>
-              </label>
-              <label class="lc-row"><span data-i18n="liquid_cover_motion_duration">Duration</span><input type="range" id="lc-motion-duration" min="1" max="6" step="0.1" value="2"><span class="lc-val" id="lc-motion-duration-v"></span></label>
-              <label class="lc-row"><span data-i18n="liquid_cover_motion_audio">Original Audio</span><input type="checkbox" id="lc-motion-audio" class="lc-check"></label>
-              <div class="lc-button-row">
-                <button class="btn" type="button" id="lc-motion-preview" aria-pressed="false" data-i18n="liquid_cover_preview_video">Preview Once</button>
-                <button class="btn default" type="button" id="lc-motion-export" data-i18n="liquid_cover_export_video">Export Video</button>
-              </div>
-              <p class="lc-note" data-i18n="liquid_cover_motion_export_note">Exports the current canvas as a browser-encoded video; MP4 is used when the browser supports it, otherwise WebM.</p>
-            </div>
-            </div>
-
           </div>
         </div>
       </section>
@@ -3440,21 +2884,27 @@ Glass</textarea>
           </span>
           <button class="btn mini-btn status-bar-trailing" type="button" id="note-pad-destination" data-action="note-pad-cycle-destination" data-i18n="send_to_teachtext">Send to TeachText</button>
         </div>
-        <div class="da-origin" id="note-pad-origin" hidden>
-          <span id="note-pad-origin-label"></span>
-          <span id="note-pad-origin-time"></span>
-        </div>
         <div class="window-pane note-pad-pane">
           <textarea id="note-pad-text" rows="10" data-i18n-placeholder="note_pad_placeholder" placeholder="Hold the thought here. It stays on this desk."></textarea>
           <div class="button-row note-pad-actions">
             <button class="btn" type="button" id="note-pad-new" data-action="note-pad-new-slip" data-i18n="note_pad_new_slip">New Slip</button>
             <span class="spacer"></span>
             <button class="btn default" type="button" id="note-pad-send" data-action="note-pad-send" data-i18n="send">Send</button>
-            <button class="btn" type="button" id="note-pad-back" data-action="note-pad-back" hidden>Back</button>
           </div>
         </div>
       </section>
 
+      <!-- Hold That Thought. Two modes on one small window, because the object
+           has two moments and they are not the same size: catching is four
+           lines of context and two questions, picking up is a pile with a list
+           on it. The mode row borrows the Alarm Clock's figure - equal cells,
+           dividers between, the current one inverted - as a layout only. These
+           modes are verbs with no native glyph to copy, and inventing 1-bit art
+           for them would be drawing from memory. -->
+      <!-- Looking inside a disk you have not mounted. Read-only on purpose: it
+           answers "which project did I file that in?" and no other question.
+           The list-over-detail figure is the one Hold That Thought's pile uses,
+           because both are going through something rather than working in it. -->
       <section class="window clipboard-window is-hidden" data-window="clipboard" aria-labelledby="clipboard-title">
         <div class="title-bar">
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
@@ -3767,6 +3217,8 @@ Glass</textarea>
             <dd id="info-file-folder">--</dd>
             <dt data-i18n="source">Source:</dt>
             <dd id="info-file-source">--</dd>
+            <dt id="info-file-description-label" data-i18n="description" hidden>Description:</dt>
+            <dd id="info-file-description" hidden></dd>
             <dt data-i18n="project_context">Project context:</dt>
             <dd id="info-file-context">--</dd>
             <dt data-i18n="created">Created:</dt>
@@ -3807,7 +3259,7 @@ Glass</textarea>
             <span class="large-mini-icon sys-icon" data-system-icon="projectDisk" aria-hidden="true"></span>
             <div class="info-main">
               <h3 id="info-project-name">Project Name</h3>
-              <p class="hint" id="info-project-kind">Kind: Project Hard Disk</p>
+              <p class="hint" id="info-project-kind"><span data-i18n="kind">Kind</span>: <span data-i18n="project_disk">Project Hard Disk</span></p>
             </div>
           </div>
           <hr />
@@ -3844,7 +3296,7 @@ Glass</textarea>
         <div class="window-pane about-pane">
           <div class="large-icon"></div>
           <p>AI System 6</p>
-          <p data-i18n="bicycle_line">A computer is a bicycle for the mind.</p>
+          <p data-i18n="bicycle_line">A reply is not a manuscript until you decide where it belongs.</p>
           <p data-i18n="about_body">AI System 6 keeps the desk quiet, turns thoughts into files, and lets the user ride.</p>
           <dl class="about-stats about-stats-compact">
             <dt data-i18n="about_version">Version</dt>
@@ -3852,345 +3304,19 @@ Glass</textarea>
             <dt id="about-model-label" data-i18n="about_model">Local model</dt>
             <dd id="about-model">--</dd>
           </dl>
+          <div class="button-row about-links">
+            <button class="btn mini-btn" type="button" data-action="open-project-site" data-i18n="guide_project_site">Project Site</button>
+            <button class="btn mini-btn" type="button" data-action="open-github-repo" data-i18n="guide_source_code">Source Code</button>
+            <button class="btn mini-btn" type="button" data-action="open-guide-promo" data-i18n="guide_promo_short">The Film</button>
+          </div>
           <button class="btn default" type="button" data-action="close-about" data-i18n="ok">OK</button>
         </div>
-      </section>
-
-      <section class="window theme-lab-window is-hidden" data-window="themeLab" aria-labelledby="theme-lab-title">
-        <div class="title-bar">
-          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
-          <h2 id="theme-lab-title" data-i18n="theme_lab">Theme Lab</h2>
-          <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
-          <button class="shade-box" aria-label="Collapse" data-i18n-aria-label="collapse"></button>
-        </div>
-        <div class="details-bar compact-status-bar">
-          <span class="status-bar-leading" data-i18n="theme_lab_status">Shared control specimen</span>
-          <span class="status-bar-context theme-lab-current-era" aria-live="polite">
-            <strong data-theme-lab-appearance>System 6</strong>
-            <span aria-hidden="true">·</span>
-            <span data-theme-lab-font>Chicago</span>
-            <span aria-hidden="true">·</span>
-            <span><span data-theme-lab-font-size>12</span> pt</span>
-          </span>
-          <span class="status-bar-trailing" data-i18n="theme_lab_internal">Internal</span>
-        </div>
-        <div class="window-pane theme-lab-pane">
-          <!-- The era bar is the spine: the same specimen set, six materials.
-               It switches the live appearance in place and keeps the open tab,
-               the inspected object, and the scroll position, so flipping eras
-               reads as one board changing clothes. -->
-          <div class="theme-lab-era-bar">
-            <div class="theme-lab-era-switch" role="radiogroup" aria-label="Appearance" data-i18n-aria-label="appearance" data-theme-lab-era-switch></div>
-            <p class="theme-lab-era-lineage" data-theme-lab-lineage aria-live="polite"></p>
-          </div>
-
-          <div class="system-tabs-sheet theme-lab-sheet-shell">
-            <div class="system-tabs theme-lab-panel-tabs" role="tablist" aria-label="Theme Lab sections" data-i18n-aria-label="theme_lab_sections">
-              <button class="system-tab is-active" id="theme-lab-tab-chrome" type="button" role="tab" aria-selected="true" aria-controls="theme-lab-panel-chrome" data-theme-lab-tab="chrome" data-i18n="theme_lab_tab_chrome">Chrome</button>
-              <button class="system-tab" id="theme-lab-tab-objects" type="button" role="tab" aria-selected="false" aria-controls="theme-lab-panel-objects" data-theme-lab-tab="objects" data-i18n="theme_lab_tab_objects">Objects</button>
-              <button class="system-tab" id="theme-lab-tab-surfaces" type="button" role="tab" aria-selected="false" aria-controls="theme-lab-panel-surfaces" data-theme-lab-tab="surfaces" data-i18n="theme_lab_tab_surfaces">Surfaces</button>
-              <button class="system-tab" id="theme-lab-tab-tokens" type="button" role="tab" aria-selected="false" aria-controls="theme-lab-panel-tokens" data-theme-lab-tab="tokens" data-i18n="theme_lab_tab_tokens">Tokens</button>
-            </div>
-
-            <div class="system-tab-panel theme-lab-panel" id="theme-lab-panel-chrome" role="tabpanel" aria-labelledby="theme-lab-tab-chrome" data-theme-lab-panel="chrome">
-              <section class="theme-lab-group theme-lab-controls" aria-labelledby="theme-lab-controls-title">
-                <h3 id="theme-lab-controls-title" data-i18n="theme_lab_controls">Controls</h3>
-                <div class="theme-lab-button-row">
-                  <button class="btn" type="button" data-i18n="theme_lab_normal">Normal</button>
-                  <button class="btn default" type="button" data-i18n="theme_lab_default">Default</button>
-                  <button class="btn is-active" type="button" aria-pressed="true" data-i18n="theme_lab_pressed">Pressed</button>
-                  <button class="btn theme-lab-focus-control" type="button" data-i18n="theme_lab_focused">Focused</button>
-                  <button class="btn" type="button" disabled data-i18n="theme_lab_disabled">Disabled</button>
-                </div>
-                <div class="theme-lab-size-row" aria-label="Control size variants">
-                  <span data-i18n="theme_lab_sizes">Sizes</span>
-                  <button class="btn" type="button" data-i18n="theme_lab_regular">Regular</button>
-                  <button class="btn theme-lab-size-small" type="button" data-i18n="theme_lab_small">Small</button>
-                  <button class="btn theme-lab-size-mini" type="button" data-i18n="theme_lab_mini">Mini</button>
-                </div>
-                <div class="theme-lab-choice-matrix" aria-label="Choice control states">
-                  <label class="field-row"><input type="checkbox" checked /><span data-i18n="theme_lab_checked">Checked</span></label>
-                  <label class="field-row"><input type="checkbox" /><span data-i18n="theme_lab_unchecked">Unchecked</span></label>
-                  <label class="field-row"><input type="radio" name="theme-lab-radio" checked /><span data-i18n="theme_lab_selected">Selected</span></label>
-                  <label class="field-row"><input type="radio" name="theme-lab-disabled-radio" checked disabled /><span data-i18n="theme_lab_disabled">Disabled</span></label>
-                  <label class="field-row theme-lab-era-choice-state"><input class="is-active" type="checkbox" checked /><span data-i18n="theme_lab_pressed">Pressed</span></label>
-                  <label class="field-row theme-lab-era-choice-state"><input type="checkbox" checked disabled /><span data-i18n="theme_lab_disabled">Disabled</span></label>
-                  <label class="field-row theme-lab-era-choice-state"><input type="radio" name="theme-lab-unselected-radio" /><span data-i18n="theme_lab_unchecked">Unchecked</span></label>
-                  <label class="field-row theme-lab-era-choice-state"><input class="is-active" type="radio" name="theme-lab-active-radio" checked /><span data-i18n="theme_lab_pressed">Pressed</span></label>
-                </div>
-                <div class="theme-lab-form-grid">
-                  <label><span data-i18n="theme_lab_text_field">Text field</span><input type="text" value="Macintosh" readonly /></label>
-                  <label><span data-i18n="theme_lab_focused_field">Focused field</span><input class="theme-lab-focus-demo" type="text" value="Appearance" readonly /></label>
-                  <label><span data-i18n="theme_lab_search">Search</span><input class="theme-lab-search" type="search" value="System" readonly /></label>
-                  <label><span data-i18n="theme_lab_popup">Pop-up</span><span class="select-wrap theme-lab-color-popup"><select aria-label="Theme Lab pop-up"><option>Blue</option><option>Graphite</option></select></span></label>
-                  <label><span data-i18n="theme_lab_disabled_field">Disabled field</span><input type="text" value="Unavailable" disabled /></label>
-                  <label><span data-i18n="theme_lab_disabled_popup">Disabled pop-up</span><span class="select-wrap theme-lab-color-popup"><select aria-label="Disabled Theme Lab pop-up" disabled><option>Blue</option></select></span></label>
-                </div>
-                <div class="theme-lab-segmented" role="group" aria-label="Segmented control">
-                  <button class="is-selected" type="button"><span class="theme-lab-view-icon is-icon" aria-hidden="true"></span><span data-i18n="theme_lab_icon_view">Icon</span></button>
-                  <button type="button"><span class="theme-lab-view-icon is-list" aria-hidden="true"></span><span data-i18n="theme_lab_list_view">List</span></button>
-                  <button type="button"><span class="theme-lab-view-icon is-columns" aria-hidden="true"></span><span data-i18n="theme_lab_column_view">Column</span></button>
-                </div>
-                <div class="theme-lab-tabs" role="tablist">
-                  <button class="is-selected" type="button" role="tab" aria-selected="true" data-i18n="theme_lab_general">General</button>
-                  <button type="button" role="tab" aria-selected="false" data-i18n="theme_lab_advanced">Advanced</button>
-                  <button type="button" role="tab" aria-selected="false" data-i18n="theme_lab_accounts">Accounts</button>
-                </div>
-                <div class="theme-lab-tab-panel" role="tabpanel"><span data-i18n="appearance">Appearance</span></div>
-              </section>
-
-              <section class="theme-lab-group theme-lab-window-chrome" aria-labelledby="theme-lab-window-chrome-title">
-                <h3 id="theme-lab-window-chrome-title" data-i18n="theme_lab_window_chrome">Window chrome</h3>
-                  <div class="theme-lab-mini-windows">
-                    <div class="theme-lab-mini-window is-active"><i class="theme-lab-mini-control is-close" aria-hidden="true"></i><i class="theme-lab-mini-control is-minimize" aria-hidden="true"></i><i class="theme-lab-mini-control is-zoom" aria-hidden="true"></i><span data-i18n="theme_lab_active_window">Active Window</span></div>
-                    <div class="theme-lab-mini-window is-inactive"><i class="theme-lab-mini-control is-close" aria-hidden="true"></i><i class="theme-lab-mini-control is-minimize" aria-hidden="true"></i><i class="theme-lab-mini-control is-zoom" aria-hidden="true"></i><span data-i18n="theme_lab_inactive_window">Inactive Window</span></div>
-                  </div>
-                  <div class="theme-lab-progress-row"><span data-i18n="theme_lab_progress">Progress</span><div class="theme-lab-progress" aria-label="Progress" role="progressbar" aria-valuenow="62"><span></span></div></div>
-                  <div class="theme-lab-scroll-frame">
-                    <div class="theme-lab-scroll" tabindex="0"><p>System 6</p><p>Platinum</p><p>Aqua</p><p>Snow Leopard</p><p>Yosemite</p><p>Liquid Glass</p></div>
-                    <div class="theme-lab-scrollbar" aria-hidden="true">
-                      <div class="theme-lab-scrollbar-track"><span class="theme-lab-scrollbar-thumb"></span></div>
-                      <span class="theme-lab-scrollbar-button is-decrement"></span>
-                      <span class="theme-lab-scrollbar-button is-increment"></span>
-                    </div>
-                  </div>
-              </section>
-            </div>
-
-            <div class="system-tab-panel theme-lab-panel" id="theme-lab-panel-objects" role="tabpanel" aria-labelledby="theme-lab-tab-objects" data-theme-lab-panel="objects" hidden>
-              <!-- One object lab for all six eras. The era supplies the art
-                   source and its own background list; the sixteen objects,
-                   the four states, the zoom ladder, and the context checks
-                   are identical, so two eras can be compared by flipping. -->
-              <section class="theme-lab-group theme-lab-object-lab" data-theme-lab-object-lab aria-labelledby="theme-lab-object-lab-title">
-                <h3 id="theme-lab-object-lab-title" data-i18n="theme_lab_objects">Priority objects</h3>
-                <p class="theme-lab-object-intro" data-theme-lab-object-intro></p>
-                <p class="theme-lab-object-evidence" data-theme-lab-object-evidence></p>
-                <div class="theme-lab-object-key" data-theme-lab-object-key></div>
-                <div class="theme-lab-object-grid" data-theme-lab-object-grid></div>
-                <div class="theme-lab-object-inspector" data-theme-lab-object-inspector aria-live="polite"></div>
-                <div class="theme-lab-object-contexts" data-theme-lab-object-contexts aria-label="Object context checks" data-i18n-aria-label="theme_lab_object_contexts"></div>
-              </section>
-
-              <section class="theme-lab-group theme-lab-icon-set" aria-labelledby="theme-lab-icon-set-title">
-                <h3 id="theme-lab-icon-set-title" data-i18n="theme_lab_icon_set">Icon set</h3>
-                <div class="theme-lab-icon-grid" data-theme-lab-icon-grid></div>
-              </section>
-            </div>
-
-            <div class="system-tab-panel theme-lab-panel" id="theme-lab-panel-surfaces" role="tabpanel" aria-labelledby="theme-lab-tab-surfaces" data-theme-lab-panel="surfaces" hidden>
-              <section class="theme-lab-group theme-lab-navigation" aria-labelledby="theme-lab-navigation-title">
-                <h3 id="theme-lab-navigation-title"><span class="theme-lab-navigation-generic-label" data-i18n="theme_lab_navigation">Lists &amp; sidebar</span><span class="theme-lab-column-browser-label" data-i18n="theme_lab_column_browser">Column browser</span></h3>
-                <div class="theme-lab-split-view theme-lab-generic-browser theme-lab-generic-fixture">
-                  <nav class="theme-lab-sidebar" aria-label="Icon list">
-                    <button class="is-selected" type="button"><span class="sys-icon" data-system-icon="startupDisk" aria-hidden="true"></span><span data-i18n="startup_disk">Startup Disk</span></button>
-                    <button type="button"><span class="sys-icon" data-system-icon="applications" aria-hidden="true"></span><span data-i18n="applications">Applications</span></button>
-                    <button type="button"><span class="sys-icon" data-system-icon="trash" aria-hidden="true"></span><span data-i18n="trash">Trash</span></button>
-                  </nav>
-                  <div class="theme-lab-list-frame is-focused" tabindex="0">
-                    <div class="theme-lab-list" role="listbox" aria-label="List">
-                      <button type="button" role="option"><span class="theme-lab-list-icon" aria-hidden="true"></span><span>Appearance</span></button>
-                      <button class="is-selected" type="button" role="option" aria-selected="true"><span class="theme-lab-list-icon" aria-hidden="true"></span><span>Control Panels</span></button>
-                      <button type="button" role="option"><span class="theme-lab-list-icon" aria-hidden="true"></span><span>System Folder</span></button>
-                    </div>
-                    <div class="theme-lab-scrollbar theme-lab-list-scrollbar" aria-hidden="true">
-                      <div class="theme-lab-scrollbar-track"><span class="theme-lab-scrollbar-thumb is-active"></span></div>
-                      <span class="theme-lab-scrollbar-button is-decrement is-active"></span>
-                      <span class="theme-lab-scrollbar-button is-increment"></span>
-                    </div>
-                  </div>
-                </div>
-                <div class="theme-lab-snow-source-list" aria-hidden="true" lang="en" translate="no">
-                  <h4 class="theme-lab-snow-group" data-i18n="theme_lab_snow_devices">Devices</h4>
-                  <button type="button"><span class="sys-icon" data-system-icon="startupDisk" aria-hidden="true"></span><span>Macintosh HD</span></button>
-                  <h4 class="theme-lab-snow-group" data-i18n="theme_lab_snow_places">Places</h4>
-                  <button type="button"><span class="sys-icon" data-system-icon="folder" aria-hidden="true"></span><span>Desktop</span></button>
-                  <button class="is-selected" type="button"><span class="sys-icon" data-system-icon="folder" aria-hidden="true"></span><span>Documents</span></button>
-                  <button type="button"><span class="sys-icon" data-system-icon="folder" aria-hidden="true"></span><span>Applications</span></button>
-                  <button type="button"><span class="sys-icon" data-system-icon="document" aria-hidden="true"></span><span>Downloads</span></button>
-                </div>
-                <div class="theme-lab-split-view theme-lab-aqua-browser" aria-label="Aqua column browser" data-theme-lab-reference="guidebook.macosx102.open-dialog" lang="en" translate="no">
-                  <div class="theme-lab-browser-column">
-                    <nav class="theme-lab-sidebar" aria-label="Column one">
-                      <button type="button"><span class="sys-icon" data-system-icon="applications" aria-hidden="true"></span><span>Desktop</span><span class="theme-lab-browser-disclosure" aria-hidden="true"></span></button>
-                      <button class="is-selected" type="button" aria-current="true"><span class="sys-icon" data-system-icon="applications" aria-hidden="true"></span><span>Documents</span><span class="theme-lab-browser-disclosure" aria-hidden="true"></span></button>
-                      <button type="button"><span class="sys-icon" data-system-icon="applications" aria-hidden="true"></span><span>Library</span><span class="theme-lab-browser-disclosure" aria-hidden="true"></span></button>
-                      <button type="button"><span class="sys-icon" data-system-icon="applications" aria-hidden="true"></span><span>Movies</span><span class="theme-lab-browser-disclosure" aria-hidden="true"></span></button>
-                      <button type="button"><span class="sys-icon" data-system-icon="applications" aria-hidden="true"></span><span>Music</span><span class="theme-lab-browser-disclosure" aria-hidden="true"></span></button>
-                      <button type="button"><span class="sys-icon" data-system-icon="applications" aria-hidden="true"></span><span>Pictures</span><span class="theme-lab-browser-disclosure" aria-hidden="true"></span></button>
-                      <button type="button"><span class="sys-icon" data-system-icon="applications" aria-hidden="true"></span><span>Public</span><span class="theme-lab-browser-disclosure" aria-hidden="true"></span></button>
-                      <button type="button" disabled><span class="sys-icon" data-system-icon="document" aria-hidden="true"></span><span>Send Registration</span></button>
-                      <button type="button"><span class="sys-icon" data-system-icon="applications" aria-hidden="true"></span><span>Sites</span><span class="theme-lab-browser-disclosure" aria-hidden="true"></span></button>
-                    </nav>
-                    <div class="theme-lab-browser-column-scrollbar" aria-hidden="true"><span class="theme-lab-browser-column-thumb is-active"></span><i class="is-decrement"></i><i class="is-increment"></i></div>
-                  </div>
-                  <div class="theme-lab-browser-column">
-                    <div class="theme-lab-list-frame">
-                      <div class="theme-lab-list" role="listbox" aria-label="Column two">
-                        <button class="is-selected" type="button" role="option" aria-selected="true"><span class="theme-lab-list-icon" aria-hidden="true"></span><span>Acrobat User Data</span><span class="theme-lab-browser-disclosure" aria-hidden="true"></span></button>
-                      </div>
-                    </div>
-                    <div class="theme-lab-browser-column-scrollbar is-inactive" aria-hidden="true"><i class="is-decrement"></i><i class="is-increment"></i></div>
-                  </div>
-                  <div class="theme-lab-browser-column">
-                    <div class="theme-lab-list-frame"><div class="theme-lab-list" role="listbox" aria-label="Column three"></div></div>
-                    <div class="theme-lab-browser-column-scrollbar is-inactive" aria-hidden="true"><i class="is-decrement"></i><i class="is-increment"></i></div>
-                  </div>
-                  <div class="theme-lab-browser-horizontal-scrollbar" aria-hidden="true"></div>
-                </div>
-                <div class="theme-lab-open-list-capture theme-lab-platinum-fixture"
-                     data-theme-lab-reference="guidebook.macos90.open-file">
-                  <div class="theme-lab-open-list-items" role="listbox" aria-label="Mac OS 9 Open list" lang="en" translate="no">
-                    <button class="is-selected" type="button" role="option" aria-selected="true"><span class="theme-lab-open-list-icon is-dvd-player" aria-hidden="true"></span><span>Apple DVD Player</span></button>
-                    <button type="button" role="option"><span class="theme-lab-open-list-icon is-video-player" aria-hidden="true"></span><span>Apple Video Player ƒ</span></button>
-                    <button type="button" role="option"><span class="theme-lab-open-list-icon is-audio-player" aria-hidden="true"></span><span>AppleCD Audio Player ƒ</span></button>
-                    <button type="button" role="option"><span class="theme-lab-open-list-icon is-quicktime" aria-hidden="true"></span><span>QuickTime</span></button>
-                    <button type="button" role="option"><span class="theme-lab-open-list-icon is-security" aria-hidden="true"></span><span>Security</span></button>
-                  </div>
-                  <div class="theme-lab-open-scrollbar" aria-hidden="true">
-                    <div class="theme-lab-open-scroll-track"></div>
-                    <span class="theme-lab-open-scroll-button is-decrement"></span>
-                    <span class="theme-lab-open-scroll-button is-increment"></span>
-                  </div>
-                </div>
-              </section>
-
-              <section class="theme-lab-group theme-lab-layered" aria-labelledby="theme-lab-layered-title">
-                <h3 id="theme-lab-layered-title" data-i18n="theme_lab_layered">Menus &amp; layered surfaces</h3>
-                <div class="theme-lab-layer-grid">
-                  <div class="theme-lab-menu theme-lab-generic-fixture" role="menu">
-                    <button type="button" role="menuitem">Open… <span>⌘O</span></button>
-                    <button class="is-selected" type="button" role="menuitem">Appearance <span class="theme-lab-menu-mark">✓</span></button>
-                    <hr />
-                    <button type="button" role="menuitem" disabled>Duplicate <span>⌘D</span></button>
-                    <button type="button" role="menuitem">Close <span>⌘W</span></button>
-                  </div>
-                  <div class="theme-lab-popover"><b class="theme-lab-popover-generic-label" data-i18n="theme_lab_popover">Popover</b><b class="theme-lab-balloon-label" data-i18n="theme_lab_balloon_help">Balloon Help</b><b class="theme-lab-help-tag-label" data-i18n="theme_lab_help_tag">Help Tag</b><span data-i18n="theme_lab_popover_copy">A temporary system surface.</span></div>
-                  <div class="theme-lab-menu-capture theme-lab-platinum-fixture"
-                       data-theme-lab-reference="guidebook.macos90.apple-menu">
-                    <div class="theme-lab-menu--platinum" role="menu" aria-label="Mac OS 9 Apple menu" lang="en" translate="no">
-                      <button class="is-about" type="button" role="menuitem"><span>About This Computer</span></button>
-                      <hr />
-                      <button class="is-profiler" type="button" role="menuitem"><span class="theme-lab-platinum-menu-icon is-system-profiler" aria-hidden="true"></span><span>Apple System Profiler</span></button>
-                      <button type="button" role="menuitem"><span class="theme-lab-platinum-menu-icon is-calculator" aria-hidden="true"></span><span>Calculator</span></button>
-                      <button type="button" role="menuitem"><span class="theme-lab-platinum-menu-icon is-chooser" aria-hidden="true"></span><span>Chooser</span></button>
-                      <button type="button" role="menuitem"><span class="theme-lab-platinum-menu-icon is-control-panels" aria-hidden="true"></span><span>Control Panels</span><i class="theme-lab-platinum-disclosure" aria-hidden="true"></i></button>
-                      <button type="button" role="menuitem"><span class="theme-lab-platinum-menu-icon is-favorites" aria-hidden="true"></span><span>Favorites</span><i class="theme-lab-platinum-disclosure" aria-hidden="true"></i></button>
-                      <button type="button" role="menuitem"><span class="theme-lab-platinum-menu-icon is-key-caps" aria-hidden="true"></span><span>Key Caps</span></button>
-                      <button type="button" role="menuitem"><span class="theme-lab-platinum-menu-icon is-network-browser" aria-hidden="true"></span><span>Network Browser</span></button>
-                      <button type="button" role="menuitem"><span class="theme-lab-platinum-menu-icon is-recent-applications" aria-hidden="true"></span><span>Recent Applications</span><i class="theme-lab-platinum-disclosure" aria-hidden="true"></i></button>
-                      <button type="button" role="menuitem"><span class="theme-lab-platinum-menu-icon is-recent-documents" aria-hidden="true"></span><span>Recent Documents</span><i class="theme-lab-platinum-disclosure" aria-hidden="true"></i></button>
-                      <button type="button" role="menuitem"><span class="theme-lab-platinum-menu-icon is-remote-access" aria-hidden="true"></span><span>Remote Access Status</span></button>
-                      <button type="button" role="menuitem"><span class="theme-lab-platinum-menu-icon is-scrapbook" aria-hidden="true"></span><span>Scrapbook</span></button>
-                      <button type="button" role="menuitem"><span class="theme-lab-platinum-menu-icon is-sherlock" aria-hidden="true"></span><span>Sherlock 2</span></button>
-                      <button type="button" role="menuitem"><span class="theme-lab-platinum-menu-icon is-stickies" aria-hidden="true"></span><span>Stickies</span></button>
-                    </div>
-                  </div>
-                  <div class="theme-lab-dialog theme-lab-generic-fixture">
-                    <span class="theme-lab-alert-icon" aria-hidden="true"></span>
-                    <div class="theme-lab-dialog-copy"><b data-i18n="theme_lab_dialog">Dialog</b><span data-i18n="theme_lab_dialog_copy">Keep this appearance?</span></div>
-                    <div class="theme-lab-dialog-actions"><button class="btn theme-lab-dialog-cancel" type="button" data-i18n="cancel">Cancel</button><button class="btn default" type="button" data-i18n="ok">OK</button></div>
-                  </div>
-                  <div class="theme-lab-about-capture theme-lab-platinum-fixture"
-                       data-theme-lab-reference="guidebook.macos90.about-application">
-                    <div class="theme-lab-dialog--platinum-about" role="dialog" aria-label="About Calculator" lang="en" translate="no">
-                      <span class="theme-lab-calculator-icon" aria-hidden="true"></span>
-                      <strong>Calculator</strong>
-                      <button class="btn default" type="button">OK</button>
-                    </div>
-                  </div>
-                  <div class="theme-lab-sheet-specimen" data-theme-lab-reference="macosx102.finder-replace-sheet">
-                    <div class="theme-lab-sheet-owner-titlebar" aria-hidden="true">
-                      <i class="is-close"></i><i class="is-minimize"></i><i class="is-zoom"></i>
-                      <span data-i18n="appearance">Appearance</span>
-                    </div>
-                    <div class="theme-lab-sheet-owner-body" aria-hidden="true"></div>
-                    <div class="theme-lab-sheet" role="dialog" aria-label="Attached sheet">
-                      <span class="theme-lab-sheet-icon" aria-hidden="true"></span>
-                      <div class="theme-lab-sheet-copy"><b class="theme-lab-sheet-generic-copy" data-i18n="theme_lab_sheet">Sheet</b><span class="theme-lab-sheet-generic-copy" data-i18n="theme_lab_sheet_copy">Attached to its owning window.</span><b class="theme-lab-sheet-aqua-copy" lang="en" translate="no">Preparing move to “Documents”</b><span class="theme-lab-sheet-aqua-copy" lang="en" translate="no">A file with the same name already exists.</span></div>
-                      <div class="theme-lab-sheet-actions"><button class="btn theme-lab-sheet-generic-action" type="button" data-i18n="cancel">Cancel</button><button class="btn default theme-lab-sheet-generic-action" type="button" data-i18n="ok">OK</button><button class="btn theme-lab-sheet-aqua-action" type="button" lang="en" translate="no">Stop</button><button class="btn default theme-lab-sheet-aqua-action" type="button" lang="en" translate="no">Replace</button></div>
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              <section class="theme-lab-group theme-lab-finder" aria-labelledby="theme-lab-finder-title">
-                <h3 id="theme-lab-finder-title" data-i18n="theme_lab_finder">Finder surface</h3>
-                <div class="theme-lab-finder-window" data-theme-lab-reference="guidebook.macosx102.finder">
-                  <div class="theme-lab-finder-window-titlebar" aria-hidden="true" lang="en" translate="no">
-                    <i class="is-close"></i><i class="is-minimize"></i><i class="is-zoom"></i>
-                    <span>Jim McKintie's Computer</span>
-                  </div>
-                  <div class="theme-lab-toolbar">
-                    <button class="btn theme-lab-toolbar-back" type="button" data-i18n="theme_lab_back">Back</button>
-                    <span class="theme-lab-separator" aria-hidden="true"></span>
-                    <strong class="theme-lab-toolbar-location">Macintosh HD</strong>
-                    <span class="theme-lab-toolbar-status" data-i18n="theme_lab_finder_status">10 items, 59.1 MB available</span>
-                    <div class="theme-lab-toolbar-icon-strip" aria-label="Finder toolbar controls">
-                      <button class="theme-lab-toolbar-icon-button" type="button"><span class="theme-lab-toolbar-round-icon is-back" aria-hidden="true"></span><small data-i18n="theme_lab_back">Back</small></button>
-                      <button class="theme-lab-toolbar-icon-button" type="button"><span class="theme-lab-toolbar-round-icon is-forward" aria-hidden="true"></span><small>Forward</small></button>
-                      <div class="theme-lab-toolbar-view-control"><span class="theme-lab-toolbar-view-buttons" aria-hidden="true"><i class="theme-lab-view-icon is-icon"></i><i class="theme-lab-view-icon is-list"></i><i class="theme-lab-view-icon is-columns"></i></span><small>View</small></div>
-                      <span class="theme-lab-toolbar-era-separator" aria-hidden="true"></span>
-                      <button class="theme-lab-toolbar-icon-button" type="button"><span class="theme-lab-toolbar-role-icon is-computer" aria-hidden="true"></span><small>Computer</small></button>
-                      <button class="theme-lab-toolbar-icon-button" type="button"><span class="theme-lab-toolbar-role-icon is-home" aria-hidden="true"></span><small>Home</small></button>
-                      <button class="theme-lab-toolbar-icon-button" type="button"><span class="theme-lab-toolbar-role-icon is-favorites" aria-hidden="true"></span><small>Favorites</small></button>
-                      <button class="theme-lab-toolbar-icon-button" type="button"><span class="theme-lab-toolbar-role-icon is-applications" aria-hidden="true"></span><small>Applications</small></button>
-                    </div>
-                    <label class="theme-lab-toolbar-search"><input type="search" value="" placeholder="Search" aria-label="Finder search" /><small>Search</small></label>
-                  </div>
-                  <div class="theme-lab-snow-toolbar" aria-hidden="true" lang="en" translate="no">
-                    <strong class="theme-lab-snow-title">Macintosh HD</strong>
-                    <div class="theme-lab-snow-nav">
-                      <button class="theme-lab-snow-droplet is-back" type="button" aria-label="Back"></button>
-                      <button class="theme-lab-snow-droplet is-forward" type="button" aria-label="Forward"></button>
-                    </div>
-                    <div class="theme-lab-snow-view-controls" role="group" aria-label="View controls">
-                      <button class="is-selected" type="button" aria-label="Icon view"><span class="theme-lab-view-icon is-icon" aria-hidden="true"></span></button>
-                      <button type="button" aria-label="List view"><span class="theme-lab-view-icon is-list" aria-hidden="true"></span></button>
-                      <button type="button" aria-label="Column view"><span class="theme-lab-view-icon is-columns" aria-hidden="true"></span></button>
-                      <button type="button" aria-label="Cover Flow view"><span class="theme-lab-view-icon is-cover" aria-hidden="true"></span></button>
-                    </div>
-                    <button class="theme-lab-snow-action" type="button" aria-label="Action menu"></button>
-                    <label class="theme-lab-snow-search"><input type="search" placeholder="Search" aria-label="Finder search" /></label>
-                  </div>
-                  <div class="theme-lab-finder-status-strip" aria-hidden="true" lang="en" translate="no"><span>2 items</span></div>
-                  <div class="theme-lab-finder-surface">
-                    <button class="finder-item is-selected" type="button"><span class="sys-icon sys-icon-desktop" data-system-icon="startupDisk" aria-hidden="true"></span><span>Macintosh HD</span></button>
-                    <button class="finder-item" type="button"><span class="sys-icon sys-icon-desktop" data-system-icon="folder" aria-hidden="true"></span><span>System Folder</span></button>
-                    <button class="finder-item theme-lab-finder-era-extra" type="button"><span class="sys-icon sys-icon-desktop" data-system-icon="folder" aria-hidden="true"></span><span>Applications</span></button>
-                    <button class="finder-item theme-lab-finder-era-extra" type="button"><span class="sys-icon sys-icon-desktop" data-system-icon="folder" aria-hidden="true"></span><span>Documents</span></button>
-                    <button class="finder-item theme-lab-finder-era-extra" type="button"><span class="sys-icon sys-icon-desktop" data-system-icon="folder" aria-hidden="true"></span><span>Utilities</span></button>
-                    <button class="finder-item theme-lab-finder-era-extra" type="button"><span class="sys-icon sys-icon-desktop" data-system-icon="document" aria-hidden="true"></span><span>Read Me</span></button>
-                    <div class="theme-lab-finder-rows">
-                      <div class="is-selected"><span class="sys-icon" data-system-icon="finderApp" aria-hidden="true"></span><span>Finder</span><small>Application</small></div>
-                      <div><span class="sys-icon" data-system-icon="document" aria-hidden="true"></span><span>Read Me</span><small>Document</small></div>
-                    </div>
-                  </div>
-                </div>
-              </section>
-            </div>
-
-            <div class="system-tab-panel theme-lab-panel" id="theme-lab-panel-tokens" role="tabpanel" aria-labelledby="theme-lab-tab-tokens" data-theme-lab-panel="tokens" hidden>
-              <!-- The authoring surface. Rows come from the live CSSOM, not a
-                   copied list, so the delta shown is the delta that ships. An
-                   edit sets the custom property on <body>, which repaints the
-                   whole desktop, and the result leaves as pasteable CSS; the
-                   Lab never writes a stylesheet or persists an experiment. -->
-              
-            </div>
-          </div>
-        </div>
-        <button class="grow-box" type="button" aria-label="Resize window" data-i18n-aria-label="grow_box_aria"></button>
       </section>
 
       <section class="icon-column" aria-label="Desktop icons" data-i18n-aria-label="desktop_icons">
         <button class="desktop-icon" type="button" data-open="disk" data-balloon-help="balloon_startup_disk">
           <span class="sys-icon sys-icon-desktop" data-system-icon="startupDisk" aria-hidden="true"></span>
           <span data-i18n="startup_disk">Startup Disk</span>
-        </button>
-        <button class="desktop-icon is-mounted-disk" id="mounted-welcome-disk" type="button" data-open="welcomeDisk" hidden>
-          <span class="sys-icon sys-icon-desktop" data-system-icon="fileFloppy" aria-hidden="true"></span>
-          <span data-i18n="welcome_floppy">Welcome Floppy</span>
         </button>
         <button class="desktop-icon" id="desktop-file-floppy-starter" type="button" data-action="open-rag" data-balloon-help="balloon_text_disk">
           <span class="sys-icon sys-icon-desktop" data-system-icon="fileFloppy" aria-hidden="true"></span>
@@ -4199,6 +3325,10 @@ Glass</textarea>
         <button class="desktop-icon desktop-app-icon" type="button" data-action="open-quick-draft" data-balloon-help="balloon_quick_draft">
           <span class="sys-icon sys-icon-desktop" data-system-icon="quickDraft" aria-hidden="true"></span>
           <span data-i18n="quick_draft_label">Quick Draft</span>
+        </button>
+        <button class="desktop-icon desktop-app-icon" type="button" data-action="open-lightroom" data-balloon-help="balloon_lightroom">
+          <span class="sys-icon sys-icon-desktop" data-system-icon="lightroom" aria-hidden="true"></span>
+          <span data-i18n="lightroom_title">Lightroom</span>
         </button>
         <button class="desktop-icon desktop-app-icon" id="finder-writing-studio-toggle" type="button" data-balloon-help="balloon_writing_studio">
           <span class="sys-icon sys-icon-desktop" data-system-icon="writingStudio" aria-hidden="true"></span>
@@ -4233,7 +3363,7 @@ Glass</textarea>
       </section>
     </main>
 
-    <script src="app/generated/build-info.js?v=20260819.2"></script>
-    <script src="app.bundle.js?v=20260819.2"></script>
+    <script src="app/generated/build-info.js?v=20260823.15"></script>
+    <script src="app.bundle.js?v=20260823.15"></script>
   </body>
 </html>

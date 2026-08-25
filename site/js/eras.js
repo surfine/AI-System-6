@@ -1,6 +1,8 @@
 // Era engine: one source of truth for the six release appearances.
 // The page theme, every synced icon, and both timeline strips follow it.
 
+import { L } from "./copy.js?v=20260820a";
+
 // `font` is the typeface the era actually wore, and the one this page swaps to
 // when you travel there. It is named out loud in the dissolve readout: an era
 // you can only see in rounded corners is a decade you have to be told about,
@@ -21,40 +23,40 @@ export const ERAS = [
   {
     id: "classic", year: 1988, label: "System 6", ext: "svg",
     font: "Chicago", substitutes: [],
-    role: "The claim",
-    claim: "An AI fits inside files, windows, and a Trash can.",
+    role: L("The grammar", "对象语法"),
+    claim: L("Files, windows, disks, and Trash make responsibility visible.", "文件、窗口、磁盘与废纸篓，让每项责任都看得见。"),
   },
   {
     id: "platinum", year: 1999, label: "Platinum", ext: "png",
     font: "Charcoal", alias: ["Charcoal CY"],
     substitutes: ["Platinum Asap", "Geneva", "Tahoma", "Verdana"],
-    role: "It was never a filter",
-    claim: "Color, bevels, a new system font. The same objects survive the repaint.",
+    role: L("More material, same meaning", "材质变多，意义不变"),
+    claim: L("Color and depth arrive without changing what a file or a save means.", "颜色与层次来到桌面，却没有改变文件与保存的意义。"),
   },
   {
     id: "aqua", year: 2002, label: "Aqua", ext: "png",
     font: "Lucida Grande", substitutes: ["Lucida Sans Unicode", "Lucida Sans", "DejaVu Sans"],
-    role: "The counterfactual",
-    claim: "If 2002 had an LLM, ClioTalk would have been a Cocoa app.",
+    role: L("A new surface language", "新的表面语言"),
+    claim: L("Aqua changes the controls and light, while the manuscript stays the manuscript.", "Aqua 改变控件与光线，正文仍然是同一份正文。"),
   },
   {
     id: "snow-leopard", year: 2009, label: "Snow Leopard", ext: "png",
     font: "Lucida Grande", substitutes: ["Lucida Sans Unicode", "Lucida Sans", "DejaVu Sans"],
-    role: "The working year",
-    claim: "Nothing to show off. A source list, a toolbar, and a day of real work.",
+    role: L("The working year", "安静工作的一年"),
+    claim: L("A mature source list and toolbar step back so the day's work can come forward.", "成熟的来源列表与工具栏退到后面，让一天的工作走到前面。"),
   },
   {
     id: "yosemite", year: 2014, label: "Yosemite", ext: "png",
     font: "Helvetica Neue", substitutes: ["Helvetica", "Arial", "Liberation Sans"],
-    role: "Not an antique",
-    claim: "Flat did not end the object. It only changed the paint.",
+    role: L("The object survives flatness", "扁平之后，对象还在"),
+    claim: L("Flat design changes the paint, not the promise made by the object.", "扁平设计改变外观，没有改变对象作出的承诺。"),
   },
   {
     id: "liquid-glass", year: 2026, label: "Liquid Glass", ext: "png",
     font: "SF Pro", alias: ["SF Pro Text", "SF Pro Display"],
     substitutes: ["Segoe UI Variable Text", "Segoe UI", "Roboto", "Noto Sans"],
-    role: "The control",
-    claim: "Same desk, today's design language. So the desk was never the costume.",
+    role: L("The control", "最后的对照"),
+    claim: L("The same desk accepts contemporary material without surrendering its rules.", "同一张桌面可以接受当代材质，却不交出自己的规则。"),
   },
 ];
 

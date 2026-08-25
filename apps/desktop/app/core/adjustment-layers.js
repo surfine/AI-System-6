@@ -2,7 +2,7 @@
 // Quick Draft adjustment layers — pure data.
 //
 // The image-editor metaphor: the writer's own text is the negative, and
-// 明明传球 / 洛洛接球 / HKRR 抬升 / 密度 are adjustment layers that sit on top
+// 铭铭视角 / 落落接收 / HKRR 提亮 / 密度 are adjustment layers that sit on top
 // of it. The first three are also ClioTalk commands; density is an adjustment
 // only — it has no command button of its own, its three strengths mean
 // "less compression / standard / more compression", and it composes the body.

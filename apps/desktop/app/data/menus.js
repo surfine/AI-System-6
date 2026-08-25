@@ -28,6 +28,9 @@ const editBasics = [
 
 const selectionTools = [
   menuItem("selection-look-up", "look_up"),
+  // Selected text into the Scrapbook: the route's own gesture, dropped when the
+  // menu bar moved out of index.html and restored on evidence, not on a hunch.
+  menuItem("selection-clip", "clip_to_scrapbook"),
   menuItem("selection-find-sources", "find_sources"),
   menuItem("selection-clip-file", "selection_clip_file"),
   menuItem("selection-translate", "translate_selection"),
@@ -49,8 +52,15 @@ const writingTools = [
 
 const flatSelectionTools = [menuSectionLabel("selection_services"), ...selectionTools];
 const editWithSelection = [...editBasics, menuSeparator, ...flatSelectionTools];
+const findCommands = [
+  menuItem("open-find-change", "find_change_ellipsis", "find-change"),
+  menuItem("find-change-next", "find_next", "find-change-next"),
+];
+
 const editWithWriting = [
   ...editBasics,
+  menuSeparator,
+  ...findCommands,
   menuSeparator,
   submenu("writing_tools", writingTools),
   menuSeparator,
@@ -174,25 +184,34 @@ const teachTextMenus = [
   menu("edit", "menu_edit", editWithWriting),
   menu("writing", "menu_writing", [
     submenu("menu_go_to", [
-      menuItem("open-question-sheet", "question_sheet"),
-      menuItem("open-outline", "outline"),
-      menuItem("open-section-drafts", "section_drafts"),
-      menuItem("open-teachtext-manuscript", "teachtext_label"),
-      menuItem("open-review-desk", "review_desk"),
+      menuItem("open-question-sheet", "question_sheet", "route-question-sheet"),
+      menuItem("open-outline", "outline", "route-outline"),
+      menuItem("open-section-drafts", "section_drafts", "route-section-drafts"),
+      menuItem("open-teachtext-manuscript", "manuscript", "route-manuscript"),
+      menuItem("open-review-desk", "review_desk", "route-review-desk"),
     ]),
-    menuItem("toggle-writing-preview", "preview"),
+    menuItem("advance-writing-route", "advance_writing_route", "route-advance"),
+    menuItem("toggle-writing-preview", "preview", "writing-preview"),
+    menuItem("cycle-writing-focus", "focus_mode_cycle", "writing-focus"),
     menuItem("see-as-chart", "clio_chart_see_as_chart"),
+    menuItem("develop-in-lightroom", "develop_in_lightroom"),
     menuSeparator,
     submenu("question_sheet", [
-      menuItem("insert-question-template", "insert_question_template"),
       menuItem("organize-question-sheet", "organize_question_sheet"),
+      menuItem("insert-question-template", "insert_question_template"),
       menuItem("generate-outline", "make_outline"),
       menuItem("advance-question-to-outline", "to_outline"),
     ], { surface: "questionSheet" }),
     submenu("outline", [
       menuItem("add-outline-section", "add_outline_section"),
+      menuItem("outline-tree-up", "outline_tree_up"),
+      menuItem("outline-tree-down", "outline_tree_down"),
+      menuItem("outline-tree-promote", "outline_tree_promote"),
+      menuItem("outline-tree-demote", "outline_tree_demote"),
+      menuItem("outline-tree-write", "outline_tree_write"),
       menuItem("mingming-outline", "mingming_outline"),
       menuItem("structure-outline", "structure_outline"),
+    menuItem("reduce-outline", "reduce_outline"),
       menuItem("expand-outline", "expand_weak_topic"),
       menuItem("advance-outline-to-drafts", "to_section_drafts"),
     ], { surface: "outline" }),
@@ -204,8 +223,15 @@ const teachTextMenus = [
       menuItem("suggest-draft", "suggest_draft"),
       menuItem("eli5-rewrite-section", "quick_draft_eli5_rewrite"),
       menuItem("eli5-review-section", "quick_draft_eli5_review"),
-      menuItem("advance-drafts-to-review", "to_review"),
+      menuItem("return-document-to-section-drafts", "edit_sections_again"),
+      menuItem("advance-drafts-to-manuscript", "to_manuscript"),
     ], { surface: "sectionDrafts" }),
+    submenu("teachtext_label", [
+      // The command, its model role and its availability rule all existed; the
+      // only thing missing was a way for the writer to run it.
+      menuItem("translate-teachtext", "translate"),
+      menuItem("advance-manuscript-to-review", "to_review"),
+    ], { surface: "teachText" }),
     submenu("review_desk", [
       menuItem("previous-style-section", "previous_section"),
       menuItem("next-style-section", "next_section"),
@@ -229,6 +255,36 @@ const teachTextMenus = [
 // Quick Draft is its own application. Its route relationship is deliberately
 // one-way: the draft may enter Writing Studio, but Writing Studio never owns
 // or advertises Quick Draft as one of its internal writing surfaces.
+// 文字亮室 is its own application, so it carries its own menu bar. The views
+// belong to it now, and so does Develop; what writes the draft stays with the
+// desk that writes it.
+const lightroomMenus = [
+  menu("file", "menu_file", [
+    menuItem("close-active-window", "close", "close-window"),
+  ]),
+  menu("edit", "menu_edit", [menuItem("copy", "copy", "copy")]),
+  menu("view", "menu_view", [
+    menuItem("quick-draft-view-grain", "quick_draft_grain"),
+    menuItem("quick-draft-view-read", "quick_draft_composite"),
+    menuItem("quick-draft-view-listen", "quick_draft_listen"),
+  ]),
+  // The application's own verbs are the contextual menu, the way Quick Draft's
+  // are: four stable menus is the rule, and the fifth appears with the work.
+  // The darkroom vocabulary lives in the darkroom. These three are one-shot
+  // rewrites named for the adjustment layers, not the layers themselves -- but
+  // a writer reading "读者视角" in the drafting window has no way to know that,
+  // and the split says write here, look there.
+  menu("lightroom", "lightroom_title", [
+    menuItem("quick-draft-apply", "quick_draft_preview_adjustments"),
+    menuItem("quick-draft-develop", "quick_draft_develop"),
+    menuSeparator,
+    menuItem("quick-draft-mingming", "quick_draft_chip_mingming"),
+    menuItem("quick-draft-luoluo", "quick_draft_chip_luoluo"),
+    menuItem("quick-draft-hkrr", "quick_draft_chip_hkrr"),
+  ], { menuCondition: "quick-draft-menu" }),
+  specialMenu(),
+];
+
 const quickDraftMenus = [
   menu("file", "menu_file", [
     menuItem("close-active-window", "close", "close-window"),
@@ -240,10 +296,16 @@ const quickDraftMenus = [
     menuItem("quick-draft-send-review", "quick_draft_send_review"),
   ]),
   menu("edit", "menu_edit", editWithWriting),
+  // Quick Draft is where the writing happens; looking at it happens in 文字亮室.
+  // The grain, composite and listen views were reachable from here too, and they
+  // were not duplicates -- they drive Quick Draft's OWN display mode, so this
+  // removes real views rather than tidying repeats. That is the point: the split
+  // says write here, look there, and leaving three ways to look inside the
+  // writing window was the split only two-thirds done. The paper itself stays,
+  // and the way across is one row instead of three.
   menu("view", "menu_view", [
     menuItem("quick-draft-view-body", "quick_draft_display_body"),
-    menuItem("quick-draft-view-grain", "quick_draft_grain"),
-    menuItem("quick-draft-view-read", "quick_draft_composite"),
+    menuItem("open-lightroom", "lightroom_title"),
     menuSeparator,
     menuItem("quick-draft-toggle-materials", "quick_draft_hide_materials"),
     menuItem("quick-draft-toggle-adjustments", "quick_draft_hide_adjustments"),
@@ -251,7 +313,6 @@ const quickDraftMenus = [
   menu("quickDraft", "quick_draft_label", [
     menuItem("quick-draft-compose", "quick_draft_start_writing"),
     menuItem("quick-draft-apply", "quick_draft_preview_adjustments"),
-    menuItem("quick-draft-develop", "quick_draft_develop"),
     menuSeparator,
     menuItem("quick-draft-import-chat", "quick_draft_import_chat_records"),
     menuItem("quick-draft-vent-on", "quick_draft_vent_start"),
@@ -259,9 +320,6 @@ const quickDraftMenus = [
     menuItem("quick-draft-vent-summary", "quick_draft_vent_summarize"),
     menuSeparator,
     menuItem("quick-draft-talk-points", "quick_draft_chip_talk_points"),
-    menuItem("quick-draft-mingming", "quick_draft_chip_mingming"),
-    menuItem("quick-draft-luoluo", "quick_draft_chip_luoluo"),
-    menuItem("quick-draft-hkrr", "quick_draft_chip_hkrr"),
     menuItem("quick-draft-praise", "quick_draft_chip_praise"),
     menuSeparator,
     menuItem("quick-draft-toggle-sideask", "quick_draft_show_sideask"),
@@ -597,6 +655,7 @@ const minimalMenus = [specialMenu()];
 
 const applicationMenuSets = Object.freeze({
   finder: finderMenus,
+  lightroom: lightroomMenus,
   quickDraft: quickDraftMenus,
   teachText: teachTextMenus,
   clioTalk: clioTalkMenus,
@@ -684,6 +743,11 @@ function renderApplicationMenuItem(item) {
   if (item.repeatMode) button.dataset.repeatMode = item.repeatMode;
   if (item.shuffleMode) button.dataset.shuffleMode = item.shuffleMode;
   if (item.shuffleKind) button.dataset.shuffleKind = item.shuffleKind;
+  // Generic dataset passthrough: app menu sets can carry their own state
+  // hooks (e.g. Bonsai's data-bonsai-display for checked view toggles).
+  if (item.dataset) {
+    Object.entries(item.dataset).forEach(([key, value]) => { button.dataset[key] = value; });
+  }
   button.textContent = typeof t === "function" ? t(item.labelKey) : item.labelKey;
   return button;
 }

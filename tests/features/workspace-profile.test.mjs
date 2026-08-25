@@ -1,4 +1,4 @@
-import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
+import { createFeatureTest, read, windowApp } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("workspace-profile");
 const profile = read("app/core/workspace-profile.js");
@@ -24,7 +24,7 @@ const quickDraftMenusBlock = menus.slice(menus.indexOf("const quickDraftMenus"),
 
 test.assertIncludes(manifest, '"app/core/workspace-profile.js"', "loads the central profile policy");
 test.assertIncludes(profile, 'let workspaceProfile = workspaceProfileWriting', "keeps the existing writing experience as the default");
-test.assertMatches(runtime, /if \(!guideSeen\) \{[\s\S]*setWorkspaceProfile\(workspaceProfileDesktop, \{ persist: false \}\)[\s\S]*openWelcomeFloppy\(\)/, "mounts first-run Welcome Floppy on the Desktop without changing the legacy profile default");
+test.assertMatches(runtime, /if \(!clioOnboardingCompleted\) \{[\s\S]*setWorkspaceProfile\(workspaceProfileDesktop, \{ persist: false \}\)[\s\S]*openFirstRunClioTalk\(\)/, "opens first-run ClioTalk on the Desktop without changing the legacy profile default");
 test.assertIncludes(profile, "applyDeploymentWorkspaceDefault", "derives the first-run public default from existing deployment capabilities");
 test.assertMatches(profile, /workspaceProfileWasRestored[\s\S]*public_deployment[\s\S]*workspaceProfileDesktop/, "preserves an explicit user profile before applying the public Desktop default");
 test.assertIncludes(profile, "workspaceCapabilityStudio", "classifies studio-only surfaces centrally");
@@ -71,7 +71,7 @@ test.assertIncludes(profile, "writingStudioOwnedWindowNames", "Writing Studio ow
 test.assertNotMatches(profile, /writingStudioOwnedWindowNames = new Set\(\[[^\]]*"quickDraft"/, "Writing Studio does not own Quick Draft");
 test.assertIncludes(multiFinder, 'writingStudio: "Writing Studio"', "MultiFinder recognizes Writing Studio as an application");
 test.assertIncludes(multiFinder, 'quickDraft: "Quick Draft"', "MultiFinder labels Quick Draft as its own application");
-test.assertIncludes(multiFinder, 'quickDraft: "quickDraft"', "the Quick Draft window resolves to the independent application");
+test.assert(windowApp("quickDraft") === "quickDraft", "the Quick Draft window resolves to the independent application");
 test.assertIncludes(quickDraftHandoff, 'ensureRunningApp("quickDraft", "quickDraft")', "Quick Draft preserves its own identity when enabling MultiFinder");
 test.assertMatches(windows, /mobileFullScreenAppIds = new Set\(\[[^\]]*"quickDraft"/, "Quick Draft retains a full-screen application shell on phones");
 test.assertNotIncludes(teachTextMenusBlock, 'menuItem("open-quick-draft"', "Writing Studio has no Quick Draft entrance");

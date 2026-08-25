@@ -2,7 +2,7 @@
 // durable storage, and final delivery stay simpler than the full feature set.
 
 import vm from "node:vm";
-import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
+import { createFeatureTest, read, windowApp } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("product-completion");
 const html = read("index.html");
@@ -20,12 +20,12 @@ const cloud = read("app/features/cloud-model.js");
 const reader = read("app/features/reader.js");
 const scrapbook = read("app/features/scrapbook.js");
 const teachtextAccessories = read("app/features/teachtext-accessories.js");
+const holdThought = read("app/features/hold-that-thought.js");
+const projectPeek = read("app/features/project-peek.js");
 const timeMachine = read("app/features/time-machine.js");
 const en = read("app/data/translations-en.js");
 const zh = read("app/data/translations-zh.js");
 
-const guide = html.match(/<section class="window guide-window[\s\S]*?<section class="window rebuild-flow-window/)?.[0] || "";
-const welcomeDisk = html.match(/<section class="window finder-window welcome-disk-window[\s\S]*?<section class="window guide-window/)?.[0] || "";
 const quickDraft = html.match(/<section class="window draft-desk-window[\s\S]*?<section class="window image-manager-window/)?.[0] || "";
 const control = html.match(/<aside class="window control-panel[\s\S]*?<aside class="window chooser-panel/)?.[0] || "";
 const applications = html.match(/<section class="window finder-window applications-window[\s\S]*?<section class="window draft-desk-window/)?.[0] || "";
@@ -33,7 +33,7 @@ const desktop = html.match(/<section class="icon-column"[\s\S]*?<\/section>\s*<\
 
 // Welcome Floppy orients without opening a writing surface. The writing routes
 // stay where they live.
-test.assertNotIncludes(guide, 'data-action="guide-start-quick-draft"', "Start Here does not put a first-time visitor into a draft");
+test.assertNotIncludes(html, 'data-action="guide-start-quick-draft"', "first use never puts a visitor into a draft");
 test.assertIncludes(html, '<button data-workspace-capability="studio" data-action="guide-start-route"', "the long-project route stays in the Special menu");
 
 // Pinning the markup is not the same as pressing the item. "Start Writing
@@ -55,6 +55,8 @@ const answeredActions = new Set([
     ...scrapbook.slice(scrapbook.indexOf("const slist=["), scrapbook.indexOf("];", scrapbook.indexOf("const slist=["))).matchAll(/\[\s*"([a-z0-9-]+)"/g),
     ...teachtextAccessories.slice(teachtextAccessories.indexOf("const nlist=["), teachtextAccessories.indexOf("];", teachtextAccessories.indexOf("const nlist=["))).matchAll(/\[\s*"([a-z0-9-]+)"/g),
     ...teachtextAccessories.slice(teachtextAccessories.indexOf("const clist=["), teachtextAccessories.indexOf("];", teachtextAccessories.indexOf("const clist=["))).matchAll(/\[\s*"([a-z0-9-]+)"/g),
+    ...holdThought.matchAll(/"(open-hold-thought|hold-thought-[a-z-]+)":/g),
+    ...projectPeek.matchAll(/"(project-peek-[a-z-]+)":/g),
     ...timeMachine.matchAll(/"(open-time-machine|time-machine-[a-z-]+)"/g),
     ...handoff.matchAll(/"(open-quick-draft|quick-draft-[a-z0-9-]+)"/g),
   ].map((m) => m[1]),
@@ -103,8 +105,13 @@ test.assert(desktop.match(/id="active-project-drop-target"/g)?.length === 1, "th
 for (const action of ["open-quick-draft", "open-rag"]) test.assertIncludes(desktop, action, `fresh desktop exposes ${action}`);
 test.assertIncludes(desktop, 'data-open="assistant"', "fresh desktop exposes ClioTalk");
 
-test.assertMatches(draftDesk, /quickDraftAdvancedRevealed = false[\s\S]*button\.hidden = !hasBody \|\| !quickDraftAdvancedRevealed/, "Grain and Read stay undisclosed until Adjust is requested");
-test.assertMatches(draftDesk, /button\.dataset\.quickDraftDrawer === "inspector"[\s\S]*quickDraftAdvancedRevealed = true/, "Adjust reveals advanced draft controls on demand");
+// Quick Draft writes; 文字亮室 looks. Grain, Read and Listen are the darkroom's
+// own views, so they are never held back by a reveal — an earlier disclosure
+// flag lived on a control that moved out, which left the darkroom with nothing
+// it could show. What is conditional is the route: no draft, no darkroom.
+test.assertNotIncludes(draftDesk, "quickDraftAdvancedRevealed", "no reveal flag gates the darkroom's own views");
+test.assertMatches(draftDesk, /data-quick-draft-display="grain"[^)]*data-quick-draft-display="read"[^)]*data-quick-draft-display="listen"/, "all three darkroom views share one availability rule");
+test.assertMatches(draftDesk, /\[data-action="open-lightroom"\][\s\S]{0,200}button\.disabled = !hasBody/, "the route into the darkroom is off until there is a draft to read");
 test.assertIncludes(draftDesk, 'const action = hasBody ? "continue" : "draft";', "the stable primary action becomes Continue Writing after the first draft");
 test.assertMatches(quickDraft, /quick-draft-save-project-doc[\s\S]*export-markdown[\s\S]*share-markdown[\s\S]*<hr \/>[\s\S]*teachtext[\s\S]*quick-draft-send-review/, "Deliver prioritizes save, download, share, then longer handoffs");
 
@@ -135,7 +142,8 @@ test.assert(manifest.display === "standalone" && manifest.start_url === "/" && m
 for (const marker of ["apple-mobile-web-app-capable", "apple-mobile-web-app-title", "apple-touch-icon", "viewport-fit=cover"]) {
   test.assertIncludes(html, marker, `iPhone metadata includes ${marker}`);
 }
-test.assertIncludes(welcomeDisk, 'data-action="welcome-iphone-help"', "Add to Home Screen help is discoverable as a conditional Welcome Floppy object");
+test.assertMatches(read("app/data/system-dictionary.js"), /id: "install-web-app"[\s\S]{0,1500}?action: "install-web-app"/, "Add to Home Screen help is discoverable as a System Help object with a real action");
+test.assertIncludes(actions, '"install-web-app": () => window.AISystem6WebPlatform?.installWebApp?.()', "the System Help install action reaches the real platform install path");
 test.assertMatches(webPlatform, /beforeinstallprompt[\s\S]*prompt\.prompt\(\)[\s\S]*userChoice/, "supported browsers install only after the user invokes the action");
 test.assertIncludes(webPlatform, "web_install_ios_steps", "iPhone receives the real Share to Add to Home Screen instruction");
 
@@ -162,7 +170,8 @@ test.assertIncludes(documents, "async function shareActiveMarkdown", "TeachText 
 test.assertIncludes(projectCd, "async function shareSelectedProjectCdMarkdown", "Project CD shares the selected Markdown");
 test.assertIncludes(webPlatform, 'button.hidden = !canShare', "unsupported Share controls are hidden before interaction");
 
-test.assertIncludes(guide, 'data-i18n="welcome_read_me_hint"', "Read Me First explicitly leaves the next step to the user");
+test.assertIncludes(read("app/data/writing-flow-help.js"), "Nothing here creates a project or chooses the next step for you.", "Read Me explicitly leaves the next step to the user");
+test.assertIncludes(read("app/data/writing-flow-help.js"), "也不会替你决定下一步", "中文说明把下一步留给用户");
 test.assertMatches(applications, /open-quick-draft[\s\S]*app_desc_draft_desk[\s\S]*open-writing-studio[\s\S]*app_desc_writing_studio/, "Applications explains both short and long writing apps");
 for (const key of ["app_desc_cliotalk", "app_desc_reader", "app_desc_searcher"]) {
   test.assertIncludes(applications, key, `Applications explains ${key}`);
@@ -192,7 +201,7 @@ const shell = read("app/core/multi-finder.js");
 const windows = read("app/core/window-manager.js");
 const sideAsk = read("app/features/sideask-pad.js");
 test.assertIncludes(html, 'data-action="open-sideask-pad"', "SideAsk is summonable from the system-wide Apple menu");
-test.assertIncludes(shell, 'sideAskPad: "accessories"', "SideAsk is a Desk Accessory, so summoning it does not displace the front window");
+test.assert(windowApp("sideAskPad") === "accessories", "SideAsk is a Desk Accessory, so summoning it does not displace the front window");
 test.assertMatches(windows, /isDeskAccessorySidecar[\s\S]{0,200}sideAskPad/, "SideAsk sits beside the work as a sidecar, like Dictation and Translation Pad");
 test.assertIncludes(sideAsk, 'sideask_pad_temporary', "the pad says its reply is not saved");
 test.assertIncludes(sideAsk, 'await closeWindow("sideAskPad", true)', "promoting closes the pad, so the desk keeps one place to look");

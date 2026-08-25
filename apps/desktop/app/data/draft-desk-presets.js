@@ -61,8 +61,8 @@ const launchDayBase = Object.freeze({
   recipientPronouns: Object.freeze({ zh: "他/他的", en: "he/him" }),
   lenses: launchDayLenses,
   commandLabels: Object.freeze({
-    mingming: Object.freeze({ zh: "铭铭快审", en: "Mingming Pass" }),
-    luoluo: Object.freeze({ zh: "落落接收", en: "Luoluo Receive" }),
+    mingming: Object.freeze({ zh: "读者快审", en: "Reader Pass" }),
+    luoluo: Object.freeze({ zh: "听者接收", en: "Listener's Ear" }),
   }),
   promptConstraints: Object.freeze({
     zh: Object.freeze(["- 落落是男生；涉及落落时只能用“他/他的”，禁止用“她/她的”。"]),

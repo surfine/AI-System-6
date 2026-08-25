@@ -7,9 +7,14 @@ const sourcePaths = [
   "app/core/adjustment-layers.js",
   "app/core/protected-ranges.js",
   "app/core/text-compose.js",
+  "app/core/darkroom-record.js",
+  "app/core/darkroom-store.js",
   "app/core/grain-diff.js",
   "app/core/explanation-lens.js",
   "app/core/quick-draft-workspace.js",
+  // Quick Draft shows imported pictures to the model through the shared image
+  // module, so the runtime world has to carry it too.
+  "app/core/image-attachments.js",
   "app/features/draft-desk.js",
   "app/features/quick-draft-intake.js",
   "app/features/quick-draft-editor.js",
@@ -181,6 +186,11 @@ export function createDraftDeskVm() {
     formatReviewVoiceStats: null,
     markdownToSystemHtml: (text) => String(text || ""),
     escapeHtml: (text) => String(text || ""),
+    // Preview anchoring measures boxes, which this VM has none of. Stubbed
+    // beside the other core-markdown helpers; the wiring is pinned by
+    // tests/features/preview-anchor.test.mjs instead.
+    enterPreviewAtCaret: () => false,
+    leavePreviewToCaret: () => false,
     attachMarkdownEditor: () => {},
     attachMarkdownHighlight: () => {},
     initSystemSelectControls: () => {},

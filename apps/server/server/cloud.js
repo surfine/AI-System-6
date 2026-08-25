@@ -145,19 +145,62 @@ function isTrustedDeepSeekCredentialTarget(provider, targetBaseUrl) {
  *                                    OpenAI-compatible `model` field).
  * @property {string} name            Human display name.
  * @property {number} context_length  Maximum context window in tokens.
+ * @property {boolean} [vision]      True when the model reads image content.
  */
+
+const DEEPSEEK_VISION_MODEL_ID = "deepseek-v4-flash-vision-exp";
+
+/**
+ * Image limits published by the DeepSeek vision guide. The server enforces
+ * them before a request leaves the machine so an oversized image fails with a
+ * clear message instead of a provider 400.
+ */
+const CLOUD_VISION_LIMITS = Object.freeze({
+  maxImageBytes: 32 * 1024 * 1024,
+  maxImagesPerRequest: 600,
+  mimeTypes: Object.freeze(["image/jpeg", "image/png", "image/gif", "image/webp"]),
+  detailModes: Object.freeze(["auto", "low", "high", "original"]),
+});
 
 /**
  * Built-in cloud model registry. Mirrors the same array in root
  * server-cloud.js exactly. The order is significant — the client
- * surfaces it in this order in the cloud-model picker.
+ * surfaces it in this order in the cloud-model picker, so the vision model
+ * goes last and the text models keep their place.
  *
  * @type {readonly CloudModelDescriptor[]}
  */
 const DEEPSEEK_CLOUD_MODELS = [
   { id: "deepseek-v4-flash", name: "DeepSeek V4 Flash", context_length: 1000000 },
   { id: "deepseek-v4-pro", name: "DeepSeek V4 Pro", context_length: 1000000 },
+  {
+    id: DEEPSEEK_VISION_MODEL_ID,
+    name: "DeepSeek V4 Flash Vision (experimental)",
+    context_length: 1000000,
+    vision: true,
+  },
 ];
+
+/**
+ * @param {string} modelId
+ * @returns {boolean}
+ */
+function cloudModelSupportsVision(modelId) {
+  const id = String(modelId || "").trim();
+  return DEEPSEEK_CLOUD_MODELS.some((model) => model.id === id && model.vision === true);
+}
+
+/**
+ * The text models silently drop image blocks, so any surface that carries an
+ * image must be routed to the vision model instead of the picked chat model.
+ *
+ * @param {string} preferred
+ * @returns {string}
+ */
+function resolveCloudVisionModel(preferred) {
+  const id = String(preferred || "").trim();
+  return cloudModelSupportsVision(id) ? id : DEEPSEEK_VISION_MODEL_ID;
+}
 
 /**
  * Build the auth headers for an OpenAI-compatible cloud request.
@@ -173,7 +216,11 @@ function cloudAuthHeaders(apiKey) {
 }
 
 module.exports = {
+  CLOUD_VISION_LIMITS,
   DEEPSEEK_CLOUD_MODELS,
+  DEEPSEEK_VISION_MODEL_ID,
+  cloudModelSupportsVision,
+  resolveCloudVisionModel,
   cloudAuthHeaders,
   DEEPSEEK_API_KEY_DEFAULT,
   DEEPSEEK_BASE_URL_DEFAULT,

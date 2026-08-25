@@ -19,7 +19,7 @@ let workingSessionSavePromise = Promise.resolve();
 let workingSessionRestoreInProgress = false;
 let workingSessionAutosaveInstalled = false;
 let workingSessionMigrationPromise = null;
-const workingSessionExcludedWindowNames = new Set(["about", "saveChat", "guide", "welcomeDisk"]);
+const workingSessionExcludedWindowNames = new Set(["about", "saveChat"]);
 
 function registerWorkingSessionAdapter(adapter) {
   if (!adapter || typeof adapter.id !== "string" || !adapter.id.trim()) return false;

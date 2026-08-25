@@ -21,6 +21,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
 import { assertReferenceAssets } from "./lib/reference-assets.mjs";
+import { windowInterfaceRegistry } from "./interface-guidelines-contract.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const require = createRequire(import.meta.url);
@@ -103,11 +104,14 @@ const outputDir = join(root, options.out);
 const outRelative = options.out.replace(`${root}/`, "");
 mkdirSync(outputDir, { recursive: true });
 
-const html = readFileSync(join(root, "apps/desktop/index.html"), "utf8");
-const windows = [];
-for (const match of html.matchAll(/class="([^"]+)"[^>]*data-window="([^"]+)"[^>]*aria-labelledby="([^"]+)"/g)) {
-  windows.push({ id: match[2], label: match[3], classes: match[1].split(/\s+/) });
-}
+const windows = Object.entries(windowInterfaceRegistry).map(([id, contract]) => ({
+  id,
+  role: contract.role,
+  sourceKind: contract.sourceKind,
+  ensure: contract.ensure,
+  mountPath: contract.mountPath,
+  cssPrefixes: contract.cssPrefixes,
+}));
 
 let server;
 let browser;
@@ -150,7 +154,13 @@ try {
 
   const captures = [];
   for (const windowInfo of windows) {
-    const rect = await page.evaluate(({ id, classes }) => {
+    await page.evaluate(async ({ id, ensure }) => {
+      if (document.querySelector(`.window[data-window="${id}"]`)) return;
+      if (ensure === "loadLazyWindowModule" && typeof loadLazyWindowModule === "function") {
+        await loadLazyWindowModule(id);
+      }
+    }, windowInfo);
+    const mounted = await page.evaluate(({ id }) => {
       for (const win of document.querySelectorAll(".window")) {
         win.classList.add("is-hidden");
         win.classList.remove("is-active");
@@ -160,9 +170,18 @@ try {
       target.classList.remove("is-hidden");
       target.classList.add("is-active");
       const box = target.getBoundingClientRect();
-      return { x: Math.round(box.x), y: Math.round(box.y), width: Math.round(box.width), height: Math.round(box.height) };
-    }, { id: windowInfo.id, classes: windowInfo.classes });
-    if (!rect) continue;
+      const titleId = target.getAttribute("aria-labelledby") || "";
+      return {
+        x: Math.round(box.x),
+        y: Math.round(box.y),
+        width: Math.round(box.width),
+        height: Math.round(box.height),
+        label: titleId,
+        classes: [...target.classList],
+      };
+    }, windowInfo);
+    if (!mounted) throw new Error(`Registered window did not mount: ${windowInfo.id} (${windowInfo.mountPath})`);
+    const { label, classes, ...rect } = mounted;
     await page.waitForTimeout(60);
     const element = page.locator(`.window[data-window="${windowInfo.id}"]`);
     const fileName = `window-${windowInfo.id}-${options.theme}.png`;
@@ -203,8 +222,12 @@ try {
     }, { id: windowInfo.id });
     captures.push({
       window: windowInfo.id,
-      label: windowInfo.label,
-      classes: windowInfo.classes,
+      label,
+      classes,
+      role: windowInfo.role,
+      sourceKind: windowInfo.sourceKind,
+      mountPath: windowInfo.mountPath,
+      cssPrefixes: windowInfo.cssPrefixes,
       theme: options.theme,
       rect,
       computed,
@@ -219,7 +242,7 @@ try {
     schemaVersion: 1,
     theme: options.theme,
     generatedAt: new Date().toISOString(),
-    registrySource: "index.html data-window entries",
+    registrySource: "tooling/interface-guidelines-contract.mjs windowInterfaceRegistry",
     windowCount: windows.length,
     captured: captures.length,
     zeroSize: captures.filter((capture) => capture.rect.width <= 0 || capture.rect.height <= 0).map((capture) => capture.window),

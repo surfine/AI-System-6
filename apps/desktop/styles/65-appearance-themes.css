@@ -179,6 +179,10 @@ body[data-theme="platinum"] {
   --control-disabled-bg: #dddddd;
   --control-disabled-field-bg: #ffffff;
   --control-disabled-opacity: 1;
+  /* Platinum dims by ink alone (opacity 1 above), so the ink has to carry the
+     whole signal. --shade-dark reads 2.79:1 on the era's #cccccc button face;
+     this clears 3:1 while staying a Platinum grey. */
+  --system-disabled-fg: #6f6f6f;
   --system-border: 1px solid #000000;
   --system-inset:
     inset 1px 1px 0 #888888,
@@ -780,9 +784,6 @@ body[data-theme="platinum"] .sys-icon[data-system-icon]:not(:where([data-system-
 
 /* Reviewed Platinum PNGs are native 32/16 px pixel art. Preserve each
    authored pixel as an integer device-pixel block on Retina displays. */
-.sys-icon-platinum-raster {
-  image-rendering: pixelated;
-}
 
 body[data-theme="platinum"] .sys-icon[data-system-icon="startupDisk"] {
   background-image: url("./assets/themes/platinum/startup-disk-32.svg");
@@ -1014,7 +1015,6 @@ body[data-theme="platinum"] :is(.menu-bar, .control-strip) .sys-icon .sys-icon-s
    Liquid Glass composition. Menus and the control strip retain compact inline
    glyphs; Finder and application objects use this complete asset family. */
 body[data-theme="yosemite"] .sys-icon[data-system-icon]:not(:where([data-system-icon="play"], [data-system-icon="pause"], [data-system-icon="previousTrack"], [data-system-icon="nextTrack"], [data-system-icon="shuffleTracks"], [data-system-icon="repeatTracks"], [data-system-icon="speaker"])) {
-  border: 0;
   border-radius: 0;
   background-color: transparent;
   background-image: none;
@@ -1025,231 +1025,174 @@ body[data-theme="yosemite"] .sys-icon[data-system-icon]:not(:where([data-system-
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   filter: none;
-  padding: 0;
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="startupDisk"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/startupDisk-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="hardDisk"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/hardDisk-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="folder"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/folder-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="document"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/document-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="applications"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/applications-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="trash"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/trash-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="trashFull"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/trashFull-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="finderApp"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/finderApp-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="fileFloppy"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/fileFloppy-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="assistant"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/assistant-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="quickDraft"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/quickDraft-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="writingStudio"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/writingStudio-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="projectDisk"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/projectDisk-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="projectDisc"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/projectDisc-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="cloudModel"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/cloudModel-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="cloudModelOff"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/cloudModelOff-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="questionSheet"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/questionSheet-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="outline"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/outline-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="sectionDrafts"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/sectionDrafts-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="manuscript"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/manuscript-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="reviewDesk"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/reviewDesk-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="searcher"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/searcher-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="reader"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/reader-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="timeMachine"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/timeMachine-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="docMap"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/docMap-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="clioStage"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/clioStage-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="clioChart"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/clioChart-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="liquidCover"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/liquidCover-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="cmfStudio"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/cmfStudio-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="soundscape"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/soundscape-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="scrapbook"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/scrapbook-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="systemFolder"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/systemFolder-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="helpFolder"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/helpFolder-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="importUtility"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/importUtility-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="controlPanel"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/controlPanel-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="chooser"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/chooser-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="systemHelp"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/systemHelp-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="dictionary"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/dictionary-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="teachText"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/teachText-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="writingDemo"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/writingDemo-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="chatFile"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/chatFile-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="chatImport"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/chatImport-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="systemStatus"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/systemStatus-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="contextPanel"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/contextPanel-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="rebuildArticle"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/rebuildArticle-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="bureaucracyMeme"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/bureaucracyMeme-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="endfieldTerminal"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/endfieldTerminal-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="documents"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/documents-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="alias"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/alias-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="systemFile"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/systemFile-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="multiFinderApp"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/multiFinderApp-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="daHandler"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/daHandler-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="writingBell"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/writingBell-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="control"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/control-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="localModel"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/localModel-128.png");
 }
 
 body[data-theme="yosemite"] .sys-icon[data-system-icon="controlStrip"] {
-  --yosemite-icon: url("./assets/themes/yosemite/icons/controlStrip-128.png");
 }
 
 /* Liquid Glass's selected/hover icon resets use the `background` shorthand at
@@ -1304,11 +1247,6 @@ body[data-theme="yosemite"] .desktop-icon:is(:hover, :focus-visible, .is-selecte
   background: transparent;
   color: var(--ink);
 }
-
-body[data-theme="yosemite"] .sys-icon[data-system-icon]:not(:where([data-system-icon="play"], [data-system-icon="pause"], [data-system-icon="previousTrack"], [data-system-icon="nextTrack"], [data-system-icon="shuffleTracks"], [data-system-icon="repeatTracks"], [data-system-icon="speaker"])) .sys-icon-svg {
-  display: block;
-}
-
 body[data-theme="yosemite"] .sys-icon-svg :is(.sys-icon-classic, .sys-icon-platinum-core, .sys-icon-aqua, .sys-icon-snow-leopard, .sys-icon-liquid) {
   display: none;
 }
@@ -1324,15 +1262,6 @@ body[data-theme="yosemite"] :is(.menu-bar, .control-strip) .sys-icon {
   background-image: none;
   filter: none;
 }
-
-body[data-theme="yosemite"] :is(.menu-bar, .control-strip) .sys-icon .sys-icon-svg {
-  display: block;
-}
-
-body[data-theme="yosemite"] :is(.menu-bar, .control-strip) .sys-icon .sys-icon-svg .sys-icon-yosemite {
-  display: block;
-}
-
 body[data-theme-family="classic"]:not([data-theme="classic"]) .desktop,
 
 body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) .desktop  {
@@ -1343,6 +1272,10 @@ body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) .desktop
 
 html[data-theme="yosemite"],
 body[data-theme="yosemite"] {
+  /* The base sheet owns the progress recipe; the era supplies its numbers. */
+  --theme-lab-progress-height: 12px;
+  --theme-lab-progress-radius: 6px;
+  --theme-lab-progress-value-radius: 5px;
   /* Evidence boundary: vinceliuice/Yosemite-gtk-theme 03b6f721 provides the
      surface hierarchy, 36/26/22px control relationships, #0e6bff selection,
      6/5px radii and active/backdrop states. Period pure-CSS window studies
@@ -1444,7 +1377,6 @@ body[data-theme="yosemite"] {
   /* Real 10.10 Finder capture (512 Pixels, 1:1): 12px lamps centered
      ~20.5px apart — an ~8.5px edge gap, not the 18px spacing of the
      System 6-era titlebar controls. */
-  --traffic-light-gap: 8.5px;
   /* 1:1 lamps: 24px discs lifted from the 10.10 Finder capture, served
      at 12px (crisp @2x). Flat #fc615c / #33c748 bodies with their real
      #df4744 / #27aa35 rims — no synthetic highlight; 10.10 has none. */
@@ -1823,6 +1755,18 @@ body[data-theme="yosemite"] {
 
 /* Semantic aliases keep application selectors independent of the era. */
 body[data-theme] {
+  /* One semantic surface vocabulary for application CSS. These aliases live
+     on the themed body so they resolve after the era parameter table, rather
+     than freezing :root's Classic values into every descendant. */
+  --system-raised-surface: var(--surface-primary);
+  --system-frame-border: var(--window-border);
+  --system-selection-bg: var(--selection-bg);
+  --system-selection-fg: var(--selection-fg);
+  /* --system-disabled-fg is declared at :root in 00-foundation.css. Repeating
+     it here on body[data-theme] matched every era at the SAME specificity but
+     later in the file, so it silently beat every per-appearance override above
+     it -- which is why Platinum's disabled ink could not be changed. */
+  --system-status-surface: var(--details-bar-bg);
   --help-row-selected-bg: var(--selection-bg);
   --help-row-selected-fg: var(--selection-fg);
   --find-path-result-selected-bg: var(--selection-bg);
@@ -1879,7 +1823,6 @@ body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) .title-b
 
   background: var(--titlebar-title-bg);
   color: var(--titlebar-title-fg);
-  font-family: var(--theme-title-font);
 
 }
 
@@ -1923,18 +1866,13 @@ body[data-theme="platinum"] .title-bar {
   /* Reclaim the fourth lane after the late responsive layer collapses the
      shared title bar to three columns. This keeps Zoom and WindowShade at
      the measured five-pixel visual gap without adding another owner. */
-  grid-template-columns:
-    var(--titlebar-gutter)
-    minmax(0, 1fr)
-    var(--titlebar-slot-zoom)
-    calc(var(--titlebar-gutter) - var(--titlebar-slot-zoom));
+  grid-template-columns: var(--titlebar-gutter) minmax(0, 1fr) var(--titlebar-slot-zoom) calc(var(--titlebar-gutter) - var(--titlebar-slot-zoom));
 }
 
 body[data-theme="platinum"] .title-bar :is(h1, h2) {
   padding-inline: 4px;
   font-weight: 700;
   font-variation-settings: "wdth" 123;
-  letter-spacing: 0;
   transform: translate(-1px, -1px);
 }
 
@@ -1962,7 +1900,6 @@ body[data-theme="platinum"] .title-bar .shade-box::before {
     inset 1px 1px 0 #cccccc,
     inset -1px -1px 0 #888888;
   opacity: 1;
-  transform: none;
 }
 
 body[data-theme="platinum"] .title-bar .resize-box::after {
@@ -1974,7 +1911,6 @@ body[data-theme="platinum"] .title-bar .resize-box::after {
   top: calc(var(--system-titlebar-control-art-offset-y) + 1px);
   width: 6px;
   height: 6px;
-  border: 0;
   background:
     linear-gradient(#222222, #222222) right top / 1px 6px no-repeat,
     linear-gradient(#222222, #222222) left bottom / 6px 1px no-repeat;
@@ -1998,7 +1934,6 @@ body[data-theme="platinum"] .title-bar .shade-box::after {
   top: calc(var(--system-titlebar-control-art-offset-y) + 4px);
   width: 9px;
   height: 3px;
-  border: 0;
   background:
     linear-gradient(#222222, #222222) left top / 9px 1px no-repeat,
     linear-gradient(#222222, #222222) left bottom / 9px 1px no-repeat;
@@ -2043,7 +1978,6 @@ body[data-theme="platinum"] .btn {
   border-radius: var(--btn-radius);
   background: var(--btn-bg);
   box-shadow: var(--btn-shadow);
-  font-family: var(--theme-ui-font);
   font-size: var(--system-control-size);
   font-weight: 700;
   line-height: 14px;
@@ -2185,12 +2119,6 @@ body[data-theme="platinum"] .menu-bar {
   padding-inline: 4px;
   box-shadow: var(--menu-bar-shadow);
 }
-
-body[data-theme="platinum"] .menu-bar > .menu > button {
-  font-family: var(--theme-ui-font);
-  font-weight: 600;
-}
-
 body[data-theme="platinum"] :is(.menu-popover, .menu-sub-popover, .theme-lab-menu) hr {
   border-top: 1px solid #888888;
   border-bottom: 1px solid #ffffff;
@@ -2205,7 +2133,6 @@ body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) .system-
   border-radius: var(--system-select-control-radius);
   background: var(--system-select-control-bg);
   box-shadow: var(--system-select-control-shadow);
-  font-family: var(--theme-ui-font);
   font-size: var(--system-control-size);
   font-weight: var(--system-select-control-font-weight);
 
@@ -2234,7 +2161,6 @@ body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) :where(.
   border-radius: var(--btn-radius);
   background: var(--btn-bg);
   box-shadow: var(--btn-shadow);
-  font-family: var(--theme-ui-font);
   font-weight: 400;
 
 }
@@ -2304,8 +2230,6 @@ body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) :is(inpu
 
 body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) .theme-lab-toolbar  {
 
-  min-height: var(--theme-lab-toolbar-min-height);
-  padding: var(--theme-lab-toolbar-padding);
   border-radius: var(--theme-lab-toolbar-radius);
   box-shadow: var(--toolbar-highlight);
 
@@ -2333,14 +2257,6 @@ body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) :is(.the
   padding-block: var(--theme-lab-nav-row-padding-block);
 
 }
-
-
-body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) .theme-lab-finder-rows > div  {
-
-  min-height: var(--theme-lab-finder-row-min-height);
-
-}
-
 /* Yosemite is expressed as a restrained delta from the Liquid Glass lineage:
    one fused header material, thin controls, and bounded early vibrancy. */
 body[data-theme="yosemite"] .window > .title-bar {
@@ -2353,18 +2269,16 @@ body[data-theme="yosemite"] .window > .title-bar {
 body[data-theme="yosemite"] .window > .title-bar :is(h1, h2) {
   padding-inline: 8px;
   font-weight: 500;
-  letter-spacing: 0;
   text-shadow: none;
 }
 
 body[data-theme="yosemite"] .title-bar > :is(.close-box, .resize-box) {
-  width: 12px;
-  height: 12px;
-  margin: 0;
-  /* Real 10.10 lamps are flat 12px discs. The uniform fill has no specular
-     highlight; this inset hairline only reproduces the source asset's dark
-     antialiased edge and prevents the classic square frame leaking through. */
-  border: 0;
+  /* Real 10.10 lamps are flat 12px discs with no specular highlight, so the
+     art is carried entirely by the source asset. The round clip is what stops
+     the classic square frame leaking through behind it.
+     This comment used to describe an "inset hairline"; no such declaration is
+     in this block, or anywhere in the Yosemite lamp rules. The words outlived
+     the rule they described. */
   border-radius: 50%;
   background-position: center;
   background-size: 12px 12px;
@@ -2372,16 +2286,23 @@ body[data-theme="yosemite"] .title-bar > :is(.close-box, .resize-box) {
   filter: none;
 }
 
+  /* Not a restatement of the base: these three eras are the traffic-light
+     eras, where the era's own tradition puts three lamps in a row at the
+     left. This is the product's choice stated explicitly where history
+     pulls the other way -- Close at the left edge, Zoom at the right --
+     and window-frame.test.mjs holds each era to saying so. The duplicate
+     is the guard. */
 body[data-theme="yosemite"] .title-bar > .close-box {
   grid-column: 1;
   justify-self: start;
+
   background: var(--traffic-light-close-bg) center / 12px 12px no-repeat;
 }
 
 body[data-theme="yosemite"] .title-bar > .resize-box {
   grid-column: 3;
   justify-self: end;
-  transform: none;
+
   background: var(--traffic-light-resize-bg) center / 12px 12px no-repeat;
 }
 
@@ -2424,15 +2345,17 @@ body[data-theme="yosemite"] select:not([multiple]) {
 }
 
 body[data-theme="yosemite"] :is(select, input, .system-select-button):disabled {
+  /* Dimmed once, by colour. The opacity here dimmed an already-grey ink a
+     second time and took the pair to 1.76:1 -- the worst of the six by a wide
+     margin. Colour alone reads at 2.31:1, in line with platinum and
+     snow-leopard. */
   color: #a0a0a0;
   background-color: #f1f1f1;
-  opacity: 0.66;
 }
 
 body[data-theme="yosemite"] .theme-lab-form-grid input[type="search"] {
   appearance: none;
   -webkit-appearance: none;
-  min-height: var(--search-field-min-height);
   padding: var(--search-field-padding);
   border-radius: var(--search-field-radius);
   background: var(--search-field-background, var(--field-bg));
@@ -2456,17 +2379,10 @@ body[data-theme="yosemite"] .theme-lab-finder-window.is-inactive .theme-lab-find
    skin draws a rounded-corner handle here (the later iPadOS-era affordance);
    Yosemite keeps the drag target but paints nothing. */
 body[data-theme="yosemite"] .grow-box {
-  width: 10px;
-  height: 10px;
   background: transparent;
   box-shadow: none;
   cursor: se-resize;
 }
-
-body[data-theme="yosemite"] .grow-box::before {
-  content: none;
-}
-
 body[data-theme="yosemite"] .grow-box:is(:hover, :focus, :focus-visible) {
   background: transparent;
   outline: 0;
@@ -2483,20 +2399,7 @@ body[data-theme="yosemite"] .grow-box:is(:hover, :focus, :focus-visible)::before
 body[data-theme="yosemite"] .window > .title-bar {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
-}
-
-/* Theme Lab Finder titlebar: red and yellow traffic lights sit left, the
-   green zoom light sits right of the title — the project's fixed titlebar
-   constraint. */
-body[data-theme="yosemite"] .theme-lab-finder-window-titlebar > i.is-close {
-  left: 7px;
-}
-
-body[data-theme="yosemite"] .theme-lab-finder-window-titlebar > i.is-minimize {
-  left: 28px;
-}
-
-body[data-theme="yosemite"] .theme-lab-finder-window-titlebar > i.is-zoom {
+}body[data-theme="yosemite"] .theme-lab-finder-window-titlebar > i.is-zoom {
   left: auto;
   right: 7px;
 }
@@ -2526,9 +2429,9 @@ body[data-theme="yosemite"] .theme-lab-finder-window:not(.is-inactive) .theme-la
 body[data-theme="yosemite"] .theme-lab-toolbar-search input {
   appearance: none;
   -webkit-appearance: none;
-  padding: var(--search-field-padding);
   border-radius: var(--search-field-radius);
   background: var(--search-field-background, var(--field-bg));
+  padding: var(--search-field-padding);
 }
 
 /* 10.10 text fields are flat white with a hairline border and 5px radius;
@@ -2572,7 +2475,6 @@ body[data-theme="yosemite"] .theme-lab-button-row .btn:is(
   color: #ffffff;
   text-shadow: 0 -1px 0 rgba(0, 58, 130, 0.32);
   box-shadow: none;
-  transform: none;
 }
 
 /* 10.10 choice controls are not Liquid Glass squares: the generic
@@ -2593,7 +2495,6 @@ body[data-theme="yosemite"] .theme-lab-choice-matrix :is(
   min-width: 15px;
   height: 15px;
   min-height: 15px;
-  margin: 0;
   border: var(--choice-border);
   background: var(--choice-bg);
   box-shadow: var(--choice-shadow);
@@ -2656,15 +2557,11 @@ body[data-theme="yosemite"] .theme-lab-split-view {
 }
 
 body[data-theme="yosemite"] .theme-lab-progress {
-  height: 12px;
-  padding: 1px;
   border-color: rgba(0, 0, 0, 0.18);
-  border-radius: 6px;
   background: #e5e5e5;
 }
 
 body[data-theme="yosemite"] .theme-lab-progress span {
-  border-radius: 5px;
   background: linear-gradient(#4c97fe, #0564e3);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26);
 }

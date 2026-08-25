@@ -30,10 +30,7 @@ let quickDraftDrawerTrigger = null;
 // which surface the paper carries. With no draft it carries the intake well;
 // once a draft exists it carries the body. That is an empty state, and a
 // manual choice is never yanked back.
-let quickDraftPaperSurface = "intake";
-let quickDraftPaperManual = false;
 let quickDraftDisplayMode = "body";
-let quickDraftAdvancedRevealed = false;
 
 /** @returns {any} */
 function $(id) {
@@ -43,8 +40,8 @@ function $(id) {
 function collectRefs() {
   refs.form = $("quick-draft-form");
   refs.noProject = $("quick-draft-no-project");
-  refs.workspace = refs.form?.querySelector(".draft-desk-workspace");
-  refs.footer = refs.form?.querySelector(".draft-desk-actions");
+  refs.workspace = quickDraftQuery(".draft-desk-workspace");
+  refs.footer = quickDraftQuery(".draft-desk-actions");
   refs.status = $("quick-draft-status");
   refs.windowTitle = $("quick-draft-title");
   refs.titleInput = $("quick-draft-title-input");
@@ -57,7 +54,7 @@ function collectRefs() {
   refs.addMaterialMenu = $("quick-draft-add-material");
   refs.tools = $("quick-draft-tools");
   refs.deliverMenu = $("quick-draft-deliver");
-  refs.shareButton = refs.form?.querySelector('[data-quick-draft-delivery="share-markdown"]');
+  refs.shareButton = quickDraftQuery('[data-quick-draft-delivery="share-markdown"]');
   refs.aiCards = $("quick-draft-ai-cards");
   refs.lengthLabel = $("quick-draft-length-label");
   refs.ventLog = $("quick-draft-vent-log");
@@ -89,6 +86,7 @@ function collectRefs() {
   refs.firstImpressionStatus = $("quick-draft-first-impression-status");
   refs.draft = $("quick-draft-draft");
   refs.preview = $("quick-draft-preview");
+  refs.lightroom = getWindow("lightroom");
   refs.toggleGrainButton = $("quick-draft-toggle-grain");
   refs.toggleCompositeButton = $("quick-draft-toggle-composite");
   refs.saveButton = $("quick-draft-save");
@@ -102,12 +100,12 @@ function collectRefs() {
   refs.counter = $("quick-draft-counter");
   refs.uncertainty = $("quick-draft-uncertainty");
   refs.risks = $("quick-draft-risks");
-  refs.eli5Bar = refs.form?.querySelector("[data-quick-draft-eli5-bar]");
-  refs.eli5Enabled = refs.form?.querySelector("[data-quick-draft-eli5-enabled]");
-  refs.eli5Baseline = refs.form?.querySelector("[data-quick-draft-eli5-baseline-select]");
-  refs.eli5BaselineWrap = refs.form?.querySelector("[data-quick-draft-eli5-baseline-wrap]");
-  refs.eli5Actions = refs.form?.querySelector("[data-quick-draft-eli5-actions]");
-  refs.eli5Candidate = refs.form?.querySelector("[data-quick-draft-eli5-candidate]");
+  refs.eli5Bar = quickDraftQuery("[data-quick-draft-eli5-bar]");
+  refs.eli5Enabled = quickDraftQuery("[data-quick-draft-eli5-enabled]");
+  refs.eli5Baseline = quickDraftQuery("[data-quick-draft-eli5-baseline-select]");
+  refs.eli5BaselineWrap = quickDraftQuery("[data-quick-draft-eli5-baseline-wrap]");
+  refs.eli5Actions = quickDraftQuery("[data-quick-draft-eli5-actions]");
+  refs.eli5Candidate = quickDraftQuery("[data-quick-draft-eli5-candidate]");
   refs.sourceMap = $("quick-draft-source-map");
   refs.shelfTitle = $("quick-draft-shelf-title");
   refs.versionsList = $("quick-draft-versions-list");
@@ -190,9 +188,6 @@ function workspaceSnapshot(record = activeProjectQuickDraft({ create: false })?.
     },
     materials: previous.workspace.materials,
     strategy: previous.workspace.strategy,
-    composition: previous.workspace.composition,
-    versions: previous.workspace.versions,
-    protectedRanges: previous.workspace.protectedRanges,
     projectDocId: previous.workspace.projectDocId,
   };
 }
@@ -277,6 +272,81 @@ async function persistQuickDraftWorkspace(projectId = activeProjectId) {
   return true;
 }
 
+// ---- 文字亮室 ----------------------------------------------------------
+// The negative, the adjustment stack, the locks and the version chain belong to
+// the document, not to Quick Draft, so they live in the darkroom record keyed
+// by (project, document). These accessors are the only way in from here.
+//
+// Reads are synchronous because every render asks several times; the record is
+// loaded into the store's cache when the draft is opened. A draft with no
+// document yet answers with a blank record rather than null, so no caller has
+// to ask whether this draft has ever been developed.
+
+const DARKROOM_FIELDS = Object.freeze(["composition", "adjustmentLayers", "protectedRanges", "versions"]);
+
+function darkroomDocumentId(record) {
+  return String(normalizeQuickDraftRecord(record).workspace.projectDocId || "");
+}
+
+function darkroomOf(record = activeProjectQuickDraft({ create: false })?.record, projectId = activeProjectId) {
+  const blank = window.AISystem6DarkroomRecord?.blankDarkroomRecord?.()
+    || { negative: "", negativeUpdatedAt: "", modelDelivered: "", modelDeliveredAt: "", composite: "", currentKey: "", generatedAt: "", adjustmentLayers: [], protectedRanges: [], versions: [] };
+  const documentId = darkroomDocumentId(record);
+  if (documentId) return window.AISystem6DarkroomStore?.darkroomRecord?.(projectId, documentId) || blank;
+  // No document yet, so the state is waiting in the pending bucket. Reading it
+  // here is not a convenience: without it a draft that has never been saved as
+  // a project document would report no layers, no locks and no negative — and
+  // that is the state every draft is in before it is first handed on.
+  const pending = normalizeQuickDraftRecord(record).workspace.pendingDarkroom;
+  return pending
+    ? (window.AISystem6DarkroomRecord?.darkroomRecordFromWorkspace?.(pending) || blank)
+    : blank;
+}
+
+// A patch aimed at the darkroom is split out of the workspace patch here, so a
+// write can never land on the workspace and become a second truth. It returns
+// the fields that are still the workspace's.
+/**
+ * @param {string} projectId
+ * @param {any} record
+ * @param {Record<string, any>} patchWorkspace
+ */
+function splitDarkroomPatch(projectId, record, patchWorkspace = {}) {
+  /** @type {Record<string, any>} */
+  const workspacePatch = { ...patchWorkspace };
+  const darkroomPatch = {};
+  let touched = false;
+  for (const field of DARKROOM_FIELDS) {
+    if (!(field in workspacePatch)) continue;
+    touched = true;
+    if (field === "composition") Object.assign(darkroomPatch, workspacePatch.composition || {});
+    else darkroomPatch[field] = workspacePatch[field];
+    delete workspacePatch[field];
+  }
+  if (touched) {
+    const documentId = darkroomDocumentId(record);
+    if (documentId) {
+      window.AISystem6DarkroomStore?.setDarkroomRecord?.(projectId, documentId, {
+        ...darkroomOf(record, projectId),
+        ...darkroomPatch,
+      });
+    } else {
+      // No document to file it under yet. Dropping it here is how a negative or
+      // a version disappears without a trace, so it waits in the same bucket a
+      // pre-schema-4 record uses and is drained by ensureDarkroomReady once the
+      // draft has a document.
+      /** @type {Record<string, any>} */
+      const pending = record?.workspace?.pendingDarkroom || {};
+      workspacePatch.pendingDarkroom = {
+        ...pending,
+        ...darkroomPatch,
+        composition: { ...(pending.composition || {}), ...darkroomPatch },
+      };
+    }
+  }
+  return { workspacePatch, touchedDarkroom: touched };
+}
+
 function updateQuickDraftForProject(projectId, patch = {}, { announce = false, captureForm = projectId === activeProjectId } = {}) {
   const slot = projectQuickDraft(projectId);
   if (!slot) {
@@ -284,7 +354,8 @@ function updateQuickDraftForProject(projectId, patch = {}, { announce = false, c
     return null;
   }
   const now = new Date().toISOString();
-  const patchWorkspace = patch.workspace && typeof patch.workspace === "object" ? patch.workspace : {};
+  const incoming = patch.workspace && typeof patch.workspace === "object" ? patch.workspace : {};
+  const { workspacePatch: patchWorkspace } = splitDarkroomPatch(projectId, slot.record, incoming);
   const workspace = normalizeQuickDraftWorkspace({
     ...slot.record.workspace,
     ...(captureForm ? workspaceSnapshot(slot.record) : {}),
@@ -319,6 +390,18 @@ async function commitQuickDraftForProject(projectId, patch = {}, options = {}) {
   const previous = slot.project.quickDraft;
   const record = updateQuickDraftForProject(projectId, patch, options);
   if (slot.project.id === activeProjectId) setSaveState("saving");
+  const documentId = String(slot.project.quickDraft?.workspace?.projectDocId || "");
+  if (documentId && window.AISystem6DarkroomStore) {
+    try {
+      await window.AISystem6DarkroomStore.persistDarkroomRecord(projectId, documentId);
+    } catch {
+      // The darkroom holds the writer's own words. A failed write must not be
+      // followed by a Saved receipt for the draft.
+      slot.project.quickDraft = previous;
+      if (slot.project.id === activeProjectId) setSaveState("modified");
+      return { ok: false, error: new Error("DARKROOM_COMMIT_FAILED") };
+    }
+  }
   const ok = await persistQuickDraftWorkspace(projectId);
   if (!ok) {
     slot.project.quickDraft = previous;
@@ -469,7 +552,7 @@ function syncQuickDraftAiAvailability() {
   document.querySelectorAll("[data-quick-draft-ai-action]").forEach((button) => {
     setQuickDraftCommandAvailability(button, modelAvailable, "quick_draft_connect_ai");
   });
-  const actionButton = (action) => refs.form?.querySelector(`[data-quick-draft-chat-action="${action}"]`);
+  const actionButton = (action) => quickDraftQuery(`[data-quick-draft-chat-action="${action}"]`);
   setQuickDraftCommandAvailability(actionButton("vent-on"), !state.ventActive, "quick_draft_vent_mode_on");
   setQuickDraftCommandAvailability(actionButton("vent-off"), state.ventActive, "quick_draft_vent_mode_off");
   ["vent-summary", "organize"].forEach((action) => {
@@ -519,15 +602,329 @@ function promoteWellTextToBody() {
   return true;
 }
 
-function setQuickDraftPaperSurface(surface = "intake", { manual = false } = {}) {
-  const next = surface === "editor" ? "editor" : "intake";
-  quickDraftPaperSurface = next;
-  if (manual) quickDraftPaperManual = true;
-  if (next === "editor") promoteWellTextToBody();
+// Which paper is on screen is derived from the work, never stored. Quick Draft
+// used to keep the surface in a variable with a manual override beside it, and
+// the two drifted apart: a draft whose body was already written could still be
+// showing the intake well, asking the writer what they wanted to say. The
+// writing route settled this years ago — its phase is computed live from the
+// persisted truth "so the two can never drift apart" — and this follows it.
+//
+// There is nothing to switch, so there is no switch. Continue Writing promotes
+// what is in the well into the body; the paper follows because a body now
+// exists.
+// Controls used to live in one form, so everything found them with
+// refs.form.querySelector. The darkroom's controls move to their own window in
+// 文字亮室, and a lookup that only knows the form would stop finding them the
+// moment they moved. One scoped query answers for both, so where a control
+// lives becomes a layout decision rather than a rename of forty call sites.
+// ---- 文字亮室 subject ---------------------------------------------------
+// The darkroom develops a document. Usually that document is the draft Quick
+// Draft is writing, but it does not have to be: a manuscript from Writing
+// Studio or an older draft off the Project Hard Disk has a negative and a
+// chain of its own, and the same instruments read them.
+//
+// A subject other than the writer's own draft is read-only here, and says so.
+// The views can be computed from any text, but writing back into a document
+// another application owns needs that application to hand over the pen, and
+// claiming an edit landed when it did not is the one thing this surface must
+// never do.
+let lightroomSubject = null;
+
+function lightroomSubjectDocumentId() {
+  if (lightroomSubject) return lightroomSubject.documentId;
+  return darkroomDocumentId(activeProjectQuickDraft({ create: false })?.record);
+}
+
+function lightroomSubjectFile() {
+  const id = lightroomSubject?.documentId;
+  if (!id || typeof chatFiles === "undefined") return null;
+  return chatFiles.find((file) => file.id === id && file.type === "text") || null;
+}
+
+function lightroomBodyText() {
+  if (!lightroomSubject) return String(refs.draft?.value || "");
+  return String(lightroomSubjectFile()?.body || "");
+}
+
+function lightroomIsReadOnly() {
+  return Boolean(lightroomSubject);
+}
+
+// Open the darkroom on a document that Quick Draft is not writing.
+async function developDocument(documentId = "") {
+  const id = String(documentId || "");
+  if (!id || typeof chatFiles === "undefined") return false;
+  const file = chatFiles.find((item) => item.id === id && item.type === "text");
+  if (!file) return false;
+  lightroomSubject = { documentId: id, name: String(file.name || "") };
+  const store = window.AISystem6DarkroomStore;
+  if (store) {
+    try {
+      await store.loadDarkroomRecord(activeProjectId, id);
+    } catch {
+      lightroomSubject = null;
+      return false;
+    }
+  }
+  await openWindow("lightroom", { skipQuickDraftEntrypoint: true });
+  const subject = document.getElementById("lightroom-subject");
+  if (subject) subject.textContent = String(file.name || "");
+  const status = document.getElementById("lightroom-status");
+  if (status) status.textContent = t("lightroom_read_only");
+  setQuickDraftDisplayMode("grain");
+  return true;
+}
+
+function clearLightroomSubject() {
+  lightroomSubject = null;
+}
+
+// 文字亮室 opens beside the draft it develops, never instead of it, and it opens
+// only once the darkroom record for that document is in hand — a window that
+// showed an empty stack while its record was still loading would be lying.
+// The lightroom's markup travels with the module that renders it. It was in
+// index.html, so every boot paid 13,677 bytes for a window most sessions never
+// open -- and openWindow already loads this module before it looks the window
+// up, so nothing had to change on the entry path.
+function installLightroomWindow() {
+  if (typeof document === "undefined") return;
+  if (document.querySelector?.('[data-window="lightroom"]')) return;
+  // The loader puts the shell ahead of this file, so a browser always has it.
+  // Contract tests execute this module against a stubbed document with no shell
+  // and no desktop to build into; there is no window to install there, and a
+  // throw at module scope would take the whole contract down with it.
+  const shell = window.AISystem6ApplicationShell;
+  if (!shell) return;
+  shell.createWindow({
+    windowName: "lightroom",
+    windowClass: "lightroom-window",
+    labelledBy: "lightroom-title",
+    titleKey: "lightroom_title",
+    title: "文字亮室",
+    statusClass: "compact-status-bar lightroom-details",
+    statusHtml: `          <span id="lightroom-subject" class="status-bar-leading"></span>
+          <span id="lightroom-status" role="status" aria-live="polite" aria-atomic="true"></span>`,
+    paneClass: "lightroom-pane",
+    paneHtml: `
+          <div class="lightroom-layout">
+                  <div class="draft-desk-eli5-bar" data-quick-draft-eli5-bar hidden>
+                    <label class="draft-desk-eli5-toggle">
+                      <input type="checkbox" data-quick-draft-eli5-enabled />
+                      <span data-i18n="quick_draft_eli5_enabled">Explain like a five-year-old</span>
+                    </label>
+                    <span class="select-wrap draft-desk-eli5-select" data-quick-draft-eli5-baseline-wrap hidden>
+                      <select data-quick-draft-eli5-baseline-select data-i18n-aria-label="quick_draft_eli5_baseline">
+                        <option value="secondary-school" data-i18n="quick_draft_eli5_baseline_general">General public</option>
+                        <option value="some-familiarity" data-i18n="quick_draft_eli5_baseline_some">Knows a little</option>
+                        <option value="familiar" data-i18n="quick_draft_eli5_baseline_familiar">Familiar with the topic</option>
+                      </select>
+                    </span>
+                    <span class="draft-desk-eli5-actions" data-quick-draft-eli5-actions hidden>
+                      <button class="btn mini-btn" type="button" data-quick-draft-eli5-review data-i18n="quick_draft_eli5_review">Find where it gets lost</button>
+                      <button class="btn mini-btn" type="button" data-quick-draft-eli5-rewrite data-i18n="quick_draft_eli5_rewrite">Make it listenable</button>
+                    </span>
+                    <span class="draft-desk-eli5-candidate" data-quick-draft-eli5-candidate hidden>
+                      <button class="btn mini-btn default" type="button" data-quick-draft-eli5-apply data-i18n="quick_draft_eli5_apply">Apply</button>
+                      <button class="btn mini-btn" type="button" data-quick-draft-eli5-cancel data-i18n="quick_draft_eli5_cancel">Cancel</button>
+                    </span>
+                  </div>
+            <div class="lightroom-view" id="lightroom-paper-view" role="tabpanel">
+                    <div id="quick-draft-preview" class="teachtext-preview is-hidden"></div>
+            </div>
+              <aside id="quick-draft-adjustments-drawer" class="draft-desk-inspector" aria-labelledby="quick-draft-adjustments-title">
+                <section class="draft-desk-inspector-section">
+                  <div class="draft-desk-region-head">
+                    <b id="quick-draft-adjustments-title" data-i18n="quick_draft_command_adjustment">Adjustment Layers</b>
+                    <button class="btn mini-btn draft-desk-drawer-close" type="button" data-quick-draft-drawer-close="inspector" data-i18n="quick_draft_drawer_close" data-i18n-aria-label="quick_draft_close_adjustments">Close</button>
+                  </div>
+                  <span id="quick-draft-adjustment-strength-label" class="visually-hidden" data-i18n="quick_draft_adjustment_strength">Adjustment layer strength</span>
+                  <div class="draft-desk-layer-stack">
+                    <div class="draft-desk-layer" data-quick-draft-adjustment-layer="mingming" data-balloon-help="quick_draft_layer_mingming_desc">
+                      <label class="draft-desk-layer-row">
+                        <input type="checkbox" data-requires-write data-quick-draft-adjustment-enabled="mingming" checked />
+                        <i data-quick-draft-layer-order="mingming" aria-hidden="true"></i>
+                        <span id="quick-draft-layer-mingming-label" data-i18n="quick_draft_chip_mingming">Mingming's Eye</span>
+                      </label>
+                      <span class="select-wrap-inline"><select data-requires-write data-quick-draft-adjustment-strength="mingming" aria-labelledby="quick-draft-layer-mingming-label quick-draft-adjustment-strength-label"><option value="25" data-i18n="quick_draft_adjustment_light">Light</option><option value="50" selected data-i18n="quick_draft_adjustment_standard">Normal</option><option value="75" data-i18n="quick_draft_adjustment_heavy">Strong</option></select></span>
+                      <button class="btn mini-btn draft-desk-layer-disclosure" type="button" data-quick-draft-layer-disclosure="mingming" aria-expanded="false" aria-controls="quick-draft-layer-detail" data-i18n-aria-label="quick_draft_scope_edit">▶</button>
+                    </div>
+                    <div class="draft-desk-layer" data-quick-draft-adjustment-layer="luoluo" data-balloon-help="quick_draft_layer_luoluo_desc">
+                      <label class="draft-desk-layer-row"><input type="checkbox" data-requires-write data-quick-draft-adjustment-enabled="luoluo" checked /><i data-quick-draft-layer-order="luoluo" aria-hidden="true"></i><span id="quick-draft-layer-luoluo-label" data-i18n="quick_draft_chip_luoluo">Luoluo Receive</span></label>
+                      <span class="select-wrap-inline"><select data-requires-write data-quick-draft-adjustment-strength="luoluo" aria-labelledby="quick-draft-layer-luoluo-label quick-draft-adjustment-strength-label"><option value="25" data-i18n="quick_draft_adjustment_light">Light</option><option value="50" selected data-i18n="quick_draft_adjustment_standard">Normal</option><option value="75" data-i18n="quick_draft_adjustment_heavy">Strong</option></select></span>
+                      <button class="btn mini-btn draft-desk-layer-disclosure" type="button" data-quick-draft-layer-disclosure="luoluo" aria-expanded="false" aria-controls="quick-draft-layer-detail" data-i18n-aria-label="quick_draft_scope_edit">▶</button>
+                    </div>
+                    <div class="draft-desk-layer" data-quick-draft-adjustment-layer="hkrr" data-balloon-help="quick_draft_layer_hkrr_desc">
+                      <label class="draft-desk-layer-row"><input type="checkbox" data-requires-write data-quick-draft-adjustment-enabled="hkrr" checked /><i data-quick-draft-layer-order="hkrr" aria-hidden="true"></i><span id="quick-draft-layer-hkrr-label" data-i18n="quick_draft_chip_hkrr">HKRR Lift</span></label>
+                      <span class="select-wrap-inline"><select data-requires-write data-quick-draft-adjustment-strength="hkrr" aria-labelledby="quick-draft-layer-hkrr-label quick-draft-adjustment-strength-label"><option value="25" data-i18n="quick_draft_adjustment_light">Light</option><option value="50" selected data-i18n="quick_draft_adjustment_standard">Normal</option><option value="75" data-i18n="quick_draft_adjustment_heavy">Strong</option></select></span>
+                      <button class="btn mini-btn draft-desk-layer-disclosure" type="button" data-quick-draft-layer-disclosure="hkrr" aria-expanded="false" aria-controls="quick-draft-layer-detail" data-i18n-aria-label="quick_draft_scope_edit">▶</button>
+                    </div>
+                    <div class="draft-desk-layer" data-quick-draft-adjustment-layer="density" data-balloon-help="quick_draft_layer_density_desc">
+                      <label class="draft-desk-layer-row"><input type="checkbox" data-requires-write data-quick-draft-adjustment-enabled="density" checked /><i data-quick-draft-layer-order="density" aria-hidden="true"></i><span id="quick-draft-layer-density-label" data-i18n="quick_draft_adjustment_density">Density</span></label>
+                      <span class="select-wrap-inline"><select data-requires-write data-quick-draft-adjustment-strength="density" aria-labelledby="quick-draft-layer-density-label quick-draft-adjustment-strength-label"><option value="25" data-i18n="quick_draft_adjustment_density_light">Less</option><option value="50" selected data-i18n="quick_draft_adjustment_density_standard">Normal</option><option value="75" data-i18n="quick_draft_adjustment_density_heavy">More</option></select></span>
+                      <button class="btn mini-btn draft-desk-layer-disclosure" type="button" data-quick-draft-layer-disclosure="density" aria-expanded="false" aria-controls="quick-draft-layer-detail" data-i18n-aria-label="quick_draft_scope_edit">▶</button>
+                    </div>
+                  </div>
+                  <div class="draft-desk-layer-scope-row">
+                    <span data-quick-draft-active-layer-scope></span>
+                    <button class="btn mini-btn" type="button" data-quick-draft-layer-toggle aria-expanded="false" aria-controls="quick-draft-layer-detail" data-i18n="quick_draft_scope_edit">Edit…</button>
+                  </div>
+                  <div class="draft-desk-layer-detail" id="quick-draft-layer-detail" hidden>
+                    <p data-quick-draft-active-layer-description></p>
+                    <div class="draft-desk-layer-edit-controls">
+                      <input type="text" inputmode="text" data-quick-draft-active-layer-mask data-i18n-placeholder="quick_draft_adjustment_mask_placeholder" data-i18n-aria-label="quick_draft_adjustment_mask_aria" />
+                      <button type="button" class="btn mini-btn" data-quick-draft-active-layer-scope-selection data-i18n="quick_draft_scope_selection">Sel</button>
+                      <button type="button" class="btn mini-btn" data-quick-draft-active-layer-move data-direction="-1" data-i18n-aria-label="quick_draft_adjustment_move_up">▲</button>
+                      <button type="button" class="btn mini-btn" data-quick-draft-active-layer-move data-direction="1" data-i18n-aria-label="quick_draft_adjustment_move_down">▼</button>
+                    </div>
+                  </div>
+                  <div class="draft-desk-protect">
+                    <b data-i18n="quick_draft_protected_label">Protection</b>
+                    <div class="draft-desk-protect-summary">
+                      <span data-quick-draft-protected-summary></span>
+                      <button type="button" class="btn mini-btn" data-quick-draft-protect-toggle aria-expanded="false" aria-controls="quick-draft-protect-detail" data-i18n="quick_draft_protect_view">View</button>
+                    </div>
+                    <div class="draft-desk-protect-detail" id="quick-draft-protect-detail" hidden>
+                      <input type="text" inputmode="text" data-quick-draft-protected-ranges data-i18n-placeholder="quick_draft_protected_placeholder" data-i18n-aria-label="quick_draft_protected_aria" />
+                    </div>
+                    <button type="button" class="btn mini-btn" data-requires-write data-quick-draft-protect-selection data-i18n="quick_draft_protect_selection" data-balloon-help="balloon_qd_protect">Protect Selection</button>
+                  </div>
+                  <div class="draft-desk-mobile-inspector-actions">
+                    <button type="button" class="btn mini-btn" data-requires-write data-quick-draft-adjustment-apply data-i18n="quick_draft_preview_adjustments">Preview</button>
+                    <button type="button" class="btn mini-btn default" data-requires-write data-quick-draft-adjustment-develop data-i18n="quick_draft_develop" data-balloon-help="balloon_qd_develop">Develop</button>
+                  </div>
+                </section>
+                <section class="draft-desk-inspector-section draft-desk-versions-section" data-balloon-help="balloon_qd_versions">
+                  <div class="draft-desk-region-head"><b data-i18n="quick_draft_versions">Versions</b></div>
+                  <div id="quick-draft-versions-list" class="draft-desk-versions-list"></div>
+                </section>
+              </aside>
+          </div>
+          <footer class="lightroom-actions">
+              <span class="draft-desk-display-switch" role="tablist" data-i18n-aria-label="quick_draft_view_label">
+                <button class="btn mini-btn" type="button" role="tab" id="quick-draft-toggle-grain" data-quick-draft-display="grain" aria-controls="lightroom-paper-view" aria-selected="false" data-i18n="quick_draft_grain" data-balloon-help="quick_draft_grain_balloon">Grain</button>
+                <button class="btn mini-btn is-active" type="button" role="tab" id="quick-draft-toggle-composite" data-quick-draft-display="read" aria-controls="lightroom-paper-view" aria-selected="true" data-i18n="quick_draft_composite" data-balloon-help="quick_draft_composite_balloon">Read</button>
+                <button class="btn mini-btn" type="button" role="tab" id="quick-draft-toggle-listen" data-quick-draft-display="listen" aria-controls="lightroom-paper-view" aria-selected="false" data-i18n="quick_draft_listen" data-balloon-help="quick_draft_listen_balloon">Listen</button>
+              </span>
+              <span class="draft-desk-action-gap"></span>
+              <button class="btn default" id="quick-draft-display-body" type="button" data-quick-draft-display="body" data-i18n="lightroom_back_to_draft" data-balloon-help="balloon_lightroom_back">Back to the Draft</button>
+          </footer>`,
+  });
+}
+
+installLightroomWindow();
+
+async function openLightroomWindow() {
+  await ensureDarkroomReady();
+  refs.lightroom = getWindow("lightroom") || refs.lightroom;
+  await openWindow("lightroom", { skipQuickDraftEntrypoint: true });
+  renderLightroomSubject({ force: true });
+  renderQuickDraft(activeProjectQuickDraft({ create: false })?.record);
+}
+
+/**
+ * Is this title one the product wrote, rather than one the writer chose?
+ *
+ * "An empty stored title means it was derived" was the obvious test and it is
+ * WRONG: the derived default is persisted, so a fresh draft stores the literal
+ * string "Quick Draft" and reads back looking exactly like a writer's choice.
+ * Measured in a browser — the guard built on that assumption never fired once.
+ *
+ * So compare against the default in every language that is loaded. When no
+ * table can answer, the answer is "not default", which is the safe direction:
+ * a title we cannot prove we wrote is never overwritten.
+ */
+function isDerivedQuickDraftTitle(title) {
+  const value = String(title || "").trim();
+  if (!value) return true;
+  const tables = (typeof translations !== "undefined" && translations)
+    || window.AISystem6Data?.translations
+    || {};
+  return Object.keys(tables).some((language) => {
+    const entry = tables[language]?.quick_draft_title;
+    const resolved = typeof entry === "function" ? entry() : entry;
+    return String(resolved || "").trim() === value;
+  });
+}
+
+// Re-render hook for applyLanguage. The subject is painted from a record rather
+// than from data-i18n, so nothing in applyLanguage reached it and switching
+// language with the window open left the previous language's word on screen
+// until it was closed and reopened.
+//
+// Opening the window writes the label whatever it says; a language switch only
+// redraws one the product itself wrote.
+function renderLightroomSubject({ force = false } = {}) {
+  const subject = document.getElementById("lightroom-subject");
+  if (!subject) return;
+  const record = activeProjectQuickDraft({ create: false })?.record;
+  const workspace = normalizeQuickDraftRecord(record).workspace;
+  // A derived title is RECOMPUTED, never re-read. The stored copy is the
+  // default frozen in whatever language it was first written in, and
+  // normalizeQuickDraftRecord hands that frozen string straight back — so
+  // re-rendering from it repaints the old language, which is the bug wearing a
+  // different hat. Measured: the guard alone was not enough.
+  if (isDerivedQuickDraftTitle(record?.workspace?.title)) {
+    subject.textContent = typeof titleFromBody === "function"
+      ? String(titleFromBody(workspace.body) || "")
+      : String(workspace.title || "");
+    return;
+  }
+  // The writer's own title. Written when the window opens, never overwritten
+  // by a language switch.
+  if (force) subject.textContent = String(workspace.title || "");
+}
+
+function closeLightroomWindow() {
+  if (typeof closeWindow === "function") closeWindow("lightroom");
+  else getWindow("lightroom")?.classList.add("is-hidden");
+}
+
+function quickDraftScope() {
+  return [refs.form, refs.lightroom].filter(Boolean);
+}
+
+function quickDraftQuery(selector = "") {
+  for (const root of quickDraftScope()) {
+    const found = root.querySelector(selector);
+    if (found) return found;
+  }
+  return null;
+}
+
+function quickDraftQueryAll(selector = "") {
+  const out = [];
+  for (const root of quickDraftScope()) out.push(...root.querySelectorAll(selector));
+  return out;
+}
+
+function quickDraftPhase(record = activeProjectQuickDraft({ create: false })?.record) {
+  const workspace = normalizeQuickDraftRecord(record).workspace;
+  const darkroom = darkroomOf(record);
+  const drafted = Boolean(
+    String(refs.draft?.value || workspace.body || "").trim()
+    || darkroom.negativeUpdatedAt
+    || darkroom.composite
+    || quickDraftLastComposite
+    || darkroom.versions.length
+  );
+  return drafted ? "editor" : "intake";
+}
+
+function applyQuickDraftPaperSurface() {
+  const next = quickDraftPhase();
   refs.form?.classList.toggle("is-empty-draft", next === "intake");
   getWindow("quickDraft")?.classList.toggle("is-quick-draft-empty", next === "intake");
   if (refs.intakeWell) refs.intakeWell.hidden = next !== "intake";
   if (refs.bodySurface) refs.bodySurface.hidden = next !== "editor";
+  // The darkroom is worth nothing until a draft exists, so it must not stand
+  // between the writer and the first one. Before there is a body it is not
+  // dimmed or disabled — it is not there, and a new writer's first screen is
+  // the material and one action rather than four adjustment layers they cannot
+  // use yet.
+  const inspector = document.getElementById("quick-draft-adjustments-drawer");
+  if (inspector) inspector.hidden = next !== "editor";
+  const drawerSwitch = quickDraftQuery(".draft-desk-drawer-switch");
+  if (drawerSwitch) drawerSwitch.hidden = next !== "editor";
   if (next === "intake") closeQuickDraftDrawer({ restoreFocus: false });
   const record = activeProjectQuickDraft({ create: false })?.record;
   const hasBody = Boolean(String(refs.draft?.value || record?.workspace?.body || "").trim());
@@ -536,33 +933,27 @@ function setQuickDraftPaperSurface(surface = "intake", { manual = false } = {}) 
   return next;
 }
 
-// A draft exists once the model has passed over the body (the negative is
-// stamped) or a previous body was kept as a version. Typing in the well is
-// not a draft, so the paper does not flip under the writer's hands.
-function syncQuickDraftPaperFromState(record = activeProjectQuickDraft({ create: false })?.record) {
-  if (quickDraftPaperManual) return;
-  const workspace = normalizeQuickDraftRecord(record).workspace;
-  const drafted = Boolean(
-    String(workspace.body || "").trim()
-    ||
-    workspace.composition?.negativeUpdatedAt
-    || workspace.composition?.composite
-    || quickDraftLastComposite
-    || workspace.versions.length
-  );
-  setQuickDraftPaperSurface(drafted ? "editor" : "intake");
+function syncQuickDraftPaperFromState() {
+  applyQuickDraftPaperSurface();
 }
 
 // Secondary controls are disabled, never removed: the position of a key is
 // part of the layout, and a disabled key can say why it is off in Balloon Help.
 function syncQuickDraftControlAvailability(hasBody) {
-  document.querySelectorAll('[data-quick-draft-display="grain"], [data-quick-draft-display="read"]')
-    .forEach((element) => {
-      const button = /** @type {HTMLButtonElement} */ (element);
-      button.hidden = !hasBody || !quickDraftAdvancedRevealed;
-      button.disabled = !hasBody;
-      if (!button.dataset.balloonHelpDisabled) button.dataset.balloonHelpDisabled = "quick_draft_needs_body";
-    });
+  // 文字亮室 reads an existing draft, so the route into it is off until there
+  // is one — disabled, never removed, so its place in the row stays put.
+  document.querySelectorAll('.draft-desk-actions [data-action="open-lightroom"]').forEach((element) => {
+    const button = /** @type {HTMLButtonElement} */ (element);
+    button.disabled = !hasBody;
+    if (!button.dataset.balloonHelpDisabled) button.dataset.balloonHelpDisabled = "quick_draft_needs_body";
+  });
+  // All three views are first-class in 文字亮室, never an advanced reveal:
+  // always on the tab strip, disabled until there is a body to read.
+  document.querySelectorAll('[data-quick-draft-display="grain"], [data-quick-draft-display="read"], [data-quick-draft-display="listen"]').forEach((element) => {
+    const button = /** @type {HTMLButtonElement} */ (element);
+    button.disabled = !hasBody;
+    if (!button.dataset.balloonHelpDisabled) button.dataset.balloonHelpDisabled = "quick_draft_needs_body";
+  });
   document.querySelectorAll('[data-quick-draft-drawer="inspector"]').forEach((element) => {
     const button = /** @type {HTMLButtonElement} */ (element);
     button.hidden = !hasBody;
@@ -586,7 +977,7 @@ function syncQuickDraftControlAvailability(hasBody) {
   if (!hasBody && refs.form?.classList.contains("is-inspector-open")) {
     closeQuickDraftDrawer({ restoreFocus: false });
   }
-  const displayGroup = refs.form?.querySelector('.draft-desk-display-switch[role="tablist"]');
+  const displayGroup = quickDraftQuery('.draft-desk-display-switch[role="tablist"]');
   if (displayGroup && typeof syncRovingTabStops === "function") syncRovingTabStops(displayGroup);
 }
 
@@ -605,12 +996,12 @@ function syncQuickDraftPrimaryAction(record = activeProjectQuickDraft({ create: 
 function updateQuickDraftShellState(record = activeProjectQuickDraft({ create: false })?.record) {
   const workspace = normalizeQuickDraftRecord(record).workspace;
   if (refs.protectState) {
-    const lines = (workspace.protectedRanges || [])
+    const lines = (darkroomOf(record).protectedRanges || [])
       .reduce((total, range) => total + Math.max(0, (range.end - range.start) + 1), 0);
     refs.protectState.textContent = lines ? t("quick_draft_protect_state", lines) : "";
   }
   if (refs.stackState) {
-    const enabled = (workspace.adjustmentLayers || []).filter((layer) => layer.enabled).length;
+    const enabled = (darkroomOf(record).adjustmentLayers || []).filter((layer) => layer.enabled).length;
     refs.stackState.textContent = enabled ? t("quick_draft_stack_state", enabled) : "";
   }
 }
@@ -671,7 +1062,7 @@ function setBusy(isBusy) {
     refs.startWritingButton,
     refs.restoreDumpButton,
     refs.saveButton,
-    ...(refs.form?.querySelectorAll([
+    ...(quickDraftQueryAll([
       "[data-quick-draft-adjustment-apply]",
       "[data-quick-draft-adjustment-develop]",
       "[data-quick-draft-chat-action]",
@@ -679,6 +1070,16 @@ function setBusy(isBusy) {
       "[data-quick-draft-eli5-review]",
       "[data-quick-draft-eli5-apply]",
       "[data-quick-draft-eli5-cancel]",
+      // The listen transport is deliberately absent: pausing the audio must
+      // stay available while a model call runs.
+      "[data-quick-draft-finding-jump]",
+      "[data-quick-draft-finding-fix]",
+      "[data-quick-draft-finding-keep]",
+      "[data-quick-draft-finding-praise]",
+      "[data-quick-draft-spoken-adopt]",
+      "[data-quick-draft-fix-adopt]",
+      "[data-quick-draft-fix-edit]",
+      "[data-quick-draft-fix-keep]",
       '[data-action="quick-draft-import-chat"]',
       "[data-quick-draft-delivery]",
     ].join(", ")) || []),
@@ -708,7 +1109,7 @@ function setQuickDraftDrawer(drawer = "", { restoreFocus = false } = {}) {
   if (!refs.form) return "";
   const next = drawer === "inspector" || drawer === "shelf" ? drawer : "";
   const trigger = next
-    ? refs.form.querySelector(`[data-quick-draft-drawer="${next}"]`)
+    ? quickDraftQuery(`[data-quick-draft-drawer="${next}"]`)
     : quickDraftDrawerTrigger;
   if (next) quickDraftDrawerTrigger = trigger || document.activeElement;
   refs.form.classList.toggle("is-shelf-open", next === "shelf");
@@ -738,7 +1139,7 @@ function closeQuickDraftDrawer(options = {}) {
 }
 
 function quickDraftUsesDrawerLayout() {
-  const compactOnlyControl = refs.form?.querySelector(".draft-desk-drawer-close");
+  const compactOnlyControl = quickDraftQuery(".draft-desk-drawer-close");
   return Boolean(compactOnlyControl && getComputedStyle(compactOnlyControl).display !== "none");
 }
 
@@ -768,11 +1169,11 @@ function toggleQuickDraftPanel(panel = "shelf") {
 }
 
 function focusQuickDraftPaper() {
-  const target = quickDraftPaperSurface === "intake"
+  const target = quickDraftPhase() === "intake"
     ? refs.say
     : !refs.draft?.classList.contains("is-hidden")
       ? refs.draft
-      : refs.form?.querySelector('[data-quick-draft-display][aria-selected="true"]');
+      : quickDraftQuery('[data-quick-draft-display][aria-selected="true"]');
   target?.focus({ preventScroll: true });
 }
 
@@ -835,7 +1236,7 @@ function renderQuickDraft(record = activeProjectQuickDraft({ create: false })?.r
   renderAdjustmentLayers(source);
   renderProtectedRangeControls(source);
   renderQuickDraftVersions(source);
-  syncQuickDraftPaperFromState(source);
+  syncQuickDraftPaperFromState();
   updateQuickDraftShellState(source);
   syncQuickDraftControlAvailability(hasBody);
   syncQuickDraftPrimaryAction(source, hasBody);
@@ -946,18 +1347,18 @@ function bind() {
   refs.eli5Baseline?.addEventListener("change", () => {
     void updateQuickDraftEli5Lens({ baselineKnowledge: refs.eli5Baseline.value });
   });
-  refs.form?.querySelector("[data-quick-draft-eli5-rewrite]")?.addEventListener("click", async () => {
+  quickDraftQuery("[data-quick-draft-eli5-rewrite]")?.addEventListener("click", async () => {
     closeQuickDraftMenus();
     await window.AISystem6QuickDraftAI.requestEli5Rewrite();
   });
-  refs.form?.querySelector("[data-quick-draft-eli5-review]")?.addEventListener("click", async () => {
+  quickDraftQuery("[data-quick-draft-eli5-review]")?.addEventListener("click", async () => {
     closeQuickDraftMenus();
     await window.AISystem6QuickDraftAI.requestEli5Review();
   });
-  refs.form?.querySelector("[data-quick-draft-eli5-apply]")?.addEventListener("click", async () => {
+  quickDraftQuery("[data-quick-draft-eli5-apply]")?.addEventListener("click", async () => {
     await window.AISystem6QuickDraftAI.applyQuickDraftEli5Rewrite();
   });
-  refs.form?.querySelector("[data-quick-draft-eli5-cancel]")?.addEventListener("click", async () => {
+  quickDraftQuery("[data-quick-draft-eli5-cancel]")?.addEventListener("click", async () => {
     await window.AISystem6QuickDraftAI.cancelQuickDraftEli5Rewrite();
   });
   const syncQuickDraftSelectionState = () => {
@@ -1000,11 +1401,13 @@ function bind() {
       return;
     }
     if (action === "continue") {
-      setQuickDraftPaperSurface("editor", { manual: true });
+      promoteWellTextToBody();
+      applyQuickDraftPaperSurface();
       requestAnimationFrame(focusQuickDraftPaper);
       return;
     }
-    setQuickDraftPaperSurface("editor", { manual: true });
+    promoteWellTextToBody();
+    applyQuickDraftPaperSurface();
     startWritingNow();
   });
   refs.saveProjectDocButton?.addEventListener("click", async () => { await saveQuickDraftAsProjectDocument(); });
@@ -1033,10 +1436,6 @@ function bind() {
     const button = /** @type {HTMLElement} */ (element);
     button.addEventListener("click", () => {
       const drawer = button.dataset.quickDraftDrawer === "inspector" ? "inspector" : "shelf";
-      if (drawer === "inspector") {
-        quickDraftAdvancedRevealed = true;
-        syncQuickDraftControlAvailability(true);
-      }
       const className = drawer === "inspector" ? "is-inspector-open" : "is-shelf-open";
       const open = !refs.form?.classList.contains(className);
       setQuickDraftDrawer(open ? drawer : "", { restoreFocus: !open });
@@ -1062,7 +1461,9 @@ function bind() {
   });
   document.querySelector("[data-quick-draft-to-start]")?.addEventListener("click", () => {
     closeQuickDraftDrawer({ restoreFocus: false });
-    setQuickDraftPaperSurface("intake", { manual: true });
+    // No forcing the paper back: which paper is on screen follows the work now,
+    // and a draft with a body is past the intake well. This takes the writer to
+    // the material, which is where they were going.
     requestAnimationFrame(() => refs.sources?.focus({ preventScroll: true }));
   });
   const commandMenus = [refs.addMaterialMenu, refs.tools, refs.deliverMenu].filter(Boolean);
@@ -1139,6 +1540,11 @@ function bind() {
       if (action === "copy-markdown") await copyQuickDraftMarkdown();
       if (action === "export-markdown") await exportQuickDraftMarkdown();
       if (action === "share-markdown") await shareQuickDraftMarkdown();
+      return;
+    }
+    const grainZoom = event.target.closest("[data-quick-draft-grain-zoom]");
+    if (grainZoom) {
+      setQuickDraftGrainZoom(grainZoom.dataset.quickDraftGrainZoom || "grain");
       return;
     }
     const layerToggle = event.target.closest("[data-quick-draft-layer-toggle]");
@@ -1233,7 +1639,7 @@ function captureWorkingSession() {
     : refs.form?.classList.contains("is-inspector-open") ? "inspector" : "";
   return {
     projectId: activeProjectId,
-    paperSurface: quickDraftPaperSurface,
+    paperSurface: quickDraftPhase(),
     displayMode: typeof currentQuickDraftDisplayMode === "function" ? currentQuickDraftDisplayMode() : "body",
     toolsOpen: !!refs.tools?.open,
     drawer,
@@ -1258,9 +1664,8 @@ function restoreWorkingSession(state = {}) {
   // Legacy state.workspace is deliberately ignored: Project Hard Disk owns
   // the latest durable draft, while Working Session restores only its view.
   renderQuickDraft(slot.record);
-  if (state.paperSurface === "editor" || state.paperSurface === "intake") {
-    setQuickDraftPaperSurface(state.paperSurface, { manual: true });
-  }
+  // state.paperSurface is deliberately ignored: the paper is derived from the
+  // work, and restoring a remembered one is exactly how the two used to drift.
   if (["body", "grain", "read"].includes(state.displayMode) && typeof setQuickDraftDisplayMode === "function") {
     setQuickDraftDisplayMode(state.displayMode);
   }
@@ -1294,8 +1699,59 @@ function restoreWorkingSession(state = {}) {
   return true;
 }
 
+// Load the document's darkroom record, and drain anything a pre-schema-4 record
+// is still carrying. The normalizer hands the old fields forward in
+// `pendingDarkroom` rather than dropping them, because it runs on every load
+// and long before this can; this is the only place that empties that bucket.
+//
+// State with no document to hang it on gets one. A draft that was never saved
+// as a project document still has a negative, a stack and a chain, and they
+// have to live somewhere addressable — so the migration creates the document
+// it should have had, and the document appears in the project like any other.
+async function ensureDarkroomReady(projectId = activeProjectId) {
+  // Load the durable half before reading for it. Without this the two handles
+  // are simply absent, the guard below returns false in silence, and the
+  // darkroom answers every read from a blank in-memory record that is never
+  // written anywhere — which is what shipped in 1.0.50 before this line.
+  if (typeof ensureDarkroomModule === "function") await ensureDarkroomModule();
+  const store = window.AISystem6DarkroomStore;
+  const plan = window.AISystem6DarkroomRecord;
+  if (!store || !plan) return false;
+  let slot = projectQuickDraft(projectId, { create: false });
+  if (!slot) return false;
+  const pending = slot.record.workspace.pendingDarkroom;
+  if (pending) {
+    let documentId = String(slot.record.workspace.projectDocId || "");
+    if (!documentId && typeof saveQuickDraftAsProjectDocumentFor === "function") {
+      await saveQuickDraftAsProjectDocumentFor(projectId);
+      slot = projectQuickDraft(projectId, { create: false }) || slot;
+      documentId = String(slot.record.workspace.projectDocId || "");
+    }
+    if (!documentId) {
+      // Nowhere to put it and no document could be made: leave the bucket
+      // exactly where it is rather than dropping it on the floor.
+      console.warn("Darkroom state could not be migrated: the draft has no document.");
+      return false;
+    }
+    await store.loadDarkroomRecord(projectId, documentId);
+    store.setDarkroomRecord(projectId, documentId, plan.darkroomRecordFromWorkspace(pending));
+    await store.persistDarkroomRecord(projectId, documentId);
+    const next = { ...slot.record.workspace };
+    delete next.pendingDarkroom;
+    slot.project.quickDraft = { ...slot.record, workspace: next };
+    await persistQuickDraftWorkspace(projectId);
+    return true;
+  }
+  const documentId = String(slot.record.workspace.projectDocId || "");
+  if (documentId && !store.darkroomIsLoaded(projectId, documentId)) {
+    await store.loadDarkroomRecord(projectId, documentId);
+  }
+  return true;
+}
+
 async function open(options = {}) {
   bind();
+  await ensureDarkroomReady();
   renderQuickDraft();
   await openWindow("quickDraft", { ...options, skipQuickDraftEntrypoint: true });
   const win = getWindow("quickDraft");
@@ -1326,7 +1782,7 @@ window.AISystem6QuickDraftRuntime = Object.freeze({
   createQuickDraftAsyncTask,
   flushPendingQuickDraftCommit,
   persistQuickDraftWorkspace,
-  paperSurface: () => quickDraftPaperSurface,
+  paperSurface: () => quickDraftPhase(),
   quickDraftAliases,
   quickDraftModelAvailable,
   refs,
@@ -1335,7 +1791,11 @@ window.AISystem6QuickDraftRuntime = Object.freeze({
   updateQuickDraftForProject,
   setBusy,
   quickDraftPanelVisible,
-  setQuickDraftPaperSurface,
+  applyQuickDraftPaperSurface,
+  developDocument,
+  lightroomBodyText,
+  lightroomIsReadOnly,
+  quickDraftPhase,
   setQuickDraftStatus,
   setSaveState,
   titleFromBody,

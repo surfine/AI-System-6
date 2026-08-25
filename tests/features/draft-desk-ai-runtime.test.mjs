@@ -30,9 +30,9 @@ function modelResult(draft) {
     "the rewritten body is durably stored"
   );
   test.assert(
-    project.quickDraft.workspace.versions.length === 1
-      && project.quickDraft.workspace.versions[0].reason === "before-ai"
-      && project.quickDraft.workspace.versions[0].body.includes("旧正文"),
+    (project.quickDraft.workspace.pendingDarkroom?.versions || []).length === 1
+      && (project.quickDraft.workspace.pendingDarkroom?.versions || [])[0]?.reason === "before-ai"
+      && (project.quickDraft.workspace.pendingDarkroom?.versions || [])[0]?.body.includes("旧正文"),
     "an existing body creates exactly one before-ai Version"
   );
 }
@@ -47,7 +47,7 @@ function modelResult(draft) {
   runtime.context.modelResponder = async () => modelResult("这是第一次生成的正文，有足够内容形成一篇完整短稿。");
   const result = await runtime.testApi.requestQuickDraft("draft");
   test.assert(result === true, "a first generation succeeds from material input");
-  test.assert(project.quickDraft.workspace.versions.length === 0, "a first generation does not create an empty before-ai Version");
+  test.assert((project.quickDraft.workspace.pendingDarkroom?.versions || []).length === 0, "a first generation does not create an empty before-ai Version");
 }
 
 // Project affinity: pause the real model await, switch the active project and
@@ -132,7 +132,7 @@ test.assert(runtime.controls.get("quick-draft-draft").value === "B 的正文绝�
   modelGate.resolve();
   const result = await pending;
   test.assert(result === false, "Adjustment Apply discards its composite after the project changes");
-  test.assert(projectA.quickDraft.workspace.composition.composite === "", "Project A records no stale composite");
+  test.assert((projectA.quickDraft.workspace.pendingDarkroom?.composition?.composite || "") === "", "Project A records no stale composite");
   test.assert(projectB.quickDraft.workspace.body === "B 的正文绝不能变化。", "Project B is byte-for-byte unchanged");
   test.assert(runtime.controls.get("quick-draft-draft").value === "B 的正文绝不能变化。", "the shared textarea remains Project B's body");
 }
@@ -153,7 +153,7 @@ test.assertIncludes(composition, "task.commit(patch, { captureForm: false })", "
   const result = await runtime.testApi.requestQuickDraft("draft");
   test.assert(result === false, "a broken Protect sentinel rejects the model result");
   test.assert(project.quickDraft.workspace.body === original, "sentinel failure leaves the working body unchanged");
-  test.assert(project.quickDraft.workspace.versions.length === 0, "sentinel failure does not add a before-ai Version");
+  test.assert((project.quickDraft.workspace.pendingDarkroom?.versions || []).length === 0, "sentinel failure does not add a before-ai Version");
 }
 
 test.finish();

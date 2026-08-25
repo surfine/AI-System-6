@@ -62,6 +62,9 @@
           document.documentElement.dataset.deploymentProfile =
             capabilities.deployment_profile
               || (capabilities.public_deployment ? "public" : "local");
+          document.documentElement.dataset.deploymentTarget =
+            capabilities.deployment_target
+              || (capabilities.public_deployment ? "vps" : "static");
           window.dispatchEvent(new CustomEvent("ai-system6:capabilities", {
             detail: capabilities,
           }));
@@ -122,13 +125,14 @@
     }
   }
 
-  async function verifyPublicSession() {
+  async function verifyPublicSession(options = {}) {
     const capabilities = await loadCapabilities();
-    if (!capabilities.public_deployment) return true;
-    const sitekey = String(capabilities.public_access?.turnstile_site_key || "");
-    const action = String(capabilities.public_access?.turnstile_action || "turnstile-spin-v2");
+    const externalExchange = typeof options.exchange === "function";
+    if (!capabilities.public_deployment && !externalExchange) return true;
+    const sitekey = String(options.sitekey || capabilities.public_access?.turnstile_site_key || "");
+    const action = String(options.action || capabilities.public_access?.turnstile_action || "turnstile-spin-v2");
     if (!sitekey) throw new Error("Public verification is not configured.");
-    if (await hasValidSession()) return true;
+    if (!externalExchange && await hasValidSession()) return true;
 
     const turnstile = await loadTurnstileScript();
     const dialog = getVerificationDialog();
@@ -192,15 +196,19 @@
             if (settled) return;
             setStatus("public_verify_confirming");
             try {
-              const response = await nativeFetch("/api/session/turnstile", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ token }),
-                cache: "no-store",
-              });
-              const data = await response.json().catch(() => ({}));
-              if (!response.ok || !data.verified) {
-                throw new Error(data.error || "Verification failed.");
+              if (externalExchange) {
+                await options.exchange(token);
+              } else {
+                const response = await nativeFetch("/api/session/turnstile", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ token }),
+                  cache: "no-store",
+                });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok || !data.verified) {
+                  throw new Error(data.error || "Verification failed.");
+                }
               }
               finish();
             } catch (error) {
@@ -228,6 +236,10 @@
     return verificationPromise;
   }
 
+  function verifyExternalSession(options = {}) {
+    return verifyPublicSession(options);
+  }
+
   window.fetch = async function guardedFetch(input, init) {
     const firstInput = input instanceof Request ? input.clone() : input;
     const retryInput = input instanceof Request ? input.clone() : input;
@@ -248,6 +260,7 @@
   window.AISystem6PublicAccess = {
     getCapabilities: loadCapabilities,
     ensureSession: ensurePublicSession,
+    verifyExternalSession,
     nativeFetch,
   };
 

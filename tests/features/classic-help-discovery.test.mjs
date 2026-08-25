@@ -5,7 +5,15 @@
 import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("classic-help-discovery");
-const html = read("index.html");
+// 文字亮室 builds its own window, so its markup is a block in draft-desk.js
+// rather than a section in index.html. Take that block only -- pulling in the
+// whole module would let its code satisfy this file's markup assertions.
+const lightroomModuleSource = read("app/features/draft-desk.js");
+const lightroomWindowMarkup = lightroomModuleSource.slice(
+  lightroomModuleSource.indexOf("function installLightroomWindow"),
+  lightroomModuleSource.indexOf("installLightroomWindow();"),
+);
+const html = `${read("index.html")}\n${lightroomWindowMarkup}`;
 const app = read("app.js");
 const manifest = read("tooling/runtime-manifest.mjs");
 const menus = read("app/data/menus.js");
@@ -118,8 +126,8 @@ test.assertIncludes(persistence, "multiFinderSwitcherHintSeen,", "the one-time M
 test.assertIncludes(persistence, "settings.multiFinderSwitcherHintSeen", "the one-time clue restores without a new storage boundary");
 test.assertMatches(desktopRuntime, /nextEnvironment === "multifinder"[\s\S]*multiFinderSwitcherHintSeen = false/, "choosing MultiFinder arms its switcher clue");
 test.assertIncludes(boot, "revealMultiFinderSwitcherHint()", "the clue appears only after the desktop finishes booting");
-test.assertMatches(guide, /function dismissWelcomeFloppy\(\)[\s\S]*requestAnimationFrame\(\(\) => revealMultiFinderSwitcherHint\(\)\)/, "entering the desktop can reveal an already-enabled MultiFinder switcher without another restart");
-test.assertMatches(balloon, /function revealMultiFinderSwitcherHint\(\)[\s\S]*!guideSeen[\s\S]*isMultiFinderMode\(\)[\s\S]*multifinder_switcher_discovery/, "the switcher clue waits for completed OOBE and an active MultiFinder environment");
+test.assertMatches(guide, /async function completeClioOnboarding\([\s\S]*requestAnimationFrame\(\(\) => revealMultiFinderSwitcherHint\(\)\)/, "finishing the Clio introduction can reveal an already-enabled MultiFinder switcher without another restart");
+test.assertMatches(balloon, /function revealMultiFinderSwitcherHint\(\)[\s\S]*!clioOnboardingCompleted[\s\S]*isMultiFinderMode\(\)[\s\S]*multifinder_switcher_discovery/, "the switcher clue waits for completed OOBE and an active MultiFinder environment");
 
 for (const key of [
   "show_balloon_help",
@@ -161,7 +169,7 @@ for (const key of [
 
 test.assertIncludes(dictionary, 'id: "balloon-help"', "System Help documents the optional Balloon Help mode");
 test.assertIncludes(dictionary, "adapted from System 7", "Help records Balloon Help's actual historical source");
-test.assertIncludes(dictionary, "mounts the read-only Welcome Floppy", "System Help matches the Finder-owned OOBE");
+test.assertIncludes(dictionary, "The short ClioTalk introduction for a first visit or an intentional replay", "System Help matches the Clio-owned first-use introduction");
 test.assertMatches(html, /apple-menu-popover[\s\S]*data-action="open-system-help"/, "System Help is one click away from the Apple menu");
 test.assertIncludes(en, "balloon_system_help:", "English explains the System Help entry");
 test.assertIncludes(zh, "balloon_system_help:", "Chinese explains the System Help entry");
@@ -171,7 +179,12 @@ test.assertMatches(foundation, /\.balloon-help \{[\s\S]*var\(--balloon-help-bg\)
 test.assertMatches(foundation, /\.balloon-help \{[\s\S]*inset: auto;[\s\S]*margin: 0;/, "the top-layer balloon keeps its measured viewport position instead of popover auto-centering");
 test.assertIncludes(balloon, "window.visualViewport", "balloons stay inside the visible viewport during zoom and mobile resizing");
 test.assertIncludes(balloon, "const available = {", "balloon placement measures all four open sides around its target");
-test.assertIncludes(balloon, "const preference = { below: 4, above: 3, right: 2, left: 1 }", "balloons prefer familiar vertical placement when it fits");
+test.assertIncludes(balloon, "{ below: 4, above: 3, right: 2, left: 1 }", "balloons prefer familiar vertical placement when it fits");
+// A pulled-down menu is measured whole, so the balloon lands beside the open
+// menu instead of over the commands the user is reaching for next.
+test.assertIncludes(balloon, "function balloonHelpAnchorRect", "the balloon anchors on the open menu, not only on the pointed-at control");
+test.assertIncludes(balloon, "{ right: 4, left: 3, below: 2, above: 1 }", "a menu-anchored balloon steps aside instead of covering the menu");
+test.assertIncludes(balloon, "const menuAnchored =", "the placement rule knows when a menu surface joined the anchor");
 test.assertIncludes(balloon, 'balloon.style.setProperty("--balloon-help-tail-top"', "side callouts keep their tail aimed at the target");
 test.assertMatches(foundation, /\.balloon-help\[data-side="left"\]::before[\s\S]*\.balloon-help\[data-side="right"\]::before/,
   "edge targets can use horizontal balloon tails instead of being covered");

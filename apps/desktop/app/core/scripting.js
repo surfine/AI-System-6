@@ -165,7 +165,7 @@ async function resolveDropletFiles(fileIds = []) {
 async function runScriptableCommand(id, context = {}) {
   const command = getScriptableCommand(id);
   if (!command) {
-    setStatus(currentLanguage === "zh" ? "找不到这个命令" : "Unknown command");
+    setStatus(t("unknown_command"));
     return false;
   }
   if (command.requiresProject && !getActiveProject()) {
@@ -178,17 +178,17 @@ async function runScriptableCommand(id, context = {}) {
     if (resolved.reason === "broken-alias") {
       setStatus(t("alias_broken", resolved.file?.name || ""));
     } else {
-      setStatus(currentLanguage === "zh" ? "这个 Droplet 只接受文稿" : "This droplet accepts documents only");
+      setStatus(t("this_droplet_accepts_documents_only"));
     }
     return false;
   }
   const files = resolved.files;
   if (!files.length) {
-    setStatus(currentLanguage === "zh" ? "请先把项目硬盘里的文稿拖到 Droplet 上" : "Drag a Project Hard Disk document onto the droplet");
+    setStatus(t("drag_a_project_hard_disk_document"));
     return false;
   }
   if (files.some((file) => !command.accepts.includes(file.type))) {
-    setStatus(currentLanguage === "zh" ? "这个 Droplet 只接受文稿" : "This droplet accepts documents only");
+    setStatus(t("this_droplet_accepts_documents_only"));
     return false;
   }
   const route = dropletApplicationRoute(command.id);

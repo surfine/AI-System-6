@@ -105,7 +105,7 @@
   font: inherit;
   text-align: left;
   cursor: pointer;
-  transition: background var(--duration-fast) var(--ease-standard),color var(--duration-fast) var(--ease-standard),transform var(--duration-fast) var(--ease-standard);
+  transition: background var(--control-motion-fast-in) var(--control-motion-ease),color var(--control-motion-fast-in) var(--control-motion-ease),transform var(--control-motion-fast-in) var(--control-motion-ease);
 }
 
 .endfield-recent-item {
@@ -176,7 +176,7 @@
 
 .endfield-recent-item:disabled,.endfield-match:disabled {
   cursor: wait;
-  opacity: var(--disabled-opacity);
+  opacity: var(--control-disabled-opacity);
 }
 
 .endfield-empty {

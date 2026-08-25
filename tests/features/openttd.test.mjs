@@ -3,7 +3,7 @@
 // inside an iframe; the desktop side stays a thin lazy chrome module. The
 // game must never touch the boot bundles or the floppy budget.
 
-import { createFeatureTest, read, readAppSurface, exists } from "../helpers/feature-test-harness.mjs";
+import { createFeatureTest, exists, read, readAppSurface, windowApp } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("openttd");
 const index = read("index.html");
@@ -42,7 +42,7 @@ test.assertIncludes(appJs, 'action: "open-openttd"', "Applications folder dynami
 test.assertIncludes(appJs, '"open-applications-folder-path:games"', "the Games folder is reachable from the Applications root");
 test.assertIncludes(appJs, '["games", { labelKey: "applications_games", parentPath: "" }]', "the Games folder is a defined Applications path");
 test.assertIncludes(app, 'openttd: "OpenTTD"', "MultiFinder labels the app");
-test.assertIncludes(app, 'openttd: "openttd"', "window maps to its own app id");
+test.assert(windowApp("openttd") === "openttd", "window maps to its own app id");
 test.assertIncludes(openttd, '"open-openttd":{handler:()=>openWindow("openttd")', "action opens the window through its registered command");
 const lazyBlock = manifest.slice(manifest.indexOf("lazyRuntimePaths"));
 test.assertIncludes(lazyBlock, "app/features/openttd.js", "feature sits in lazyRuntimePaths");

@@ -129,22 +129,80 @@ function syncWriteModeDataset() {
 // this single query freezes it when the instance is not the writer. Reading,
 // copying, sharing, downloading, exporting backups, and Get Info carry no such
 // marker and stay available. The storage boundary remains the final fence.
-function syncReadOnlySurface() {
-  // Handoff freezes new user mutations exactly like read-only: the old writer
-  // may finish pending durable writes but must not accept new edits.
-  const readOnly = leaseState.mode !== "writer";
-  try {
-    document.querySelectorAll("[data-requires-write]").forEach((element) => {
-      const tag = element.tagName?.toLowerCase();
-      if (tag === "textarea" || tag === "input" || tag === "select") {
-        element.readOnly = readOnly;
-      }
-      element.disabled = readOnly;
-    });
-  } catch {}
+// A surface can be locked for more than one reason at a time: the instance may
+// hold no write lease, and the writing route may separately hand the pen to
+// another window. Both used to write element.readOnly directly and overwrite
+// each other, so whichever ran last decided - which quietly unlocked the
+// drafting manuscript the route contract depends on. Reasons register here and
+// this stays the single writer of the property.
+const extraReadOnlyRules = new Set();
+
+function registerReadOnlyRule(rule) {
+  if (typeof rule !== "function") return () => {};
+  extraReadOnlyRules.add(rule);
+  syncReadOnlySurface();
+  return () => {
+    extraReadOnlyRules.delete(rule);
+    syncReadOnlySurface();
+  };
 }
 
+function elementIsReadOnly(element) {
+  // Handoff freezes new user mutations exactly like read-only: the old writer
+  // may finish pending durable writes but must not accept new edits.
+  if (leaseState.mode !== "writer") return true;
+  for (const rule of extraReadOnlyRules) {
+    try {
+      if (rule(element) === true) return true;
+    } catch {}
+  }
+  return false;
+}
+
+function syncReadOnlySurface() {
+  let elements = [];
+  try {
+    elements = [...document.querySelectorAll("[data-requires-write]")];
+  } catch {
+    return;
+  }
+  // Per element, so one exotic node cannot abort the sweep for every other
+  // surface and leave half the window writable in read-only mode.
+  elements.forEach((element) => {
+    try {
+      const readOnly = elementIsReadOnly(element);
+      const tag = String(element.tagName || "").toLowerCase();
+      const type = String(element.type || "").toLowerCase();
+      const takesReadOnly = tag === "textarea"
+        || (tag === "input" && !["checkbox", "radio", "file", "range", "color"].includes(type));
+      if (takesReadOnly) {
+        // A locked document is still a document: it must stay focusable,
+        // selectable, scrollable and copyable, and it must keep its place in
+        // the tab order. disabled takes all of that away, which is not what
+        // "you cannot change this" means on paper.
+        element.readOnly = readOnly;
+        element.disabled = false;
+        element.classList?.toggle?.("is-write-locked", readOnly);
+        return;
+      }
+      if (tag === "select") element.readOnly = readOnly;
+      element.disabled = readOnly;
+      element.classList?.toggle?.("is-write-locked", readOnly);
+    } catch {}
+  });
+}
+
+// A receipt has to expire with the thing it reports. The read-only notice used
+// to sit on screen after the lease came back, which nobody noticed while the
+// status line lived in a hidden window - and which reads as a lie now that the
+// route shows it. Only our own message is cleared, never someone else's.
+let announcedReadOnly = false;
+
 function setWriter(value, claimedAt = 0, epoch = 0) {
+  if (value && announcedReadOnly) {
+    announcedReadOnly = false;
+    if (typeof setStatus === "function") clearStatus();
+  }
   leaseState = {
     writer: value,
     readOnly: !value,
@@ -382,7 +440,10 @@ function cancelTakeoverRequest() {
 }
 
 async function flushOldWriterBeforeTakeover() {
-  // Order matters: draft first, then the Working Session, then desk state.
+  // Order matters: the writer's last keystrokes first -- they live in the DOM
+  // until a commit pulls them into the record, and everything below persists
+  // the record. Then draft, Working Session, desk state.
+  if (typeof flushWorkingProgress === "function") flushWorkingProgress();
   if (typeof flushPendingQuickDraftCommit === "function") {
     const flushed = await flushPendingQuickDraftCommit();
     if (flushed === false) return false;
@@ -545,7 +606,14 @@ function initWriteLease() {
     if (event.persisted) reconcileWriteLease();
   });
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible") reconcileWriteLease();
+    if (document.visibilityState !== "visible") return;
+    reconcileWriteLease().then(() => reclaimWriteLeaseOnFocus());
+  });
+  // A background window that never lost visibility (a second desktop window
+  // rather than a tab) still becomes the one being written in when it is
+  // clicked. Same silent reclaim, same focus gate.
+  window.addEventListener("focus", () => {
+    reclaimWriteLeaseOnFocus();
   });
 }
 
@@ -570,6 +638,7 @@ function enterReadOnly(reason = "write-access-lost") {
   stopHeartbeat();
   setWriter(false);
   if (typeof cancelWorkingSessionAutosave === "function") cancelWorkingSessionAutosave();
+  announcedReadOnly = true;
   if (typeof setStatus === "function") setStatus(t("read_only_instance_status"));
   if (typeof updateMenuState === "function") updateMenuState();
   return reason;
@@ -676,12 +745,40 @@ function initWriteLeaseUi() {
   });
 }
 
+// Opening a second window used to stop the writer with a modal before they had
+// typed anything - a prompt for the case that is almost always safe, which is
+// how a permission dialog stops being read. The protocol can answer it itself:
+// a safe takeover makes the other window flush every durable write BEFORE it
+// releases, and it refuses outright if that flush fails. So the common path is
+// silent, and a dialog only appears when the answer is a real decision: the
+// other window is holding work it could not save.
+async function takeOverSilentlyOrAsk({ announce = true } = {}) {
+  const takeover = await requestSafeTakeover().catch(() => ({ ok: false, reason: "error" }));
+  if (takeover?.ok) return { writer: true, readOnly: false, silent: true };
+  if (announce) setTimeout(() => showWriteLeaseDialog({ denied: true }), 0);
+  return { writer: false, readOnly: true, reason: takeover?.reason || "denied" };
+}
+
 async function acquireWriteLeaseAtBoot() {
   const result = await acquireWriteLease();
-  if (result.readOnly) {
-    setTimeout(() => showWriteLeaseDialog({ lost: false }), 0);
-  }
-  return result;
+  if (!result.readOnly) return result;
+  const handover = await takeOverSilentlyOrAsk();
+  return handover.writer ? handover : result;
+}
+
+// Coming back to a window the user is looking at is the clearest possible
+// statement of intent, so the pen follows it. The invariant is only that a
+// HIDDEN window never takes the pen - it cannot be the one being typed in.
+// Document focus is deliberately not required: a tab can be fronted with the
+// caret still in the browser's own chrome, and the writer would then find the
+// window they are staring at inexplicably read-only.
+async function reclaimWriteLeaseOnFocus() {
+  if (leaseState.mode === "writer") return false;
+  if (document.visibilityState === "hidden") return false;
+  const stored = currentStoredLease();
+  if (!stored || stored.instanceId === instanceId || !leaseIsFresh(stored)) return false;
+  const handover = await takeOverSilentlyOrAsk({ announce: false });
+  return handover.writer === true;
 }
 
 window.AISystem6WriteLease = Object.freeze({
@@ -694,6 +791,7 @@ window.AISystem6WriteLease = Object.freeze({
   forceTakeOver: forceTakeOverWriteLease,
   release: releaseWriteLease,
   reconcile: reconcileWriteLease,
+  reclaimOnFocus: reclaimWriteLeaseOnFocus,
   isReadOnly: isReadOnlyInstance,
   isOwner: isWriteLeaseOwner,
   canMutate,
@@ -706,6 +804,7 @@ window.AISystem6WriteLease = Object.freeze({
   showConflict: () => showWriteLeaseDialog({ lost: false }),
   showLost: () => showWriteLeaseDialog({ lost: true }),
   showDenied: () => showWriteLeaseDialog({ denied: true }),
+  registerReadOnlyRule,
   on: onWriteLeaseEvent,
   initUi: initWriteLeaseUi,
   syncReadOnlySurface,

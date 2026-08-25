@@ -3,9 +3,9 @@
 ## Identity
 
 - **Save format:** `bonsai-city`
-- **Current format version:** 1
-- **Current engine save version:** 1
-- **Engine map size:** 64×64 (fixed in v1)
+- **Current format version:** 3
+- **Current engine save version:** 3
+- **Supported map sizes:** 64×64, 96×96, and 128×128 (the SC2K-native size)
 
 The format name and version are pinned by the simulation core
 (`FORMAT` / `SAVE_VERSION` in `apps/desktop/app/features/bonsai-city-sim.js`)
@@ -19,31 +19,40 @@ Three numbers mean three different things and must never be conflated:
 | Number | Means | Owner |
 | --- | --- | --- |
 | `formatVersion` | portable save structure | save codec |
-| `rulesetVersion` (future) | simulation semantics | simulation core |
+| `rulesetVersion` | simulation semantics | simulation core |
 | `indexedDbVersion` | browser physical store layout | AI System 6 shell |
 
-## v1 fields
+## v3 fields
 
 `serialize()` emits plain JSON-compatible values:
 
 | Field | Meaning |
 | --- | --- |
-| `format` / `version` | `bonsai-city` / 1 |
+| `format` / `version` | `bonsai-city` / 3 |
 | `name` | city name (display only, no translation) |
 | `seed` | initial integer seed |
 | `rngState` | current 32-bit PRNG state |
-| `tick` | integer tick count |
-| `funds`, `taxRate`, `speed` | economy and pacing |
+| `tick` | integer fixed-step count; five ticks equal one game day; a month is 25 days and a year 300 days (the SC2K calendar) |
+| `yearFounded` | founding year, one of 1900 / 1950 / 2000 / 2050 |
+| `funds`, `taxRate`, `funding`, `loan` | economy and policy state |
 | `milestone`, `wasBroke`, `brownout` | status flags |
-| `size` | 64 |
-| `alt`, `water`, `tree`, `over`, `zone`, `stage`, `variant` | durable tile layers |
-| `plants` | power plants `{ kind, x, y }` |
+| `size`, `terrainPreset` | 64, 96, or 128 and the deterministic generator preset |
+| `terrain`, `alt`, `water`, `shore`, `slope`, `tree` | durable terrain layers; altitude range is 0..31 |
+| `road`, `rail`, `wire`, `pipe`, `zone`, `density` | independent network and zoning layers; zone values 4/5/6 are military/airport/seaport (model-level, commands arrive with the transport milestone) |
+| `stage`, `buildingState`, `constructionTimer`, `variant` | durable development and construction layers |
+| `catalogId` | explicit XBLD-aligned tile id; 0 means "derive from sim state" — the carrier that lets imported `.sc2` buildings survive until the sim takes ownership of the tile |
+| `subway`, `waterLevel`, `salt`, `rotate`, `tunnel`, `waterKind` | v3 SC2K-model layers (underground, water table, salinity, footprint rotation, terrain tunnels, water classification) |
+| `sc2Sidecar` | optional preservation side-table for an imported `.sc2` city (raw MISC bytes and unmodeled segments), or `null` |
+| `facilities` | power, water, transport, and public-service facilities |
+| `history` | bounded 120-month city history |
+| `nextCommandSequence` / `pendingCommands` | deterministic command ordering |
 
-Derived layers (`powered`, `roadOk`, `plantAt`, population, jobs, demand,
-capacity) are rebuilt on load and never saved.
+Derived networks (`powered`, `watered`, road access, coverage, traffic),
+multi-tile `buildingAt`/`buildings` anchors, problem flags, population, jobs,
+demand, visual agents, and renderer caches are rebuilt on load and never saved.
 
-Phase 7 view state (camera, day/night lighting, and decorative traffic
-positions) is derived from `tick` or owned by the shell and is likewise never
+View state (camera, active overlay, inspector, and day/night lighting) is
+derived from `tick` or owned by the shell and is likewise never
 serialized; a reloaded city replays the same simulation regardless of how it
 was last viewed.
 
@@ -66,36 +75,41 @@ Rules:
 - `formatVersion`, `rulesetVersion`, and `indexedDbVersion` bumps are
   independent and each requires its own contract/test update.
 
-## Envelope (implemented in Phase 2)
+## Envelope
 
-`encodeSave` wraps the v1 engine payload in an envelope:
+`encodeSave` wraps the v3 engine payload in an envelope:
 
 ```json
 {
   "format": "bonsai-city",
-  "formatVersion": 1,
+  "formatVersion": 3,
   "metadata": { "cityId": "…", "name": "…", "createdAt": "…", "updatedAt": "…" },
-  "engine": { "rulesetVersion": 1, "fixedTickHz": 20 },
+  "engine": { "rulesetVersion": 3, "fixedTickHz": 20, "ticksPerDay": 5, "daysPerMonth": 25 },
   "simulation": { "seed": "...", "rng": { "algorithm": "mulberry32-v1", "state": [0] } },
-  "payload": { "format": "bonsai-city", "version": 1, "…": "the v1 engine save" },
+  "payload": { "format": "bonsai-city", "version": 3, "…": "the v3 engine save" },
   "integrity": { "algorithm": "SHA-256", "canonicalization": "sorted-json-v1", "digest": "..." }
 }
 ```
 
 `decodeSave` validates the structure, recomputes the digest over the canonical
 JSON of everything except `integrity`, and rejects tampered saves. `migrateSave`
-is the pure chain; v1 is identity and newer versions are rejected explicitly.
+is the pure chain; v1 maps its fixed 64×64 state into the independent v2
+layers and converts `tick` to `tick * 5`; v2 gains the SC2K-model layers
+zero-filled (with `waterKind` derived from `water`) and the default founding
+year 1900. Newer versions are rejected explicitly.
 Canonicalization is sorted keys, arrays in order, no whitespace — stable across
 Node and browsers so a checkpoint hash is portable.
 
-The in-memory `createCityRepository` (create/list/get/put/remove) holds live
-state with an injectable clock; an IndexedDB-backed repository may replace it
-in a later phase behind the same contract.
+The in-memory `createCityRepository` (create/list/get/put/remove) remains the
+test adapter. The shell persists v3 envelopes in the existing dedicated
+`bonsaiCities` IndexedDB store through the shared write-fence helper.
+Canonical serialization, integrity work, and large import parsing use the
+dedicated save Worker when available. A bounded timeout/error path falls back
+to the same direct codec; worker and fallback output are byte-identical.
 
-## Persistence boundary (open)
+## Persistence boundary
 
-Where city saves live in IndexedDB is an open decision. It must not silently
-reuse the GPL Micropolis `cities` store, because that store belongs to a
-different product line and the Bonsai path must stay provenance-clean. Options
-are a dedicated store (an `ask first` boundary change) or project-scoped city
-records; the decision belongs to a later phase.
+City saves live in the dedicated `bonsaiCities` store and never reuse the GPL
+Micropolis `cities` store. Import validates format, version, structure, and
+integrity before assigning a new city id; it never overwrites an existing
+record. The v3 record envelope does not require an IndexedDB schema bump.

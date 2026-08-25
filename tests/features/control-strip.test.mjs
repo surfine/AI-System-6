@@ -9,7 +9,11 @@ import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("control-strip");
 const manifest = read("tooling/runtime-manifest.mjs");
-const html = read("index.html");
+// Windows whose markup moved into their own lazy module: the boot payload no
+// longer carries a window this module already loads on demand. These
+// assertions are about what the window CONTAINS, not which file stores it,
+// so they read both surfaces and stay true wherever it is built.
+const html = `${read("index.html")}\n${read("app/features/control-strip-modules-folder.js")}`;
 const persistence = read("app/core/persistence-status.js");
 const domHandles = read("app/core/dom-handles.js");
 const wireup = read("app/core/wireup.js");
@@ -85,7 +89,8 @@ test.assertIncludes(wireup, "saveDeskState()", "toggling the checkbox persists")
 test.assertIncludes(wireup, "window.AISystem6ControlStrip?.renderSettings?.()", "opening the Control Strip tab loads the settings renderer");
 test.assertIncludes(config, "function ensureControlStripModule", "the strip loads from one lazy loader");
 test.assertIncludes(config, "function ensureControlStripModulesModule", "module descriptors load through a second lazy loader");
-test.assertIncludes(config, "function ensureControlStripModulesFolderModule", "the Control Strip Modules folder loads lazily");
+test.assertIncludes(config, "ensureControlStripModulesFolderModule = createLazyModuleLoader",
+  "the Control Strip Modules folder loads lazily, and brings its own markup with it");
 test.assertIncludes(config, "function applyControlStripState", "enabling loads the module; disabling removes it");
 test.assertIncludes(boot, "applyControlStripState({ silent: true })", "the strip activates after boot without blocking it");
 test.assertIncludes(manifest, '"app/features/control-strip.js"', "the strip is a lazy module");
@@ -172,7 +177,7 @@ test.assertIncludes(quickDraftHandoff, 'setFinderEnvironment("multifinder"', "Qu
 // instead of owning a command, and it reads the same availability map the menu
 // rows read, so a tile can never offer what the menu knows is unavailable.
 test.assertIncludes(modules, 'id: "heldPlace"', "the strip carries one Your Place module for the pause button");
-test.assertIncludes(modules, 'run: () => handleAction("hold-my-place")', "the tile reuses the desk's own hold command");
+test.assertIncludes(modules, 'run: () => handleAction("hold-that-thought")', "the tile reuses the desk's own hold command");
 test.assertIncludes(modules, 'run: () => handleAction("hold-that-thought")', "and the same tile carries the passing thought");
 test.assertIncludes(modules, "function controlStripActionAvailable", "module rows read one availability map instead of restating conditions");
 test.assertIncludes(modules, "getActionAvailability()[action] !== false", "that map is the one the menu rows already use");

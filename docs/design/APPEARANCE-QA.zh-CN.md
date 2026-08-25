@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/design/APPEARANCE-QA.md -->
-<!-- source-sha256: d1995426a6e08ca6c561afd2f82097dc782ba81da4eee4de9af02dc5d8a94d23 -->
+<!-- source-sha256: e7097398953d2f4e089909f7cb1a488c643bf0ab427c2dee22510a2785339bc2 -->
 
 英文版为准。本文档仅供人类参考。
 
@@ -34,15 +34,19 @@ specimen 在自己的 `floor` 台账中声明所处状态，因此一块 board �
 reference、一边自称 canonical。详见
 [THEME-FAMILY-CONTRACT.zh-CN.md](THEME-FAMILY-CONTRACT.zh-CN.md) 第 9 节。
 
-当前 floor 状态（2026-08-17 实测，非估计）：
+当前 floor 状态（由已提交 manifest 推导，非估计）：
 
 | Board | specimen 数 | 达到 floor | 已记录差距 | reference 不可用 |
 | --- | --- | --- | --- | --- |
-| Platinum | 20 | 12 | 5 | 3（图标材质，裁切自照片缩略图） |
-| Aqua | 16 | 16 | 0 | 0 |
-| Snow Leopard | 17 | 17 | 0 | 0 |
-| Yosemite | 19 | 6 | 13 | 0 |
-| Yosemite 2x | 5 | 4 | 1 | 0 |
+| Platinum | 20 | 12 | 2 | 6（3 个照片缩略图裁片，加 3 个裁错对象的裁片） |
+| Aqua | 19 | 19 | 0 | 0 |
+| Snow Leopard | 18 | 18 | 0 | 0 |
+| Yosemite | 19 | 6 | 11 | 2（checkbox/radio 标记只有 clone 资产） |
+| Yosemite 2x | 5 | 4 | 0 | 1（checkbox 只有缩放后的 clone 资产） |
+
+`tests/features/appearance-qa-ledger.test.mjs` 从各 manifest 的
+`specimens[].floor.status` 推导这些计数，并要求中英文表格一致。Aqua 新增的三个
+specimen 覆盖完整标题栏灯组；Snow Leopard 新增的一个 specimen 覆盖其灯组。
 
 ### 控件状态覆盖
 
@@ -111,17 +115,18 @@ System Preferences General 面板）里没有推按钮、文本框、对话框�
 `sidebar-inactive` 固定的是未选中的 Downloads 切片，fixture 显示的却是选中态；
 `checkbox-checked` 与 `radio-checked` 比的是 GTK 克隆字形，不是原生 10.10 美术。
 
-Yosemite 是当前公开的 fidelity 债务：19 个 specimen 中有 13 个未达到 floor。
+Yosemite 是当前公开的 fidelity 债务：19 个 specimen 中有 13 个未达到 floor
+（11 个可量测差距，加 2 个无法用 clone reference 证明原生 10.10 像素的标记比较）。
 它的窗口与控件 reference 已是 10.10 原生截图；只剩复选框、单选框和标题按钮
 字形仍在比 GTK 仿制资源。System 6 与
 Liquid Glass 没有历史截图 target，继续使用各自的设计契约加回归基线；不为它们
 伪造 fidelity board。
 Liquid Glass 正在通过现有主题 ID 与材质 token 重校到 macOS 27 Golden Gate；它
 不会新增主题或主题家族。
-`npm run verify:appearance-apps` 另行在六套外观下渲染 Finder、Page Setup、
-TeachText、Scrapbook、Cover Glass 与 Endfield Terminal，证明普通 App 与视觉
-特殊 App 都收到同一套系统 title bar painter；这个传播检查不与像素回归或历史
-fidelity 混为一谈。
+`npm run verify:appearance-apps` 另行在六套外观下渲染
+`REPRESENTATIVE_WINDOWS` 当前列出的真实窗口，证明普通 App 与视觉特殊 App 都
+收到同一套系统 title bar painter；这个传播检查不与像素回归或历史 fidelity
+混为一谈。
 
 每个表面的 QA 标准：无裁切、无不清晰文字、无错误对比度、无坏焦点、无错误
 图标、无损坏的窗口边框。

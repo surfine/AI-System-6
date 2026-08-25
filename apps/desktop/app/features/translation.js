@@ -391,7 +391,7 @@ async function translateTeachTextSelection(selection, targetLanguage) {
     saveDeskState();
     openWindow("teachText");
     teachTextBodyInput.focus();
-    setStatus(t("ready"));
+    clearStatus();
   } catch (error) {
     if (!isAbortError(error)) setStatus(t("translation_failed", error.message));
   } finally {
@@ -491,20 +491,46 @@ async function runTeachTextStyleCheck(options = {}) {
   const checkingMessage = sectionOnly ? t("checking_style_section", section.title) : t("checking_style");
   if (!beginLongTask(taskKey, checkingMessage)) return;
   openReviewDesk("style");
-  renderStyleSheet([], checkingMessage);
+
+  // The writer's own hard rules, checked exactly. These are rendered before
+  // the model is asked anything and they survive its failure: a word the
+  // writer said not to use either appears in the text or it does not, and
+  // that answer should not depend on a round trip.
+  const sheetMarkdown = getActiveProject()?.questionSheet || "";
+  const exactFindings = outputRuleBreaches(questionSheetQuotedRules(sheetMarkdown), body)
+    .map((breach) => ({
+      location: t("style_finding_line", breach.line),
+      type: t("style_finding_output_rule"),
+      quote: breach.text,
+      problem: t("output_rule_breached", breach.term),
+      impact: "",
+      suggestion: "",
+      priority: "",
+    }));
+  renderStyleSheet(exactFindings, exactFindings.length ? "" : checkingMessage);
+
   try {
     const outputLanguage = currentLanguage === "zh" ? "Chinese" : "English";
     const scope = sectionOnly ? `selected TeachText section "${section.title}"` : "text";
+    // The sheet states what this piece is for and what it must keep. Without
+    // it the reviewer is asked to notice "missing personal detail" while
+    // holding no record of which details were personal.
+    const constraints = questionSheetReviewContext(sheetMarkdown);
     const prompt = `${resolveWritingRoutePrompt("other-apps.style-proofread", "en")
       .replace("{{scope}}", scope)
       .replace("{{language}}", outputLanguage)}
-
+${constraints ? `\nTHE WRITER'S OWN CONSTRAINTS, from their Question Sheet:\n${constraints}\n` : ""}
 TEXT:
 ${body}`;
 
     const response = await fetchModelPayload({
       model: getLocalModelRequestName(),
-      messages: withMarkdownModelMessages([{ role: "user", content: prompt }]),
+      // Figures the draft cites, so the reviewer can see what the reader sees.
+      // Prose is still what is under review.
+      messages: attachImagesToModelMessages(
+        withMarkdownModelMessages([{ role: "user", content: prompt }]),
+        teachTextFiguresReferencedIn(body)
+      ),
       temperature: 0.3,
       max_tokens: 1600,
       stream: false,
@@ -513,15 +539,18 @@ ${body}`;
     const data = await readChatJson(response);
     const content = data?.choices?.[0]?.message?.content;
     if (content) {
-      const findings = parseStyleFindings(content);
+      const findings = [...exactFindings, ...parseStyleFindings(content)];
       styleSheetSourceOffset = sectionOnly ? section.offset : hasSelection ? selectionStart : 0;
       renderStyleSheet(findings);
-      setStatus(findings.length ? t("ready") : t("no_style_results"));
+      // Findings are on screen; only their absence needs saying.
+      if (findings.length) clearStatus();
+      else setStatus(t("no_style_results"));
     }
   } catch (error) {
     if (!isAbortError(error)) {
       console.error("Style check failed", error);
-      renderStyleSheet([], t("style_check_failed"));
+      // The exact findings needed no model, so they do not fall with it.
+      renderStyleSheet(exactFindings, exactFindings.length ? "" : t("style_check_failed"));
       setStatus(t("style_check_failed"));
     }
   } finally {
@@ -658,7 +687,7 @@ function jumpToStyleFinding(index) {
   teachTextBodyInput.focus();
   teachTextBodyInput.selectionStart = start;
   teachTextBodyInput.selectionEnd = start + finding.quote.length;
-  setStatus(t("ready"));
+  clearStatus();
 }
 
 function copyStyleFinding(index) {
@@ -758,11 +787,11 @@ function writingToolTaskBody(mode, instruction = "", resolvedPrompt = null) {
 
 function writingToolPromptUnavailable(resolvedPrompt) {
   if (resolvedPrompt?.status === "disabled") {
-    setStatus(currentLanguage === "zh" ? "此写作工具提示词已停用。" : "This Writing Tools prompt is disabled for this project.");
+    setStatus(t("this_writing_tools_prompt_is_disabled"));
     return true;
   }
   if (resolvedPrompt?.status === "missing") {
-    setStatus(currentLanguage === "zh" ? "找不到此写作工具提示词文件，无法运行。" : "This Writing Tools prompt file is missing, so it cannot run.");
+    setStatus(t("this_writing_tools_prompt_file_is"));
     return true;
   }
   return false;
@@ -945,7 +974,7 @@ async function runDirectWritingTool(mode) {
   }
 
   if (!result) {
-    setStatus(t("ready"));
+    clearStatus();
     return;
   }
 
@@ -953,7 +982,7 @@ async function runDirectWritingTool(mode) {
   const confirmKey = target.append ? "writing_tool_insert_confirm" : "writing_tool_replace_confirm";
   const confirm = await showSystemModal(t(confirmKey, preview), "confirm");
   if (confirm !== "yes") {
-    setStatus(t("ready"));
+    clearStatus();
     return;
   }
 
@@ -1004,7 +1033,7 @@ async function sendPrintToAiRequest(mode, publicRequest, hiddenPrompt, sourceWin
     conversation.push({ role: "user", content: publicRequest });
     conversation.push({ role: "assistant", content: assistantText });
     resolvePendingMessage(pendingMessage, "assistant", assistantText);
-    setStatus(t("ready"));
+    clearStatus();
   } catch (error) {
     if (error.name === "AbortError") {
       resolvePendingStatus(pendingMessage, t("stopped"));
@@ -1087,7 +1116,7 @@ async function praiseReviewDeskText() {
   setReviewDeskMode("facts");
   clearReviewFeedbackSlot("facts", currentLanguage === "zh" ? "正在写夸夸我..." : "Writing encouragement...");
   activeAbortController = new AbortController();
-  setStatus(currentLanguage === "zh" ? "正在给创作者加一点信心..." : "Writing encouragement...");
+  setStatus(t("writing_encouragement"));
   try {
     const prompt = [
       writingToolTaskBody("reviewPraise", "", resolvedPrompt),
@@ -1106,7 +1135,7 @@ async function praiseReviewDeskText() {
       "",
       praise.trim(),
     ].join("\n"));
-    setStatus(t("ready"));
+    clearStatus();
   } catch (error) {
     if (error.name !== "AbortError") setStatus(`${t("connection_error")} ${error.message}`);
   } finally {
@@ -1124,7 +1153,7 @@ async function reviewSectionAsMingming() {
     openWindow("reviewDesk");
     return;
   }
-  const runningLabel = currentLanguage === "zh" ? "正在代入铭铭视角..." : "Reviewing as Mingming...";
+  const runningLabel = currentLanguage === "zh" ? "正在代入读者视角..." : "Reviewing as the Reader...";
   if (!beginLongTask("mingming-review-section", runningLabel)) return;
   setReviewDeskMode("facts");
   clearReviewFeedbackSlot("facts", runningLabel);
@@ -1149,7 +1178,7 @@ async function reviewSectionAsMingming() {
     const data = await readChatJson(response);
     const content = stripRebuildMarkdownFence(data?.choices?.[0]?.message?.content || "").trim();
     appendReviewFeedbackToBody(content || (currentLanguage === "zh" ? "没有明显的铭铭视角问题。" : "No obvious Mingming-perspective issues found."));
-    setStatus(t("ready"));
+    clearStatus();
   } catch (error) {
     if (!isAbortError(error)) {
       const message = `${t("connection_error")} ${error.message}`;

@@ -1,9 +1,12 @@
-// Start Here mounts a real, read-only Welcome Floppy. The first-run surface is
-// Finder itself; the writing route, AI calls, and project creation stay opt-in.
+// A true first launch opens ClioTalk as the front door. Onboarding is one
+// conversation surface, not a wizard or a mounted Welcome Floppy: resumable
+// work always wins, the starters only fill the composer, and Replay
+// Introduction is a session state that never resets completion.
 
 import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("start-here-guide");
+const appJs = read("app.js");
 const actions = read("app/core/actions.js");
 const boot = read("app/core/boot.js");
 const desktopRuntime = read("app/core/desktop-runtime.js");
@@ -13,85 +16,120 @@ const en = read("app/data/translations-en.js");
 const zh = read("app/data/translations-zh.js");
 const windowManager = read("app/core/window-manager.js");
 const workingSession = read("app/core/working-session.js");
-const wireup = read("app/core/wireup.js");
-const cloudModel = read("app/features/cloud-model.js");
+const persistence = read("app/core/persistence-status.js");
 const chatMessages = read("app/core/chat-messages.js");
-const writingDemo = read("app/features/writing-demo.js");
-const workspaceProfile = read("app/core/workspace-profile.js");
 
-const diskMarkup = html.match(/<section class="window finder-window welcome-disk-window[\s\S]*?<section class="window guide-window/)?.[0] || "";
-const readMeMarkup = html.match(/<section class="window guide-window[\s\S]*?<section class="window rebuild-flow-window/)?.[0] || "";
+// --- First launch routing -------------------------------------------------
 
-test.assertMatches(desktopRuntime, /if \(!guideSeen\)[\s\S]*setWorkspaceProfile\(workspaceProfileDesktop, \{ persist: false \}\)[\s\S]*openWelcomeFloppy\(\)/, "first launch mounts Welcome Floppy on the ordinary Desktop");
-test.assertNotMatches(desktopRuntime, /if \(!guideSeen\)[\s\S]*openWindow\("guide"\)/, "first launch does not cover Finder with the Read Me window");
-test.assertMatches(desktopRuntime, /if \(!guideSeen\)[\s\S]*getWindow\("assistant"\)[\s\S]*classList\.add\("is-hidden"\)/, "first launch does not leave ClioTalk behind the floppy");
-// This used to read `guideSeen && ...`, which skipped the resume until the
-// Welcome Floppy had been closed. It cost a writer their sentence: type before
-// finishing onboarding, get interrupted, and the work was dropped and then
-// overwritten by autosave. Someone who wrote a paragraph is not on first
-// launch. The floppy still owns a true first launch — an empty desk with
-// nothing to resume — which is what the assertion below actually protects.
-test.assertMatches(boot, /const resumedWorkingSession = !writerMode[\s\S]*if \(!guideSeen && !resumedWorkingSession\) \{[\s\S]*openStartupItems\(\)/, "a true first launch still meets the Welcome Floppy, and resumable work is never dropped for onboarding");
+test.assertMatches(
+  desktopRuntime,
+  /function openStartupItems\(\) \{\s*\n\s*if \(!clioOnboardingCompleted\) \{[\s\S]*?setWorkspaceProfile\(workspaceProfileDesktop, \{ persist: false \}\);/,
+  "first launch stays on the ordinary Desktop profile without persisting it"
+);
+test.assertMatches(
+  desktopRuntime,
+  /if \(!clioOnboardingCompleted\) \{\s*\n\s*openFirstRunClioTalk\(\);\s*\n\s*return;/,
+  "a true first launch opens ClioTalk instead of mounting a Welcome Floppy"
+);
+// Someone who wrote a paragraph is not on first launch, whatever the flag
+// says. The restored Working Session always wins over onboarding.
+test.assertMatches(
+  boot,
+  /const resumedWorkingSession = !writerMode[\s\S]*if \(!clioOnboardingCompleted && !resumedWorkingSession\) \{[\s\S]*?openStartupItems\(\)/,
+  "resumable work is never dropped for onboarding"
+);
+test.assertMatches(
+  guide,
+  /async function openFirstRunClioTalk\(\)[\s\S]*?openWindow\("assistant"\)[\s\S]*?AISystem6ClioProvider\?\.resolve\?\.\(\{ reason: "first-run" \}\)/,
+  "first run opens the existing ClioTalk window and starts the provider resolver in the background"
+);
 
-test.assertIncludes(diskMarkup, 'data-window="welcomeDisk"', "Welcome Floppy is a named Finder window");
-test.assertIncludes(diskMarkup, 'class="window-pane finder-grid welcome-disk-grid window-frame-scroller"', "the floppy uses the ordinary Finder grid and frame");
-for (const control of ["close-box", "resize-box", "shade-box", "grow-box"]) {
-  test.assertIncludes(diskMarkup, control, `Welcome Floppy keeps the native ${control} control`);
+// --- The introduction surface ----------------------------------------------
+
+test.assertIncludes(guide, "return clioIntroductionReplay || !clioOnboardingCompleted;", "the introduction is active for new users and during a replay");
+test.assertMatches(
+  chatMessages,
+  /const welcomeKey = readOnly\s*\n\s*\? "clio_read_only_message"\s*\n\s*: providerResolving\s*\n\s*\? "clio_provider_resolving_message"/,
+  "the empty state tells the truth about read-only and connecting states first"
+);
+test.assertIncludes(chatMessages, '? "clio_first_welcome_message"', "a true first use greets with the Clio introduction");
+test.assertIncludes(chatMessages, ': (clioTalkTemporaryMode ? "temporary_welcome_message" : "welcome_message")', "returning users keep the ordinary ClioTalk welcome");
+for (const starter of ["idea", "notes", "file", "explore"]) {
+  test.assertMatches(chatMessages, new RegExp(`\\["${starter}", "clio_starter_${starter}"\\]`), `the introduction offers the ${starter} starter`);
 }
-test.assertIncludes(html, 'id="mounted-welcome-disk" type="button" data-open="welcomeDisk" hidden', "the mounted floppy is a real desktop object that is absent for returning users");
-test.assertIncludes(guide, 'icon.hidden = false', "mounting Start Here reveals the desktop floppy");
-test.assertMatches(guide, /async function openWelcomeFloppy\(\)[\s\S]*syncWelcomeFloppyState\(\);[\s\S]*openWindow\("welcomeDisk"\)/, "Start Here mounts, synchronizes, and opens the Finder volume");
+test.assertMatches(
+  guide,
+  /function activateClioStarter\(starterId = ""\)[\s\S]*?promptInput\.value = t\(key\);[\s\S]*?promptInput\.focus\(\);/,
+  "a starter only puts an editable phrase into the composer"
+);
+test.assertNotMatches(
+  guide,
+  /function activateClioStarter\(starterId = ""\)[\s\S]*?(requestSubmit|submitUserText|handleAction)/,
+  "starters never auto-send or auto-execute a feature"
+);
+test.assertIncludes(en, "clio_first_welcome_message:", "English copy exists for the Clio introduction");
+test.assertIncludes(zh, "clio_first_welcome_message:", "Chinese copy exists for the Clio introduction");
 
-for (const action of ["open-welcome-read-me", "play-teaser-demo", "open-clio-model-settings", "welcome-iphone-help"]) {
-  test.assertIncludes(diskMarkup, `data-action="${action}"`, `Welcome Floppy carries the ${action} object`);
+// --- Completion and migration ----------------------------------------------
+
+test.assertMatches(
+  chatMessages,
+  /requiresDurableChatFile\s*\n\s*&& typeof isClioIntroductionActive === "function"\s*\n\s*&& isClioIntroductionActive\(\)\s*\n\s*\) \{\s*\n\s*void completeClioOnboarding\("first-chat"\);/,
+  "sending the first durable Chat message completes onboarding; Temporary Chat and SideAsk do not"
+);
+test.assertIncludes(actions, '"skip-clio-introduction": () => completeClioOnboarding("skipped")', "explicitly skipping completes onboarding");
+test.assertIncludes(windowManager, 'await completeClioOnboarding("closed");', "closing the first-run ClioTalk window also completes onboarding");
+test.assertMatches(
+  guide,
+  /async function completeClioOnboarding\(reason = "completed"\)[\s\S]*?clioOnboardingCompleted = true;[\s\S]*?await saveDeskState\(\);/,
+  "completion is persisted through the ordinary settings record"
+);
+test.assertNotIncludes(guide, "clioOnboardingCompleted = false", "nothing resets the persisted completion flag");
+test.assertNotIncludes(guide, "localStorage", "onboarding state lives in the settings record, not a parallel store");
+
+// Legacy migration: the old guideSeen flag is a read-only source, meaningful
+// existing work counts as completed, and saves write only the new field.
+test.assertMatches(
+  persistence,
+  /clioOnboardingCompleted = typeof settings\.clioOnboardingCompleted === "boolean"\s*\n\s*\? settings\.clioOnboardingCompleted\s*\n\s*: guideSeen;/,
+  "legacy guideSeen users are migrated without a second onboarding"
+);
+test.assertMatches(
+  persistence,
+  /function hasMeaningfulClioOnboardingWork\(\)[\s\S]*?chatFiles\.some[\s\S]*?questionSheet/,
+  "existing real work marks onboarding as completed"
+);
+test.assertMatches(persistence, /^\s*clioOnboardingCompleted,$/m, "saves persist the new completion field");
+test.assertNotMatches(persistence, /^\s*guideSeen,$/m, "saves no longer write the legacy guideSeen field");
+
+// --- Replay Introduction -----------------------------------------------------
+
+test.assertIncludes(guide, "if (replay) clioIntroductionReplay = true;", "Replay Introduction is a session-only state");
+test.assertIncludes(actions, '"replay-clio-introduction": () => openClioIntroduction({ replay: true })', "the replay action reuses the introduction surface");
+test.assertIncludes(actions, 'registerCommand?.("replay-clio-introduction"', "replay is a registered command available everywhere");
+test.assert(
+  html.split('data-action="replay-clio-introduction"').length - 1 >= 3,
+  "the Apple menu, Control Panel, and Help Folder share the one replay action"
+);
+test.assertMatches(html, /apple-menu-popover[\s\S]{0,600}data-action="replay-clio-introduction"/, "Replay Clio Introduction lives in the Apple menu Start section");
+
+// --- The Welcome Floppy is gone ---------------------------------------------
+
+test.assertNotIncludes(html, 'data-window="welcomeDisk"', "no Welcome Floppy window remains in the markup");
+test.assertNotIncludes(html, 'data-window="guide"', "no Read Me guide window remains in the markup");
+test.assertNotIncludes(windowManager, "welcomeDisk", "the window manager no longer special-cases the Welcome Floppy");
+test.assertIncludes(workingSession, 'new Set(["about", "saveChat"])', "the Working Session exclusion list no longer carries guide windows");
+test.assertNotIncludes(appJs, "welcomeDisk", "no desktop object mounts a Welcome Floppy");
+for (const key of ["welcome_floppy:", "welcome_read_me:", "welcome_ai_setup:", "guide_welcome_heading:"]) {
+  test.assertNotIncludes(en, key, `dead English copy ${key} is removed`);
+  test.assertNotIncludes(zh, key, `dead Chinese copy ${key} is removed`);
 }
-test.assertMatches(diskMarkup, /finder-item is-selected[\s\S]*data-action="open-welcome-read-me"/, "Read Me First is the Finder-default selection");
-test.assertIncludes(diskMarkup, 'id="welcome-iphone-item"', "the iPhone handoff is a real conditional Finder object");
-test.assertMatches(guide, /isIosWebPlatform\(\)[\s\S]*isStandaloneWebApp\(\)[\s\S]*iphone\.hidden = !showIphone[\s\S]*showIphone \? 4 : 3/, "the fourth object appears only on iPhone or iPad outside standalone mode");
 
-test.assertIncludes(readMeMarkup, 'data-i18n="guide_welcome_heading"', "Read Me First explains the product premise");
-for (const key of ["guide_route_step_material", "guide_route_step_question", "guide_route_step_write", "guide_route_step_review"]) {
-  test.assertIncludes(readMeMarkup, `data-i18n="${key}"`, `Read Me First introduces ${key}`);
-}
-for (const action of ["open-project-site", "open-github-repo", "open-guide-promo"]) {
-  test.assertIncludes(readMeMarkup, `data-action="${action}"`, `Read Me First keeps ${action} available`);
-}
-test.assertNotIncludes(readMeMarkup, "guide-step", "Read Me First is one document, not a wizard");
-test.assertNotIncludes(readMeMarkup, "guide-nav", "the old page-by-page navigation is gone");
-test.assertNotIncludes(readMeMarkup, "guide-start-route", "onboarding never starts Writing Studio's route");
-test.assertNotIncludes(readMeMarkup, "guide-start-quick-draft", "onboarding never starts a draft");
+// --- Discovery surfaces the floppy used to carry ------------------------------
 
-test.assertMatches(guide, /const aiKey = shared \? "welcome_ai_website_ready" : guideHasReadyModel\(\) \? "welcome_ai_ready" : "welcome_ai_setup"/, "the AI object reflects the real configured source");
-test.assertIncludes(zh, 'welcome_ai_website_ready: "网站 AI 已就绪"', "Chinese AI status says ready rather than inventing a connection");
-test.assertNotIncludes(zh, 'welcome_ai_website_ready: "网站 AI 已连接"', "Welcome Floppy never labels untested website AI as connected");
-test.assertIncludes(cloudModel, 'typeof syncWelcomeFloppyState === "function"', "model changes refresh the mounted floppy");
-test.assertIncludes(chatMessages, 'typeof syncWelcomeFloppyState === "function"', "ClioTalk model changes refresh the mounted floppy");
-test.assertIncludes(actions, 'registerCommand?.("open-clio-model-settings"', "the AI object reuses Control Panel instead of duplicating setup");
-test.assertIncludes(actions, '"welcome-iphone-help": showWelcomeIphoneHelp', "the iPhone object delegates to the platform instructions");
-
-test.assertIncludes(actions, '"play-teaser-demo": playWelcomeTour', "the tour object uses the deterministic teaser entrypoint");
-test.assertMatches(writingDemo, /Teaser mode[\s\S]*needs no model or network/, "the tour does not depend on AI or the network");
-test.assertMatches(writingDemo, /function teaserDemoSnapshot\(\)[\s\S]*durable: teaserDemoSnapshotDurable\(\)/, "the tour snapshots durable user state");
-test.assertMatches(writingDemo, /finally \{[\s\S]*await teaserDemoRestore\(snapshot\)/, "the tour restores the desk on success, failure, or Escape");
-
-test.assertIncludes(actions, 'registerCommand?.("open-guide"', "the Start Here menu remounts Welcome Floppy");
-test.assertIncludes(html, '<button data-action="open-guide" data-i18n="start_here">', "Start Here remains in the Apple menu");
-test.assertMatches(windowManager, /if \(name === "welcomeDisk"\) \{\n\s*guideSeen = true;\n\s*saveDeskState\(\);/, "closing Welcome Floppy completes first-run without hiding product features");
-test.assertIncludes(workingSession, 'new Set(["about", "saveChat", "guide", "welcomeDisk"])', "Welcome Floppy and its Read Me never become recoverable work windows");
-test.assertIncludes(windowManager, '"welcomeDisk",\n  "finder"', "mobile treats Welcome Floppy as a Finder page");
-test.assertNotMatches(workspaceProfile, /const studioWindowNames = new Set\(\[[^\]]*"welcomeDisk"/, "Writing Studio does not own Welcome Floppy");
-test.assertNotIncludes(guide, "localStorage", "Welcome Floppy reuses the existing guideSeen boundary");
-test.assertIncludes(wireup, "initializeWelcomeFloppy();", "first paint synchronizes conditional floppy objects");
-test.assertIncludes(read("apps/desktop/styles/40-icons.css"), ".finder-grid .finder-item[hidden]", "appearance display rules cannot reveal an unavailable conditional Finder object");
-test.assertIncludes(read("apps/desktop/styles/10-windows.css"), ".welcome-disk-grid", "the short Welcome Floppy grid stays compact inside a phone-height Finder page");
-test.assertMatches(read("apps/desktop/app.js"), /applyTheme[\s\S]*requestAnimationFrame[\s\S]*\.window\.is-finder-content-fit:not\(\.is-hidden\)[\s\S]*fitFinderWindowToContents/, "live appearance changes refit open Finder windows after icon geometry changes");
-
-for (const key of [
-  "welcome_floppy", "welcome_floppy_read_only", "welcome_read_me", "welcome_read_me_hint",
-  "welcome_ai_setup", "welcome_ai_ready", "welcome_ai_website_ready", "welcome_keep_on_iphone",
-]) {
-  test.assertIncludes(en, `${key}:`, `English copy exists for ${key}`);
-  test.assertIncludes(zh, `${key}:`, `Chinese copy exists for ${key}`);
-}
+test.assertMatches(html, /about-links[\s\S]{0,400}data-action="open-project-site"[\s\S]{0,200}data-action="open-github-repo"[\s\S]{0,200}data-action="open-guide-promo"/, "About keeps the project site, source, and film links");
+test.assertIncludes(actions, '"play-teaser-demo": playWelcomeTour', "the deterministic 30-second tour keeps its entrypoint");
+test.assertIncludes(read("app/data/system-dictionary.js"), 'id: "install-web-app"', "iPhone install instructions live in System Help");
+test.assertIncludes(read("app/data/system-dictionary.js"), 'id: "quick-tour"', "System Help keeps a door to the quick introduction");
 
 test.finish();

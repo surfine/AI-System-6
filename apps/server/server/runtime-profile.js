@@ -20,10 +20,16 @@ if (configuredProfile !== LOCAL_PROFILE && configuredProfile !== PUBLIC_PROFILE)
 
 const deploymentProfile = configuredProfile;
 const isPublicDeployment = deploymentProfile === PUBLIC_PROFILE;
+const deploymentTarget = isPublicDeployment
+  ? "vps"
+  : String(process.env.AI_SYSTEM6_SHELL || "").trim().toLowerCase() === "macos"
+    ? "mac"
+    : "local";
 
 module.exports = {
   LOCAL_PROFILE,
   PUBLIC_PROFILE,
   deploymentProfile,
+  deploymentTarget,
   isPublicDeployment,
 };

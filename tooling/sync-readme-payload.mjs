@@ -17,19 +17,39 @@ import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const receipt = JSON.parse(readFileSync(path.join(root, "site/data/floppy-budget.json"), "utf8"));
 const measured = receipt.bytes.toLocaleString("en-US");
-// Any grouped number of this magnitude in the gauges is a previous payload.
-const gauge = /\b2,9\d{2},\d{3}\b/g;
+const capacity = receipt.twoFloppyBytes.toLocaleString("en-US");
+
+// Anchor each rewrite to its OWN gauge row. A magnitude-matching regex was
+// used here once and it swallowed the capacity row too, so both rows quoted
+// the payload and the README claimed two 1.44 MB floppies were whatever the
+// bundle happened to weigh. That shipped to GitHub for eight days. The two
+// rows carry different numbers and must be addressed separately.
+const rows = [
+  { label: "boot-critical payload", value: measured },
+  { label: "two 1.44 MB floppies", value: capacity },
+  { label: "启动关键载荷", value: measured },
+  { label: "两张 1.44 MB 软盘", value: capacity },
+];
+
+function syncGauges(text) {
+  return rows.reduce(
+    (acc, row) => acc.replace(
+      new RegExp(`(^${row.label}\\s+[▓░]+\\s+)[\\d,]+`, "m"),
+      `$1${row.value}`
+    ),
+    text
+  );
+}
 
 const english = path.join(root, "README.md");
 const before = readFileSync(english, "utf8");
-const after = before.replace(gauge, measured);
+const after = syncGauges(before);
 if (after !== before) writeFileSync(english, after);
 
 const mirror = path.join(root, "README.zh-CN.md");
 const mirrorBefore = readFileSync(mirror, "utf8");
 const hash = createHash("sha256").update(readFileSync(english)).digest("hex");
-const mirrorAfter = mirrorBefore
-  .replace(gauge, measured)
+const mirrorAfter = syncGauges(mirrorBefore)
   .replace(/<!-- source-sha256: [0-9a-f]+ -->/, `<!-- source-sha256: ${hash} -->`);
 if (mirrorAfter !== mirrorBefore) writeFileSync(mirror, mirrorAfter);
 

@@ -139,8 +139,10 @@ window.AISystem6Config = (() => {
     indexedDbName: "ai-system-6-db",
     // Version 3 added the "cities" store (Micropolis saves); version 4 adds
     // the separate "bonsaiCities" store so the original simulator's saves
-    // never share provenance with the GPL games.
-    indexedDbVersion: 4,
+    // never share provenance with the GPL games. Version 5 adds
+    // "imageAttachments" so a picture is one object shared by every surface,
+    // instead of base64 swelling each project and scrap record.
+    indexedDbVersion: 5,
     referenceStoreName: "projectReferences",
     keyvalStoreName: "keyval",
     projectsStoreName: "projects",
@@ -150,6 +152,7 @@ window.AISystem6Config = (() => {
     chatFilesStoreName: "chatFiles",
     citiesStoreName: "cities",
     bonsaiCitiesStoreName: "bonsaiCities",
+    imageAttachmentsStoreName: "imageAttachments",
   });
 
   const projectConfig = Object.freeze({
@@ -252,7 +255,6 @@ window.AISystem6Config = (() => {
       "finder",
       "helpFolder",
       "disk",
-      "welcomeDisk",
       "trash",
       "textDisk",
       "projects",
@@ -272,6 +274,12 @@ window.AISystem6Config = (() => {
       "cmfStudio",
       "soundscape",
       "micropolis",
+      // Theme Lab is a workbench with tabs and a live token editor, so it earns
+      // a grow box. Its static markup used to hand-draw one, but themeLab was
+      // never in this list and installGrowBoxes() returns before wiring
+      // anything for a window it does not consider resizable -- so that corner
+      // was painted and dead for as long as it existed.
+      "themeLab",
       "bonsaiCity",
       "imageManager",
       "systemHelp",
@@ -441,6 +449,8 @@ function createLazyModuleLoader(flag, sources, resolveData = false, stylesheets 
 }
 
 const ensureWritingFlowModule = createLazyModuleLoader("AISystem6WritingFlowLoaded", [
+  "app/core/explanation-lens.js",
+  "app/data/evergreen-demo-corpus.js",
   "app/content/rebuild-samples.js",
   "app/features/writing-flow.js",
 ]);
@@ -452,6 +462,16 @@ const ensureMingmingLensModule = createLazyModuleLoader("AISystem6MingmingLensLo
 const ensureOutlineClaimModule = createLazyModuleLoader("AISystem6OutlineClaimLoaded", [
   "app/features/mingming-lens.js",
   "app/features/outline-claim.js",
+]);
+// 文字亮室's durable half. Order matters: the store reads
+// window.AISystem6DarkroomRecord at call time, so the record module has to be
+// evaluated first. Both stay lazy because only the darkroom reads them, and
+// every caller reaches them through the two window handles rather than by bare
+// name — which is why the app booted for a day with neither file ever loaded
+// and nothing said so. ensureDarkroomReady() awaits this before it decides.
+const ensureDarkroomModule = createLazyModuleLoader("AISystem6DarkroomStore", [
+  "app/core/darkroom-record.js",
+  "app/core/darkroom-store.js",
 ]);
 const ensureContextGistModule = createLazyModuleLoader("AISystem6ContextGist", ["app/core/context-gist.js"]);
 const ensureDocMapSourcePolicyModule = createLazyModuleLoader("AISystem6DocMapSourcePolicy", ["app/core/docmap-source-policy.js"]);
@@ -469,12 +489,15 @@ function ensureLanguageFor(language) {
   return language === "zh" ? ensureTranslationZh() : ensureTranslationEn();
 }
 const ensureWritingFlowHelpData = createLazyModuleLoader("AISystem6WritingFlowHelpData", ["app/data/writing-flow-help.js"], true);
-const ensureSystemConceptsData = createLazyModuleLoader("AISystem6SystemConceptsData", ["app/data/system-concepts.js"], true);
+const ensureSystemConceptsData = createLazyModuleLoader("AISystem6SystemConceptsData", [
+  "app/data/evergreen-demo-corpus.js",
+  "app/data/system-concepts.js",
+], true);
 const ensureMemoryCardsModule = createLazyModuleLoader("", ["app/features/memory-cards.js"]);
 const ensureAlarmClockModule = createLazyModuleLoader("", ["app/features/alarm-clock.js"]);
-const ensureBureaucracyMemeModule = createLazyModuleLoader("AISystem6BureaucracyMeme", ["app/features/bureaucracy-meme.js"]);
+const ensureBureaucracyMemeModule = createLazyModuleLoader("AISystem6BureaucracyMeme", ["app/core/application-shell.js", "app/features/bureaucracy-meme.js"], false, ["styles.bureaucracy-meme.css"]);
 const ensurePrintDirectoryModule = createLazyModuleLoader("", ["app/features/print-directory.js"]);
-const ensureProjectCdPrintModule = createLazyModuleLoader("", ["app/features/project-cd-print.js"]);
+const ensureProjectCdPrintModule = createLazyModuleLoader("", ["app/core/application-shell.js", "app/features/project-cd-print.js"]);
 const ensureTranslationPadModule = createLazyModuleLoader("", ["app/features/translation-pad.js"]);
 const ensureDictionaryHelpModule = createLazyModuleLoader("AISystem6DictionaryHelpLoaded", ["app/features/dictionary-help.js"]);
 // The shaper is pure text and only the pad calls it, so it travels with the
@@ -483,66 +506,83 @@ const ensureDictationPadModule = createLazyModuleLoader("AISystem6DictationPadLo
   "app/core/dictation-shape.js",
   "app/features/dictation-pad.js",
 ]);
-const ensureHeldPlaceSlipModule = createLazyModuleLoader("AISystem6HeldPlaceSlipLoaded", ["app/core/held-place-slip.js"]);
+const ensureHoldThatThoughtModule = createLazyModuleLoader("AISystem6HoldThatThoughtLoaded", ["app/core/application-shell.js", "app/features/hold-that-thought.js"]);
+const ensureProjectPeekModule = createLazyModuleLoader("AISystem6ProjectPeekLoaded", ["app/core/application-shell.js", "app/features/project-peek.js"]);
 const ensureVideoTranscriptModule = createLazyModuleLoader("AISystem6VideoTranscriptLoaded", ["app/features/video-transcript.js"]);
 const ensureVideoDocMapModule = createLazyModuleLoader("AISystem6VideoDocMapLoaded", ["app/features/video-docmap.js"]);
 const ensureFindPathModule = createLazyModuleLoader("AISystem6FindPathLoaded", ["app/features/findpath.js"]);
-const ensureEndfieldTerminalModule = createLazyModuleLoader("AISystem6EndfieldTerminalLoaded", ["app/features/endfield-terminal.js"]);
-const ensureTimeMachineModule = createLazyModuleLoader("AISystem6TimeMachineLoaded", ["app/features/time-machine.js"]);
+const ensureEndfieldTerminalModule = createLazyModuleLoader("AISystem6EndfieldTerminalLoaded", ["app/features/endfield-terminal.js"], false, ["styles.endfield-terminal.css"]);
+const ensureTimeMachineModule = createLazyModuleLoader("AISystem6TimeMachineLoaded", ["app/features/time-machine.js"], false, ["styles.time-machine.css"]);
 const ensureHkrrReviewModule = createLazyModuleLoader("", ["app/features/hkrr-review.js"]);
 const ensureMingmingHandoffReviewModule = createLazyModuleLoader("", ["app/features/mingming-handoff-review.js"]);
 const ensureSlidesExportModule = createLazyModuleLoader("AISystem6SlidesExportLoaded", ["app/features/slides-export.js"]);
-const ensureClioStageModule = createLazyModuleLoader("AISystem6ClioStageLoaded", ["app/features/clio-stage.js"]);
-const ensureClioChartModule = createLazyModuleLoader("AISystem6ClioChartLoaded", ["app/features/clio-chart.js"]);
-const ensureLiquidCoverModule = createLazyModuleLoader("AISystem6LiquidCoverLoaded", ["app/features/image-prompt-runtime.js", "app/features/liquid-cover.js"]);
-const ensureImagePromptStudioModule = createLazyModuleLoader("AISystem6ImagePromptStudioLoaded", ["app/features/image-prompt-runtime.js", "app/features/image-prompt-studio.js"]);
+const ensureClioStageModule = createLazyModuleLoader("AISystem6ClioStageLoaded", ["app/features/clio-stage.js"], false, ["styles.clio-chart.css"]);
+const ensureClioChartModule = createLazyModuleLoader("AISystem6ClioChartLoaded", ["app/features/clio-chart.js"], false, ["styles.clio-chart.css"]);
+const ensureLiquidCoverModule = createLazyModuleLoader("AISystem6LiquidCoverLoaded", ["app/core/application-shell.js", "app/features/image-prompt-runtime.js", "app/features/liquid-cover.js"], false, ["styles.liquid-cover.css"]);
+const ensureImagePromptStudioModule = createLazyModuleLoader("AISystem6ImagePromptStudioLoaded", ["app/core/application-shell.js", "app/features/image-prompt-runtime.js", "app/features/image-prompt-studio.js"], false, ["styles.image-prompt-studio.css"]);
 const ensureQuickDraftModule = createLazyModuleLoader("AISystem6QuickDraftLoaded", [
+  "app/core/application-shell.js",
+  "app/core/explanation-lens.js",
+  "app/core/model-user-errors.js",
+  "app/core/text-compose.js",
   "app/features/mingming-lens.js",
   "app/core/author-thesis-guidance.js",
   "app/core/chat-vent-guidance.js",
   "app/data/draft-desk-presets.js",
+  "app/core/listen-beats.js",
   "app/features/draft-desk.js",
   "app/features/quick-draft-intake.js",
   "app/features/quick-draft-editor.js",
   "app/features/quick-draft-composition.js",
   "app/features/quick-draft-ai.js",
+  "app/features/quick-draft-listen.js",
   "app/features/quick-draft-handoff.js",
-]);
+], false, ["styles.draft-desk.css"]);
 const ensureCmfStudioModule = createLazyModuleLoader("AISystem6CMFStudioLoaded", [
   "app/features/cmf-usdz-export.js",
   "app/features/cmf-studio.js?cmf=exterior-ao-sanitized",
-]);
-const ensureSoundscapeModule = createLazyModuleLoader("AISystem6SoundscapeLoaded", ["app/features/soundscape.js"]);
-const ensureThemeLabModule = createLazyModuleLoader("AISystem6ThemeLabLoaded", ["app/features/theme-lab.js"], false, ["styles.theme-lab.css"]);
+], false, ["styles.cmf-studio.css"]);
+const ensureSoundscapeModule = createLazyModuleLoader("AISystem6SoundscapeLoaded", ["app/features/soundscape.js"], false, ["styles.soundscape.css"]);
+const ensureFindChangeModule = createLazyModuleLoader("AISystem6FindChangeLoaded", ["app/features/find-change.js"]);
+const ensureThemeLabModule = createLazyModuleLoader("AISystem6ThemeLabLoaded", ["app/core/application-shell.js", "app/features/theme-lab.js"], false, ["styles.theme-lab.css"]);
 window.AISystem6EnsureThemeLabModule = ensureThemeLabModule;
 // The GPL engine bundle loads first, then the AI System 6 shell; the shell's
 // flag proves both arrived. Styles ride along as a lazy bundle.
 const ensureMicropolisModule = createLazyModuleLoader("AISystem6MicropolisLoaded", [
+  "app/core/application-shell.js",
   "app/vendor/micropolis/micropolis-engine.js",
   "app/features/micropolis.js",
 ], false, ["styles.micropolis.css"]);
 // The wasm game itself loads inside the window's iframe, not through this
 // loader; this only fetches the thin System 6 chrome module.
 const ensureOpenTTDModule = createLazyModuleLoader("AISystem6OpenTTDLoaded", [
+  "app/core/application-shell.js",
   "app/features/openttd.js",
 ], false, ["styles.openttd.css"]);
 // Bonsai City loads its MIT-clean core, the in-memory repository, and the
 // System 6 shell together; the shell's flag proves all three arrived.
 const ensureBonsaiCityModule = createLazyModuleLoader("AISystem6BonsaiCityLoaded", [
+  "app/features/bonsai-translations.js",
   "app/features/bonsai-city-sim.js",
+  "app/features/bonsai-sc2-codec.js",
+  "app/features/bonsai-catalog.js",
+  "app/features/bonsai-audio.js",
+  "app/features/bonsai-save-worker-manager.js",
   "app/features/bonsai-repository.js",
   "app/features/bonsai-renderer.js",
   "app/generated/bonsai-atlas.js",
+  "app/features/bonsai-renderer-canvas.js",
   "app/features/bonsai-renderer-voxel.js",
   "app/features/bonsai-city.js",
 ], false, ["styles.bonsai.css"]);
 // Phase one reuses the existing iframe-game window geometry. The GPL engine
 // remains inside assets/doom/ and is fetched only by its same-origin shell.
 const ensureDoomModule = createLazyModuleLoader("AISystem6DoomLoaded", [
+  "app/core/application-shell.js",
   "app/features/doom.js",
 ], false, ["styles.openttd.css"]);
 const ensureWritingDemoModule = createLazyModuleLoader("AISystem6WritingDemoLoaded", [
-  "app/data/iphone-17e-demo-corpus.js",
+  "app/data/evergreen-demo-corpus.js",
   "app/features/writing-demo.js",
 ]);
 
@@ -602,13 +642,19 @@ function withDocMap(callback) {
 }
 
 function ensureScriptingModule() { return ensureLazySystemModule("app/core/scripting.js", "AISystem6ScriptingLoaded"); }
-function ensureControlStripModule() { return ensureLazySystemModule("app/features/control-strip.js", "AISystem6ControlStripLoaded"); }
+// ensureLazySystemModule takes no stylesheet, so the Control Strip's sheet rode
+// in the boot bundle while its module was already lazy. createLazyModuleLoader
+// is the same mechanism the other lazy sheets use, and it loads both.
+const ensureControlStripModule = createLazyModuleLoader(
+  "AISystem6ControlStripLoaded",
+  ["app/features/control-strip.js"],
+  false,
+  ["styles.control-strip.css"],
+);
 function ensureControlStripModulesModule() {
   return ensureLazySystemModule("app/features/control-strip-modules.js", "AISystem6ControlStripModulesLoaded");
 }
-function ensureControlStripModulesFolderModule() {
-  return ensureLazySystemModule("app/features/control-strip-modules-folder.js", "AISystem6ControlStripModulesFolderLoaded");
-}
+const ensureControlStripModulesFolderModule = createLazyModuleLoader("AISystem6ControlStripModulesFolderLoaded", ["app/core/application-shell.js", "app/features/control-strip-modules-folder.js"]);
 function applyControlStripState(options = {}) {
   if (!getControlStripState().enabled) { window.AISystem6ControlStrip?.disable(); return; }
   const enable = () => ensureControlStripModule().then(() => window.AISystem6ControlStrip?.enable());
@@ -720,7 +766,9 @@ function installLazyWritingFlowStub(name) {
   "draftSelectedOutlineSection",
   "showAdjacentSectionDraft",
   "createManualSectionDraft",
-  "advanceDraftsToReview",
+  "advanceDraftsToManuscript",
+  "advanceManuscriptToReview",
+  "returnDocumentToSectionDrafts",
 ].forEach(installLazyWritingFlowStub);
 
 [

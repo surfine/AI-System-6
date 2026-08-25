@@ -10,6 +10,7 @@ const test = createFeatureTest("applications-hierarchy");
 const app = read("app.js");
 const actions = read("app/core/actions.js");
 const windowManager = read("app/core/window-manager.js");
+const desktopRuntime = read("app/core/desktop-runtime.js");
 const translationsEn = read("app/data/translations-en.js");
 const translationsZh = read("app/data/translations-zh.js");
 
@@ -77,5 +78,19 @@ test.assertIncludes(windowManager, '"parentPath" in definition', "back climbs on
 test.assertIncludes(translationsZh, 'applications_create: "创意工具"', "the Create folder has its own zh name");
 test.assertNotIncludes(translationsZh, 'applications_create: "创作坊"', "the Create folder does not collide with the Writing Studio");
 test.assertIncludes(translationsZh, 'writing_studio: "创作坊"', "the Writing Studio keeps its established name");
+
+for (const action of [
+  "open-writing-studio", "open-quick-draft", "open-assistant", "open-reader",
+  "open-find-path", "open-teachtext", "open-scrapbook", "open-docmap",
+  "open-clio-stage", "open-clio-chart", "open-liquid-cover", "open-cmf-studio",
+  "open-image-prompt-studio", "open-soundscape", "open-endfield-terminal",
+  "open-bureaucracy-meme", "open-time-machine", "open-rebuild-flow",
+  "play-writing-demo", "play-teaser-demo", "open-micropolis", "open-openttd",
+  "open-doom", "open-bonsai-city",
+]) {
+  test.assertIncludes(app, `"${action}": "app_desc_`, `${action} has one runtime description key`);
+}
+test.assertIncludes(app, "description: descriptionKey ? t(descriptionKey)", "rendered Finder application items carry localized descriptions");
+test.assertIncludes(desktopRuntime, "fileInfoDescriptionEl.textContent = description", "Get Info shows the runtime application description");
 
 test.finish();

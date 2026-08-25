@@ -8,6 +8,87 @@ function renderCalculator() {
   calculatorDisplay.value = calculatorExpression.replace(/\*/g, "×").replace(/\//g, "÷");
 }
 
+/**
+ * Apply one binary operator. Returns false for an operator the keypad cannot
+ * produce, which is how a malformed stream is refused rather than guessed at.
+ * @param {number[]} stack @param {number} left @param {number} right @param {string} operator
+ */
+function applyArithmeticOperator(stack, left, right, operator) {
+  if (operator === "+") stack.push(left + right);
+  else if (operator === "-") stack.push(left - right);
+  else if (operator === "*") stack.push(left * right);
+  else if (operator === "/") stack.push(right === 0 ? NaN : left / right);
+  else return false;
+  return true;
+}
+
+/**
+ * Arithmetic, evaluated rather than eval'd.
+ *
+ * This used to be `Function("return (" + expression + ")")`. The product's own
+ * Content-Security-Policy sets `script-src 'self'` with no `'unsafe-eval'`, so
+ * that call threw everywhere the CSP is enforced — `npm start` and the Mac app,
+ * which is to say the README's own quickstart — and the throw was caught and
+ * displayed as "Error". Every operation, including 1+2. It looked like a
+ * calculator and could not add.
+ *
+ * A console cannot show you this: DevTools evaluation is exempt from CSP, so
+ * `Function()` answers 56 there while the identical call inside the page is
+ * blocked. Only pressing the keys reveals it.
+ *
+ * Shunting-yard, then evaluate the RPN. Left-associative binary operators and a
+ * leading minus are the whole grammar this keypad can produce.
+ *
+ * @param {string} expression
+ * @returns {number | null} null when the expression is not well formed
+ */
+function evaluateArithmetic(expression) {
+  const tokens = String(expression).match(/\d+(?:\.\d+)?|[+\-*/()]/g);
+  if (!tokens) return null;
+
+  const precedence = { "+": 1, "-": 1, "*": 2, "/": 2 };
+  const output = [];
+  const operators = [];
+  let previous = null;
+
+  for (const token of tokens) {
+    if (/^\d/.test(token)) {
+      output.push(Number(token));
+    } else if (token === "(") {
+      operators.push(token);
+    } else if (token === ")") {
+      while (operators.length && operators[operators.length - 1] !== "(") output.push(operators.pop());
+      if (!operators.length) return null;
+      operators.pop();
+    } else {
+      // A minus with nothing usable before it is a sign, not a subtraction.
+      if (token === "-" && (previous === null || previous === "(" || previous in precedence)) output.push(0);
+      while (
+        operators.length
+        && operators[operators.length - 1] !== "("
+        && precedence[operators[operators.length - 1]] >= precedence[token]
+      ) output.push(operators.pop());
+      operators.push(token);
+    }
+    previous = token;
+  }
+  while (operators.length) {
+    const operator = operators.pop();
+    if (operator === "(") return null;
+    output.push(operator);
+  }
+
+  const stack = [];
+  for (const token of output) {
+    if (typeof token === "number") { stack.push(token); continue; }
+    const right = stack.pop();
+    const left = stack.pop();
+    if (right === undefined || left === undefined) return null;
+    if (!applyArithmeticOperator(stack, left, right, token)) return null;
+  }
+  return stack.length === 1 && Number.isFinite(stack[0]) ? stack[0] : null;
+}
+
 function calculateExpression() {
   const expression = calculatorExpression.replace(/×/g, "*").replace(/÷/g, "/");
   if (!/^[\d+\-*/().\s]+$/.test(expression)) {
@@ -16,12 +97,8 @@ function calculateExpression() {
     return;
   }
 
-  try {
-    const value = Function(`"use strict"; return (${expression})`)();
-    calculatorExpression = Number.isFinite(value) ? String(Number(value.toFixed(8))) : "Error";
-  } catch {
-    calculatorExpression = "Error";
-  }
+  const value = evaluateArithmetic(expression);
+  calculatorExpression = value === null ? "Error" : String(Number(value.toFixed(8)));
   renderCalculator();
 }
 

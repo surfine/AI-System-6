@@ -203,6 +203,54 @@ function secondsUntilUtcReset(now = new Date()) {
   return Math.max(1, Math.ceil((reset.getTime() - now.getTime()) / 1000));
 }
 
+function utcResetAt(now = new Date()) {
+  const reset = new Date(now);
+  reset.setUTCHours(24, 0, 0, 0);
+  return reset.toISOString();
+}
+
+function poolState(state, config) {
+  const remainingRequests = Math.max(0, config.dailyRequestLimit - state.requests);
+  const remainingTokens = Math.max(0, config.dailyTokenBudget - state.reserved_tokens);
+  if (!remainingRequests || !remainingTokens) return "exhausted";
+  const lowRequests = remainingRequests <= Math.max(1, Math.ceil(config.dailyRequestLimit * 0.1));
+  const lowTokens = remainingTokens <= Math.max(1, Math.ceil(config.dailyTokenBudget * 0.1));
+  return lowRequests || lowTokens ? "low" : "available";
+}
+
+/**
+ * Return the caller's exact per-session remainder plus only a coarse state for
+ * the shared site pool. Exact global request/token counts remain server-only.
+ *
+ * @param {{ sessionNonce: string, now?: Date }} options
+ */
+function sharedCloudBudgetSummary({ sessionNonce, now = new Date() }) {
+  const nonce = String(sessionNonce || "");
+  if (!nonce) {
+    const error = /** @type {Error & { code?: string }} */ (
+      new Error("A verified session is required.")
+    );
+    error.code = "shared_cloud_session_required";
+    throw error;
+  }
+  const config = sharedCloudBudgetConfig();
+  const sessionId = sessionBudgetId(nonce);
+  return withStateLock(() => {
+    const state = loadState(now, { fresh: true });
+    const used = Math.max(0, Number(state.sessions[sessionId] || 0));
+    const remainingSessionRequests = Math.max(0, config.sessionRequestLimit - used);
+    const currentPoolState = poolState(state, config);
+    return {
+      available: currentPoolState !== "exhausted" && remainingSessionRequests > 0,
+      poolState: currentPoolState,
+      remainingSessionRequests,
+      sessionRequestLimit: config.sessionRequestLimit,
+      resetsAt: utcResetAt(now),
+      retryAfter: secondsUntilUtcReset(now),
+    };
+  });
+}
+
 function quotaFailure(code, retryAfter, detail) {
   return {
     ok: false,
@@ -433,5 +481,6 @@ module.exports = {
   settleSharedCloudRequest,
   resetSharedCloudBudgetCacheForTests,
   sharedCloudBudgetConfig,
+  sharedCloudBudgetSummary,
   sharedCloudConfigured,
 };

@@ -116,7 +116,8 @@ test.assertIncludes(liquid, "--menu-item-active-bg: var(--liquid-menu-active)", 
 test.assertIncludes(liquid, "background: var(--menu-item-bg)", "Liquid Glass menu items consume the guarded base hover token instead of duplicating the selector");
 test.assertIncludes(foundation, "color: var(--menu-shortcut-color)", "Menu shortcuts consume the shared shortcut color token instead of hard-coding opacity only");
 test.assertIncludes(foundation, "--menu-chip-bg: transparent", "Menu bar status controls stay unframed until interaction");
-test.assertIncludes(liquid, "rgba(248, 251, 252, 0.88)", "Liquid Glass menu panels use an opaque-enough frosted fill so background text cannot read through");
+test.assertIncludes(liquid, "--liquid-menu-alpha: calc(0.76 + 0.24 * var(--liquid-tint-level, 0.5));", "the default tint still resolves the menu opacity to the shipped 0.88 floor");
+test.assertIncludes(liquid, "rgba(248, 251, 252, var(--liquid-menu-alpha))", "Liquid Glass menu panels consume the shared opacity parameter instead of a dead literal");
 test.assert(!liquid.includes("body.use-liquid-glass .menu-bar > :is(.cloud-switcher-menu, .project-switcher-menu, .multifinder-menu) > button"), "Liquid Glass does not add an idle capsule around right-side menu controls");
 test.assertIncludes(responsive, "body.use-liquid-glass .menu-bar", "the frosted menu bar rule is collocated with its base rule in the responsive layer");
 test.assertIncludes(responsive, "backdrop-filter: blur(18px) saturate(155%) brightness(1.02)", "Liquid Glass menu bar is a real frosted system strip, not an opaque classic white slab");
@@ -161,5 +162,12 @@ test.assertMatches(
   "Fields stay selectable even inside a non-selectable label"
 );
 test.assertNotIncludes(foundation, ".window-pane {\n  user-select: none", "Document and reading surfaces keep normal text selection");
+
+// The System 6 select harness hides the native control, so its button carries
+// the only label a user can read. A programmatic value write fires no "change"
+// event, and the harness used to keep printing the previous option while the
+// control already held the new one. The label follows the value itself now, so
+// no caller has to remember a refresh.
+test.assertIncludes(app, 'watchControlWrites(select, HTMLSelectElement.prototype, "value", refreshSystemSelectControl)', "System Select repaints its label when code writes the value");
 
 test.finish();

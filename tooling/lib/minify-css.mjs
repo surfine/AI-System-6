@@ -43,6 +43,10 @@ export function minifyCss(source) {
   let output = "";
   let quote = "";
   let pendingSpace = false;
+  // Last non-whitespace character appended. `output.at(-1)` forces V8 to
+  // flatten the growing rope on every call, which made minification O(n^2);
+  // a scalar last-char is O(1).
+  let lastChar = "";
   const tightBefore = new Set("{}:;,>+~)]=");
   const tightAfter = new Set("{}:;,>+~([=");
   // Stack of open parens; each entry is true when that paren (or an ancestor)
@@ -59,14 +63,20 @@ export function minifyCss(source) {
   // `.a:is(b)`. Inside a declaration block the property/value `:` still tightens.
   const nestedAtRule = /(?:^|[{};])\s*@(?:media|container|supports|layer|scope)\b[^{}]*$/i;
   const blockStack = [];
+  // Track where the current prelude/segment starts instead of re-scanning the
+  // whole output on every `{`/`(`. `segmentStart` resets on `{`, `}`, or `;`
+  // (the boundaries the nested-at-rule regex used); `blockStart` resets on `{`
+  // or `}` (the boundaries the prelude-space check used). This removes the
+  // O(n^2) re-scan that made minifying ~1 MB of CSS take seconds.
+  let segmentStart = 0;
+  let blockStart = 0;
   const inSelectorPrelude = () =>
     parenStack.length === 0 && (blockStack.length === 0 || blockStack[blockStack.length - 1]);
   const inMath = () => parenStack.length > 0 && parenStack[parenStack.length - 1];
   const needsPreludeSpaceBeforeParen = () => {
     if (!pendingSpace) return false;
-    if (/(?:^|[^\w-])(?:and|or|not)$/i.test(output)) return true;
-    const blockStart = Math.max(output.lastIndexOf("{"), output.lastIndexOf("}"));
-    const prelude = output.slice(blockStart + 1);
+    if (/(?:^|[^\w-])(?:and|or|not)$/i.test(output.slice(-16))) return true;
+    const prelude = output.slice(blockStart);
     return /^@(media|supports|container|scope)(?:\s+[a-z_][\w-]*)?$/i.test(prelude);
   };
   // A `+` directly after the previous token normally suppresses the following
@@ -79,8 +89,10 @@ export function minifyCss(source) {
 
     if (quote) {
       output += char;
+      lastChar = char;
       if (char === "\\") {
         output += withoutComments[index + 1] || "";
+        lastChar = withoutComments[index + 1] || "";
         index += 1;
       } else if (char === quote) {
         quote = "";
@@ -89,10 +101,11 @@ export function minifyCss(source) {
     }
 
     if (char === "\"" || char === "'") {
-      if (pendingSpace && output && !suppressLeadingSpace(output.at(-1))) output += " ";
+      if (pendingSpace && output && !suppressLeadingSpace(lastChar)) output += " ";
       pendingSpace = false;
       quote = char;
       output += char;
+      lastChar = char;
       continue;
     }
 
@@ -107,19 +120,18 @@ export function minifyCss(source) {
       // Outside math, `(` tightens the preceding token. Inside math the space
       // can be a required operator gap (e.g. `25px + (…)`), so preserve it.
       if (parentMath || needsPreludeSpaceBeforeParen()) {
-        if (pendingSpace && output && !suppressLeadingSpace(output.at(-1))) output += " ";
-      } else {
-        output = output.trimEnd();
+        if (pendingSpace && output && !suppressLeadingSpace(lastChar)) output += " ";
       }
       output += char;
+      lastChar = char;
       pendingSpace = false;
       parenStack.push(parentMath || startsMathFn);
       continue;
     }
 
     if (char === ")") {
-      output = output.trimEnd();
       output += char;
+      lastChar = char;
       pendingSpace = false;
       parenStack.pop();
       continue;
@@ -131,10 +143,9 @@ export function minifyCss(source) {
       tightBefore.has(char) &&
       !(char === "+" && inMath()) &&
       !(char === ":" && inSelectorPrelude());
-    if (tightenBefore) output = output.trimEnd();
-    else if (pendingSpace && output && !suppressLeadingSpace(output.at(-1))) output += " ";
+    if (!tightenBefore && pendingSpace && output && !suppressLeadingSpace(lastChar)) output += " ";
 
-    if (char === "{") blockStack.push(nestedAtRule.test(output));
+    if (char === "{") blockStack.push(nestedAtRule.test(output.slice(segmentStart)));
     else if (char === "}") {
       // The last declaration's semicolon is optional; strings already took the
       // quote branch above, so a `;` here always ends a declaration.
@@ -143,6 +154,13 @@ export function minifyCss(source) {
     }
 
     output += char;
+    lastChar = char;
+    if (char === "{" || char === "}") {
+      blockStart = output.length;
+      segmentStart = output.length;
+    } else if (char === ";") {
+      segmentStart = output.length;
+    }
     pendingSpace = false;
   }
 

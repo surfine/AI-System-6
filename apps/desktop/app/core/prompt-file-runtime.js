@@ -7,6 +7,34 @@ window.AISystem6PromptFilesRuntime = (() => {
   const disabledKind = "ai-prompt-disabled";
   const receiptKind = "ai-prompt-receipt";
 
+  const promptFolderLabels = Object.freeze({
+    "prompt-overrides": Object.freeze({ zh: "提示词覆盖", en: "Prompt Overrides" }),
+    "disabled-prompts": Object.freeze({ zh: "已停用提示词", en: "Disabled Prompts" }),
+    "run-records": Object.freeze({ zh: "运行记录", en: "Run Records" }),
+  });
+
+  function promptLanguage(language = "") {
+    const requested = String(language || (typeof currentLanguage !== "undefined" ? currentLanguage : "zh"));
+    return requested.toLowerCase().startsWith("en") ? "en" : "zh";
+  }
+
+  function promptDisplayName(recordOrId, language = "") {
+    const record = typeof recordOrId === "string" ? systemPrompt(recordOrId) : recordOrId;
+    if (!record) return typeof recordOrId === "string" ? recordOrId : "";
+    const lang = promptLanguage(language);
+    return record.names?.[lang] || (lang === "en" ? record.nameEn : record.name) || record.name || record.id;
+  }
+
+  function promptFolderDescriptor(kindOrName, language = "") {
+    const kind = Object.keys(promptFolderLabels).find((candidate) => (
+      candidate === kindOrName
+      || promptFolderLabels[candidate].zh === kindOrName
+      || promptFolderLabels[candidate].en === kindOrName
+    )) || "";
+    const labels = promptFolderLabels[kind] || { zh: String(kindOrName || ""), en: String(kindOrName || "") };
+    return { kind, name: labels[promptLanguage(language)] || labels.zh };
+  }
+
   function hashPromptBody(body = "") {
     let hash = 2166136261;
     for (const char of String(body)) {
@@ -20,8 +48,34 @@ window.AISystem6PromptFilesRuntime = (() => {
     return (window.AISystem6PromptFiles || []).find((item) => item.id === id) || null;
   }
 
-  function systemPromptPath(system) {
-    return `System Folder/AI 提示词/${system.category}/${system.name}`;
+  function systemPromptPath(system, language = "") {
+    const lang = promptLanguage(language);
+    const systemFolder = lang === "en" ? "System Folder" : "系统文件夹";
+    const promptFolder = lang === "en" ? "AI Prompts" : "AI 提示词";
+    return `${systemFolder}/${promptFolder}/${system.category}/${promptDisplayName(system, lang)}`;
+  }
+
+  function promptDocument(recordOrId, language = "") {
+    const system = typeof recordOrId === "string" ? systemPrompt(recordOrId) : recordOrId;
+    if (!system) return null;
+    const lang = promptLanguage(language);
+    const body = String(system.bodies?.[lang] || "").trim();
+    if (!body) return null;
+    return Object.freeze({
+      id: `system-prompt:${system.id}:${lang}`,
+      promptId: system.id,
+      type: "text",
+      artifactKind: "ai-prompt-system",
+      name: promptDisplayName(system, lang),
+      path: systemPromptPath(system, lang),
+      body,
+      hash: system.hash,
+      category: system.category,
+      editable: system.editable,
+      language: lang,
+      readOnly: true,
+      source: "system",
+    });
   }
 
   function projectPromptFile(projectId, id, artifactKind) {
@@ -45,22 +99,28 @@ window.AISystem6PromptFilesRuntime = (() => {
     // Precedence: 项目停用 > 项目覆盖 > system prompt.
     const system = systemPrompt(id);
     if (!system) return { status: "missing", source: null, path: "", body: "", hash: "" };
+    const lang = promptLanguage(language);
+    const path = systemPromptPath(system, lang);
     // System-boundary records are auditable system files, never project policy.
     if (system.editable !== "project") {
-      const body = system.bodies?.[String(language).startsWith("en") ? "en" : "zh"];
-      return body ? { status: "ready", source: "system-forced", path: systemPromptPath(system), body, hash: system.hash } : { status: "missing", source: null, path: systemPromptPath(system), body: "", hash: "" };
+      const body = system.bodies?.[lang];
+      return body ? { status: "ready", source: "system-forced", path, body, hash: system.hash, language: lang } : { status: "missing", source: null, path, body: "", hash: "", language: lang };
     }
     const disabled = projectId && projectPromptFile(projectId, id, disabledKind);
-    if (disabled) return { status: "disabled", source: null, path: disabled.path || `ClioTalk/已停用提示词/${system.name}`, body: "", hash: disabled.hash || "" };
+    if (disabled) {
+      const folder = promptFolderDescriptor("disabled-prompts", lang);
+      return { status: "disabled", source: null, path: disabled.path || `ClioTalk/${folder.name}/${promptDisplayName(system, lang)}`, body: "", hash: disabled.hash || "", language: lang };
+    }
     const override = projectId && projectPromptFile(projectId, id, overrideKind);
     if (override) {
       const body = String(override.body || "").trim();
-      if (!body) return { status: "missing", source: null, path: override.path || `ClioTalk/提示词覆盖/${system.name}`, body: "", hash: "" };
-      return { status: "ready", source: "project", path: override.path || `ClioTalk/提示词覆盖/${system.name}`, body, hash: hashPromptBody(body) };
+      const folder = promptFolderDescriptor("prompt-overrides", lang);
+      if (!body) return { status: "missing", source: null, path: override.path || `ClioTalk/${folder.name}/${promptDisplayName(system, lang)}`, body: "", hash: "", language: lang };
+      return { status: "ready", source: "project", path: override.path || `ClioTalk/${folder.name}/${promptDisplayName(system, lang)}`, body, hash: hashPromptBody(body), language: lang };
     }
-    const body = system.bodies?.[String(language).startsWith("en") ? "en" : "zh"];
-    if (!body) return { status: "missing", source: null, path: systemPromptPath(system), body: "", hash: "" };
-    return { status: "ready", source: "system", path: systemPromptPath(system), body, hash: system.hash };
+    const body = system.bodies?.[lang];
+    if (!body) return { status: "missing", source: null, path, body: "", hash: "", language: lang };
+    return { status: "ready", source: "system", path, body, hash: system.hash, language: lang };
   }
 
   function upsertProjectPromptOverride(projectId, id = defaultPromptId, body = "") {
@@ -77,37 +137,43 @@ window.AISystem6PromptFilesRuntime = (() => {
       if (existing) chatFiles.splice(chatFiles.indexOf(existing), 1);
       return null;
     }
-    const folder = ensureProjectPromptFolder(projectId, "提示词覆盖");
+    const lang = promptLanguage();
+    const folder = ensureProjectPromptFolder(projectId, "prompt-overrides", lang);
+    const name = promptDisplayName(system, lang);
     const record = existing || { id: crypto.randomUUID(), projectId, folderId: folder?.id || null, type: "text", artifactKind: overrideKind, promptId: id, createdAt: new Date().toISOString() };
-    Object.assign(record, { name: system.name, path: `ClioTalk/提示词覆盖/${system.name}`, body: clean, hash: hashPromptBody(clean), updatedAt: new Date().toISOString() });
+    Object.assign(record, { name, path: `ClioTalk/${folder?.name || promptFolderDescriptor("prompt-overrides", lang).name}/${name}`, body: clean, hash: hashPromptBody(clean), promptLanguage: lang, updatedAt: new Date().toISOString() });
     if (!existing) chatFiles.unshift(record);
     return record;
   }
 
-  function ensureProjectPromptOverrideForEditing(projectId, id = defaultPromptId) {
+  function ensureProjectPromptOverrideForEditing(projectId, id = defaultPromptId, language = "") {
     const existing = projectPromptFile(projectId, id, overrideKind);
     if (existing) return existing;
     const system = systemPrompt(id);
-    if (!system?.bodies?.zh || system.editable !== "project" || !projectId || typeof chatFiles === "undefined") return null;
-    const folder = ensureProjectPromptFolder(projectId, "提示词覆盖");
+    const lang = promptLanguage(language);
+    const body = system?.bodies?.[lang];
+    if (!body || system.editable !== "project" || !projectId || typeof chatFiles === "undefined") return null;
+    const folder = ensureProjectPromptFolder(projectId, "prompt-overrides", lang);
+    const name = promptDisplayName(system, lang);
     const now = new Date().toISOString();
     const record = {
       id: crypto.randomUUID(), projectId, folderId: folder?.id || null, type: "text",
-      artifactKind: overrideKind, promptId: id, name: system.name, path: `ClioTalk/提示词覆盖/${system.name}`,
-      body: system.bodies.zh, hash: hashPromptBody(system.bodies.zh), createdAt: now, updatedAt: now,
+      artifactKind: overrideKind, promptId: id, name, path: `ClioTalk/${folder?.name || promptFolderDescriptor("prompt-overrides", lang).name}/${name}`,
+      body, hash: hashPromptBody(body), promptLanguage: lang, createdAt: now, updatedAt: now,
     };
     chatFiles.unshift(record);
     return record;
   }
 
-  function ensureProjectPromptFolder(projectId, name) {
+  function ensureProjectPromptFolder(projectId, kindOrName, language = "") {
     if (!projectId || typeof chatFolders === "undefined") return null;
-    const folderKinds = { "提示词覆盖": "prompt-overrides", "已停用提示词": "disabled-prompts", "运行记录": "run-records" };
-    const promptFolderKind = folderKinds[name] || "";
-    let folder = chatFolders.find((item) => item.projectId === projectId && (item.promptFolderKind === promptFolderKind || item.name === name));
+    const descriptor = promptFolderDescriptor(kindOrName, language);
+    const promptFolderKind = descriptor.kind;
+    const legacyNames = promptFolderLabels[promptFolderKind] ? Object.values(promptFolderLabels[promptFolderKind]) : [descriptor.name];
+    let folder = chatFolders.find((item) => item.projectId === projectId && (item.promptFolderKind === promptFolderKind || legacyNames.includes(item.name)));
     if (!folder) {
       const now = new Date().toISOString();
-      folder = { id: crypto.randomUUID(), projectId, name, promptFolderKind, parentId: null, createdAt: now, updatedAt: now };
+      folder = { id: crypto.randomUUID(), projectId, name: descriptor.name, promptFolderKind, parentId: null, createdAt: now, updatedAt: now };
       chatFolders.unshift(folder);
     } else if (promptFolderKind && !folder.promptFolderKind) {
       folder.promptFolderKind = promptFolderKind;
@@ -129,8 +195,10 @@ window.AISystem6PromptFilesRuntime = (() => {
       return null;
     }
     if (existing) return existing;
-    const folder = ensureProjectPromptFolder(projectId, "已停用提示词");
-    const record = { id: crypto.randomUUID(), projectId, folderId: folder?.id || null, type: "text", artifactKind: disabledKind, promptId: id, name: system.name, path: `ClioTalk/已停用提示词/${system.name}`, body: "", hash: "disabled", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+    const lang = promptLanguage();
+    const folder = ensureProjectPromptFolder(projectId, "disabled-prompts", lang);
+    const name = promptDisplayName(system, lang);
+    const record = { id: crypto.randomUUID(), projectId, folderId: folder?.id || null, type: "text", artifactKind: disabledKind, promptId: id, name, path: `ClioTalk/${folder?.name || promptFolderDescriptor("disabled-prompts", lang).name}/${name}`, body: "", hash: "disabled", promptLanguage: lang, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
     chatFiles.unshift(record);
     return record;
   }
@@ -142,13 +210,23 @@ window.AISystem6PromptFilesRuntime = (() => {
     }
     if (!projectId || !resolved || typeof chatFiles === "undefined") return null;
     const now = new Date().toISOString();
-    const folder = ensureProjectPromptFolder(projectId, "运行记录");
+    const lang = promptLanguage(resolved.language);
+    const folder = ensureProjectPromptFolder(projectId, "run-records", lang);
     const system = systemPrompt(id);
-    const receipt = { time: now, feature: system?.name || id, path: resolved.path, source: resolved.source, hash: resolved.hash };
-    const record = { id: crypto.randomUUID(), projectId, folderId: folder?.id || null, type: "text", artifactKind: receiptKind, promptId: id, name: `${receipt.feature}运行记录 ${new Date(now).toLocaleString()}`, path: "ClioTalk/运行记录", body: [`时间：${receipt.time}`, `功能：${receipt.feature}`, `实际提示词：${receipt.path}`, `来源：${receipt.source}`, `hash：${receipt.hash}`].join("\n"), receipt, createdAt: now, updatedAt: now };
+    const feature = promptDisplayName(system || id, lang);
+    const sourceLabels = lang === "en"
+      ? { system: "System", "system-forced": "Required system", project: "Project override" }
+      : { system: "系统", "system-forced": "系统强制", project: "项目覆盖" };
+    const receipt = { time: now, feature, path: resolved.path, source: resolved.source, hash: resolved.hash, language: lang };
+    const stamp = new Date(now).toLocaleString(lang === "en" ? "en-US" : "zh-CN");
+    const body = lang === "en"
+      ? [`Time: ${receipt.time}`, `Feature: ${receipt.feature}`, `Effective prompt: ${receipt.path}`, `Source: ${sourceLabels[receipt.source] || receipt.source}`, `Hash: ${receipt.hash}`]
+      : [`时间：${receipt.time}`, `功能：${receipt.feature}`, `实际提示词：${receipt.path}`, `来源：${sourceLabels[receipt.source] || receipt.source}`, `Hash：${receipt.hash}`];
+    const suffix = lang === "en" ? "Prompt Run" : "运行记录";
+    const record = { id: crypto.randomUUID(), projectId, folderId: folder?.id || null, type: "text", artifactKind: receiptKind, promptId: id, name: `${receipt.feature} ${suffix} ${stamp}`, path: `ClioTalk/${folder?.name || promptFolderDescriptor("run-records", lang).name}`, body: body.join("\n"), receipt, createdAt: now, updatedAt: now };
     chatFiles.unshift(record);
     return record;
   }
 
-  return Object.freeze({ resolvePromptFile, upsertProjectPromptOverride, ensureProjectPromptOverrideForEditing, setProjectPromptDisabled, recordPromptRun, ensureProjectPromptFolder, hashPromptBody });
+  return Object.freeze({ resolvePromptFile, upsertProjectPromptOverride, ensureProjectPromptOverrideForEditing, setProjectPromptDisabled, recordPromptRun, ensureProjectPromptFolder, hashPromptBody, promptDisplayName, promptDocument });
 })();

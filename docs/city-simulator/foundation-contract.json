@@ -1,14 +1,14 @@
 {
   "format": "ai-system-6-city-simulator-foundation",
   "formatVersion": 1,
-  "phase": 7,
-  "phaseName": "voxel-visual-showcase",
+  "phase": 9,
+  "phaseName": "sc2000-parity-program",
   "product": {
     "codename": "bonsai-city",
     "displayName": "Bonsai City",
     "displayNameZh": "盆景城市",
     "status": "deferred-from-public-snapshot",
-    "finalNameApproved": false
+    "finalNameApproved": true
   },
   "layers": {
     "simulationCore": {
@@ -33,19 +33,37 @@
       "status": "implemented",
       "commandOnly": true,
       "rendererReadsSnapshots": true,
-      "voxelRenderer": {
-        "file": "apps/desktop/app/features/bonsai-renderer-voxel.js",
-        "vendor": "apps/desktop/app/vendor/bonsai-renderer.js",
-        "atlas": "apps/desktop/assets/bonsai/atlas.png",
+      "canvasRenderer": {
+        "file": "apps/desktop/app/features/bonsai-renderer-canvas.js",
+        "atlases": [
+          "apps/desktop/assets/bonsai/atlas-north.png",
+          "apps/desktop/assets/bonsai/atlas-east.png",
+          "apps/desktop/assets/bonsai/atlas-south.png",
+          "apps/desktop/assets/bonsai/atlas-west.png"
+        ],
         "provenance": "apps/desktop/assets/bonsai/provenance.json",
         "lazy": true,
-        "projection": "orthographic-isometric",
-        "tintAndFlipVariants": true,
-        "decorativeTrafficIsViewState": true
+        "projection": "2-to-1-isometric",
+        "tilePixels": [48, 24],
+        "heightStepPixels": 8,
+        "rotationQuarterTurns": true,
+        "visibleDiagonalCulling": true,
+        "chunkSizeTiles": 16,
+        "canvasLayers": 6,
+        "decorativeAgentsAreDerived": true
+      },
+      "voxelRenderer": {
+        "status": "authorized-phase9",
+        "file": "apps/desktop/app/features/bonsai-renderer-voxel.js",
+        "vendor": "apps/desktop/app/vendor/bonsai-renderer.js",
+        "library": "three (existing npm devDependency; esbuild ESM subset, lazy import)",
+        "recipeSource": "apps/desktop/assets/bonsai/atlas-source.json",
+        "lazy": true,
+        "readsSnapshotsOnly": true
       }
     },
     "aiSystem6Shell": {
-      "status": "contract-only",
+      "status": "implemented",
       "windowContract": {
         "role": "creative-lab",
         "route": "summoned",
@@ -60,6 +78,10 @@
   },
   "determinism": {
     "fixedTickHz": 20,
+    "ticksPerDay": 5,
+    "daysPerMonth": 25,
+    "monthsPerYear": 12,
+    "yearFoundedChoices": [1900, 1950, 2000, 2050],
     "coreTickModel": "integer-tick",
     "speedScalesTicksPerFrame": true,
     "prng": {
@@ -69,14 +91,15 @@
       "coreGeneratesSeed": false
     },
     "commandSchema": {
-      "schemaVersion": 1,
-      "fields": ["schemaVersion", "type", "payload", "targetTick", "clientCommandId", "sequence"],
+      "schemaVersion": 2,
+      "inputFields": ["schemaVersion", "type", "payload", "targetTick", "clientCommandId"],
+      "assignedFields": ["sequence", "transactionId", "events"],
       "implemented": true,
       "pendingQueue": true,
       "rejectedCommandsConsumeNoSequence": true
     },
     "eventSchema": {
-      "schemaVersion": 1,
+      "schemaVersion": 2,
       "fields": ["schemaVersion", "tick", "sequence", "type", "payload"],
       "implemented": true,
       "drainedNotPersisted": true
@@ -85,7 +108,7 @@
       "algorithm": "SHA-256",
       "canonicalization": "sorted-json-v1",
       "kernelLevel": "implemented",
-      "saveEnvelopeIntegrity": "phase-2"
+      "saveEnvelopeIntegrity": "implemented-v2"
     },
     "forbiddenCoreInputs": ["wall-clock", "locale", "translation-string"]
   },
@@ -147,19 +170,62 @@
     "economyCycle": true,
     "deterministicReplay": true
   },
-  "phase7Invariants": {
-    "voxelRendererReadsSnapshotOnly": true,
-    "voxelVendorLazyLoaded": true,
-    "textureAtlasHasProvenance": true,
-    "coreDeterminismUnchanged": true,
-    "decorativeTrafficIsViewState": true,
-    "noGplOrMaxisAssetsInAtlas": true
+  "phase8Invariants": {
+    "canvasRendererReadsSnapshotOnly": true,
+    "singleProductionRenderer": true,
+    "fourDirectionAtlasesHaveProvenance": true,
+    "resizeObserverReadsContainerOnly": true,
+    "newCitiesStartPaused": true,
+    "atomicPathAndAreaCommands": true,
+    "dynamicMapSizes": [64, 96],
+    "waterPowerRoadGrowthFeedback": true,
+    "deterministicReplayAndMigration": true,
+    "noGplOrMaxisAssetsInAtlases": true
+  },
+  "phase9Invariants": {
+    "note": "Phase 9 supersedes phase 8's singleProductionRenderer and phase 0's noSc2Fixtures/noAssetAddition; those blocks stay as historical fences.",
+    "oneSnapshotContract": true,
+    "rendererBackends": ["three-voxel", "canvas-2d"],
+    "primaryRendererBackend": "three-voxel",
+    "canvasFallbackWhenWebglUnavailable": true,
+    "renderersReadSnapshotOnly": true,
+    "sc2CompatibilityAuthorized": true,
+    "sc2CodecCleanRoom": true,
+    "sc2FixturesSyntheticOnly": true,
+    "userSuppliedSc2RuntimeImportOnly": true,
+    "provenanceGatedAssetAdditions": true,
+    "headlessCorePreserved": true,
+    "deterministicReplayAndMigration": true,
+    "noGplOrMaxisAssetsInAtlases": true,
+    "dynamicMapSizes": [64, 96, 128],
+    "maxAltitude": 31,
+    "catalogIdZeroMeansDerived": true
+  },
+  "sc2Import": {
+    "status": "implemented-m2",
+    "codec": "apps/desktop/app/features/bonsai-sc2-codec.js",
+    "workerOperation": "sc2-import",
+    "sidecarPreservation": true,
+    "fixtures": "synthetic-only",
+    "factSource": "SC2k-docs (attributed, independent wording)"
+  },
+  "sc2Export": {
+    "status": "implemented-m7",
+    "workerOperation": "sc2-export",
+    "canonicalRleEncoder": true,
+    "sidecarReemitsUnmodeledSegments": true,
+    "smallMapsEmbedInSeaApron": true,
+    "byteStableAcrossRoundTrips": true,
+    "ownerCertification": "pending-owner-run (docs/city-simulator/SC2-COMPAT.md protocol)"
   },
   "saveFormat": {
     "format": "bonsai-city",
-    "formatVersion": 1,
-    "currentEngineSaveVersion": 1,
+    "formatVersion": 3,
+    "currentEngineSaveVersion": 3,
     "derivedLayersNeverSaved": true,
+    "buildingOccupancyDerivedFromDurableDevelopmentLayers": true,
+    "v3DurableLayers": ["catalogId", "subway", "waterLevel", "salt", "rotate", "tunnel", "waterKind"],
+    "sc2SidecarOptional": true,
     "integrity": "planned-phase2",
     "migration": "pure-chain-vN-to-vN+1-input-never-mutated"
   },
@@ -183,8 +249,36 @@
       "OpenTTD-GPLv2",
       "Maxis-EA-original-assets",
       "SC2k-docs-CC-BY-SA-verbatim",
-      "SC2-file-fixtures"
-    ]
+      "EA-origin-SC2-city-files"
+    ],
+    "permittedFactSources": [
+      {
+        "source": "SC2k-docs (OpenCity2k/SC2k-docs, CC BY-SA 4.0)",
+        "terms": "independently worded format facts with attribution; no verbatim text, tables, diagrams, or extracted data"
+      }
+    ],
+    "sc2Compatibility": {
+      "authorized": true,
+      "decision": "owner directive, 2026-08-23; recorded in LEGAL-AND-PROVENANCE.md",
+      "cleanRoom": true,
+      "fixtures": "synthetic-only, generated by project code, never EA-origin",
+      "userSuppliedCities": "runtime import only; never committed, bundled, or uploaded"
+    },
+    "visualFidelity": {
+      "reference": "Macintosh SimCity 2000 releases, studied from the owner's legally-owned copies",
+      "decision": "owner directive, 2026-08-24; recorded in LEGAL-AND-PROVENANCE.md",
+      "observedFactsAuthorized": [
+        "color values observed or sampled as RGB facts, reused in our own original artwork",
+        "layout, proportion, and composition measurements",
+        "structural arrangement of scenes and interfaces"
+      ],
+      "expressionStillForbidden": [
+        "sprites, tiles, and pixel art",
+        "screenshots committed or shipped as assets",
+        "tracing outlines or automated extraction/conversion of art assets",
+        "sounds, copy, brand assets, city and scenario files"
+      ]
+    }
   },
   "verification": {
     "daily": "npm run verify:quick -- --feature city-simulator-foundation --docs --no-build",

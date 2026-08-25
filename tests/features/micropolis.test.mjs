@@ -5,7 +5,7 @@
 
 import { readFileSync } from "node:fs";
 import vm from "node:vm";
-import { createFeatureTest, exists, read, resolveProjectPath } from "../helpers/feature-test-harness.mjs";
+import { createFeatureTest, exists, read, resolveProjectPath, windowApp, windowRegistryRecords } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("micropolis");
 
@@ -17,6 +17,7 @@ const styleManifest = read("tooling/style-manifest.mjs");
 const packageJson = read("package.json");
 const menus = read("app/data/menus.js");
 const windowManager = read("app/core/window-manager.js");
+const windowRegistry = read("app/core/window-registry.js");
 const multiFinder = read("app/core/multi-finder.js");
 const html = read("index.html");
 const en = read("app/data/translations-en.js");
@@ -208,7 +209,8 @@ test.assertIncludes(shellSource, "micropolisCssTileWidth", "pan and wheel deltas
 
 const projectDisk = read("app/features/project-disk.js");
 test.assertIncludes(config, 'citiesStoreName: "cities"', "city saves have a declared object store");
-test.assertIncludes(config, "indexedDbVersion: 4", "the database version keeps the cities store (v4 adds the separate Bonsai store)");
+test.assertIncludes(config, "indexedDbVersion: 5", "the database version keeps the cities store (v4 added the separate Bonsai store; v5 added image attachments)");
+test.assertIncludes(config, "citiesStoreName", "the cities store survives later schema versions");
 test.assertIncludes(read("app.js"), "citiesStoreName,", "app.js destructures the store name into the shared scope");
 test.assertIncludes(projectDisk, "db.createObjectStore(citiesStoreName", "the upgrade path creates the cities store");
 test.assertIncludes(shellSource, "AISystem6StorageTransactions.runTransaction", "city writes go through the shared write fence");
@@ -219,11 +221,12 @@ test.assertIncludes(shellSource, "window.AISystem6MicropolisLoaded = true;", "th
 test.assertIncludes(config, 'createLazyModuleLoader("AISystem6MicropolisLoaded"', "config.js owns the lazy loader");
 test.assertMatches(config, /ensureMicropolisModule[\s\S]{0,200}styles\.micropolis\.css/,
   "the lazy loader pulls the Micropolis stylesheet with the module");
-test.assertMatches(windowManager, /micropolis:\s*\{\s*ensure:\s*\(\)\s*=>\s*ensureMicropolisModule\(\)/,
-  "session restore reloads the module through lazyWindowModules");
+test.assert(
+  /ensure: \(\) => ensureMicropolisModule\(\)/.test(windowRegistryRecords().micropolis?.lazy || ""),
+  "session restore reloads the module through the window registry");
 test.assertMatches(windowManager, /mobileFullScreenAppIds = new Set\(\[[^\]]*"micropolis"/,
   "the phone shell treats Micropolis as a full-screen app");
-test.assertIncludes(multiFinder, 'micropolis: "micropolis",', "the window declares its owning app");
+test.assert(windowApp("micropolis") === "micropolis", "the window declares its owning app");
 test.assertNotIncludes(html, 'data-window="micropolis"', "the window frame stays off the startup disk");
 test.assertIncludes(shellSource, 'data-window="micropolis"', "the lazy module installs the real window frame");
 test.assertMatches(styleManifest, /id: "micropolis",\s*\n\s*output: "styles\.micropolis\.css"/,

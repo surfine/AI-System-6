@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 32 32" fill="none" stroke="#000000" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" shape-rendering="geometricPrecision">
+  <style>
+
+    .classic-ink{fill:#000000;stroke:#000000;stroke-width:.25}
+    .classic-paper{fill:#ffffff;stroke:none}
+    .sys-icon-detail{display:none}
+  </style>
+  <g transform="translate(0 0)">
+
+    <path d="M18 10.5 23 13 18 15.5 13 13z" />
+    <path d="M13 13 18 15.5v10l-5-2.5z" />
+    <path d="M18 15.5 23 13v10l-5 2.5z" />
+    <path class="sys-icon-detail" d="M18 10.5v-3" />
+    <path d="M8 15.25 11.5 17 8 18.75 4.5 17z" />
+    <path d="M4.5 17 8 18.75v6.75l-3.5-1.75z" />
+    <path d="M8 18.75 11.5 17v6.75L8 25.5z" />
+    <path d="M3 25.5h23" />
+    <rect class="classic-ink" x="9.25" y="8.5" width="1" height="1" />
+    <rect class="classic-ink" x="10.5" y="10" width="1" height="1" />
+    <rect class="classic-ink" x="7.5" y="9.5" width="1.25" height="1.75" />
+    <rect class="classic-ink" x="4.5" y="9.75" width="1" height="1" />
+  </g>
+</svg>

@@ -1,11 +1,348 @@
 (function initThemeLabFeature() {
   "use strict";
 
+  // The Lab's markup used to sit in index.html: 35,291 bytes of static window
+  // that every boot downloaded for a window most sessions never open, while the
+  // module and stylesheet were already lazy. It is built here instead, at module
+  // eval, BEFORE anything below queries its own elements. Nothing eager refers
+  // to these ids -- checked against every module in appModulePaths and against
+  // the rest of index.html -- and dom-handles.js never sweeps them.
+  // The grow box is not built here; openWindow() calls installGrowBoxes().
+  function installThemeLabWindow() {
+    if (typeof document === "undefined") return;
+    if (document.querySelector('[data-window="themeLab"]')) return;
+    window.AISystem6ApplicationShell.createWindow({
+      windowName: "themeLab",
+      windowClass: "theme-lab-window",
+      labelledBy: "theme-lab-title",
+      titleKey: "theme_lab",
+      title: "Theme Lab",
+      statusClass: "compact-status-bar",
+      statusHtml: `<span class="status-bar-leading" data-i18n="theme_lab_status">Shared control specimen</span>
+          <span class="status-bar-context theme-lab-current-era" aria-live="polite">
+            <strong data-theme-lab-appearance>System 6</strong>
+            <span aria-hidden="true">·</span>
+            <span data-theme-lab-font>Chicago</span>
+            <span aria-hidden="true">·</span>
+            <span><span data-theme-lab-font-size>12</span> pt</span>
+          </span>
+          <span class="status-bar-trailing" data-i18n="theme_lab_internal">Internal</span>`,
+      paneClass: "theme-lab-pane",
+      paneHtml: `
+          <!-- The era bar is the spine: the same specimen set, six materials.
+               It switches the live appearance in place and keeps the open tab,
+               the inspected object, and the scroll position, so flipping eras
+               reads as one board changing clothes. -->
+          <div class="theme-lab-era-bar">
+            <div class="theme-lab-era-switch" role="group" aria-label="Appearance" data-i18n-aria-label="appearance" data-theme-lab-era-switch></div>
+            <p class="theme-lab-era-lineage" data-theme-lab-lineage aria-live="polite"></p>
+          </div>
+
+          <div class="system-tabs-sheet theme-lab-sheet-shell">
+            <div class="system-tabs theme-lab-panel-tabs" role="tablist" aria-label="Theme Lab sections" data-i18n-aria-label="theme_lab_sections">
+              <button class="system-tab is-active" id="theme-lab-tab-chrome" type="button" role="tab" aria-selected="true" aria-controls="theme-lab-panel-chrome" data-theme-lab-tab="chrome" data-i18n="theme_lab_tab_chrome">Chrome</button>
+              <button class="system-tab" id="theme-lab-tab-objects" type="button" role="tab" aria-selected="false" aria-controls="theme-lab-panel-objects" data-theme-lab-tab="objects" data-i18n="theme_lab_tab_objects">Objects</button>
+              <button class="system-tab" id="theme-lab-tab-surfaces" type="button" role="tab" aria-selected="false" aria-controls="theme-lab-panel-surfaces" data-theme-lab-tab="surfaces" data-i18n="theme_lab_tab_surfaces">Surfaces</button>
+              <button class="system-tab" id="theme-lab-tab-tokens" type="button" role="tab" aria-selected="false" aria-controls="theme-lab-panel-tokens" data-theme-lab-tab="tokens" data-i18n="theme_lab_tab_tokens">Tokens</button>
+            </div>
+
+            <div class="system-tab-panel theme-lab-panel" id="theme-lab-panel-chrome" role="tabpanel" aria-labelledby="theme-lab-tab-chrome" data-theme-lab-panel="chrome">
+              <section class="theme-lab-group theme-lab-controls" aria-labelledby="theme-lab-controls-title">
+                <h3 id="theme-lab-controls-title" data-i18n="theme_lab_controls">Controls</h3>
+                <div class="theme-lab-button-row">
+                  <button class="btn" type="button" data-i18n="theme_lab_normal">Normal</button>
+                  <button class="btn default" type="button" data-i18n="theme_lab_default">Default</button>
+                  <button class="btn is-active" type="button" aria-pressed="true" data-i18n="theme_lab_pressed">Pressed</button>
+                  <button class="btn theme-lab-focus-control" type="button" data-i18n="theme_lab_focused">Focused</button>
+                  <button class="btn" type="button" disabled data-i18n="theme_lab_disabled">Disabled</button>
+                </div>
+                <div class="theme-lab-size-row" aria-label="Control size variants">
+                  <span data-i18n="theme_lab_sizes">Sizes</span>
+                  <button class="btn" type="button" data-i18n="theme_lab_regular">Regular</button>
+                  <button class="btn theme-lab-size-small" type="button" data-i18n="theme_lab_small">Small</button>
+                  <button class="btn theme-lab-size-mini" type="button" data-i18n="theme_lab_mini">Mini</button>
+                </div>
+                <div class="theme-lab-choice-matrix" aria-label="Choice control states">
+                  <label class="field-row"><input type="checkbox" checked /><span data-i18n="theme_lab_checked">Checked</span></label>
+                  <label class="field-row"><input type="checkbox" /><span data-i18n="theme_lab_unchecked">Unchecked</span></label>
+                  <label class="field-row"><input type="radio" name="theme-lab-radio" checked /><span data-i18n="theme_lab_selected">Selected</span></label>
+                  <label class="field-row"><input type="radio" name="theme-lab-disabled-radio" checked disabled /><span data-i18n="theme_lab_disabled">Disabled</span></label>
+                  <label class="field-row theme-lab-era-choice-state"><input class="is-active" type="checkbox" checked /><span data-i18n="theme_lab_pressed">Pressed</span></label>
+                  <label class="field-row theme-lab-era-choice-state"><input type="checkbox" checked disabled /><span data-i18n="theme_lab_disabled">Disabled</span></label>
+                  <label class="field-row theme-lab-era-choice-state"><input type="radio" name="theme-lab-unselected-radio" /><span data-i18n="theme_lab_unchecked">Unchecked</span></label>
+                  <label class="field-row theme-lab-era-choice-state"><input class="is-active" type="radio" name="theme-lab-active-radio" checked /><span data-i18n="theme_lab_pressed">Pressed</span></label>
+                </div>
+                <div class="theme-lab-form-grid">
+                  <label><span data-i18n="theme_lab_text_field">Text field</span><input type="text" value="Macintosh" readonly /></label>
+                  <label><span data-i18n="theme_lab_focused_field">Focused field</span><input class="theme-lab-focus-demo" type="text" value="Appearance" readonly /></label>
+                  <label><span data-i18n="theme_lab_search">Search</span><input class="theme-lab-search" type="search" value="System" readonly /></label>
+                  <label><span data-i18n="theme_lab_popup">Pop-up</span><span class="select-wrap theme-lab-color-popup"><select aria-label="Theme Lab pop-up"><option>Blue</option><option>Graphite</option></select></span></label>
+                  <label><span data-i18n="theme_lab_disabled_field">Disabled field</span><input type="text" value="Unavailable" disabled /></label>
+                  <label><span data-i18n="theme_lab_disabled_popup">Disabled pop-up</span><span class="select-wrap theme-lab-color-popup"><select aria-label="Disabled Theme Lab pop-up" disabled><option>Blue</option></select></span></label>
+                </div>
+                <div class="theme-lab-segmented" role="group" aria-label="Segmented control">
+                  <button class="is-selected" type="button"><span class="theme-lab-view-icon is-icon" aria-hidden="true"></span><span data-i18n="theme_lab_icon_view">Icon</span></button>
+                  <button type="button"><span class="theme-lab-view-icon is-list" aria-hidden="true"></span><span data-i18n="theme_lab_list_view">List</span></button>
+                  <button type="button"><span class="theme-lab-view-icon is-columns" aria-hidden="true"></span><span data-i18n="theme_lab_column_view">Column</span></button>
+                </div>
+                <div class="theme-lab-tabs" role="tablist">
+                  <button class="is-selected" type="button" role="tab" aria-selected="true" data-i18n="theme_lab_general">General</button>
+                  <button type="button" role="tab" aria-selected="false" data-i18n="theme_lab_advanced">Advanced</button>
+                  <button type="button" role="tab" aria-selected="false" data-i18n="theme_lab_accounts">Accounts</button>
+                </div>
+                <div class="theme-lab-tab-panel" role="tabpanel"><span data-i18n="appearance">Appearance</span></div>
+              </section>
+
+              <section class="theme-lab-group theme-lab-window-chrome" aria-labelledby="theme-lab-window-chrome-title">
+                <h3 id="theme-lab-window-chrome-title" data-i18n="theme_lab_window_chrome">Window chrome</h3>
+                  <div class="theme-lab-mini-windows">
+                    <div class="theme-lab-mini-window is-active"><i class="theme-lab-mini-control is-close" aria-hidden="true"></i><i class="theme-lab-mini-control is-minimize" aria-hidden="true"></i><i class="theme-lab-mini-control is-zoom" aria-hidden="true"></i><span data-i18n="theme_lab_active_window">Active Window</span></div>
+                    <div class="theme-lab-mini-window is-inactive"><i class="theme-lab-mini-control is-close" aria-hidden="true"></i><i class="theme-lab-mini-control is-minimize" aria-hidden="true"></i><i class="theme-lab-mini-control is-zoom" aria-hidden="true"></i><span data-i18n="theme_lab_inactive_window">Inactive Window</span></div>
+                  </div>
+                  <div class="theme-lab-progress-row"><span data-i18n="theme_lab_progress">Progress</span><div class="theme-lab-progress" aria-label="Progress" role="progressbar" aria-valuenow="62"><span></span></div></div>
+                  <div class="theme-lab-scroll-frame">
+                    <div class="theme-lab-scroll" tabindex="0"><p>System 6</p><p>Platinum</p><p>Aqua</p><p>Snow Leopard</p><p>Yosemite</p><p>Liquid Glass</p></div>
+                    <div class="theme-lab-scrollbar" aria-hidden="true">
+                      <div class="theme-lab-scrollbar-track"><span class="theme-lab-scrollbar-thumb"></span></div>
+                      <span class="theme-lab-scrollbar-button is-decrement"></span>
+                      <span class="theme-lab-scrollbar-button is-increment"></span>
+                    </div>
+                  </div>
+              </section>
+            </div>
+
+            <div class="system-tab-panel theme-lab-panel" id="theme-lab-panel-objects" role="tabpanel" aria-labelledby="theme-lab-tab-objects" data-theme-lab-panel="objects" hidden>
+              <!-- One object lab for all six eras. The era supplies the art
+                   source and its own background list; the sixteen objects,
+                   the four states, the zoom ladder, and the context checks
+                   are identical, so two eras can be compared by flipping. -->
+              <section class="theme-lab-group theme-lab-object-lab" data-theme-lab-object-lab aria-labelledby="theme-lab-object-lab-title">
+                <h3 id="theme-lab-object-lab-title" data-i18n="theme_lab_objects">Priority objects</h3>
+                <p class="theme-lab-object-intro" data-theme-lab-object-intro></p>
+                <p class="theme-lab-object-evidence" data-theme-lab-object-evidence></p>
+                <div class="theme-lab-object-key" data-theme-lab-object-key></div>
+                <div class="theme-lab-object-grid" data-theme-lab-object-grid></div>
+                <div class="theme-lab-object-inspector" data-theme-lab-object-inspector aria-live="polite"></div>
+                <div class="theme-lab-object-contexts" data-theme-lab-object-contexts aria-label="Object context checks" data-i18n-aria-label="theme_lab_object_contexts"></div>
+              </section>
+
+              <section class="theme-lab-group theme-lab-icon-set" aria-labelledby="theme-lab-icon-set-title">
+                <h3 id="theme-lab-icon-set-title" data-i18n="theme_lab_icon_set">Icon set</h3>
+                <div class="theme-lab-icon-grid" data-theme-lab-icon-grid></div>
+              </section>
+            </div>
+
+            <div class="system-tab-panel theme-lab-panel" id="theme-lab-panel-surfaces" role="tabpanel" aria-labelledby="theme-lab-tab-surfaces" data-theme-lab-panel="surfaces" hidden>
+              <section class="theme-lab-group theme-lab-navigation" aria-labelledby="theme-lab-navigation-title">
+                <h3 id="theme-lab-navigation-title"><span class="theme-lab-navigation-generic-label" data-i18n="theme_lab_navigation">Lists &amp; sidebar</span><span class="theme-lab-column-browser-label" data-i18n="theme_lab_column_browser">Column browser</span></h3>
+                <div class="theme-lab-split-view theme-lab-generic-browser theme-lab-generic-fixture">
+                  <nav class="theme-lab-sidebar" aria-label="Icon list">
+                    <button class="is-selected" type="button"><span class="sys-icon" data-system-icon="startupDisk" aria-hidden="true"></span><span data-i18n="startup_disk">Startup Disk</span></button>
+                    <button type="button"><span class="sys-icon" data-system-icon="applications" aria-hidden="true"></span><span data-i18n="applications">Applications</span></button>
+                    <button type="button"><span class="sys-icon" data-system-icon="trash" aria-hidden="true"></span><span data-i18n="trash">Trash</span></button>
+                  </nav>
+                  <div class="theme-lab-list-frame is-focused" tabindex="0">
+                    <div class="theme-lab-list" role="listbox" aria-label="List">
+                      <button type="button" role="option"><span class="theme-lab-list-icon" aria-hidden="true"></span><span>Appearance</span></button>
+                      <button class="is-selected" type="button" role="option" aria-selected="true"><span class="theme-lab-list-icon" aria-hidden="true"></span><span>Control Panels</span></button>
+                      <button type="button" role="option"><span class="theme-lab-list-icon" aria-hidden="true"></span><span>System Folder</span></button>
+                    </div>
+                    <div class="theme-lab-scrollbar theme-lab-list-scrollbar" aria-hidden="true">
+                      <div class="theme-lab-scrollbar-track"><span class="theme-lab-scrollbar-thumb is-active"></span></div>
+                      <span class="theme-lab-scrollbar-button is-decrement is-active"></span>
+                      <span class="theme-lab-scrollbar-button is-increment"></span>
+                    </div>
+                  </div>
+                </div>
+                <div class="theme-lab-snow-source-list" aria-hidden="true" lang="en" translate="no">
+                  <h4 class="theme-lab-snow-group" data-i18n="theme_lab_snow_devices">Devices</h4>
+                  <button type="button"><span class="sys-icon" data-system-icon="startupDisk" aria-hidden="true"></span><span>Macintosh HD</span></button>
+                  <h4 class="theme-lab-snow-group" data-i18n="theme_lab_snow_places">Places</h4>
+                  <button type="button"><span class="sys-icon" data-system-icon="folder" aria-hidden="true"></span><span>Desktop</span></button>
+                  <button class="is-selected" type="button"><span class="sys-icon" data-system-icon="folder" aria-hidden="true"></span><span>Documents</span></button>
+                  <button type="button"><span class="sys-icon" data-system-icon="folder" aria-hidden="true"></span><span>Applications</span></button>
+                  <button type="button"><span class="sys-icon" data-system-icon="document" aria-hidden="true"></span><span>Downloads</span></button>
+                </div>
+                <div class="theme-lab-split-view theme-lab-aqua-browser" aria-label="Aqua column browser" data-theme-lab-reference="guidebook.macosx102.open-dialog" lang="en" translate="no">
+                  <div class="theme-lab-browser-column">
+                    <nav class="theme-lab-sidebar" aria-label="Column one">
+                      <button type="button"><span class="sys-icon" data-system-icon="applications" aria-hidden="true"></span><span>Desktop</span><span class="theme-lab-browser-disclosure" aria-hidden="true"></span></button>
+                      <button class="is-selected" type="button" aria-current="true"><span class="sys-icon" data-system-icon="applications" aria-hidden="true"></span><span>Documents</span><span class="theme-lab-browser-disclosure" aria-hidden="true"></span></button>
+                      <button type="button"><span class="sys-icon" data-system-icon="applications" aria-hidden="true"></span><span>Library</span><span class="theme-lab-browser-disclosure" aria-hidden="true"></span></button>
+                      <button type="button"><span class="sys-icon" data-system-icon="applications" aria-hidden="true"></span><span>Movies</span><span class="theme-lab-browser-disclosure" aria-hidden="true"></span></button>
+                      <button type="button"><span class="sys-icon" data-system-icon="applications" aria-hidden="true"></span><span>Music</span><span class="theme-lab-browser-disclosure" aria-hidden="true"></span></button>
+                      <button type="button"><span class="sys-icon" data-system-icon="applications" aria-hidden="true"></span><span>Pictures</span><span class="theme-lab-browser-disclosure" aria-hidden="true"></span></button>
+                      <button type="button"><span class="sys-icon" data-system-icon="applications" aria-hidden="true"></span><span>Public</span><span class="theme-lab-browser-disclosure" aria-hidden="true"></span></button>
+                      <button type="button" disabled><span class="sys-icon" data-system-icon="document" aria-hidden="true"></span><span>Send Registration</span></button>
+                      <button type="button"><span class="sys-icon" data-system-icon="applications" aria-hidden="true"></span><span>Sites</span><span class="theme-lab-browser-disclosure" aria-hidden="true"></span></button>
+                    </nav>
+                    <div class="theme-lab-browser-column-scrollbar" aria-hidden="true"><span class="theme-lab-browser-column-thumb is-active"></span><i class="is-decrement"></i><i class="is-increment"></i></div>
+                  </div>
+                  <div class="theme-lab-browser-column">
+                    <div class="theme-lab-list-frame">
+                      <div class="theme-lab-list" role="listbox" aria-label="Column two">
+                        <button class="is-selected" type="button" role="option" aria-selected="true"><span class="theme-lab-list-icon" aria-hidden="true"></span><span>Acrobat User Data</span><span class="theme-lab-browser-disclosure" aria-hidden="true"></span></button>
+                      </div>
+                    </div>
+                    <div class="theme-lab-browser-column-scrollbar is-inactive" aria-hidden="true"><i class="is-decrement"></i><i class="is-increment"></i></div>
+                  </div>
+                  <div class="theme-lab-browser-column">
+                    <div class="theme-lab-list-frame"><div class="theme-lab-list" role="listbox" aria-label="Column three"></div></div>
+                    <div class="theme-lab-browser-column-scrollbar is-inactive" aria-hidden="true"><i class="is-decrement"></i><i class="is-increment"></i></div>
+                  </div>
+                  <div class="theme-lab-browser-horizontal-scrollbar" aria-hidden="true"></div>
+                </div>
+                <div class="theme-lab-open-list-capture theme-lab-platinum-fixture"
+                     data-theme-lab-reference="guidebook.macos90.open-file">
+                  <div class="theme-lab-open-list-items" role="listbox" aria-label="Mac OS 9 Open list" lang="en" translate="no">
+                    <button class="is-selected" type="button" role="option" aria-selected="true"><span class="theme-lab-open-list-icon is-dvd-player" aria-hidden="true"></span><span>Apple DVD Player</span></button>
+                    <button type="button" role="option"><span class="theme-lab-open-list-icon is-video-player" aria-hidden="true"></span><span>Apple Video Player ƒ</span></button>
+                    <button type="button" role="option"><span class="theme-lab-open-list-icon is-audio-player" aria-hidden="true"></span><span>AppleCD Audio Player ƒ</span></button>
+                    <button type="button" role="option"><span class="theme-lab-open-list-icon is-quicktime" aria-hidden="true"></span><span>QuickTime</span></button>
+                    <button type="button" role="option"><span class="theme-lab-open-list-icon is-security" aria-hidden="true"></span><span>Security</span></button>
+                  </div>
+                  <div class="theme-lab-open-scrollbar" aria-hidden="true">
+                    <div class="theme-lab-open-scroll-track"></div>
+                    <span class="theme-lab-open-scroll-button is-decrement"></span>
+                    <span class="theme-lab-open-scroll-button is-increment"></span>
+                  </div>
+                </div>
+              </section>
+
+              <section class="theme-lab-group theme-lab-layered" aria-labelledby="theme-lab-layered-title">
+                <h3 id="theme-lab-layered-title" data-i18n="theme_lab_layered">Menus &amp; layered surfaces</h3>
+                <div class="theme-lab-layer-grid">
+                  <div class="theme-lab-menu theme-lab-generic-fixture" role="menu">
+                    <button type="button" role="menuitem">Open… <span>⌘O</span></button>
+                    <button class="is-selected" type="button" role="menuitem">Appearance <span class="theme-lab-menu-mark">✓</span></button>
+                    <hr />
+                    <button type="button" role="menuitem" disabled>Duplicate <span>⌘D</span></button>
+                    <button type="button" role="menuitem">Close <span>⌘W</span></button>
+                  </div>
+                  <div class="theme-lab-popover"><b class="theme-lab-popover-generic-label" data-i18n="theme_lab_popover">Popover</b><b class="theme-lab-balloon-label" data-i18n="theme_lab_balloon_help">Balloon Help</b><b class="theme-lab-help-tag-label" data-i18n="theme_lab_help_tag">Help Tag</b><span data-i18n="theme_lab_popover_copy">A temporary system surface.</span></div>
+                  <div class="theme-lab-menu-capture theme-lab-platinum-fixture"
+                       data-theme-lab-reference="guidebook.macos90.apple-menu">
+                    <div class="theme-lab-menu--platinum" role="menu" aria-label="Mac OS 9 Apple menu" lang="en" translate="no">
+                      <button class="is-about" type="button" role="menuitem"><span>About This Computer</span></button>
+                      <hr />
+                      <button class="is-profiler" type="button" role="menuitem"><span class="theme-lab-platinum-menu-icon is-system-profiler" aria-hidden="true"></span><span>Apple System Profiler</span></button>
+                      <button type="button" role="menuitem"><span class="theme-lab-platinum-menu-icon is-calculator" aria-hidden="true"></span><span>Calculator</span></button>
+                      <button type="button" role="menuitem"><span class="theme-lab-platinum-menu-icon is-chooser" aria-hidden="true"></span><span>Chooser</span></button>
+                      <button type="button" role="menuitem"><span class="theme-lab-platinum-menu-icon is-control-panels" aria-hidden="true"></span><span>Control Panels</span><i class="theme-lab-platinum-disclosure" aria-hidden="true"></i></button>
+                      <button type="button" role="menuitem"><span class="theme-lab-platinum-menu-icon is-favorites" aria-hidden="true"></span><span>Favorites</span><i class="theme-lab-platinum-disclosure" aria-hidden="true"></i></button>
+                      <button type="button" role="menuitem"><span class="theme-lab-platinum-menu-icon is-key-caps" aria-hidden="true"></span><span>Key Caps</span></button>
+                      <button type="button" role="menuitem"><span class="theme-lab-platinum-menu-icon is-network-browser" aria-hidden="true"></span><span>Network Browser</span></button>
+                      <button type="button" role="menuitem"><span class="theme-lab-platinum-menu-icon is-recent-applications" aria-hidden="true"></span><span>Recent Applications</span><i class="theme-lab-platinum-disclosure" aria-hidden="true"></i></button>
+                      <button type="button" role="menuitem"><span class="theme-lab-platinum-menu-icon is-recent-documents" aria-hidden="true"></span><span>Recent Documents</span><i class="theme-lab-platinum-disclosure" aria-hidden="true"></i></button>
+                      <button type="button" role="menuitem"><span class="theme-lab-platinum-menu-icon is-remote-access" aria-hidden="true"></span><span>Remote Access Status</span></button>
+                      <button type="button" role="menuitem"><span class="theme-lab-platinum-menu-icon is-scrapbook" aria-hidden="true"></span><span>Scrapbook</span></button>
+                      <button type="button" role="menuitem"><span class="theme-lab-platinum-menu-icon is-sherlock" aria-hidden="true"></span><span>Sherlock 2</span></button>
+                      <button type="button" role="menuitem"><span class="theme-lab-platinum-menu-icon is-stickies" aria-hidden="true"></span><span>Stickies</span></button>
+                    </div>
+                  </div>
+                  <div class="theme-lab-dialog theme-lab-generic-fixture">
+                    <span class="theme-lab-alert-icon" aria-hidden="true"></span>
+                    <div class="theme-lab-dialog-copy"><b data-i18n="theme_lab_dialog">Dialog</b><span data-i18n="theme_lab_dialog_copy">Keep this appearance?</span></div>
+                    <div class="theme-lab-dialog-actions"><button class="btn theme-lab-dialog-cancel" type="button" data-i18n="cancel">Cancel</button><button class="btn default" type="button" data-i18n="ok">OK</button></div>
+                  </div>
+                  <div class="theme-lab-about-capture theme-lab-platinum-fixture"
+                       data-theme-lab-reference="guidebook.macos90.about-application">
+                    <div class="theme-lab-dialog--platinum-about" role="dialog" aria-label="About Calculator" lang="en" translate="no">
+                      <span class="theme-lab-calculator-icon" aria-hidden="true"></span>
+                      <strong>Calculator</strong>
+                      <button class="btn default" type="button">OK</button>
+                    </div>
+                  </div>
+                  <div class="theme-lab-sheet-specimen" data-theme-lab-reference="macosx102.finder-replace-sheet">
+                    <div class="theme-lab-sheet-owner-titlebar" aria-hidden="true">
+                      <i class="is-close"></i><i class="is-minimize"></i><i class="is-zoom"></i>
+                      <span data-i18n="appearance">Appearance</span>
+                    </div>
+                    <div class="theme-lab-sheet-owner-body" aria-hidden="true"></div>
+                    <div class="theme-lab-sheet" role="dialog" aria-label="Attached sheet">
+                      <span class="theme-lab-sheet-icon" aria-hidden="true"></span>
+                      <div class="theme-lab-sheet-copy"><b class="theme-lab-sheet-generic-copy" data-i18n="theme_lab_sheet">Sheet</b><span class="theme-lab-sheet-generic-copy" data-i18n="theme_lab_sheet_copy">Attached to its owning window.</span><b class="theme-lab-sheet-aqua-copy" lang="en" translate="no">Preparing move to “Documents”</b><span class="theme-lab-sheet-aqua-copy" lang="en" translate="no">A file with the same name already exists.</span></div>
+                      <div class="theme-lab-sheet-actions"><button class="btn theme-lab-sheet-generic-action" type="button" data-i18n="cancel">Cancel</button><button class="btn default theme-lab-sheet-generic-action" type="button" data-i18n="ok">OK</button><button class="btn theme-lab-sheet-aqua-action" type="button" lang="en" translate="no">Stop</button><button class="btn default theme-lab-sheet-aqua-action" type="button" lang="en" translate="no">Replace</button></div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <section class="theme-lab-group theme-lab-finder" aria-labelledby="theme-lab-finder-title">
+                <h3 id="theme-lab-finder-title" data-i18n="theme_lab_finder">Finder surface</h3>
+                <div class="theme-lab-finder-window" data-theme-lab-reference="guidebook.macosx102.finder">
+                  <div class="theme-lab-finder-window-titlebar" aria-hidden="true" lang="en" translate="no">
+                    <i class="is-close"></i><i class="is-minimize"></i><i class="is-zoom"></i>
+                    <span>Jim McKintie's Computer</span>
+                  </div>
+                  <div class="theme-lab-toolbar">
+                    <button class="btn theme-lab-toolbar-back" type="button" data-i18n="theme_lab_back">Back</button>
+                    <span class="theme-lab-separator" aria-hidden="true"></span>
+                    <strong class="theme-lab-toolbar-location">Macintosh HD</strong>
+                    <span class="theme-lab-toolbar-status" data-i18n="theme_lab_finder_status">10 items, 59.1 MB available</span>
+                    <div class="theme-lab-toolbar-icon-strip" aria-label="Finder toolbar controls">
+                      <button class="theme-lab-toolbar-icon-button" type="button"><span class="theme-lab-toolbar-round-icon is-back" aria-hidden="true"></span><small data-i18n="theme_lab_back">Back</small></button>
+                      <button class="theme-lab-toolbar-icon-button" type="button"><span class="theme-lab-toolbar-round-icon is-forward" aria-hidden="true"></span><small>Forward</small></button>
+                      <div class="theme-lab-toolbar-view-control"><span class="theme-lab-toolbar-view-buttons" aria-hidden="true"><i class="theme-lab-view-icon is-icon"></i><i class="theme-lab-view-icon is-list"></i><i class="theme-lab-view-icon is-columns"></i></span><small>View</small></div>
+                      <span class="theme-lab-toolbar-era-separator" aria-hidden="true"></span>
+                      <button class="theme-lab-toolbar-icon-button" type="button"><span class="theme-lab-toolbar-role-icon is-computer" aria-hidden="true"></span><small>Computer</small></button>
+                      <button class="theme-lab-toolbar-icon-button" type="button"><span class="theme-lab-toolbar-role-icon is-home" aria-hidden="true"></span><small>Home</small></button>
+                      <button class="theme-lab-toolbar-icon-button" type="button"><span class="theme-lab-toolbar-role-icon is-favorites" aria-hidden="true"></span><small>Favorites</small></button>
+                      <button class="theme-lab-toolbar-icon-button" type="button"><span class="theme-lab-toolbar-role-icon is-applications" aria-hidden="true"></span><small>Applications</small></button>
+                    </div>
+                    <label class="theme-lab-toolbar-search"><input type="search" value="" placeholder="Search" aria-label="Finder search" /><small>Search</small></label>
+                  </div>
+                  <div class="theme-lab-snow-toolbar" aria-hidden="true" lang="en" translate="no">
+                    <strong class="theme-lab-snow-title">Macintosh HD</strong>
+                    <div class="theme-lab-snow-nav">
+                      <button class="theme-lab-snow-droplet is-back" type="button" aria-label="Back"></button>
+                      <button class="theme-lab-snow-droplet is-forward" type="button" aria-label="Forward"></button>
+                    </div>
+                    <div class="theme-lab-snow-view-controls" role="group" aria-label="View controls">
+                      <button class="is-selected" type="button" aria-label="Icon view"><span class="theme-lab-view-icon is-icon" aria-hidden="true"></span></button>
+                      <button type="button" aria-label="List view"><span class="theme-lab-view-icon is-list" aria-hidden="true"></span></button>
+                      <button type="button" aria-label="Column view"><span class="theme-lab-view-icon is-columns" aria-hidden="true"></span></button>
+                      <button type="button" aria-label="Cover Flow view"><span class="theme-lab-view-icon is-cover" aria-hidden="true"></span></button>
+                    </div>
+                    <button class="theme-lab-snow-action" type="button" aria-label="Action menu"></button>
+                    <label class="theme-lab-snow-search"><input type="search" placeholder="Search" aria-label="Finder search" /></label>
+                  </div>
+                  <div class="theme-lab-finder-status-strip" aria-hidden="true" lang="en" translate="no"><span>2 items</span></div>
+                  <div class="theme-lab-finder-surface">
+                    <button class="finder-item is-selected" type="button"><span class="sys-icon sys-icon-desktop" data-system-icon="startupDisk" aria-hidden="true"></span><span>Macintosh HD</span></button>
+                    <button class="finder-item" type="button"><span class="sys-icon sys-icon-desktop" data-system-icon="folder" aria-hidden="true"></span><span>System Folder</span></button>
+                    <button class="finder-item theme-lab-finder-era-extra" type="button"><span class="sys-icon sys-icon-desktop" data-system-icon="folder" aria-hidden="true"></span><span>Applications</span></button>
+                    <button class="finder-item theme-lab-finder-era-extra" type="button"><span class="sys-icon sys-icon-desktop" data-system-icon="folder" aria-hidden="true"></span><span>Documents</span></button>
+                    <button class="finder-item theme-lab-finder-era-extra" type="button"><span class="sys-icon sys-icon-desktop" data-system-icon="folder" aria-hidden="true"></span><span>Utilities</span></button>
+                    <button class="finder-item theme-lab-finder-era-extra" type="button"><span class="sys-icon sys-icon-desktop" data-system-icon="document" aria-hidden="true"></span><span>Read Me</span></button>
+                    <div class="theme-lab-finder-rows">
+                      <div class="is-selected"><span class="sys-icon" data-system-icon="finderApp" aria-hidden="true"></span><span>Finder</span><small>Application</small></div>
+                      <div><span class="sys-icon" data-system-icon="document" aria-hidden="true"></span><span>Read Me</span><small>Document</small></div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </div>
+
+            <div class="system-tab-panel theme-lab-panel" id="theme-lab-panel-tokens" role="tabpanel" aria-labelledby="theme-lab-tab-tokens" data-theme-lab-panel="tokens" hidden>
+              <!-- The authoring surface. Rows come from the live CSSOM, not a
+                   copied list, so the delta shown is the delta that ships. An
+                   edit sets the custom property on <body>, which repaints the
+                   whole desktop, and the result leaves as pasteable CSS; the
+                   Lab never writes a stylesheet or persists an experiment. -->
+              
+            </div>
+          </div>`,
+    });
+  }
+
+  installThemeLabWindow();
+
   // Internal Appearance workbench. Three jobs, in this order:
   //   1. show one specimen set in whichever era is on screen,
   //   2. say what that era overrides and what it inherits,
-  //   3. hand back the exact edit — pasteable CSS, or the checklist a new era
-  //      needs — without writing a file or persisting an experiment.
+  //   3. hand back an exact pasteable CSS delta and show the shared shell that
+  //      lets a new app inherit every mature Appearance automatically.
   //
   // Everything era-specific is data in this file. There is one object lab, one
   // context list, and one token table; an era supplies art tiers, appearance
@@ -44,99 +381,11 @@
     docMap: "C",
   });
 
-  // Per era: the authored art tiers, and which of them the runtime dispatches
-  // for ordinary, compact, and large contexts. `zoom` is the inspector ladder —
-  // [source tier, displayed px] — so a tier is never resampled to stand in for
-  // a neighbour it does not have.
-  const ERA_ART = Object.freeze({
-    classic: Object.freeze({
-      dir: "classic", ext: "svg", tiers: [32, 16],
-      ordinary: 32, compact: 16, large: 32,
-      zoom: [[32, 32], [32, 64], [32, 128], [32, 256]],
-      appearances: ["default"],
-    }),
-    platinum: Object.freeze({
-      dir: "platinum", ext: "png", tiers: [42, 32, 16],
-      ordinary: 32, compact: 16, large: 42,
-      zoom: [[42, 168], [32, 96], [16, 64]],
-      appearances: ["default"],
-    }),
-    aqua: Object.freeze({
-      dir: "aqua", ext: "png", tiers: [128, 32, 16],
-      ordinary: 32, compact: 16, large: 128,
-      zoom: [[128, 128], [32, 96], [16, 64]],
-      appearances: ["default"],
-    }),
-    "snow-leopard": Object.freeze({
-      dir: "snow-leopard", ext: "png", tiers: [512, 128, 32, 16],
-      ordinary: 32, compact: 16, large: 128,
-      zoom: [[512, 256], [128, 128], [32, 96], [16, 64]],
-      appearances: ["default"],
-    }),
-    yosemite: Object.freeze({
-      dir: "yosemite", ext: "png", tiers: [128, 64, 32, 16],
-      ordinary: 32, compact: 16, large: 128,
-      zoom: [[128, 128], [64, 128], [32, 96], [16, 64]],
-      appearances: ["default"],
-    }),
-    "liquid-glass": Object.freeze({
-      dir: "liquid-glass", ext: "png", tiers: [128, 64, 32, 16],
-      ordinary: 32, compact: 16, large: 128,
-      zoom: [[128, 128], [64, 128], [32, 96], [16, 64]],
-      // The only era whose files carry an appearance suffix. Everyone else
-      // declares one appearance, so the inspector keeps the same shape.
-      variant: "-default",
-      appearances: ["default", "dark", "clear"],
-    }),
-  });
-
-  // Which stylesheet owns an era's token delta, and the selector its block
-  // carries. Repo facts, not something the CSSOM can report once the bundle is
-  // concatenated; DESIGN.md → "Appearance work should be token-first" is the
-  // authority. The copy-out block names both so the paste target is unambiguous.
-  const ERA_TOKEN_HOME = Object.freeze({
-    classic: Object.freeze({ file: "apps/desktop/styles/00-foundation.css", selector: ":root" }),
-    platinum: Object.freeze({
-      file: "apps/desktop/styles/65-appearance-themes.css",
-      selector: 'html[data-theme="platinum"],\nbody[data-theme="platinum"]',
-    }),
-    aqua: Object.freeze({
-      file: "apps/desktop/styles/67-aqua-appearance.css",
-      selector: 'html[data-theme="aqua"],\nbody[data-theme="aqua"]',
-    }),
-    "snow-leopard": Object.freeze({
-      file: "apps/desktop/styles/67-aqua-appearance.css",
-      selector: 'html[data-theme="snow-leopard"],\nbody[data-theme="snow-leopard"]',
-    }),
-    yosemite: Object.freeze({
-      file: "apps/desktop/styles/65-appearance-themes.css",
-      selector: 'html[data-theme="yosemite"],\nbody[data-theme="yosemite"]',
-    }),
-    "liquid-glass": Object.freeze({
-      file: "apps/desktop/styles/70-liquid-glass.css",
-      selector: "body.use-liquid-glass",
-    }),
-  });
-
-  // Every semantic icon the appearance system paints, in painter order. The
-  // overview is Theme Lab's alone, so its 54 tiles are built here rather than
-  // written into index.html, where they would cost the boot bundle ~9 KB for a
-  // window that loads on demand. Tile labels are the id read as words; only
-  // fileFloppy carries a product name that the id does not spell.
-  const ICON_SET = Object.freeze([
-    "startupDisk", "hardDisk", "folder", "document", "applications",
-    "trash", "trashFull", "finderApp", "fileFloppy", "assistant",
-    "quickDraft", "writingStudio", "projectDisk", "projectDisc",
-    "cloudModel", "cloudModelOff", "questionSheet", "outline",
-    "sectionDrafts", "manuscript", "reviewDesk", "searcher", "reader",
-    "timeMachine", "docMap", "clioStage", "clioChart", "liquidCover",
-    "cmfStudio", "soundscape", "scrapbook", "systemFolder", "helpFolder",
-    "importUtility", "controlPanel", "chooser", "systemHelp", "dictionary",
-    "teachText", "writingDemo", "chatFile", "chatImport", "systemStatus",
-    "contextPanel", "rebuildArticle", "bureaucracyMeme", "endfieldTerminal",
-    "documents", "alias", "systemFile", "multiFinderApp", "daHandler",
-    "writingBell", "control",
-  ]);
+  // Appearance authoring data belongs to the boot-safe registry, and the icon
+  // vocabulary belongs to the painter. Theme Lab reads both; it never keeps a
+  // private list that can silently drift from what the desktop ships.
+  const authoringOf = (theme) => theme?.authoring || window.AISystem6Theme?.getAuthoringMetadata?.(theme?.id);
+  const appearanceIconIds = () => window.AISystem6SystemIcons?.ids || [];
 
   const PANELS = Object.freeze(["chrome", "objects", "surfaces", "tokens"]);
   const TOKEN_ROW_LIMIT = 240;
@@ -151,6 +400,7 @@
   const draftTokens = new Map();
   let tokenIndex = null;
   let lastRenderedThemeId = null;
+  let sessionOpen = false;
   // Until the user picks a scope, the Lab picks the one that has rows: an era
   // with a delta opens on its delta, and System 6 — which is the baseline and
   // overrides nothing — opens on the whole table instead of on an empty box.
@@ -167,7 +417,8 @@
   }
 
   function artOf(themeId) {
-    return ERA_ART[themeId] || ERA_ART.classic;
+    const theme = window.AISystem6Theme?.getTheme?.(themeId);
+    return authoringOf(theme)?.art || authoringOf(window.AISystem6Theme?.getTheme?.("classic"))?.art;
   }
 
   // One source-file path for one authored tier. `art.variant` is the appearance
@@ -270,13 +521,20 @@
     ].join("");
   }
 
-  // Dragging sweeps the live desktop through forty years, so the appearance is
-  // applied the moment the nearest tick changes — but without persisting or
-  // saving the desk on every frame. The release settles onto the exact era and
-  // commits it once, through the same boundary the menu uses.
-  function travelTo(themeId, { commit }) {
-    if (!commit && window.AISystem6Theme?.getCurrentTheme?.() === themeId) return;
-    applyTheme(themeId, commit ? {} : { persist: false, saveDesk: false, syncUi: false });
+  // Theme Lab is an authoring preview, not another Appearance preference. Both
+  // tick jumps and slider travel repaint the whole semantic desktop through the
+  // application boundary, but the committed theme remains owned by Control
+  // Panel / Special. Closing the Lab restores that committed theme.
+  function travelTo(themeId) {
+    if (window.AISystem6Theme?.getCurrentTheme?.() === themeId) return;
+    applyTheme(themeId, {
+      experimental: true,
+      commit: false,
+      persist: false,
+      saveDesk: false,
+      syncUi: false,
+      source: "theme-lab",
+    });
   }
 
   // ------------------------------------------------------------------ tabs --
@@ -419,8 +677,6 @@
     if (!panel || panel.querySelector("[data-theme-lab-token-table]")) return;
     const field = (labelKey, control) =>
       `<label><span>${escapeHtml(t(labelKey))}</span>${control}</label>`;
-    const text = (hook, placeholderKey) =>
-      `<input type="text" data-theme-lab-${hook} placeholder="${escapeHtml(t(placeholderKey))}" aria-label="${escapeHtml(t(`theme_lab_${hook.replace(/-/g, "_")}`))}" />`;
     panel.insertAdjacentHTML("beforeend", `
       <section class="theme-lab-group theme-lab-token-desk" aria-labelledby="theme-lab-token-desk-title">
         <h3 id="theme-lab-token-desk-title">${escapeHtml(t("theme_lab_tokens"))}</h3>
@@ -442,31 +698,47 @@
         </div>
         <pre class="theme-lab-desk-output" data-theme-lab-token-output hidden></pre>
       </section>
-      <section class="theme-lab-group theme-lab-new-appearance" aria-labelledby="theme-lab-new-appearance-title">
-        <h3 id="theme-lab-new-appearance-title">${escapeHtml(t("theme_lab_new_appearance"))}</h3>
-        <p class="theme-lab-new-intro">${escapeHtml(t("theme_lab_new_intro"))}</p>
-        <div class="theme-lab-new-form">
-          ${field("theme_lab_new_id", text("new-id", "theme_lab_new_id_placeholder"))}
-          ${field("theme_lab_new_label", text("new-label", "theme_lab_new_label_placeholder"))}
-          ${field("theme_lab_new_base", `<span class="select-wrap"><select data-theme-lab-new-base aria-label="${escapeHtml(t("theme_lab_new_base"))}"></select></span>`)}
-          ${field("theme_lab_new_font", text("new-font", "theme_lab_new_font_placeholder"))}
-          ${field("theme_lab_new_font_size", `<input type="number" min="9" max="24" step="1" value="13" data-theme-lab-new-font-size aria-label="${escapeHtml(t("theme_lab_new_font_size"))}" />`)}
-        </div>
-        <div class="theme-lab-desk-actions">
-          <span class="theme-lab-desk-status" data-theme-lab-new-status aria-live="polite"></span>
-          <button class="btn" type="button" data-theme-lab-new-copy>${escapeHtml(t("theme_lab_new_copy"))}</button>
-          <button class="btn default" type="button" data-theme-lab-new-build>${escapeHtml(t("theme_lab_new_build"))}</button>
-        </div>
-        <pre class="theme-lab-desk-output" data-theme-lab-new-output hidden></pre>
+      <section class="theme-lab-group theme-lab-app-contract" aria-labelledby="theme-lab-app-contract-title">
+        <h3 id="theme-lab-app-contract-title">${escapeHtml(t("theme_lab_status"))}</h3>
+        <p class="theme-lab-token-summary" data-theme-lab-app-contract-summary></p>
+        <div class="theme-lab-token-table" data-theme-lab-app-contract></div>
       </section>`);
+  }
+
+  function renderAppContract(theme) {
+    const win = lab();
+    const host = win?.querySelector("[data-theme-lab-app-contract]");
+    if (!host || !theme) return;
+    const authoring = authoringOf(theme);
+    const chain = window.AISystem6Theme?.getRecipeChain?.(theme.id) || [theme];
+    const path = chain.map((entry) => t(entry.labelKey)).join(" → ");
+    const summary = win.querySelector("[data-theme-lab-app-contract-summary]");
+    if (summary) {
+      summary.textContent = `${path} · ${authoring?.tokenHome?.file || ""}`;
+    }
+    const rows = [
+      [".window", "theme_lab_window_chrome"],
+      [".title-bar", "theme_lab_active_window"],
+      [".details-bar", "theme_lab_status"],
+      [".window-pane", "theme_lab_surfaces"],
+      [".btn", "theme_lab_controls"],
+      [".system-tabs", "theme_lab_tab_chrome"],
+      [".sys-icon", "theme_lab_icon_set"],
+    ];
+    host.innerHTML = rows.map(([selector, labelKey]) => `<div class="theme-lab-token-row">
+      <code>${escapeHtml(selector)}</code>
+      <span class="theme-lab-token-flag is-inherited">${escapeHtml(t("theme_lab_token_inherited"))}</span>
+      <span class="theme-lab-token-base">${escapeHtml(t(labelKey))}</span>
+      <span class="theme-lab-token-editor"><input type="text" readonly aria-readonly="true" value="${escapeHtml(theme.id)}" /></span>
+    </div>`).join("");
   }
 
   function buildIconSet(win) {
     const grid = win.querySelector("[data-theme-lab-icon-grid]");
     if (!grid || grid.childElementCount) return;
-    grid.innerHTML = ICON_SET.map((id) => {
+    grid.innerHTML = appearanceIconIds().map((id) => {
       const label = id === "fileFloppy" ? "floppy" : id.replace(/([A-Z])/g, " $1");
-      return `<button class="theme-lab-icon-tile"><span class="sys-icon" data-system-icon="${escapeHtml(id)}" aria-hidden="true"></span><b>${escapeHtml(label)}</b></button>`;
+      return `<div class="theme-lab-icon-tile" role="figure" aria-label="${escapeHtml(label)}"><span class="sys-icon" data-system-icon="${escapeHtml(id)}" aria-hidden="true"></span><b>${escapeHtml(label)}</b></div>`;
     }).join("");
     hydrateSystemIcons(grid);
   }
@@ -492,18 +764,99 @@
 
   // ------------------------------------------------------- token workbench --
 
-  // The delta is read from the live CSSOM rather than a copied list, so the
-  // table cannot drift from the stylesheets. Only unconditional declarations
-  // count as an era's base value; anything inside @media/@container/@supports
-  // is a conditional refinement and is reported separately instead of being
-  // presented as the value to edit.
-  function eraForSelector(selectorText) {
+  // The delta is read from the live CSSOM rather than a copied list. Scope is
+  // part of the identity: `body.use-liquid-glass` is an editable era root, but
+  // `body.use-liquid-glass .menu-popover button` is a contextual recipe and is
+  // read-only here. Collapsing both under one token name used to turn the last
+  // contextual declaration in the bundle into a false global value.
+  function splitSelectorList(selectorText) {
+    const selectors = [];
+    let current = "";
+    let parenDepth = 0;
+    let bracketDepth = 0;
+    let quote = "";
+    let escaped = false;
+    for (const char of String(selectorText || "")) {
+      if (escaped) {
+        current += char;
+        escaped = false;
+        continue;
+      }
+      if (char === "\\") {
+        current += char;
+        escaped = true;
+        continue;
+      }
+      if (quote) {
+        current += char;
+        if (char === quote) quote = "";
+        continue;
+      }
+      if (char === '"' || char === "'") {
+        current += char;
+        quote = char;
+        continue;
+      }
+      if (char === "(") parenDepth += 1;
+      else if (char === ")") parenDepth = Math.max(0, parenDepth - 1);
+      else if (char === "[") bracketDepth += 1;
+      else if (char === "]") bracketDepth = Math.max(0, bracketDepth - 1);
+      if (char === "," && parenDepth === 0 && bracketDepth === 0) {
+        if (current.trim()) selectors.push(current.trim());
+        current = "";
+      } else {
+        current += char;
+      }
+    }
+    if (current.trim()) selectors.push(current.trim());
+    return selectors;
+  }
+
+  function selectorScope(selectorText) {
     const selector = String(selectorText || "");
-    if (/(^|,)\s*:root\s*$/.test(selector) || selector === ":root") return "__base";
-    if (/body\[data-theme\](?!=)/.test(selector)) return "__base";
-    if (/\.use-liquid-glass/.test(selector)) return "liquid-glass";
-    const match = selector.match(/\[data-theme="([a-z-]+)"\]/);
-    return match ? match[1] : null;
+    const parts = splitSelectorList(selector);
+    if (!parts.length) return null;
+    const themeIds = new Set();
+    let sharedThemeRoot = false;
+    let allExactRoots = true;
+    let hasAppearanceSelector = false;
+    for (const part of parts) {
+      if (part === ":root") {
+        themeIds.add("__base");
+        hasAppearanceSelector = true;
+        continue;
+      }
+      if (/^body\[data-theme\](?::|$)/.test(part)) {
+        themeIds.add("__base");
+        sharedThemeRoot = true;
+        hasAppearanceSelector = true;
+        allExactRoots = false;
+        continue;
+      }
+      if (part === "body.use-liquid-glass") {
+        themeIds.add("liquid-glass");
+        hasAppearanceSelector = true;
+        continue;
+      }
+      const exact = part.match(/^(?:html|body)\[data-theme=["']([a-z-]+)["']\]$/);
+      if (exact) {
+        themeIds.add(exact[1]);
+        hasAppearanceSelector = true;
+        continue;
+      }
+      const matches = [...part.matchAll(/\[data-theme=["']([a-z-]+)["']\]/g)];
+      for (const match of matches) themeIds.add(match[1]);
+      if (part.includes(".use-liquid-glass")) themeIds.add("liquid-glass");
+      if (matches.length || part.includes(".use-liquid-glass")) hasAppearanceSelector = true;
+      allExactRoots = false;
+    }
+    if (!hasAppearanceSelector) return null;
+    return {
+      selector,
+      themeIds: [...themeIds],
+      global: allExactRoots && !sharedThemeRoot,
+      contextual: !allExactRoots || sharedThemeRoot,
+    };
   }
 
   function readCustomProperties(style) {
@@ -515,38 +868,67 @@
     return found;
   }
 
-  function buildTokenIndex() {
+  function stylesheetName(sheet) {
+    const href = String(sheet?.href || "inline");
+    try {
+      const path = new URL(href, document.baseURI).pathname;
+      return path.split("/").filter(Boolean).at(-1) || href;
+    } catch {
+      return href;
+    }
+  }
+
+  function buildTokenIndexFromStyleSheets(styleSheets, sourceFileForTheme = null) {
     const base = new Map();
     const eras = new Map();
-    const conditional = new Map();
+    const entries = [];
+    const contextual = [];
+    const conditional = [];
     const bucket = (map, key) => {
       if (!map.has(key)) map.set(key, new Map());
       return map.get(key);
     };
 
-    const walk = (rules, inCondition) => {
+    const walk = (rules, context) => {
       for (const rule of rules) {
-        // A style rule can own declarations *and* nested rules, so read its
-        // own custom properties before recursing rather than instead of it.
         const isStyleRule = Boolean(rule.selectorText && rule.style);
         if (isStyleRule) {
-          const era = eraForSelector(rule.selectorText);
-          const declarations = era ? readCustomProperties(rule.style) : [];
-          if (declarations.length) {
-            if (inCondition) {
-              const target = bucket(conditional, era);
-              for (const [name] of declarations) target.set(name, true);
-            } else {
-              const target = era === "__base" ? base : bucket(eras, era);
-              for (const [name, value] of declarations) target.set(name, value);
+          const scope = selectorScope(rule.selectorText);
+          const declarations = scope ? readCustomProperties(rule.style) : [];
+          for (const [name, value] of declarations) {
+            for (const themeId of scope.themeIds) {
+              const entry = Object.freeze({
+                name,
+                value,
+                themeId,
+                selector: scope.selector,
+                file: (themeId !== "__base" && sourceFileForTheme?.(themeId)) || context.file,
+                global: scope.global,
+                contextual: scope.contextual,
+                conditional: context.conditions.length > 0,
+                conditions: Object.freeze([...context.conditions]),
+              });
+              entries.push(entry);
+              if (entry.conditional) conditional.push(entry);
+              else if (entry.contextual) contextual.push(entry);
+              else {
+                const target = themeId === "__base" ? base : bucket(eras, themeId);
+                target.set(name, entry);
+              }
             }
           }
         }
-        if (rule.cssRules) walk(rule.cssRules, inCondition || !isStyleRule);
+        if (rule.cssRules) {
+          const condition = rule.conditionText || rule.media?.mediaText || "";
+          walk(rule.cssRules, {
+            file: context.file,
+            conditions: condition ? [...context.conditions, String(condition)] : context.conditions,
+          });
+        }
       }
     };
 
-    for (const sheet of Array.from(document.styleSheets)) {
+    for (const sheet of Array.from(styleSheets || [])) {
       let rules = null;
       try {
         rules = sheet.cssRules;
@@ -554,9 +936,20 @@
         // A cross-origin stylesheet cannot be read; the app serves its own.
         continue;
       }
-      if (rules) walk(rules, false);
+      if (rules) walk(rules, { file: stylesheetName(sheet), conditions: [] });
     }
-    return { base, eras, conditional };
+    return Object.freeze({
+      base,
+      eras,
+      entries: Object.freeze(entries),
+      contextual: Object.freeze(contextual),
+      conditional: Object.freeze(conditional),
+    });
+  }
+
+  function buildTokenIndex() {
+    return buildTokenIndexFromStyleSheets(document.styleSheets, (themeId) =>
+      window.AISystem6Theme?.getAuthoringMetadata?.(themeId)?.tokenHome?.file || "");
   }
 
   function tokenGroupName(name) {
@@ -565,18 +958,62 @@
     return parts[0] || "other";
   }
 
-  function tokenRowsFor(themeId) {
-    if (!tokenIndex) tokenIndex = buildTokenIndex();
-    const { base, eras } = tokenIndex;
-    const overrides = themeId === "classic" ? new Map() : (eras.get(themeId) || new Map());
-    const names = new Set([...base.keys(), ...overrides.keys()]);
-    return [...names].sort().map((name) => ({
-      name,
-      group: tokenGroupName(name),
-      baseValue: base.get(name) || "",
-      eraValue: overrides.has(name) ? overrides.get(name) : base.get(name) || "",
-      overridden: overrides.has(name),
+  function resolvedGlobalTokens(index, chain) {
+    const resolved = new Map(index.base);
+    for (const theme of chain || []) {
+      for (const [name, entry] of index.eras.get(theme.id) || []) resolved.set(name, entry);
+    }
+    return resolved;
+  }
+
+  function tokenRowsForIndex(theme, index, recipeChain) {
+    const chain = recipeChain || [theme];
+    const parentChain = chain.slice(0, -1);
+    const inherited = resolvedGlobalTokens(index, parentChain);
+    const active = theme.id === "classic" ? new Map() : (index.eras.get(theme.id) || new Map());
+    const resolved = resolvedGlobalTokens(index, chain);
+    const names = new Set([...inherited.keys(), ...resolved.keys(), ...active.keys()]);
+    const globalRows = [...names].sort().map((name) => {
+      const entry = resolved.get(name) || inherited.get(name);
+      const baseEntry = inherited.get(name);
+      return {
+        key: `global:${name}`,
+        name,
+        group: tokenGroupName(name),
+        baseValue: baseEntry?.value || "",
+        eraValue: entry?.value || "",
+        overridden: active.has(name),
+        editable: true,
+        contextual: false,
+        conditional: false,
+        selector: entry?.selector || "",
+        file: entry?.file || "",
+      };
+    });
+    const scopedEntries = [...index.contextual, ...index.conditional]
+      .filter((entry) => entry.themeId === theme.id || entry.themeId === "__base")
+      .sort((a, b) => a.selector.localeCompare(b.selector) || a.name.localeCompare(b.name));
+    const scopedRows = scopedEntries.map((entry, position) => ({
+      key: `scoped:${position}:${entry.themeId}:${entry.selector}:${entry.name}`,
+      name: entry.name,
+      group: entry.conditional ? "conditional" : "contextual",
+      baseValue: entry.selector,
+      eraValue: entry.value,
+      overridden: entry.themeId === theme.id,
+      editable: false,
+      contextual: entry.contextual,
+      conditional: entry.conditional,
+      selector: entry.selector,
+      file: entry.file,
+      conditions: entry.conditions,
     }));
+    return [...globalRows, ...scopedRows];
+  }
+
+  function tokenRowsFor(theme) {
+    if (!tokenIndex) tokenIndex = buildTokenIndex();
+    const chain = window.AISystem6Theme?.getRecipeChain?.(theme.id) || [theme];
+    return tokenRowsForIndex(theme, tokenIndex, chain);
   }
 
   function groupChoices(rows) {
@@ -605,16 +1042,17 @@
     const win = lab();
     const table = win?.querySelector("[data-theme-lab-token-table]");
     if (!table) return;
-    const rows = tokenRowsFor(theme.id);
-    const overriddenCount = rows.filter((row) => row.overridden).length;
-    const home = ERA_TOKEN_HOME[theme.id] || ERA_TOKEN_HOME.classic;
-    const conditionalCount = tokenIndex?.conditional.get(theme.id === "classic" ? "__base" : theme.id)?.size || 0;
+    const rows = tokenRowsFor(theme);
+    const globalRows = rows.filter((row) => row.editable);
+    const overriddenCount = globalRows.filter((row) => row.overridden).length;
+    const home = authoringOf(theme)?.tokenHome || authoringOf(window.AISystem6Theme?.getTheme?.("classic"))?.tokenHome;
+    const conditionalCount = rows.filter((row) => row.conditional).length;
 
     const summary = win.querySelector("[data-theme-lab-token-summary]");
     if (summary) {
       summary.textContent = theme.id === "classic"
-        ? t("theme_lab_token_summary_base", rows.length, home.file, conditionalCount)
-        : t("theme_lab_token_summary_era", t(theme.labelKey), overriddenCount, rows.length, home.file, conditionalCount);
+        ? t("theme_lab_token_summary_base", globalRows.length, home.file, conditionalCount)
+        : t("theme_lab_token_summary_era", t(theme.labelKey), overriddenCount, globalRows.length, home.file, conditionalCount);
     }
 
     const { named, smallCount } = groupChoices(rows);
@@ -646,24 +1084,33 @@
       if (scope === "inherited" && row.overridden) return false;
       if (group === "__other" && namedGroups.has(row.group)) return false;
       if (group !== "all" && group !== "__other" && row.group !== group) return false;
-      if (search && !row.name.includes(search) && !row.eraValue.toLowerCase().includes(search)) return false;
+      if (search && ![row.name, row.eraValue, row.selector, row.file, ...(row.conditions || [])]
+        .some((value) => String(value || "").toLowerCase().includes(search))) return false;
       return true;
     });
 
     const shown = visible.slice(0, TOKEN_ROW_LIMIT);
     table.innerHTML = shown.map((row) => {
-      const draft = draftTokens.get(row.name);
+      const draft = row.editable ? draftTokens.get(row.name) : undefined;
       const value = draft === undefined ? row.eraValue : draft;
       const flagKey = row.overridden ? "theme_lab_token_overridden" : "theme_lab_token_inherited";
       const flagClass = row.overridden ? "is-overridden" : "is-inherited";
-      const baseNote = row.overridden && row.baseValue
-        ? `<span class="theme-lab-token-base" title="${escapeHtml(t("theme_lab_token_base_value"))}">${escapeHtml(row.baseValue)}</span>`
+      const baseTitle = row.editable ? t("theme_lab_token_base_value") : `${row.file}${row.conditional ? ` · ${row.conditions.join(" · ")}` : ""}`;
+      const baseNote = row.baseValue
+        ? `<span class="theme-lab-token-base" title="${escapeHtml(baseTitle)}">${escapeHtml(row.baseValue)}</span>`
         : `<span class="theme-lab-token-base"></span>`;
-      return `<div class="theme-lab-token-row${draft === undefined ? "" : " is-dirty"}" data-theme-lab-token-row="${escapeHtml(row.name)}">
+      const editAttributes = row.editable
+        ? `data-theme-lab-token-input="${escapeHtml(row.name)}"`
+        : 'readonly aria-readonly="true"';
+      const computedValue = row.editable
+        ? getComputedStyle(document.body).getPropertyValue(row.name).trim()
+        : "";
+      return `<div class="theme-lab-token-row${draft === undefined ? "" : " is-dirty"}" data-theme-lab-token-row="${escapeHtml(row.key)}">
         <code>${escapeHtml(row.name)}</code>
         <span class="theme-lab-token-flag ${flagClass}">${escapeHtml(t(flagKey))}</span>
         ${baseNote}
-        <span class="theme-lab-token-editor">${looksLikeColor(value) ? '<i class="theme-lab-token-swatch" aria-hidden="true"></i>' : ""}<input type="text" spellcheck="false" value="${escapeHtml(value)}" data-theme-lab-token-input="${escapeHtml(row.name)}" aria-label="${escapeHtml(row.name)}" /></span>
+        <span class="theme-lab-token-computed" title="computed">${escapeHtml(computedValue)}</span>
+        <span class="theme-lab-token-editor">${looksLikeColor(value) ? '<i class="theme-lab-token-swatch" aria-hidden="true"></i>' : ""}<input type="text" spellcheck="false" value="${escapeHtml(value)}" ${editAttributes} aria-label="${escapeHtml(row.name)}" /></span>
       </div>`;
     }).join("") || `<p class="theme-lab-token-empty">${escapeHtml(t("theme_lab_token_empty"))}</p>`;
 
@@ -705,7 +1152,7 @@
   }
 
   function tokenDeltaCss(theme) {
-    const home = ERA_TOKEN_HOME[theme.id] || ERA_TOKEN_HOME.classic;
+    const home = authoringOf(theme)?.tokenHome || authoringOf(window.AISystem6Theme?.getTheme?.("classic"))?.tokenHome;
     const names = [...draftTokens.keys()].sort();
     const body = names.map((name) => `  ${name}: ${draftTokens.get(name)};`).join("\n");
     return [
@@ -713,74 +1160,6 @@
       `   Paste inside ${home.selector.replace(/\n/g, " ")} { … }`,
       `   in ${home.file} */`,
       body,
-    ].join("\n");
-  }
-
-  // ---------------------------------------------------------- new appearance --
-
-  function newAppearanceFields(win) {
-    const value = (selector) => (win.querySelector(selector)?.value || "").trim();
-    const id = value("[data-theme-lab-new-id]").toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/^-+|-+$/g, "");
-    return {
-      id,
-      label: value("[data-theme-lab-new-label]"),
-      base: value("[data-theme-lab-new-base]"),
-      font: value("[data-theme-lab-new-font]"),
-      fontSize: Number(value("[data-theme-lab-new-font-size]")) || 13,
-      key: `theme_${id.replace(/-/g, "_")}`,
-    };
-  }
-
-  // The checklist is the real cost of a new era: a registry entry, two
-  // translation tables, an action, a menu row, a token delta in the file its
-  // base already uses, an icon family at the base's tiers, and the contracts
-  // that will refuse to ship without it.
-  function newAppearanceChecklist(fields) {
-    const baseTheme = window.AISystem6Theme?.getTheme?.(fields.base);
-    const home = ERA_TOKEN_HOME[fields.base] || ERA_TOKEN_HOME.classic;
-    const art = artOf(fields.base);
-    const inherited = (tokenIndex?.eras.get(fields.base)?.size) || tokenIndex?.base.size || 0;
-    const iconFiles = art.tiers.map((tier) => `${OBJECTS[0][0]}-${tier}${art.variant || ""}.${art.ext}`).join(", ");
-    return [
-      `# ${fields.label} (${fields.id}) — new appearance on the ${t(baseTheme.labelKey)} recipe`,
-      "",
-      "1. apps/desktop/app/core/theme-registry.js — add to `registry`:",
-      "     Object.freeze({",
-      `       id: "${fields.id}",`,
-      `       label: "${fields.label}",`,
-      `       labelKey: "${fields.key}",`,
-      `       family: "${baseTheme.family}",`,
-      `       recipeBase: "${fields.base}",`,
-      "       releaseReady: false,",
-      `       systemFont: "${fields.font}",`,
-      `       systemFontSize: ${fields.fontSize},`,
-      `       fontStrategy: "${baseTheme.fontStrategy}",`,
-      `       overlay: "${baseTheme.overlay}",`,
-      `       capabilities: Object.freeze([${baseTheme.capabilities.map((item) => `"${item}"`).join(", ")}]),`,
-      "     }),",
-      "",
-      "2. apps/desktop/app/data/translations-en.js and translations-zh.js — add:",
-      `     ${fields.key}: "${fields.label}",`,
-      "",
-      "3. apps/desktop/app/core/actions.js — add:",
-      `     "set-theme-${fields.id}": () => applyTheme("${fields.id}"),`,
-      "",
-      "4. apps/desktop/app/data/menus.js — add to the Appearance group:",
-      `     menuItem("set-theme-${fields.id}", "${fields.key}", "", { themeId: "${fields.id}" }),`,
-      "",
-      `5. ${home.file} — add the token delta beside the ${fields.base} block:`,
-      `     html[data-theme="${fields.id}"],`,
-      `     body[data-theme="${fields.id}"] {`,
-      `       /* ${inherited} tokens arrive from the ${fields.base} recipe. Override only what differs. */`,
-      "     }",
-      "",
-      `6. apps/desktop/assets/themes/${fields.id}/icons/ — ${OBJECTS.length} priority objects at ${art.tiers.join(" / ")} px:`,
-      `     ${iconFiles}, …`,
-      "",
-      "7. Contracts, in the same change:",
-      "     tests/features/appearance-system.test.mjs — THEME_IDS, SYSTEM_FONTS, THEME_FAMILIES, RECIPE_BASES",
-      `     npm run snapshot:theme-lab — writes tests/visual/theme-lab/${fields.id}.png`,
-      `     tests/visual/theme-lab-fidelity/${fields.id}.json — only once a canonical reference exists`,
     ].join("\n");
   }
 
@@ -815,9 +1194,13 @@
     win.dataset.themeLabWired = "true";
 
     win.addEventListener("click", (event) => {
+      if (event.target.closest(".close-box")) {
+        cleanup();
+        return;
+      }
       const era = event.target.closest("[data-theme-lab-era]");
       if (era) {
-        travelTo(era.dataset.themeLabEra, { commit: true });
+        travelTo(era.dataset.themeLabEra);
         return;
       }
       const tab = event.target.closest("[data-theme-lab-tab]");
@@ -852,35 +1235,12 @@
         publishOutput(win, "[data-theme-lab-token-output]", "[data-theme-lab-token-status]", tokenDeltaCss(currentTheme()));
         return;
       }
-      if (event.target.closest("[data-theme-lab-new-build]") || event.target.closest("[data-theme-lab-new-copy]")) {
-        const fields = newAppearanceFields(win);
-        const status = win.querySelector("[data-theme-lab-new-status]");
-        if (!fields.id || !fields.label || !fields.font) {
-          if (status) status.textContent = t("theme_lab_new_incomplete");
-          return;
-        }
-        if (window.AISystem6Theme?.themes?.some((entry) => entry.id === fields.id)) {
-          if (status) status.textContent = t("theme_lab_new_exists", fields.id);
-          return;
-        }
-        const text = newAppearanceChecklist(fields);
-        const output = win.querySelector("[data-theme-lab-new-output]");
-        if (event.target.closest("[data-theme-lab-new-copy]")) {
-          publishOutput(win, "[data-theme-lab-new-output]", "[data-theme-lab-new-status]", text);
-          return;
-        }
-        if (output) {
-          output.textContent = text;
-          output.hidden = false;
-        }
-        if (status) status.textContent = t("theme_lab_new_ready", fields.id);
-      }
     });
 
     win.addEventListener("input", (event) => {
       const range = event.target.closest("[data-theme-lab-era-range]");
       if (range) {
-        travelTo(nearestStop(Number(range.value) / 1000).theme.id, { commit: false });
+        travelTo(nearestStop(Number(range.value) / 1000).theme.id);
         return;
       }
       const tokenInput = event.target.closest("[data-theme-lab-token-input]");
@@ -899,13 +1259,14 @@
       if (event.target.closest("[data-theme-lab-token-search]")) renderTokenDesk(currentTheme());
     });
 
-    // Release settles the knob onto the exact tick and commits that era once.
+    // Release settles the knob onto the exact tick; Theme Lab remains preview-
+    // only, so the saved Appearance still belongs to Control Panel / Special.
     win.addEventListener("change", (event) => {
       const range = event.target.closest("[data-theme-lab-era-range]");
       if (range) {
         const stop = nearestStop(Number(range.value) / 1000);
         range.value = String(Math.round(stop.t * 1000));
-        travelTo(stop.theme.id, { commit: true });
+        travelTo(stop.theme.id);
         return;
       }
       if (event.target.closest("[data-theme-lab-token-scope]")) tokenScopeChosen = true;
@@ -913,13 +1274,6 @@
         renderTokenDesk(currentTheme());
       }
     });
-  }
-
-  function fillRecipeBaseChoices(win) {
-    const select = win.querySelector("[data-theme-lab-new-base]");
-    if (!select || select.options.length) return;
-    select.innerHTML = (window.AISystem6Theme?.themes || [])
-      .map((entry) => `<option value="${escapeHtml(entry.id)}">${escapeHtml(t(entry.labelKey))}</option>`).join("");
   }
 
   // ------------------------------------------------------------------- sync --
@@ -931,7 +1285,7 @@
     buildTokenPanel(win);
     renderEraTimeline(theme);
     renderLineage(theme);
-    fillRecipeBaseChoices(win);
+    renderAppContract(theme);
     if (typeof initSystemSelectControls === "function") initSystemSelectControls();
 
     for (const [selector, value] of [
@@ -968,12 +1322,36 @@
     render(next);
   }
 
+  function cleanup() {
+    revertDraftTokens();
+    const committedThemeId = window.AISystem6Theme?.getCommittedTheme?.()
+      || window.AISystem6Theme?.DEFAULT_THEME_ID
+      || "classic";
+    if (window.AISystem6Theme?.getCurrentTheme?.() !== committedThemeId && typeof applyTheme === "function") {
+      applyTheme(committedThemeId, {
+        experimental: true,
+        commit: false,
+        persist: false,
+        saveDesk: false,
+        source: "theme-lab-restore",
+      });
+    }
+    sessionOpen = false;
+    lastRenderedThemeId = null;
+  }
+
   function attach() {
     const win = lab();
+    sessionOpen = true;
     if (win?.dataset.themeLabCapture === "all") {
       for (const panel of win.querySelectorAll("[data-theme-lab-panel]")) panel.hidden = false;
     }
     render(currentTheme());
+  }
+
+  function restore() {
+    if (sessionOpen || draftTokens.size) cleanup();
+    attach();
   }
 
   // The workbench markup is built from translated strings, so a language switch
@@ -986,12 +1364,18 @@
   }
 
   window.AISystem6ThemeLabLoaded = true;
-  window.AISystem6ThemeLab = Object.freeze({ attach, sync, refreshLanguage, showPanel });
+  window.AISystem6ThemeLabInternals = Object.freeze({
+    splitSelectorList,
+    selectorScope,
+    buildTokenIndexFromStyleSheets,
+    tokenRowsForIndex,
+  });
+  window.AISystem6ThemeLab = Object.freeze({ attach, cleanup, restore, sync, refreshLanguage, showPanel });
   window.AISystem6Runtime?.registerApplication({
     id: "themeLab",
     windowName: "themeLab",
     mount: attach,
-    restore: attach,
+    restore,
     commands: {
       "open-theme-lab": {
         handler: () => openWindow("themeLab"),

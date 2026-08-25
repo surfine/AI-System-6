@@ -44,12 +44,11 @@ test.assertIncludes(writingDemo, 'writingDemoRun.mode === "teaser"', "Escape sto
 test.assertIncludes(writingDemo, "writingDemoSetTeaserButtons", "the teaser has its own start/stop button state");
 test.assertIncludes(writingDemo, "teaser-demo-running", "the teaser marks its running surface distinctly from the full demo");
 
-// Entry points: Welcome Floppy object, registered action, Applications item,
-// and bilingual labels.
+// Entry points: registered action, Applications item, and bilingual labels.
+// First-run onboarding is owned by ClioTalk; the deterministic tour remains an
+// explicit Extras application instead of a second onboarding system.
 test.assertIncludes(actions, '"play-teaser-demo"', "the teaser action is registered");
-test.assertIncludes(actions, "playWelcomeTour", "Welcome Floppy can launch the tour");
-test.assertIncludes(indexHtml, 'data-window="welcomeDisk"', "the tour starts from a mounted Finder object");
-test.assertIncludes(indexHtml, 'data-action="play-teaser-demo"', "Welcome Floppy shows the 30-second tour object");
+test.assertIncludes(actions, "playWelcomeTour", "the explicit tour command reaches teaser mode");
 test.assertIncludes(appJs, "play-teaser-demo", "the Applications folder lists the teaser");
 test.assertIncludes(en, "guide_play_teaser_demo:", "English labels the teaser");
 test.assertIncludes(zh, "guide_play_teaser_demo:", "Chinese labels the teaser");
@@ -70,9 +69,8 @@ test.assertIncludes(finderObjects, "renderRunReceiptInfo", "Get Info renders pro
 test.assertIncludes(finderObjects, "run_receipt_repeat", "Get Info offers Repeat This Run");
 test.assertIncludes(coordinator, "reportRunTransition", "writing agent runs feed the activity state");
 
-// The tour is discoverable as an object, never pushed as a carousel or toast.
+// The tour is discoverable as an application, never pushed as a carousel or toast.
 const writerGuide = read("app/features/writer-guide.js");
-test.assertIncludes(writerGuide, 'openWindow("welcomeDisk")', "Start Here opens the Finder volume that owns the tour");
 test.assertNotIncludes(writerGuide, "pushSystemNotification", "onboarding never pushes the tour after dismissal");
 
 // ---- Behavioral state tests ----------------------------------------------

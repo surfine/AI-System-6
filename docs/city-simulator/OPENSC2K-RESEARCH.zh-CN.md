@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/city-simulator/OPENSC2K-RESEARCH.md -->
-<!-- source-sha256: 3e3872944e56cf64e0a4b9b9577945dfc98db3b83cb913c9bbaf0d638d20adca -->
+<!-- source-sha256: b69798116a2d52572a8d97f92e39a4a39cddb1da30319f41a92bac3a21552f0a -->
 
 > 英文版为准 ・ 仅供人类参考
 
@@ -46,9 +46,12 @@
 ## 规则
 
 - 禁止把 OpenSC2K 代码复制、移植或 AI 近似改写进 MIT 路径。
-- 禁止提交 `.SC2` fixture 或任何原版游戏派生数据。
+- 禁止提交 EA 原版来源的 `.SC2` 文件或任何原版游戏派生数据。
 - 公开格式事实注明出处、独立措辞记录；不复制 CC BY-SA 笔记的逐字文本。
-- 若未来真需要 `.SC2` 兼容，应另立 clean-room importer 项目并单独做许可
-  审查。Phase 0 默认关闭。
+- **`.SC2` 兼容自 2026-08-23 起获得授权**（所有者指示；许可审查记录在
+  [LEGAL-AND-PROVENANCE.md](LEGAL-AND-PROVENANCE.md)）。它就是本文件预留的
+  clean-room 导入/导出器：依据 SC2k-docs 的事实、以独立措辞并注明出处实现
+  （规范固定在上文 `1062334f8cc63b2bd297bb8ebffaefadc6b5b4f8`）；实现过程
+  不查阅 OpenSC2K 的解析代码；fixture 全部由项目代码在测试时合成生成。
 
 本文件是工程风险记录，不是法律意见。

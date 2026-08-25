@@ -1,5 +1,5 @@
 <!-- canonical-source: README.md -->
-<!-- source-sha256: 0a3f104a045d2e911af17489e775028ab7ee9a8d5eeca99268a6bd42696aacd6 -->
+<!-- source-sha256: 65d40b9a167dbd3ee92c49edc3d031b50986d42dfebe3fd95720c9114636c156 -->
 
 > 英文版为准 / 仅供人类参考
 
@@ -10,7 +10,7 @@
 # AI System 6
 
 **一张本地优先的写作桌，AI 永远不会变成你的嗓音。**<br>
-从你粗糙的问题到一篇能交出去的稿子，只有一条路线。没有框架。没有数据库。两张软盘。
+从你粗糙的问题到一篇能交出去的稿子，只有一条路线。项目留在浏览器，服务端不留项目。两张软盘。
 
 [![License](https://img.shields.io/badge/license-MIT-000000?style=flat-square)](LICENSE)
 [![Node](https://img.shields.io/badge/node-24%2B-000000?style=flat-square)](package.json)
@@ -18,13 +18,13 @@
 [![Model](https://img.shields.io/badge/model-bring%20your%20own-000000?style=flat-square)](#自带模型)
 [![Live](https://img.shields.io/badge/live-system6.aaronlau.me-000000?style=flat-square)](https://system6.aaronlau.me)
 
-[**立即启动**](https://system6.aaronlau.me)&nbsp;&nbsp;·&nbsp;&nbsp;[**50 秒影片**](https://www.bilibili.com/video/BV1ht3m6UEDb/)&nbsp;&nbsp;·&nbsp;&nbsp;[**产品官网**](https://aisystem6.pages.dev)&nbsp;&nbsp;·&nbsp;&nbsp;[**Mac 测试版**](https://github.com/surfine/AI-System-6/releases/latest)&nbsp;&nbsp;·&nbsp;&nbsp;[English](README.md)
+[**立即启动**](https://system6.aaronlau.me)&nbsp;&nbsp;·&nbsp;&nbsp;[**50 秒影片**](https://www.bilibili.com/video/BV1ht3m6UEDb/)&nbsp;&nbsp;·&nbsp;&nbsp;[**产品官网**](https://aisystem6.pages.dev/zh-CN.html)&nbsp;&nbsp;·&nbsp;&nbsp;[**Mac 测试版**](https://github.com/surfine/AI-System-6/releases/latest)&nbsp;&nbsp;·&nbsp;&nbsp;[English](README.md)
 
 <br>
 
 <a href="https://system6.aaronlau.me"><picture>
   <source media="(prefers-color-scheme: dark)" srcset="site/img/frames/liquid-glass.webp">
-  <img src="site/img/frames/classic.webp" width="100%" alt="从真实应用中捕获的 AI System 6 桌面：Searcher、ClioTalk、Scrapbook、TeachText 和 Review Desk 围绕同一份手稿。浅色模式显示 1988 年的 System 6 外观；深色模式显示 2026 年的 Liquid Glass。">
+  <img src="site/img/frames/classic.webp" width="100%" alt="从真实应用中捕获的 AI System 6 桌面：Searcher、ClioTalk、Scrapbook、TeachText 和审校台围绕同一份正文。浅色模式显示 1988 年的 System 6 外观；深色模式显示 2026 年的 Liquid Glass。">
 </picture></a>
 
 <sub>你的 GITHUB 主题刚刚替你选好了时代：浅色是 1988，深色是 2026。<br>
@@ -38,7 +38,7 @@
 - [60 秒跑起来](#60-秒跑起来)
 - [路线就是产品](#路线就是产品)
 - [聊天是一个应用，不是整台计算机](#聊天是一个应用不是整台计算机)
-- [一台 1988 年的桌面本不该跑得动的软件](#一台-1988-年的桌面本不该跑得动的软件)
+- [约束仍然容得下什么](#约束仍然容得下什么)
 - [它还能跑 DOOM](#它还能跑-doom)
 - [一张桌子，六个系统](#一张桌子六个系统)
 - [在一个 1988 年的约束下建造](#在一个-1988-年的约束下建造)
@@ -58,7 +58,7 @@ AI System 6 建立在一个判断上：你的语言、你的来源、你的判�
 - **AI 的产出是临时的**，直到你存下、剪下、插入或导出为止。
 - **落到哪里由你说了算** —— 问题单、大纲、当前的章节草稿、稿件，还是 Scrapbook；
   以及它是追加、只替换你选中的那一段，还是新建一份。
-- **审稿台会检查你有没有滑进模型的腔调**：节奏过于齐整、通用的总结语气、
+- **审校台会检查你有没有滑进模型的腔调**：节奏过于齐整、通用的总结语气、
   个人细节被抹平、读起来像新闻稿的模糊措辞。它排在最后一站是有原因的。
 - **你的粗糙不是缺陷。** 犹豫、一个还没核实的数字、一句私人的旁白、一句说得有点太直的话：
   这些都带着判断，这条路线是为了留住它们，而不是把它们打磨掉。
@@ -95,7 +95,7 @@ npm run verify:public    # 仓库、命令、资源与文档门禁
 
 ```text
 项目硬盘 → 文件软盘 → 问题单 → 大纲
-  → 章节草稿 → 稿件 → 审稿台 → 项目光盘
+  → 章节草稿 → 正文 → 审校台 → 项目光盘
 ```
 
 这个仓库里其他所有东西，都是你召唤到这条路线上的工具。
@@ -108,8 +108,8 @@ npm run verify:public    # 仓库、命令、资源与文档门禁
 | **大纲** | 用你的话写的结构；每个 `##` 都能变成一节草稿 |
 | **章节草稿** | 一次一节，并且明确谁才是可编辑的那一方 |
 | **稿件** | TeachText；起草期间是只读的，所以没有东西能改写它 |
-| **审稿台** | 事实、结构，以及它是否还像你写的 |
-| **项目光盘** | 完成的稿子，连同来源一起导出 |
+| **审校台** | 事实、结构，以及它是否还像你写的 |
+| **项目光盘** | 完成的 Markdown 与其他明确生成的只读交付物 |
 
 <table>
   <tr>
@@ -150,7 +150,7 @@ flowchart LR
     D --> E["大纲"]
     E --> F["章节草稿"]
     F --> G["稿件"]
-    G --> H["审稿台"]
+    G --> H["审校台"]
     H --> I["Markdown / PDF / 幻灯 / 图表 / 封面"]
     M{{"LM Studio / Ollama / DeepSeek"}} -. "可选" .-> D
     M -. "可选" .-> F
@@ -159,9 +159,10 @@ flowchart LR
 
 > 硬盘告诉你什么是长久的。软盘告诉你什么是临时的。Scrapbook 里只有你选择留下的东西。
 
-## 一台 1988 年的桌面本不该跑得动的软件
+## 约束仍然容得下什么
 
-这条路线跑在一台真正的计算机上，而真正的计算机的意义就在于：它不只会做那一件事。
+写作路线始终在前，但真正的计算机也可以为其他工作留出位置，而不把它们变成必经站。
+这些工具只在被召唤时加载，底下的写作对象仍然保持同样的意义。
 
 <table>
   <tr>
@@ -199,9 +200,9 @@ flowchart LR
   </tr>
 </table>
 
-它们不是游戏的动图。它们就是那些游戏，编译成 WebAssembly，和 Searcher、审稿台跑在
-同一个 MultiFinder 里。一台能装得下游戏的计算机才算计算机 —— 而这也正是那条写作路线
-可以信任它的原因。
+它们不是游戏的动图。它们就是那些游戏，编译成 WebAssembly，和 Searcher、审校台运行在
+同一个 MultiFinder 里。它们证明这套约束装得下真正的软件；写作路线的可信，则来自可见对象、
+明确保存，以及每一件真正发生过的事都有回执。
 
 ## 一张桌子。六个系统。
 
@@ -234,8 +235,8 @@ System 6.0.8 资源和实际观察到的 Macintosh 行为出发；后面几个�
 ## 在一个 1988 年的约束下建造
 
 ```text
-启动关键载荷            ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,945,420 字节
-两张 1.44 MB 软盘       ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  2,945,420 字节
+启动关键载荷            ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,797,963 字节
+两张 1.44 MB 软盘       ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  2,949,120 字节
 重型工具                按需懒加载，从第三张盘上来
 ```
 

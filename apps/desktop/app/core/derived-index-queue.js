@@ -90,6 +90,24 @@ function collectDerivedIndexSources() {
       title: file.name,
       content: file.body,
     }));
+  // A picture the writer had read becomes searchable material.
+  //
+  // The album already stores that reading on the picture record, and until now
+  // nothing ever read the field back: visionNotes was written in one place and
+  // consumed in none. So a photographed whiteboard sat in the project as an
+  // untitled thumbnail, and the one description of it that existed could not be
+  // found. A picture with no reading is still not indexed -- there is nothing
+  // to match on, and Scrapbook already says so in as many words.
+  (Array.isArray(imageAttachments) ? imageAttachments : [])
+    .filter((picture) => String(picture?.visionNotes || "").trim())
+    .forEach((picture) => derivedIndexAddSource(sources, {
+      projectId: picture.projectId,
+      sourceId: picture.id,
+      sourceKind: "picture",
+      sourceVersion: picture.visionUpdatedAt || picture.createdAt,
+      title: picture.name || picture.alt,
+      content: picture.visionNotes,
+    }));
   (Array.isArray(scraps) ? scraps : []).forEach((scrap) => derivedIndexAddSource(sources, {
     projectId: scrap.projectId,
     sourceId: scrap.id,

@@ -288,4 +288,26 @@ for (const [action, reason] of DELIBERATE_LITERALS) {
   test.assert(gated.has(action), `${action} still answers getActionAvailability() (${reason})`);
 }
 
+// A command name must not outlive its handler.
+//
+// model-roles.js lists the commands that cannot finish without a model, so the
+// menus can grey them out. When a command is deleted, a name left behind here
+// is a rule about something that no longer exists -- harmless to run, and
+// exactly the kind of stale reference that made 43 controls look alive for
+// three months. Five names survived one deletion pass because the pass covered
+// actions.js and window-manager.js and forgot this file.
+const modelRoles = read("app/core/model-roles.js");
+const registeredNames = new Set([
+  ...read("app/core/actions.js").matchAll(/"([a-z][a-z0-9-]{3,})":/g),
+].map((m) => m[1]));
+const orphanRoles = [...modelRoles.matchAll(/^\s*"([a-z][a-z0-9-]{3,})",/gm)]
+  .map((m) => m[1])
+  .filter((name) => !registeredNames.has(name));
+test.assert(
+  orphanRoles.length === 0,
+  orphanRoles.length === 0
+    ? "every command in the model-backed set still has a handler"
+    : `model-backed command names with no handler left: ${orphanRoles.join(", ")}`,
+);
+
 test.finish();

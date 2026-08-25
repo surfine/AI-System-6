@@ -31,7 +31,18 @@ const scriptDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 // In the private tree `--root dist/public-snapshot` verifies the built
 // payload. In the public repository itself that path does not exist; the
 // snapshot root is the tree under verification, so fall back to it.
-const root = explicitRoot && existsSync(explicitRoot) ? explicitRoot : scriptDir;
+// An explicit --root that does not exist used to fall through to scriptDir
+// silently, so in the private tree this gate verified the PRIVATE repo and then
+// failed on internal/ being present -- a guaranteed red that looked like a real
+// finding. Say what happened instead of verifying the wrong tree.
+if (explicitRoot && !existsSync(explicitRoot)) {
+  console.error(`verify-public-tree: --root ${explicitRoot} does not exist.`);
+  console.error("Build it first with `npm run snapshot:build` (it will ask for");
+  console.error("--accept-new if any file would become public for the first time),");
+  console.error("or run this inside the public repository with no --root.");
+  process.exit(2);
+}
+const root = explicitRoot || scriptDir;
 
 const failures = [];
 

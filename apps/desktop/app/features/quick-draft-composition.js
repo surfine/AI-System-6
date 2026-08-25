@@ -8,7 +8,7 @@
 // a model pass that breaks a sentinel fails the whole composition.
 
 function adjustmentLayersSnapshot(record = activeProjectQuickDraft({ create: false })?.record) {
-  return normalizeAdjustmentLayers(normalizeQuickDraftWorkspace(record?.workspace, record).adjustmentLayers);
+  return normalizeAdjustmentLayers(darkroomOf(record).adjustmentLayers);
 }
 
 function adjustmentLayerState(kind = "", record = activeProjectQuickDraft({ create: false })?.record) {
@@ -25,6 +25,25 @@ function adjustmentLayerLabelKey(kind = "") {
   return labels[kind] || "";
 }
 
+// FatBits is a zoom level of the grain view, not a fifth display mode: the
+// same canvas at a different magnification, the way MacPaint had it.
+// Three magnifications of one canvas, the way MacPaint had FatBits and
+// Photoshop has a zoom-out: the histogram is the whole draft in one picture,
+// grain is the draft at reading size, FatBits is one sentence per cell.
+let quickDraftGrainZoom = "grain";
+// The history brush's source state. Photoshop picks one and then paints from
+// it; so does this. Empty means the brush is put down.
+let quickDraftBrushSource = "";
+// The cells last drawn, so a commit can splice by offset instead of searching.
+let quickDraftFatBitsCells = [];
+// One previous text per edited sentence, keyed by what it reads now. It lives
+// only as long as the zoom session: FatBits is a magnifier, not a second
+// version store.
+const quickDraftFatBitsUndo = new Map();
+let quickDraftFatBitsBound = false;
+// One write at a time: the re-render a write causes must not start another.
+let quickDraftFatBitsWriting = false;
+let quickDraftFatBitsRuleRegistered = false;
 let quickDraftActiveLayerKind = "mingming";
 let quickDraftExpandedLayerKind = "";
 let quickDraftLayerLayoutObserver = null;
@@ -55,9 +74,9 @@ function quickDraftUsesLayerAccordion() {
 // layer so the rows behave like a Finder disclosure list without duplicating
 // controls or state.
 function syncQuickDraftLayerDetailPlacement() {
-  const stack = refs.form?.querySelector(".draft-desk-layer-stack");
+  const stack = quickDraftQuery(".draft-desk-layer-stack");
   const section = stack?.closest(".draft-desk-inspector-section");
-  const scope = refs.form?.querySelector(".draft-desk-layer-scope-row");
+  const scope = quickDraftQuery(".draft-desk-layer-scope-row");
   const detail = document.getElementById("quick-draft-layer-detail");
   const protect = section?.querySelector(".draft-desk-protect");
   if (!stack || !section || !scope || !detail || !protect) return;
@@ -106,7 +125,7 @@ function toggleQuickDraftLayerDetail() {
   const open = Boolean(target.hidden);
   target.hidden = !open;
   target.classList.toggle("is-editing", open);
-  refs.form?.querySelector("[data-quick-draft-layer-toggle]")
+  quickDraftQuery("[data-quick-draft-layer-toggle]")
     ?.setAttribute("aria-expanded", open ? "true" : "false");
   return open;
 }
@@ -117,7 +136,7 @@ function renderAdjustmentLayers(record = activeProjectQuickDraft({ create: false
   if (!layers.some((layer) => layer.kind === quickDraftActiveLayerKind)) {
     quickDraftActiveLayerKind = layers.find((layer) => layer.enabled)?.kind || layers[0]?.kind || "mingming";
   }
-  const stack = refs.form.querySelector(".draft-desk-layer-stack");
+  const stack = quickDraftQuery(".draft-desk-layer-stack");
   if (stack) {
     layers.forEach((layer) => {
       const wrapper = stack.querySelector(`[data-quick-draft-adjustment-layer="${layer.kind}"]`);
@@ -126,19 +145,19 @@ function renderAdjustmentLayers(record = activeProjectQuickDraft({ create: false
   }
   layers.forEach((layer, index) => {
     const layerLabel = t(adjustmentLayerLabelKey(layer.kind));
-    const checkbox = refs.form.querySelector(`[data-quick-draft-adjustment-enabled="${layer.kind}"]`);
-    const select = refs.form.querySelector(`[data-quick-draft-adjustment-strength="${layer.kind}"]`);
+    const checkbox = quickDraftQuery(`[data-quick-draft-adjustment-enabled="${layer.kind}"]`);
+    const select = quickDraftQuery(`[data-quick-draft-adjustment-strength="${layer.kind}"]`);
     if (checkbox) checkbox.checked = layer.enabled;
     if (select) select.value = String(layer.strength);
-    const order = refs.form.querySelector(`[data-quick-draft-layer-order="${layer.kind}"]`);
+    const order = quickDraftQuery(`[data-quick-draft-layer-order="${layer.kind}"]`);
     if (order) order.textContent = String(index + 1);
-    const wrapper = refs.form.querySelector(`[data-quick-draft-adjustment-layer="${layer.kind}"]`);
+    const wrapper = quickDraftQuery(`[data-quick-draft-adjustment-layer="${layer.kind}"]`);
     if (wrapper) {
       wrapper.classList.toggle("is-off", !layer.enabled);
       wrapper.classList.toggle("is-active-layer", layer.kind === quickDraftActiveLayerKind);
       wrapper.classList.toggle("is-expanded-layer", layer.kind === quickDraftExpandedLayerKind);
     }
-    const disclosure = refs.form.querySelector(`[data-quick-draft-layer-disclosure="${layer.kind}"]`);
+    const disclosure = quickDraftQuery(`[data-quick-draft-layer-disclosure="${layer.kind}"]`);
     if (disclosure) {
       const expanded = layer.kind === quickDraftExpandedLayerKind;
       disclosure.setAttribute("aria-expanded", expanded ? "true" : "false");
@@ -148,17 +167,17 @@ function renderAdjustmentLayers(record = activeProjectQuickDraft({ create: false
   });
   const active = layers.find((layer) => layer.kind === quickDraftActiveLayerKind) || layers[0];
   const summary = adjustmentMaskSummary(active?.mask);
-  const scope = refs.form.querySelector("[data-quick-draft-active-layer-scope]");
+  const scope = quickDraftQuery("[data-quick-draft-active-layer-scope]");
   if (scope) scope.textContent = t("quick_draft_layer_scope", summary || t("quick_draft_layer_scope_all"));
-  const mask = refs.form.querySelector("[data-quick-draft-active-layer-mask]");
+  const mask = quickDraftQuery("[data-quick-draft-active-layer-mask]");
   const activeLabel = t(adjustmentLayerLabelKey(active?.kind));
   if (mask) {
     mask.value = summary;
     mask.setAttribute("aria-label", t("quick_draft_layer_mask_aria", activeLabel));
   }
-  const description = refs.form.querySelector("[data-quick-draft-active-layer-description]");
+  const description = quickDraftQuery("[data-quick-draft-active-layer-description]");
   if (description) description.textContent = t(layerDescriptionKey(active?.kind));
-  refs.form.querySelectorAll("[data-quick-draft-active-layer-move]").forEach((button) => {
+  quickDraftQueryAll("[data-quick-draft-active-layer-move]").forEach((button) => {
     button.dataset.quickDraftActiveLayerMove = active?.kind || "";
     const index = layers.findIndex((layer) => layer.kind === active?.kind);
     button.disabled = Number(button.dataset.direction) < 0 ? index <= 0 : index >= layers.length - 1;
@@ -169,7 +188,7 @@ function renderAdjustmentLayers(record = activeProjectQuickDraft({ create: false
       activeLabel
     ));
   });
-  const scopeToggle = refs.form.querySelector("[data-quick-draft-layer-toggle]");
+  const scopeToggle = quickDraftQuery("[data-quick-draft-layer-toggle]");
   const detail = document.getElementById("quick-draft-layer-detail");
   if (scopeToggle && detail) {
     scopeToggle.setAttribute("aria-expanded", detail.classList.contains("is-editing") ? "true" : "false");
@@ -182,9 +201,9 @@ function renderAdjustmentLayers(record = activeProjectQuickDraft({ create: false
 function syncQuickDraftMobileAdjustmentActions(record = activeProjectQuickDraft({ create: false })?.record) {
   const normalized = normalizeQuickDraftRecord(record);
   const hasBody = Boolean(String(refs.draft?.value || normalized.workspace.body || "").trim());
-  const enabled = normalized.workspace.adjustmentLayers.some((layer) => layer.enabled);
-  const previewButton = refs.form?.querySelector("[data-quick-draft-adjustment-apply]");
-  const developButton = refs.form?.querySelector("[data-quick-draft-adjustment-develop]");
+  const enabled = darkroomOf(record).adjustmentLayers.some((layer) => layer.enabled);
+  const previewButton = quickDraftQuery("[data-quick-draft-adjustment-apply]");
+  const developButton = quickDraftQuery("[data-quick-draft-adjustment-develop]");
   if (previewButton) previewButton.disabled = !hasBody || !enabled || !quickDraftModelAvailable();
   if (developButton) developButton.disabled = !hasBody || !currentCompositeState(normalized).ready;
 }
@@ -246,32 +265,53 @@ function refreshQuickDraftPreviewIfOpen() {
 // sees the protected bytes, and any violation fails the composition.
 
 function protectedRangesSnapshot(record = activeProjectQuickDraft({ create: false })?.record) {
-  return normalizeAdjustmentLayerMask(normalizeQuickDraftWorkspace(record?.workspace, record).protectedRanges);
+  return normalizeAdjustmentLayerMask(darkroomOf(record).protectedRanges);
 }
 
 function renderProtectedRangeControls(record = activeProjectQuickDraft({ create: false })?.record) {
-  const input = refs.form?.querySelector("[data-quick-draft-protected-ranges]");
+  const input = quickDraftQuery("[data-quick-draft-protected-ranges]");
   const ranges = protectedRangesSnapshot(record);
   if (input) input.value = adjustmentMaskSummary(ranges);
   const lines = ranges.reduce((total, range) => total + Math.max(0, (range.end - range.start) + 1), 0);
-  const summary = refs.form?.querySelector("[data-quick-draft-protected-summary]");
+  const summary = quickDraftQuery("[data-quick-draft-protected-summary]");
   if (summary) summary.textContent = lines
     ? t("quick_draft_protected_summary", lines)
     : t("quick_draft_protected_empty");
 }
 
+// The lasso, not the marquee: the range shrink-wraps to the lines the drag
+// actually caught text on. The rule itself is pure and lives with the rest of
+// the protection data in app/core/protected-ranges.js, so a test can execute
+// it without a textarea.
+// Two named reasons a line may not be reworded, never merged into one number:
+// the writer locked it, or it is quoted from a source. The writer's count keeps
+// meaning what the writer locked; the citation count says the rest out loud.
+function citationRangesSnapshot(record = activeProjectQuickDraft({ create: false })?.record) {
+  const workspace = normalizeQuickDraftWorkspace(record?.workspace, record);
+  const ids = (workspace.materials || []).map((material) => String(material?.id || "")).filter(Boolean);
+  if (!ids.length) return [];
+  const body = String(refs.draft?.value || workspace.body || "");
+  return window.AISystem6ProtectedRanges?.citationLineRanges(body, ids) || [];
+}
+
+// What a model pass may not touch: the writer's locks plus every citation.
+// Every AI write path asks this one function, so a quotation cannot be quietly
+// reworded by whichever path forgot to add it.
+function modelProtectedRanges(record = activeProjectQuickDraft({ create: false })?.record) {
+  return normalizeAdjustmentLayerMask([
+    ...protectedRangesSnapshot(record),
+    ...citationRangesSnapshot(record).map((range) => ({ start: range.start, end: range.end })),
+  ]);
+}
+
 function selectionLineRanges() {
   const el = refs.draft;
   if (!el) return [];
-  const value = String(el.value || "");
-  if (!value) return [];
-  const start = Math.min(Number(el.selectionStart) || 0, value.length);
-  const end = Math.max(Number(el.selectionEnd) || start, start);
-  const before = value.slice(0, start);
-  const selected = value.slice(start, end).replace(/\n$/, "");
-  const startLine = before.split(/\n/).length;
-  const endLine = startLine + Math.max(0, selected.split(/\n/).length - 1);
-  return [{ start: startLine, end: endLine }];
+  return window.AISystem6ProtectedRanges?.lassoLineRanges(
+    String(el.value || ""),
+    Number(el.selectionStart) || 0,
+    Number(el.selectionEnd) || 0
+  ) || [];
 }
 
 async function protectSelectionFromTextarea() {
@@ -470,7 +510,7 @@ let quickDraftLastCompositeKey = "";
 function quickDraftCompositeSource(record = activeProjectQuickDraft({ create: false })?.record) {
   const workspace = normalizeQuickDraftWorkspace(record?.workspace, record);
   return hasRecordedNegative(record)
-    ? workspace.composition.negative
+    ? darkroomOf(record).negative
     : String(refs.draft?.value || workspace.body || "");
 }
 
@@ -497,8 +537,9 @@ function currentCompositeState(record = activeProjectQuickDraft({ create: false 
   if (!layers.length) return { text: body, ready: true, stale: false };
   const source = quickDraftCompositeSource(record);
   const key = composeCacheKey({ source, layers, protectedRanges: protectedRangesSnapshot(record), ...compositionCacheContext(record) });
-  if (workspace.composition.currentKey === key && workspace.composition.composite) {
-    return { text: workspace.composition.composite, ready: true, stale: false };
+  const darkroom = darkroomOf(record);
+  if (darkroom.currentKey === key && darkroom.composite) {
+    return { text: darkroom.composite, ready: true, stale: false };
   }
   if (quickDraftCompositeCache.has(key)) {
     return { text: quickDraftCompositeCache.get(key), ready: true, stale: false };
@@ -543,7 +584,7 @@ function buildCompositionPrompt({ sourceText = "", sentinels = [], layers = [] }
     `稿件类型：${formatText}`,
     `目标长度：${lengthText}`,
   ].filter(Boolean).join("\n");
-  const protectedRanges = protectedRangesSnapshot();
+  const protectedRanges = modelProtectedRanges();
   const layerInstructions = layers
     .map((layer) => adjustmentLayerCompositionInstruction(layer, zh, protectedRanges))
     .filter(Boolean)
@@ -665,7 +706,7 @@ async function applyAdjustmentLayers() {
     }
     const currentRecord = task.currentRecord();
     const committed = await task.commit({ workspace: { composition: {
-      ...currentRecord.workspace.composition,
+      ...darkroomOf(currentRecord),
       currentKey: quickDraftLastCompositeKey,
       composite: composed.text,
       generatedAt: new Date().toISOString(),
@@ -750,11 +791,11 @@ async function developAdjustmentLayers() {
       reason: "before-develop",
       source: "quick-draft",
     });
-    patch.workspace.versions = [...slot.record.workspace.versions, version].slice(-100);
+    patch.workspace.versions = [...darkroomOf(slot.record).versions, version].slice(-100);
   }
   if (!hasRecordedNegative(slot.record)) {
     patch.workspace.composition = {
-      ...slot.record.workspace.composition,
+      ...darkroomOf(slot.record),
       negative: previousBody,
       negativeUpdatedAt: new Date().toISOString(),
     };
@@ -774,6 +815,8 @@ async function developAdjustmentLayers() {
     }),
     composite,
     generatedAt: new Date().toISOString(),
+    modelDelivered: composite,
+    modelDeliveredAt: new Date().toISOString(),
   };
   refs.draft.value = composite;
   quickDraftLastComposite = "";
@@ -846,15 +889,15 @@ function cleanMingmingQuickDraftBody(markdown = "") {
 
 function hasRecordedNegative(record = activeProjectQuickDraft({ create: false })?.record) {
   const workspace = normalizeQuickDraftWorkspace(record?.workspace, record);
-  return Boolean(workspace.composition?.negativeUpdatedAt) || Boolean(humanAnchorSnapshot(record));
+  return Boolean(darkroomOf(record).negativeUpdatedAt) || Boolean(humanAnchorSnapshot(record));
 }
 
 function grainVersionChain(record) {
   const workspace = normalizeQuickDraftWorkspace(record?.workspace, record);
   return grainChainFromRecordParts({
-    humanAnchor: workspace.composition?.negative,
-    humanAnchorUpdatedAt: workspace.composition?.negativeUpdatedAt,
-    dumps: (workspace.versions || []).map((entry) => entry.body),
+    humanAnchor: darkroomOf(record).negative,
+    humanAnchorUpdatedAt: darkroomOf(record).negativeUpdatedAt,
+    dumps: (darkroomOf(record).versions || []).map((entry) => entry.body),
   });
 }
 
@@ -870,7 +913,12 @@ function quickDraftGrainRuns(anchorText = "", bodyText = "") {
 }
 
 function quickDraftGrainReport(record = activeProjectQuickDraft({ create: false })?.record) {
-  const body = String(record ? normalizeQuickDraftWorkspace(record.workspace, record).body : refs.draft?.value || "");
+  // The views read whatever the darkroom has as its subject. Usually that is
+  // the draft in front of the writer; when it is another document, the same
+  // instruments read that one instead.
+  const body = lightroomIsReadOnly()
+    ? lightroomBodyText()
+    : String(record ? normalizeQuickDraftWorkspace(record.workspace, record).body : refs.draft?.value || "");
   const chain = grainVersionChain(record);
   const model = grainBodyModel(body);
   const empty = {
@@ -880,7 +928,8 @@ function quickDraftGrainReport(record = activeProjectQuickDraft({ create: false 
   if (!chain.versions.length) {
     return { ...empty, runs: [{ text: body, generation: 0, source: "author" }], totalChars: grainVisibleLength(body) };
   }
-  const runs = grainRunsFromGenerations(model, grainGenerations(model, chain));
+  const delivered = darkroomOf(record).modelDelivered || "";
+  const runs = grainRunsFromGenerations(model, grainGenerations(model, chain, { modelDelivered: delivered }));
   let author = 0;
   let rewritten = 0;
   let deepest = 0;
@@ -949,6 +998,10 @@ function renderQuickDraftGrain() {
     .map((entry) => `${escapeHtml(entry.label)} ${escapeHtml(adjustmentMaskSummary(entry.ranges))}`)
     .join(" · ");
   const protectedSummary = adjustmentMaskSummary(protectedRangesSnapshot());
+  const citationRanges = citationRangesSnapshot();
+  const citationSummary = citationRanges.length
+    ? `${adjustmentMaskSummary(citationRanges)} · ${[...new Set(citationRanges.map((range) => range.sourceId))].join(" ")}`
+    : "";
   // Original / Current / Difference: the grain readout states how compressed
   // the current text is (author ratio + model characters), what may have been
   // squeezed out (the difference between the negative and the body), and how
@@ -966,6 +1019,9 @@ function renderQuickDraftGrain() {
     protectedSummary
       ? `<span><b>${escapeHtml(t("quick_draft_grain_protected"))}</b> ${protectedSummary}</span>`
       : "",
+    citationSummary
+      ? `<span><b>${escapeHtml(t("quick_draft_grain_cited"))}</b> ${citationSummary}</span>`
+      : "",
   ].join("");
   const legend = [
     `<span><i class="quick-draft-grain-swatch is-author"></i>${escapeHtml(t("quick_draft_grain_legend_author"))}</span>`,
@@ -977,12 +1033,349 @@ function renderQuickDraftGrain() {
       ? `<span><i class="quick-draft-grain-swatch is-protected"></i>${escapeHtml(t("quick_draft_grain_legend_protected"))}</span>`
       : "",
   ].join("");
-  refs.preview.innerHTML = [
-    `<div class="quick-draft-grain-readout">${readout}</div>`,
-    note,
-    `<pre class="quick-draft-grain-body">${body}</pre>`,
-    `<div class="quick-draft-grain-legend">${legend}</div>`,
+  const zoomButton = (zoom, label, balloon) => [
+    `<button type="button" class="btn mini-btn${quickDraftGrainZoom === zoom ? " is-active" : ""}"`,
+    ` data-quick-draft-grain-zoom="${zoom}" aria-pressed="${quickDraftGrainZoom === zoom ? "true" : "false"}"`,
+    ` data-balloon-help="${balloon}">${escapeHtml(label)}</button>`,
   ].join("");
+  const zoom = [
+    `<span class="quick-draft-grain-zoom">`,
+    zoomButton("histogram", t("quick_draft_histogram"), "balloon_qd_histogram"),
+    zoomButton("fatbits", "FatBits", "balloon_qd_fatbits"),
+    `</span>`,
+  ].join("");
+  const canvas = quickDraftGrainZoom === "fatbits"
+    ? renderFatBitsCells(report, protectedLines)
+    : quickDraftGrainZoom === "histogram"
+      ? renderGrainHistogram(report)
+      : `<pre class="quick-draft-grain-body">${body}</pre>`;
+  refs.preview.innerHTML = [
+    `<div class="quick-draft-grain-readout">${readout}${zoom}</div>`,
+    note,
+    canvas,
+    quickDraftGrainZoom === "histogram" ? "" : `<div class="quick-draft-grain-legend">${legend}</div>`,
+  ].join("");
+}
+
+// Zoomed out until the whole draft is one picture. Two charts on one axis: the
+// writer's own negative, and the body now. No threshold and no warning — the
+// comparison is the evidence, and the writer is the one who reads it.
+function grainHistogramChart(histogram, label, peak) {
+  const bars = histogram.buckets.map((bucket) => {
+    const height = peak ? Math.round((bucket.total / peak) * 100) : 0;
+    const model = bucket.total ? Math.round((bucket.model / bucket.total) * 100) : 0;
+    const range = bucket.to ? `${bucket.from}\u2013${bucket.to}` : `${bucket.from}+`;
+    return [
+      `<li class="quick-draft-histogram-bar">`,
+      `<span class="quick-draft-histogram-column" style="--grain-bar-height:${height}%">`,
+      model ? `<span class="quick-draft-histogram-model" style="--grain-bar-model:${model}%"></span>` : "",
+      `</span>`,
+      `<span class="quick-draft-histogram-tick">${range}</span>`,
+      `</li>`,
+    ].join("");
+  }).join("");
+  const summary = histogram.count
+    ? t("quick_draft_histogram_summary", histogram.count, histogram.median, histogram.spread)
+    : t("quick_draft_histogram_none");
+  return [
+    `<figure class="quick-draft-histogram">`,
+    `<figcaption>${escapeHtml(label)}</figcaption>`,
+    `<ol class="quick-draft-histogram-bars">${bars}</ol>`,
+    `<p class="quick-draft-histogram-summary">${escapeHtml(summary)}</p>`,
+    `</figure>`,
+  ].join("");
+}
+
+function renderGrainHistogram(report) {
+  const negativeText = darkroomOf().negative || "";
+  const now = grainHistogram(grainSentenceCells(report.runs));
+  const negative = negativeText.trim() ? grainHistogramForText(negativeText) : null;
+  const peak = Math.max(now.peak, negative?.peak || 0);
+  return [
+    `<div class="quick-draft-histograms">`,
+    negative ? grainHistogramChart(negative, t("quick_draft_histogram_negative"), peak) : "",
+    grainHistogramChart(now, t("quick_draft_histogram_now"), peak),
+    `</div>`,
+    `<p class="quick-draft-grain-note">${escapeHtml(t("quick_draft_histogram_axis"))}</p>`,
+  ].join("");
+}
+
+// The target the writer already chose, read in the unit it was chosen in.
+// A words target counts words; a duration target counts seconds — the frame
+// never converts one into the other behind the writer's back.
+function quickDraftCanvasTarget() {
+  const raw = String(refs.duration?.value || "").trim();
+  const words = /^([0-9]+)w$/.exec(raw);
+  if (words) {
+    return {
+      kind: "words",
+      target: Number(words[1]) || 0,
+      measure: (text) => (typeof countTextWords === "function" ? countTextWords(text) : grainVisibleLength(text)),
+    };
+  }
+  const minutes = /^([0-9]+)m$/.exec(raw);
+  if (minutes) {
+    return {
+      kind: "duration",
+      target: (Number(minutes[1]) || 0) * 60,
+      measure: (text) => (typeof estimateVoiceoverSeconds === "function"
+        ? estimateVoiceoverSeconds(text)
+        : estimateBilibiliVoiceoverSeconds(text)),
+    };
+  }
+  return { kind: "", target: 0, measure: grainVisibleLength };
+}
+
+function canvasFrameSummary(frame, kind) {
+  if (!frame.target) return "";
+  const unit = kind === "duration" ? t("quick_draft_canvas_seconds") : t("quick_draft_canvas_words");
+  return frame.over
+    ? t("quick_draft_canvas_over", frame.total, frame.target, unit, frame.over)
+    : t("quick_draft_canvas_fits", frame.total, frame.target, unit);
+}
+
+// The brush sources are the version chain the Versions list already shows, by
+// the same ids, so "restore this sentence" and "restore the draft" never mean
+// two different histories.
+function brushSourceOptions(record = activeProjectQuickDraft({ create: false })?.record) {
+  const workspace = normalizeQuickDraftWorkspace(record?.workspace, record);
+  const options = [];
+  const darkroom = darkroomOf(record);
+  if (String(darkroom.negativeUpdatedAt || "")) {
+    options.push({ id: "negative", label: t("quick_draft_negative"), body: darkroom.negative || "" });
+  }
+  [...(darkroom.versions || [])].reverse().slice(0, 12).forEach((entry) => {
+    options.push({ id: entry.id, label: textExcerpt(entry.body, 18) || t("quick_draft_versions"), body: entry.body });
+  });
+  return options;
+}
+
+function brushSourceText(record = activeProjectQuickDraft({ create: false })?.record) {
+  if (!quickDraftBrushSource) return "";
+  return brushSourceOptions(record).find((option) => option.id === quickDraftBrushSource)?.body || "";
+}
+
+function renderBrushPicker(record = activeProjectQuickDraft({ create: false })?.record) {
+  const options = brushSourceOptions(record);
+  if (!options.length) return "";
+  const items = [`<option value="">${escapeHtml(t("quick_draft_brush_off"))}</option>`]
+    .concat(options.map((option) => (
+      `<option value="${escapeHtml(option.id)}"${option.id === quickDraftBrushSource ? " selected" : ""}>${escapeHtml(option.label)}</option>`
+    )))
+    .join("");
+  return [
+    `<div class="quick-draft-brush-picker">`,
+    `<label for="quick-draft-brush-source">${escapeHtml(t("quick_draft_brush_source"))}</label>`,
+    `<div class="select-wrap"><select id="quick-draft-brush-source" data-quick-draft-brush-source>${items}</select></div>`,
+    `</div>`,
+  ].join("");
+}
+
+// One sentence, one cell. The badge is the deepest generation in the cell; the
+// parts inside keep their own colour so a sentence whose second clause alone
+// was rewritten does not read as wholly the model's.
+function renderFatBitsCells(report, protectedLines = new Set()) {
+  const cells = grainSentenceCells(report.runs);
+  quickDraftFatBitsCells = cells;
+  if (!cells.length) return `<p class="quick-draft-grain-note">${escapeHtml(t("quick_draft_grain_empty"))}</p>`;
+  const source = brushSourceText();
+  const { kind: canvasKind, target: canvasTarget, measure: canvasMeasure } = quickDraftCanvasTarget();
+  const frame = grainCanvasFrame(cells, canvasTarget, canvasMeasure);
+  const citations = citationRangesSnapshot();
+  const citedLines = new Map();
+  citations.forEach((range) => {
+    for (let line = range.start; line <= range.end; line += 1) citedLines.set(line, range.sourceId);
+  });
+  const rows = cells.map((cell, index) => {
+    const inner = cell.parts
+      .map((part) => `<span class="${part.generation ? "quick-draft-grain-model" : "quick-draft-grain-author"}">${escapeHtml(part.text)}</span>`)
+      .join("");
+    const badge = cell.generation
+      ? `<i class="quick-draft-grain-generation">&times;${cell.generation}</i>`
+      : "";
+    const locked = protectedLines.has(cell.line);
+    // Protection is a ban on the model, not on the writer, so a locked cell
+    // stays editable and keeps the lock mark that says the model cannot touch it.
+    // The brush only appears where there is really something to take back: an
+    // ancestor that was found and that differs. Where none was found the cell
+    // simply has no brush, which says "no ancestor here" without claiming one.
+    // A quoted sentence is not the writer's to repaint from an older draft
+    // either: it belongs to its source.
+    const citedBy = citedLines.get(cell.line) || "";
+    const ancestor = source && !citedBy ? grainAncestorSentence(cell.text, source) : null;
+    const brush = ancestor && !ancestor.unchanged
+      ? `<button type="button" class="quick-draft-fatbit-brush" data-fatbit-brush="${index}" title="${escapeHtml(ancestor.text)}" aria-label="${escapeHtml(t("quick_draft_brush_cell"))}">&#9678;</button>`
+      : "";
+    const undo = quickDraftFatBitsUndo.has(cell.text)
+      ? `<button type="button" class="quick-draft-fatbit-undo" data-fatbit-revert="${index}" data-i18n-aria-label="quick_draft_fatbits_revert" aria-label="${escapeHtml(t("quick_draft_fatbits_revert"))}">&#8617;</button>`
+      : "";
+    const outside = frame.target && !frame.marks[index]?.fits;
+    const edge = frame.edge === index;
+    return [
+      `<li class="quick-draft-fatbit${locked ? " is-protected" : ""}${outside ? " is-outside-canvas" : ""}${edge ? " is-canvas-edge" : ""}" data-fatbit-line="${cell.line}">`,
+      `<span class="quick-draft-fatbit-index">${index + 1}</span>`,
+      `<span class="quick-draft-fatbit-text"${lightroomIsReadOnly() ? "" : ' contenteditable="plaintext-only" role="textbox" data-requires-write'} spellcheck="false" data-fatbit-cell="${index}">${inner}</span>`,
+      `<span class="quick-draft-fatbit-badge">${citedBy ? `<i class="quick-draft-fatbit-cite">${escapeHtml(citedBy)}</i>` : ""}${brush}${undo}${locked ? `<i class="quick-draft-fatbit-lock" aria-hidden="true"></i>` : ""}${badge}</span>`,
+      `</li>`,
+    ].join("");
+  });
+  const canvasNote = frame.target
+    ? `<p class="quick-draft-canvas-note">${escapeHtml(canvasFrameSummary(frame, canvasKind))}</p>`
+    : "";
+  return `${renderBrushPicker()}${canvasNote}<ol class="quick-draft-fatbits">${rows.join("")}</ol>`;
+}
+
+// While the zoom is open the cells are the one editable owner of the body. The
+// lock is registered as a reason rather than written onto the textarea: the
+// write lease owns that property, and two owners means the last one to run
+// wins — the trap the writing route already paid for once.
+function fatBitsReadOnlyRule(element) {
+  return quickDraftGrainZoom === "fatbits" && element === refs.draft;
+}
+
+function bindFatBitsHandlers() {
+  if (quickDraftFatBitsBound || !refs.preview) return;
+  quickDraftFatBitsBound = true;
+  refs.preview.addEventListener("keydown", (event) => {
+    const cell = event.target.closest?.("[data-fatbit-cell]");
+    if (!cell) return;
+    if (event.key === "Escape") {
+      cell.textContent = quickDraftFatBitsCells[Number(cell.dataset.fatbitCell)]?.text || cell.textContent;
+      cell.blur();
+      return;
+    }
+    if (event.key !== "Enter" || event.shiftKey || event.isComposing) return;
+    // A sentence cell holds one sentence. Splitting the draft is the body
+    // view's job, so Enter commits and moves on rather than making a line.
+    event.preventDefault();
+    const next = cell.closest("li")?.nextElementSibling?.querySelector("[data-fatbit-cell]");
+    commitFatBitsCell(cell).then(() => {
+      const moved = next && next.isConnected
+        ? next
+        : refs.preview?.querySelectorAll("[data-fatbit-cell]")[Number(cell.dataset.fatbitCell) + 1];
+      moved?.focus?.();
+    });
+  });
+  refs.preview.addEventListener("focusout", (event) => {
+    const cell = event.target.closest?.("[data-fatbit-cell]");
+    if (cell) commitFatBitsCell(cell);
+  });
+  refs.preview.addEventListener("change", (event) => {
+    const picker = event.target.closest?.("[data-quick-draft-brush-source]");
+    if (!picker) return;
+    quickDraftBrushSource = String(picker.value || "");
+    renderQuickDraftGrain();
+  });
+  refs.preview.addEventListener("click", (event) => {
+    const brush = event.target.closest?.("[data-fatbit-brush]");
+    if (brush) {
+      const cell = quickDraftFatBitsCells[Number(brush.dataset.fatbitBrush)];
+      const ancestor = cell ? grainAncestorSentence(cell.text, brushSourceText()) : null;
+      if (cell && ancestor && !ancestor.unchanged) {
+        quickDraftFatBitsUndo.set(ancestor.text, cell.text);
+        writeFatBitsCell(cell, ancestor.text);
+      }
+      return;
+    }
+    const revert = event.target.closest?.("[data-fatbit-revert]");
+    if (!revert) return;
+    const cell = quickDraftFatBitsCells[Number(revert.dataset.fatbitRevert)];
+    const previous = cell ? quickDraftFatBitsUndo.get(cell.text) : "";
+    if (!cell || typeof previous !== "string") return;
+    quickDraftFatBitsUndo.delete(cell.text);
+    writeFatBitsCell(cell, previous);
+  });
+}
+
+function fatBitsCellText(element) {
+  return String(element?.textContent || "").replace(/\s+/g, " ").trim();
+}
+
+// Splice by offset, never by search: a draft that repeats a sentence would
+// otherwise have the wrong one rewritten.
+async function writeFatBitsCell(cell, nextText) {
+  if (quickDraftFatBitsWriting) return false;
+  const body = String(refs.draft?.value || "");
+  if (!cell || body.slice(cell.start, cell.end) !== cell.text) {
+    renderQuickDraftGrain();
+    return false;
+  }
+  let head = body.slice(0, cell.start);
+  let tail = body.slice(cell.end);
+  let shift = null;
+  if (!nextText) {
+    // An emptied cell removes its sentence. If that leaves the line blank the
+    // line goes too, and every protected range and layer mask below it moves up
+    // with it — the same splice report the paste takeover files.
+    const lineStart = head.lastIndexOf("\n") + 1;
+    const lineEndOffset = tail.indexOf("\n");
+    const restOfLine = lineEndOffset < 0 ? tail : tail.slice(0, lineEndOffset);
+    if (!head.slice(lineStart).trim() && !restOfLine.trim() && lineEndOffset >= 0) {
+      head = head.slice(0, Math.max(0, lineStart - 1));
+      tail = tail.slice(lineEndOffset);
+      shift = { atLine: cell.line, delta: -1 };
+    }
+  }
+  const nextBody = `${head}${nextText}${tail}`;
+  if (nextBody === body) return false;
+  if (refs.draft) refs.draft.value = nextBody;
+  const patch = { body: nextBody };
+  if (shift) {
+    const runtime = window.AISystem6PasteMarkdown;
+    const ranges = protectedRangesSnapshot();
+    const layers = adjustmentLayersSnapshot();
+    if (runtime && ranges.length) patch.protectedRanges = normalizeAdjustmentLayerMask(runtime.pasteShiftLineRanges(ranges, shift));
+    if (runtime && layers.some((layer) => (layer.mask || []).length)) {
+      patch.adjustmentLayers = layers.map((layer) => (
+        (layer.mask || []).length
+          ? { ...layer, mask: normalizeAdjustmentLayerMask(runtime.pasteShiftLineRanges(layer.mask, shift)) }
+          : layer
+      ));
+    }
+  }
+  quickDraftFatBitsWriting = true;
+  try {
+    const committed = await commitQuickDraft({ workspace: patch }, { captureForm: false });
+    if (!committed.ok) {
+      if (refs.draft) refs.draft.value = body;
+      setQuickDraftStatus(t("quick_draft_save_failed"));
+      renderQuickDraftGrain();
+      return false;
+    }
+    renderQuickDraft(committed.record);
+    return true;
+  } finally {
+    quickDraftFatBitsWriting = false;
+  }
+}
+
+async function commitFatBitsCell(element) {
+  // A commit re-renders, and replacing the list detaches whatever cell had
+  // focus — which still fires focusout, from a node whose index now points at
+  // a different sentence. A detached cell has nothing left to say: its text is
+  // already in the body. Without this a re-render deletes the next sentence.
+  if (!element || !element.isConnected || quickDraftFatBitsWriting) return false;
+  const index = Number(element?.dataset?.fatbitCell);
+  const cell = quickDraftFatBitsCells[index];
+  if (!cell) return false;
+  const nextText = fatBitsCellText(element);
+  if (nextText === cell.text) return false;
+  if (nextText) quickDraftFatBitsUndo.set(nextText, cell.text);
+  return writeFatBitsCell(cell, nextText);
+}
+
+function setQuickDraftGrainZoom(zoom = "grain") {
+  const next = zoom === "fatbits" || zoom === "histogram" ? zoom : "grain";
+  quickDraftGrainZoom = quickDraftGrainZoom === next ? "grain" : next;
+  if (!quickDraftFatBitsRuleRegistered && window.AISystem6WriteLease?.registerReadOnlyRule) {
+    window.AISystem6WriteLease.registerReadOnlyRule(fatBitsReadOnlyRule);
+    quickDraftFatBitsRuleRegistered = true;
+  }
+  if (quickDraftGrainZoom !== "fatbits") quickDraftFatBitsUndo.clear();
+  bindFatBitsHandlers();
+  renderQuickDraftGrain();
+  window.AISystem6WriteLease?.syncReadOnlySurface?.();
+  return quickDraftGrainZoom;
 }
 
 async function runAdjustmentCommand(kind = "") {
@@ -1030,6 +1423,7 @@ window.AISystem6QuickDraftComposition = Object.freeze({
   quickDraftCompositeSource,
   renderAdjustmentLayers,
   renderQuickDraftGrain,
+  setQuickDraftGrainZoom,
   renderQuickDraftReadingView,
   renderProtectedRangeControls,
   runAdjustmentCommand,

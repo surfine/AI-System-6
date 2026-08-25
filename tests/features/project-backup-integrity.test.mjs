@@ -126,7 +126,7 @@ test.assert(
 );
 
 const v3Bundle = await backup.attachIntegrity(legacyBundle);
-test.assert(v3Bundle.formatVersion === 4, "new exports use the current format v4");
+test.assert(v3Bundle.formatVersion === 6, "new exports use the current format v6");
 test.assert(
   /^[a-f0-9]{64}$/.test(v3Bundle.integrity.contentHash),
   "new exports carry a SHA-256 content hash"
@@ -234,7 +234,7 @@ test.assert(
   "v2 reference chunks point at the imported reference and project"
 );
 const exportedV2 = await backup.attachIntegrity(importedV2);
-test.assert(exportedV2.formatVersion === 4, "imported v2 re-exports as the current v4 format");
+test.assert(exportedV2.formatVersion === 6, "imported v2 re-exports as the current v6 format");
 test.assert(
   Array.isArray(exportedV2.documentRevisions) && exportedV2.documentRevisions.length === 0,
   "the v3 export of an imported v2 backup carries an empty documentRevisions array"
@@ -555,10 +555,10 @@ sceneBundle.workingSession = {
   },
 };
 const sceneExport = await backup.attachIntegrity(sceneBundle);
-test.assert(sceneExport.formatVersion === 4, "a backup carrying a desktop scene exports as v4");
+test.assert(sceneExport.formatVersion === 6, "a backup carrying a desktop scene exports at the current version");
 const sceneValidation = backup.validateBackup(sceneExport);
 if (!sceneValidation.valid) console.error(sceneValidation.errors.join("\n"));
-test.assert(sceneValidation.valid, "a v4 bundle with a desktop scene satisfies the schema");
+test.assert(sceneValidation.valid, "a bundle with a desktop scene satisfies the schema");
 test.assert(
   (await backup.verifyIntegrity(sceneExport)).valid,
   "the desktop scene is covered by the SHA-256 content hash"
@@ -689,6 +689,123 @@ test.assertIncludes(
   exportImportSource,
   "AISystem6StorageTransactions.runTransaction",
   "all imported stores share the transaction completion contract"
+);
+
+// --- v5: the darkroom travels with the disk --------------------------------
+//
+// 文字亮室's record — the negative, the adjustment stack, the writer's locks
+// and the version chain — lived in keyval, outside the seven array stores a
+// backup carried. Export-then-restore therefore lost every one of them and
+// said nothing. It is user work, so it belongs in the backup, and this is the
+// contract that stops it being dropped again.
+
+const darkroomBundle = structuredClone(legacyBundle);
+darkroomBundle.darkroomRecords = [
+  {
+    schemaVersion: 1,
+    projectId: "project-old",
+    documentId: "file-child",
+    negative: "The sentence as the writer first wrote it.",
+    composite: "The sentence after one pass.",
+    adjustmentLayers: [{ kind: "mingming", enabled: true }],
+    protectedRanges: [{ start: 0, end: 8 }],
+    versions: [{ key: "v1", text: "The sentence as the writer first wrote it." }],
+    updatedAt: "2026-08-21T00:00:00.000Z",
+  },
+];
+const darkroomExport = await backup.attachIntegrity(darkroomBundle);
+test.assert(darkroomExport.formatVersion === 6, "a backup carrying a darkroom exports as v6");
+const darkroomValidation = backup.validateBackup(darkroomExport);
+if (!darkroomValidation.valid) console.error(darkroomValidation.errors.join("\n"));
+test.assert(darkroomValidation.valid, "a v6 bundle with a darkroom record satisfies the schema");
+test.assert(
+  (await backup.verifyIntegrity(darkroomExport)).valid,
+  "the darkroom record is covered by the SHA-256 content hash"
+);
+test.assert(
+  darkroomExport.counts.darkroomRecords === 1,
+  "the darkroom records are counted like every other durable collection"
+);
+
+// A disk where nothing was ever developed still says so explicitly, so
+// "no darkroom" and "the exporter forgot the field" cannot look the same.
+test.assert(
+  Array.isArray(sceneless.darkroomRecords) && sceneless.darkroomRecords.length === 0,
+  "a disk with no darkroom exports an explicit empty set"
+);
+
+// A record pointing at a file this backup does not carry would restore a
+// darkroom belonging to nothing. That is a broken backup, not a warning.
+const darkroomOrphan = structuredClone(darkroomExport);
+darkroomOrphan.darkroomRecords[0].documentId = "file-that-is-gone";
+test.assert(
+  !backup.validateBackup(darkroomOrphan).valid,
+  "a darkroom record whose document is missing is rejected"
+);
+
+// One record per document is the whole identity model — the document IS the
+// key — so two records for one document is a corrupt bundle.
+const darkroomDuplicate = structuredClone(darkroomExport);
+darkroomDuplicate.darkroomRecords.push(structuredClone(darkroomExport.darkroomRecords[0]));
+test.assert(
+  !backup.validateBackup(darkroomDuplicate).valid,
+  "two darkroom records for one document are rejected"
+);
+
+// Older backups predate the field entirely and must stay importable.
+test.assert(
+  backup.validateBackup({ ...v2Fixture }).valid,
+  "v2 backups with no darkroom field stay importable"
+);
+
+// On import the record follows its document into the new id space. It has no
+// id of its own, so the two pointers are the whole remap.
+const importedDarkroom = backup.remapBackup(darkroomExport);
+const darkroomChild = importedDarkroom.files.find((file) => file.name === "Child Chat");
+test.assert(
+  importedDarkroom.darkroomRecords.length === 1
+    && importedDarkroom.darkroomRecords[0].documentId === darkroomChild.id,
+  "an imported darkroom record points at the remapped document"
+);
+test.assert(
+  importedDarkroom.darkroomRecords[0].projectId === importedDarkroom.project.id,
+  "and at the imported project"
+);
+test.assert(
+  importedDarkroom.darkroomRecords[0].negative === "The sentence as the writer first wrote it."
+    && importedDarkroom.darkroomRecords[0].versions.length === 1,
+  "the negative and the version chain survive the import unchanged"
+);
+
+// A record whose document did not come across never reaches the remap: the
+// import refuses the whole bundle rather than restoring a darkroom that
+// belongs to nothing.
+const darkroomStray = structuredClone(darkroomExport);
+darkroomStray.darkroomRecords[0].documentId = "file-that-is-gone";
+let strayRefused = false;
+try {
+  backup.remapBackup(darkroomStray);
+} catch (error) {
+  strayRefused = String(error?.message || "").includes("darkroom record references missing file");
+}
+test.assert(strayRefused, "importing a darkroom record with no surviving document is refused");
+
+// The assembler is the one place a Project-level durable collection is
+// declared, and the writer is the one place it lands. Both must name it.
+test.assertIncludes(
+  read("app/core/project-backup-assembler.js"),
+  "readCollection(source.getDarkroomRecords, projectId)",
+  "the single assembler reads the darkroom like every other durable collection"
+);
+test.assertIncludes(
+  exportImportSource,
+  "async function collectProjectDarkroomRecords(projectId)",
+  "the export reads the darkroom records out of keyval"
+);
+test.assertIncludes(
+  exportImportSource,
+  "`darkroom:${String(imported.project.id)}:${String(documentId)}`",
+  "the import writes them back under the imported project's own key"
 );
 
 test.finish();

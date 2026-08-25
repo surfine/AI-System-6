@@ -7,6 +7,7 @@
 // identical glyph shape, and Quick Draft must keep its lightning bolt so it
 // never regresses into TeachText's twin.
 
+import vm from "node:vm";
 import { createFeatureTest, exists, read } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("icon-distinguishability");
@@ -136,11 +137,13 @@ test.assert(
 );
 
 const themeLab = read("app/features/theme-lab.js");
-const iconSetBlock = themeLab.slice(themeLab.indexOf("const ICON_SET"));
-const iconSetIds = iconSetBlock.slice(0, iconSetBlock.indexOf("]);")).match(/"[A-Za-z]+"/g) || [];
-test.assert(iconSetIds.length === 54, `Theme Lab displays all 54 appearance semantic icons (found ${iconSetIds.length})`);
-test.assertIncludes(themeLab, '"hardDisk"', "Theme Lab no longer aliases hard disk to startup disk");
-test.assertIncludes(themeLab, '"control",', "Theme Lab includes the distinct control utility icon");
+const iconWindow = {};
+vm.runInNewContext(icons, { window: iconWindow });
+const iconSetIds = iconWindow.AISystem6SystemIcons.ids;
+test.assert(iconSetIds.length === 56, `the shared painter exposes all 56 appearance semantic icons (found ${iconSetIds.length})`);
+test.assert(iconSetIds.includes("hardDisk"), "the shared Theme Lab vocabulary no longer aliases hard disk to startup disk");
+test.assert(iconSetIds.includes("control"), "the shared Theme Lab vocabulary includes the distinct control utility icon");
+test.assertIncludes(themeLab, "appearanceIconIds()", "Theme Lab renders the painter-owned icon vocabulary");
 test.assertIncludes(read("app/features/theme-lab.js"), 'assets/themes/${themeId}', "Theme Lab includes every asset-backed appearance");
 test.assertIncludes(read("app/features/theme-lab.js"), "theme-lab-icon-hint", "Theme Lab displays the native 16px hint beside every asset-backed 32px runtime icon");
 test.assertIncludes(icons, "hardDisk: nativeSystem6HardDiskPath", "hard disk is a real runtime id instead of a document fallback");

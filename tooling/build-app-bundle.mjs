@@ -130,10 +130,10 @@ const cssSource = layerPreamble + styleRuntimePaths
   .map((path) => readFileSync(join(desktopRoot, path), "utf8"))
   .join("\n");
 
-// The origin serves non-HTML/JS/CSS assets with a long cache lifetime
-// (public, max-age=604800) and the CSS refers to them by stable URLs, so a
+// The origin serves non-HTML/JS/CSS assets with a bounded cache lifetime
+// (public, max-age=86400) and the CSS refers to them by stable URLs, so a
 // release that changes an asset would leave returning visitors on the old
-// bytes for up to a week. index.html already busts its own bundle refs with
+// bytes for up to a day. index.html already busts its own bundle refs with
 // ?v=<build>; stamp every static asset url() in the CSS bundle with the same
 // build so a new release always fetches fresh icons, sprites and fonts.
 function stampCssAssetUrls(css, build) {

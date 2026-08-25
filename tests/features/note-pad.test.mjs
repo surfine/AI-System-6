@@ -28,15 +28,17 @@ const zh = read("app/data/translations-zh.js");
 
 test.assertIncludes(indexHtml, 'id="note-pad-page-label"', "the pager says which slip this is");
 test.assertIncludes(indexHtml, 'id="note-pad-destination" data-action="note-pad-cycle-destination"', "the status bar carries the destination, and it is a button");
-test.assertIncludes(indexHtml, '<div class="da-origin" id="note-pad-origin" hidden>', "the provenance row starts hidden and is the shared one every accessory uses");
-test.assertIncludes(indexHtml, 'data-action="note-pad-back"', "the way back is a declared action");
+// Being interrupted, and going back to the sentence you left, belong to Hold
+// That Thought. What is left here is the pad you write on.
+test.assertNotIncludes(indexHtml, 'id="note-pad-origin"', "the pad no longer carries where a slip came from");
+test.assertNotIncludes(indexHtml, 'data-action="note-pad-back"', "nor a way back that duplicates the Apple menu's row word for word");
 test.assertIncludes(indexHtml, 'data-action="note-pad-new-slip"', "a new slip is a declared action");
 test.assertIncludes(indexHtml, 'data-action="note-pad-send"', "sending the slip is a declared action");
 test.assertNotIncludes(indexHtml, 'id="note-pad-send-teachtext"', "the three competing Send buttons are gone; one destination answers for them");
 test.assertNotIncludes(indexHtml, 'data-i18n="note_pad_hint"', "the three-line hint is replaced by the destination the writer can see");
 
 test.assertMatches(actions, /^\s{4}"hold-that-thought":/m, "hold-that-thought reaches a global handler");
-["note-pad-new-slip", "note-pad-send", "note-pad-back", "note-pad-cycle-destination"].forEach((action) => {
+["note-pad-new-slip", "note-pad-send", "note-pad-cycle-destination"].forEach((action) => {
   test.assertIncludes(accessories, `["${action}"`, `${action} reaches a runtime handler`);
 });
 test.assertIncludes(
@@ -52,8 +54,8 @@ test.assertIncludes(
 test.assertIncludes(actions, 'scope: "global"', "the shortcut works wherever the writer is");
 
 // A command reachable only by its shortcut is a command only Key Caps can
-// show. Hold That Thought sits with Hold My Place under Your Place: two ways
-// to hold an interruption, and one way back.
+// show. Hold That Thought is the whole of Your Place now: one way to hold an
+// interruption, one way back, and the accessory they share.
 test.assertIncludes(
   indexHtml,
   '<button data-action="hold-that-thought" data-i18n="hold_that_thought">',
@@ -65,29 +67,22 @@ const yourPlaceGroup = indexHtml.slice(
 );
 test.assert(
   [...yourPlaceGroup.matchAll(/data-action="([a-z-]+)"/g)].map((match) => match[1]).join(" ")
-    === "hold-my-place hold-that-thought resume-my-place",
-  "Your Place reads: hold the place, hold the thought, go back"
+    === "hold-that-thought resume-my-place open-hold-thought",
+  "Your Place reads: hold the thought, go back, open the pile"
 );
 
 // Two commands that print the identical words are one command the writer
-// cannot choose between. The menu row names the marked caret; the Note Pad's
-// own button names the window its slip came from. Both once read "Back to
-// TeachText" and nothing told them apart.
-[["English", en], ["Chinese", zh]].forEach(([language, source]) => {
-  const heldPlace = source.match(/held_place_resume_at: \(where\) => `([^`]*)`/)?.[1];
-  const slipOrigin = source.match(/note_pad_back_to: \(title\) => `([^`]*)`/)?.[1];
-  test.assert(
-    Boolean(heldPlace) && Boolean(slipOrigin)
-      && heldPlace.replace("${where}", "X") !== slipOrigin.replace("${title}", "X"),
-    `${language}: the held place and the slip's origin do not print the same row (got "${heldPlace}" / "${slipOrigin}")`
-  );
-});
+// cannot choose between. The menu row names the marked caret; the Note Pad
+// used to name the window its slip came from, and both read "Back to
+// TeachText". Only one of them says it now.
+test.assertNotIncludes(en, "note_pad_back_to", "the pad's own way back is retired, not reworded");
+test.assertNotIncludes(zh, "note_pad_back_to", "in both languages");
 
 // The display trap: an author `display` outranks the [hidden] attribute.
 test.assertIncludes(windowChrome, ".da-origin:not([hidden])", "the provenance row is hidden by the attribute, not fought by a display rule");
 test.assertIncludes(persistence, "notePadDestination,", "the chosen destination survives the session");
 
-["note_pad_slip", "note_pad_new_slip", "note_pad_from", "note_pad_back_to", "note_pad_held", "hold_that_thought", "bell_stopped_here"].forEach((key) => {
+["note_pad_slip", "note_pad_new_slip", "hold_that_thought", "bell_stopped_here"].forEach((key) => {
   test.assertIncludes(en, `${key}:`, `English names ${key}`);
   test.assertIncludes(zh, `${key}:`, `Chinese names ${key}`);
 });
@@ -169,7 +164,7 @@ test.assertIncludes(
 // ---- The slip itself --------------------------------------------------------
 
 const slipSource = accessories.slice(
-  accessories.indexOf("function normalizeNotePadOrigin"),
+  accessories.indexOf("function normalizeNotePadPages"),
   accessories.indexOf("function renderClipboard")
 );
 
@@ -193,12 +188,8 @@ function fakeField(value = "") {
 
 const notePadTextInput = fakeField();
 const parts = {
-  "#note-pad-origin": fakeField(),
-  "#note-pad-origin-label": fakeField(),
-  "#note-pad-origin-time": fakeField(),
   "#note-pad-destination": fakeField(),
   "#note-pad-send": fakeField(),
-  "#note-pad-back": fakeField(),
 };
 const teachTextField = fakeField("She put the kettle on and said nothing about the rent.");
 const opened = [];
@@ -236,49 +227,29 @@ test.assert(
   "pages saved as plain strings migrate into slips without losing a word"
 );
 
-// The writer is mid-sentence in TeachText when the thought arrives.
-context.document.activeElement = {
-  ...teachTextField,
-  selectionStart: 20,
-  closest: () => ({ dataset: { window: "teachText" }, contains: () => true, querySelector: () => ({ textContent: "TeachText" }) }),
-};
-await context.holdThatThought();
+// Older desks stamped an origin on a page. The shape is read and dropped: the
+// pad keeps the words and nothing else.
+const stamped = context.normalizeNotePadPages([
+  { text: "the bit about her hands", from: { window: "teachText", title: "TeachText", caret: 20 } },
+]);
+test.assert(
+  stamped.length === 1 && stamped[0].text === "the bit about her hands" && stamped[0].from === null,
+  "a page that used to carry an origin keeps its words and loses the origin"
+);
 
-const firstSlip = context.notePadPages[context.notePadPageIndex];
-test.assert(opened.includes("notePad"), "holding a thought opens the pad");
-test.assert(firstSlip.from?.window === "teachText", "the slip remembers the window the thought came from");
-test.assert(firstSlip.from?.caret === 20, "the slip remembers the character the writer left");
-test.assert(context.notePadPages.length === 1, "an untouched empty slip is reused instead of stacking blank pages");
-
-// A second thought, with the first one written on.
+// A new slip is a blank page, and the one before it keeps what was typed.
 notePadTextInput.value = "the bit about her hands";
-await context.holdThatThought();
-test.assert(context.notePadPages.length === 2, "a thought arriving on a written slip starts a new one");
-test.assert(context.notePadPages[0].text === "the bit about her hands", "the earlier slip keeps its words");
+context.addNotePadPage();
+test.assert(context.notePadPages.length === 2, "New Slip adds a page");
+test.assert(context.notePadPages[0].text === "the bit about her hands", "and the earlier page keeps its words");
+test.assert(context.notePadPages[1].from === null, "a new page has no origin to carry");
 
-// The way back.
-context.notePadPageIndex = 0;
-await context.returnToNotePadOrigin();
-test.assert(opened.includes("teachText"), "Back opens the window the slip came from");
-test.assert(teachTextField.selectionStart === 20, "Back puts the caret where the writer left it");
-
-// The default verb follows the slip: the way back when there is one, sending
-// when there is not.
+// Sending is the only thing this window does with a page, so it is the one
+// default button. There is no second verb to choose between.
 const defaults = [];
-parts["#note-pad-back"].classList = { toggle: (name, on) => defaults.push(["back", on]) };
-parts["#note-pad-send"].classList = { toggle: (name, on) => defaults.push(["send", on]) };
+parts["#note-pad-send"].classList = { add: (name) => defaults.push(name), toggle() {}, remove() {}, contains: () => false };
+context.notePadPageIndex = 0;
 context.renderNotePadPage();
-test.assert(
-  defaults.some(([who, on]) => who === "back" && on === true) && defaults.some(([who, on]) => who === "send" && on === false),
-  "a slip with an origin makes the way back the one default button"
-);
-
-context.notePadPages[0].from = null;
-defaults.length = 0;
-context.renderNotePadPage();
-test.assert(
-  defaults.some(([who, on]) => who === "back" && on === false) && defaults.some(([who, on]) => who === "send" && on === true),
-  "a slip with nowhere to go back to makes Send the one default button"
-);
+test.assert(defaults.includes("default"), "Send is the one default button");
 
 test.finish();

@@ -1,10 +1,16 @@
 // Theme icon dispatch generator + consistency check.
 //
 // The semantic icon id -> per-theme asset mapping lives in one manifest per
-// theme (assets/themes/<theme>/<theme>-icon-manifest.json). Platinum and
-// Yosemite paint individual SVGs through per-icon CSS rules in
-// styles/65-appearance-themes.css; Aqua and Snow Leopard compose the same
-// manifests into sprite sheets via build-aqua-icons.mjs.
+// theme (assets/themes/<theme>/<theme>-icon-manifest.json). Every id is painted
+// either by a per-icon CSS rule in styles/65-appearance-themes.css or by an
+// <image> inside the inline SVG, and this asserts that each manifest id has
+// exactly one of the two.
+//
+// Yosemite used to be described here as CSS-painted. It was not: all 56 of its
+// ids ride completeEraRasterSystemIconArt with Aqua and Snow Leopard, and the
+// 56 `--yosemite-icon` declarations that sat beside them were read by nothing
+// -- no CSS rule, no JS, nowhere in the repository. Deleting them as dead
+// tokens was correct and broke this check, which had encoded the old story.
 //
 // `--check` fails when the checked-in 65 mapping disagrees with the manifest
 // (missing id, missing file, or a CSS rule pointing at a different asset),
@@ -45,16 +51,32 @@ function readManifest(theme) {
 }
 
 function svgEmbedCoreIds(theme) {
-  // Platinum's core batch travels inside the inline SVG as a raster
-  // <image> (<g class="sys-icon-platinum-core">), so those ids legitimately
-  // have no CSS background-image rule. Parse the Set literal from
-  // app/core/system-icons.js (the painter source of truth) instead of
-  // duplicating the list here.
-  if (theme.id !== "platinum") return new Set();
+  // Ids that travel inside the inline SVG as a raster <image> legitimately have
+  // no CSS rule. Both sets are parsed out of app/core/system-icons.js -- the
+  // painter source of truth -- rather than duplicated here.
+  //
+  // Platinum's core batch rides <g class="sys-icon-platinum-core">, written as
+  // a Set of quoted ids. Yosemite rides completeEraRasterSystemIconArt with
+  // Aqua and Snow Leopard, and its set is built from space-separated strings,
+  // so the two need different parsing.
   const source = readFileSync(join(root, "apps", "desktop", "app", "core", "system-icons.js"), "utf8");
-  const match = source.match(/const platinumCoreSystemIconIds = new Set\(\[([\s\S]*?)\]\);/);
-  if (!match) throw new Error("Could not locate platinumCoreSystemIconIds in app/core/system-icons.js");
-  return new Set([...match[1].matchAll(/"([A-Za-z0-9]+)"/g)].map((m) => m[1]));
+  if (theme.id === "platinum") {
+    const match = source.match(/const platinumCoreSystemIconIds = new Set\(\[([\s\S]*?)\]\);/);
+    if (!match) throw new Error("Could not locate platinumCoreSystemIconIds in app/core/system-icons.js");
+    return new Set([...match[1].matchAll(/"([A-Za-z0-9]+)"/g)].map((m) => m[1]));
+  }
+  if (theme.id === "yosemite") {
+    const start = source.indexOf("const completeEraSystemIconIds = new Set(");
+    if (start < 0) throw new Error("Could not locate completeEraSystemIconIds in app/core/system-icons.js");
+    const terminator = source.indexOf(";", source.indexOf(".split(", start));
+    const chunk = source.slice(start, terminator > start ? terminator : start + 4000);
+    const ids = [...chunk.matchAll(/"([^"]*)"/g)]
+      .flatMap((match) => match[1].trim().split(/\s+/))
+      .filter(Boolean);
+    if (!ids.length) throw new Error("completeEraSystemIconIds parsed to an empty set");
+    return new Set(ids);
+  }
+  return new Set();
 }
 
 function cssMapping(theme) {

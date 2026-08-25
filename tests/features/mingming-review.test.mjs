@@ -20,7 +20,7 @@ test.assertIncludes(persistenceStatus, '"mingming-review-section": { label: t("r
 
 test.assertIncludes(translation, "function reviewSectionAsMingming()", "Mingming review has a dedicated implementation");
 test.assertIncludes(translation, "buildMingmingReviewPrompt", "Mingming review uses the shared prompt builder");
-test.assertIncludes(translation, "代入铭铭视角", "Mingming review keeps the requested product language");
+test.assertIncludes(translation, "代入读者视角", "the review command keeps its product label");
 test.assertNotIncludes(translation, "交稿前给自己用的镜子", "Review implementation no longer embeds Aaron-only framing");
 test.assertNotIncludes(translation, "交得更少、零压力", "Review implementation no longer embeds handoff-pressure framing");
 test.assertNotIncludes(translation, "这会给落落增加压力吗", "Review implementation avoids relationship-specific preflight language");
@@ -59,7 +59,30 @@ test.assertIncludes(mingmingLens, "最多 5 条", "Mingming review keeps feedbac
 test.assertIncludes(mingmingLens, "这一节已经顺", "Mingming review can decline to manufacture issues");
 test.assertNotIncludes(mingmingLens, "叙事弧线", "Mingming review no longer treats narrative arc as a target lens");
 
-test.assertIncludes(zh, 'review_mingming_section: "代入铭铭视角"', "Chinese copy names the requested command");
-test.assertIncludes(en, 'review_mingming_section: "Review as Mingming"', "English copy is present");
+test.assertIncludes(zh, 'review_mingming_section: "代入读者视角"', "Chinese copy names the requested command");
+test.assertIncludes(en, 'review_mingming_section: "Review as the Reader"', "English copy is present");
+
+
+// Review Desk figure checking. A review may see the figures the draft cites,
+// because a claim can rest on one — but only those. An album image the writer
+// never placed is not part of the draft, so a finding about it would be a
+// finding about something the reader will never see.
+const teachTextAccessories = read("app/features/teachtext-accessories.js");
+const outlineClaim = read("app/features/outline-claim.js");
+const hkrr = read("app/features/hkrr-review.js");
+const handoff = read("app/features/mingming-handoff-review.js");
+
+test.assertIncludes(teachTextAccessories, "function teachTextFiguresReferencedIn", "the album can report only the figures a draft cites");
+test.assertIncludes(teachTextAccessories, "aisystem6-image:", "cited figures are found by the manuscript's own reference form");
+for (const [pass, source] of [
+  ["style", translation],
+  ["claim check", outlineClaim],
+  ["HKRR", hkrr],
+  ["handoff", handoff],
+]) {
+  test.assertIncludes(source, "attachImagesToModelMessages(", `the ${pass} pass can see cited figures`);
+  test.assertIncludes(source, "teachTextFiguresReferencedIn(", `the ${pass} pass sends only cited figures, never the whole album`);
+  test.assertNotIncludes(source, "getTeachTextImageAttachments()),", `the ${pass} pass does not send the whole album`);
+}
 
 test.finish();

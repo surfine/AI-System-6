@@ -27,12 +27,19 @@ const commandPopover = commandMenuIndex >= 0 && commandMenuEndIndex >= 0 ? html.
 test.assertNotIncludes(mainButtonArea, 'data-action="review-mingming-handoff"', "Review Desk button row matches other TeachText windows: no extra primary handoff button");
 test.assertIncludes(commandPopover, 'data-action="review-mingming-handoff"', "Short-card handoff lives in the review command menu");
 test.assertIncludes(commandPopover, 'data-i18n="review_mingming_handoff"', "Handoff command is localized");
-test.assertIncludes(html.slice(reviewDeskActionsIndex), 'data-i18n="review_commands"', "Review Desk command menu uses its own name, not the generic Commands menu");
+// The Review Desk is a TeachText-based window, so its command menu carries the
+// same name as the others. "review_commands" survives as the group's accessible
+// name only - while it was also the summary label, the later aria-label entry of
+// the same key silently won and the button read "Review commands".
+test.assertIncludes(commandPopover, 'data-i18n="teachtext_commands"', "Review Desk names its command menu like every other TeachText-based window");
+test.assertIncludes(html.slice(reviewDeskActionsIndex), 'data-i18n-aria-label="review_commands"', "the command group keeps its own accessible name");
+test.assert(en.split("review_commands:").length === 2, "review_commands is defined once in English, so no later entry overrides the label");
+test.assert(zh.split("review_commands:").length === 2, "review_commands is defined once in Chinese, so no later entry overrides the label");
 test.assertIncludes(commandPopover, 'data-action="review-mingming-handoff-backstage"', "Command menu exposes the backstage handoff review");
 test.assertIncludes(commandPopover, 'data-i18n="review_mingming_handoff_backstage"', "Backstage handoff command is localized");
-test.assertIncludes(zh, 'review_mingming_handoff: "如果是落落会怎么接"', "Chinese copy names the short-card handoff");
+test.assertIncludes(zh, 'review_mingming_handoff: "听者会怎么接"', "Chinese copy names the short-card handoff");
 test.assertIncludes(zh, 'review_mingming_handoff_backstage: "交付后台审校"', "Chinese copy names the backstage review");
-test.assertIncludes(en, 'review_mingming_handoff: "How Luoluo Would Receive It"', "English copy names the short-card handoff");
+test.assertIncludes(en, 'review_mingming_handoff: "How a Listener Would Receive It"', "English copy names the short-card handoff");
 test.assertIncludes(en, 'review_mingming_handoff_backstage: "Backstage Handoff Review"', "English copy names the backstage review");
 
 test.assertIncludes(actions, "function runReviewDeskMingmingHandoffReview()", "Review Desk has a dedicated short-card runner");

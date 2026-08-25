@@ -214,6 +214,7 @@ function renderReaderTabs(project = getActiveProject()) {
     labelFor: (tab, index) => `${index + 1}. ${tab.title || tab.url}`,
     compactLabelFor: (tab) => tab.title || tab.url || t("reader"),
     sublabelFor: (tab) => formatReaderTabSubtitle(tab),
+    iconFor: () => "reader",
     closableFor: () => tabs.length > 1,
     onOpen: (tab) => openReaderDocumentTab(tab.id),
     onClose: (tab) => removeReaderTab(tab.id),
@@ -421,10 +422,231 @@ function renderReaderDocumentView({ renderedVideoTranscript = false } = {}) {
     const body = document.createElement("div");
     body.className = "reader-body-content";
     body.innerHTML = markdownToSystemHtml(currentReaderPage.text);
+    wireReaderFigures(body);
     readerContentEl.append(body);
   }
   readerStatusEl.textContent = t("reader_reading_mode");
   updateReaderClioStageButton();
+}
+
+// Figures a clipped page brought with it.
+//
+// The Reader is still not a browser: it reads the figures of the page already
+// clipped and follows nothing. What travels is the address the publisher
+// already put on the open web, not the bytes and not the writer's disk — and
+// the notes stay on screen until the writer clips them, like every other
+// piece of model output here.
+
+/** @type {{ src: string, label: string, text: string, model: string } | null} */
+let readerFigureReading = null;
+
+// The picture is named, not fetched.
+//
+// The desktop's own policy is img-src 'self' data: blob:, and that is the
+// right answer here for a second reason: pulling a publisher's image into the
+// page would tell that publisher the writer is reading their piece, every
+// time the clip is opened. So the figure arrives as a plate carrying its
+// caption, and its address travels only when the writer asks for it to be
+// read. Reading a figure is a decision, like every other send on this desk.
+function wireReaderFigures(body) {
+  body.querySelectorAll("img[src^='https://']").forEach((image) => {
+    const src = image.getAttribute("src") || "";
+    const label = image.getAttribute("alt") || "";
+
+    const plate = document.createElement("figure");
+    plate.className = "reader-figure";
+    plate.dataset.src = src;
+    // Where the picture would be. A framed rectangle is how a Macintosh
+    // document has always shown a picture it is holding a place for; a dashed
+    // box would read as an error, and nothing here has gone wrong.
+    plate.dataset.balloonHelp = "balloon_reader_figure";
+
+    const frame = document.createElement("div");
+    frame.className = "reader-figure-frame";
+    frame.setAttribute("aria-hidden", "true");
+
+    const caption = document.createElement("figcaption");
+    caption.className = "reader-figure-caption";
+    caption.textContent = label || t("reader_figure_untitled");
+
+    const row = document.createElement("div");
+    row.className = "reader-figure-actions";
+
+    const read = document.createElement("button");
+    read.type = "button";
+    read.className = "btn mini-btn reader-figure-read";
+    // The Reader already has one verb for putting a question to what is on
+    // screen. A figure is part of what is on screen, so it uses that verb
+    // rather than teaching a second one.
+    read.textContent = t("reader_figure_read");
+    read.dataset.balloonHelp = "balloon_reader_figure_ask";
+    read.addEventListener("click", () => readReaderFigure(plate, row));
+    row.append(read);
+
+    plate.append(frame, caption, row);
+    // A lone image is wrapped in a paragraph by the Markdown renderer, and
+    // that paragraph carries the body's indent and justification.
+    const host = image.parentElement?.children.length === 1
+      && image.parentElement.tagName === "P"
+      ? image.parentElement
+      : image;
+    host.replaceWith(plate);
+  });
+}
+
+async function readReaderFigure(plate, row) {
+  const src = plate.dataset.src || "";
+  const label = plate.querySelector(".reader-figure-caption")?.textContent || "";
+  if (!src) return;
+
+  const button = row.querySelector(".reader-figure-read");
+  setControlLoading(button, true, t("reader_figure_reading"));
+  readerStatusEl.textContent = t("reader_figure_reading");
+
+  try {
+    // The address, not the picture. A local VLM cannot fetch a link, so the
+    // server inlines it there; the cloud model takes the link itself. Either
+    // way the writer asked for this one figure and nothing else moved.
+    const disclosed = await cloudVisionDisclosure({
+      surface: "reader-figure",
+      kind: "figure-url",
+      name: label || src,
+    });
+    if (!disclosed) return;
+
+    const response = await window.AISystem6Capabilities.requestService("vision.analyze", {
+      init: {
+        method: "POST",
+        signal: typeof getLongTaskSignal === "function" ? getLongTaskSignal() : null,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          images: [src],
+          mode: "writing-context",
+          name: label,
+          detail: "low",
+          allowCloudFallback: true,
+          modelRoute: modelRouteForVisionRequest(),
+        }),
+      },
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data?.detail || data?.error || t("image_vision_empty"));
+    const text = String(data?.text || "").trim();
+    if (!text) throw new Error(t("image_vision_empty"));
+
+    readerFigureReading = { src, label, text, model: String(data?.model || "") };
+    renderReaderFigureReading(row);
+    readerStatusEl.textContent = t("reader_figure_ready");
+  } catch (error) {
+    if (typeof isAbortError === "function" && isAbortError(error)) return;
+    setStatus(t("image_vision_failed", error?.message || t("connection_error")));
+  } finally {
+    setControlLoading(button, false, t("reader_figure_read"));
+  }
+}
+
+/**
+ * Cloud is used when the writer has chosen a cloud model, exactly as the rest
+ * of the desk decides it. Vision is not a separate opinion about routing.
+ */
+function modelRouteForVisionRequest() {
+  if (typeof isCloudModelActive !== "function" || !isCloudModelActive()) return {};
+  return {
+    cloud: {
+      active: true,
+      ...(typeof cloudCredentialTransportFields === "function"
+        ? cloudCredentialTransportFields("status")
+        : {}),
+    },
+  };
+}
+
+function renderReaderFigureReading(row) {
+  row.parentElement?.querySelectorAll(".reader-figure-reading").forEach((node) => node.remove());
+  if (!readerFigureReading) return;
+
+  const panel = document.createElement("div");
+  panel.className = "reader-figure-reading scrap-reading-proposal";
+
+  const text = document.createElement("span");
+  text.className = "scrap-reading-proposal-text";
+  text.textContent = readerFigureReading.text;
+  panel.append(text);
+
+  const actions = document.createElement("div");
+  actions.className = "reader-figure-actions";
+
+  const keep = document.createElement("button");
+  keep.type = "button";
+  keep.textContent = t("reader_figure_clip");
+  keep.addEventListener("click", () => clipReaderFigureReading(panel));
+
+  const discard = document.createElement("button");
+  discard.type = "button";
+  discard.textContent = t("reader_figure_discard");
+  discard.addEventListener("click", () => {
+    readerFigureReading = null;
+    panel.remove();
+    readerStatusEl.textContent = t("reader_reading_mode");
+  });
+
+  actions.append(keep, discard);
+  panel.append(actions);
+  row.insertAdjacentElement("afterend", panel);
+}
+
+function clipReaderFigureReading(panel) {
+  if (!readerFigureReading) return;
+
+  const title = document.querySelector("#reader-content h1")?.textContent || "Reader Clip";
+  const capturedAt = new Date().toISOString();
+  const url = currentReaderPage?.url || "";
+  const site = currentReaderPage?.site || "";
+
+  const scrapBody = [
+    `Figure: ${readerFigureReading.label || readerFigureReading.src}`,
+    "",
+    readerFigureReading.text,
+    "",
+    "---",
+    `Source: ${title}`,
+    site ? `Site: ${site}` : "",
+    url ? `URL: ${url}` : "",
+    `Figure address: ${readerFigureReading.src}`,
+    // Whose eyes read it. A reader deserves to know a model wrote these notes.
+    readerFigureReading.model ? `Read by: ${readerFigureReading.model}` : "",
+    `Time: ${new Date(capturedAt).toLocaleString()}`,
+  ].filter(Boolean).join("\n");
+
+  const scrap = createScrap(
+    `Figure: ${(readerFigureReading.label || readerFigureReading.src).slice(0, 20)}...`,
+    scrapBody,
+    {
+      source: {
+        type: "reader-figure",
+        readerKind: currentReaderPage?.kind || "web",
+        title,
+        url,
+        site,
+        imageUrl: readerFigureReading.src,
+        model: readerFigureReading.model,
+        capturedAt,
+      },
+      capturedAt,
+    }
+  );
+
+  if (scrap) {
+    scrap.tags = [...new Set(["reader-clip", "figure", ...(scrap.tags || [])])];
+    currentReaderClipCount += 1;
+    saveDeskState();
+    renderScraps();
+  }
+
+  readerFigureReading = null;
+  panel.remove();
+  readerStatusEl.textContent = t("reader_clips_count", currentReaderClipCount);
+  setStatus(t("reader_clipped"));
 }
 
 async function fetchReaderPage(urlArg = null) {
@@ -1266,7 +1488,7 @@ async function translateCurrentReaderSubtitleFromQuestion(question) {
       "```",
     ].join("\n");
     const file = createReaderTranslationTeachTextDocument(documentBody, readerSubtitleTranslationName(title, mode));
-    if (file) setStatus(currentLanguage === "zh" ? `已生成字幕翻译文档：${file.name}` : `Subtitle translation document created: ${file.name}`);
+    if (file) setStatus(t("subtitle_translation_document_created", file.name));
   } catch (error) {
     if (!isAbortError(error)) setStatus(t("translation_failed", error.message));
   } finally {
@@ -1311,7 +1533,7 @@ async function translateCurrentReaderSourceFromQuestion(question) {
     conversation.push({ role: "user", content: `${t("reader")}: ${question}` });
     conversation.push({ role: "assistant", content: translated });
     resolvePendingMessage(pendingMessage, "assistant", translated);
-    setStatus(t("ready"));
+    clearStatus();
   } catch (error) {
     if (!isAbortError(error)) {
       pendingMessage.remove();

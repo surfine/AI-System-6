@@ -197,69 +197,6 @@
   text-align: right;
 }
 
-/* ---- Position track: a scroll bar, not a slider ---- */
-
-.system-track {
-  position: relative;
-  height: 14px;
-  border: var(--system-track-border);
-  border-radius: var(--system-track-radius);
-  background: var(--system-track-bg);
-  box-shadow: var(--system-track-shadow);
-  cursor: pointer;
-  touch-action: none;
-}
-
-.system-track[aria-disabled="true"] {
-  cursor: default;
-  opacity: var(--control-disabled-opacity);
-}
-
-.system-track-fill {
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: var(--system-track-position, 0%);
-  border-radius: var(--system-track-radius);
-  background: var(--system-track-fill);
-  pointer-events: none;
-}
-
-.system-track-thumb {
-  position: absolute;
-  top: 0;
-  left: var(--system-track-position, 0%);
-  width: 15px;
-  height: 12px;
-  border: var(--system-track-thumb-border);
-  border-radius: var(--system-track-thumb-radius);
-  background: var(--system-track-thumb-bg);
-  box-shadow: var(--system-track-thumb-shadow);
-  pointer-events: none;
-}
-
-/* ---- Segment cells: the Sound control panel level control ---- */
-
-.system-segments {
-  display: flex;
-  gap: 2px;
-  cursor: pointer;
-  touch-action: none;
-}
-
-.system-segments span {
-  display: block;
-  width: 8px;
-  height: 15px;
-  border: var(--system-segment-border);
-  border-radius: var(--system-segment-radius);
-  background: var(--system-segment-bg);
-}
-
-.system-segments span.is-on {
-  background: var(--system-segment-on-bg);
-  box-shadow: var(--system-segment-on-shadow);
-}
-
 .soundscape-transport {
   display: flex;
   grid-area: keys;

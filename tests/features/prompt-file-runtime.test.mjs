@@ -6,6 +6,7 @@ const generated = read("app/generated/ai-prompt-files.js");
 const runtime = read("app/core/prompt-file-runtime.js");
 const context = {
   window: {},
+  currentLanguage: "zh",
   chatFiles: [],
   chatFolders: [],
   crypto: { randomUUID: () => `id-${context.chatFiles.length + context.chatFolders.length + 1}` },
@@ -28,6 +29,10 @@ const forcedBoundary = api.resolvePromptFile("system.model-boundaries", projectI
 test.assert(forcedBoundary.status === "ready" && forcedBoundary.source === "system-forced", "System boundary remains forced for every project");
 test.assert(api.upsertProjectPromptOverride(projectId, "system.model-boundaries", "不能覆盖") === null, "Project cannot override the forced system boundary");
 test.assert(api.setProjectPromptDisabled(projectId, "system.model-boundaries", true) === null, "Project cannot disable the forced system boundary");
+const forcedBoundaryDocument = api.promptDocument("system.model-boundaries", "en");
+test.assert(forcedBoundaryDocument?.readOnly === true, "a required system prompt exposes a read-only document without creating project state");
+test.assert(forcedBoundaryDocument?.name === "System Model Boundaries (Required)", "the read-only document uses its English display name");
+test.assertIncludes(forcedBoundaryDocument?.path || "", "System Folder/AI Prompts/System Boundaries", "the read-only document carries a localized system path");
 
 const remainingModes = ["critique", "praise", "digest", "continue", "describe-change", "rewrite", "friendly", "professional", "concise", "summary", "key-points", "list", "table", "review-praise"];
 remainingModes.forEach((mode) => {
@@ -70,5 +75,19 @@ test.assert(restored.source === "project", "moving the file back restores its pr
 const receipt = api.recordPromptRun(projectId, restored);
 test.assert(receipt.receipt.hash === restored.hash, "receipt records the effective hash");
 test.assertNotIncludes(receipt.body, "用户正文", "receipt does not contain user document content");
+test.assertIncludes(receipt.body, "实际提示词：", "a Chinese run receives a Chinese receipt");
+
+context.currentLanguage = "en";
+const englishProjectId = "project-en";
+const englishOverride = api.ensureProjectPromptOverrideForEditing(englishProjectId, "writing-tools.proofread", "en");
+const englishSystem = context.AISystem6PromptFiles.find((item) => item.id === "writing-tools.proofread");
+test.assert(englishOverride?.body === englishSystem?.bodies?.en, "opening an English prompt copies the English body into its project override");
+test.assert(englishOverride?.name === "Proofread", "the English override uses the English display name");
+test.assertIncludes(englishOverride?.path || "", "Prompt Overrides/Proofread", "the English override path is localized");
+const englishResolved = api.resolvePromptFile("writing-tools.proofread", englishProjectId, "en");
+const englishReceipt = api.recordPromptRun(englishProjectId, "writing-tools.proofread", englishResolved);
+test.assertIncludes(englishReceipt?.body || "", "Effective prompt:", "an English run receives an English receipt body");
+test.assertIncludes(englishReceipt?.name || "", "Proofread Prompt Run", "an English receipt receives an English file name");
+test.assert(englishReceipt?.receipt?.language === "en", "the receipt records the language of the effective prompt");
 
 test.finish();

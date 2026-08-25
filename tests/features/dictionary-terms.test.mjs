@@ -18,6 +18,7 @@ const indexHtml = read("index.html");
 const dictionary = read("app/features/dictionary-help.js");
 const actions = read("app/core/actions.js");
 const windowManager = read("app/core/window-manager.js");
+const windowRegistrySource = read("app/core/window-registry.js");
 const chatMessages = read("app/core/chat-messages.js");
 const projectDisk = read("app/features/project-disk.js");
 const en = read("app/data/translations-en.js");
@@ -38,7 +39,7 @@ test.assertMatches(indexHtml, /id="dictionary-delete-word"[^>]*data-requires-wri
 test.assertIncludes(actions, '"dictionary-keep-word": () => keepDictionaryWord(),', "the keep action reaches a handler, wrapped for the lazy module");
 test.assertIncludes(actions, '"dictionary-delete-word": () => deleteDictionaryWord(),', "the delete action reaches a handler, wrapped for the lazy module");
 test.assertIncludes(actions, '  "dictionary-keep-word",\n  "dictionary-delete-word",', "both actions declare that they write durable project state");
-test.assertIncludes(windowManager, 'if (typeof renderDictionaryWords === "function") renderDictionaryWords();', "the word list is drawn when the window opens, without a bare lazy reference");
+test.assertIncludes(windowRegistrySource, 'if (typeof renderDictionaryWords === "function") renderDictionaryWords();', "the word list is drawn when the window opens, without a bare lazy reference");
 
 ["dictionary_my_words", "dictionary_how_i_use_it", "dictionary_never_say", "dictionary_keep_word", "dictionary_words_need_project", "dictionary_keep_needs_definition"].forEach((key) => {
   test.assertIncludes(en, `${key}:`, `English names ${key}`);

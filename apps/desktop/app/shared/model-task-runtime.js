@@ -229,8 +229,13 @@
     ];
   }
 
-  function buildVisionMessages({ mode = "writing-context", name = "Image", dataUrl = "" } = {}) {
+  // `detail` is an OpenAI-compatible hint on the image block: "low" makes the
+  // cloud model read a 512x512 copy, "original" hands over the picture as
+  // sent. A local VLM ignores the field, so the two routes stay equivalent
+  // and only the cloud one gets cheaper.
+  function buildVisionMessages({ mode = "writing-context", name = "Image", dataUrl = "", detail = "" } = {}) {
     const ocr = mode === "ocr";
+    const imageUrl = detail ? { url: dataUrl, detail } : { url: dataUrl };
     return [
       {
         role: "system",
@@ -245,7 +250,7 @@
               ? `Transcribe all readable text in this image as Markdown. Image name: ${name}`
               : `Describe this image for writing context in concise Markdown. Include visible subject, setting, notable details, readable text, and uncertainty. Image name: ${name}`,
           },
-          { type: "image_url", image_url: { url: dataUrl } },
+          { type: "image_url", image_url: imageUrl },
         ],
       },
     ];
@@ -404,25 +409,11 @@
     ];
   }
 
-  /**
-   * @param {{
-   *   verdict?: string,
-   *   premiseStatus?: string,
-   *   question?: string,
-   *   findings?: Array<{
-   *     type?: string,
-   *     quote?: string,
-   *     whyViewerGetsLost?: string,
-   *     minimumChange?: string,
-   *   }>,
-   *   keep?: string[],
-   * }} data
-   * @param {string} [language]
-   */
-  function eli5ReviewMarkdown(data = {}, language = "zh") {
+  // The creator-facing names for the nine ELI5 problem types, shared by the
+  // chat report and the inline finding rows.
+  function eli5ReviewLabels(language = "zh") {
     const zh = String(language || "").toLowerCase().startsWith("zh");
-    const source = data && typeof data === "object" ? data : {};
-    const typeLabels = zh
+    return zh
       ? {
           "missing-step": "少了一步",
           "undefined-term": "词没解释",
@@ -445,6 +436,27 @@
           "fact-boundary": "Fact boundary too absolute",
           pace: "Pace",
         };
+  }
+
+  /**
+   * @param {{
+   *   verdict?: string,
+   *   premiseStatus?: string,
+   *   question?: string,
+   *   findings?: Array<{
+   *     type?: string,
+   *     quote?: string,
+   *     whyViewerGetsLost?: string,
+   *     minimumChange?: string,
+   *   }>,
+   *   keep?: string[],
+   * }} data
+   * @param {string} [language]
+   */
+  function eli5ReviewMarkdown(data = {}, language = "zh") {
+    const zh = String(language || "").toLowerCase().startsWith("zh");
+    const source = data && typeof data === "object" ? data : {};
+    const typeLabels = eli5ReviewLabels(language);
     const premiseLabels = zh
       ? { sound: "前提成立", needs_correction: "前提需要纠正", uncertain: "前提不确定" }
       : { sound: "Premise sound", needs_correction: "Premise needs correction", uncertain: "Premise uncertain" };
@@ -512,6 +524,7 @@
     shouldRepairHumanizerOutput,
     findHumanizerOutputHits,
     buildHumanizerRepairMessages,
+    eli5ReviewLabels,
     eli5ReviewMarkdown,
   });
 });

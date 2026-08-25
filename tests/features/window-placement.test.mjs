@@ -145,6 +145,48 @@ test.assertIncludes(
   'win.dataset.userPositioned === "true"',
   "reopening a user-positioned window preserves spatial memory",
 );
+
+const viewportClampFunctions = [
+  "keyboardInsetValue",
+  "clampWindowToViewport",
+  "reconcileVisibleSystemWindowsToViewport",
+].map((name) => readFunction(windowManager, name)).join("\n");
+const narrowStyles = { left: "184px", top: "18px", height: "496px", maxHeight: "496px" };
+const narrowWindow = {
+  dataset: { userPositioned: "false" },
+  getBoundingClientRect: () => {
+    const left = Number.parseFloat(narrowStyles.left);
+    const top = Number.parseFloat(narrowStyles.top);
+    const height = Number.parseFloat(narrowStyles.height);
+    return { left, right: left + 390, top, bottom: top + height, width: 390, height };
+  },
+};
+let viewportWrites = 0;
+const clampRuntime = Function("environment", `
+  const { document, window, getComputedStyle, setInlineStyleValue } = environment;
+  ${viewportClampFunctions}
+  return { clampWindowToViewport, reconcileVisibleSystemWindowsToViewport };
+`)({
+  document: {
+    documentElement: { clientWidth: 390, clientHeight: 844 },
+    querySelectorAll: () => [narrowWindow],
+  },
+  window: { innerWidth: 390, innerHeight: 844 },
+  getComputedStyle: () => ({ getPropertyValue: () => "0px" }),
+  setInlineStyleValue: (_win, property, value) => { viewportWrites += 1; narrowStyles[property] = value; },
+});
+clampRuntime.reconcileVisibleSystemWindowsToViewport();
+test.assert(
+  narrowStyles.left === "0px" && Number.parseFloat(narrowStyles.height) <= 810,
+  "a system-positioned full-width window is brought wholly on-screen after a wide-to-phone resize",
+);
+const writesBeforeUserWindow = viewportWrites;
+const userWindow = {
+  dataset: { userPositioned: "true" },
+  getBoundingClientRect: () => ({ left: 184, right: 574, top: 18, bottom: 514, width: 390, height: 496 }),
+};
+clampRuntime.clampWindowToViewport(userWindow);
+test.assert(viewportWrites === writesBeforeUserWindow, "viewport reconciliation never overwrites a user-positioned desktop frame");
 test.assertIncludes(
   windowManager,
   "writingLayoutWindowNames.has(name)",

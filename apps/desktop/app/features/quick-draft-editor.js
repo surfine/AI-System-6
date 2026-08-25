@@ -224,6 +224,7 @@ function quickDraftMarkdownPreview(text = "") {
 
 function renderQuickDraftPreviewPane() {
   if (quickDraftDisplayMode === "grain") renderQuickDraftGrain();
+  else if (quickDraftDisplayMode === "listen") window.AISystem6QuickDraftListen?.renderQuickDraftListenView?.();
   else renderQuickDraftReadingView();
 }
 
@@ -238,10 +239,15 @@ function syncQuickDraftPreviewButtons(active) {
     button.classList.toggle("is-active", on);
     button.setAttribute("aria-selected", on ? "true" : "false");
   });
-  const panel = document.getElementById("quick-draft-paper-view");
-  const selected = refs.form?.querySelector('[data-quick-draft-display][aria-selected="true"]');
+  // The tablist and its panel are both in the lightroom window. They were not:
+  // the tabs moved there with the split and kept naming the paper body left
+  // behind in Quick Draft, so the tablist advertised a relationship across two
+  // windows — and the panel was labelled by "Back to the Draft", which is a
+  // door, not a tab.
+  const panel = document.getElementById("lightroom-paper-view");
+  const selected = quickDraftQuery('[data-quick-draft-display][aria-selected="true"][role="tab"]');
   if (panel && selected?.id) panel.setAttribute("aria-labelledby", selected.id);
-  const group = refs.form?.querySelector('.draft-desk-display-switch[role="tablist"]');
+  const group = quickDraftQuery('.draft-desk-display-switch[role="tablist"]');
   if (group && typeof syncRovingTabStops === "function") syncRovingTabStops(group);
   getWindow("quickDraft")?.classList.toggle("is-reading", reading);
 }
@@ -260,17 +266,29 @@ function syncQuickDraftDrawerButtons() {
   });
 }
 
+// The views of a draft live in 文字亮室 now, so opening one no longer turns the
+// paper over. The writer keeps the body in front of them and the darkroom sits
+// beside it, which is the whole reason the two are separate windows: looking at
+// what a pass did to a sentence while the sentence is still in reach.
 function showQuickDraftDisplayMode(mode) {
-  const container = refs.draft?.closest(".teachtext-editor-container");
-  if (!container || !refs.preview || !refs.draft) return;
-  quickDraftDisplayMode = mode === "grain" ? "grain" : "read";
-  container.classList.add("is-previewing");
-  container.classList.toggle("is-graining", quickDraftDisplayMode === "grain");
+  if (!refs.preview || !refs.draft) return;
+  const container = refs.preview.closest(".lightroom-view") || refs.preview.parentElement;
+  if (quickDraftDisplayMode === "listen" && mode !== "listen") window.AISystem6QuickDraftListen?.stop?.();
+  quickDraftDisplayMode = mode === "grain" ? "grain" : mode === "listen" ? "listen" : "read";
+  container?.classList.add("is-previewing");
+  container?.classList.toggle("is-graining", quickDraftDisplayMode === "grain");
+  container?.classList.toggle("is-listening", quickDraftDisplayMode === "listen");
   refs.preview.classList.remove("is-hidden");
   refs.preview.classList.toggle("quick-draft-grain-pane", quickDraftDisplayMode === "grain");
-  refs.draft.classList.add("is-hidden");
+  refs.preview.classList.toggle("draft-desk-listen-pane", quickDraftDisplayMode === "listen");
+  openLightroomWindow();
   syncQuickDraftPreviewButtons(true);
+  // The reading view still follows the caret. It is in another window now, but
+  // "show me where I am" did not stop being true when it moved.
+  if (quickDraftDisplayMode === "read") enterPreviewAtCaret(refs.draft, refs.preview);
   renderQuickDraftPreviewPane();
+  // Grain and Listen are their own views of the paper, not the paper turned
+  // over, so only the reading view follows the caret.
   if (typeof updateMenuState === "function") updateMenuState();
 }
 
@@ -281,6 +299,7 @@ function currentQuickDraftDisplayMode() {
 function setQuickDraftDisplayMode(display = "body") {
   if (display === "grain") showQuickDraftDisplayMode("grain");
   else if (display === "read") showQuickDraftDisplayMode("read");
+  else if (display === "listen") showQuickDraftDisplayMode("listen");
   else leaveQuickDraftPreview();
   return currentQuickDraftDisplayMode();
 }
@@ -301,13 +320,16 @@ function toggleQuickDraftComposite() {
 }
 
 function leaveQuickDraftPreview() {
-  const container = refs.draft?.closest(".teachtext-editor-container");
-  if (!container || !refs.preview || !refs.draft) return;
+  if (!refs.preview || !refs.draft) return;
+  const container = refs.preview.closest(".lightroom-view") || refs.preview.parentElement;
+  if (quickDraftDisplayMode === "listen") window.AISystem6QuickDraftListen?.stop?.();
+  const wasReading = quickDraftDisplayMode === "read";
   quickDraftDisplayMode = "body";
-  container.classList.remove("is-previewing", "is-graining");
+  container?.classList.remove("is-previewing", "is-graining", "is-listening");
+  if (wasReading) leavePreviewToCaret(refs.draft, refs.preview);
+  closeLightroomWindow();
   refs.preview.classList.add("is-hidden");
-  refs.preview.classList.remove("quick-draft-grain-pane");
-  refs.draft.classList.remove("is-hidden");
+  refs.preview.classList.remove("quick-draft-grain-pane", "draft-desk-listen-pane");
   syncQuickDraftPreviewButtons(false);
   refs.draft.focus();
   if (typeof updateMenuState === "function") updateMenuState();
@@ -355,7 +377,7 @@ function presentQuickDraftModelFailure(error, context = {}) {
 
 function restoreDumpToBody() {
   const slot = activeProjectQuickDraft();
-  const latest = slot?.record?.workspace?.versions?.at(-1);
+  const latest = darkroomOf(slot?.record).versions?.at(-1);
   if (!latest?.body) {
     setQuickDraftStatus(t("quick_draft_dump_empty"));
     return false;
@@ -364,7 +386,7 @@ function restoreDumpToBody() {
   refs.draft.value = latest.body;
   renderQuickDraftPreview();
   const version = normalizeQuickDraftVersion({ id: stableId("version"), body: previousBody, title: slot.record.workspace.title, createdAt: new Date().toISOString(), reason: "restore", source: "quick-draft" });
-  return commitQuickDraft({ workspace: { body: latest.body, versions: [...slot.record.workspace.versions, version].slice(-100) } }).then((result) => {
+  return commitQuickDraft({ workspace: { body: latest.body, versions: [...darkroomOf(slot.record).versions, version].slice(-100) } }).then((result) => {
     if (!result.ok) {
       refs.draft.value = previousBody;
       setQuickDraftStatus(t("quick_draft_save_failed"));
@@ -405,8 +427,9 @@ function quickDraftVersionRow({ label, meta, id, kind }) {
 function renderQuickDraftVersions(record = activeProjectQuickDraft({ create: false })?.record) {
   if (!refs.versionsList) return;
   const workspace = normalizeQuickDraftRecord(record).workspace;
-  const versions = workspace.versions || [];
-  const negativeAt = String(workspace.composition?.negativeUpdatedAt || "");
+  const darkroom = darkroomOf(record);
+  const versions = darkroom.versions || [];
+  const negativeAt = String(darkroom.negativeUpdatedAt || "");
   refs.versionsList.replaceChildren();
   if (!versions.length && !negativeAt) {
     refs.versionsList.textContent = t("quick_draft_versions_empty");
@@ -449,16 +472,17 @@ async function restoreQuickDraftVersion(id = "", kind = "version") {
     return false;
   }
   const workspace = normalizeQuickDraftRecord(slot.record).workspace;
+  const darkroom = darkroomOf(slot.record);
   const target = kind === "negative"
-    ? { body: String(workspace.composition?.negative || ""), id: "negative" }
-    : (workspace.versions || []).find((entry) => entry.id === id);
+    ? { body: String(darkroom.negative || ""), id: "negative" }
+    : (darkroom.versions || []).find((entry) => entry.id === id);
   if (!target || !String(target.body || "").trim()) {
     setQuickDraftStatus(t("quick_draft_version_empty"));
     return false;
   }
   const current = String(refs.draft?.value || workspace.body || "");
   const kept = current.trim()
-    ? [...(workspace.versions || []), {
+    ? [...(darkroom.versions || []), {
       id: `version-${Date.now()}`,
       body: current,
       title: String(workspace.title || ""),
@@ -466,7 +490,7 @@ async function restoreQuickDraftVersion(id = "", kind = "version") {
       reason: "before-restore",
       source: "quick-draft",
     }]
-    : workspace.versions;
+    : darkroom.versions;
   if (refs.draft) refs.draft.value = target.body;
   const committed = await commitQuickDraft({ workspace: { body: target.body, versions: kept } });
   if (!committed.ok) {

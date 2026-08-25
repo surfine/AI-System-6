@@ -69,14 +69,25 @@ Control meanings are load-bearing:
 
 Progressive discovery divides responsibility instead of building one tutorial:
 
-- OOBE mounts one read-only Welcome Floppy and opens it in Finder. Read Me First
-  points to the Apple and Special menus; sibling objects expose a deterministic
-  30-second tour, the real AI readiness state, and iPhone Home Screen help only
-  on iOS. Nothing creates a project or enters Writing Studio. Closing the disk
-  hands the desktop back; Start Here remounts it later.
+- On a true first use with no Working Session to resume, ClioTalk opens to one
+  short greeting and a few optional conversation starters. They are prompts,
+  not permanent modes. The writer may ignore them, type anything, or skip the
+  introduction; the first ordinary exchange completes it. Returning empty
+  Chats use ClioTalk's normal welcome. OOBE never becomes a wizard and never
+  leads with provider fields, project setup, or a feature inventory.
+- Clio introduces named objects only when the current task reaches them. It may
+  offer an existing application action for Project Hard Disk, Scrapbook,
+  Question Sheet, TeachText, Review Desk, or AI Settings, but it does not
+  reproduce those applications inside conversation or make model output saved
+  work. Start Here and Replay Introduction return to this same short ClioTalk
+  entry; the deterministic 30-second tour remains optional, not a boot step.
 - MultiFinder is discovered through the startup environment: briefly explain
   Finder versus MultiFinder where that choice is made, then teach the real
   menu-bar switcher only after MultiFinder is enabled.
+- System Help remains the browsable, version-controlled catalog of product
+  objects and actions. ClioTalk reuses that local knowledge for task-oriented
+  questions and does not search the web for product help unless the user
+  explicitly asks it to. System Help is not a second onboarding flow.
 - [Balloon Help](https://en.wikipedia.org/wiki/Balloon_help) is a state-aware
   help mode, discoverable by default on hover-capable devices so new users meet
   it, and user-toggleable with the choice persisted. It answers “What is this?”

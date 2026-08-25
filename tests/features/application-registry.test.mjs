@@ -47,9 +47,14 @@ test.assertIncludes(quickDraftHandoff, 'dispatch("teachText", { intent: "open"',
 test.assertIncludes(quickDraftHandoff, 'dispatch("reviewDesk", {', "Quick Draft -> Review Desk dispatches");
 
 // The intent vocabulary stays the closed set from the product plan.
+// "develop" joined the set when 文字亮室 became an application. It is its own
+// intent rather than a reuse: edit belongs to TeachText, which is the default
+// opener for a text object, and review belongs to the Review Desk. Adding one
+// is a deliberate act — the set stays closed, and this line is where it is
+// widened on purpose.
 test.assertIncludes(
   registrySource,
-  '"open", "read", "edit", "review", "map", "present", "attach", "export"',
+  '"open", "read", "edit", "review", "develop", "map", "present", "attach", "export"',
   "the registry declares the closed intent set"
 );
 test.assertIncludes(registrySource, "function registerApplication", "apps register through one descriptor contract");

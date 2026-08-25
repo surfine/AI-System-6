@@ -12,8 +12,15 @@ import { fileURLToPath } from "node:url";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const budgetPath = "tooling/design-budget.json";
+const fidelityContractPath = "tooling/classic-platinum-fidelity-contract.json";
 const budget = JSON.parse(readFileSync(join(root, budgetPath), "utf8"));
 const failures = [];
+let fidelityContract = null;
+try {
+  fidelityContract = JSON.parse(readFileSync(join(root, fidelityContractPath), "utf8"));
+} catch (error) {
+  failures.push(`${fidelityContractPath} is unreadable: ${error.message}`);
+}
 
 function ok(message) {
   console.log(`OK  ${message}`);
@@ -55,6 +62,79 @@ const allSourceFiles = sourceFiles.map((abs) => ({
   text: readFileSync(abs, "utf8"),
 }));
 const cssSourceFiles = allSourceFiles.filter((file) => file.rel.endsWith(".css"));
+
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function validateClassicPlatinumContract() {
+  if (!fidelityContract) return;
+  const requiredPriority = [
+    "disabled",
+    "loading",
+    "selected",
+    "pressed",
+    "focus-visible",
+    "hover-preview",
+    "default",
+  ];
+  if (fidelityContract.schemaVersion !== 1) {
+    fail(`${fidelityContractPath} schemaVersion must be 1`);
+  }
+  const canonicalSource = String(fidelityContract.canonicalSource || "");
+  if (!canonicalSource || !existsSync(join(root, canonicalSource))) {
+    fail(`${fidelityContractPath} canonicalSource must name an existing document`);
+  }
+  for (const principle of ["productFirst", "smoothClassicSvg", "noPixelMode", "noWholeUiScale"]) {
+    if (fidelityContract.principles?.[principle] !== true) {
+      fail(`${fidelityContractPath} principles.${principle} must remain true`);
+    }
+  }
+  if (JSON.stringify(fidelityContract.states?.priority) !== JSON.stringify(requiredPriority)) {
+    fail(`${fidelityContractPath} states.priority must match the shared control-state order`);
+  }
+  if (fidelityContract.enforcement?.owner !== "tooling/verify-design.mjs") {
+    fail(`${fidelityContractPath} enforcement.owner must be tooling/verify-design.mjs`);
+  }
+  const liveTokens = fidelityContract.enforcement?.requiredLiveRoleTokens;
+  if (!Array.isArray(liveTokens) || liveTokens.length === 0) {
+    fail(`${fidelityContractPath} must declare requiredLiveRoleTokens`);
+    return;
+  }
+  const seen = new Set();
+  for (const entry of liveTokens) {
+    const name = String(entry?.name || "");
+    const minOccurrences = Number(entry?.minOccurrences);
+    if (!/^--[a-z0-9-]+$/.test(name) || !Number.isInteger(minOccurrences) || minOccurrences < 2) {
+      fail(`${fidelityContractPath} has an invalid live token entry: ${JSON.stringify(entry)}`);
+      continue;
+    }
+    if (seen.has(name)) {
+      fail(`${fidelityContractPath} repeats live token ${name}`);
+      continue;
+    }
+    seen.add(name);
+    const escaped = escapeRegExp(name);
+    let declarations = 0;
+    let consumers = 0;
+    let occurrences = 0;
+    for (const file of cssSourceFiles) {
+      declarations += (file.text.match(new RegExp(`(?:^|\\n)\\s*${escaped}\\s*:`, "g")) || []).length;
+      consumers += (file.text.match(new RegExp(`var\\(\\s*${escaped}(?:\\s*[,\\)])`, "g")) || []).length;
+      occurrences += file.text.split(name).length - 1;
+    }
+    if (declarations < 1 || consumers < 1 || occurrences < minOccurrences) {
+      fail(`${fidelityContractPath} live token ${name} needs a declaration and consumer (declarations ${declarations}, consumers ${consumers}, occurrences ${occurrences}/${minOccurrences})`);
+    }
+  }
+  const referenceOnly = fidelityContract.enforcement?.referenceOnlySections;
+  if (!Array.isArray(referenceOnly) || !["finePointer", "coarsePointer", "geometryTokens", "windowPaddingTokens"].every((name) => referenceOnly.includes(name))) {
+    fail(`${fidelityContractPath} must keep proposed geometry sections reference-only`);
+  }
+  if (!failures.some((message) => message.startsWith(fidelityContractPath))) {
+    ok(`Classic/Platinum fidelity contract: ${liveTokens.length} live role tokens verified; reference-only targets do not create unused tokens`);
+  }
+}
 
 function lineOf(text, index) {
   return text.slice(0, index).split("\n").length;
@@ -164,6 +244,8 @@ function softShadowInBlockFindings(files, selector) {
   }
   return findings;
 }
+
+validateClassicPlatinumContract();
 
 const checks = [
   {

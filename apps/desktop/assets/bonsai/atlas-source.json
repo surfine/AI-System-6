@@ -1,0 +1,1810 @@
+{
+  "schema": "ai-system-6-bonsai-micro-voxel-source-v2",
+  "authoredAt": "2026-08-24T00:00:00.000Z",
+  "author": "AI System 6",
+  "license": "MIT",
+  "source": "original",
+  "geometry": {
+    "tileWidth": 48,
+    "tileHeight": 24,
+    "heightStep": 8,
+    "cellWidth": 160,
+    "cellHeight": 128,
+    "columns": 10
+  },
+  "palette": {
+    "grass": [
+      86,
+      124,
+      72,
+      255
+    ],
+    "grassLight": [
+      112,
+      150,
+      88,
+      255
+    ],
+    "grassDark": [
+      56,
+      86,
+      50,
+      255
+    ],
+    "soil": [
+      136,
+      108,
+      78,
+      255
+    ],
+    "soilLight": [
+      162,
+      132,
+      98,
+      255
+    ],
+    "rock": [
+      122,
+      124,
+      120,
+      255
+    ],
+    "rockLight": [
+      156,
+      158,
+      152,
+      255
+    ],
+    "water": [
+      64,
+      112,
+      140,
+      224
+    ],
+    "waterLight": [
+      96,
+      148,
+      172,
+      236
+    ],
+    "sand": [
+      198,
+      178,
+      134,
+      255
+    ],
+    "road": [
+      84,
+      84,
+      80,
+      255
+    ],
+    "roadLight": [
+      128,
+      128,
+      120,
+      255
+    ],
+    "rail": [
+      72,
+      66,
+      58,
+      255
+    ],
+    "metal": [
+      160,
+      162,
+      158,
+      255
+    ],
+    "wire": [
+      46,
+      50,
+      48,
+      255
+    ],
+    "pipe": [
+      72,
+      128,
+      146,
+      255
+    ],
+    "tree": [
+      52,
+      102,
+      56,
+      255
+    ],
+    "treeLight": [
+      90,
+      136,
+      74,
+      255
+    ],
+    "trunk": [
+      106,
+      80,
+      56,
+      255
+    ],
+    "residential": [
+      170,
+      104,
+      88,
+      255
+    ],
+    "residentialLight": [
+      210,
+      164,
+      140,
+      255
+    ],
+    "commercial": [
+      86,
+      108,
+      154,
+      255
+    ],
+    "commercialLight": [
+      142,
+      168,
+      202,
+      255
+    ],
+    "industrial": [
+      166,
+      132,
+      80,
+      255
+    ],
+    "industrialLight": [
+      204,
+      174,
+      110,
+      255
+    ],
+    "glass": [
+      142,
+      188,
+      196,
+      255
+    ],
+    "windowNight": [
+      250,
+      214,
+      110,
+      255
+    ],
+    "roofTile": [
+      128,
+      92,
+      66,
+      255
+    ],
+    "roofDark": [
+      94,
+      68,
+      50,
+      255
+    ],
+    "mortar": [
+      156,
+      138,
+      120,
+      255
+    ],
+    "snow": [
+      232,
+      236,
+      238,
+      255
+    ],
+    "snowDark": [
+      198,
+      208,
+      212,
+      255
+    ],
+    "olive": [
+      120,
+      130,
+      84,
+      255
+    ],
+    "concrete": [
+      178,
+      176,
+      164,
+      255
+    ],
+    "construction": [
+      198,
+      152,
+      64,
+      255
+    ],
+    "abandoned": [
+      84,
+      82,
+      76,
+      255
+    ],
+    "police": [
+      72,
+      98,
+      152,
+      255
+    ],
+    "fire": [
+      178,
+      72,
+      58,
+      255
+    ],
+    "school": [
+      168,
+      150,
+      98,
+      255
+    ],
+    "clinic": [
+      200,
+      208,
+      202,
+      255
+    ],
+    "white": [
+      236,
+      236,
+      226,
+      255
+    ],
+    "black": [
+      30,
+      32,
+      30,
+      255
+    ],
+    "red": [
+      188,
+      64,
+      54,
+      255
+    ],
+    "yellow": [
+      216,
+      186,
+      74,
+      255
+    ],
+    "blossom": [
+      240,
+      198,
+      198,
+      255
+    ],
+    "blossomDark": [
+      224,
+      170,
+      170,
+      255
+    ],
+    "winterCanopy": [
+      152,
+      154,
+      150,
+      255
+    ],
+    "highway": [
+      62,
+      64,
+      60,
+      255
+    ],
+    "highwayLight": [
+      136,
+      138,
+      130,
+      255
+    ]
+  },
+  "terrain": [
+    {
+      "id": "terrain.grass",
+      "kind": "terrain",
+      "colors": [
+        "grassLight",
+        "grass",
+        "grassDark"
+      ],
+      "height": 8
+    },
+    {
+      "id": "terrain.soil",
+      "kind": "terrain",
+      "colors": [
+        "soilLight",
+        "soil",
+        "grassDark"
+      ],
+      "height": 8
+    },
+    {
+      "id": "terrain.rock",
+      "kind": "terrain",
+      "colors": [
+        "rockLight",
+        "rock",
+        "grassDark"
+      ],
+      "height": 8
+    },
+    {
+      "id": "terrain.water",
+      "kind": "water",
+      "colors": [
+        "waterLight",
+        "water",
+        "water"
+      ],
+      "height": 0,
+      "animation": "water-2"
+    },
+    {
+      "id": "terrain.coast",
+      "kind": "coast",
+      "colors": [
+        "sand",
+        "soil",
+        "water"
+      ],
+      "height": 4
+    },
+    {
+      "id": "terrain.slope",
+      "kind": "slope",
+      "colors": [
+        "grassLight",
+        "soil",
+        "grassDark"
+      ],
+      "height": 12
+    },
+    {
+      "id": "terrain.lot",
+      "kind": "terrain",
+      "colors": [
+        "soilLight",
+        "soil",
+        "grassDark"
+      ],
+      "height": 2
+    },
+    {
+      "id": "terrain.snow",
+      "kind": "terrain",
+      "colors": [
+        "snow",
+        "snowDark",
+        "rockLight"
+      ],
+      "height": 8
+    }
+  ],
+  "connectors": [
+    {
+      "family": "road",
+      "color": "road",
+      "accent": "roadLight"
+    },
+    {
+      "family": "rail",
+      "color": "rail",
+      "accent": "metal"
+    },
+    {
+      "family": "wire",
+      "color": "wire",
+      "accent": "metal"
+    },
+    {
+      "family": "highway",
+      "color": "highway",
+      "accent": "highwayLight"
+    },
+    {
+      "family": "onramp",
+      "color": "road",
+      "accent": "roadLight",
+      "shapes": [
+        "ns",
+        "ne",
+        "nw",
+        "en",
+        "es",
+        "ew",
+        "sn",
+        "se",
+        "sw",
+        "wn",
+        "we",
+        "ws"
+      ]
+    },
+    {
+      "family": "bridge-road",
+      "color": "road",
+      "accent": "roadLight"
+    },
+    {
+      "family": "bridge-rail",
+      "color": "rail",
+      "accent": "metal"
+    },
+    {
+      "family": "bridge-highway",
+      "color": "road",
+      "accent": "roadLight"
+    }
+  ],
+  "connectorShapes": [
+    "mask-0",
+    "mask-1",
+    "mask-2",
+    "mask-3",
+    "mask-4",
+    "mask-5",
+    "mask-6",
+    "mask-7",
+    "mask-8",
+    "mask-9",
+    "mask-10",
+    "mask-11",
+    "mask-12",
+    "mask-13",
+    "mask-14",
+    "mask-15"
+  ],
+  "scenery": [
+    {
+      "id": "tree.broadleaf",
+      "kind": "tree",
+      "variant": 1
+    },
+    {
+      "id": "tree.conifer",
+      "kind": "tree",
+      "variant": 2
+    },
+    {
+      "id": "tree.young",
+      "kind": "tree",
+      "variant": 3
+    },
+    {
+      "id": "tree.maple",
+      "kind": "tree",
+      "variant": 4
+    },
+    {
+      "id": "utility.pipe",
+      "kind": "pipe",
+      "variant": 1
+    },
+    {
+      "id": "tree.blossom",
+      "kind": "tree",
+      "variant": 5
+    },
+    {
+      "id": "tree.winter",
+      "kind": "tree",
+      "variant": 6
+    }
+  ],
+  "buildingFamilies": [
+    {
+      "zone": "residential",
+      "prefix": "r",
+      "base": "residential",
+      "light": "residentialLight"
+    },
+    {
+      "zone": "commercial",
+      "prefix": "c",
+      "base": "commercial",
+      "light": "commercialLight"
+    },
+    {
+      "zone": "industrial",
+      "prefix": "i",
+      "base": "industrial",
+      "light": "industrialLight"
+    }
+  ],
+  "buildingStages": [
+    {
+      "stage": 1,
+      "density": "light",
+      "footprint": [
+        1,
+        1
+      ],
+      "height": 24
+    },
+    {
+      "stage": 2,
+      "density": "high",
+      "footprint": [
+        2,
+        2
+      ],
+      "height": 46
+    },
+    {
+      "stage": 3,
+      "density": "high",
+      "footprint": [
+        3,
+        3
+      ],
+      "height": 70
+    }
+  ],
+  "normalVariantsPerStage": 4,
+  "buildingStates": [
+    "foundation",
+    "construction",
+    "normal",
+    "declined",
+    "abandoned",
+    "recovering"
+  ],
+  "night": {
+    "buildings": true,
+    "facilities": true,
+    "catalog": true
+  },
+  "textureMaterials": {
+    "terrain.grass": {
+      "top": "terrain.grass.top",
+      "side": "terrain.grass.side"
+    },
+    "terrain.soil": {
+      "top": "terrain.soil",
+      "side": "terrain.soil"
+    },
+    "terrain.rock": {
+      "top": "terrain.rock",
+      "side": "terrain.rock"
+    },
+    "terrain.sand": {
+      "top": "terrain.sand",
+      "side": "terrain.sand"
+    },
+    "terrain.snow": {
+      "top": "terrain.snow",
+      "side": "terrain.snow"
+    },
+    "road": {
+      "top": "road",
+      "side": "road.side"
+    },
+    "rail": {
+      "top": "rail",
+      "side": "rail.side"
+    },
+    "wire": {
+      "top": "wire",
+      "side": "wire"
+    },
+    "pipe": {
+      "top": "pipe",
+      "side": "pipe"
+    },
+    "park": {
+      "top": "park",
+      "side": "park.side"
+    },
+    "wall.r.day": {
+      "top": "roof",
+      "side": "wall.r.day"
+    },
+    "wall.r.night": {
+      "top": "roof.dark",
+      "side": "wall.r.night"
+    },
+    "wall.c.day": {
+      "top": "roof",
+      "side": "wall.c.day"
+    },
+    "wall.c.night": {
+      "top": "roof.dark",
+      "side": "wall.c.night"
+    },
+    "wall.i.day": {
+      "top": "roof",
+      "side": "wall.i.day"
+    },
+    "wall.i.night": {
+      "top": "roof.dark",
+      "side": "wall.i.night"
+    },
+    "roof": {
+      "top": "roof",
+      "side": "roof"
+    },
+    "tree.trunk": {
+      "top": "trunk",
+      "side": "trunk"
+    },
+    "tree.canopy": {
+      "top": "canopy",
+      "side": "canopy"
+    },
+    "tree.maple": {
+      "top": "canopy.maple",
+      "side": "canopy.maple"
+    },
+    "construction": {
+      "top": "construction",
+      "side": "construction"
+    },
+    "abandoned": {
+      "top": "abandoned",
+      "side": "abandoned"
+    },
+    "concrete": {
+      "top": "concrete",
+      "side": "concrete"
+    },
+    "metal": {
+      "top": "metal",
+      "side": "metal"
+    },
+    "tunnel": {
+      "top": "tunnel",
+      "side": "tunnel"
+    },
+    "zone.military": {
+      "top": "zone.military",
+      "side": "zone.military"
+    },
+    "zone.airport": {
+      "top": "zone.airport",
+      "side": "zone.airport"
+    },
+    "zone.seaport": {
+      "top": "zone.seaport",
+      "side": "zone.seaport"
+    },
+    "facility.police": {
+      "top": "facility.police",
+      "side": "facility.police"
+    },
+    "facility.fire": {
+      "top": "facility.fire",
+      "side": "facility.fire"
+    },
+    "facility.school": {
+      "top": "facility.school",
+      "side": "facility.school"
+    },
+    "facility.clinic": {
+      "top": "facility.clinic",
+      "side": "facility.clinic"
+    },
+    "facility.coal": {
+      "top": "facility.coal",
+      "side": "facility.coal"
+    },
+    "facility.wind": {
+      "top": "facility.wind",
+      "side": "facility.wind"
+    },
+    "facility.nuclear": {
+      "top": "facility.nuclear",
+      "side": "facility.nuclear"
+    },
+    "facility.solar": {
+      "top": "facility.solar",
+      "side": "facility.solar"
+    },
+    "facility.tower": {
+      "top": "facility.tower",
+      "side": "facility.tower"
+    },
+    "facility.pump": {
+      "top": "facility.pump",
+      "side": "facility.pump"
+    },
+    "facility.station": {
+      "top": "facility.station",
+      "side": "facility.station"
+    },
+    "tree.blossom": {
+      "top": "canopy.blossom",
+      "side": "canopy.blossom"
+    },
+    "tree.winter": {
+      "top": "canopy.winter",
+      "side": "canopy.winter"
+    }
+  },
+  "textures": [
+    {
+      "id": "tunnel",
+      "pattern": "rock",
+      "base": "black",
+      "dark": "abandoned",
+      "light": "metal"
+    },
+    {
+      "id": "terrain.grass.top",
+      "pattern": "grass",
+      "base": "grassLight",
+      "dark": "grass",
+      "light": "grassDark"
+    },
+    {
+      "id": "terrain.grass.side",
+      "pattern": "grass",
+      "base": "grass",
+      "dark": "grassDark",
+      "light": "soil"
+    },
+    {
+      "id": "terrain.soil",
+      "pattern": "soil",
+      "base": "soil",
+      "dark": "soilLight",
+      "light": "rock"
+    },
+    {
+      "id": "terrain.rock",
+      "pattern": "rock",
+      "base": "rock",
+      "dark": "rockLight",
+      "light": "grassDark"
+    },
+    {
+      "id": "terrain.sand",
+      "pattern": "sand",
+      "base": "sand",
+      "dark": "white",
+      "light": "soilLight"
+    },
+    {
+      "id": "terrain.snow",
+      "pattern": "snow",
+      "base": "snow",
+      "dark": "snowDark",
+      "light": "white"
+    },
+    {
+      "id": "water",
+      "pattern": "water",
+      "base": "water",
+      "dark": "waterLight",
+      "light": "white"
+    },
+    {
+      "id": "road",
+      "pattern": "road",
+      "base": "road",
+      "dark": "roadLight",
+      "light": "black"
+    },
+    {
+      "id": "road.side",
+      "pattern": "rock",
+      "base": "road",
+      "dark": "roadLight",
+      "light": "soil"
+    },
+    {
+      "id": "rail",
+      "pattern": "rail",
+      "base": "rail",
+      "dark": "metal",
+      "light": "soil"
+    },
+    {
+      "id": "rail.side",
+      "pattern": "soil",
+      "base": "rail",
+      "dark": "soil",
+      "light": "rock"
+    },
+    {
+      "id": "wire",
+      "pattern": "wire",
+      "base": "wire",
+      "dark": "metal",
+      "light": "black"
+    },
+    {
+      "id": "pipe",
+      "pattern": "pipe",
+      "base": "pipe",
+      "dark": "waterLight",
+      "light": "black"
+    },
+    {
+      "id": "park",
+      "pattern": "park",
+      "base": "grassLight",
+      "dark": "grass",
+      "light": "white"
+    },
+    {
+      "id": "park.side",
+      "pattern": "grass",
+      "base": "grassDark",
+      "dark": "soil",
+      "light": "grass"
+    },
+    {
+      "id": "wall.r.day",
+      "pattern": "wall",
+      "base": "residential",
+      "dark": "residentialLight",
+      "light": "mortar",
+      "window": "glass",
+      "cols": 4,
+      "rows": 3,
+      "brick": false
+    },
+    {
+      "id": "wall.r.night",
+      "pattern": "wall",
+      "base": "residential",
+      "dark": "residentialLight",
+      "light": "mortar",
+      "window": "windowNight",
+      "cols": 4,
+      "rows": 3,
+      "brick": false
+    },
+    {
+      "id": "wall.c.day",
+      "pattern": "wall",
+      "base": "commercial",
+      "dark": "commercialLight",
+      "light": "metal",
+      "window": "glass",
+      "cols": 3,
+      "rows": 3,
+      "brick": false,
+      "largeWindows": true
+    },
+    {
+      "id": "wall.c.night",
+      "pattern": "wall",
+      "base": "commercial",
+      "dark": "commercialLight",
+      "light": "metal",
+      "window": "windowNight",
+      "cols": 3,
+      "rows": 3,
+      "brick": false,
+      "largeWindows": true
+    },
+    {
+      "id": "wall.i.day",
+      "pattern": "wall",
+      "base": "industrial",
+      "dark": "industrialLight",
+      "light": "mortar",
+      "window": "glass",
+      "cols": 3,
+      "rows": 2,
+      "brick": true
+    },
+    {
+      "id": "wall.i.night",
+      "pattern": "wall",
+      "base": "industrial",
+      "dark": "industrialLight",
+      "light": "mortar",
+      "window": "windowNight",
+      "cols": 3,
+      "rows": 2,
+      "brick": true
+    },
+    {
+      "id": "roof",
+      "pattern": "roof",
+      "base": "roofTile",
+      "dark": "roofDark",
+      "light": "white"
+    },
+    {
+      "id": "roof.dark",
+      "pattern": "roof",
+      "base": "roofDark",
+      "dark": "abandoned",
+      "light": "metal"
+    },
+    {
+      "id": "trunk",
+      "pattern": "trunk",
+      "base": "trunk",
+      "dark": "soil",
+      "light": "white"
+    },
+    {
+      "id": "canopy",
+      "pattern": "canopy",
+      "base": "tree",
+      "dark": "treeLight",
+      "light": "grassDark"
+    },
+    {
+      "id": "canopy.maple",
+      "pattern": "maple",
+      "base": "red",
+      "dark": "fire",
+      "light": "residentialLight"
+    },
+    {
+      "id": "construction",
+      "pattern": "stripes",
+      "base": "construction",
+      "dark": "white",
+      "light": "black"
+    },
+    {
+      "id": "abandoned",
+      "pattern": "abandoned",
+      "base": "abandoned",
+      "dark": "concrete",
+      "light": "black"
+    },
+    {
+      "id": "concrete",
+      "pattern": "concrete",
+      "base": "concrete",
+      "dark": "metal",
+      "light": "black"
+    },
+    {
+      "id": "metal",
+      "pattern": "metal",
+      "base": "metal",
+      "dark": "concrete",
+      "light": "black"
+    },
+    {
+      "id": "zone.military",
+      "pattern": "military",
+      "base": "olive",
+      "dark": "grassDark",
+      "light": "metal"
+    },
+    {
+      "id": "zone.airport",
+      "pattern": "runway",
+      "base": "road",
+      "dark": "roadLight",
+      "light": "white"
+    },
+    {
+      "id": "zone.seaport",
+      "pattern": "dock",
+      "base": "concrete",
+      "dark": "waterLight",
+      "light": "yellow"
+    },
+    {
+      "id": "facility.police",
+      "pattern": "police",
+      "base": "police",
+      "dark": "white",
+      "light": "black"
+    },
+    {
+      "id": "facility.fire",
+      "pattern": "fire",
+      "base": "fire",
+      "dark": "white",
+      "light": "yellow"
+    },
+    {
+      "id": "facility.school",
+      "pattern": "wall",
+      "base": "school",
+      "dark": "industrialLight",
+      "light": "mortar",
+      "window": "glass",
+      "cols": 3,
+      "rows": 2,
+      "brick": false
+    },
+    {
+      "id": "facility.clinic",
+      "pattern": "clinic",
+      "base": "clinic",
+      "dark": "white",
+      "light": "red"
+    },
+    {
+      "id": "facility.coal",
+      "pattern": "coal",
+      "base": "abandoned",
+      "dark": "metal",
+      "light": "construction"
+    },
+    {
+      "id": "facility.wind",
+      "pattern": "wind",
+      "base": "white",
+      "dark": "metal",
+      "light": "concrete"
+    },
+    {
+      "id": "facility.nuclear",
+      "pattern": "nuclear",
+      "base": "white",
+      "dark": "yellow",
+      "light": "black"
+    },
+    {
+      "id": "facility.solar",
+      "pattern": "solar",
+      "base": "glass",
+      "dark": "white",
+      "light": "metal"
+    },
+    {
+      "id": "facility.tower",
+      "pattern": "tower",
+      "base": "pipe",
+      "dark": "metal",
+      "light": "black"
+    },
+    {
+      "id": "facility.pump",
+      "pattern": "pump",
+      "base": "pipe",
+      "dark": "waterLight",
+      "light": "metal"
+    },
+    {
+      "id": "facility.station",
+      "pattern": "station",
+      "base": "rail",
+      "dark": "metal",
+      "light": "yellow"
+    },
+    {
+      "id": "canopy.blossom",
+      "pattern": "blossom",
+      "base": "blossom",
+      "dark": "blossomDark",
+      "light": "white"
+    },
+    {
+      "id": "canopy.winter",
+      "pattern": "winterCanopy",
+      "base": "winterCanopy",
+      "dark": "snowDark",
+      "light": "white"
+    }
+  ],
+  "facilities": [
+    {
+      "id": "facility.coal",
+      "kind": "facility",
+      "footprint": [
+        2,
+        2
+      ],
+      "height": 66,
+      "base": "abandoned",
+      "light": "metal",
+      "variant": 1
+    },
+    {
+      "id": "facility.wind",
+      "kind": "wind",
+      "footprint": [
+        1,
+        1
+      ],
+      "height": 78,
+      "base": "white",
+      "light": "metal",
+      "variant": 1,
+      "animation": "rotor-4"
+    },
+    {
+      "id": "facility.pump",
+      "kind": "facility",
+      "footprint": [
+        1,
+        1
+      ],
+      "height": 30,
+      "base": "pipe",
+      "light": "glass",
+      "variant": 1
+    },
+    {
+      "id": "facility.tower",
+      "kind": "tower",
+      "footprint": [
+        1,
+        1
+      ],
+      "height": 62,
+      "base": "pipe",
+      "light": "metal",
+      "variant": 1
+    },
+    {
+      "id": "facility.police",
+      "kind": "facility",
+      "footprint": [
+        1,
+        1
+      ],
+      "height": 34,
+      "base": "police",
+      "light": "commercialLight",
+      "variant": 1
+    },
+    {
+      "id": "facility.fire",
+      "kind": "facility",
+      "footprint": [
+        1,
+        1
+      ],
+      "height": 34,
+      "base": "fire",
+      "light": "residentialLight",
+      "variant": 1
+    },
+    {
+      "id": "facility.school",
+      "kind": "facility",
+      "footprint": [
+        1,
+        1
+      ],
+      "height": 32,
+      "base": "school",
+      "light": "industrialLight",
+      "variant": 1
+    },
+    {
+      "id": "facility.clinic",
+      "kind": "facility",
+      "footprint": [
+        1,
+        1
+      ],
+      "height": 38,
+      "base": "clinic",
+      "light": "white",
+      "variant": 1
+    },
+    {
+      "id": "facility.station",
+      "kind": "station",
+      "footprint": [
+        2,
+        2
+      ],
+      "height": 36,
+      "base": "rail",
+      "light": "metal",
+      "variant": 1
+    },
+    {
+      "id": "facility.hydro",
+      "kind": "facility",
+      "footprint": [
+        1,
+        1
+      ],
+      "height": 26,
+      "base": "waterLight",
+      "light": "metal",
+      "variant": 1
+    },
+    {
+      "id": "facility.oil",
+      "kind": "facility",
+      "footprint": [
+        4,
+        4
+      ],
+      "height": 58,
+      "base": "abandoned",
+      "light": "metal",
+      "variant": 1
+    },
+    {
+      "id": "facility.gas",
+      "kind": "facility",
+      "footprint": [
+        4,
+        4
+      ],
+      "height": 44,
+      "base": "metal",
+      "light": "glass",
+      "variant": 1
+    },
+    {
+      "id": "facility.nuclear",
+      "kind": "facility",
+      "footprint": [
+        4,
+        4
+      ],
+      "height": 70,
+      "base": "white",
+      "light": "glass",
+      "variant": 1
+    },
+    {
+      "id": "facility.solar",
+      "kind": "facility",
+      "footprint": [
+        4,
+        4
+      ],
+      "height": 16,
+      "base": "glass",
+      "light": "metal",
+      "variant": 1
+    },
+    {
+      "id": "facility.microwave",
+      "kind": "facility",
+      "footprint": [
+        4,
+        4
+      ],
+      "height": 84,
+      "base": "metal",
+      "light": "red",
+      "variant": 1
+    },
+    {
+      "id": "facility.fusion",
+      "kind": "facility",
+      "footprint": [
+        4,
+        4
+      ],
+      "height": 76,
+      "base": "white",
+      "light": "waterLight",
+      "variant": 1
+    },
+    {
+      "id": "facility.treatment",
+      "kind": "facility",
+      "footprint": [
+        1,
+        1
+      ],
+      "height": 26,
+      "base": "pipe",
+      "light": "glass",
+      "variant": 1
+    },
+    {
+      "id": "facility.desal",
+      "kind": "facility",
+      "footprint": [
+        2,
+        2
+      ],
+      "height": 30,
+      "base": "pipe",
+      "light": "waterLight",
+      "variant": 1
+    },
+    {
+      "id": "facility.subway-station",
+      "kind": "facility",
+      "footprint": [
+        1,
+        1
+      ],
+      "height": 24,
+      "base": "concrete",
+      "light": "commercialLight",
+      "variant": 1
+    },
+    {
+      "id": "facility.bus",
+      "kind": "facility",
+      "footprint": [
+        1,
+        1
+      ],
+      "height": 26,
+      "base": "commercial",
+      "light": "yellow",
+      "variant": 1
+    }
+  ],
+  "agents": [
+    {
+      "id": "agent.car.1",
+      "kind": "car",
+      "variant": 1,
+      "animation": "road-motion"
+    },
+    {
+      "id": "agent.car.2",
+      "kind": "car",
+      "variant": 2,
+      "animation": "road-motion"
+    },
+    {
+      "id": "agent.car.3",
+      "kind": "car",
+      "variant": 3,
+      "animation": "road-motion"
+    },
+    {
+      "id": "agent.car.4",
+      "kind": "car",
+      "variant": 4,
+      "animation": "road-motion"
+    },
+    {
+      "id": "agent.pedestrian.1",
+      "kind": "pedestrian",
+      "variant": 1,
+      "animation": "walk-2"
+    },
+    {
+      "id": "agent.pedestrian.2",
+      "kind": "pedestrian",
+      "variant": 2,
+      "animation": "walk-2"
+    },
+    {
+      "id": "agent.train.1",
+      "kind": "train",
+      "variant": 1,
+      "animation": "rail-motion"
+    },
+    {
+      "id": "agent.train.2",
+      "kind": "train",
+      "variant": 2,
+      "animation": "rail-motion"
+    },
+    {
+      "id": "agent.service.police",
+      "kind": "service",
+      "variant": 1,
+      "animation": "road-motion"
+    },
+    {
+      "id": "agent.service.fire",
+      "kind": "service",
+      "variant": 2,
+      "animation": "road-motion"
+    },
+    {
+      "id": "agent.service.medical",
+      "kind": "service",
+      "variant": 3,
+      "animation": "road-motion"
+    },
+    {
+      "id": "agent.smoke.1",
+      "kind": "smoke",
+      "variant": 1,
+      "animation": "smoke-3"
+    },
+    {
+      "id": "agent.smoke.2",
+      "kind": "smoke",
+      "variant": 2,
+      "animation": "smoke-3"
+    },
+    {
+      "id": "agent.smoke.3",
+      "kind": "smoke",
+      "variant": 3,
+      "animation": "smoke-3"
+    }
+  ],
+  "catalogSpecials": [
+    {
+      "id": "catalog.city_hall",
+      "kind": "facility",
+      "footprint": [
+        2,
+        2
+      ],
+      "height": 52,
+      "base": "concrete",
+      "light": "glass",
+      "variant": 1
+    },
+    {
+      "id": "catalog.hospital",
+      "kind": "facility",
+      "footprint": [
+        2,
+        2
+      ],
+      "height": 44,
+      "base": "clinic",
+      "light": "white",
+      "variant": 1
+    },
+    {
+      "id": "catalog.museum",
+      "kind": "facility",
+      "footprint": [
+        2,
+        2
+      ],
+      "height": 36,
+      "base": "concrete",
+      "light": "glass",
+      "variant": 1
+    },
+    {
+      "id": "catalog.stadium",
+      "kind": "facility",
+      "footprint": [
+        3,
+        3
+      ],
+      "height": 30,
+      "base": "concrete",
+      "light": "red",
+      "variant": 1
+    },
+    {
+      "id": "catalog.prison",
+      "kind": "facility",
+      "footprint": [
+        2,
+        2
+      ],
+      "height": 28,
+      "base": "abandoned",
+      "light": "metal",
+      "variant": 1
+    },
+    {
+      "id": "catalog.college",
+      "kind": "facility",
+      "footprint": [
+        2,
+        2
+      ],
+      "height": 40,
+      "base": "school",
+      "light": "glass",
+      "variant": 1
+    },
+    {
+      "id": "catalog.zoo",
+      "kind": "facility",
+      "footprint": [
+        2,
+        2
+      ],
+      "height": 24,
+      "base": "grassDark",
+      "light": "treeLight",
+      "variant": 1
+    },
+    {
+      "id": "catalog.statue",
+      "kind": "facility",
+      "footprint": [
+        1,
+        1
+      ],
+      "height": 44,
+      "base": "concrete",
+      "light": "yellow",
+      "variant": 1
+    },
+    {
+      "id": "catalog.park_big",
+      "kind": "facility",
+      "footprint": [
+        2,
+        2
+      ],
+      "height": 20,
+      "base": "grassLight",
+      "light": "tree",
+      "variant": 1
+    },
+    {
+      "id": "catalog.library",
+      "kind": "facility",
+      "footprint": [
+        2,
+        2
+      ],
+      "height": 34,
+      "base": "school",
+      "light": "white",
+      "variant": 1
+    },
+    {
+      "id": "catalog.church",
+      "kind": "facility",
+      "footprint": [
+        1,
+        1
+      ],
+      "height": 42,
+      "base": "white",
+      "light": "glass",
+      "variant": 1
+    },
+    {
+      "id": "catalog.marina",
+      "kind": "facility",
+      "footprint": [
+        2,
+        2
+      ],
+      "height": 22,
+      "base": "pipe",
+      "light": "waterLight",
+      "variant": 1
+    },
+    {
+      "id": "catalog.mayors_house",
+      "kind": "facility",
+      "footprint": [
+        2,
+        2
+      ],
+      "height": 38,
+      "base": "residential",
+      "light": "residentialLight",
+      "variant": 1
+    },
+    {
+      "id": "catalog.water_treatment",
+      "kind": "facility",
+      "footprint": [
+        1,
+        1
+      ],
+      "height": 26,
+      "base": "pipe",
+      "light": "glass",
+      "variant": 1
+    },
+    {
+      "id": "catalog.desalination",
+      "kind": "facility",
+      "footprint": [
+        2,
+        2
+      ],
+      "height": 30,
+      "base": "pipe",
+      "light": "waterLight",
+      "variant": 1
+    },
+    {
+      "id": "catalog.missile_silo",
+      "kind": "facility",
+      "footprint": [
+        1,
+        1
+      ],
+      "height": 18,
+      "base": "metal",
+      "light": "red",
+      "variant": 1
+    },
+    {
+      "id": "catalog.runway",
+      "kind": "facility",
+      "footprint": [
+        1,
+        1
+      ],
+      "height": 6,
+      "base": "road",
+      "light": "roadLight",
+      "variant": 1
+    },
+    {
+      "id": "catalog.tarmac",
+      "kind": "facility",
+      "footprint": [
+        1,
+        1
+      ],
+      "height": 6,
+      "base": "concrete",
+      "light": "roadLight",
+      "variant": 1
+    },
+    {
+      "id": "catalog.pier",
+      "kind": "facility",
+      "footprint": [
+        1,
+        1
+      ],
+      "height": 12,
+      "base": "trunk",
+      "light": "sand",
+      "variant": 1
+    },
+    {
+      "id": "catalog.crane",
+      "kind": "facility",
+      "footprint": [
+        1,
+        1
+      ],
+      "height": 56,
+      "base": "metal",
+      "light": "yellow",
+      "variant": 1
+    },
+    {
+      "id": "catalog.control_tower",
+      "kind": "facility",
+      "footprint": [
+        1,
+        1
+      ],
+      "height": 50,
+      "base": "concrete",
+      "light": "glass",
+      "variant": 1
+    },
+    {
+      "id": "catalog.bus_depot",
+      "kind": "facility",
+      "footprint": [
+        1,
+        1
+      ],
+      "height": 26,
+      "base": "commercial",
+      "light": "yellow",
+      "variant": 1
+    },
+    {
+      "id": "catalog.subway_station",
+      "kind": "facility",
+      "footprint": [
+        1,
+        1
+      ],
+      "height": 24,
+      "base": "concrete",
+      "light": "commercialLight",
+      "variant": 1
+    },
+    {
+      "id": "catalog.rubble",
+      "kind": "facility",
+      "footprint": [
+        1,
+        1
+      ],
+      "height": 10,
+      "base": "abandoned",
+      "light": "rock",
+      "variant": 1
+    },
+    {
+      "id": "catalog.radioactive",
+      "kind": "facility",
+      "footprint": [
+        1,
+        1
+      ],
+      "height": 12,
+      "base": "grassDark",
+      "light": "yellow",
+      "variant": 1
+    },
+    {
+      "id": "catalog.construction",
+      "kind": "facility",
+      "footprint": [
+        1,
+        1
+      ],
+      "height": 14,
+      "base": "construction",
+      "light": "yellow",
+      "variant": 1
+    },
+    {
+      "id": "catalog.abandoned",
+      "kind": "facility",
+      "footprint": [
+        1,
+        1
+      ],
+      "height": 22,
+      "base": "abandoned",
+      "light": "black",
+      "variant": 1
+    },
+    {
+      "id": "catalog.arcology",
+      "kind": "facility",
+      "footprint": [
+        3,
+        3
+      ],
+      "height": 96,
+      "base": "commercial",
+      "light": "glass",
+      "variant": 1
+    },
+    {
+      "id": "catalog.dome",
+      "kind": "facility",
+      "footprint": [
+        3,
+        3
+      ],
+      "height": 72,
+      "base": "commercial",
+      "light": "yellow",
+      "variant": 1
+    },
+    {
+      "id": "catalog.infrastructure",
+      "kind": "facility",
+      "footprint": [
+        1,
+        1
+      ],
+      "height": 20,
+      "base": "metal",
+      "light": "concrete",
+      "variant": 1
+    },
+    {
+      "id": "catalog.service",
+      "kind": "facility",
+      "footprint": [
+        2,
+        2
+      ],
+      "height": 32,
+      "base": "concrete",
+      "light": "commercialLight",
+      "variant": 1
+    },
+    {
+      "id": "catalog.power_plant",
+      "kind": "facility",
+      "footprint": [
+        2,
+        2
+      ],
+      "height": 48,
+      "base": "metal",
+      "light": "glass",
+      "variant": 1
+    }
+  ]
+}

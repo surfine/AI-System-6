@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI System 6 - 让作品仍然像你写的</title>
+<meta name="description" content="一张本地优先的写作桌，让来源、问题、草稿、审校与交付始终可见；AI 输出只有在你明确留下以后，才会成为作品的一部分。">
+<link rel="canonical" href="https://aisystem6.pages.dev/zh-CN.html">
+<link rel="alternate" hreflang="en" href="https://aisystem6.pages.dev/">
+<link rel="alternate" hreflang="zh-CN" href="https://aisystem6.pages.dev/zh-CN.html">
+<link rel="alternate" hreflang="x-default" href="https://aisystem6.pages.dev/">
+<link rel="icon" href="img/app-icon-192.png">
+<link rel="apple-touch-icon" href="img/app-icon-180.png">
+<meta property="og:type" content="website">
+<meta property="og:title" content="AI System 6 - 把你的语言、来源与判断留在明处">
+<meta property="og:description" content="一张本地优先的写作桌，让 AI 帮忙，却不让它悄悄变成写作者。">
+<meta property="og:image" content="https://aisystem6.pages.dev/img/og-poster.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="AI System 6：六个 Macintosh 时代的图标排列在 1988 至 2026 年的时间线上。">
+<meta property="og:url" content="https://aisystem6.pages.dev/zh-CN.html">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="AI System 6 - 把你的语言、来源与判断留在明处">
+<meta name="twitter:description" content="一张本地优先的写作桌，让 AI 帮忙，却不让它悄悄变成写作者。">
+<meta name="twitter:image" content="https://aisystem6.pages.dev/img/og-poster.png">
+<script>try{var t=localStorage.getItem("s6-site-theme");if(t&&t!=="classic")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
+<link rel="stylesheet" href="site.css?v=20260814i">
+<link rel="stylesheet" href="desk.css?v=20260814i">
+</head>
+<body>
+
+<div class="boot-screen" id="boot" hidden aria-hidden="true">
+  <div class="happy-mac"><span class="happy-mac-face"></span></div>
+  <p class="boot-msg" id="boot-msg">正在启动 AI System 6&hellip;</p>
+  <div class="boot-progress"><span id="boot-fill"></span></div>
+  <div class="boot-ledger">
+    <span id="boot-check-disk">启动磁盘</span>
+    <span id="boot-check-eras">六套外观</span>
+    <span id="boot-check-llm">LLM</span>
+  </div>
+</div>
+
+<div class="shutdown-screen" id="shutdown" hidden>
+  <div class="happy-mac is-sleeping"><span class="happy-mac-face"></span></div>
+  <div class="shutdown-ledger">
+    <p>现在可以安全地关闭 AI&nbsp;System&nbsp;6。</p>
+    <button type="button" class="btn btn-default">重新启动</button>
+  </div>
+</div>
+
+<nav class="menu-bar" aria-label="网站">
+  <details class="menu">
+    <summary><span class="menu-apple s6-mark" aria-hidden="true"></span><span class="visually-hidden">系统菜单</span></summary>
+    <ul class="menu-list">
+      <li><a href="#top">关于 AI System 6&hellip;</a></li>
+      <li class="menu-sep" aria-hidden="true"></li>
+      <li><a href="https://system6.aaronlau.me">打开运行中的系统</a></li>
+    </ul>
+  </details>
+  <span class="menu-title">AI System 6</span>
+  <details class="menu menu-extra">
+    <summary>文件</summary>
+    <ul class="menu-list">
+      <li><a href="https://system6.aaronlau.me">新建项目&hellip;</a></li>
+      <li><a href="https://github.com/surfine/AI-System-6/releases/latest">下载 Mac 版&hellip;</a></li>
+      <li><a href="https://github.com/surfine/AI-System-6">查看源代码&hellip;</a></li>
+    </ul>
+  </details>
+  <details class="menu menu-extra">
+    <summary>显示</summary>
+    <ul class="menu-list">
+      <li><a href="#route">写作路线</a></li>
+      <li><a href="#temporary">任何东西都不会自动保存</a></li>
+      <li><a href="#chat">聊天只是一款应用</a></li>
+      <li><a href="#argument">六套外观，同一张桌面</a></li>
+      <li><a href="#games">它也能运行 DOOM</a></li>
+      <li><a href="#accessories">留下来的小工具</a></li>
+      <li><a href="#impossible">约束之内</a></li>
+      <li><a href="#floppies">两张软盘</a></li>
+      <li><a href="#model">选择模型</a></li>
+      <li><a href="#demo">50 秒演示</a></li>
+      <li><a href="#readme">说明文件</a></li>
+    </ul>
+  </details>
+  <details class="menu">
+    <summary>特别</summary>
+    <ul class="menu-list">
+      <li><a href="#" data-appearance="classic"><span><span class="menu-check" aria-hidden="true">&#10003;</span>System 6</span><kbd>1988</kbd></a></li>
+      <li><a href="#" data-appearance="platinum"><span><span class="menu-check" aria-hidden="true">&#10003;</span>Platinum</span><kbd>1999</kbd></a></li>
+      <li><a href="#" data-appearance="aqua"><span><span class="menu-check" aria-hidden="true">&#10003;</span>Aqua</span><kbd>2002</kbd></a></li>
+      <li><a href="#" data-appearance="snow-leopard"><span><span class="menu-check" aria-hidden="true">&#10003;</span>Snow Leopard</span><kbd>2009</kbd></a></li>
+      <li><a href="#" data-appearance="yosemite"><span><span class="menu-check" aria-hidden="true">&#10003;</span>Yosemite</span><kbd>2014</kbd></a></li>
+      <li><a href="#" data-appearance="liquid-glass"><span><span class="menu-check" aria-hidden="true">&#10003;</span>Liquid Glass</span><kbd>2026</kbd></a></li>
+      <li class="menu-sep" aria-hidden="true"></li>
+      <li><a href="#" id="menu-cycle"><span><span class="menu-check" aria-hidden="true">&#10003;</span>循环切换外观</span></a></li>
+      <li class="menu-sep" aria-hidden="true"></li>
+      <li><a href="#" id="menu-shutdown">关机&hellip;</a></li>
+    </ul>
+  </details>
+  <details class="menu menu-extra">
+    <summary>帮助</summary>
+    <ul class="menu-list">
+      <li><a href="#" id="menu-balloons"><span><span class="menu-check" aria-hidden="true">&#10003;</span>显示气球帮助</span></a></li>
+      <li class="menu-sep" aria-hidden="true"></li>
+      <li><a href="#readme">说明文件&hellip;</a></li>
+    </ul>
+  </details>
+  <span class="menu-spacer"></span>
+  <a class="menu-link menu-link-live" href="https://system6.aaronlau.me">运行中系统</a>
+  <a class="menu-link" href="index.html" lang="en">English</a>
+  <a class="menu-link" href="https://github.com/surfine/AI-System-6">GitHub</a>
+</nav>
+
+<main class="desk" id="top">
+
+  <!-- ================= Hero ================= -->
+  <header class="hero-scene" id="hero" aria-labelledby="hero-title">
+    <p class="hero-brand">AI SYSTEM 6</p>
+    <h1 class="hero-head" id="hero-title">写到最后，<br>仍然应该像你。</h1>
+    <p class="hero-sub">AI System 6 把来源、问题、草稿、审校与交付分别放在看得见的位置。模型可以帮忙，却不能悄悄接过笔。</p>
+    <p class="btn-row hero-btns">
+      <a class="btn btn-default" href="https://system6.aaronlau.me">启动运行中的系统</a>
+      <a class="btn" href="#route">查看写作路线</a>
+    </p>
+    <figure class="machine-figure dissolve-figure" id="hero-dissolve">
+      <noscript>
+        <img src="img/frames/classic.webp" width="2880" height="1800" style="width:100%;height:auto"
+             alt="拍摄自真实应用的 AI System 6 桌面：Searcher、ClioTalk、Scrapbook、TeachText 与审校台围绕同一份正文。">
+      </noscript>
+    </figure>
+    <p class="btn-row hero-actions">
+      <button type="button" class="btn btn-glyph" id="snapshot-btn" data-balloon="把当前时代的桌面保存成分享卡片。"><svg viewBox="0 0 32 32" width="16" height="16" fill="currentColor" shape-rendering="crispEdges" aria-hidden="true"><path d="M10 6h12l2 4h6v16H2V10h6zM16 12a6 6 0 1 0 0 12 6 6 0 0 0 0-12z" fill-rule="evenodd"/><path d="M16 14a4 4 0 1 1 0 8 4 4 0 0 1 0-8z"/></svg><span class="snapshot-label">保存 1988 截图</span></button>
+    </p>
+    <p class="machine-provenance" id="hero-provenance"></p>
+  </header>
+
+  <!-- ================= The route: the product itself ================= -->
+  <section class="scene" id="route" aria-labelledby="route-title">
+    <h2 class="scene-head" id="route-title">一份作品，<br>八个看得见的位置。</h2>
+    <p class="scene-note">路线就是产品。从第一份来源到最后的交付，每一站都让一种不同的责任留在明处。</p>
+    <div class="route-stage" id="route-stage"></div>
+    <p class="proof-note">由 <code>tooling/capture-site-route.mjs</code> 从运行中的应用拍摄；没有连接模型。</p>
+  </section>
+
+  <!-- ================= AI output is temporary ================= -->
+  <section class="scene" id="temporary" aria-labelledby="temporary-title">
+    <h2 class="scene-head" id="temporary-title">任何东西都不会自动保存。</h2>
+    <p class="scene-note">模型回复仍然只是一份回复。只有在你保存、摘录、插入或导出以后，它才会成为作品的一部分。</p>
+    <ul class="temp-grid">
+      <li class="temp-card">
+        <h3>输出到来时仍是临时的</h3>
+        <p>你可以阅读、拒绝，或决定它应该去哪里，而不必先改动正文。</p>
+      </li>
+      <li class="temp-card">
+        <h3>由你决定去处</h3>
+        <p>问题单、大纲、当前章节、TeachText、Scrapbook，或一份新的项目文件。</p>
+      </li>
+      <li class="temp-card">
+        <h3>来源保留自己的身份</h3>
+        <p>Searcher 寻找来源入口，阅读器打开原文，Scrapbook 只留下你亲自挑选的段落。</p>
+      </li>
+      <li class="temp-card">
+        <h3>桌面只报告真正发生过的事</h3>
+        <p>保存、检索、摘录和审校都有状态与回执，不是模型可以猜测的措辞。</p>
+      </li>
+    </ul>
+  </section>
+
+  <!-- ================= Chat is an app ================= -->
+  <section class="scene" id="chat" aria-labelledby="chat-title">
+    <h2 class="scene-head" id="chat-title">聊天只是一款应用。<br>不是整台电脑。</h2>
+    <p class="scene-note" id="chat-note">ClioTalk 只是一扇窗口。周围的桌面保存来源、草稿、决定与文件，不让一段对话同时冒充这一切。</p>
+    <div class="compare-wall">
+      <div class="compare-col">
+        <h3>一个聊天产品</h3>
+        <ul>
+          <li>一条会话承载所有材料</li>
+          <li>上下文消失在提示词里</li>
+          <li>回复看起来像已经保存的结果</li>
+          <li>答案本身就是终点</li>
+        </ul>
+      </div>
+      <div class="compare-col is-ours">
+        <h3>这台电脑</h3>
+        <ul>
+          <li>每个对象只有一项看得见的责任</li>
+          <li>来源、摘录、地图与草稿各自保留身份</li>
+          <li>输出在你留下以前始终是临时的</li>
+          <li>终点是一份能够交给别人的文件</li>
+        </ul>
+      </div>
+    </div>
+    <figure class="machine-figure machine-figure-narrow" id="route-machine"></figure>
+    <p class="scene-fine">硬盘告诉你什么会长期留下，软盘告诉你什么只是临时材料，Scrapbook 里只有你选择保留的东西。</p>
+  </section>
+
+  <!-- ================= Six appearances, one argument ================= -->
+  <section class="scene" id="argument" aria-labelledby="argument-title">
+    <h2 class="scene-head" id="argument-title">桌面改变外观。<br>对象守住意义。</h2>
+    <p class="scene-note" id="argument-note">System 6 提供一套语法：对象可见、保存明确、一次专注一件事。六套外观检验这套语法能否经受材质变化。</p>
+    <div class="finder-window claim-window">
+      <header class="tbar"><span class="close-box" aria-hidden="true"></span>
+        <h2>外观</h2>
+      </header>
+      <div class="finder-status">6 套外观          1 张桌面          同一批文件</div>
+      <ol class="claim-list" id="claim-list"></ol>
+      <p class="claim-kicker">界面会老去，对象不会。</p>
+    </div>
+    <p class="scene-fine">窗口材质改变了，每个对象承担的责任没有。</p>
+  </section>
+
+  <!-- ================= Games ================= -->
+  <section class="scene" id="games" aria-labelledby="games-title">
+    <h2 class="scene-head" id="games-title">它也能运行 DOOM。</h2>
+    <p class="scene-note">Micropolis、OpenTTD、DOOM，都在窗口里，就在正文旁边。</p>
+    <p class="scene-fine">不是游戏录像，而是编译为 WebAssembly 的游戏本身，与 Searcher 和审校台运行在同一个 MultiFinder 里。</p>
+    <div class="games-wall">
+      <figure class="proof-card">
+        <img class="proof-shot games-shot" src="img/proofs/micropolis.webp?v=20260814h" alt="AI System 6 窗口里的 Micropolis：经典工具面板旁是一张新生成的河流地图，状态栏欢迎新市长。" loading="lazy" decoding="async">
+        <figcaption class="proof-cap"><span class="proof-label">Micropolis</span><span class="proof-line">1900 年 1 月，$20,000。欢迎你，市长。</span></figcaption>
+      </figure>
+      <figure class="proof-card">
+        <img class="proof-shot games-shot" src="img/proofs/openttd.webp?v=20260814h" alt="中文 OpenTTD 的 1950 年中局：秋色森林上方是一座煤矿，画面保留完整工具栏与资金状态。" loading="lazy" decoding="async">
+        <figcaption class="proof-cap"><span class="proof-label">OpenTTD 运输大亨</span><span class="proof-line">1950 年，中文，中局。</span></figcaption>
+      </figure>
+      <figure class="proof-card">
+        <img class="proof-shot games-shot" src="img/proofs/doom.webp?v=20260814h" alt="DOOM 窗口正在请求用户自有的本地 IWAD 文件；文件不会离开当前浏览器。" loading="lazy" decoding="async">
+        <figcaption class="proof-cap"><span class="proof-label">DOOM</span><span class="proof-line">引擎就绪，恶魔请自备。</span></figcaption>
+      </figure>
+    </div>
+    <p class="proof-note">与本页其他画面一样，由脚本从运行中的桌面拍摄。</p>
+    <p class="btn-row"><a class="btn btn-default" href="https://system6.aaronlau.me">去运行这些游戏</a></p>
+  </section>
+
+  <!-- ================= Desk accessories ================= -->
+  <section class="scene" id="accessories" aria-labelledby="accessories-title">
+    <h2 class="scene-head" id="accessories-title">那些小东西，也被留下。</h2>
+    <p class="scene-note">计算器、数字华容道、写作铃、闹钟、听写板和记忆卡片。这些小工具说明，桌面也在意工作之外的片刻。</p>
+    <ul class="temp-grid">
+      <li class="temp-card accessory-card">
+        <img class="accessory-shot" src="img/proofs/calculator.webp?v=20260817a" alt="计算器桌面附件：带斜面的 1988 风格键盘，显示 1988 加 38。" loading="lazy" decoding="async">
+        <h3>计算器</h3>
+        <p>在带斜面的窗口里完成计算。</p>
+      </li>
+      <li class="temp-card accessory-card">
+        <img class="accessory-shot" src="img/proofs/puzzle.webp?v=20260817a" alt="数字华容道桌面附件：一盘被打乱的滑块。" loading="lazy" decoding="async">
+        <h3>数字华容道</h3>
+        <p>一局还没有复原的数字华容道。</p>
+      </li>
+      <li class="temp-card accessory-card">
+        <img class="accessory-shot" src="img/proofs/writing-bell.webp?v=20260817a" alt="写作铃桌面附件：工作模式设为 25 分钟。" loading="lazy" decoding="async">
+        <h3>写作铃</h3>
+        <p>一只听起来像 1988 年的番茄钟。</p>
+      </li>
+      <li class="temp-card accessory-card">
+        <img class="accessory-shot" src="img/proofs/alarm-clock.webp?v=20260817a" alt="闹钟桌面附件：显示当前时间、日期与 09:00 的提醒。" loading="lazy" decoding="async">
+        <h3>闹钟</h3>
+        <p>上弦、响铃，也像它应该有的样子。</p>
+      </li>
+      <li class="temp-card accessory-card">
+        <img class="accessory-shot" src="img/proofs/dictation.webp?v=20260817a" alt="听写板桌面附件：已有转写文字；在选择去处以前，发送按钮保持停用。" loading="lazy" decoding="async">
+        <h3>听写板</h3>
+        <p>就在当前工作旁边把话说下来。</p>
+      </li>
+      <li class="temp-card accessory-card">
+        <img class="accessory-shot" src="img/proofs/memory-cards.webp?v=20260817a" alt="记忆卡片桌面附件：一盘打乱的四乘四卡片。" loading="lazy" decoding="async">
+        <h3>记忆卡片</h3>
+        <p>翻开两张，寻找成对图案。</p>
+      </li>
+    </ul>
+    <p class="scene-fine">拍摄自运行中的桌面。它们是对象，不是摆拍图片。</p>
+  </section>
+
+  <!-- ================= The proof ================= -->
+  <section class="scene" id="impossible" aria-labelledby="proof-title">
+    <h2 class="scene-head" id="proof-title">约束之内，仍然装得下什么。</h2>
+    <div class="finder-window" id="impossible-window">
+      <header class="tbar"><span class="close-box" aria-hidden="true"></span>
+        <h2 id="impossible-title">一张安静的写作桌仍能为这些事留出位置</h2>
+      </header>
+      <div class="finder-status" id="impossible-status">12 个项目          2 张软盘          按需打开</div>
+      <div class="proof-wall" id="proof-wall"></div>
+      <p class="proof-note">运行中真实应用的截图。本页没有模型图。</p>
+      <div class="finder-body" id="impossible-body"></div>
+    </div>
+  </section>
+
+  <!-- ================= Two floppies ================= -->
+  <section class="scene" id="floppies" aria-labelledby="floppies-title">
+    <h2 class="scene-head" id="floppies-title">两张软盘。</h2>
+    <div class="floppy-wall" id="floppy-wall"></div>
+  </section>
+
+  <!-- ================= Your model ================= -->
+  <section class="scene" id="model" aria-labelledby="model-title">
+    <h2 class="scene-head" id="model-title">更换模型。<br>工作空间仍在。</h2>
+    <figure class="machine-figure machine-figure-strip" id="model-machine"></figure>
+    <p class="scene-note">菜单栏如实显示：没有连接模型，桌面仍然可以工作。</p>
+    <div class="model-providers" role="list" aria-label="支持的模型服务商">
+      <span role="listitem"><img data-icon="localModel" class="obj-icon" width="32" height="32" alt="" src="img/themes/classic/localModel.svg"><span>LM Studio</span></span>
+      <span role="listitem"><img data-icon="endfieldTerminal" class="obj-icon" width="32" height="32" alt="" src="img/themes/classic/endfieldTerminal.svg"><span>Ollama</span></span>
+      <span role="listitem"><img data-icon="cloudModel" class="obj-icon" width="32" height="32" alt="" src="img/themes/classic/cloudModel.svg"><span>DeepSeek</span></span>
+      <span role="listitem"><img data-icon="chooser" class="obj-icon" width="32" height="32" alt="" src="img/themes/classic/chooser.svg"><span>任何 OpenAI 兼容端点</span></span>
+    </div>
+  </section>
+
+  <!-- ================= QuickTime demo ================= -->
+  <section class="scene" id="demo" aria-labelledby="demo-title">
+    <div class="qt-window" id="qt-window">
+      <header class="tbar"><span class="close-box" aria-hidden="true"></span><h2 id="demo-title">AI System 6 - 影片</h2><span class="qt-badge">50 秒演示</span></header>
+      <div class="qt-body" id="qt-body">
+        <a class="qt-poster" id="qt-poster" href="https://www.bilibili.com/video/BV1ht3m6UEDb/">
+          <img src="img/hero-poster.jpg" width="1440" height="900" loading="lazy" decoding="async"
+               alt="影片封面：AI System 6 桌面同时打开 Searcher、阅读器、DocMap 与 ClioTalk 窗口。">
+          <span class="qt-poster-play" aria-hidden="true"></span>
+          <span class="qt-poster-note">播放 50 秒影片</span>
+        </a>
+      </div>
+      <p class="qt-strip">通过哔哩哔哩在这里播放，也可以<a href="https://www.bilibili.com/video/BV1ht3m6UEDb/">前往网站观看</a>。</p>
+    </div>
+  </section>
+
+  <!-- ================= Ready to boot ================= -->
+  <section class="scene" id="boot-cta" aria-labelledby="boot-title">
+    <h2 class="scene-head" id="boot-title">准备好启动了吗？</h2>
+    <div class="boot-picker">
+      <a class="boot-choice" href="https://system6.aaronlau.me">
+        <img data-icon="startupDisk" class="obj-icon" width="64" height="64" alt="" src="img/themes/classic/startupDisk.svg">
+        <span class="boot-label">启动磁盘</span>
+        <span class="boot-sub">启动运行中的系统</span>
+      </a>
+      <a class="boot-choice" href="https://github.com/surfine/AI-System-6/releases/latest">
+        <img data-icon="applications" class="obj-icon" width="64" height="64" alt="" src="img/themes/classic/applications.svg">
+        <span class="boot-label">Mac 应用程序</span>
+        <span class="boot-sub">下载 Apple 芯片版本</span>
+      </a>
+      <a class="boot-choice" href="https://github.com/surfine/AI-System-6">
+        <img data-icon="folder" class="obj-icon" width="64" height="64" alt="" src="img/themes/classic/folder.svg">
+        <span class="boot-label">源代码文件夹</span>
+        <span class="boot-sub">在 GitHub 查看</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- ================= 说明文件 ================= -->
+  <section class="scene" id="readme" aria-labelledby="readme-title">
+    <div class="window readme-window">
+      <header class="tbar"><span class="close-box" aria-hidden="true"></span><h2 id="readme-title">说明文件</h2></header>
+      <div class="wbody readme-body">
+        <p class="pack-lede">六个对象，一条纪律：写作者始终留在作品里。</p>
+        <ul class="pack-grid">
+          <li class="pack-card">
+            <img data-icon="hardDisk" class="obj-icon" width="32" height="32" alt="" src="img/themes/classic/hardDisk.svg">
+            <h3>作品有长期留下的地方</h3>
+            <p>对话结束以后，项目、参考资料、草稿和主动选择的摘录仍留在项目硬盘里。</p>
+          </li>
+          <li class="pack-card">
+            <img data-icon="fileFloppy" class="obj-icon" width="32" height="32" alt="" src="img/themes/classic/fileFloppy.svg">
+            <h3>临时材料继续保持临时</h3>
+            <p>文件软盘里的材料与模型回复，不会只因出现在屏幕上就变成项目记忆。</p>
+          </li>
+          <li class="pack-card">
+            <img data-icon="questionSheet" class="obj-icon" width="32" height="32" alt="" src="img/themes/classic/questionSheet.svg">
+            <h3>你的问题先于正文</h3>
+            <p>接收者、反对意见、亲眼看到的细节和尚未解决的疑问，都有地方留下。</p>
+          </li>
+          <li class="pack-card">
+            <img data-icon="scrapbook" class="obj-icon" width="32" height="32" alt="" src="img/themes/classic/scrapbook.svg">
+            <h3>选择让材料成为记忆</h3>
+            <p>Scrapbook 只保存你选择的段落，并保留回到来源的路径。</p>
+          </li>
+          <li class="pack-card">
+            <img data-icon="teachText" class="obj-icon" width="32" height="32" alt="" src="img/themes/classic/teachText.svg">
+            <h3>正文同一时间只有一个编辑者</h3>
+            <p>每个阶段都明确唯一可编辑的表面，因此一条命令不会悄悄改写文章的旧版本。</p>
+          </li>
+          <li class="pack-card">
+            <img data-icon="reviewDesk" class="obj-icon" width="32" height="32" alt="" src="img/themes/classic/reviewDesk.svg">
+            <h3>审校台把作品读回来</h3>
+            <p>在作品离开你手中之前，它会把事实、结构和模型口吻风险摆到明处。</p>
+          </li>
+        </ul>
+        <p class="pack-more">项目保存在这个浏览器的 IndexedDB 中。本机模型让请求留在本机；云端请求遵循你所选服务商的政策。服务端不保存第二份项目数据库。</p>
+      </div>
+    </div>
+  </section>
+
+  <footer class="site-footer">
+    <p>
+      <a href="https://system6.aaronlau.me">运行中系统</a> /
+      <a href="https://github.com/surfine/AI-System-6">GitHub</a> /
+      <a href="https://github.com/surfine/AI-System-6/issues">问题反馈</a> /
+      <a href="https://www.bilibili.com/video/BV1ht3m6UEDb/">50 秒演示</a> /
+      <a href="index.html" lang="en">English</a>
+    </p>
+    <p>采用 MIT 许可。AI System 6 是独立项目，与 Apple&nbsp;Inc. 没有关联，也未获其背书。</p>
+    <p class="footer-shutdown">现在可以安全地关闭 AI System 6。</p>
+  </footer>
+
+</main>
+<script type="module" src="js/main.js?v=20260820a"></script>
+</body>
+</html>

@@ -63,14 +63,23 @@ function auditTopModules() {
 }
 
 function auditTranslations() {
-  const dataPath = "app/data/system-data.js";
-  const dataSource = read(dataPath);
-  const corpus = sourceCorpus(sourcePaths.filter((path) => path !== dataPath));
+  const translationPaths = ["app/data/translations-en.js", "app/data/translations-zh.js"];
+  const translationSources = translationPaths.map(read);
+  const corpus = sourceCorpus(sourcePaths.filter((path) => !translationPaths.includes(path)));
   const dynamicPrefixes = [
+    "balloon_",
     "system_help_group_",
     "trash_type_",
   ];
-  const keys = unique(collectMatches(dataSource, /^    ([a-z][a-z0-9_]*):/gm));
+  const keys = unique(translationSources.flatMap((source) => collectMatches(
+    source,
+    /^    (?:(?:"|')([a-z][a-z0-9_-]*)(?:"|')|([a-z][a-z0-9_-]*)):/gm,
+    1
+  ).concat(collectMatches(
+    source,
+    /^    (?:(?:"|')[a-z][a-z0-9_-]*(?:"|')|([a-z][a-z0-9_-]*)):/gm,
+    1
+  ))));
   const unused = keys.filter((key) => {
     if (dynamicPrefixes.some((prefix) => key.startsWith(prefix))) return false;
     return !corpus.includes(key);

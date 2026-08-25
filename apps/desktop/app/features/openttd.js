@@ -14,19 +14,16 @@ window.AISystem6OpenTTDLoaded = true;
   function installOpenTTDWindow() {
     if (typeof document === "undefined") return;
     if (document.querySelector('[data-window="openttd"]')) return;
-    document.querySelector(".desktop")?.insertAdjacentHTML("beforeend", `
-      <section class="window openttd-window is-hidden" data-window="openttd" aria-labelledby="openttd-title">
-        <div class="title-bar">
-          <button class="close-box" aria-label="${t("close")}" data-i18n-aria-label="close"></button>
-          <h2 id="openttd-title" data-i18n="openttd_title">${t("openttd_title")}</h2>
-          <button class="resize-box" aria-label="${t("zoom")}" data-i18n-aria-label="zoom"></button>
-          <button class="shade-box" aria-label="${t("collapse")}" data-i18n-aria-label="collapse"></button>
-        </div>
-        <div class="details-bar openttd-details-bar">
-          <span class="openttd-status" data-openttd-status role="status" aria-live="polite"></span>
-        </div>
-        <div class="window-pane openttd-pane"></div>
-      </section>`);
+    window.AISystem6ApplicationShell.createWindow({
+      windowName: "openttd",
+      windowClass: "openttd-window",
+      labelledBy: "openttd-title",
+      titleKey: "openttd_title",
+      title: t("openttd_title"),
+      statusClass: "openttd-details-bar",
+      statusHtml: '<span class="openttd-status" data-openttd-status role="status" aria-live="polite"></span>',
+      paneClass: "openttd-pane",
+    });
   }
 
   installOpenTTDWindow();

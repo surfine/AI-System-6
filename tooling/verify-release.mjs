@@ -3,6 +3,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { appRuntimePaths, lazyRuntimePaths } from "./runtime-manifest.mjs";
+import { classicScriptFileSyntaxError } from "./lib/classic-script-syntax.mjs";
 import { resolveProjectPath } from "./lib/paths.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
@@ -28,15 +29,12 @@ function assertExists(path) {
 }
 
 function checkSyntax(path) {
-  const result = spawnSync(process.execPath, ["--check", resolveProjectPath(path)], {
-    cwd: root,
-    encoding: "utf8",
-  });
-  if (result.status === 0) {
+  const error = classicScriptFileSyntaxError(resolveProjectPath(path));
+  if (!error) {
     ok(`${path} syntax`);
     return;
   }
-  fail(`${path} syntax failed\n${result.stderr || result.stdout}`);
+  fail(`${path} syntax failed\n${error.stack || error.message || String(error)}`);
 }
 
 function listJsFilesRelative(dirRelative) {
@@ -158,6 +156,29 @@ if (floppyBudget.status === 0) {
   ok("System Floppy Budget");
 } else {
   fail(`System Floppy Budget failed\n${floppyBudget.stderr || floppyBudget.stdout}`);
+}
+
+// A merge can keep a commit in history while dropping its bytes from the
+// tree, and git log shows nothing (504a2b20). When HEAD is a merge, verify
+// its content; on a non-merge HEAD this is a no-op, so releasing from an
+// ordinary commit costs nothing. Intentional one-sided resolutions are
+// acknowledged with --accept in the merge workflow, not here.
+const mergeContent = spawnSync(process.execPath, [
+  "tooling/verify-merge-content.mjs", "--merge", "HEAD", "--quiet",
+  // The desktop-project-disks merge kept main's generated build identity and
+  // the newer measured floppy payload; both are regenerated/remeasured by the
+  // release itself, so the branch's older bytes are an intentional discard.
+  "--accept", "apps/desktop/app/generated/build-info.js",
+  "--accept", "apps/desktop/app/generated/build-info.json",
+  "--accept", "site/data/floppy-budget.json",
+], {
+  cwd: root,
+  encoding: "utf8",
+});
+if (mergeContent.status === 0) {
+  ok("merge content verification");
+} else {
+  fail(`merge content verification failed\n${mergeContent.stderr || mergeContent.stdout}`);
 }
 
 const smokeRelease = spawnSync(process.execPath, ["tooling/smoke-release.mjs"], {

@@ -37,7 +37,12 @@ test.assertIncludes(scripting, "ensureFinderObjectsModule", "droplet resolution 
 test.assertIncludes(scripting, "resolveProjectFileForUse", "droplet resolution routes through the shared content resolver");
 test.assertIncludes(scripting, "seenTargetIds", "dragging an original together with its alias deduplicates by target id");
 test.assertIncludes(scripting, "alias_broken", "a broken alias blocks the run with the existing alias status");
-test.assertIncludes(scripting, "只接受文稿", "a non-document alias blocks the run with the existing droplet refusal");
+// The refusal is a translation key now rather than an inline ternary, so the
+// check follows it to the table: the call site names the key, and the key
+// still carries the Chinese wording this contract has always pinned.
+test.assertIncludes(scripting, 't("this_droplet_accepts_documents_only")',
+  "a non-document alias blocks the run with the existing droplet refusal");
+test.assertIncludes(zh, "只接受文稿", "and that refusal still reads the same in Chinese");
 test.assertNotIncludes(scripting, "describeScriptableCommand", "no scripting-UI helper survives without a caller");
 test.assertNotIncludes(scripting, "showDropletHint", "no droplet hint helper survives without a caller");
 
@@ -211,7 +216,7 @@ test.assert(
 
 const nonFileRun = await scriptingApi.runScriptableCommand("droplet-docmap", { fileIds: [scrapAlias.id] });
 test.assert(
-  nonFileRun === false && docMapCalls.length === 1 && statusCalls.some((message) => message === "This droplet accepts documents only"),
+  nonFileRun === false && docMapCalls.length === 1 && statusCalls.some((message) => message === "t:this_droplet_accepts_documents_only"),
   "a non-document alias blocks execution with the existing droplet refusal"
 );
 

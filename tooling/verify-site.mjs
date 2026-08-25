@@ -38,9 +38,12 @@ function localTarget(sourceFile, rawTarget) {
 
 const required = [
   "index.html",
+  "zh-CN.html",
+  "build-zh-page.mjs",
   "site.css",
   "desk.css",
   "js/main.js",
+  "js/copy.js",
   "js/argument.js",
   "img/og-poster.png",
   "img/frames/manifest.json",
@@ -142,21 +145,78 @@ if (posterWidth === 1200 && posterHeight === 630) ok("Open Graph poster is 1200�
 else fail(`Open Graph poster is ${posterWidth}×${posterHeight}; expected 1200×630`);
 
 const index = readFileSync(path.join(siteRoot, "index.html"), "utf8");
+const zhIndex = readFileSync(path.join(siteRoot, "zh-CN.html"), "utf8");
 const argument = readFileSync(path.join(siteRoot, "js", "argument.js"), "utf8");
 const quickTime = readFileSync(path.join(siteRoot, "js", "quicktime.js"), "utf8");
 for (const needle of [
-  // The page leads with the retro-Macintosh hook, then reveals the writing
-  // desk underneath: six appearances are the promise, the route is the
-  // product, and "the AI never becomes your voice" is still the payoff.
-  "SIX APPEARANCES",
-  "becomes your voice",
+  // The public story leads with writer ownership. Historical appearances are
+  // supporting evidence after the route, temporary-output rule, and chat
+  // boundary have established the product.
+  "YOUR WORDS SHOULD",
+  "never quietly takes the pen",
   'id="route"',
+  'id="temporary"',
+  'id="chat"',
   "https://system6.aaronlau.me",
   "https://www.bilibili.com/video/BV1ht3m6UEDb/",
   "https://github.com/surfine/AI-System-6",
   'src="js/main.js',
 ]) {
   if (!index.includes(needle)) fail(`site/index.html is missing ${needle}`);
+}
+if (index.indexOf('id="route"') < index.indexOf('id="argument"')
+  && index.indexOf('id="temporary"') < index.indexOf('id="argument"')
+  && index.indexOf('id="chat"') < index.indexOf('id="argument"')) {
+  ok("official-site narrative establishes writing ownership before appearance and feature proof");
+} else {
+  fail("official-site route, temporary-output rule, and chat boundary must precede appearance proof");
+}
+
+for (const needle of [
+  '<html lang="zh-CN">',
+  '<link rel="canonical" href="https://aisystem6.pages.dev/zh-CN.html">',
+  "写到最后",
+  "模型可以帮忙，却不能悄悄接过笔",
+  "审校台",
+  'href="index.html" lang="en">English</a>',
+]) {
+  if (!zhIndex.includes(needle)) fail(`site/zh-CN.html is missing ${needle}`);
+}
+for (const needle of [
+  'hreflang="en"',
+  'hreflang="zh-CN"',
+  'hreflang="x-default"',
+]) {
+  if (index.includes(needle) && zhIndex.includes(needle)) ok(`both official-site languages carry ${needle}`);
+  else fail(`official-site language alternates are missing ${needle}`);
+}
+
+const localizedBuild = spawnSync(process.execPath, [path.join(siteRoot, "build-zh-page.mjs"), "--check"], {
+  cwd: root,
+  encoding: "utf8",
+});
+if (localizedBuild.status === 0) ok("Chinese official-site page matches the shared page structure and copy map");
+else fail((localizedBuild.stderr || localizedBuild.stdout || "Chinese site page is stale").trim());
+
+const publicNarrative = [index, zhIndex, ...jsFiles.map((file) => readFileSync(file, "utf8"))].join("\n");
+for (const forbidden of [
+  "THE AI HAS A DESKTOP NOW",
+  "No account and no upload",
+  "with no reformatting",
+  "this stop refuses to be skipped",
+  "It goes and reads the live web",
+]) {
+  if (!publicNarrative.includes(forbidden)) ok(`official-site copy retired: ${forbidden}`);
+  else fail(`official-site copy still contains retired or inaccurate claim: ${forbidden}`);
+}
+for (const requiredClaim of [
+  "Searcher finds titles, sites, and snippets to open and inspect in Reader.",
+  "Source Markdown can be converted into a Marp deck",
+  "cloud requests follow the policy of the provider you choose",
+  "The server keeps no second project database",
+]) {
+  if (publicNarrative.includes(requiredClaim)) ok(`official-site fact boundary: ${requiredClaim}`);
+  else fail(`official-site fact boundary is missing: ${requiredClaim}`);
 }
 // The route section must show real captures, not a diagram of itself.
 {

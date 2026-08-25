@@ -1,5 +1,13 @@
 # Incremental ESM Migration Plan
 
+> **Archived, not scheduled.** This plan is not being executed. Nothing in
+> `apps/desktop/app/` imports anything: there are zero `import ... from`
+> statements and zero `type="module"` scripts, and CLAUDE.md's *Do Not
+> Introduce* list rules out "a frontend framework, or a transpiler / build step
+> for app JS — it is plain concatenated JS by design", which this plan would
+> require. Kept for the reasoning it records, not as a backlog item.
+> Archived 2026-08-22.
+
 This is a follow-up plan, not part of the security, budget, persistence, or
 rendering fixes. It does not authorize a framework migration or a UI rewrite.
 

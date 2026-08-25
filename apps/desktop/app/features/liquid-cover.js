@@ -12,6 +12,345 @@
 
 window.AISystem6LiquidCoverLoaded = true;
 
+// Cover Glass builds its own window. 29,014 bytes of markup for a creative lab
+// most sessions never open sat in index.html, downloaded at every boot.
+//
+// The one judgement here: `liquid-cover-body` IS the pane. It was a private
+// name for the same thing every other window calls a window-pane, so it takes
+// the shared class rather than teaching the shell to skip a pane for one
+// window. The toolbar above it is a real sibling and uses the shell's slot.
+//
+// This runs before the IIFE below, which reads these elements as it loads.
+function installLiquidCoverWindow() {
+  if (typeof document === "undefined") return;
+  if (document.querySelector('[data-window="liquidCover"]')) return;
+  const shell = window.AISystem6ApplicationShell;
+  if (!shell) return;
+  shell.createWindow({
+    windowName: "liquidCover",
+    windowClass: "liquid-cover-window",
+    labelledBy: "liquid-cover-title",
+    titleKey: "liquid_cover_title",
+    title: "Cover Glass",
+    statusClass: "lc-status-bar",
+    statusHtml: `          <span class="lc-ask-status" id="lc-ai-status" role="status" aria-live="polite" data-i18n="ready">Ready</span>
+          <span class="lc-status-meta" id="lc-status-meta">16:9 · 1 layer</span>`,
+    beforePaneHtml: `<div class="lc-toolbar" role="toolbar" aria-label="Cover tools" data-i18n-aria-label="liquid_cover_tools">
+          <div class="lc-toolbar-create">
+            <button class="btn" type="button" id="lc-add-layer" data-i18n-aria-label="liquid_cover_add">
+              <span class="mobile-control-long" data-i18n="liquid_cover_add">Add Text</span>
+              <span class="mobile-control-short" data-i18n="liquid_cover_add_short">+ Text</span>
+            </button>
+            <button class="btn" type="button" id="lc-add-shape" data-i18n-aria-label="liquid_cover_add_shape">
+              <span class="mobile-control-long" data-i18n="liquid_cover_add_shape">Add Shape</span>
+              <span class="mobile-control-short" data-i18n="liquid_cover_add_shape_short">+ Shape</span>
+            </button>
+            <input type="file" id="lc-shape-file" accept="image/png,image/webp,image/svg+xml,image/jpeg" hidden>
+          </div>
+          <div class="lc-toolbar-history" role="group" aria-label="Edit history" data-i18n-aria-label="liquid_cover_history">
+            <button class="btn lc-history-button" type="button" id="lc-undo" aria-label="Undo" data-i18n-aria-label="liquid_cover_undo" title="Undo" data-i18n-title="liquid_cover_undo" disabled>
+              <span class="lc-control-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M9 3 3 9l6 6"></path><path d="M3.5 9H15a6 6 0 0 1 0 12h-3"></path></svg></span>
+            </button>
+            <button class="btn lc-history-button is-redo" type="button" id="lc-redo" aria-label="Redo" data-i18n-aria-label="liquid_cover_redo" title="Redo" data-i18n-title="liquid_cover_redo" disabled>
+              <span class="lc-control-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M9 3 3 9l6 6"></path><path d="M3.5 9H15a6 6 0 0 1 0 12h-3"></path></svg></span>
+            </button>
+          </div>
+          <div class="lc-toolbar-modes" role="tablist" aria-label="Inspector" data-i18n-aria-label="liquid_cover_inspector">
+            <button class="lc-inspector-tab" type="button" id="lc-tab-media" data-lc-inspector-tab="media" role="tab" aria-selected="false" aria-controls="lc-panel-media" data-i18n-aria-label="liquid_cover_media">
+              <span class="mobile-control-long" data-i18n="liquid_cover_media">Background</span>
+              <span class="mobile-control-short" data-i18n="liquid_cover_media_short">BG</span>
+            </button>
+            <button class="lc-inspector-tab is-active" type="button" id="lc-tab-layers" data-lc-inspector-tab="layers" role="tab" aria-selected="true" aria-controls="lc-panel-layers" data-i18n-aria-label="liquid_cover_text">
+              <span class="mobile-control-long" data-i18n="liquid_cover_text">Type</span>
+              <span class="mobile-control-short" data-i18n="liquid_cover_text_short">Type</span>
+            </button>
+            <button class="lc-inspector-tab" type="button" id="lc-tab-glass" data-lc-inspector-tab="glass" role="tab" aria-selected="false" aria-controls="lc-panel-glass" data-i18n-aria-label="liquid_cover_tab_glass">
+              <span class="mobile-control-long" data-i18n="liquid_cover_tab_glass">Glass</span>
+              <span class="mobile-control-short" data-i18n="liquid_cover_glass_short">Glass</span>
+            </button>
+          </div>
+          <div class="lc-toolbar-aspect">
+            <span data-i18n="liquid_cover_aspect">Aspect</span>
+            <div class="lc-aspect" role="group" aria-label="Aspect ratio" data-i18n-aria-label="liquid_cover_aspect">
+              <button type="button" data-k="16:9" aria-pressed="true">16:9</button>
+              <button type="button" data-k="3:2" aria-pressed="false">3:2</button>
+              <button type="button" data-k="4:3" aria-pressed="false">4:3</button>
+              <button type="button" data-k="3:4" aria-pressed="false">3:4</button>
+            </div>
+          </div>
+          <button class="btn default lc-toolbar-export" type="button" id="lc-tab-export" data-lc-inspector-tab="export" aria-pressed="false" aria-controls="lc-panel-export" data-i18n-aria-label="liquid_cover_tab_export">
+            <span class="mobile-control-long" data-i18n="liquid_cover_tab_export">Export</span>
+            <span class="mobile-control-short" data-i18n="liquid_cover_export_short">Export</span>
+          </button>
+        </div>`,
+    paneClass: "liquid-cover-body",
+    paneHtml: `
+          <aside class="lc-sidebar" aria-label="Scene layers" data-i18n-aria-label="liquid_cover_scene">
+            <div class="lc-sidebar-head">
+              <span class="lc-panel-kicker" data-i18n="liquid_cover_scene">Scene</span>
+              <strong data-i18n="liquid_cover_layers">Layers</strong>
+            </div>
+            <div class="lc-layer-list" id="lc-layer-list" aria-label="Cover layers" data-i18n-aria-label="liquid_cover_layers"></div>
+            <p class="lc-selection-help" id="lc-selection-help" role="status" aria-live="polite" data-i18n="liquid_cover_selection_help">Shift-click or drag a box to select multiple layers. Drag layers to reorder.</p>
+            <details class="lc-arrange-panel">
+              <summary id="lc-arrange-title" data-i18n="liquid_cover_arrange">Arrange &amp; align</summary>
+              <div class="lc-order-row" role="group" aria-label="Layer order" data-i18n-aria-label="liquid_cover_layer_order">
+                <button class="btn" type="button" id="lc-layer-bottom" data-i18n="liquid_cover_send_bottom">Bottom</button>
+                <button class="btn" type="button" id="lc-layer-down" data-i18n="liquid_cover_send_down">Down</button>
+                <button class="btn" type="button" id="lc-layer-up" data-i18n="liquid_cover_bring_up">Up</button>
+                <button class="btn" type="button" id="lc-layer-top" data-i18n="liquid_cover_bring_top">Top</button>
+              </div>
+              <div class="lc-align-grid" role="group" aria-label="Align to artboard" data-i18n-aria-label="liquid_cover_align_artboard">
+                <button class="btn" type="button" id="lc-align-left" data-i18n="liquid_cover_align_left">Left</button>
+                <button class="btn" type="button" id="lc-align-center" data-i18n="liquid_cover_align_center">Center</button>
+                <button class="btn" type="button" id="lc-align-right" data-i18n="liquid_cover_align_right">Right</button>
+                <button class="btn" type="button" id="lc-align-top" data-i18n="liquid_cover_align_top">Top</button>
+                <button class="btn" type="button" id="lc-align-middle" data-i18n="liquid_cover_align_middle">Middle</button>
+                <button class="btn" type="button" id="lc-align-bottom" data-i18n="liquid_cover_align_bottom">Bottom</button>
+              </div>
+            </details>
+            <div class="lc-sidebar-actions">
+              <button class="btn" type="button" id="lc-add-inside-text" data-i18n="liquid_cover_add_inside_text">Text in shape</button>
+              <button class="btn" type="button" id="lc-duplicate-layer" data-i18n="liquid_cover_duplicate">Duplicate</button>
+              <button class="btn" type="button" id="lc-del-layer" data-i18n="liquid_cover_del">Delete</button>
+            </div>
+            <details class="lc-shape-library">
+              <summary data-i18n="liquid_cover_shape_library">Quick shapes</summary>
+              <div class="lc-shape-tray">
+                <button class="btn" type="button" id="lc-shape-circle" data-i18n="liquid_cover_shape_circle">Circle</button>
+                <button class="btn" type="button" id="lc-shape-squircle" data-i18n="liquid_cover_shape_squircle">Rounded Rect</button>
+                <button class="btn" type="button" id="lc-shape-capsule" data-i18n="liquid_cover_shape_capsule">Capsule</button>
+              </div>
+            </details>
+          </aside>
+          <div class="lc-stage">
+            <div class="lc-stage-head">
+              <span class="lc-stage-kicker" data-i18n="liquid_cover_artboard">Artboard</span>
+              <output class="lc-stage-format" id="lc-stage-format">16:9 · 1280 × 720</output>
+            </div>
+            <div class="lc-canvas-shell">
+              <canvas id="lc-canvas" class="lc-canvas" tabindex="0" role="application" aria-label="Select directly, Shift-click or box-select multiple layers, then drag to move and snap. Drag the handles to scale or rotate." data-i18n-aria-label="liquid_cover_canvas_label"></canvas>
+              <div class="lc-selection-box" id="lc-selection-box">
+                <button class="lc-transform-handle is-rotate" type="button" id="lc-transform-rotate" aria-label="Rotate layer" data-i18n-aria-label="liquid_cover_rotate_layer" title="Rotate layer" data-i18n-title="liquid_cover_rotate_layer">↻</button>
+                <button class="lc-transform-handle is-scale" type="button" id="lc-transform-scale" aria-label="Scale layer" data-i18n-aria-label="liquid_cover_scale_layer" title="Scale layer" data-i18n-title="liquid_cover_scale_layer"></button>
+              </div>
+              <div class="lc-selection-marquee" id="lc-selection-marquee" aria-hidden="true"></div>
+              <div class="lc-alignment-guides" id="lc-alignment-guides" aria-hidden="true">
+                <span class="lc-alignment-guide is-vertical"></span>
+                <span class="lc-alignment-guide is-horizontal"></span>
+              </div>
+            </div>
+            <div class="lc-stage-foot">
+              <span class="lc-stage-selection" id="lc-stage-selection">Liquid</span>
+              <span class="lc-stage-hint" data-i18n="liquid_cover_stage_hint">Auto-snap · Shift multi-select · Drag handles to scale or rotate</span>
+            </div>
+            <button type="button" class="btn lc-stage-expand" id="lc-stage-expand" aria-label="Fullscreen preview" aria-pressed="false" data-i18n-aria-label="liquid_cover_stage_expand" title="Fullscreen preview" data-i18n-title="liquid_cover_stage_expand">⤢</button>
+          </div>
+          <div class="lc-panel window-frame-scroller" id="liquid-cover-app">
+            <div class="lc-panel-intro">
+              <span class="lc-panel-kicker" data-i18n="liquid_cover_inspector">Inspector</span>
+              <strong id="lc-inspector-title" data-i18n="liquid_cover_type_properties">Type properties</strong>
+              <span id="lc-inspector-hint" data-i18n="liquid_cover_type_hint">Select a layer, then change only what matters to it.</span>
+            </div>
+
+            <div class="lc-inspector-panel is-active" id="lc-panel-layers" data-lc-inspector-panel="layers" role="tabpanel" aria-labelledby="lc-tab-layers">
+            <div class="lc-group lc-text-group">
+              <div class="lc-group-title" data-i18n="liquid_cover_text">Text</div>
+              <textarea id="lc-text" class="lc-textarea" rows="2">Liquid
+Glass</textarea>
+              <label class="lc-row"><span data-i18n="liquid_cover_font">Font</span>
+                <div class="select-wrap"><select id="lc-font">
+                  <optgroup label="Apple">
+                    <option value='-apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", system-ui, sans-serif' data-font-system="true">SF Pro · System</option>
+                    <option value='"SF Pro Rounded", ui-rounded, -apple-system, sans-serif' data-font-family="SF Pro Rounded">SF Pro Rounded</option>
+                    <option value='"SF Compact", "SF Compact Display", "SF Compact Text", -apple-system, sans-serif' data-font-family="SF Compact">SF Compact</option>
+                    <option value='"SF Compact Rounded", "SF Compact", ui-rounded, -apple-system, sans-serif' data-font-family="SF Compact Rounded">SF Compact Rounded</option>
+                    <option value='"SF Mono", ui-monospace, monospace' data-font-family="SF Mono">SF Mono</option>
+                    <option value='"New York", "New York Small", "New York Medium", "New York Large", serif' data-font-family="New York">New York</option>
+                  </optgroup>
+                  <optgroup label="中文">
+                    <option value='"PingFang SC", -apple-system, sans-serif' data-font-family="PingFang SC">苹方简体 · PingFang SC</option>
+                    <option value='"PingFang TC", -apple-system, sans-serif' data-font-family="PingFang TC">蘋方繁體 · PingFang TC</option>
+                    <option value='"Songti SC", STSong, serif' data-font-family="Songti SC">宋体简体 · Songti SC</option>
+                    <option value='"Songti TC", "Songti SC", STSong, serif' data-font-family="Songti TC">宋體繁體 · Songti TC</option>
+                    <option value='"Smiley Sans", "PingFang SC", sans-serif' data-font-bundled="true">得意黑 · Smiley Sans</option>
+                  </optgroup>
+                </select></div>
+              </label>
+              <div class="lc-font-import-row">
+                <button class="btn" type="button" id="lc-font-import" data-i18n="liquid_cover_import_font">Import Font…</button>
+                <input hidden type="file" id="lc-font-file" tabindex="-1" aria-hidden="true" accept=".ttf,.otf,.woff,.woff2,font/ttf,font/otf,font/woff,font/woff2">
+                <span class="lc-font-status" id="lc-font-status" role="status" aria-live="polite" data-i18n="liquid_cover_font_import_hint">Uses installed Apple fonts · imports last for this page only</span>
+                <a class="lc-font-source-link" href="https://developer.apple.com/fonts/" target="_blank" rel="noopener" data-i18n="liquid_cover_apple_fonts">Apple fonts</a>
+              </div>
+              <label class="lc-row"><span data-i18n="liquid_cover_size">Size</span><input type="range" id="lc-font-size" min="20" max="600" step="1" value="170"><span class="lc-val" id="lc-font-size-v"></span></label>
+              <label class="lc-row"><span data-i18n="liquid_cover_weight">Weight</span><input type="range" id="lc-font-weight" min="100" max="900" step="100" value="800"><span class="lc-val" id="lc-font-weight-v"></span></label>
+              <details class="lc-object-advanced">
+                <summary data-i18n="liquid_cover_more_type_controls">More type controls</summary>
+                <div class="lc-layer-advanced">
+                <label class="lc-row"><span data-i18n="liquid_cover_tracking">Tracking</span><input type="range" id="lc-letter-spacing" min="-10" max="40" step="1" value="0"><span class="lc-val" id="lc-letter-spacing-v"></span></label>
+                <label class="lc-row"><span data-i18n="liquid_cover_rotation">Rotation</span><input type="range" id="lc-rotation" min="-180" max="180" step="1" value="0"><span class="lc-val" id="lc-rotation-v"></span></label>
+                </div>
+              </details>
+            </div>
+            </div>
+
+            <div class="lc-inspector-panel" id="lc-panel-media" data-lc-inspector-panel="media" role="tabpanel" aria-labelledby="lc-tab-media" hidden>
+            <details class="lc-media-ai">
+              <summary data-i18n="liquid_cover_generate_background">Generate a background</summary>
+            <div class="lc-group lc-t2i-group">
+              <div class="lc-group-title" data-i18n="liquid_cover_t2i_title">Background Prompt</div>
+              <div class="lc-note" data-i18n="liquid_cover_t2i_hint">Write a text-to-image prompt for the background (uses the mood box below).</div>
+              <div class="lc-button-row">
+                <button class="btn" type="button" id="lc-t2i-go" data-i18n="liquid_cover_t2i_go">Write Image Prompt</button>
+              </div>
+              <textarea id="lc-t2i-out" class="lc-textarea" rows="4" readonly hidden></textarea>
+              <div class="lc-button-row">
+                <button class="btn" type="button" id="lc-t2i-copy" data-i18n="liquid_cover_t2i_copy" hidden>Copy</button>
+              </div>
+            </div>
+
+            </details>
+
+            <div class="lc-group lc-bg-group">
+              <div class="lc-group-title" data-i18n="liquid_cover_background">Background</div>
+              <div class="lc-bg-row" id="lc-bg-row"></div>
+              <div class="file-picker">
+                <button class="btn file-picker-button" type="button" id="lc-bg-choose" data-i18n="liquid_cover_choose_bg">Choose Background…</button>
+                <span class="file-picker-name" id="lc-bg-name" data-i18n="no_files_selected">No files selected</span>
+              </div>
+              <input id="lc-bg-input" class="visually-hidden" type="file" accept="image/*" />
+            </div>
+
+            <details class="lc-media-extras">
+              <summary data-i18n="liquid_cover_media_extras">Motion and foreground</summary>
+            <div class="lc-group lc-motion-group">
+              <div class="lc-group-title" data-i18n="liquid_cover_motion">Motion Video</div>
+              <div class="file-picker">
+                <button class="btn file-picker-button" type="button" id="lc-motion-choose" data-i18n="liquid_cover_choose_motion">Choose Motion Video…</button>
+                <button class="btn" type="button" id="lc-motion-clear" data-i18n="liquid_cover_clear" hidden>Clear</button>
+                <span class="file-picker-name" id="lc-motion-name" data-i18n="no_files_selected">No files selected</span>
+              </div>
+              <input id="lc-motion-input" class="visually-hidden" type="file" accept="video/quicktime,video/mp4,video/*,.mov,.mp4,.m4v" />
+              <p class="lc-note" data-i18n="liquid_cover_motion_note">Use the MOV/MP4 side of a Live Photo as the animated background.</p>
+            </div>
+
+            <div class="lc-group lc-fg-group">
+              <div class="lc-group-title" data-i18n="liquid_cover_subject">Subject (Foreground)</div>
+              <div class="file-picker">
+                <button class="btn file-picker-button" type="button" id="lc-fg-choose" data-i18n="liquid_cover_choose_subject">Choose Subject…</button>
+                <button class="btn" type="button" id="lc-fg-clear" data-i18n="liquid_cover_clear" hidden>Clear</button>
+                <span class="file-picker-name" id="lc-fg-name" data-i18n="no_files_selected">No files selected</span>
+              </div>
+              <input id="lc-fg-input" class="visually-hidden" type="file" accept="image/*" />
+              <label class="lc-row"><span data-i18n="liquid_cover_scale">Scale</span><input type="range" id="lc-fg-scale" min="10" max="200" step="1" value="100"><span class="lc-val" id="lc-fg-scale-v"></span></label>
+              <label class="lc-row"><span data-i18n="liquid_cover_drag_subject">Drag Subject</span><input type="checkbox" id="lc-fg-drag" class="lc-check"></label>
+            </div>
+            </details>
+            </div>
+
+            <div class="lc-inspector-panel" id="lc-panel-glass" data-lc-inspector-panel="glass" role="tabpanel" aria-labelledby="lc-tab-glass" hidden>
+            <div class="lc-group lc-material-group">
+              <div class="lc-group-title" data-i18n="liquid_cover_material">Glass Mix</div>
+              <label class="lc-row"><span data-i18n="liquid_cover_material_scale">Clear / Tinted</span><input type="range" id="lc-material-mix" min="0" max="100" step="1" value="0"><span class="lc-val" id="lc-material-mix-v"></span></label>
+            </div>
+            <div class="lc-group lc-layer-glass-group">
+              <div class="lc-group-title" data-i18n="liquid_cover_selected_layer">Selected layer</div>
+              <label class="lc-row"><span data-i18n="liquid_cover_layer_solid">Solid Layer</span><input type="checkbox" id="lc-layer-solid" class="lc-check"></label>
+              <label class="lc-row"><span data-i18n="liquid_cover_thickness">Thickness</span><input type="range" id="lc-thickness" min="0" max="100" step="1" value="20"><span class="lc-val" id="lc-thickness-v"></span></label>
+              <label class="lc-row"><span data-i18n="liquid_cover_tint">Tint</span><input type="color" id="lc-tint-color" class="lc-color" value="#ffffff"></label>
+              <label class="lc-row"><span data-i18n="liquid_cover_tint_strength">Tint Strength</span><input type="range" id="lc-tint-alpha" min="0" max="100" step="1" value="0"><span class="lc-val" id="lc-tint-alpha-v"></span></label>
+            </div>
+            <div class="lc-group lc-presets-group">
+              <div class="lc-group-title" data-i18n="liquid_cover_presets">Glass Presets</div>
+              <div class="lc-preset-row" id="lc-preset-row"></div>
+              <p class="lc-note" data-i18n="liquid_cover_presets_hint">Choose a proven material; the cover updates immediately.</p>
+            </div>
+
+            <details class="lc-look-assistant">
+              <summary data-i18n="liquid_cover_ai_director">AI art director</summary>
+              <form id="lc-ask-form" class="lc-ask-bar">
+                <label for="lc-ask-input" class="lc-ask-label" data-i18n="liquid_cover_ask_label">Describe a look</label>
+                <div class="lc-ask-row">
+                  <input id="lc-ask-input" type="text" data-i18n-placeholder="liquid_cover_ask_hint" placeholder="e.g. calm tech blue, cinematic…" />
+                  <button class="btn default" type="submit" id="lc-ask-go" data-i18n="liquid_cover_ask_go">Apply</button>
+                </div>
+                <label class="lc-row lc-ai-vision-setting"><span data-i18n="liquid_cover_ai_vision">Read background</span><input type="checkbox" id="lc-ask-vision" class="lc-check" checked></label>
+              </form>
+            </details>
+
+            <details class="lc-finetune">
+              <summary data-i18n="liquid_cover_finetune">Fine-tune (manual)</summary>
+            <details class="lc-group lc-tune-group">
+              <summary data-i18n="liquid_cover_refraction">Refraction (Global)</summary>
+              <label class="lc-row"><span data-i18n="liquid_cover_ior">Index</span><input type="range" id="lc-ref-factor" min="1" max="4" step="0.01" value="1.5"><span class="lc-val" id="lc-ref-factor-v"></span></label>
+              <label class="lc-row"><span data-i18n="liquid_cover_lens">Magnify</span><input type="range" id="lc-lens" min="0" max="30" step="0.5" value="11"><span class="lc-val" id="lc-lens-v"></span></label>
+              <label class="lc-row"><span data-i18n="liquid_cover_dispersion">Dispersion</span><input type="range" id="lc-dispersion" min="0" max="50" step="0.5" value="2"><span class="lc-val" id="lc-dispersion-v"></span></label>
+              <label class="lc-row"><span data-i18n="liquid_cover_blur_edge">Blur Edge</span><input type="checkbox" id="lc-blur-edge" class="lc-check" checked></label>
+            </details>
+
+            <details class="lc-group lc-tune-group">
+              <summary data-i18n="liquid_cover_highlight">Fresnel &amp; Glare</summary>
+              <label class="lc-row"><span data-i18n="liquid_cover_fresnel_range">Fresnel Range</span><input type="range" id="lc-fresnel-range" min="1" max="100" step="1" value="32"><span class="lc-val" id="lc-fresnel-range-v"></span></label>
+              <label class="lc-row"><span data-i18n="liquid_cover_fresnel_strength">Fresnel Strength</span><input type="range" id="lc-fresnel-factor" min="0" max="100" step="1" value="90"><span class="lc-val" id="lc-fresnel-factor-v"></span></label>
+              <label class="lc-row"><span data-i18n="liquid_cover_glare_strength">Glare Strength</span><input type="range" id="lc-glare-factor" min="0" max="120" step="1" value="100"><span class="lc-val" id="lc-glare-factor-v"></span></label>
+              <label class="lc-row"><span data-i18n="liquid_cover_glare_range">Glare Range</span><input type="range" id="lc-glare-range" min="1" max="100" step="1" value="42"><span class="lc-val" id="lc-glare-range-v"></span></label>
+              <label class="lc-row"><span data-i18n="liquid_cover_glare_converge">Glare Converge</span><input type="range" id="lc-glare-convergence" min="0" max="100" step="1" value="58"><span class="lc-val" id="lc-glare-convergence-v"></span></label>
+              <label class="lc-row"><span data-i18n="liquid_cover_glare_angle">Glare Angle</span><input type="range" id="lc-glare-angle" min="-180" max="180" step="1" value="-50"><span class="lc-val" id="lc-glare-angle-v"></span></label>
+            </details>
+
+            <details class="lc-group lc-tune-group">
+              <summary data-i18n="liquid_cover_blur_shadow">Blur &amp; Shadow</summary>
+              <label class="lc-row"><span data-i18n="liquid_cover_bg_blur">Background Blur</span><input type="range" id="lc-blur-radius" min="0" max="80" step="1" value="24"><span class="lc-val" id="lc-blur-radius-v"></span></label>
+              <label class="lc-row"><span data-i18n="liquid_cover_shadow_strength">Shadow Strength</span><input type="range" id="lc-shadow-factor" min="0" max="100" step="1" value="22"><span class="lc-val" id="lc-shadow-factor-v"></span></label>
+              <label class="lc-row"><span data-i18n="liquid_cover_shadow_spread">Shadow Spread</span><input type="range" id="lc-shadow-expand" min="2" max="100" step="1" value="20"><span class="lc-val" id="lc-shadow-expand-v"></span></label>
+            </details>
+            </details>
+
+            </div>
+
+            <div class="lc-inspector-panel" id="lc-panel-export" data-lc-inspector-panel="export" role="tabpanel" aria-labelledby="lc-tab-export" hidden>
+            <div class="lc-group lc-export-group">
+              <label class="lc-export-choice"><span data-i18n="liquid_cover_export_res">Export size</span>
+                <div class="select-wrap"><select id="lc-export-res">
+                  <option value="source" selected data-i18n="liquid_cover_res_source">Match photo</option>
+                  <option value="4" data-i18n="liquid_cover_res_4x">4× preview</option>
+                  <option value="2" data-i18n="liquid_cover_res_2x">2× preview</option>
+                  <option value="1" data-i18n="liquid_cover_res_1x">1× preview</option>
+                </select></div>
+              </label>
+              <p class="lc-note" id="lc-export-dim" data-i18n="liquid_cover_export_dim_note">PNG is rendered at full resolution — no downscaling.</p>
+              <div class="lc-button-row">
+                <button class="btn default" type="button" id="lc-export" data-i18n="liquid_cover_export">Export PNG</button>
+              </div>
+              <p class="lc-note" data-i18n="liquid_cover_aspect_note">Exported at the chosen aspect — never cropped.</p>
+            </div>
+
+            <div class="lc-group lc-animation-group">
+              <div class="lc-group-title" data-i18n="liquid_cover_animation">Animation</div>
+              <label class="lc-row"><span data-i18n="liquid_cover_motion_preset">Preset</span>
+                <div class="select-wrap"><select id="lc-motion-preset">
+                  <option value="none" data-i18n="liquid_cover_motion_none">None</option>
+                  <option value="condense" data-i18n="liquid_cover_motion_condense">Glass Forming</option>
+                  <option value="push" data-i18n="liquid_cover_motion_push">Live Push</option>
+                </select></div>
+              </label>
+              <label class="lc-row"><span data-i18n="liquid_cover_motion_duration">Duration</span><input type="range" id="lc-motion-duration" min="1" max="6" step="0.1" value="2"><span class="lc-val" id="lc-motion-duration-v"></span></label>
+              <label class="lc-row"><span data-i18n="liquid_cover_motion_audio">Original Audio</span><input type="checkbox" id="lc-motion-audio" class="lc-check"></label>
+              <div class="lc-button-row">
+                <button class="btn" type="button" id="lc-motion-preview" aria-pressed="false" data-i18n="liquid_cover_preview_video">Preview Once</button>
+                <button class="btn default" type="button" id="lc-motion-export" data-i18n="liquid_cover_export_video">Export Video</button>
+              </div>
+              <p class="lc-note" data-i18n="liquid_cover_motion_export_note">Exports the current canvas as a browser-encoded video; MP4 is used when the browser supports it, otherwise WebM.</p>
+            </div>
+            </div>
+
+          </div>`,
+  });
+}
+
+installLiquidCoverWindow();
+
 (function () {
   "use strict";
 

@@ -22,6 +22,12 @@
 }
 
 .liquid-cover-body {
+  /* This element is the window pane now, so it inherits the pane's padding and
+     ground. Cover Glass wants neither: its three columns run edge to edge and
+     the artboard paints its own dark ground behind the canvas. Measured against
+     the shipped build, which computed 0px and transparent here. */
+  padding: 0;
+  background-color: transparent;
   flex: 1 1 auto;
   display: grid;
   grid-template-columns: clamp(150px, 14vw, 190px) minmax(0, 1fr) clamp(300px, 26vw, 360px);

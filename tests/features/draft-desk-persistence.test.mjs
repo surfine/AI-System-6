@@ -68,7 +68,10 @@ const windowManager = read("app/core/window-manager.js");
   const results = await Promise.all([first, second]);
   test.assert(results.every((result) => result === true), "both rapid Save commands resolve successfully");
   test.assert(project.quickDraft.workspace.body === "第三版", "the later Save wins; no stale body overwrite");
-  test.assert(project.quickDraft.workspace.versions.length === 1, "rapid Saves never duplicate Versions");
+  // Versions belong to the document now. A draft with no document yet keeps them
+// in the pending bucket rather than losing them, which is what this asserts.
+const savedVersions = project.quickDraft.workspace.pendingDarkroom?.versions || [];
+test.assert(savedVersions.length === 1, "rapid Saves never duplicate Versions");
   test.assert(project.quickDraft.workspace.projectDocId === "document-1", "rapid Saves never duplicate the Project Document");
   test.assert(project.quickDraft.workspace.savedStatus === "saved", "rapid Saves settle on Saved");
 }
@@ -122,7 +125,9 @@ test.assertIncludes(
   test.assert(files.length === 1, "Save & New creates exactly one Project document");
   test.assert(files[0].body.includes("A 的正文") && files[0].durable === true, "the old draft is durable and reopenable from Project Hard Disk");
   test.assert(project.quickDraft.workspace.body === "" && project.quickDraft.workspace.projectDocId === "", "the blank workspace has no stale body or document identity");
-  test.assert(project.quickDraft.workspace.versions.length === 0, "the blank workspace carries no Versions");
+  // A blank workspace carries no darkroom bucket at all — "no bucket" and "an
+// empty bucket" have to keep meaning the same thing.
+test.assert(!project.quickDraft.workspace.pendingDarkroom, "the blank workspace carries no Versions");
 }
 
 // New contract — Case 2: a failed Project Document save aborts New and leaves
@@ -240,7 +245,7 @@ for (const action of ["protect", "adjustment"]) {
   draft.selectionEnd = 3;
   runtime.context.persistSucceeds = false;
   const result = await runtime.testApi.scopeSelectionToLayer("mingming");
-  const layer = project.quickDraft.workspace.adjustmentLayers.find((entry) => entry.kind === "mingming");
+  const layer = (project.quickDraft.workspace.pendingDarkroom?.adjustmentLayers || []).find((entry) => entry.kind === "mingming");
   test.assert(result === false, "a failed Scope commit reports failure");
   test.assert((layer?.mask || []).length === 0, "a failed Scope commit rolls back the adjustment mask");
   test.assert(runtime.controls.get("quick-draft-status").textContent === "quick_draft_save_failed", "a failed Scope commit never announces success");

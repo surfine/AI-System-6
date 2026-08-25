@@ -159,7 +159,6 @@ function getElements() {
   const teachTextAttachmentDocumentEl = document.querySelector("#image-manager-document");
   const teachTextAttachmentsListEl = document.querySelector("#teachtext-attachments-list");
   const teachTextTogglePreviewButton = document.querySelector("#teachtext-toggle-preview");
-  const teachTextSideAskButton = document.querySelector("#teachtext-sideask");
   const teachTextTranslateButton = document.querySelector("#teachtext-translate");
   const teachTextDocMapButton = document.querySelector("#teachtext-docmap");
   const teachTextClipSelectionButton = document.querySelector("#teachtext-clip-selection");
@@ -270,6 +269,7 @@ function getElements() {
   const outlineContentEl = document.querySelector("#outline-content");
   const outlinePreviewEl = document.querySelector("#outline-preview");
   const outlineStatusEl = document.querySelector("#outline-status");
+  const outlineTreeEl = document.querySelector("#outline-tree");
   const outlinePipelineLabelSelect = document.querySelector("#outline-pipeline-label");
   const draftListEl = document.querySelector("#draft-list");
   const draftSectionSelectEl = document.querySelector("#draft-section-source");
@@ -387,6 +387,8 @@ function getElements() {
   const fileInfoLocationEl = document.querySelector("#info-file-location");
   const fileInfoFolderEl = document.querySelector("#info-file-folder");
   const fileInfoSourceEl = document.querySelector("#info-file-source");
+  const fileInfoDescriptionLabelEl = document.querySelector("#info-file-description-label");
+  const fileInfoDescriptionEl = document.querySelector("#info-file-description");
   const fileInfoContextEl = document.querySelector("#info-file-context");
   const fileInfoCreatedEl = document.querySelector("#info-file-created");
   const fileInfoModifiedEl = document.querySelector("#info-file-modified");
@@ -559,7 +561,6 @@ function getElements() {
     teachTextAttachmentDocumentEl,
     teachTextAttachmentsListEl,
     teachTextTogglePreviewButton,
-    teachTextSideAskButton,
     teachTextTranslateButton,
     teachTextDocMapButton,
     teachTextClipSelectionButton,
@@ -668,6 +669,7 @@ function getElements() {
     questionManuscriptTitleEl,
     outlineNotesEl,
     outlineContentEl,
+    outlineTreeEl,
     outlinePreviewEl,
     outlineStatusEl,
     outlinePipelineLabelSelect,
@@ -787,6 +789,8 @@ function getElements() {
     fileInfoLocationEl,
     fileInfoFolderEl,
     fileInfoSourceEl,
+    fileInfoDescriptionLabelEl,
+    fileInfoDescriptionEl,
     fileInfoContextEl,
     fileInfoCreatedEl,
     fileInfoModifiedEl,

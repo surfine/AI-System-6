@@ -1,11 +1,13 @@
-// Quick Draft adjustment layers — pure data. 明明传球 / 洛洛接球 / HKRR 抬升
+import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { join } from "node:path";
+// Quick Draft adjustment layers — pure data. 铭铭视角 / 落落接收 / HKRR 提亮
 // are layers with a switch and a strength parameter; the stack stays in the
 // existing workspace record and a layer reads the negative, never another
 // layer's output. The pure module is executed here in a bare vm context:
 // no DOM, no record, no translations.
 
 import vm from "node:vm";
-import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
+import { createFeatureTest, read, resolveProjectPath } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("adjustment-layers");
 const source = read("app/core/adjustment-layers.js");
@@ -112,5 +114,48 @@ test.assert(
   JSON.stringify(maskedLayer[0].mask) === JSON.stringify([{ start: 3, end: 5 }]),
   "layer normalization keeps the stored mask"
 );
+
+// The three adjustment layers are named after real people, so a homophone is a
+// misspelling of a person, not a synonym. 铭铭 must never appear as 明明 and
+// 落落 must never appear as 洛洛. This was not theoretical: "明明传球 / 洛洛接球"
+// had reached CLAUDE.full.md's own prose and a published RELEASE-NOTES entry --
+// both names wrong, in text that went out as a GitHub release's "What's new".
+// 明明 alone is an ordinary Chinese adverb, so only the layer phrasings are
+// checked, and lines that state the rule may quote the wrong form.
+{
+  // internal/ is absent from the public snapshot, and this test ships in it.
+  // Walking a root that is not there threw ENOENT and took the whole public
+  // `npm test` down -- the run the snapshot sync makes before it pushes.
+  const roots = ["internal", "docs", "apps", "site", "tests", "tooling"].filter((root) => existsSync(root));
+  const offenders = [];
+  const walk = (dir) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      if (entry.name === "node_modules" || entry.name.startsWith(".")) continue;
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) { walk(full); continue; }
+      if (!/\.(md|html|js|mjs|json|css)$/.test(entry.name)) continue;
+      // This detector necessarily spells the wrong forms, in its comment and in
+      // its own pattern. It is the one file that may.
+      if (entry.name === "adjustment-layers.test.mjs") continue;
+      const text = readFileSync(full, "utf8");
+      text.split("\n").forEach((line, index) => {
+        if (/never 洛洛|绝不是洛洛|never 明明|绝不是明明/.test(line)) return;
+        if (/洛洛接球|洛洛接收|明明传球|明明视角/.test(line)) {
+          offenders.push(`${full}:${index + 1}`);
+        }
+      });
+    }
+  };
+  let scanned = 0;
+  const countingWalk = (dir) => { scanned += 1; walk(dir); };
+  for (const root of roots) countingWalk(resolveProjectPath(root));
+  test.assert(scanned === roots.length, `the homophone walk reached all ${roots.length} roots`);
+  test.assert(
+    offenders.length === 0,
+    offenders.length === 0
+      ? "no adjustment layer is written with a homophone of its person's name"
+      : `a real person's name is misspelled at: ${offenders.slice(0, 6).join(", ")}`
+  );
+}
 
 test.finish();

@@ -186,4 +186,44 @@ test.assertIncludes(index, 'id="teachtext-docmap" data-i18n="docmap">DocMap</but
 test.assertIncludes(index, 'id="scrapbook-docmap" data-action="make-docmap" data-i18n="docmap">DocMap</button>', "Scrapbook keeps the compact DocMap label");
 test.assertIncludes(index, 'id="clipboard-docmap" data-i18n="docmap">DocMap</button>', "Clipboard keeps the compact DocMap label");
 
+
+// A photographed page or whiteboard. DocMap anchors every node back into
+// source.text, so a picture is read into text FIRST and that reading becomes
+// the source — the writer can see and correct it. The picture then rides along
+// only so the model can resolve its own reading; it never adds branches.
+test.assertIncludes(app, "function docMapSourceFromPicture", "a picture can become a DocMap source");
+test.assertIncludes(app, "scope: \"picture\"", "a picture source is its own scope");
+test.assertIncludes(app, "function makeDocMapFromPicture", "the writer can map a picture");
+test.assertIncludes(app, "analyzeImageAttachment(attachment", "the picture is read into text before it is mapped");
+test.assertIncludes(app, "docMapSourceImages(source)", "the picture is sent as context for the reading");
+test.assertIncludes(app, "图片只用来读懂上面这份来源文字", "the prompt confines the picture to disambiguating the text");
+test.assertIncludes(app, "不要把图片里有、来源文字里没有的东西写成分支", "the prompt forbids branches that do not trace to the text");
+test.assertIncludes(index, 'data-action="docmap-from-picture"', "the DocMap window offers the command");
+test.assertIncludes(actions, "withDocMap(() => makeDocMapFromPicture())", "the lazy module is resolved at click time, not at boot");
+
+// A map built from a picture used to be built from a reading the writer never
+// saw. Every node anchors into that text, so one misread word does not make one
+// wrong branch — it makes a whole map that looks right and is not, with nothing
+// to check it against. The reading is now a proposal, and the field is
+// EDITABLE, because accepting or rejecting it whole is not enough when a single
+// word is wrong.
+const docmapSource = read("app/features/docmap.js");
+test.assertIncludes(index, 'id="docmap-picture-reading-text"', "the reading is shown before anything is mapped");
+test.assertIncludes(index, '<textarea id="docmap-picture-reading-text"', "and it is a field the writer can correct, not a read-only output");
+test.assertIncludes(docmapSource, "showDocMapPictureReading(attachment, reading)", "reading the picture stops at the proposal");
+test.assertNotIncludes(
+  docmapSource,
+  "const source = docMapSourceFromPicture(attachment, reading);",
+  "no path maps a picture's reading without the writer seeing it"
+);
+// The rule easiest to lose in a later edit: what the writer is looking at wins
+// over what the model returned.
+test.assertIncludes(
+  docmapSource,
+  "String(field?.value ?? docMapPictureProposal.text).trim()",
+  "the mapped text is the corrected field, not the model's original reading"
+);
+test.assertIncludes(actions, "withDocMap(() => mapDocMapPictureReading())", "confirming defers to the lazy module the same way");
+test.assertIncludes(actions, "withDocMap(() => discardDocMapPictureReading())", "and so does discarding");
+
 test.finish();

@@ -40,4 +40,46 @@ const test = createFeatureTest("project-backup-roundtrip");
   test.assert(remapped.project.quickDraft.workspace.projectDocId === remapped.files[0].id || remapped.files.some((file) => file.id === remapped.project.quickDraft.workspace.projectDocId), "Quick Draft workspace points at a remapped document");
 }
 
+// v6: the pictures travel, and the figures stay attached to them.
+//
+// Before v6 a backup carried no pictures at all. A restored disk lost every
+// Question Sheet photo, left each Scrapbook clip pointing at a picture that
+// was not there, and turned every manuscript figure back into raw
+// `![](aisystem6-image:...)` markdown -- silently, the way the darkroom was
+// lost before v5.
+{
+  const runtime = createBackupVm(seedComplexProject());
+  const bundle = await runtime.recovery.exportRecoveryProjectBackup("p1");
+  test.assert(
+    Array.isArray(bundle.imageAttachments) && bundle.imageAttachments.length === 1,
+    "the export carries the project's pictures",
+  );
+  const exported = bundle.imageAttachments[0];
+  test.assert(!!exported.originalDataUrl, "the original travels, not only the preview");
+  test.assert(!!exported.previewDataUrl, "and the preview travels with it");
+
+  const remapped = runtime.backup.remapBackup(bundle, { uuid: (() => { let n = 0; return () => `new-${++n}`; })() });
+  const picture = (remapped.imageAttachments || [])[0];
+  test.assert(!!picture, "a picture survives the identity remap");
+  test.assert(picture.id !== "img-1", "and takes a fresh id, so importing one disk twice cannot collide");
+  test.assert(picture.projectId === remapped.project.id, "the picture belongs to the imported project");
+  test.assert(picture.originalDataUrl === exported.originalDataUrl, "the bytes are untouched by the remap");
+
+  // The pointer no generic remapper can see: a citation inside prose.
+  const manuscript = remapped.files.find((file) => file.name === "manuscript.md");
+  test.assert(
+    manuscript.body.includes(`aisystem6-image:${picture.id}`),
+    "a figure cited in the manuscript follows its picture to the new id",
+  );
+  test.assert(
+    !manuscript.body.includes("aisystem6-image:img-1"),
+    "and no citation is left pointing at the id the picture had on the other disk",
+  );
+
+  const scrap = remapped.scraps.find((item) => Array.isArray(item.images) && item.images.length);
+  if (scrap) {
+    test.assert(scrap.images.includes(picture.id), "a scrap's picture list follows the remap too");
+  }
+}
+
 test.finish();

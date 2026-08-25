@@ -756,6 +756,153 @@
   flex: 0 0 auto;
 }
 
+/* The writing route's own info strip. System 6 drew a window's info bar as a
+   permanent frame rather than one that appears and shoves the layout, so this
+   keeps its height whether or not there is a message. It is the destination of
+   the single #status element, which moves here from ClioTalk's info bar
+   whenever a route window is in front. */
+.window-status-strip {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  min-height: 19px;
+  padding: 2px 6px;
+  border: 1px solid transparent;
+  border-top: 0;
+  background: transparent;
+  font-family: var(--mono-font);
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--ink);
+  overflow: hidden;
+}
+
+/* The frame appears with the message. The row reserves its height either way,
+   so a receipt arrives in place instead of pushing the editor up. */
+.window-status-strip.has-message {
+  border-color: var(--ink);
+  background: var(--paper);
+  box-shadow: inset 1px 1px 0 var(--shade);
+}
+
+.window-status-slot {
+  flex: 1 1 auto;
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+/* Shared System 6 level controls. These are primitives, not one window's
+   chrome: the Soundscape transport and Quick Draft's Listen progress both draw
+   them, so they live in the base sheet rather than travelling with whichever
+   window happened to introduce them. Moved out of styles/88-soundscape.css when
+   that sheet became lazy. */
+/* Position track: a scroll bar, not a slider. */
+
+.system-track {
+  position: relative;
+  height: 14px;
+  border: var(--system-track-border);
+  border-radius: var(--system-track-radius);
+  background: var(--system-track-bg);
+  box-shadow: var(--system-track-shadow);
+  cursor: pointer;
+  touch-action: none;
+}
+
+.system-track[aria-disabled="true"] {
+  cursor: default;
+  opacity: var(--control-disabled-opacity);
+}
+
+.system-track-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--system-track-position, 0%);
+  border-radius: var(--system-track-radius);
+  background: var(--system-track-fill);
+  pointer-events: none;
+}
+
+.system-track-thumb {
+  position: absolute;
+  top: 0;
+  left: var(--system-track-position, 0%);
+  width: 15px;
+  height: 12px;
+  border: var(--system-track-thumb-border);
+  border-radius: var(--system-track-thumb-radius);
+  background: var(--system-track-thumb-bg);
+  box-shadow: var(--system-track-thumb-shadow);
+  pointer-events: none;
+}
+
+/* Segment cells: the Sound control panel level control. */
+
+.system-segments {
+  display: flex;
+  gap: 2px;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.system-segments span {
+  display: block;
+  width: 8px;
+  height: 15px;
+  border: var(--system-segment-border);
+  border-radius: var(--system-segment-radius);
+  background: var(--system-segment-bg);
+}
+
+.system-segments span.is-on {
+  background: var(--system-segment-on-bg);
+  box-shadow: var(--system-segment-on-shadow);
+}
+
+/* Both are tabbable sliders, so the focus ring travels with the primitive
+   rather than with the window that happens to draw it. */
+.system-track:focus-visible,
+.system-segments:focus-visible {
+  outline: var(--control-focus-outline);
+  outline-offset: var(--control-focus-offset);
+}
+
+/* Find / Change: a small modeless panel, not a document window. Two labelled
+   fields, one option, the target row, and a button row whose default is Find
+   Next - the button a writer presses over and over. */
+.find-change-window {
+  min-width: 340px;
+}
+
+.find-change-pane {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: 5px;
+  padding: 10px;
+}
+
+.find-change-label {
+  font-size: 12px;
+}
+
+.find-change-pane input[type="text"] {
+  width: 100%;
+}
+
+.find-change-options {
+  margin-top: 2px;
+}
+
+.find-change-actions {
+  justify-content: flex-end;
+  margin-top: 6px;
+}
+
 .specialized-command-menu .teachtext-command-popover {
   right: auto;
   left: 0;
@@ -1060,37 +1207,6 @@
   background: var(--context-item-dropped-bg);
 }
 
-.guide-pane {
-  display: grid;
-  justify-items: center;
-  gap: var(--guide-pane-gap);
-  text-align: center;
-}
-
-.guide-pane h3 {
-  margin: 0;
-  font-size: 18px;
-  line-height: 1.25;
-}
-
-.guide-pane p {
-  max-width: 34ch;
-  margin: 0;
-  line-height: 1.5;
-}
-
-/* The route shown as named objects rather than sentences. Left-aligned so the
-   numbers form one scannable column instead of a ragged centered block. */
-.guide-route {
-  justify-items: start;
-  gap: 3px;
-  margin: 0;
-  padding: var(--guide-start-card-padding);
-  padding-left: calc(var(--guide-start-card-padding) + 18px);
-  text-align: left;
-  line-height: 1.35;
-}
-
 .system-tab-panel[hidden],
 .system-tabs [hidden] {
   display: none;
@@ -1101,31 +1217,6 @@
    on specificity rather than relying on the plain class alone. */
 [data-control-panel][hidden] {
   display: none;
-}
-
-/* Read Me carries real paragraphs, not captions. Headings stay centred. */
-.guide-pane > p {
-  max-width: none;
-  text-align: left;
-}
-
-/* One quiet default action below the document. */
-.guide-actions {
-  display: grid;
-  gap: 7px;
-  width: 100%;
-}
-
-/* The outside world stays reachable and stays quiet: small
-   push buttons under a hairline, never competing with the page's own action. */
-.guide-links {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 7px;
-  width: 100%;
-  padding-top: 7px;
-  border-top: var(--system-border);
 }
 
 /* A view switch, not two actions. The tabs sit on a rail and the selected one

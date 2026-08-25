@@ -56,6 +56,32 @@ function modelKindFromData(item, id, name) {
 }
 
 /**
+ * Decide whether a model can read images, returning a tri-state so a
+ * caller can tell "this one cannot see" from "this build does not say".
+ *
+ * LM Studio reports it two ways: `capabilities.vision` on /api/v1/models,
+ * and `type: "vlm"` on /api/v0/models. Older builds report neither, and
+ * there the answer is unknown rather than false — refusing to try a model
+ * because an old server stayed quiet would be worse than trying it.
+ *
+ * @param {any} item
+ * @returns {{ known: boolean, vision: boolean }}
+ */
+function modelVisionSupportFromData(item) {
+  if (!item || typeof item === "string") return { known: false, vision: false };
+  const capability = item?.capabilities?.vision ?? item?.capabilities?.image_input;
+  if (typeof capability === "boolean") return { known: true, vision: capability };
+
+  const type = String(item.type || item.kind || "").trim().toLowerCase();
+  if (type === "vlm") return { known: true, vision: true };
+  // v0 names the text-only kinds explicitly, so these are real negatives.
+  if (type === "llm" || type === "embeddings" || type === "embedding") {
+    return { known: true, vision: false };
+  }
+  return { known: false, vision: false };
+}
+
+/**
  * Decide whether a single model record is currently loaded, returning
  * a tri-state { known, loaded, state }.
  *
@@ -383,6 +409,7 @@ module.exports = {
   knownModelMaxContext,
   modelKindFromData,
   modelLoadStateFromData,
+  modelVisionSupportFromData,
   modelMaxContextFromData,
   loadedModelContext,
   loadedModelName,

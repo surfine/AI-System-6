@@ -7,7 +7,7 @@ import {
   runAction,
 } from "./helpers.mjs";
 
-// Quick Draft adjustment layers: 明明传球 / 洛洛接球 / HKRR 抬升 carry a switch,
+// Quick Draft adjustment layers: 铭铭视角 / 落落接收 / HKRR 提亮 carry a switch,
 // a strength, a line-range mask, and a stack order. The layer stack lives in
 // the workspace record, travels to the draft route, and its masks show up in
 // the read-only grain view. These specs drive the real UI — no source greps —

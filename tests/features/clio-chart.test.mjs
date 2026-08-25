@@ -1,5 +1,5 @@
 import vm from "node:vm";
-import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
+import { createFeatureTest, read, windowApp } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("clio-chart");
 const source = read("app/features/clio-chart.js");
@@ -201,6 +201,7 @@ const styleManifest = read("tooling/style-manifest.mjs");
 const menus = read("app/data/menus.js");
 const app = read("app.js");
 const multiFinder = read("app/core/multi-finder.js");
+const windowRegistrySource = read("app/core/window-registry.js");
 const actions = read("app/core/actions.js");
 const config = read("app/core/config.js");
 const integrity = read("app/core/system-integrity-guidance.js");
@@ -218,9 +219,15 @@ test.assertIncludes(html, 'data-i18n="clio_chart_bars_short"', "ClioChart suppli
 test.assertIncludes(manifest, '"app/features/clio-chart.js"', "the module is registered as a lazy runtime path");
 test.assertNotIncludes(html, "app/features/clio-chart.js", "a lazy module is never added to the startup script tags");
 test.assertIncludes(styleManifest, '"styles/87-clio-chart.css"', "the stylesheet is in the style manifest");
-test.assertIncludes(config, 'createLazyModuleLoader("AISystem6ClioChartLoaded", ["app/features/clio-chart.js"])', "there is a lazy loader for the module");
+test.assertIncludes(config, 'createLazyModuleLoader("AISystem6ClioChartLoaded", ["app/features/clio-chart.js"], false, ["styles.clio-chart.css"])', "the lazy loader brings the stylesheet with the module");
+// The sheet also dresses one ClioStage element: .clio-stage-chart-slide is added
+// when a slide carries a chart snapshot, and a restored session can bring that
+// snapshot back without ClioChart having been opened this boot. ClioStage must
+// therefore pull the same sheet, or a restored chart slide loses its styling.
+test.assertIncludes(config, 'createLazyModuleLoader("AISystem6ClioStageLoaded", ["app/features/clio-stage.js"], false, ["styles.clio-chart.css"])', "ClioStage pulls the chart stylesheet for a restored chart slide");
+test.assertIncludes(styleManifest, '"styles.clio-chart.css"', "the stylesheet ships as its own lazy bundle, off the boot payload");
 test.assertIncludes(html, 'data-window="clioChart"', "the window is declared in index.html");
-test.assertIncludes(multiFinder, 'clioChart: "clioChart"', "the window maps to its own application");
+test.assert(windowApp("clioChart") === "clioChart", "the window maps to its own application");
 test.assertIncludes(menus, "clioChart: clioChartMenus", "the application owns a menu set");
 test.assertIncludes(menus, 'menuItem("see-as-chart", "clio_chart_see_as_chart")', "TeachText carries the menu twin of the in-body button");
 test.assertIncludes(source, '"open-clio-chart"', "the open action is registered in the lazy module");
@@ -325,8 +332,8 @@ const responsive = read("styles/60-responsive.css");
 // A window restored from the previous session must not come back inert. The
 // cross-cutting rule lives in tests/features/lazy-window-restore.test.mjs;
 // here we only pin ClioChart's own end of it.
-test.assertIncludes(windows, "clioChart: {", "ClioChart is in the lazy-window registry openWindow consults");
-test.assertIncludes(windows, "window.AISystem6ClioChart?.attach?.()", "the restored window is wired before the user touches it");
+test.assertIncludes(windowRegistrySource, "clioChart: {", "ClioChart is in the lazy-window registry openWindow consults");
+test.assertIncludes(windowRegistrySource, "window.AISystem6ClioChart?.attach?.()", "the restored window is wired before the user touches it");
 test.assert(typeof chart.attach === "function", "the module exposes attach() for the restore path");
 
 // The split handle is the app's existing figure, not a second one. Reusing

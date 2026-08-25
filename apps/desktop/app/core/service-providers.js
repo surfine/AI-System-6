@@ -113,11 +113,59 @@
     },
   });
 
+  window.AISystem6Capabilities?.registerServiceProvider?.("vision.analyze", {
+    id: "same-origin-node",
+    request(input = {}) {
+      return sameOriginNode.request({
+        url: "/api/vision/analyze",
+        init: input.init,
+        signal: input.signal,
+      });
+    },
+  });
+
   window.AISystem6Capabilities?.registerServiceProvider?.("cloud.chat", {
     id: "same-origin-node",
     request(input = {}) {
       return sameOriginNode.request({
-        url: "/api/cloud/chat",
+        url: typeof cloudCredentialMode === "function" && cloudCredentialMode() === "shared-remote"
+          ? "/api/mac-shared/chat"
+          : "/api/cloud/chat",
+        init: input.init,
+        signal: input.signal,
+      });
+    },
+  });
+
+  window.AISystem6Capabilities?.registerServiceProvider?.("cloud.quota", {
+    id: "same-origin-node",
+    request(input = {}) {
+      return sameOriginNode.request({
+        url: typeof cloudCredentialMode === "function" && cloudCredentialMode() === "shared-remote"
+          ? "/api/mac-shared/quota"
+          : "/api/cloud/quota",
+        init: input.init,
+        signal: input.signal,
+      });
+    },
+  });
+
+  window.AISystem6Capabilities?.registerServiceProvider?.("local.lmstudio.start", {
+    id: "same-origin-node",
+    request(input = {}) {
+      return sameOriginNode.request({
+        url: "/api/lmstudio/start",
+        init: input.init,
+        signal: input.signal,
+      });
+    },
+  });
+
+  window.AISystem6Capabilities?.registerServiceProvider?.("macShared.session", {
+    id: "same-origin-node",
+    request(input = {}) {
+      return sameOriginNode.request({
+        url: "/api/mac-shared/session",
         init: input.init,
         signal: input.signal,
       });
@@ -320,7 +368,11 @@
         "cloud.status",
         "cloud.models",
         "cloud.chat",
+        "vision.analyze",
+        "cloud.quota",
         "cloud.embeddings",
+        "local.lmstudio.start",
+        "macShared.session",
         "endfield.search",
         "endfield.ask",
         "cmf.capabilities",

@@ -522,6 +522,29 @@ body.is-resizing-tdi {
   -webkit-backdrop-filter: var(--tdi-tab-backdrop-filter);
 }
 
+.tdi-tab:has(.tdi-tab-icon) {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: 6px;
+}
+
+.tdi-tab-icon {
+  align-self: center;
+}
+
+.tdi-tab-copy {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+
+.tdi-tab-copy > :is(span, small) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .tdi-tab-wrap {
   position: relative;
   display: block;
@@ -736,6 +759,54 @@ body.is-resizing-tdi {
 .reader-body-content ul,
 .reader-body-content ol {
   padding-left: 20px;
+}
+
+/* A figure the clipped page brought with it.
+
+   It arrives as a framed place, the way a Macintosh document has always shown
+   a picture it is holding room for -- not as a dashed box, which reads as an
+   error when nothing has gone wrong. The picture itself is never fetched:
+   pulling the publisher's image into the page would tell them the writer is
+   reading, every time the clip is opened, and the desktop's img-src policy
+   allows only self, data:, and blob: in any case. Balloon Help carries that
+   explanation so the article does not have to. */
+.reader-figure {
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+  margin: 1.4em 0;
+}
+
+.reader-figure-frame {
+  width: 100%;
+  max-width: 320px;
+  height: 84px;
+  border: var(--system-control-line) solid var(--shade-dark);
+  background: var(--paper);
+}
+
+.reader-figure-caption {
+  max-width: 320px;
+  text-indent: 0;
+  text-align: center;
+  font-family: var(--text-font);
+  font-size: 12px;
+  font-style: italic;
+  line-height: 1.3;
+}
+
+.reader-figure-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+
+.reader-figure-reading {
+  width: 100%;
+  margin: 2px 0 0;
+  text-indent: 0;
+  text-align: left;
 }
 
 .reader-transcript-view {

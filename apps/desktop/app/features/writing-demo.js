@@ -4,104 +4,159 @@
 
 let writingDemoRun = null;
 
-const writingDemoCorpus = window.AISystem6Iphone17eDemoCorpus || {};
-const writingDemoAppleUrl = writingDemoCorpus.appleNewsroomUrl || "https://www.apple.com.cn/cn/newsroom/2026/03/apple-introduces-iphone-17e/";
-const writingDemoSearchKeyword = writingDemoCorpus.searchKeyword || "iPhone 17e";
-const writingDemoQuestionSeed = writingDemoCorpus.questionSheet || "";
-const writingDemoOutlineSeed = writingDemoCorpus.aaronBulletInput || "";
-const writingDemoManuscriptTitle = writingDemoCorpus.manuscriptTitle || "iPhone 17e 视频口播稿";
-const writingDemoFinalExportTitle = writingDemoCorpus.finalExportTitle || "iPhone 17e 视频口播稿 - Final";
-const writingDemoShortIntent = "我要写一条 iPhone 17e 的 B 站口播稿：有来源、有判断，别变成发布会复读。";
+let writingDemoCorpus = window.AISystem6EvergreenDemoCorpus || {};
+let writingDemoCorpusPromise = null;
 
-const writingDemoClipSeeds = [
-  {
-    title: "Clip: A19 / C1X / 256GB / MagSafe",
-    cues: ["A19", "C1X", "256GB", "MagSafe", "Qi2"],
-  },
-  {
-    title: "Clip: 浅粉色与外观",
-    cues: ["浅粉色", "粉色", "外观", "颜色"],
-  },
-  {
-    title: "Clip: 摄像头与续航",
-    cues: ["摄像头", "相机", "48MP", "夜景", "续航", "Qi2"],
-  },
-];
+function writingDemoLanguage() {
+  return currentLanguage === "zh" ? "zh" : "en";
+}
 
-const writingDemoScriptSteps = [
+function writingDemoBilingual(zh, en) {
+  return writingDemoLanguage() === "zh" ? zh : en;
+}
+
+function writingDemoCorpusText(value, fallbackZh = "", fallbackEn = fallbackZh) {
+  const language = writingDemoLanguage();
+  if (value && typeof value === "object") return String(value[language] || value.zh || value.en || (language === "zh" ? fallbackZh : fallbackEn));
+  return String(value || (language === "zh" ? fallbackZh : fallbackEn));
+}
+
+function writingDemoFallbackCorpus() {
+  return {
+    id: "ai-system6-development-story-fallback",
+    version: 0,
+    projectName: { zh: "演示项目 - 当聊天框装不下一篇文章", en: "Live Demo - When Chat Cannot Hold an Article" },
+    sourceFileName: { zh: "AI System 6 开发记（示范来源）", en: "AI System 6 Development Story (Demo Source)" },
+    manuscriptTitle: { zh: "当聊天框装不下一篇文章", en: "When Chat Cannot Hold an Article" },
+    finalExportTitle: { zh: "当聊天框装不下一篇文章 - 定稿", en: "When Chat Cannot Hold an Article - Final" },
+    shortIntent: {
+      zh: "解释为什么 AI 写作需要一台电脑，而不只是更长的聊天框。",
+      en: "Explain why AI writing needs a computer rather than a longer chat box.",
+    },
+    followupQuestions: {
+      zh: ["这篇稿子的开头应该留下哪两个动作？", "哪些技术判断必须保留来源边界？"],
+      en: ["Which two actions should remain in the opening?", "Which technical judgments need their source boundary?"],
+    },
+    artifacts: {
+      article: {
+        zh: "# 当聊天框装不下一篇文章\n\n聊天只是一款应用。来源、问题、大纲、正文与交付物应该各有位置。模型结果先保持临时，直到用户明确保存、摘录、插入或导出。作者不只是验收员；亲眼看到的细节、犹豫和判断，本来就是文章的一部分。",
+        en: "# When a Chat Box Cannot Hold an Article\n\nChat is one application. Sources, questions, outline, manuscript, and handoff need different places. Model output remains temporary until the writer saves, clips, inserts, or exports it. A writer is not merely an approver; witnessed detail, hesitation, and judgment belong to the work.",
+      },
+      outline: {
+        zh: "# 当聊天框装不下一篇文章\n\n## 聊天只是一款应用\n\n## 出现过与保存过\n\n## 作者仍然在写",
+        en: "# When Chat Cannot Hold an Article\n\n## Chat Is One Application\n\n## Seen and Saved\n\n## The Writer Still Writes",
+      },
+      clippings: {
+        zh: [{ title: "出现过与保存过", text: "屏幕上出现过，和电脑已经保存，是两件不同的事。" }],
+        en: [{ title: "Seen and saved", text: "Appearing on screen and being saved by the computer are different events." }],
+      },
+      teaserManuscript: {
+        zh: "# 屏幕上出现过，不等于已经保存\n\n聊天只是一款应用。模型结果先停在临时状态，明确写入后才成为项目的一部分。",
+        en: "# Appearing on Screen Is Not the Same as Being Saved\n\nChat is one application. Model output remains temporary until an explicit write makes it part of the project.",
+      },
+    },
+  };
+}
+
+async function writingDemoEnsureCorpus() {
+  if (window.AISystem6EvergreenDemoCorpus) {
+    writingDemoCorpus = window.AISystem6EvergreenDemoCorpus;
+    return writingDemoCorpus;
+  }
+  if (typeof loadClassicScriptOnce !== "function") {
+    writingDemoCorpus = writingDemoFallbackCorpus();
+    return writingDemoCorpus;
+  }
+  writingDemoCorpusPromise ||= loadClassicScriptOnce("app/data/evergreen-demo-corpus.js")
+    .then(() => {
+      writingDemoCorpus = window.AISystem6EvergreenDemoCorpus || writingDemoFallbackCorpus();
+      return writingDemoCorpus;
+    })
+    .catch((error) => {
+      writingDemoCorpusPromise = null;
+      console.warn("Evergreen demo corpus could not load; using the compact fallback.", error);
+      writingDemoCorpus = writingDemoFallbackCorpus();
+      return writingDemoCorpus;
+    });
+  return writingDemoCorpusPromise;
+}
+
+function writingDemoScriptSteps() {
+  return [
   {
     id: "sources",
-    title: "来源进入项目",
-    userVisiblePurpose: "先把 iPhone 17e 的来源带进项目，而不是在浏览器和聊天窗口之间复制粘贴。",
-    windows: [{ name: "findPath", slot: "compact" }],
-    expectedVisibleChange: "Searcher 选中来源、生成摘要，并把结果送进 Scrapbook。",
-    failureMessage: "Searcher 没有把来源变成项目材料。",
+    title: writingDemoBilingual("来源进入项目", "Source Enters the Project"),
+    userVisiblePurpose: writingDemoBilingual("先让一篇完整文章成为项目文件，不从一次易逝的网页搜索开始。", "Begin with a complete article as a project file, not an expiring web search."),
+    windows: [{ name: "teachText", slot: "wide" }],
+    expectedVisibleChange: writingDemoBilingual("内置开发记作为有出处的示范来源打开。", "The built-in development story opens as a sourced demo document."),
+    failureMessage: writingDemoBilingual("示范来源没有成为项目文件。", "The demo source did not become a project file."),
   },
   {
     id: "reader",
-    title: "阅读变成摘录",
-    userVisiblePurpose: "Reader 负责读来源，Scrapbook 负责留下可追踪片段。",
+    title: writingDemoBilingual("阅读变成摘录", "Reading Becomes Clippings"),
+    userVisiblePurpose: writingDemoBilingual("Reader 负责读来源，Scrapbook 只留下作者明确选择的片段。", "Reader holds the source; Scrapbook keeps only passages the writer explicitly chooses."),
     windows: [{ name: "reader", slot: "wide" }],
-    expectedVisibleChange: "Apple 新闻稿打开，关键片段进入 Scrapbook。",
-    failureMessage: "Reader 没有生成可用摘录。",
+    expectedVisibleChange: writingDemoBilingual("开发记打开，关键片段带着 corpus 来源进入 Scrapbook。", "The story opens and selected passages enter Scrapbook with corpus provenance."),
+    failureMessage: writingDemoBilingual("Reader 没有生成可用摘录。", "Reader did not produce usable clippings."),
   },
   {
     id: "scrapbook",
-    title: "材料篮送入写作",
-    userVisiblePurpose: "Scrapbook 不是临时便签，它把来源片段送进写作对象链。",
+    title: writingDemoBilingual("材料篮送入写作", "The Material Basket Enters Writing"),
+    userVisiblePurpose: writingDemoBilingual("Scrapbook 不是临时便签，它把被选中的来源片段送进写作对象链。", "Scrapbook is not a scratch pad; it sends selected source passages into the writing route."),
     windows: [{ name: "scrapbook", slot: "wide" }],
-    expectedVisibleChange: "来源摘录被选中并送到问题单。",
-    failureMessage: "Scrapbook 没有把材料送入问题单。",
+    expectedVisibleChange: writingDemoBilingual("来源摘录被选中并送到问题单。", "Source clippings are selected and sent to Question Sheet."),
+    failureMessage: writingDemoBilingual("Scrapbook 没有把材料送入问题单。", "Scrapbook did not send material to Question Sheet."),
   },
   {
     id: "questionSheet",
-    title: "素材变成问题单",
-    userVisiblePurpose: "问题单把来源、观众问题、口吻和事实边界放到同一个对象里。",
+    title: writingDemoBilingual("素材变成问题单", "Material Becomes a Question Sheet"),
+    userVisiblePurpose: writingDemoBilingual("问题单把来源、真实接收者、原始问题和事实边界放到同一个对象里。", "Question Sheet holds sources, the real recipient, original questions, and factual boundaries together."),
     windows: [{ name: "questionSheet", slot: "wide" }],
-    expectedVisibleChange: "一次短听写进入问题单，并被模型整理成写作任务。",
-    failureMessage: "问题单没有形成可用写作边界。",
+    expectedVisibleChange: writingDemoBilingual("一次短听写进入问题单，并被模型整理成写作任务。", "A short dictation enters Question Sheet and is organized into a writing job."),
+    failureMessage: writingDemoBilingual("问题单没有形成可用写作边界。", "Question Sheet did not form a usable writing boundary."),
   },
   {
     id: "outline",
-    title: "手工结构进入大纲",
-    userVisiblePurpose: "问题单提供写作边界；大纲使用作者已经给定的章节顺序，不把问题单当作唯一上游。",
+    title: writingDemoBilingual("作者结构进入大纲", "The Writer's Structure Enters Outline"),
+    userVisiblePurpose: writingDemoBilingual("问题单提供边界；大纲保留作者已经给定的章节顺序。", "Question Sheet supplies the boundary while Outline keeps the writer's chosen order."),
     windows: [{ name: "outline", slot: "wide" }],
-    expectedVisibleChange: "Aaron 给定的大纲进入 Outline，并同步为可起草章节。",
-    failureMessage: "给定大纲没有形成可起草结构。",
+    expectedVisibleChange: writingDemoBilingual("开发记大纲进入 Outline，并接受一次通用结构检查。", "The development-story outline enters Outline and receives one generic structure pass."),
+    failureMessage: writingDemoBilingual("给定大纲没有形成可起草结构。", "The supplied outline did not form a draftable structure."),
   },
   {
     id: "sectionDrafts",
-    title: "逐节推敲",
-    userVisiblePurpose: "章节草稿只精演两节：一节从无到有，一节被润色；其余章节后台验收。",
+    title: writingDemoBilingual("逐节推敲", "Work One Section at a Time"),
+    userVisiblePurpose: writingDemoBilingual("章节草稿只精演两节：一节从无到有，一节在作者材料上润色。", "Section Drafts demonstrates two sections: one drafted from nothing and one polished from writer material."),
     windows: [{ name: "sectionDrafts", slot: "wide" }],
-    expectedVisibleChange: "第 1 节出现草稿，第 2 节出现润色前后变化。",
-    failureMessage: "章节草稿没有展示真实逐节处理。",
+    expectedVisibleChange: writingDemoBilingual("第 1 节出现草稿，第 2 节出现润色后的保留。", "Section 1 gains a draft and Section 2 keeps usable text after polishing."),
+    failureMessage: writingDemoBilingual("章节草稿没有展示真实逐节处理。", "Section Drafts did not demonstrate real section work."),
   },
   {
     id: "teachText",
-    title: "章节合成正文",
-    userVisiblePurpose: "TeachText 承接章节草稿，正文是项目对象，不是聊天记录。",
+    title: writingDemoBilingual("章节合成正文", "Sections Become the Manuscript"),
+    userVisiblePurpose: writingDemoBilingual("TeachText 承接章节草稿；正文是项目对象，不是聊天记录。", "TeachText receives the sections; the manuscript is a project object, not a chat reply."),
     windows: [{ name: "outline", slot: "leftNarrow" }, { name: "teachText", slot: "rightWide" }],
-    expectedVisibleChange: "章节草稿合成为一篇可编辑中文正文。",
-    failureMessage: "正文没有达到可用中文稿标准。",
+    expectedVisibleChange: writingDemoBilingual("章节草稿合成为一篇可编辑正文。", "Section drafts become one editable manuscript."),
+    failureMessage: writingDemoBilingual("正文没有达到当前语言的可用标准。", "The manuscript did not meet the usable threshold for the current language."),
   },
   {
     id: "reviewDesk",
-    title: "定稿前审校",
-    userVisiblePurpose: "审校台把“我觉得写完了”变成一次代入铭铭视角的交付前检查。",
+    title: writingDemoBilingual("定稿前审校", "Review Before Handoff"),
+    userVisiblePurpose: writingDemoBilingual("审校台把“我觉得写完了”变成一次通用的风格与模型嘴替检查。", "Review Desk turns “I think it is done” into a general style and model-mouthpiece check."),
     windows: [{ name: "teachText", slot: "main" }, { name: "reviewDesk", slot: "side" }],
-    expectedVisibleChange: "Review Desk 生成鼓励和铭铭视角检视，再回到正文改稿。",
-    failureMessage: "审校台没有生成真实审校结果。",
+    expectedVisibleChange: writingDemoBilingual("Review Desk 生成鼓励与风格检查，再回到正文改稿。", "Review Desk produces encouragement and a style check before the manuscript is revised."),
+    failureMessage: writingDemoBilingual("审校台没有生成真实审校结果。", "Review Desk did not produce a real review result."),
   },
   {
     id: "reuse",
-    title: "成稿继续复用",
-    userVisiblePurpose: "Project CD 里的成稿还能被 DocMap 理解、被 ClioStage 改成提纲，并交给 ClioTalk 做后续写作追问。",
+    title: writingDemoBilingual("成稿继续复用", "Reuse the Finished Work"),
+    userVisiblePurpose: writingDemoBilingual("Project CD 里的成稿还能被 DocMap 理解、被 ClioStage 改成提纲，并交给 ClioTalk 做后续追问。", "A Project CD manuscript can still be mapped by DocMap, shaped for ClioStage, and questioned through ClioTalk."),
     windows: [{ name: "projectCd", slot: "wide" }],
-    expectedVisibleChange: "成稿进入 Project CD，并依次打开 DocMap、ClioStage、ClioTalk；ClioTalk 基于成稿回答改稿问题。",
-    failureMessage: "成稿复用链路没有跑通。",
+    expectedVisibleChange: writingDemoBilingual("成稿进入 Project CD，并依次打开 DocMap、ClioStage、ClioTalk。", "The manuscript enters Project CD and then opens in DocMap, ClioStage, and ClioTalk."),
+    failureMessage: writingDemoBilingual("成稿复用链路没有跑通。", "The finished-work reuse chain did not complete."),
   },
-];
+  ];
+}
 
 function writingDemoSleep(ms = 260) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -116,7 +171,6 @@ function writingDemoAssertRunning() {
 }
 
 const writingDemoManagedWindows = [
-  "guide",
   "control",
   "saveChat",
   "projects",
@@ -541,7 +595,7 @@ async function writingDemoNarrate(message, windowName = "") {
 }
 
 function writingDemoStep(id) {
-  return writingDemoScriptSteps.find((step) => step.id === id) || null;
+  return writingDemoScriptSteps().find((step) => step.id === id) || null;
 }
 
 async function writingDemoRunScriptStep(id, action) {
@@ -595,54 +649,26 @@ async function writingDemoProbeModel(label, prompt, taskKind, options = {}) {
   }
 }
 
-async function writingDemoProbeSearch() {
-  const label = "Searcher";
-  try {
-    await ensureFindPathModule();
-    const results = await writingDemoWithTimeout(searchFindPath(writingDemoSearchKeyword), 20000, "search_timeout");
-    return { label, ok: Array.isArray(results) && results.length > 0, error: Array.isArray(results) && results.length ? null : "搜索结果为空" };
-  } catch (error) {
-    return { label, ok: false, error };
-  }
-}
-
-async function writingDemoProbeReader() {
-  const label = "Reader";
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 8000);
-  try {
-    const response = await window.AISystem6Capabilities.requestService("reader.remote", {
-      url: writingDemoAppleUrl,
-      signal: controller.signal,
-    });
-    if (!response.ok) throw new Error(serviceErrorDetail(response.status, await response.text()));
-    const data = await response.json();
-    return { label, ok: !!String(data?.text || "").trim(), error: data?.text ? null : "Reader 正文为空" };
-  } catch (error) {
-    return { label, ok: false, error };
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
 async function writingDemoRunPreflight() {
   const results = [];
-  setStatus(currentLanguage === "zh" ? "正在预检实战演示关键能力..." : "Checking live demo prerequisites...");
-  writingDemoShowCaption(currentLanguage === "zh"
-    ? "演示预检：先确认模型、搜索、阅读和关键生成任务可用；不通过就不开始录屏流程。"
-    : "Demo preflight: checking model, search, reader, and generation tasks before recording.");
+  setStatus(writingDemoBilingual("正在预检实战演示关键能力...", "Checking live demo prerequisites..."));
+  writingDemoShowCaption(writingDemoBilingual(
+    "演示预检：来源已经离线定稿；这里只确认当前模型能完成关键写作任务。",
+    "Demo preflight: the source is editorially fixed offline; only the active model's writing tasks are checked."
+  ));
   const model = await writingDemoPreflightModel();
-  results.push({ label: currentLanguage === "zh" ? "模型通道" : "Model route", ok: model.ok, error: model.error });
+  results.push({ label: writingDemoBilingual("模型通道", "Model route"), ok: model.ok, error: model.error });
   if (!model.ok) return results;
-  results.push(await writingDemoProbeSearch());
-  results.push(await writingDemoProbeReader());
-  const zhProbe = "请用一句自然简体中文回答：OK，实战演示预检通过。";
-  results.push(await writingDemoProbeModel("问题单整理", zhProbe, "organize-question-sheet", { maxTokens: 64 }));
-  results.push(await writingDemoProbeModel("章节起草", zhProbe, "draft-section", { maxTokens: 64 }));
-  results.push(await writingDemoProbeModel("HKRR", zhProbe, "hkrr", { maxTokens: 64 }));
-  results.push(await writingDemoProbeModel("DocMap", "请输出一个极简 Markdown 大纲：# 预检\n## 主线\n- OK", "docmap", { maxTokens: 96 }));
-  results.push(await writingDemoProbeModel("Marp", "请输出 2 页极简 Marp Markdown，每页不超过 1 行。", "marp", { maxTokens: 160 }));
-  results.push(await writingDemoProbeModel("ClioTalk 写作追问", zhProbe, "writing-demo-rag", { maxTokens: 64 }));
+  const probe = writingDemoBilingual(
+    "请用一句自然简体中文回答：OK，实战演示预检通过。",
+    "Reply in one natural English sentence: OK, the live demo preflight passed."
+  );
+  results.push(await writingDemoProbeModel(writingDemoBilingual("问题单整理", "Question Sheet"), probe, "organize-question-sheet", { maxTokens: 64 }));
+  results.push(await writingDemoProbeModel(writingDemoBilingual("章节起草", "Section Draft"), probe, "draft-section", { maxTokens: 64 }));
+  results.push(await writingDemoProbeModel(writingDemoBilingual("风格审校", "Style Review"), probe, "style", { maxTokens: 64 }));
+  results.push(await writingDemoProbeModel("DocMap", writingDemoBilingual("请输出极简 Markdown：# 预检\n## 主线\n- OK", "Return minimal Markdown: # Preflight\n## Through-line\n- OK"), "docmap", { maxTokens: 96 }));
+  results.push(await writingDemoProbeModel("Marp", writingDemoBilingual("请输出 2 页极简 Marp Markdown，每页不超过 1 行。", "Return a minimal two-slide Marp deck, one line per slide."), "marp", { maxTokens: 160 }));
+  results.push(await writingDemoProbeModel(writingDemoBilingual("ClioTalk 写作追问", "ClioTalk Follow-up"), probe, "writing-demo-rag", { maxTokens: 64 }));
   return results;
 }
 
@@ -816,7 +842,7 @@ async function writingDemoWaitForAiResult({ timeoutMs = 140000, acceptModals = t
     await writingDemoSleep(180);
   }
 
-  throw new Error(currentLanguage === "zh" ? "等待模型生成超时。" : "Timed out waiting for model generation.");
+  throw new Error(t("timed_out_waiting_for_model_generation"));
 }
 
 function writingDemoResultText(value) {
@@ -858,32 +884,40 @@ function writingDemoLatinWordCount(text = "") {
   return (String(text || "").match(/[A-Za-z]{3,}/g) || []).length;
 }
 
-function writingDemoAssertChineseManuscript(text, label = t("teachtext")) {
+function writingDemoAssertManuscriptLanguage(text, label = t("teachtext")) {
   const value = writingDemoRequireText(text, label);
   const chineseCount = writingDemoChineseCharCount(value);
   const latinCount = writingDemoLatinWordCount(value);
-  if (chineseCount < 260 || latinCount > Math.max(36, chineseCount * 0.35)) {
-    throw new Error(currentLanguage === "zh"
-      ? `${label} 没有形成可用的中文视频稿，演示已停止。`
-      : `${label} is not a usable Chinese video script; demo stopped.`);
+  const invalid = currentLanguage === "zh"
+    ? chineseCount < 260 || latinCount > Math.max(36, chineseCount * 0.35)
+    : latinCount < 90 || chineseCount > Math.max(24, latinCount * 0.2);
+  if (invalid) {
+    throw new Error(writingDemoBilingual(
+      `${label} 没有形成可用的中文正文，演示已停止。`,
+      `${label} is not a usable English manuscript; demo stopped.`
+    ));
   }
   return value;
 }
 
-function writingDemoAssertChineseSectionDraft(text, label = t("section_drafts")) {
+function writingDemoAssertSectionDraftLanguage(text, label = t("section_drafts")) {
   const value = writingDemoRequireText(text, label);
   const chineseCount = writingDemoChineseCharCount(value);
   const latinCount = writingDemoLatinWordCount(value);
-  if (chineseCount < 120 || latinCount > Math.max(36, chineseCount * 0.45)) {
-    throw new Error(currentLanguage === "zh"
-      ? `${label} 没有形成可用的中文章节草稿，演示已停止。`
-      : `${label} is not a usable Chinese section draft; demo stopped.`);
+  const invalid = currentLanguage === "zh"
+    ? chineseCount < 120 || latinCount > Math.max(36, chineseCount * 0.45)
+    : latinCount < 55 || chineseCount > Math.max(18, latinCount * 0.25);
+  if (invalid) {
+    throw new Error(writingDemoBilingual(
+      `${label} 没有形成可用的中文章节草稿，演示已停止。`,
+      `${label} is not a usable English section draft; demo stopped.`
+    ));
   }
   return value;
 }
 
 function writingDemoAssertDocMapReadyManuscript(text) {
-  const value = writingDemoAssertChineseManuscript(text, t("teachtext"));
+  const value = writingDemoAssertManuscriptLanguage(text, t("teachtext"));
   const minChars = Number.isFinite(docMapMinDocumentChars) ? docMapMinDocumentChars : 800;
   if (value.length < minChars) {
     throw new Error(currentLanguage === "zh"
@@ -913,7 +947,7 @@ async function writingDemoWaitForExpectedResult(options = {}, before = "") {
     await writingDemoSleep(260);
   }
 
-  throw new Error(currentLanguage === "zh" ? "模型动作没有写入预期结果。" : "Model action did not write the expected result.");
+  throw new Error(t("model_action_did_not_write_the"));
 }
 
 async function writingDemoWaitForActionCompletion(options = {}, before = "") {
@@ -1005,8 +1039,8 @@ async function writingDemoClickActionButton(action, label = "") {
 
 function writingDemoInstallSeedOutline() {
   const project = getActiveProject();
-  const outline = writingDemoRequireText(writingDemoOutlineSeed, t("outline"));
-  if (!project) throw new Error(currentLanguage === "zh" ? "没有当前项目，无法写入大纲。" : "No active project for the demo outline.");
+  const outline = writingDemoRequireText(writingDemoCorpusText(writingDemoCorpus.artifacts?.outline), t("outline"));
+  if (!project) throw new Error(t("no_active_project_for_the_demo"));
   if (typeof setProjectOutlineMarkdown === "function") setProjectOutlineMarkdown(project, outline);
   else {
     project.outline = outline;
@@ -1026,7 +1060,7 @@ function writingDemoInstallSeedOutline() {
 
 function writingDemoRequireText(value, label) {
   const text = String(value || "").trim();
-  if (!text) throw new Error(currentLanguage === "zh" ? `${label} 没有生成内容。` : `${label} did not generate content.`);
+  if (!text) throw new Error(t("demo_step_generated_nothing", label));
   return text;
 }
 
@@ -1042,7 +1076,7 @@ function writingDemoSyncDraftSelection(index) {
 
 async function writingDemoEnsureDraftContent(index, label = "") {
   const project = getActiveProject();
-  if (!project?.drafts?.length) throw new Error(currentLanguage === "zh" ? "章节草稿没有可用章节。" : "No section draft is available.");
+  if (!project?.drafts?.length) throw new Error(t("no_section_draft_is_available"));
   const draft = writingDemoSyncDraftSelection(index);
   const current = String(draft?.body || draftBodyInput?.value || "").trim();
   if (current) return current;
@@ -1070,7 +1104,7 @@ async function writingDemoEnsureVisibleDraftContent(index, label = "") {
 function writingDemoSeedDraftFromOutline(index = selectedDraftIndex) {
   const project = getActiveProject();
   const draft = writingDemoSyncDraftSelection(index);
-  const seededSections = String(writingDemoOutlineSeed || "")
+  const seededSections = writingDemoCorpusText(writingDemoCorpus.artifacts?.outline)
     .split(/(?=^##\s+)/m)
     .map((section) => section.trim())
     .filter((section) => /^##\s+/m.test(section));
@@ -1131,28 +1165,9 @@ async function writingDemoAwaitWithModalAccept(promise, { timeoutMs = 140000, ac
     }
     await writingDemoSleep(180);
   }
-  if (!settled) throw new Error(currentLanguage === "zh" ? "等待演示动作超时。" : "Timed out waiting for demo action.");
+  if (!settled) throw new Error(t("timed_out_waiting_for_demo_action"));
   if (failure) throw failure;
   return value;
-}
-
-async function writingDemoReaderFetchWithTimeout(url, ms = 7000) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), ms);
-  try {
-    const response = await window.AISystem6Capabilities.requestService("reader.remote", {
-      url,
-      signal: controller.signal,
-    });
-    if (!response.ok) throw new Error(serviceErrorDetail(response.status, await response.text()));
-    const data = await response.json();
-    const readerDoc = { ...data, kind: "web", source: data.url };
-    createReaderWebDocumentTab(readerDoc, { forceNew: true });
-    openReaderDocument(readerDoc);
-    return readerDoc;
-  } finally {
-    clearTimeout(timer);
-  }
 }
 
 async function writingDemoGenerateAssistantAnswer({ displayText, prompt, taskKind = "writing-demo", maxTokens = 900, timeoutMs = 45000 }) {
@@ -1160,7 +1175,7 @@ async function writingDemoGenerateAssistantAnswer({ displayText, prompt, taskKin
   const publicText = String(displayText || "").trim();
   if (publicText) addMessage("user", publicText);
   const modelName = writingDemoGetModelName();
-  if (!modelName) throw new Error(currentLanguage === "zh" ? "演示未配置模型。" : "Demo model is not configured.");
+  if (!modelName) throw new Error(t("demo_model_is_not_configured"));
   const controller = new AbortController();
   let timer = null;
   try {
@@ -1204,7 +1219,7 @@ async function writingDemoDictate(destination, raw, cleaned = raw, options = {})
   }
   dictationRawInput.value = "";
   dictationCleanedInput.value = "";
-  dictationStatusEl.textContent = currentLanguage === "zh" ? "演示听写中..." : "Demo dictation...";
+  dictationStatusEl.textContent = t("demo_dictation");
   await writingDemoTypeInto(dictationRawInput, raw, { delay: 2 });
   await writingDemoSleep(180);
   if (options.cleanWithModel && typeof cleanTranscript === "function") {
@@ -1213,7 +1228,7 @@ async function writingDemoDictate(destination, raw, cleaned = raw, options = {})
     dictationCleanedInput.value = cleaned;
     dictationCleanedInput.dispatchEvent(new Event("input", { bubbles: true }));
   }
-  dictationStatusEl.textContent = currentLanguage === "zh" ? "已整理听写。" : "Dictation cleaned.";
+  dictationStatusEl.textContent = t("dictation_cleaned");
   await writingDemoSleep(900);
   if (options.send !== false && typeof sendTranscript === "function") sendTranscript();
   if (options.closeAfterSend !== false) {
@@ -1226,9 +1241,7 @@ async function writingDemoDictate(destination, raw, cleaned = raw, options = {})
 }
 
 function writingDemoCreateProject() {
-  const baseName = currentLanguage === "zh"
-    ? (writingDemoCorpus.projectNameZh || t("writing_live_project_name"))
-    : (writingDemoCorpus.projectNameEn || t("writing_live_project_name"));
+  const baseName = writingDemoCorpusText(writingDemoCorpus.projectName, "演示项目 - 当聊天框装不下一篇文章", "Live Demo - When Chat Cannot Hold an Article");
   const name = typeof uniqueProjectName === "function" ? uniqueProjectName(baseName) : `${baseName} ${new Date().toLocaleTimeString()}`;
   const project = createProjectRecord(name);
   const previousProjectId = activeProjectId;
@@ -1250,142 +1263,110 @@ function writingDemoCreateProject() {
   return project;
 }
 
-async function writingDemoSearch() {
-  await writingDemoStage([{ name: "findPath", slot: "compact" }]);
-  await ensureFindPathModule();
-  await writingDemoTypeInto(findPathQueryInput, writingDemoSearchKeyword, { delay: 12 });
-  findPathResultsEl.replaceChildren();
-  findPathResults.length = 0;
-  selectedFindPathIndex = null;
-  findPathSummaryEl.classList.add("is-hidden");
-  findPathSummaryEl.textContent = "";
-  try {
-    const results = await writingDemoWithTimeout(searchFindPath(writingDemoSearchKeyword), 20000, "search_timeout");
-    if (!Array.isArray(results) || !results.length) throw new Error(currentLanguage === "zh" ? "搜索结果为空。" : "Search returned no results.");
-    findPathResults.push(...results);
-  } catch (error) {
-    throw new Error(currentLanguage === "zh"
-      ? `Searcher 未拿到可用结果：${error?.message || "未知错误"}`
-      : `Searcher could not return usable results: ${error?.message || "Unknown error"}`);
-  }
-  const appleIndex = findPathResults.findIndex((result) => /apple/i.test(`${result.title} ${result.site}`));
-  selectedFindPathIndex = appleIndex >= 0 ? appleIndex : 0;
-  renderFindPathResults();
-  await writingDemoHighlightElement(findPathResultsEl.querySelector(".find-path-result.is-selected") || findPathResultsEl.querySelector(".find-path-result"), currentLanguage === "zh" ? "选中结果" : "Select Result", { ms: 1200 });
-  try {
-    await writingDemoHighlightElement(synthesizeFindPathButton, currentLanguage === "zh" ? "点击 Synthesize" : "Click Synthesize", { ms: 1000 });
-    await writingDemoWithTimeout(synthesizeFindPath(), 45000, "search_synthesis_timeout");
-  } catch (error) {
-    throw new Error(currentLanguage === "zh"
-      ? `Searcher 摘要生成失败：${error?.message || "未知错误"}`
-      : `Searcher synthesis failed: ${error?.message || "Unknown error"}`);
-  }
-  if (!findPathSummaryEl.textContent.trim()) {
-    throw new Error(currentLanguage === "zh" ? "Searcher 未返回可读总结。" : "Searcher summary is empty.");
-  }
-  findPathSummaryEl.classList.remove("is-hidden");
-  await writingDemoHighlightElement(findPathSummaryEl, currentLanguage === "zh" ? "AI 总结" : "AI Summary", { ms: 1400 });
-  await writingDemoHighlightElement(document.querySelector('[data-action="clip-selected-find-path"]'), currentLanguage === "zh" ? "摘录到 Scrapbook" : "Clip to Scrapbook", { ms: 1000 });
-  clipSelectedFindPath();
-  await writingDemoPause(900);
+function writingDemoCreateCorpusProjectFile(name, body, artifactKind = "demo-source") {
+  const folder = ensureFolder(t("documents"), null);
+  const now = new Date().toISOString();
+  const file = {
+    id: crypto.randomUUID(),
+    projectId: activeProjectId,
+    folderId: folder.id,
+    type: "text",
+    artifactKind,
+    name: nextAvailableFileName(name, folder.id),
+    body: String(body || "").trim(),
+    label: "demo",
+    demo: { kind: "evergreen", corpusId: writingDemoCorpus.id || "", corpusVersion: writingDemoCorpus.version || 0 },
+    createdAt: now,
+    updatedAt: now,
+  };
+  chatFiles.unshift(file);
+  selectedChatFileId = file.id;
+  saveDeskState();
+  renderDocuments();
+  renderProjectDisks();
+  return file;
+}
+
+async function writingDemoSource() {
+  const article = writingDemoRequireText(writingDemoCorpusText(writingDemoCorpus.artifacts?.article), writingDemoBilingual("示范来源", "Demo source"));
+  const name = writingDemoCorpusText(writingDemoCorpus.sourceFileName, "AI System 6 开发记（示范来源）", "AI System 6 Development Story (Demo Source)");
+  const file = writingDemoCreateCorpusProjectFile(name, article);
+  openTextFile(file.id);
+  await writingDemoStage([{ name: "teachText", slot: "wide" }]);
+  writingDemoShowCaption(writingDemoBilingual(
+    "演示：来源是一篇离线定稿的开发记；它先成为文件，不假装刚刚搜索过网络。",
+    "Demo: the source is an editorially fixed offline development story. It becomes a file without pretending a live web search happened."
+  ));
+  await writingDemoHighlightElement(teachTextBodyInput || getWindow("teachText"), writingDemoBilingual("示范来源文件", "Demo source file"), { ms: 1300 });
 }
 
 function writingDemoReaderClip(seed) {
   const passage = String(seed?.text || "").trim();
   if (!passage) return null;
-  const title = currentReaderPage?.title || `Apple introduces ${writingDemoSearchKeyword}`;
+  const title = currentReaderPage?.title || writingDemoCorpusText(writingDemoCorpus.sourceFileName, "AI System 6 开发记", "AI System 6 Development Story");
   const capturedAt = new Date().toISOString();
   const sourceText = String(currentReaderPage?.text || "");
   const hitIndex = sourceText.toLowerCase().indexOf(passage.toLowerCase().slice(0, 20));
   const scrap = createScrap(seed.title, [
-    "Selected passage:",
+    writingDemoBilingual("所选段落：", "Selected passage:"),
     passage,
     "",
     "---",
-    `Source: ${title}`,
-    "Site: Apple Newsroom",
-    `URL: ${writingDemoAppleUrl}`,
-    `Time: ${new Date(capturedAt).toLocaleString()}`,
+    `${writingDemoBilingual("来源", "Source")}: ${title}`,
+    `Corpus: ${writingDemoCorpus.id || "ai-system6-development-story"} v${writingDemoCorpus.version || 0}`,
+    `${writingDemoBilingual("时间", "Time")}: ${new Date(capturedAt).toLocaleString()}`,
     "",
-    "Context before:",
+    writingDemoBilingual("前文：", "Context before:"),
     hitIndex >= 0
       ? sourceText.slice(Math.max(0, hitIndex - 140), hitIndex)
-      : "[source start]",
+      : writingDemoBilingual("[来源开头]", "[source start]"),
     "",
-    "Context after:",
+    writingDemoBilingual("后文：", "Context after:"),
     hitIndex >= 0
       ? sourceText.slice(Math.min(sourceText.length, hitIndex + passage.length), Math.min(sourceText.length, hitIndex + passage.length + 140))
-      : "[source end]",
+      : writingDemoBilingual("[来源结尾]", "[source end]"),
   ].join("\n"), {
     reveal: false,
     selectedText: passage,
     source: {
       type: "reader-clip",
-      readerKind: "web",
+      readerKind: "demo-corpus",
       title,
-      url: writingDemoAppleUrl,
-      site: "Apple Newsroom",
       capturedAt,
       sourceTitle: title,
+      corpusId: writingDemoCorpus.id || "",
+      corpusVersion: writingDemoCorpus.version || 0,
     },
   });
   if (scrap) {
-    scrap.tags = [...new Set(["reader-clip", "web", ...(scrap.tags || [])])];
+    scrap.tags = [...new Set(["reader-clip", "demo-corpus", ...(scrap.tags || [])])];
   }
   return scrap;
 }
 
-function writingDemoExtractReaderSnippet(text, cues) {
-  const sourceText = String(text || "");
-  const lowerSource = sourceText.toLowerCase();
-  let index = -1;
-
-  for (const cue of cues) {
-    const needle = String(cue || "").trim();
-    if (!needle) continue;
-    const hit = lowerSource.indexOf(needle.toLowerCase());
-    if (hit >= 0) {
-      index = hit;
-      break;
-    }
-  }
-
-  if (index < 0) return "";
-  const start = Math.max(0, index - 140);
-  const end = Math.min(sourceText.length, index + 560);
-  return sourceText.slice(start, end).trim();
-}
-
-function writingDemoGetReaderClips(sourceText) {
-  return writingDemoClipSeeds
-    .map((seed) => {
-      const snippet = writingDemoExtractReaderSnippet(sourceText, seed.cues);
-      return snippet ? { ...seed, text: snippet } : null;
-    })
-    .filter(Boolean)
-    .slice(0, 3);
-}
-
 async function writingDemoReader() {
   await writingDemoStage([{ name: "reader", slot: "wide" }]);
-  await writingDemoTypeInto(readerUrlInput, writingDemoAppleUrl, { delay: 1 });
-  try {
-    await writingDemoReaderFetchWithTimeout(writingDemoAppleUrl);
-  } catch {
-    throw new Error(currentLanguage === "zh" ? "Reader 无法打开目标网页。" : "Reader failed to open the target page.");
-  }
+  const article = writingDemoCorpusText(writingDemoCorpus.artifacts?.article);
+  await openReaderDocument({
+    kind: "demoCorpus",
+    title: writingDemoCorpusText(writingDemoCorpus.sourceFileName, "AI System 6 开发记", "AI System 6 Development Story"),
+    text: article,
+    source: `Demo Corpus: ${writingDemoCorpus.id || "ai-system6-development-story"} v${writingDemoCorpus.version || 0}`,
+  }, { status: writingDemoBilingual("正在阅读离线示范来源", "Reading the offline demo source") });
   if (!currentReaderPage?.text?.trim()) {
-    throw new Error(currentLanguage === "zh" ? "Reader 页面解析结果为空。" : "Reader page has no text content.");
+    throw new Error(t("reader_demo_source_is_empty"));
   }
   await writingDemoPause(1200);
-  const readerClips = writingDemoGetReaderClips(currentReaderPage.text);
+  const readerClips = Array.isArray(writingDemoCorpus.artifacts?.clippings?.[writingDemoLanguage()])
+    ? writingDemoCorpus.artifacts.clippings[writingDemoLanguage()].slice(0, 3)
+    : [];
   if (!readerClips.length) {
-    throw new Error(currentLanguage === "zh" ? "未抽取到可用 Reader 摘录。" : "No usable Reader clips could be extracted.");
+    throw new Error(t("no_usable_reader_clips_could_be"));
   }
   readerClips.forEach(writingDemoReaderClip);
   renderScraps();
   saveDeskState();
-  await writingDemoHighlightElement(readerContentEl || getWindow("reader"), currentLanguage === "zh" ? "摘录 3 段来源" : "Clip 3 Passages", { ms: 1400 });
+  await writingDemoHighlightElement(readerContentEl || getWindow("reader"), writingDemoBilingual(`摘录 ${readerClips.length} 段来源`, `Clip ${readerClips.length} Passages`), { ms: 1400 });
   await writingDemoPause(900);
 }
 
@@ -1408,7 +1389,7 @@ async function writingDemoQuestionSheet() {
   await writingDemoStage([{ name: "questionSheet", slot: "wide" }]);
   await writingDemoDictate(
     "questionSheet",
-    writingDemoShortIntent,
+    writingDemoCorpusText(writingDemoCorpus.shortIntent),
     "",
     { cleanWithModel: true }
   );
@@ -1436,10 +1417,13 @@ async function writingDemoQuestionSheet() {
   }
   applyOrganizedQuestionSheet(organized);
   writingDemoRequireText(questionSheetBodyInput.value, t("question_sheet"));
-  writingDemoShowCaption("演示：问题单只是写作边界和参考；现在切到大纲，使用作者给定的章节结构。");
+  writingDemoShowCaption(writingDemoBilingual(
+    "演示：问题单只是写作边界和参考；现在切到大纲，使用作者给定的章节结构。",
+    "Demo: Question Sheet is the writing boundary and reference; now move to the writer's supplied structure in Outline."
+  ));
   await writingDemoClickActionButton("advance-question-to-outline", currentLanguage === "zh" ? "到大纲" : "To Outline");
   if (getWindow("outline")?.classList.contains("is-hidden")) {
-    throw new Error(currentLanguage === "zh" ? "点击到大纲后，大纲窗口没有打开。" : "The Outline window did not open after To Outline.");
+    throw new Error(t("the_outline_window_did_not_open"));
   }
 }
 
@@ -1447,12 +1431,13 @@ async function writingDemoOutline() {
   await writingDemoStage([{ name: "outline", slot: "wide" }]);
   writingDemoInstallSeedOutline();
   writingDemoRequireText(writingDemoOutlineText(), t("outline"));
-  writingDemoShowCaption(currentLanguage === "zh"
-    ? "演示：大纲来自作者给定结构；现在执行「若是铭铭会怎么写」，看它如何把结构改成更可交付的口播形状。"
-    : "Demo: the Outline starts from the author-provided structure; now run What Would Mingming Write to reshape it for handoff.");
-  await writingDemoRunAction("outline", "mingming-outline", {
+  writingDemoShowCaption(writingDemoBilingual(
+    "演示：大纲来自作者给定结构；现在执行一次通用结构检查，不把私人写作镜头当作产品主线。",
+    "Demo: the Outline begins with the writer's structure; now run a generic structure pass rather than making a private style lens the product route."
+  ));
+  await writingDemoRunAction("outline", "structure-outline", {
     readResult: writingDemoOutlineText,
-    minResultLength: 600,
+    minResultLength: currentLanguage === "zh" ? 240 : 360,
     requireChanged: true,
     resultTimeoutMs: 180000,
   });
@@ -1476,7 +1461,10 @@ async function writingDemoSectionDrafts() {
       if (draftBodyInput) draftBodyInput.value = "";
       renderPipeline();
       writingDemoFocusWindow("sectionDrafts", "wide");
-      writingDemoShowCaption(`演示：第 ${index + 1} 节，先从空章节开始，点击「AI 起草」。`);
+      writingDemoShowCaption(writingDemoBilingual(
+        `演示：第 ${index + 1} 节，先从空章节开始，点击「AI 起草」。`,
+        `Demo: Section ${index + 1} begins empty; now run AI Draft.`
+      ));
       writingDemoFocusWindow("sectionDrafts", "wide");
       await writingDemoRunAction("sectionDrafts", "draft-current-section", {
         readResult: () => writingDemoDraftText(index),
@@ -1484,7 +1472,7 @@ async function writingDemoSectionDrafts() {
         requireChanged: false,
         resultTimeoutMs: profile.sectionTimeoutMs,
       });
-      writingDemoAssertChineseSectionDraft(
+      writingDemoAssertSectionDraftLanguage(
         await writingDemoEnsureVisibleDraftContent(index, currentLanguage === "zh" ? "AI 起草已写入" : "AI Draft Inserted"),
         currentLanguage === "zh" ? `章节 ${index + 1}` : `Section ${index + 1}`
       );
@@ -1497,7 +1485,10 @@ async function writingDemoSectionDrafts() {
       }
       await writingDemoEnsureVisibleDraftContent(index, currentLanguage === "zh" ? "第 2 节已有草稿" : "Section 2 Draft Ready");
       writingDemoFocusWindow("sectionDrafts", "wide");
-      writingDemoShowCaption("演示：第 2 节已有作者大纲材料；现在只点击「AI 润色」，不再重复起草。");
+      writingDemoShowCaption(writingDemoBilingual(
+        "演示：第 2 节已有作者大纲材料；现在只点击「AI 润色」，不再重复起草。",
+        "Demo: Section 2 already contains writer material; use AI Polish without drafting it again."
+      ));
       await writingDemoHighlightElement(draftBodyInput, currentLanguage === "zh" ? "已有草稿" : "Draft exists", { ms: 900 });
       writingDemoFocusWindow("sectionDrafts", "wide");
       await writingDemoRunAction("sectionDrafts", "polish-draft", {
@@ -1506,17 +1497,20 @@ async function writingDemoSectionDrafts() {
         requireChanged: false,
         resultTimeoutMs: profile.sectionTimeoutMs,
       });
-      writingDemoAssertChineseSectionDraft(
+      writingDemoAssertSectionDraftLanguage(
         await writingDemoEnsureVisibleDraftContent(index, currentLanguage === "zh" ? "AI 润色后保留" : "Polish Kept"),
         currentLanguage === "zh" ? `章节 ${index + 1}` : `Section ${index + 1}`
       );
     }
-    writingDemoAssertChineseSectionDraft(
+    writingDemoAssertSectionDraftLanguage(
       await writingDemoEnsureVisibleDraftContent(index),
       currentLanguage === "zh" ? `章节 ${index + 1}` : `Section ${index + 1}`
     );
   }
-  writingDemoShowCaption("演示：章节草稿验收完成，下一步合成为 TeachText 正文。");
+  writingDemoShowCaption(writingDemoBilingual(
+    "演示：章节草稿验收完成，下一步合成为 TeachText 正文。",
+    "Demo: the section drafts passed their checks; next they become one TeachText manuscript."
+  ));
   selectedDraftIndex = 0;
   renderPipeline();
 }
@@ -1534,7 +1528,7 @@ async function writingDemoTeachText() {
   activeTextFileId = null;
   teachTextFileLabel = "final";
   setTeachTextWorkflowState("final");
-  teachTextNameInput.value = writingDemoManuscriptTitle;
+  teachTextNameInput.value = writingDemoCorpusText(writingDemoCorpus.manuscriptTitle, "当聊天框装不下一篇文章", "When Chat Cannot Hold an Article");
   if (typeof syncTeachTextWindowTitle === "function") syncTeachTextWindowTitle();
   teachTextBodyInput.value = manuscript;
   setTeachTextStatus("modified");
@@ -1552,21 +1546,36 @@ async function writingDemoRewriteFinalWithReview() {
   const review = writingDemoRequireText(writingDemoReviewText(), t("review_desk"));
   const minChars = Number.isFinite(docMapMinDocumentChars) ? docMapMinDocumentChars : 800;
   const targetChars = Math.max(minChars + 180, 980);
-  if (!beginLongTask("writing-demo-rewrite", currentLanguage === "zh" ? "正在根据铭铭视角改出定稿..." : "Rewriting final draft with Mingming-perspective feedback...")) return;
+  if (!beginLongTask("writing-demo-rewrite", writingDemoBilingual("正在根据审校反馈改出定稿...", "Rewriting the final draft from Review Desk feedback..."))) return;
   try {
-    const prompt = `你是 AI System 6 的中文视频稿编辑。请根据铭铭视角审校反馈，把下面这篇 iPhone 17e 口播稿改成更适合 B 站观众的一版定稿。
+    const prompt = currentLanguage === "zh"
+      ? `你是 AI System 6 的中文长文编辑。请根据审校台反馈，把下面这篇开发记改成一版可以交付的定稿。
 
 要求：
 - 保留事实边界，只使用原稿、Reader/Scrapbook 摘录和审校反馈中支持的信息。
-- 更口语、更有节奏，更像视频口播，减少论文腔和发布会腔。
-- 开头要更容易留住观众；结尾要给出清楚购买建议。
-- 定稿至少 ${targetChars} 个中文字符，保留 4-6 个自然段或 Markdown 小节，不能压缩成短摘要。
+- 保留第一人称观察、真实犹豫和作者判断，不要漂洗成模型嘴替或发布会文案。
+- 让技术机制回答它替写作者挡住了什么风险；不要堆功能清单。
+- 定稿至少 ${targetChars} 个中文字符，保留 4-7 个自然段或 Markdown 小节，不能压缩成短摘要。
 - 不要输出解释、修改说明或审校报告，只返回完整 Markdown 正文。
 
-铭铭视角审校反馈：
+审校台反馈：
 ${clipContextContent(review, 4200)}
 
 当前正文：
+${clipContextContent(manuscript, 12000)}`
+      : `You are the long-form editor inside AI System 6. Use the Review Desk feedback to turn the development story below into a finished manuscript.
+
+Requirements:
+- Preserve factual boundaries. Use only information supported by the manuscript, Reader/Scrapbook clippings, and review.
+- Keep first-person observation, genuine hesitation, and the writer's judgment. Do not wash the piece into model-mouthpiece prose or launch copy.
+- Make each technical mechanism answer which risk it removes from the writer; do not create a feature inventory.
+- Return at least 160 English words and ${targetChars} characters, in 4–7 natural paragraphs or Markdown sections. Do not compress it into a short summary.
+- Return the complete Markdown manuscript only, with no explanation or change report.
+
+REVIEW DESK FEEDBACK:
+${clipContextContent(review, 4200)}
+
+CURRENT MANUSCRIPT:
 ${clipContextContent(manuscript, 12000)}`;
     let content = "";
     let lastError = null;
@@ -1575,14 +1584,24 @@ ${clipContextContent(manuscript, 12000)}`;
         ? withMarkdownModelMessages([{ role: "user", content: prompt }])
         : withMarkdownModelMessages([{
           role: "user",
-          content: `上一次定稿太短，不能进入 DocMap：${lastError?.message || "低于最低长度"}。
+          content: currentLanguage === "zh"
+            ? `上一次定稿没有通过语言或长度检查：${lastError?.message || "低于最低长度"}。
 
-请在不编造新事实的前提下，把下面短稿扩写成至少 ${targetChars} 个中文字符的完整 B 站口播定稿。保留已有判断，补足过渡、观众疑问、购买建议和来源边界。只返回完整 Markdown 正文。
+请在不编造新事实的前提下，把下面短稿扩写成至少 ${targetChars} 个中文字符的完整开发记。保留作者判断，补足过渡、读者疑问、机制后果和来源边界。只返回完整 Markdown 正文。
 
-铭铭视角审校反馈：
+审校台反馈：
 ${clipContextContent(review, 2600)}
 
 短稿：
+${clipContextContent(content || manuscript, 10000)}`
+            : `The previous draft failed its language or length check: ${lastError?.message || "below the minimum"}.
+
+Without inventing facts, expand the short draft into a complete development story of at least 160 English words and ${targetChars} characters. Keep the writer's judgment and restore transitions, reader questions, consequences, and source boundaries. Return the complete Markdown manuscript only.
+
+REVIEW DESK FEEDBACK:
+${clipContextContent(review, 2600)}
+
+SHORT DRAFT:
 ${clipContextContent(content || manuscript, 10000)}`,
         }]);
       if (attempt > 0) {
@@ -1626,11 +1645,14 @@ ${clipContextContent(content || manuscript, 10000)}`,
 async function writingDemoReviewDesk() {
   openReviewDesk("style");
   await writingDemoStage([{ name: "teachText", slot: "main" }, { name: "reviewDesk", slot: "side" }]);
-  writingDemoShowCaption("演示：先点「夸夸我」，确认审校台不是只会挑刺，也能保留作者状态。");
+  writingDemoShowCaption(writingDemoBilingual(
+    "演示：先点「夸夸我」，确认审校台不是只会挑刺，也能保留作者状态。",
+    "Demo: begin with Encourage Me, so Review Desk preserves the writer's footing before it identifies risks."
+  ));
   await writingDemoCommandMenu("reviewDesk", "ai-praise");
   writingDemoFocusWindow("reviewDesk", "side");
   if (typeof praiseReviewDeskText !== "function") {
-    throw new Error(currentLanguage === "zh" ? "审校台夸夸我功能不可用。" : "Review Desk praise is not available.");
+    throw new Error(t("review_desk_praise_is_not_available"));
   }
   const beforePraise = writingDemoReviewText();
   await writingDemoAwaitWithModalAccept(praiseReviewDeskText(), { timeoutMs: 120000 });
@@ -1644,22 +1666,29 @@ async function writingDemoReviewDesk() {
   writingDemoRequireText(writingDemoReviewText(), t("review_desk"));
   if (typeof selectClaimCheckSection === "function") selectClaimCheckSection(0);
   else if (typeof selectStyleCheckSection === "function") selectStyleCheckSection(0);
-  writingDemoShowCaption("演示：再对当前节执行「代入铭铭视角」，检查视频感、接收压力和交付轻重。");
-  await writingDemoRunAction("reviewDesk", "review-mingming-section", {
+  writingDemoShowCaption(writingDemoBilingual(
+    "演示：再对当前节执行通用风格检查，寻找模型嘴替、结构与可读性风险。",
+    "Demo: now run the generic style check for model-mouthpiece, structure, and readability risks."
+  ));
+  await writingDemoRunAction("reviewDesk", "review-style-section", {
     timeoutMs: 120000,
     readResult: writingDemoReviewText,
     minResultLength: 30,
-    requireChanged: false,
+    requireChanged: true,
     resultTimeoutMs: 120000,
     stage: [{ name: "teachText", slot: "main" }, { name: "reviewDesk", slot: "side" }],
   });
-  writingDemoRequireText(writingDemoReviewText(), "铭铭视角");
-  writingDemoShowCaption("演示：带着铭铭视角反馈回到 TeachText，改出更适合 B 站观众的定稿。");
+  writingDemoRequireText(writingDemoReviewText(), t("review_desk"));
+  writingDemoShowCaption(writingDemoBilingual(
+    "演示：带着审校反馈回到 TeachText，改出仍然属于作者的定稿。",
+    "Demo: return to TeachText with the review and make a final draft that still belongs to its writer."
+  ));
   await writingDemoRewriteFinalWithReview();
 }
 
 async function writingDemoProjectCdAndDocMap() {
-  const item = await addProjectCdItem(writingDemoAssertDocMapReadyManuscript(teachTextBodyInput.value), writingDemoFinalExportTitle, {
+  const finalTitle = writingDemoCorpusText(writingDemoCorpus.finalExportTitle, "当聊天框装不下一篇文章 - 定稿", "When Chat Cannot Hold an Article - Final");
+  const item = await addProjectCdItem(writingDemoAssertDocMapReadyManuscript(teachTextBodyInput.value), finalTitle, {
     sourceDocumentId: activeTextFileId || "",
     sourceKind: "markdown",
   });
@@ -1671,15 +1700,21 @@ async function writingDemoProjectCdAndDocMap() {
     selectedProjectCdItemIds.add(item.id);
     renderProjectCd();
     await writingDemoHighlightElement(projectCdGridEl?.querySelector(`[data-project-cd-item-id="${item.id}"]`) || projectCdGridEl, currentLanguage === "zh" ? "选中最终稿" : "Select Final Draft", { ms: 1200 });
-    writingDemoShowCaption("演示：Project CD 选中成稿，现在让 DocMap 读取这份 Markdown 的结构。");
-    setStatus(currentLanguage === "zh" ? "演示：正在从 Project CD 成稿生成 DocMap..." : "Demo: generating DocMap from Project CD...");
+    writingDemoShowCaption(writingDemoBilingual(
+      "演示：Project CD 选中成稿，现在让 DocMap 读取这份 Markdown 的结构。",
+      "Demo: the finished manuscript is selected on Project CD; now DocMap reads its Markdown structure."
+    ));
+    setStatus(t("demo_generating_docmap_from_project_cd"));
     await ensureDocMapModule();
     await makeDocMapFromCurrentSource();
     await writingDemoWaitForAiResult({ timeoutMs: 140000, acceptModals: false });
-    if (!currentDocMap) throw new Error(currentLanguage === "zh" ? "DocMap 没有生成，演示已停止。" : "DocMap was not generated; demo stopped.");
+    if (!currentDocMap) throw new Error(t("docmap_was_not_generated_demo_stopped"));
     await writingDemoStage([{ name: "projectCd", slot: "side" }, { name: "docMap", slot: "main" }]);
-    writingDemoShowCaption("演示：DocMap 已经理解成稿结构；现在就文章主线问一个问题。");
-    docMapQuestionInput.value = "这篇稿子的主线是什么？";
+    writingDemoShowCaption(writingDemoBilingual(
+      "演示：DocMap 已经理解成稿结构；现在就文章主线问一个问题。",
+      "Demo: DocMap now holds the manuscript structure; ask one question about its through-line."
+    ));
+    docMapQuestionInput.value = writingDemoBilingual("这篇稿子的主线是什么？", "What is the through-line of this manuscript?");
     docMapQuestionInput.dispatchEvent(new Event("input", { bubbles: true }));
     await writingDemoHighlightElement(docMapQuestionInput, currentLanguage === "zh" ? "询问 DocMap" : "Ask DocMap", { ms: 1000 });
     await askDocMapQuestion({ preventDefault() {} });
@@ -1691,9 +1726,12 @@ async function writingDemoProjectCdAndDocMap() {
 async function writingDemoClioStage(item) {
   await writingDemoStage([{ name: "projectCd", slot: "compact" }]);
   await ensureSlidesExportModule();
-  writingDemoShowCaption("演示：同一份 Project CD 成稿，现在生成 3-5 页 ClioStage 提纲。");
-  setStatus(currentLanguage === "zh" ? "演示：正在生成短 Marp 提纲..." : "Demo: generating a short Marp outline...");
-  const sourceName = item?.title || writingDemoManuscriptTitle;
+  writingDemoShowCaption(writingDemoBilingual(
+    "演示：同一份 Project CD 成稿，现在生成 3-5 页 ClioStage 提纲。",
+    "Demo: the same Project CD manuscript now becomes a concise 3–5 slide ClioStage deck."
+  ));
+  setStatus(t("demo_generating_a_short_marp_outline"));
+  const sourceName = item?.title || writingDemoCorpusText(writingDemoCorpus.manuscriptTitle, "当聊天框装不下一篇文章", "When Chat Cannot Hold an Article");
   const sourceBody = String(item?.body || "").trim();
   const bodySections = sourceBody
     ? sourceBody
@@ -1704,7 +1742,7 @@ async function writingDemoClioStage(item) {
     : [];
   const sourceText = [
     `# ${sourceName}`,
-    ...bodySections.map((section, index) => `## 幻灯 ${index + 1}\n\n${section}`),
+    ...bodySections.map((section, index) => `## ${writingDemoBilingual("幻灯", "Slide")} ${index + 1}\n\n${section}`),
   ].join("\n\n");
   const file = await writingDemoAwaitWithModalAccept(generateMarpMarkdownAndOpenClioStage({
     title: sourceName,
@@ -1714,7 +1752,7 @@ async function writingDemoClioStage(item) {
     demoBrief: true,
     maxTokens: 900,
   }), { timeoutMs: 180000, acceptModals: true });
-  if (!file) throw new Error(currentLanguage === "zh" ? "ClioStage 没有生成 Marp，演示已停止。" : "ClioStage did not generate Marp; demo stopped.");
+  if (!file) throw new Error(t("cliostage_did_not_generate_marp_demo"));
   await writingDemoStage([{ name: "clioStage", slot: "wide" }]);
   window.AISystem6ClioStage?.setMode?.("slide");
   window.AISystem6ClioStage?.showSlide?.(0);
@@ -1729,7 +1767,10 @@ async function writingDemoClioTalk(item) {
     selectedProjectCdItemIds.add(item.id);
     renderProjectCd();
   }
-  writingDemoShowCaption("演示：ClioTalk 在这里不是另一个聊天入口，而是接住 Project CD 成稿，继续问改稿和剪辑问题。");
+  writingDemoShowCaption(writingDemoBilingual(
+    "演示：ClioTalk 在这里不是另一个聊天入口，而是接住 Project CD 成稿，继续问改稿和剪辑问题。",
+    "Demo: ClioTalk is not another starting point here; it receives the Project CD manuscript for editing and handoff questions."
+  ));
   attachSelectedProjectCdToAssistantContext();
   rememberInput.checked = true;
   await writingDemoStage([{ name: "assistant", slot: "main" }]);
@@ -1737,27 +1778,41 @@ async function writingDemoClioTalk(item) {
     .map((id) => scraps.find((scrap) => scrap.id === id && isInActiveProject(scrap)))
     .find((scrap) => scrap?.source?.type === "project-cd");
   const ragContext = clipContextContent(attachedScrap?.body || item?.body || "", 4200);
-  const questions = [
-    "如果把这篇稿子剪成 20 秒 B 站开头，应该抓哪两段，为什么？",
-    "正文里哪些判断必须保留原文依据，避免评论区质疑？",
-  ];
+  const questions = Array.isArray(writingDemoCorpus.followupQuestions?.[writingDemoLanguage()])
+    ? writingDemoCorpus.followupQuestions[writingDemoLanguage()]
+    : writingDemoFallbackCorpus().followupQuestions[writingDemoLanguage()];
   for (const question of questions) {
     writingDemoAssertRunning();
-    writingDemoShowCaption(`演示：ClioTalk 追问成稿 - ${question}`);
+    writingDemoShowCaption(writingDemoBilingual(`演示：ClioTalk 追问成稿 - ${question}`, `Demo: ClioTalk asks the manuscript — ${question}`));
     await writingDemoGenerateAssistantAnswer({
       displayText: question,
       taskKind: "writing-demo-rag",
       maxTokens: writingDemoModelProfile().assistantMaxTokens,
-      prompt: `你是 AI System 6 的 ClioTalk。你现在处在写作流程收尾阶段：Project CD 已有最终稿，用户需要围绕成稿继续做剪辑、事实边界和改稿决策。请只根据当前 Project CD 成稿上下文回答用户问题。
+      prompt: currentLanguage === "zh"
+        ? `你是 AI System 6 的 ClioTalk。写作流程已经到收尾阶段：Project CD 里有最终稿。请只根据当前成稿回答剪辑、事实边界和改稿问题。
 
 要求：
-- 先用“写作用途：”说明这个回答会帮助用户做什么写作/剪辑决策。
-- 再用 2-4 条短 bullet 直接回答用户问题。
-- 最后用“依据：”列 1-2 个来自成稿的段落/句群线索。
+- 先用“写作用途：”说明这个回答会帮助用户做什么决定。
+- 再用 2-4 条短项目符号直接回答。
+- 最后用“依据：”列 1-2 个来自成稿的段落或句群线索。
 - 总长控制在 220 字以内。
-- 自然简体中文，不要编造成稿之外的信息。
+- 不要编造成稿之外的信息。
 
 用户问题：
+${question}
+
+PROJECT CD CONTEXT:
+${ragContext}`
+        : `You are ClioTalk inside AI System 6 at the end of the writing route. Project CD holds the final manuscript. Answer editing, factual-boundary, and handoff questions from that manuscript only.
+
+Requirements:
+- Begin with “Writing use:” and name the decision this answer supports.
+- Answer directly in 2–4 short bullets.
+- End with “Basis:” and name one or two passages or sentence groups from the manuscript.
+- Stay under 140 words.
+- Invent nothing outside the manuscript.
+
+USER QUESTION:
 ${question}
 
 PROJECT CD CONTEXT:
@@ -1787,7 +1842,10 @@ ${ragContext}`,
     }];
     if (typeof renderContextPanel === "function") renderContextPanel();
   }
-  writingDemoShowCaption("演示：右侧 Context Panel 显示 ClioTalk 引用了当前项目里的 Project CD 成稿。");
+  writingDemoShowCaption(writingDemoBilingual(
+    "演示：右侧 Context Panel 显示 ClioTalk 引用了当前项目里的 Project CD 成稿。",
+    "Demo: Context Panel shows that ClioTalk used the current project's Project CD manuscript."
+  ));
   await writingDemoStage([{ name: "assistant", slot: "main" }, { name: "contextPanel", slot: "side" }]);
 }
 
@@ -1805,13 +1863,14 @@ async function playWritingDemo() {
   setStatus(t("writing_demo_running"));
   let terminalStatus = "";
   try {
+    await writingDemoEnsureCorpus();
     const preflightResults = await writingDemoRunPreflight();
     const preflightFailures = preflightResults.filter((item) => !item.ok);
     if (preflightFailures.length) {
       terminalStatus = currentLanguage === "zh" ? "演示准备失败。" : "Live demo preflight failed.";
       setStatus(terminalStatus);
       const failureText = writingDemoFormatPreflightFailures(preflightResults);
-      if (preflightFailures.some((item) => item.label === (currentLanguage === "zh" ? "模型通道" : "Model route"))) {
+      if (preflightFailures.some((item) => item.label === (t("model_route")))) {
         openWindow("control");
       }
       await showSystemModal(
@@ -1825,10 +1884,16 @@ async function playWritingDemo() {
     await ensureWritingFlowModule();
     await ensureSlidesExportModule();
     await writingDemoStage([], { pauseMs: 250 });
-    await writingDemoNarrate(`预检通过：${writingDemoModelRouteLabel()}。正式录屏只展示写作主线，后面的生成都走真实 LLM。`, "modelMeter");
-    await writingDemoNarrate("新建一块演示项目硬盘，后续所有材料都归入这个项目。", "projects");
+    await writingDemoNarrate(writingDemoBilingual(
+      `预检通过：${writingDemoModelRouteLabel()}。来源已经离线定稿，后面的写作动作走真实模型。`,
+      `Preflight passed: ${writingDemoModelRouteLabel()}. The source is fixed offline; the writing actions ahead use the live model.`
+    ), "modelMeter");
+    await writingDemoNarrate(writingDemoBilingual(
+      "新建一块演示项目硬盘，后续所有材料都归入这个项目。",
+      "Create a demo Project Hard Disk so every material ahead belongs to one visible project."
+    ), "projects");
     writingDemoCreateProject();
-    await writingDemoRunScriptStep("sources", writingDemoSearch);
+    await writingDemoRunScriptStep("sources", writingDemoSource);
     await writingDemoRunScriptStep("reader", writingDemoReader);
     await writingDemoRunScriptStep("scrapbook", writingDemoScrapbook);
     await writingDemoRunScriptStep("questionSheet", writingDemoQuestionSheet);
@@ -1872,43 +1937,28 @@ async function playWritingDemo() {
 // A seeded, deterministic 15–30s walkthrough that needs no model or network.
 // It reuses the demo corpus, window staging, captions, and stop/cleanup
 // machinery; seeded content is always labeled Demo and never claims live
-// search, model calls, or tool calls. The full live demo stays untouched.
+// search, model calls, or tool calls. The full demo uses the same source but
+// runs real writing operations after its model preflight.
 
 const teaserDemoScenePauseMs = 5600;
 const teaserDemoManagedWindows = ["projects", "documents", "teachText", "scrapbook", "reviewDesk", "projectCd"];
 
 function teaserDemoSeededSourceText() {
+  const article = writingDemoCorpusText(writingDemoCorpus.artifacts?.article);
   return [
-    `# ${writingDemoCorpus.manuscriptTitle || "iPhone 17e 视频口播稿"} (Demo source)`,
+    writingDemoBilingual("演示材料：以下内容为离线定稿，不代表实时搜索结果。", "Demo material: editorially fixed offline, not a live search result."),
     "",
-    "演示材料：以下内容为内置示例，不代表实时搜索结果。",
-    "Demo material: built-in sample, not a live search result.",
-    "",
-    "iPhone 17e 使用 A19 芯片，配备 C1X 调制解调器，提供 256GB 起步容量并支持 MagSafe / Qi2。",
-    "外观提供浅粉色版本，采用玻璃背板；相机系统为 48MP 主摄，支持夜景模式。",
-    "续航方面宣称满足全天使用，eSIM 支持快速转移。",
-    "",
-    "（本段为 30 秒演示的确定性素材）",
-    "(This passage is the deterministic fixture for the 30-second demo.)",
+    article,
   ].join("\n");
 }
 
 function teaserDemoClippingText() {
-  return "A19 芯片 + C1X 调制解调器 · 256GB 起步 · 支持 MagSafe / Qi2 —— 来自演示素材。";
+  const clips = writingDemoCorpus.artifacts?.clippings?.[writingDemoLanguage()] || [];
+  return String(clips[1]?.text || clips[0]?.text || writingDemoFallbackCorpus().artifacts.clippings[writingDemoLanguage()][0].text);
 }
 
 function teaserDemoManuscriptBody() {
-  return [
-    `# ${writingDemoCorpus.manuscriptTitle || "iPhone 17e 视频口播稿"}`,
-    "",
-    "## 开场",
-    "这台 2026 年的手机第一次出现在 1988 年的桌面上：先别急着说参数，先看它是不是一台“够用的标准版”。",
-    "",
-    "## 来源摘录",
-    `> ${teaserDemoClippingText()}`,
-    "",
-    "（演示文稿：内容为内置示例，用于展示对象在应用之间移动并改变。）",
-  ].join("\n");
+  return writingDemoCorpusText(writingDemoCorpus.artifacts?.teaserManuscript);
 }
 
 function teaserDemoClone(value) {
@@ -2024,7 +2074,7 @@ async function teaserDemoRestore(snapshot) {
 }
 
 function teaserDemoEnsureDemoProject() {
-  const baseName = currentLanguage === "zh" ? "30 秒演示 - iPhone 17e" : "Teaser Demo - iPhone 17e";
+  const baseName = writingDemoBilingual("30 秒演示 - 一篇文章如何留下", "Teaser Demo - How an Article Stays");
   const name = typeof uniqueProjectName === "function" ? uniqueProjectName(baseName) : `${baseName} ${new Date().toLocaleTimeString()}`;
   const project = createProjectRecord(name);
   // Marker for cleanup/assertion only; rollback removes the whole demo project.
@@ -2057,7 +2107,7 @@ function teaserDemoCreateProjectFile(name, body) {
     name: typeof nextAvailableFileName === "function" ? nextAvailableFileName(name, folder?.id || null) : name,
     body,
     label: "demo",
-    demo: { kind: "teaser", seeded: true },
+    demo: { kind: "teaser", seeded: true, corpusId: writingDemoCorpus.id || "", corpusVersion: writingDemoCorpus.version || 0 },
     createdAt: now,
     updatedAt: now,
   };
@@ -2072,16 +2122,18 @@ async function teaserDemoSceneSource() {
   writingDemoAssertRunning();
   await writingDemoStage([{ name: "teachText", slot: "wide" }], { pauseMs: 500 });
   const sourceFile = teaserDemoCreateProjectFile(
-    currentLanguage === "zh" ? "iPhone 17e 产品资料 (Demo)" : "iPhone 17e Source (Demo)",
+    writingDemoCorpusText(writingDemoCorpus.sourceFileName, "AI System 6 开发记 (Demo)", "AI System 6 Development Story (Demo)"),
     teaserDemoSeededSourceText()
   );
-  if (!sourceFile) throw new Error(currentLanguage === "zh" ? "演示来源文件创建失败。" : "Teaser source file creation failed.");
+  if (!sourceFile) throw new Error(t("teaser_source_file_creation_failed"));
+  sourceFile.demo.role = "source";
   selectedChatFileId = sourceFile.id;
   openTextFile(sourceFile.id);
   await writingDemoPause(500);
-  writingDemoShowCaption(currentLanguage === "zh"
-    ? "一份 2026 年的产品资料，作为真实文件进入了这台 1988 年的电脑。（演示素材）"
-    : "A 2026 source arrives on this 1988 desktop as a real file. (Demo material)");
+  writingDemoShowCaption(writingDemoBilingual(
+    "一篇离线定稿的开发记，作为真实文件进入了这台 1988 年的电脑。（演示素材）",
+    "An editorially fixed development story enters this 1988 desktop as a real file. (Demo material)"
+  ));
   await writingDemoPause(teaserDemoScenePauseMs);
 }
 
@@ -2094,12 +2146,12 @@ async function teaserDemoSceneTransform() {
   const clipping = typeof createClippingFile === "function"
     ? createClippingFile({
         text: teaserDemoClippingText(),
-        sourceTitle: currentLanguage === "zh" ? "iPhone 17e 产品资料 (Demo)" : "iPhone 17e Source (Demo)",
+        sourceTitle: writingDemoCorpusText(writingDemoCorpus.sourceFileName, "AI System 6 开发记 (Demo)", "AI System 6 Development Story (Demo)"),
         sourceType: "teaser-demo",
         folderId: null,
       })
     : null;
-  if (!clipping) throw new Error(currentLanguage === "zh" ? "演示摘录创建失败。" : "Teaser clipping creation failed.");
+  if (!clipping) throw new Error(t("teaser_clipping_creation_failed"));
   await writingDemoStage([{ name: "teachText", slot: "wide" }], { pauseMs: 400 });
   selectedChatFileId = clipping.id;
   openTextFile(clipping.id);
@@ -2109,9 +2161,10 @@ async function teaserDemoSceneTransform() {
     : "A selection becomes its own clipping object — material now moves between apps.");
   await writingDemoPause(teaserDemoScenePauseMs);
   const manuscript = teaserDemoCreateProjectFile(
-    currentLanguage === "zh" ? "iPhone 17e 视频口播稿 (Demo)" : "iPhone 17e Manuscript (Demo)",
+    `${writingDemoCorpusText(writingDemoCorpus.manuscriptTitle, "当聊天框装不下一篇文章", "When Chat Cannot Hold an Article")} (Demo)`,
     teaserDemoManuscriptBody()
   );
+  manuscript.demo.role = "manuscript";
   selectedChatFileId = manuscript.id;
   openTextFile(manuscript.id);
   await writingDemoPause(600);
@@ -2127,7 +2180,8 @@ async function teaserDemoSceneResult() {
   const manuscript = chatFiles.find((file) =>
     file?.projectId === activeProjectId
     && file?.artifactKind === "teaser-demo"
-    && /(视频口播稿|Manuscript)/i.test(String(file.name || ""))
+    && file?.demo?.kind === "teaser"
+    && file?.demo?.role === "manuscript"
   );
   if (manuscript) {
     selectedChatFileId = manuscript.id;
@@ -2167,6 +2221,7 @@ async function playTeaserDemo() {
   setStatus(t("teaser_demo_running"));
   let terminalStatus = "";
   try {
+    await writingDemoEnsureCorpus();
     teaserDemoEnsureDemoProject();
     await writingDemoStage([], { pauseMs: 250 });
     await teaserDemoSceneSource();

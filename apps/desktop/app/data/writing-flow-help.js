@@ -1,204 +1,260 @@
-// Lazy system-folder documents for AI System 6.
+// Lazy, read-only help documents. Editorial cards are internal comprehension
+// checks: they keep each document aimed at one real beginner question without
+// leaking an agent checklist into the user-facing prose.
 window.AISystem6WritingFlowHelpData = (() => {
-  const docs = {
-    readMe: {
-      zhTitle: "说明文件",
-      enTitle: "Read Me",
-      zhLead: [
-        "AI System 6 是一张以来源为中心的本地 AI 写作桌面。它不是聊天框，也不是复古皮肤；它帮助你把资料、判断、情感和自己的语言整理成能被真实接收者接住的作品。",
-        "它把长文写作里最容易混在一起的东西分开：资料、摘录、问题、接收者、结构、草稿、正文、审校和交付。",
-        "它也防止模型变成你的嘴替：粗糙表达、个人碎事、犹豫、吐槽和多样的缺陷，只要承载真实判断，就应该被保住，而不是被漂洗成同一种 AI 味。",
-        "这里的 Macintosh 隐喻不是装饰，而是一种写作纪律：对象要看得见，保存要明确，模型回复不能偷偷变成你的成果。",
-      ],
-      enLead: [
-        "AI System 6 is a source-first local AI writing desktop. It is not a chat box and not a retro skin. It helps you turn sources, judgment, feeling, and your own language into work a real recipient can receive.",
-        "It separates the parts of long writing that usually collapse into one place: sources, clips, questions, recipient, structure, drafts, manuscript, review, and handoff.",
-        "It also keeps the model from becoming your mouthpiece: rough phrasing, personal bits, hesitation, complaints, and diverse flaws should be preserved when they carry real judgment instead of being washed into one AI flavor.",
-        "The Macintosh metaphor is not decoration. It is discipline: visible objects, explicit saving, and no model reply becomes your work until you choose where it belongs.",
-      ],
-      sections: [
-        {
-          zh: "最短路线",
-          en: "Shortest Route",
-          zhBody: [
-            "**项目硬盘**：为这篇文章开一个清楚的项目房间。",
-            "**文件软盘**：临时插入本次写作要用的来源材料。",
-            "**Reader 与 Scrapbook**：先阅读，再只留下你确认有价值的摘录。",
-            "**问题单**：写清接收者、问题、主张、限制、反对意见、交付摩擦和必须记住的点。",
-            "**大纲**：把意图变成章节顺序。",
-            "**章节草稿**：一次只处理一个章节。",
-            "**TeachText**：完成真正的正文手稿。",
-            "**审校台与项目光盘**：检查风险，收束交付。",
-          ],
-          enBody: [
-            "**Project Hard Disk**: the project room for this piece.",
-            "**File Floppy**: temporary source material for this startup.",
-            "**Reader and Scrapbook**: inspect sources, then keep only chosen clips.",
-            "**Question Sheet**: state the recipient, problem, claim, constraints, objections, handoff friction, and must-remember points.",
-            "**Outline**: turn intent into section order.",
-            "**Section Drafts**: work one section at a time.",
-            "**TeachText**: finish the manuscript body.",
-            "**Review Desk and Project CD**: check risk, then hand off the export cleanly.",
-          ],
-        },
-        {
-          zh: "使用原则",
-          en: "How To Use It",
-          zhBody: [
-            "先走主路线，再召唤工具。Searcher、Reader、DocMap、ClioChart、ClioStage、时光机、Cover Glass、图片提示词工作室、词典、翻译和 ClioTalk 都是帮手，不是新的主线。",
-            "模型可以帮助阅读、规划、起草、改写和审校，但它不拥有正文。只有保存、摘录、插入、写入项目硬盘或导出的内容，才真正进入项目。",
-            "不要为了显得整齐而提前删掉自己的口水话、碎念和真实使用细节。输入太稀薄时，模型会用自己的均质语言补空；输入够具体时，模型才是在整理你。",
-            "如果你在为另一个人、团队、客户、观众或编辑准备东西，先让问题单说清“对方是谁”和“怎样让对方更容易接收”。AI System 6 默认偏向更少、更清楚的交付，而不是更多版本。",
-          ],
-          enBody: [
-            "Walk the main route first, then summon tools. Searcher, Reader, DocMap, ClioChart, ClioStage, Time Machine, Cover Glass, Image Prompt Studio, Dictionary, Translation, and ClioTalk are helpers, not new routes.",
-            "The model may help read, plan, draft, rewrite, and review, but it does not own the manuscript. Only saved, clipped, inserted, written, or exported material enters the project.",
-            "Do not delete your messy speech, stray thoughts, or real usage details just to look orderly. Thin input makes the model fill gaps with its own uniform language; concrete input lets the model organize you.",
-            "If you are preparing work for another person, team, client, audience, or editor, let the Question Sheet name who receives it and how to make it easier to receive. AI System 6 defaults toward fewer, clearer handoffs, not more variants.",
-          ],
-        },
-        {
-          zh: "研究、呈现与外观工具",
-          en: "Research, Presentation, And Appearance Tools",
-          zhBody: [
-            "**Searcher → Reader → DocMap**：Searcher 只负责找到来源入口；在 Reader 检查原文并摘录；只有需要展开一份来源的层级、论断与关系时，才把已加载材料交给 DocMap。不要把搜索摘要直接当证据。",
-            "**ClioChart → ClioStage**：在 ClioChart 的可编辑网格中整理有来源的数据，让空白保持未知，再选择只读投影并送入 ClioStage。ClioStage 继续保留源码、文档、幻灯和提词视图，以及讲者备注。",
-            "**时光机与 Cover Glass**：时光机用真实存档日期检查历史网页；Cover Glass 用场景、图层、画板和 Glass Mix 玻璃总控合成生产封面。Cover Glass 需要背景提示词时使用共享的图片提示词运行时，但图像生成本身在其外完成。它们的结果只有在明确摘录、保存或导出后才进入项目。",
-            "**图片提示词工作室**：把一句想法、可选叠层文字、画面比例和可选参考图，写成可直接粘贴的 GPT-Image 与通用提示词。它只写提示词，不生成图片。",
-            "**MultiFinder 与外观**：MultiFinder 保持多个应用运行，并从菜单栏切回指定应用。可在“特别 → 外观”沿 System 6、Platinum、Aqua、Snow Leopard、Yosemite、Liquid Glass 时间线选择界面；改变的是同一工作区的外观，不是另一套文件。",
-            "**手机工作区**：内容始终优先。应用占满菜单栏下方的屏幕；桌面附件在水平居中的纵向轨道里整体重排，不互相遮盖；详细命令仍保留在菜单与辅助功能名称中。",
-          ],
-          enBody: [
-            "**Searcher → Reader → DocMap**: Searcher only finds source doors. Inspect and clip the original in Reader; hand the loaded material to DocMap only when you need its hierarchy, claims, and relations. Never treat a search snippet as evidence.",
-            "**ClioChart → ClioStage**: organize sourced data in ClioChart's editable grid, keep blanks unknown, then choose a read-only projection and send it to ClioStage. ClioStage preserves Source, Document, Slide, and Cue views plus speaker notes.",
-            "**Time Machine and Cover Glass**: use real archive dates in Time Machine to inspect the historical web. Use Cover Glass scene, layers, artboard, and the global Glass Mix control to compose a production cover. Cover Glass uses the shared Image Prompt runtime for background prompts, but generating the image stays outside it. Their results enter the project only after an explicit clip, save, or export.",
-            "**Image Prompt Studio**: turn an idea, optional overlay title, aspect ratio, and optional reference image into ready-to-paste GPT-Image and universal prompts. It writes prompts; it does not draw the picture.",
-            "**MultiFinder and appearance**: MultiFinder keeps applications running and returns to a chosen app from the menu bar. Special → Appearance follows the System 6, Platinum, Aqua, Snow Leopard, Yosemite, and Liquid Glass timeline; the same workspace and files remain underneath.",
-            "**Mobile Workspace**: content stays primary. An application fills the screen below the menu bar; Desk Accessories reflow together in one horizontally centered column without covering one another; full command wording remains in menus and accessible names.",
-          ],
-        },
-      ],
-    },
-    flow: {
-      zhTitle: "从问题到正文",
-      enTitle: "From Questions to Manuscript",
-      zhLead: [
-        "长文写作最危险的不是写得慢，而是来源、意图、接收者、AI 建议和最终正文全都挤在一个聊天窗口里。AI System 6 的写作流程，就是为了让这些东西保持各自的位置。",
-      ],
-      enLead: [
-        "Long writing does not fail only because prose is slow. It fails when sources, intent, recipient, AI suggestions, and final prose collapse into one chat. AI System 6 keeps them apart.",
-      ],
-      sections: [
-        {
-          zh: "问题单",
-          en: "Question Sheet",
-          zhBody: ["问题单不是摘要，也不是正文。它保存作者真正要解决的问题：接收者是谁，主张是什么，对方可能卡在哪里，哪些术语要区分，哪些反对意见必须正面处理，哪些来源线索不能丢。它也应该保留还没变成 prose 的人类输入：碎念、用机细节、犹豫、口头判断和压力点。"],
-          enBody: ["The Question Sheet is not a summary and not manuscript text. It preserves the writer's problem: recipient, claim, where the other person may get stuck, distinctions, objections, source leads, and output rules. It should also keep human input before it becomes prose: stray thoughts, usage details, hesitation, spoken judgments, and pressure points."],
-        },
-        {
-          zh: "大纲",
-          en: "Outline",
-          zhBody: ["大纲把问题变成顺序。每个 `##` 都是未来的章节草稿目标。趁 prose 还不沉重时，在这里移动结构。"],
-          enBody: ["Outline turns the question into order. Each `##` becomes a future Section Draft target. Move structure here before prose becomes expensive."],
-        },
-        {
-          zh: "章节草稿",
-          en: "Section Drafts",
-          zhBody: ["章节草稿让一篇大文章变小。一次只处理一个 `##`：看证据，写一节，改一节，然后再进入下一节。"],
-          enBody: ["Section Drafts make a large article small. Work one `##` at a time: inspect evidence, draft, revise, then move on."],
-        },
-        {
-          zh: "TeachText",
-          en: "TeachText",
-          zhBody: ["TeachText 是正文手稿。联动写作流程里，它的标题会同步给问题单、大纲和章节草稿；但正文真正属于 TeachText。"],
-          enBody: ["TeachText is the manuscript body. In the linked flow, its title is shared with Question Sheet, Outline, and Section Drafts; the body belongs in TeachText."],
-        },
-        {
-          zh: "审校与交付",
-          en: "Review And Handoff",
-          zhBody: ["审校台把隐藏风险变成可见风险：缺少支持的论断、松散的章节、风格问题、AI 嘴替漂移、接收者摩擦和最后清理。项目光盘负责交付最终 Markdown 或双语 Markdown。"],
-          enBody: ["Review Desk turns hidden risk visible: unsupported claims, loose sections, style issues, AI-mouthpiece drift, recipient friction, and final cleanup. Project CD hands off final Markdown or bilingual Markdown."],
-        },
-      ],
-    },
-    memory: {
-      zhTitle: "什么会被记住",
-      enTitle: "What Gets Remembered",
-      zhLead: [
-        "模型回复本身不是记忆。搜索结果不是记忆。打开的 Reader 页面也不是记忆。AI System 6 只通过用户选择或保存的可见对象来记住东西。",
-      ],
-      enLead: [
-        "A model reply is not memory. A search result is not memory. An open Reader page is not memory. AI System 6 remembers through visible objects the user chooses or saves.",
-      ],
-      sections: [
-        {
-          zh: "会留下的东西",
-          en: "Durable Things",
-          zhBody: [
-            "保存在当前项目硬盘里的 TeachText 文稿与写作记录。",
-            "用户主动摘录的 Scrapbook 片段。",
-            "写入项目硬盘的参考资料和导入记录。",
-            "问题单、大纲、章节草稿、审校状态、废纸篓、项目光盘导出和项目设置。",
-          ],
-          enBody: [
-            "Saved TeachText documents and Writing Records on the current Project Hard Disk.",
-            "Scrapbook clips chosen by the user.",
-            "References and imported records written to the project.",
-            "Question Sheet, Outline, Section Drafts, review state, Trash, Project CD exports, and project settings.",
-          ],
-        },
-        {
-          zh: "临时上下文",
-          en: "Temporary Context",
-          zhBody: [
-            "当前 ClioTalk 消息和可选会话上下文。",
-            "本次启动挂载的文件软盘材料。",
-            "Reader 页面、Searcher 结果、DocMap 视图和未保存的模型回复。",
-            "记忆边界只显示上一次模型运行装入了什么；它不是存储位置。",
-          ],
-          enBody: [
-            "The current ClioTalk message and optional session context.",
-            "File Floppy material mounted for this startup.",
-            "Reader pages, Searcher results, DocMap views, and unsaved model replies.",
-            "Memory Inspector shows what entered the last model run; it is not storage.",
-          ],
-        },
-        {
-          zh: "一句话规则",
-          en: "Rule",
-          zhBody: ["重要的东西要放到看得见的位置。证据放进 Scrapbook 或项目硬盘；正文放进章节草稿或 TeachText；交付物放进项目光盘。"],
-          enBody: ["If it matters, put it somewhere visible. Evidence goes to Scrapbook or Project Hard Disk; prose goes to Section Drafts or TeachText; handoff goes to Project CD."],
-        },
-      ],
-    },
-  };
-
-  function renderDoc(key, language = "zh") {
-    const doc = docs[key] || docs.readMe;
-    const zh = language === "zh";
-    const title = zh ? doc.zhTitle : doc.enTitle;
-    const lead = zh ? doc.zhLead : doc.enLead;
-    const lines = [`# ${title}`, "", ...lead.flatMap((paragraph) => [paragraph, ""])];
-    doc.sections.forEach((section) => {
-      lines.push(`## ${zh ? section.zh : section.en}`, "");
-      const body = zh ? section.zhBody : section.enBody;
-      body.forEach((line) => lines.push(line));
-      lines.push("");
-    });
-    return lines.join("\n").trim();
-  }
-
-  const api = {
-    render: renderDoc,
-    readMe: {},
-    flow: {},
-    memory: {},
-  };
-
-  ["readMe", "flow", "memory"].forEach((key) => {
-    Object.defineProperty(api[key], "zh", { get: () => renderDoc(key, "zh") });
-    Object.defineProperty(api[key], "en", { get: () => renderDoc(key, "en") });
+  const editorialCards = Object.freeze({
+    readMe: Object.freeze({
+      question: "What is this desk for?",
+      stuckPoint: "The Macintosh appearance and the many applications can hide the writing problem it solves.",
+      directAnswer: "It gives sources, human intent, drafts, review, and handoff separate visible places.",
+      boundary: "AI remains optional and its visible replies are not automatically project work.",
+    }),
+    flow: Object.freeze({
+      question: "How does one long piece move from a rough question to a finished file?",
+      stuckPoint: "Readers may mistake every useful tool for a required route stop.",
+      directAnswer: "Eight writing objects own eight different decisions; other applications are summoned only when needed.",
+      boundary: "The route guides order but does not force the writer through an unnecessary step.",
+    }),
+    memory: Object.freeze({
+      question: "What will still be here next time?",
+      stuckPoint: "Visible, sent, saved, and remembered can look like the same state in a chat interface.",
+      directAnswer: "Only a confirmed project object is durable; temporary views and model output remain temporary.",
+      boundary: "Normal Chats are saved files, but their replies still do not become manuscript text automatically.",
+    }),
   });
 
+  const documents = Object.freeze({
+    readMe: Object.freeze({
+      en: `# Read Me
+
+AI System 6 is a writing desk. Sources, questions, drafts, review, and finished files have different places, so a model reply cannot quietly become your manuscript.
+
+The Macintosh appearance is not the purpose. It supplies a useful rule: an object should show what it is, where it belongs, and whether it has actually been saved.
+
+## Two ways to begin
+
+- **Quick Draft** is the shortest route to one small finished piece. Bring in fragments, write or develop the draft, save it, then download it or continue in TeachText.
+- **Writing Studio** is the complete route for a long piece that needs an explicit question, sections, review, and handoff.
+
+## The eight writing objects
+
+1. **Project Hard Disk** keeps one project's durable files apart from every other project.
+2. **File Floppy** carries temporary source material for the current work.
+3. **Question Sheet** keeps the recipient, raw questions, observations, objections, and limits upstream of prose.
+4. **Outline** decides the order and job of each section.
+5. **Section Drafts** makes one large article small enough to work on one part at a time.
+6. **Manuscript** shows the whole piece in TeachText.
+7. **Review Desk** separates factual, structural, voice, and handoff risks before delivery.
+8. **Project CD** holds the files you deliberately prepared for handoff.
+
+Reader, Scrapbook, Searcher, DocMap, ClioChart, ClioStage, and ClioTalk are tools you summon when one of those objects needs help. They are not extra checkpoints.
+
+## What AI may do
+
+AI may help read, organize, draft, rewrite, and review. Its answer remains conversation material until you save, clip, insert, confirm Use Result, or export it. Appearing on screen and being saved are different states.
+
+The writer remains part of the work. Personal observation, uncertainty, an awkward but honest sentence, and a real objection are not defects to wash away when they carry judgment.
+
+If you are preparing the piece for another person, team, client, audience, or editor, let the Question Sheet name the real recipient first. AI System 6 defaults toward fewer, clearer handoffs, not more variants.
+
+Close this document when you are ready. Nothing here creates a project or chooses the next step for you.`,
+      zh: `# 说明文件
+
+AI System 6 是一张写作桌。来源、问题、草稿、审校和交付文件各有位置，因此模型回复不会悄悄变成你的正文。
+
+Macintosh 的样子不是产品目的。它提供了一条有用的规矩：一个对象应当让人看出它是什么、放在哪里，以及究竟有没有保存。
+
+## 两种开始方式
+
+- **钟点稿**是完成一篇小作品的最短路线。带入碎片，手写或显影成稿，保存后下载，或继续送进 TeachText。
+- **创作坊**是长文的完整路线，适合需要明确问题、分节、审校和交付的作品。
+
+## 八个写作对象
+
+1. **项目硬盘**长期保存一个项目的文件，并把它们同其他项目分开。
+2. **文件软盘**装入本次工作临时要用的来源材料。
+3. **问题单**在正文之前保住接收者、原始问题、个人观察、反对意见和限制。
+4. **大纲**决定章节顺序，以及每一节要完成什么。
+5. **章节草稿**把一篇大文章拆成一次能处理的一小部分。
+6. **正文**在 TeachText 中显示整篇作品。
+7. **审校台**在交付前分开检查事实、结构、作者声音和交付风险。
+8. **项目光盘**保存你明确准备交出去的文件。
+
+Reader、Scrapbook、Searcher、DocMap、ClioChart、ClioStage 和 ClioTalk 都是按需召唤的工具，不是额外关卡。
+
+## AI 可以做什么
+
+AI 可以帮助阅读、整理、起草、改写和审校。它的回答仍是对话材料，直到你明确保存、摘录、插入、确认“使用结果”或导出。屏幕上出现过，和电脑已经保存，是两种状态。
+
+写作者始终是作品的一部分。粗糙表达、个人碎事、犹豫、吐槽和多样的缺陷，只要承载真实判断，就不该被漂洗掉，也不该让模型变成你的嘴替。
+
+如果这份作品要交给另一个人、团队、客户、观众或编辑，先让问题单说清真实接收者是谁。AI System 6 默认偏向更少、更清楚的交付，而不是更多版本。
+
+准备好以后关掉这份说明即可。这里不会替你新建项目，也不会替你决定下一步。`,
+    }),
+    flow: Object.freeze({
+      en: `# From Questions to Manuscript
+
+A long piece becomes manageable when each decision has one owner. AI System 6 uses eight visible objects so sources, intent, model suggestions, manuscript text, and delivery do not collapse into one chat thread.
+
+## 1. Choose the durable room
+
+Mount the correct **Project Hard Disk** first. It is the durable room for this piece. Insert a **File Floppy** only when temporary local material should join the current work.
+
+The hard disk and floppy answer different questions: the hard disk says what should still be here next time; the floppy says what is available for this session.
+
+## 2. Preserve the human problem
+
+The **Question Sheet** is not a summary and not early manuscript prose. Write who will receive the piece, what they need answered, what you observed, where they may object, which terms need separating, and what remains unknown.
+
+Concrete input matters. When the human problem is thin, a model can fill the empty space with its own generic language.
+
+## 3. Decide order before prose becomes expensive
+
+The **Outline** turns the problem into section order. Each second-level Markdown heading, written as \`##\`, becomes a Section Draft target. Markdown is plain text with small marks that describe structure; here, two number signs mean “start a section.”
+
+Use **DocMap** for the structure of source material. Use **Outline** for the structure you intend to write.
+
+## 4. Work one section at a time
+
+**Section Drafts** owns editable text during drafting. The **Manuscript** in TeachText shows the whole article but remains read-only while a section owns the text. This prevents two windows from silently editing different copies of the same paragraph.
+
+## 5. Read the finished piece back
+
+After the Manuscript is marked Final, **Review Desk** reads it beside the final text. Fact Check asks what visible sources support. Other checks look for loose structure, missing personal detail, overly regular model rhythm, and avoidable friction for the recipient.
+
+Review findings are advice and evidence, not silent edits. The writer chooses what returns to the Manuscript.
+
+## 6. Hand off a file
+
+**Project CD** contains deliberate handoff files. Exporting or burning to it is a separate action from seeing text on screen. The route ends with an object someone else can receive, not with another model answer.
+
+The research chain has its own order: **Searcher → Reader → DocMap**. Searcher finds a source door, Reader opens the original, and DocMap spreads the source's structure out for inspection. Scrapbook keeps only the passages the writer deliberately clips.
+
+ClioTalk, ClioChart, and ClioStage may also join wherever the work needs them. If a step is unnecessary, do not perform it merely to complete a checklist.`,
+      zh: `# 从问题到正文
+
+一篇长文之所以能变得好处理，是因为每一种决定只有一个主人。AI System 6 用八个看得见的对象，把来源、意图、模型建议、正文和交付分开，不让它们全挤进一条聊天记录。
+
+## 1. 先选长期保存的房间
+
+首先挂载正确的**项目硬盘**。它是这篇作品长期留下的房间。只有本次需要临时本地材料时，才插入**文件软盘**。
+
+硬盘和软盘回答的是两个问题：硬盘说明“下次还要不要在”；软盘说明“这次能不能使用”。
+
+## 2. 先保住人的问题
+
+**问题单**不是摘要，也不是提前写正文。写清作品交给谁、对方需要得到什么答案、你亲眼看到什么、对方可能怎样反驳、哪些术语必须分开，以及什么仍然未知。
+
+具体输入很重要。人的问题太稀薄时，模型很容易用自己的通用语言填满空白。
+
+## 3. 在正文变重以前决定顺序
+
+**大纲**把问题变成章节顺序。Markdown 中的二级标题写成 \`##\`，每个二级标题都会成为一份章节草稿。Markdown 是一种用少量符号标出文字结构的纯文本格式；这里的两个井号表示“从这一行开始是一节”。
+
+理解来源材料的结构时用 **DocMap**；规划自己要写的结构时用**大纲**。
+
+## 4. 一次只处理一节
+
+起草阶段由**章节草稿**持有可编辑正文。TeachText 中的**正文**显示整篇文章，但章节仍在起草时保持只读。这样，两扇窗口就不会各自偷偷修改同一段文字的不同副本。
+
+## 5. 把定稿重新读一遍
+
+正文标记为定稿后，**审校台**会同定稿并排打开。事实核查询问眼前哪些来源能提供支持；其他检查寻找松散结构、消失的个人细节、过分整齐的模型节奏，以及接收者不必承受的交付摩擦。
+
+审校发现只是证据和建议，不是暗中改写。哪些内容回到正文，由写作者决定。
+
+## 6. 交付一个文件
+
+**项目光盘**保存明确准备交付的文件。把文字导出或刻录进去，是独立于“屏幕上已经出现文字”的另一个动作。路线最终交出的是别人能收到的对象，不是另一条模型回答。
+
+研究工具有自己的先后关系：**Searcher → Reader → DocMap**。Searcher 找到来源入口，Reader 打开原文，DocMap 再把来源的结构摊开供人检查。Scrapbook 只留下写作者明确摘录的段落。
+
+ClioTalk、ClioChart 和 ClioStage 也可以在需要时加入。如果某一步对当前作品没有帮助，不要只为完成清单而使用它。`,
+    }),
+    memory: Object.freeze({
+      en: `# What Gets Remembered
+
+Visible does not mean saved. AI System 6 remembers durable work through confirmed project objects; temporary views and unaccepted model output can disappear.
+
+## Where durable work lives
+
+The browser keeps projects on this device in its built-in database, called **IndexedDB**. Think of it as the file cabinet behind the desk: Project Hard Disks, documents, references, Scrapbook clips, Project CD files, and Trash live there.
+
+The small Node.js server beside the browser connects to models, web reading, OCR, and transcription. It is a bridge, not another file cabinet, and it does not keep a second Project Hard Disk.
+
+## What a normal Chat saves
+
+A normal ClioTalk conversation becomes a **Chat file** when its first message is sent. Each completed, stopped, or failed model request can also create a **Run Record**: a receipt of what the application sent, which Prompt and inputs it used, and what status returned.
+
+Saving a Chat does not make every reply manuscript text. A reply enters Question Sheet, Outline, a Section Draft, TeachText, Scrapbook, or a new document only after the writer reviews and confirms Use Result.
+
+## What stays temporary
+
+- A **Temporary Chat** disappears when it closes unless the user explicitly saves it.
+- A Searcher result is only a source door until the original is opened and useful material is clipped or saved.
+- An unsaved Reader page, DocMap view, or model reply may help the current work without becoming a durable project file.
+- A File Floppy is temporary context. Ejecting it removes that mounted material from the current work.
+
+## Why another window may be read-only
+
+Several tabs or installed app windows can point to the same IndexedDB file cabinet. To stop an older copy from overwriting newer work, only one AI System 6 instance may save changes at a time. Other instances remain read-only until write access is safely handed over.
+
+## How to carry work elsewhere
+
+Browser storage belongs to this browser on this device. Export a **Project Backup** before clearing site data, changing browsers, or moving to another device. A backup is the explicit portable copy; the server is not a hidden cloud backup.
+
+The practical rule is short: if something matters, put it in a visible project object and wait for the save receipt.`,
+      zh: `# 什么会被记住
+
+看得见，不等于已经保存。AI System 6 只通过确认写入的项目对象长期记住工作；临时视图和未采用的模型结果可能消失。
+
+## 长期内容放在哪里
+
+浏览器把项目保存在这台设备的内建数据库中，这个数据库叫 **IndexedDB**。可以把它理解成桌面背后的文件柜：项目硬盘、文档、参考资料、Scrapbook 摘录、项目光盘文件和废纸篓都放在里面。
+
+浏览器旁边的小型 Node.js 服务负责连接模型、网页读取、OCR 和音频转写。OCR 是从图片中识别文字。这个服务是一座桥，不是另一只文件柜，也不会另存一份项目硬盘。
+
+## 普通 Chat 会保存什么
+
+普通 ClioTalk 对话发送第一条消息时，会成为一个 **Chat 文件**。每次完成、停止或失败的模型请求还可以生成一份**运行记录**：它是一张回执，说明应用发送了什么、使用了哪些 Prompt 与输入，以及最后返回什么状态。
+
+保存 Chat 不等于把所有回复写进正文。回复只有在写作者查看并确认“使用结果”后，才会进入问题单、大纲、章节草稿、TeachText、Scrapbook 或新文档。
+
+## 什么仍然是临时的
+
+- **临时对话**关闭后消失，除非用户明确保存。
+- Searcher 结果只是来源入口；打开原文并摘录或保存以后，有用材料才会留下。
+- 未保存的 Reader 页面、DocMap 视图或模型回复可以帮助当前工作，但不因此自动成为项目文件。
+- 文件软盘是临时上下文。推出软盘后，这批挂载材料会离开当前工作。
+
+## 为什么另一扇窗口可能只读
+
+多个浏览器标签页或安装后的应用窗口，可能共同指向同一只 IndexedDB 文件柜。为了防止较旧的副本覆盖较新的工作，同一时间只有一个 AI System 6 实例可以保存修改。其他实例保持只读，直到写入权限安全移交。
+
+## 怎样把项目带到别处
+
+浏览器存储属于这台设备上的当前浏览器。清理网站数据、更换浏览器或换设备前，应先导出**项目备份**。备份才是明确的可携带副本；旁边的服务不是隐藏的云备份。
+
+实际规则很短：重要的东西要放进看得见的项目对象，并等到保存回执出现。`,
+    }),
+  });
+
+  function languageKey(language = "zh") {
+    return String(language || "").toLowerCase().startsWith("zh") ? "zh" : "en";
+  }
+
+  function render(documentKey = "readMe", language = "zh") {
+    const document = documents[documentKey] || documents.readMe;
+    return document[languageKey(language)];
+  }
+
+  const api = { render, editorialCards };
+  for (const key of Object.keys(documents)) {
+    api[key] = Object.freeze({
+      get zh() { return documents[key].zh; },
+      get en() { return documents[key].en; },
+    });
+  }
   return Object.freeze(api);
 })();

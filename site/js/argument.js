@@ -11,7 +11,8 @@
 // swaps those to the era the page is wearing, which is right everywhere else
 // and exactly wrong here: six rows of one era's icon would prove nothing.
 
-import { ERAS, iconSrc, setEra, onEraChange, currentEra, fontLabel } from "./eras.js?v=20260814i";
+import { ERAS, iconSrc, setEra, onEraChange, currentEra, fontLabel } from "./eras.js?v=20260820a";
+import { L } from "./copy.js?v=20260820a";
 
 const doc = document;
 
@@ -44,7 +45,10 @@ export function initArgument(list) {
     const hit = doc.createElement("button");
     hit.type = "button";
     hit.className = "claim-hit";
-    hit.setAttribute("data-balloon", `Puts the whole page in ${era.year}, type and all.`);
+    hit.setAttribute("data-balloon", L(
+      `Puts the whole page in ${era.year}, type and all.`,
+      `把整个页面切换到 ${era.year} 年的外观与字体。`,
+    ));
 
     const icon = doc.createElement("img");
     icon.className = "claim-icon";
@@ -53,7 +57,7 @@ export function initArgument(list) {
     icon.height = 32;
     icon.loading = "lazy";
     icon.decoding = "async";
-    icon.alt = `The manuscript icon, as ${era.label} drew it`;
+    icon.alt = L(`The manuscript icon, as ${era.label} drew it`, `${era.label} 外观下的正文图标`);
 
     const year = doc.createElement("span");
     year.className = "claim-year";

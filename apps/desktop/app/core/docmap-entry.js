@@ -97,6 +97,32 @@ function docMapSourceFromFileFloppy() {
   };
 }
 
+/**
+ * A photographed page or whiteboard, turned into a DocMap source.
+ *
+ * DocMap anchors every node back into `source.text`, so a picture cannot be
+ * mapped directly — there would be nothing to trace a branch to. Instead the
+ * picture is read into text first; that reading is the source, the writer can
+ * see it, and the picture rides along so the model can resolve its own
+ * handwriting when the map is built.
+ *
+ * @param {any} attachment
+ * @param {string} reading
+ * @returns {any|null}
+ */
+function docMapSourceFromPicture(attachment, reading) {
+  const text = String(reading || "").trim();
+  if (!attachment || !text) return null;
+  return {
+    text,
+    label: attachment.name || t("image_attachment"),
+    scope: "picture",
+    threshold: 0,
+    images: [attachment.id],
+    meta: { imageAttachmentId: attachment.id, imageName: attachment.name || "" },
+  };
+}
+
 function docMapSourceFromProjectCd() {
   if (typeof getSelectedProjectCdItem !== "function") return null;
   const item = getSelectedProjectCdItem();

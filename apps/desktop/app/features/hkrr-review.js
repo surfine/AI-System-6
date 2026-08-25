@@ -17,10 +17,10 @@ ${body}
 全文语境：
 ${fullBody}`;
   try {
-    const response = await fetchModelPayload({ model: getLocalModelRequestName(), messages: withMarkdownModelMessages([{ role: "user", content: prompt }]), temperature: 0.2, max_tokens: 2600, ai_system6_task_kind: "hkrr" }, getLongTaskSignal());
+    const response = await fetchModelPayload({ model: getLocalModelRequestName(), messages: attachImagesToModelMessages(withMarkdownModelMessages([{ role: "user", content: prompt }]), teachTextFiguresReferencedIn(fullBody)), temperature: 0.2, max_tokens: 2600, ai_system6_task_kind: "hkrr" }, getLongTaskSignal());
     const data = await readChatJson(response);
     renderClaimCheckDraft(stripRebuildMarkdownFence(data?.choices?.[0]?.message?.content || ""));
-    setStatus(currentLanguage === "zh" ? "HKRR 审视完成。" : "HKRR review ready.");
+    setStatus(t("hkrr_review_ready"));
   } catch (error) {
     if (!isAbortError(error)) claimResultsEl.innerHTML = `<div class="empty-folder-note">${escapeHtml(error.message)}</div>`;
   } finally {
@@ -30,7 +30,7 @@ ${fullBody}`;
 
 async function saveHkrrReview() {
   const markdown = claimResultsEl?.innerText.trim() || "";
-  if (!markdown) return setStatus("No HKRR Review to save.");
+  if (!markdown) return setStatus(t("hkrr_review_none_to_save"));
   const result = await showSystemModal(`Save Review report?\n\n${clipContextContent(markdown, 1000)}`, "confirm");
   if (result !== "yes") return;
   const item = await addProjectCdItem(markdown, `HKRR Review - ${teachTextNameInput.value || t("review_desk")}`, {

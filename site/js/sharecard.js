@@ -1,8 +1,9 @@
 // Snapshot: compose a share card from the CURRENT ERA's real captured frame.
 // No mockups. The desktop on the card is the desktop from the machine.
 
-import { currentEra, onEraChange } from "./eras.js?v=20260814i";
-import { frameSrc, machineManifest } from "./machine.js?v=20260814i";
+import { currentEra, onEraChange } from "./eras.js?v=20260820a";
+import { frameSrc, machineManifest } from "./machine.js?v=20260820a";
+import { L } from "./copy.js?v=20260820a";
 
 function loadImage(src) {
   return new Promise((resolve, reject) => {
@@ -46,8 +47,11 @@ export async function drawShareCard(w, h) {
     if (!ctx.font.includes(`${size}px`)) ctx.font = `${classic ? "" : "700 "}${size}px sans-serif`;
   };
   const big = Math.round(Math.min(w * 0.055, h * 0.11));
-  const line1 = "THE AI HAS A DESKTOP NOW.";
-  const line2 = `${era.year} / ${era.label.toUpperCase()} / REAL SYSTEM CAPTURE`;
+  const line1 = L("YOUR WORK HAS A PLACE TO LIVE.", "你的作品，有了自己的位置。" );
+  const line2 = L(
+    `${era.year} / ${era.label.toUpperCase()} / REAL SYSTEM CAPTURE`,
+    `${era.year} / ${era.label.toUpperCase()} / 真实系统截图`,
+  );
   setFont(big, display);
   const tw = ctx.measureText(line1).width;
   const plateW = Math.min(w * 0.92, tw + big * 1.6);
@@ -79,7 +83,7 @@ export function initShareCard(button) {
   // The button wears the year you are standing on, so the card is visibly
   // yours before you press it.
   function syncLabel() {
-    label.textContent = `Snapshot ${currentEra().year}`;
+    label.textContent = L(`Snapshot ${currentEra().year}`, `保存 ${currentEra().year} 截图`);
   }
   syncLabel();
   onEraChange(syncLabel);
@@ -88,7 +92,7 @@ export function initShareCard(button) {
     if (!machineManifest()) return;
     const era = currentEra();
     button.disabled = true;
-    label.textContent = "Developing\u2026";
+    label.textContent = L("Developing\u2026", "正在显影…");
     try {
       const wide = await drawShareCard(1200, 630);
       // One press, one file: the download starts without a second decision.
@@ -118,18 +122,18 @@ function showPanel(button, era, wide) {
   panel.id = "snapshot-panel";
   panel.className = "mini-window snapshot-panel";
   panel.setAttribute("role", "dialog");
-  panel.setAttribute("aria-label", `Snapshot saved: ${era.year} ${era.label}`);
+  panel.setAttribute("aria-label", L(`Snapshot saved: ${era.year} ${era.label}`, `截图已保存：${era.year} ${era.label}`));
   panel.innerHTML = `
     <header class="tbar mini-tbar">
-      <button type="button" class="close-box mw-close" aria-label="Close snapshot"></button>
-      <h3>Saved: ${era.year} ${era.label}</h3>
+      <button type="button" class="close-box mw-close" aria-label="${L("Close snapshot", "关闭截图")}"></button>
+      <h3>${L("Saved", "已保存")}: ${era.year} ${era.label}</h3>
     </header>
     <div class="mini-wbody snapshot-body">
       <div class="snapshot-preview"></div>
       <p class="btn-row snapshot-actions">
-        <a class="btn" id="snapshot-square" download="ai-system-6-${era.year}-square.png">Also Save Square</a>
+        <a class="btn" id="snapshot-square" download="ai-system-6-${era.year}-square.png">${L("Also Save Square", "另存正方形版本")}</a>
       </p>
-      <p class="mw-status">Saved to your downloads. Every pixel is a real system capture.</p>
+      <p class="mw-status">${L("Saved to your downloads. Every pixel is a real system capture.", "已保存到下载目录。每个像素都来自真实系统截图。")}</p>
     </div>`;
   panel.querySelector(".snapshot-preview").appendChild(wide);
   button.closest("section, header").appendChild(panel);

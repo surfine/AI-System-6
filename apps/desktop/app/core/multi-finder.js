@@ -38,78 +38,8 @@ const multiFinderAppLabels = {
   system: "System",
 };
 
-const windowAppMap = {
-  assistant: "clioTalk",
-  quickDraft: "quickDraft",
-  bureaucracyMeme: "bureaucracyMeme",
-  chooser: "accessories",
-  control: "accessories",
-  themeLab: "themeLab",
-  rag: "finder",
-  textDisk: "finder",
-  finder: "finder",
-  helpFolder: "finder",
-  applications: "finder",
-  disk: "finder",
-  projectCd: "finder",
-  pageSetup: "finder",
-  importUtility: "finder",
-  projects: "finder",
-  documents: "finder",
-  chatFile: "teachText",
-  teachText: "teachText",
-  styleSheet: "teachText",
-  reviewDesk: "teachText",
-  saveChat: "clioTalk",
-  scrapbook: "scrapbook",
-  trash: "finder",
-  printDirectory: "finder",
-  reader: "reader",
-  timeMachine: "timeMachine",
-  endfieldTerminal: "endfield",
-  questionSheet: "teachText",
-  outline: "teachText",
-  sectionDrafts: "teachText",
-  claimCheck: "teachText",
-  findPath: "searcher",
-  findFile: "accessories",
-  contextPanel: "clioTalk",
-  guide: "system",
-  rebuildFlow: "teachText",
-  docMap: "docMap",
-  clioStage: "clioStage",
-  clioChart: "clioChart",
-  liquidCover: "liquidCover",
-  cmfStudio: "cmfStudio",
-  imagePromptStudio: "imagePromptStudio",
-  soundscape: "soundscape",
-  micropolis: "micropolis",
-  openttd: "openttd",
-  bonsaiCity: "bonsaiCity",
-  doom: "doom",
-  dictionary: "accessories",
-  imageManager: "teachText",
-  systemHelp: "system",
-  dictation: "accessories",
-  translationPad: "accessories",
-  writingBell: "accessories",
-  notePad: "accessories",
-  clipboard: "accessories",
-  alarmClock: "accessories",
-  calculator: "accessories",
-  puzzle: "accessories",
-  memoryCards: "accessories",
-  modelMeter: "accessories",
-  keyCaps: "accessories",
-  systemStatus: "accessories",
-  // A Desk Accessory, so summoning it floats over the work instead of
-  // replacing it — a pad that displaced the window it reads would be useless.
-  sideAskPad: "accessories",
-  notificationCenter: "accessories",
-  fileInfo: "finder",
-  projectInfo: "finder",
-  about: "system",
-};
+// Which application owns a window is declared once, in
+// core/window-registry.js, along with everything else a window is.
 
 function resolvedWindowAppId(name) {
   if (
@@ -125,7 +55,7 @@ function resolvedWindowAppId(name) {
   ) {
     return "writingStudio";
   }
-  return windowAppMap[name] || "finder";
+  return registeredWindowAppId(name);
 }
 
 function getWindowAppId(winOrName) {

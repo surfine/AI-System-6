@@ -1,74 +1,1101 @@
-/* Bonsai City window — lazy, scoped to the bonsai window only. */
+/* Bonsai City — lazy and wholly scoped to the Bonsai application. */
 
 .bonsai-window {
-  --bonsai-toolbar-gap: 4px;
-  /* Frame size mirrored from 50-apps.css so the lazy sheet and the boot
-     bundle agree; the eager rule prevents the sliver before this loads. */
-  width: min(760px, calc(100vw - 72px));
-  height: min(680px, calc(100vh - 88px));
-}
-
-.bonsai-window .bonsai-pane {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 6px;
-}
-
-.bonsai-window .bonsai-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--bonsai-toolbar-gap);
-}
-
-.bonsai-window .bonsai-toolbar-separator {
-  width: 1px;
-  height: 18px;
-  margin: 0 3px;
-  background: var(--system-border, #888);
-}
-
-.bonsai-window .bonsai-canvas-wrap {
+  width: var(--bonsai-window-width);
+  height: var(--bonsai-window-height);
+  min-width: 320px;
+  min-height: 360px;
   position: relative;
-  overflow: auto;
-  /* The canvas carries the window's intrinsic width; without a min-width the
-     overflow-auto box lets the whole window shrink-to-fit to ~2px. */
-  min-width: 512px;
-  border: var(--system-border, 1px solid #888);
-  background: var(--paper, #fff);
-}
-
-.bonsai-window .bonsai-canvas {
-  display: block;
-  image-rendering: pixelated;
-  cursor: crosshair;
-  touch-action: none;
-}
-
-.bonsai-window .bonsai-canvas.is-panning {
-  cursor: grabbing;
-}
-
-.bonsai-window .bonsai-actions {
-  display: flex;
-  gap: 6px;
-}
-
-.bonsai-window .bonsai-cities-list {
-  position: absolute;
-  top: 6px;
-  left: 6px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 6px;
-  border: var(--system-border, 1px solid #888);
-  background: var(--paper, #fff);
 }
 
 .bonsai-window .bonsai-details-bar {
   display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  container-type: inline-size;
+  padding: 2px 4px;
+}
+
+.bonsai-window .bonsai-gauge > span {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  min-height: 22px;
+  padding: 0 7px;
+  border-left: 1px solid var(--shade);
+  font-size: 10px;
+  line-height: 1.2;
+}
+
+.bonsai-window .bonsai-gauge > span:first-child {
+  border-left: 0;
+  padding-left: 0;
+}
+
+.bonsai-window .bonsai-gauge .bonsai-status-message {
+  flex: 1 1 auto;
+  min-width: 8ch;
+  overflow: hidden;
+  text-align: right;
+  text-overflow: ellipsis;
+}
+
+.bonsai-window .bonsai-gauge .bonsai-rci-gauge {
+  display: block;
+  width: 26px;
+  height: 14px;
+  image-rendering: pixelated;
+  shape-rendering: crispEdges;
+}
+
+.bonsai-window .bonsai-gauge .bonsai-gauge-city {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bonsai-window .bonsai-gauge .bonsai-speed-controls,
+.bonsai-window .bonsai-gauge .bonsai-gauge-undo-redo {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-wrap: nowrap;
+  padding: 0 5px;
+}
+
+.bonsai-window .bonsai-gauge .bonsai-speed-controls .btn,
+.bonsai-window .bonsai-gauge .bonsai-gauge-undo-redo .btn {
+  padding: 2px 4px;
+  font-size: 10px;
+  min-width: 0;
+}
+
+/* Fixed drop order: never scroll, never clip. As the bar narrows, cells hide
+   from the front of this list; 速度, 撤销 and 资金 are never dropped. */
+.bonsai-window .bonsai-gauge:has(.bonsai-status-message) { min-width: 0; }
+@container (max-width: 685px) {
+  .bonsai-window .bonsai-gauge .bonsai-status-message { display: none; }
+}
+@container (max-width: 645px) {
+  .bonsai-window .bonsai-gauge .bonsai-gauge-city { display: none; }
+}
+@container (max-width: 525px) {
+  .bonsai-window .bonsai-gauge .bonsai-gauge-population { display: none; }
+}
+@container (max-width: 460px) {
+  .bonsai-window .bonsai-gauge .bonsai-gauge-tool,
+  .bonsai-window .bonsai-gauge .bonsai-gauge-cost { display: none; }
+}
+@container (max-width: 355px) {
+  .bonsai-window .bonsai-gauge .bonsai-gauge-date { display: none; }
+}
+@container (max-width: 295px) {
+  .bonsai-window .bonsai-gauge .bonsai-gauge-undo-redo .btn[data-bonsai-action="redo"] { display: none; }
+}
+@container (max-width: 270px) {
+  .bonsai-window .bonsai-gauge .bonsai-gauge-rci { display: none; }
+}
+
+/* Phones: the status element becomes a transient toast over the playfield.
+   Same element, same aria-live — only its position and decay change. */
+@media (max-width: 560px) {
+  .bonsai-window .bonsai-gauge .bonsai-status-message[data-bonsai-status] {
+    display: flex;
+    position: absolute;
+    right: 8px;
+    bottom: 10px;
+    max-width: min(240px, calc(100% - 16px));
+    padding: 5px 9px;
+    border: var(--system-border);
+    background: var(--paper);
+    box-shadow: var(--system-shadow);
+    text-align: left;
+    animation: bonsai-status-toast 2.5s ease forwards;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bonsai-window .bonsai-gauge .bonsai-status-message { animation: none; }
+}
+@keyframes bonsai-status-toast {
+  0%, 80% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.bonsai-window .bonsai-pane {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  padding: 5px;
+  overflow: hidden;
+}
+
+.bonsai-window .bonsai-workspace-container {
+  container-type: inline-size;
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+}
+
+.bonsai-window .bonsai-workspace {
+  position: relative;
+  --bonsai-rail: 28px;
+  --bonsai-palette: 140px;
+  display: grid;
+  grid-template-columns: var(--bonsai-rail) var(--bonsai-palette) minmax(0, 1fr) auto;
+  min-width: 0;
+  min-height: 0;
+  border: var(--system-border);
+  background: var(--paper);
+}
+
+.bonsai-window .bonsai-rail {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.bonsai-window .bonsai-map-shell {
+  grid-column: 3;
+  grid-row: 1;
+}
+
+.bonsai-window .bonsai-sub-palette {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.bonsai-window .bonsai-inspector {
+  grid-column: 4;
+  grid-row: 1;
+}
+
+.bonsai-window .bonsai-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 1px;
+  overflow: hidden auto;
+  border-right: var(--system-border);
+  background: var(--paper);
+}
+
+.bonsai-window .bonsai-rail-cell {
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--bonsai-rail);
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 1px solid var(--shade);
+  border-radius: 0;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+/* The armed cell inverts — black fill, paper glyph — the native 1-bit way to
+   show selection. No second selected icon exists. */
+.bonsai-window .bonsai-rail-cell[aria-pressed="true"] {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.bonsai-window .bonsai-rail-cell:disabled {
+  opacity: 0.35;
+}
+
+.bonsai-window .bonsai-rail-glyph {
+  font-family: monospace;
+  font-size: 15px;
+  line-height: 1;
+  image-rendering: pixelated;
+}
+
+.bonsai-window .bonsai-sub-palette {
+  min-width: 0;
+  min-height: 0;
+  padding: 4px;
+  overflow: auto;
+  border-right: var(--system-border);
+  background: var(--paper);
+}
+
+.bonsai-window .bonsai-sub-palette[hidden] {
+  display: none;
+}
+
+/* The docked/sheet switch is a @container query on .bonsai-workspace, not a
+   viewport media query and not a ResizeObserver: the window resizes
+   independently of the viewport. The docked edge is 840 so an 844-wide phone
+   landscape stays a sheet — with a 140px palette beside it the playfield
+   would drop below the 75% phone-landscape target. */
+@container (max-width: 839px) {
+  .bonsai-window .bonsai-workspace-container .bonsai-workspace {
+    grid-template-columns: var(--bonsai-rail) minmax(0, 1fr) auto;
+  }
+
+  .bonsai-window .bonsai-workspace-container .bonsai-rail {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .bonsai-window .bonsai-workspace-container .bonsai-map-shell {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .bonsai-window .bonsai-workspace-container .bonsai-inspector {
+    grid-column: 1 / -1;
+    grid-row: 1 / -1;
+  }
+
+  .bonsai-window .bonsai-workspace-container .bonsai-sub-palette {
+    position: absolute;
+    grid-column: 1 / -1;
+    grid-row: 1 / -1;
+    top: 0;
+    bottom: 0;
+    left: var(--bonsai-rail);
+    width: 140px;
+    display: none;
+    border-right: var(--system-border);
+    box-shadow: var(--system-shadow);
+  }
+
+  .bonsai-window .bonsai-workspace-container .bonsai-sub-palette.is-open {
+    display: block;
+  }
+
+  /* In sheet mode the palette occupies the left 140px; the minimap card
+     floats just clear of it so the two instruments never fight for a tap. */
+  .bonsai-window .bonsai-workspace-container .bonsai-minimap-card {
+    left: calc(var(--bonsai-rail) + 148px);
+  }
+}
+
+/* A docked window that is merely tablet-narrow keeps the 75% landscape
+   playfield target by giving the palette the same 124px it would occupy in
+   the sheet; full desktops keep the wider 140px column. */
+@container (max-width: 1099px) {
+  .bonsai-window .bonsai-workspace-container .bonsai-workspace {
+    --bonsai-palette: 124px;
+  }
+}
+
+/* Phone portrait: the rail docks to the bottom edge in the thumb zone, with
+   the safe-area inset below it; the sheet floats above the rail. */
+@container (max-width: 560px) {
+  .bonsai-window .bonsai-workspace-container .bonsai-workspace {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: minmax(0, 1fr) calc(var(--bonsai-rail) + var(--safe-area-bottom, 0px));
+  }
+
+  .bonsai-window .bonsai-workspace-container .bonsai-rail {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    flex-direction: row;
+    justify-content: space-around;
+    border-right: 0;
+    border-top: var(--system-border);
+    padding-bottom: var(--safe-area-bottom, 0px);
+  }
+
+  .bonsai-window .bonsai-workspace-container .bonsai-rail-cell {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .bonsai-window .bonsai-workspace-container .bonsai-sub-palette {
+    top: auto;
+    right: 6px;
+    bottom: calc(var(--bonsai-rail) + var(--safe-area-bottom, 0px) + 6px);
+    left: 6px;
+    width: auto;
+    max-height: 42%;
+    border: var(--system-border);
+  }
+
+  .bonsai-window .bonsai-workspace-container .bonsai-map-shell {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .bonsai-window .bonsai-workspace-container .bonsai-inspector {
+    grid-column: 1 / -1;
+    grid-row: 1 / -1;
+  }
+
+  /* Phone portrait: the minimap card is collapsed by default and opens as a
+     half-height sheet above the bottom rail. */
+  .bonsai-window .bonsai-workspace-container .bonsai-minimap-card {
+    top: auto;
+    right: 6px;
+    bottom: calc(var(--bonsai-rail) + var(--safe-area-bottom, 0px) + 6px);
+    left: 6px;
+    width: auto;
+    max-height: 50%;
+    overflow: auto;
+  }
+
+  /* Phone portrait: the setup card and the city-browser sheet dock to the
+     lower half, with the generated terrain visible above them (M5 §3.8). */
+  .bonsai-window .bonsai-workspace-container .bonsai-map-setup,
+  .bonsai-window .bonsai-workspace-container .bonsai-city-browser {
+    top: auto;
+    bottom: calc(var(--bonsai-rail) + var(--safe-area-bottom, 0px) + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 12px);
+    max-width: calc(100% - 12px);
+    max-height: 54%;
+  }
+
+  .bonsai-window .bonsai-workspace-container .bonsai-news-stories {
+    column-count: 1;
+    column-rule: 0;
+  }
+}
+
+/* Touch targets: the rail cells are game controls and get the same 44px
+   coarse-pointer treatment Micropolis carries. System 6 chrome stays small. */
+@media (hover: none) and (pointer: coarse) {
+  .bonsai-window .bonsai-workspace {
+    --bonsai-rail: 40px;
+  }
+
+  .bonsai-window .bonsai-overlay-chip {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+.bonsai-window .bonsai-tool-group + .bonsai-tool-group {
+  margin-top: 5px;
+  padding-top: 4px;
+  border-top: 1px solid var(--shade);
+}
+
+.bonsai-window .bonsai-tool-group h3 {
+  margin: 0 0 3px;
+  font-size: 10px;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.bonsai-window .bonsai-tool-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 3px;
+}
+
+.bonsai-window .bonsai-tool {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  min-width: 0;
+  padding: 2px 3px;
+  text-align: left;
+}
+
+.bonsai-window .bonsai-tool[aria-pressed="true"],
+.bonsai-window .bonsai-speed-controls [aria-pressed="true"] {
+  color: var(--paper);
+  background: var(--ink);
+}
+
+.bonsai-window .bonsai-tool-icon {
+  grid-row: 1 / 3;
+  align-self: center;
+  font-family: monospace;
+  font-size: 13px;
+  line-height: 16px;
+  text-align: center;
+  image-rendering: pixelated;
+}
+
+.bonsai-window .bonsai-tool-label,
+.bonsai-window .bonsai-tool-meta {
+  min-width: 0;
+  overflow: hidden;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bonsai-window .bonsai-tool-label {
+  font-size: 10px;
+}
+
+.bonsai-window .bonsai-tool-meta {
+  color: var(--muted-ink, var(--shade));
+  font-size: 8px;
+}
+
+.bonsai-window .bonsai-tool[aria-pressed="true"] .bonsai-tool-meta {
+  color: inherit;
+}
+
+.bonsai-window .bonsai-map-shell {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--desktop-bg, var(--shade));
+}
+
+.bonsai-window .bonsai-map-stack {
+  position: absolute;
+  inset: 0;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  outline: none;
+  cursor: crosshair;
+  touch-action: none;
+  background: #a8c888;
+}
+
+.bonsai-window .bonsai-map-stack:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--ink);
+}
+
+.bonsai-window .bonsai-map-stack.is-panning {
+  cursor: grabbing;
+}
+
+.bonsai-window .bonsai-map-layer {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  image-rendering: pixelated;
+}
+
+.bonsai-window .bonsai-goals {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  max-width: min(260px, calc(100% - 12px));
+  padding: 5px 7px;
+  border: var(--system-border);
+  background: var(--paper);
+  box-shadow: var(--system-shadow);
+}
+
+.bonsai-window .bonsai-goals h3,
+.bonsai-window .bonsai-goals ol {
+  margin: 0;
+}
+
+.bonsai-window .bonsai-goals h3 {
+  padding-bottom: 3px;
+  border-bottom: 1px solid var(--shade);
+  font-size: 11px;
+}
+
+.bonsai-window .bonsai-goals ol {
+  padding: 3px 0 0;
+  list-style: none;
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.bonsai-window .bonsai-goals li.is-complete {
+  color: var(--muted-ink, var(--shade));
+  text-decoration: line-through;
+}
+
+.bonsai-window .bonsai-map-setup,
+.bonsai-window .bonsai-city-browser {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  width: min(420px, 92%);
+  max-width: min(420px, 92%);
+  max-height: 86%;
+  padding: 7px;
+  overflow: auto;
+  border: var(--system-border);
+  background: var(--paper);
+  box-shadow: var(--system-shadow);
+}
+
+.bonsai-window .bonsai-city-browser {
+  width: min(560px, 92%);
+  max-width: min(560px, 92%);
+}
+
+.bonsai-window .bonsai-map-setup[hidden],
+.bonsai-window .bonsai-city-browser[hidden],
+.bonsai-window .bonsai-goals[hidden],
+.bonsai-window .bonsai-inspector[hidden] {
+  display: none;
+}
+
+.bonsai-window .bonsai-subwindow-title,
+.bonsai-window .bonsai-inspector-title-row {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 20px;
+  margin: -7px -7px 7px;
+  padding: 2px 5px;
+  border-bottom: var(--system-border);
+  background: var(--shade);
+}
+
+.bonsai-window .bonsai-subwindow-title h3,
+.bonsai-window .bonsai-inspector-title-row h3 {
+  margin: 0;
+  font-size: 11px;
+}
+
+.bonsai-window .bonsai-setup-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 7px;
+  width: 100%;
+}
+
+.bonsai-window .bonsai-setup-form label {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.bonsai-window .bonsai-setup-form input,
+.bonsai-window .bonsai-setup-form select,
+.bonsai-window .bonsai-setup-form .select-wrap {
+  min-width: 0;
+  width: 100%;
+}
+
+.bonsai-window .bonsai-setup-preview-note {
+  min-height: 30px;
+  margin: 0;
+  padding: 5px;
+  border: 1px solid var(--shade);
+  background: var(--surface-muted, var(--paper));
+}
+
+.bonsai-window .bonsai-setup-actions {
+  justify-content: flex-end;
+}
+
+.bonsai-window .bonsai-setup-advanced {
+  margin: 0;
+  padding: 3px 5px;
+  border: 1px solid var(--shade);
+  background: var(--surface-muted, var(--paper));
+}
+
+.bonsai-window .bonsai-setup-advanced summary {
+  cursor: pointer;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.bonsai-window .bonsai-setup-advanced[open] summary {
+  margin-bottom: 5px;
+}
+
+.bonsai-window .bonsai-setup-advanced label {
+  margin-bottom: 5px;
+}
+
+.bonsai-window .bonsai-browser-status,
+.bonsai-window .bonsai-empty-message {
+  margin: auto;
+  text-align: center;
+}
+
+.bonsai-window .bonsai-city-list {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 3px;
+  overflow: auto;
+}
+
+.bonsai-window .bonsai-examples {
+  padding: 5px;
+  border: 1px solid var(--shade);
+  background: var(--surface-muted, var(--paper));
+}
+
+.bonsai-window .bonsai-examples h4 {
+  margin: 0 0 4px;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.bonsai-window .bonsai-example-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.bonsai-window .bonsai-city-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px;
+  border-bottom: 1px solid var(--shade);
+}
+
+.bonsai-window .bonsai-city-summary {
+  display: grid;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.bonsai-window .bonsai-city-summary strong,
+.bonsai-window .bonsai-city-summary small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bonsai-window .bonsai-city-row-actions,
+.bonsai-window .bonsai-browser-actions,
+.bonsai-window .bonsai-speed-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.bonsai-window .bonsai-browser-actions {
+  flex: 0 0 auto;
+  justify-content: flex-end;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--shade);
+}
+
+.bonsai-window .bonsai-inspector {
+  width: 256px;
+  min-width: 0;
+  min-height: 0;
+  padding: 7px;
+  overflow: auto;
+  border-left: var(--system-border);
+  background: var(--paper);
+}
+
+.bonsai-window .bonsai-budget-controls > label,
+.bonsai-window .bonsai-budget-controls fieldset label {
+  display: grid;
+  grid-template-columns: minmax(72px, 1fr) minmax(92px, 1fr);
+  align-items: center;
+  gap: 5px;
+}
+
+.bonsai-window .bonsai-budget-controls .select-wrap,
+.bonsai-window .bonsai-budget-controls select,
+.bonsai-window .bonsai-budget-controls input {
+  min-width: 0;
+  width: 100%;
+}
+
+.bonsai-window .bonsai-minimap {
+  display: block;
+  width: 100%;
+  height: 112px;
+  margin-bottom: 7px;
+  border: var(--system-border);
+  background: var(--shade);
+  image-rendering: pixelated;
+}
+
+.bonsai-window .bonsai-budget-controls {
+  display: grid;
+  gap: 7px;
+  margin-top: 8px;
+  padding-top: 7px;
+  border-top: 1px solid var(--shade);
+}
+
+.bonsai-window .bonsai-budget-controls fieldset {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  margin: 0;
+  padding: 5px;
+}
+
+.bonsai-window .bonsai-loan-actions {
+  display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 4px;
+}
+
+.bonsai-window .bonsai-inspector dl {
+  display: grid;
+  grid-template-columns: minmax(72px, auto) minmax(0, 1fr);
+  gap: 4px 7px;
+  margin: 0;
+}
+
+.bonsai-window .bonsai-inspector dt {
+  font-weight: bold;
+}
+
+.bonsai-window .bonsai-inspector dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Newspaper (M4): masthead rule, edition line, two newsprint columns on
+   wide, one on phone. */
+.bonsai-window .bonsai-news-masthead {
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+  border-bottom: 2px solid var(--ink);
+  text-align: center;
+}
+
+.bonsai-window .bonsai-news-name {
+  margin: 0;
+  font-family: var(--ui-serif, Georgia, serif);
+  font-size: 20px;
+  line-height: 1.15;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.bonsai-window .bonsai-news-edition {
+  margin-top: 2px;
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
+.bonsai-window .bonsai-news-stories {
+  column-count: 2;
+  column-gap: 14px;
+  column-rule: 1px solid var(--shade);
+  margin-bottom: 6px;
+}
+
+.bonsai-window .bonsai-news-story {
+  margin: 0 0 6px;
+  font-size: 10px;
+  line-height: 1.45;
+  text-align: justify;
+  break-inside: avoid;
+}
+
+/* Graphs (M4): the 1-bit chart canvas and its controls. */
+.bonsai-window .bonsai-graph-canvas {
+  display: block;
+  width: 100%;
+  height: 150px;
+  margin-bottom: 6px;
+  border: 1px solid var(--shade);
+  background: var(--surface-muted, var(--paper));
+  image-rendering: pixelated;
+}
+
+.bonsai-window .bonsai-graph-controls {
+  margin-top: 4px;
+}
+
+.bonsai-window .bonsai-graph-controls fieldset {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  min-width: 0;
+  margin: 0 0 6px;
+  padding: 4px;
+  border: 1px solid var(--shade);
+}
+
+.bonsai-window .bonsai-graph-controls legend {
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
+.bonsai-window .bonsai-graph-controls label {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 9px;
+}
+
+.bonsai-window .bonsai-graph-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px 8px;
+  margin-top: 4px;
+  font-size: 9px;
+}
+
+.bonsai-window .bonsai-graph-legend-item::before {
+  content: "";
+  display: inline-block;
+  width: 14px;
+  height: 3px;
+  margin-right: 4px;
+  vertical-align: middle;
+  background: var(--ink);
+}
+
+.bonsai-window .bonsai-graph-legend-item.is-pattern-1::before {
+  background: repeating-linear-gradient(90deg, var(--ink) 0 1px, transparent 1px 3px);
+}
+
+.bonsai-window .bonsai-graph-legend-item.is-pattern-2::before {
+  background: repeating-linear-gradient(90deg, var(--ink) 0 2px, transparent 2px 4px);
+}
+
+/* Budget (M4): three collapsible sections so it reads on a phone. */
+.bonsai-window .bonsai-budget-section {
+  margin: 0 0 5px;
+  padding: 3px 5px;
+  border: 1px solid var(--shade);
+  background: var(--surface-muted, var(--paper));
+}
+
+.bonsai-window .bonsai-budget-section summary {
+  cursor: pointer;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.bonsai-window .bonsai-budget-section-body {
+  margin-top: 4px;
+}
+
+.bonsai-window .bonsai-budget-grid {
+  display: grid;
+  gap: 4px;
+}
+
+.bonsai-window .bonsai-budget-grid label {
+  display: grid;
+  grid-template-columns: minmax(72px, 1fr) minmax(92px, 1fr);
+  align-items: center;
+  gap: 5px;
+}
+
+.bonsai-window .bonsai-budget-grid .bonsai-ordinance {
+  grid-template-columns: auto 1fr;
+}
+
+.bonsai-window .bonsai-speed-controls {
+  flex-wrap: wrap;
+}
+
+@media (max-width: 820px) {
+  .bonsai-window .bonsai-inspector {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    top: 0;
+    width: min(340px, 88%);
+    max-height: 100%;
+    border-top: var(--system-border);
+    border-left: var(--system-border);
+    box-shadow: var(--system-shadow);
+  }
+
+}
+
+@media (max-width: 560px) {
+  .bonsai-window .bonsai-city-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .bonsai-window .bonsai-city-row-actions {
+    justify-content: flex-end;
+  }
+
+  .bonsai-window .bonsai-goals {
+    max-width: calc(100% - 12px);
+  }
+}
+
+@media (max-height: 600px) {
+  .bonsai-window .bonsai-goals {
+    font-size: 9px;
+  }
+
+  .bonsai-window .bonsai-goals li:nth-child(n + 4) {
+    display: none;
+  }
+}
+
+/* Floating playfield instruments (M1): the minimap card and the first-run
+   hint. Panels stack by DOM order — the map stack, then this card, then the
+   goals card — stacking by DOM order only, per the stylesheet budget. */
+.bonsai-window .bonsai-minimap-card {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 150px;
+  padding: 5px 7px;
+  border: var(--system-border);
+  background: var(--paper);
+  box-shadow: var(--system-shadow);
+}
+
+.bonsai-window .bonsai-minimap-card[hidden] {
+  display: none;
+}
+
+.bonsai-window .bonsai-minimap-title {
+  margin-bottom: 4px;
+  padding-bottom: 2px;
+  border-bottom: 1px solid var(--shade);
+  font-size: 10px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.bonsai-window .bonsai-minimap-card .bonsai-minimap {
+  display: block;
+  width: 100%;
+  height: 64px;
+  margin-bottom: 4px;
+  border: 1px solid var(--shade);
+  background: var(--shade);
+  image-rendering: pixelated;
+}
+
+.bonsai-window .bonsai-overlay-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.bonsai-window .bonsai-overlay-chip {
+  padding: 1px 5px;
+  font-size: 9px;
+  line-height: 1.3;
+  border: 1px solid var(--shade);
+  border-radius: 0;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.bonsai-window .bonsai-overlay-chip[aria-pressed="true"] {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.bonsai-window .bonsai-minimap-card.is-collapsed .bonsai-minimap,
+.bonsai-window .bonsai-minimap-card.is-collapsed .bonsai-overlay-chips {
+  display: none;
+}
+
+/* The gauge bar names the active overlay when one is on (M3 §3.5); an empty
+   cell takes no width and draws no hairline. */
+.bonsai-window .bonsai-gauge-overlay:empty {
+  display: none;
+}
+
+/* The tile-query balloon (M3 §3.6): anchored near the tile via the two
+   custom properties the shell sets, so no inline layout styles are needed. */
+.bonsai-window .bonsai-tile-balloon {
+  position: absolute;
+  left: var(--balloon-x, 8px);
+  top: var(--balloon-y, 8px);
+  width: min(230px, calc(100% - 12px));
+  max-height: 60%;
+  padding: 5px 7px;
+  overflow: auto;
+  border: var(--system-border);
+  border-radius: 3px;
+  background: var(--paper);
+  box-shadow: var(--system-shadow);
+}
+
+.bonsai-window .bonsai-tile-balloon[hidden] {
+  display: none;
+}
+
+.bonsai-window .bonsai-tile-balloon-title {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 3px;
+  padding-bottom: 2px;
+  border-bottom: 1px solid var(--shade);
+  font-size: 10px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.bonsai-window .bonsai-tile-balloon dl {
+  display: grid;
+  grid-template-columns: minmax(72px, auto) minmax(0, 1fr);
+  gap: 3px 7px;
+  margin: 0;
+  font-size: 10px;
+}
+
+.bonsai-window .bonsai-tile-balloon dt {
+  font-weight: bold;
+}
+
+.bonsai-window .bonsai-tile-balloon dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.bonsai-window .bonsai-first-hint {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: min(420px, calc(100% - 16px));
+  padding: 5px 10px;
+  border: var(--system-border);
+  background: var(--paper);
+  box-shadow: var(--system-shadow);
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--ink);
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 0.8s ease;
+}
+
+.bonsai-window .bonsai-first-hint.is-leaving {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bonsai-window .bonsai-first-hint {
+    transition: none;
+  }
+}
+
+/* Game controls — the gauge's speed and undo/redo cells — get full 44px
+   touch targets under the same coarse-pointer rule Micropolis carries. System
+   chrome (title bar, close box, menu bar) stays small. */
+@media (hover: none) and (pointer: coarse) {
+  .bonsai-window .bonsai-gauge .btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
 }

@@ -27,9 +27,18 @@ const css = read("styles/91-draft-desk.css");
 const translationsEn = read("app/data/translations-en.js");
 const translationsZh = read("app/data/translations-zh.js");
 
+// Draft Desk is one application across two windows now: Quick Draft writes the
+// draft, 文字亮室 develops it. The markup slice follows the application, not one
+// of its windows, or every control that moved would read as deleted.
 const quickWindowStart = html.indexOf('data-window="quickDraft"');
 const quickWindowEnd = html.indexOf('data-window="cmfStudio"', quickWindowStart);
-const quickWindowHtml = html.slice(quickWindowStart, quickWindowEnd);
+// 文字亮室 builds its own window from draft-desk.js, so the application's second
+// half is no longer between two markers in index.html. The slice still follows
+// the application rather than one window -- it just spans two files to do it.
+const lightroomMarkupStart = coordinator.indexOf("function installLightroomWindow");
+const lightroomMarkupEnd = coordinator.indexOf("installLightroomWindow();");
+const lightroomMarkup = coordinator.slice(lightroomMarkupStart, lightroomMarkupEnd);
+const quickWindowHtml = `${html.slice(quickWindowStart, quickWindowEnd)}\n${lightroomMarkup}`;
 const feature = [coordinator, intake, editor, composition, ai, handoff].join("\n");
 
 test.assert(quickWindowStart > 0 && quickWindowEnd > quickWindowStart, "Draft Desk has one named System 6 window");
@@ -37,6 +46,17 @@ test.assertIncludes(html, 'data-action="open-quick-draft"', "the existing Finder
 test.assertIncludes(handoff, '"open-quick-draft"', "the lazy handoff keeps the existing open route");
 test.assertIncludes(actions, 'registerLazyCommand?.("open-quick-draft"', "the open route is wired through a lazy runtime command");
 test.assertMatches(config, /ensureQuickDraftModule[\s\S]*"app\/features\/draft-desk\.js"[\s\S]*"app\/features\/quick-draft-handoff\.js"/, "the clean coordinator owns the lazy chain");
+
+// 文字亮室 shares the lazy module with Quick Draft, so a cold open of the
+// darkroom alone — the desk icon on a fresh boot, or a restored desk with
+// Quick Draft closed — must load and render it, not show an empty frame.
+test.assertMatches(windowManager, /name === "lightroom" && !skipQuickDraftEntrypoint[\s\S]*ensureQuickDraftModule\(\)[\s\S]*openLightroom\(\)/, "opening the lightroom window loads its module first");
+test.assertIncludes(handoff, "openLightroom: enterLightroom", "the lazy handoff publishes the lightroom entrypoint");
+// The display switch opens this window, so the opening view is chosen at the
+// door. Choosing it inside openLightroomWindow made the two call each other
+// and froze the renderer.
+test.assertNotMatches(coordinator, /async function openLightroomWindow\(\)[\s\S]{0,400}setQuickDraftDisplayMode/, "opening the window does not set a display mode");
+test.assertNotIncludes(coordinator, 'openWindow("lightroom");', "the coordinator's own opens skip the entrypoint so it cannot recurse");
 test.assertMatches(manifest, /appModulePaths[\s\S]*"app\/core\/quick-draft-workspace\.js"/, "workspace migration is eager so project data remains readable without opening the app");
 test.assertMatches(manifest, /lazyRuntimePaths[\s\S]*"app\/features\/draft-desk\.js"/, "Draft Desk stays lazy");
 test.assertNotIncludes(manifest, "app/features/finder-draft.js", "the retired coordinator is not bundled");
@@ -118,24 +138,47 @@ test.assertIncludes(quickWindowHtml, 'aria-haspopup="menu" aria-expanded="false"
 test.assertIncludes(quickWindowHtml, 'aria-haspopup="menu" aria-expanded="false" aria-controls="quick-draft-deliver-menu"', "Deliver announces a pull-down menu and its controlled surface");
 test.assertIncludes(quickWindowHtml, 'data-quick-draft-delivery="copy-markdown"', "Markdown copy remains available");
 test.assertIncludes(quickWindowHtml, 'data-quick-draft-delivery="export-markdown"', "Markdown export remains available");
-test.assertIncludes(quickWindowHtml, 'class="draft-desk-display-switch" role="tablist"', "Body, Grain, and Read use the shared roving tab pattern");
-test.assertIncludes(quickWindowHtml, 'id="quick-draft-paper-view" class="draft-desk-paper-body" role="tabpanel"', "the selected display tab owns one paper view");
-test.assertIncludes(quickWindowHtml, 'aria-controls="quick-draft-paper-view" aria-selected="true"', "the initial Body tab identifies its panel and selection state");
+test.assertIncludes(quickWindowHtml, 'class="draft-desk-display-switch" role="tablist"', "Grain, Read, and Listen use the shared roving tab pattern");
+// The tablist and the panel it controls must be in the SAME window. They were
+// not: the tabs moved into 文字亮室 with the split and kept naming the paper
+// body left behind in Quick Draft, so the tablist advertised a relationship
+// across two windows — and that panel was labelled by "Back to the Draft",
+// which is a door, not a tab. `quickWindowHtml` spans both windows despite its
+// name, so a plain assertIncludes cannot see the difference; these two pin the
+// panel's own window.
+const lightroomWindowHtml = lightroomMarkup;
+test.assertIncludes(lightroomWindowHtml, 'id="lightroom-paper-view" role="tabpanel"', "the selected display tab owns one paper view, in its own window");
+test.assertIncludes(lightroomWindowHtml, 'data-quick-draft-display="read" aria-controls="lightroom-paper-view" aria-selected="true"', "the darkroom opens on Read, and that tab identifies its panel and selection state");
+test.assertNotIncludes(quickWindowHtml, 'aria-controls="quick-draft-paper-view"', "no tab reaches across into the other window's paper body");
+// Leaving 文字亮室 is a door back to the writing app, not a fourth way of
+// looking, so it must not sit inside the tablist wearing a tab role.
+test.assertNotMatches(quickWindowHtml, /data-quick-draft-display="body"[^>]*role="tab"/, "returning to the draft is not dressed as a display tab");
 test.assertNotMatches(quickWindowHtml, /data-quick-draft-display=[^>]+aria-pressed=/, "display tabs do not mix pressed and selected semantics");
 test.assertIncludes(quickWindowHtml, 'data-quick-draft-drawer="shelf" aria-controls="quick-draft-materials-drawer" aria-expanded="false"', "Materials reports which drawer it expands");
-test.assertIncludes(quickWindowHtml, 'data-quick-draft-drawer="inspector" aria-controls="quick-draft-adjustments-drawer" aria-expanded="false"', "Adjust reports which drawer it expands");
+// Rule A splits the two windows by writing versus looking, so each window
+// needs one visible route to the other. Quick Draft had none: the desk icon
+// is the only other entry, and Quick Draft covers the desk.
+test.assertIncludes(quickWindowHtml, 'data-action="open-lightroom"', "Quick Draft carries a visible route into the darkroom");
+test.assertIncludes(quickWindowHtml, 'data-i18n="lightroom_back_to_draft"', "the darkroom carries a visible route back to the draft");
 test.assertIncludes(quickWindowHtml, 'data-i18n-aria-label="quick_draft_close_materials"', "the Materials close key has a specific accessible name");
 test.assertIncludes(quickWindowHtml, 'data-i18n-aria-label="quick_draft_close_adjustments"', "the Adjustments close key has a specific accessible name");
 test.assertIncludes(quickWindowHtml, 'aria-labelledby="quick-draft-layer-mingming-label quick-draft-adjustment-strength-label"', "layer strength controls identify their owning layer");
 test.assertIncludes(quickWindowHtml, 'data-quick-draft-active-layer-mask data-i18n-placeholder="quick_draft_adjustment_mask_placeholder"', "line ranges remain free-form text instead of a numeric keyboard trap");
 
-test.assertIncludes(workspace, "schemaVersion: 3", "the canonical workspace schema stays at v3");
+test.assertIncludes(workspace, "schemaVersion: 4", "the canonical workspace schema stays at v4");
 test.assertIncludes(workspace, "scenario: BILI_DYNAMIC_FORMAT", "Figure 02 opens on Bilibili post");
 test.assertIncludes(workspace, 'entry.sourceKind === "quick-draft-dump"', "legacy dumps still migrate into Versions");
 test.assertIncludes(workspace, "function normalizeQuickDraftRecord", "all project records cross one normalization boundary");
 test.assertNotIncludes(coordinator, "function normalizeQuickDraftRecord", "the replaceable shell does not own the durable schema");
 test.assertIncludes(coordinator, "async function commitQuickDraft", "durable writes retain awaited completion semantics");
-test.assertIncludes(coordinator, "String(workspace.body", "an existing body opens as a draft, without requiring a model stamp");
+// Which paper is on screen is derived from the work, not remembered. A stored
+// surface with a manual override used to drift from the record, and a draft
+// whose body was already written could still be asking what the writer wanted
+// to say.
+test.assertIncludes(coordinator, "function quickDraftPhase", "the paper phase is derived");
+test.assertIncludes(coordinator, "String(refs.draft?.value || workspace.body", "an existing body opens as a draft, without requiring a model stamp");
+test.assertNotIncludes(coordinator, "quickDraftPaperManual", "no manual override can hold the paper against the record");
+test.assertNotIncludes(coordinator, "let quickDraftPaperSurface", "the surface is never stored beside the record");
 test.assertIncludes(coordinator, 'document.querySelector(".draft-desk-paper")', "the exposed paper edge closes a mobile drawer");
 test.assertIncludes(coordinator, 'function setQuickDraftDrawer(drawer = "", { restoreFocus = false } = {})', "one drawer state owner keeps the side regions mutually exclusive");
 test.assertMatches(coordinator, /event\.key === "Escape" && drawerOpen[\s\S]*?closeQuickDraftDrawer\(\{ restoreFocus: true \}\)/, "Escape closes either non-modal drawer and restores its trigger");
@@ -195,7 +238,22 @@ test.assertIncludes(handoff, "canPreviewAdjustments", "menu availability can ref
 test.assertIncludes(handoff, "canDevelop", "menu availability can reflect whether a developed composite exists");
 test.assertIncludes(menus, 'menuItem("quick-draft-apply", "quick_draft_preview_adjustments")', "Preview is also available from the app menu");
 test.assertIncludes(menus, 'menuItem("quick-draft-develop", "quick_draft_develop")', "Develop is also available from the app menu");
-test.assertMatches(menus, /menu\("view", "menu_view", \[[\s\S]*?quick-draft-view-body[\s\S]*?quick-draft-view-grain[\s\S]*?quick-draft-view-read[\s\S]*?quick-draft-toggle-materials[\s\S]*?quick-draft-toggle-adjustments/, "paper views and panels use the HIG-standard View menu");
+// Quick Draft's View menu offers the paper and the way across, not four ways to
+// look. The grain, composite and listen views moved to 文字亮室: they were never
+// duplicates of its rows -- they drive Quick Draft's OWN display mode -- so this
+// removed real views on purpose, because the split says write here, look there.
+test.assertMatches(
+  menus,
+  /menu\("view", "menu_view", \[[\s\S]*?quick-draft-view-body[\s\S]*?open-lightroom[\s\S]*?quick-draft-toggle-materials[\s\S]*?quick-draft-toggle-adjustments/,
+  "paper views and panels use the HIG-standard View menu",
+);
+for (const retired of ["quick-draft-view-grain", "quick-draft-view-read", "quick-draft-view-listen"]) {
+  // Once, not never: 文字亮室's own View menu still carries all three, which is
+  // where looking now lives. What must not exist is a second copy inside the
+  // writing window.
+  const uses = menus.split(`"${retired}"`).length - 1;
+  test.assert(uses === 1, `${retired} is offered by 文字亮室 only, not from inside the writing window (found ${uses})`);
+}
 test.assertNotMatches(menus, /submenu\("quick_draft_(view_label|panels)"/, "Quick Draft does not bury first-level view commands in nested submenus");
 test.assertIncludes(menus, 'menuItem("quick-draft-toggle-sideask", "quick_draft_show_sideask")', "Quick Draft owns an explicit SideAsk menu command");
 test.assertIncludes(handoff, '"quick-draft-apply"', "the Preview menu command reaches the active Quick Draft API");
@@ -207,7 +265,7 @@ test.assertMatches(windowManager, /async function toggleQuickDraftSideAsk\(\)[\s
 test.assertIncludes(handoff, 'action === "quick-draft-apply"', "Preview is disabled in the menu until it can run");
 test.assertIncludes(handoff, 'action === "quick-draft-develop"', "Develop is disabled in the menu until a real body and composite both exist");
 test.assertIncludes(handoff, 'action === "quick-draft-view-body"', "Body remains available as the stable paper view");
-test.assertIncludes(handoff, '["quick-draft-view-grain", "quick-draft-view-read"].includes(action)', "Grain stays disabled in the blank-sheet state");
+test.assertIncludes(handoff, '["quick-draft-view-grain", "quick-draft-view-read", "quick-draft-view-listen"].includes(action)', "Grain and Listen stay disabled in the blank-sheet state");
 test.assertIncludes(handoff, '["quick-draft-toggle-materials", "quick-draft-toggle-adjustments"].includes(action)', "Materials do not appear before the draft exists");
 test.assertIncludes(handoff, 'action === "quick-draft-compose"', "Draft stays unavailable until both a model and real input exist");
 test.assertIncludes(handoff, 'action === "quick-draft-vent-on"', "Start Vent Mode is unavailable while vent capture is already active");
@@ -219,7 +277,10 @@ test.assertIncludes(app, "window.AISystem6QuickDraft?.render?.()", "language cha
 
 test.assertIncludes(css, ".draft-desk-window {", "the application has an independent style root");
 test.assertIncludes(css, "grid-template-rows: minmax(0, 1fr) auto;", "the paper workspace and action row use explicit tracks");
-test.assertIncludes(css, "grid-template-columns:\n    var(--quick-draft-shelf-width)\n    minmax(0, 1fr)\n    var(--quick-draft-inspector-width);", "desktop keeps materials, paper, and inspector side by side");
+// The inspector moved to 文字亮室, so Quick Draft holds two tracks. A third
+// track would stand empty on the right, which is what it did once.
+test.assertIncludes(css, "grid-template-columns:\n    var(--quick-draft-shelf-width)\n    minmax(0, 1fr);", "desktop keeps materials beside the paper");
+test.assertNotIncludes(css, "is-inspector-hidden", "no rule still collapses an inspector this window does not hold");
 test.assertIncludes(css, ".draft-desk-layout.is-empty-draft .draft-desk-shelf", "the blank sheet removes secondary side regions");
 test.assertIncludes(css, "@container (max-width: 800px)", "collapse follows window width, not the viewport");
 test.assertIncludes(css, ".draft-desk-layout.is-shelf-open .draft-desk-shelf", "the material drawer is an explicit narrow-window state");
@@ -270,9 +331,9 @@ test.assertIncludes(translationsZh, 'quick_draft_display_body: "文章"', "Figur
 test.assertIncludes(translationsZh, 'quick_draft_display_body_mobile: "正文"', "Figure 06 uses the portrait display label from the design");
 test.assertIncludes(translationsZh, 'quick_draft_more: "更多…"', "Figure 06 keeps the ellipsis on More");
 test.assertIncludes(translationsZh, 'quick_draft_drawer_close: "关"', "Figure 07 uses the compact drawer-close label");
-test.assertIncludes(translationsZh, 'quick_draft_chip_mingming: "明明传球"', "Figure 07 names the Mingming layer exactly");
-test.assertIncludes(translationsZh, 'quick_draft_chip_luoluo: "洛洛接球"', "Figure 07 names the Luoluo layer exactly");
-test.assertIncludes(translationsZh, 'quick_draft_chip_hkrr: "HKRR 抬升"', "Figure 07 names the HKRR layer exactly");
+test.assertIncludes(translationsZh, 'quick_draft_chip_mingming: "读者视角"', "Figure 07 names the Mingming layer exactly");
+test.assertIncludes(translationsZh, 'quick_draft_chip_luoluo: "听者接收"', "Figure 07 names the Luoluo layer exactly");
+test.assertIncludes(translationsZh, 'quick_draft_chip_hkrr: "HKRR 提亮"', "Figure 07 names the HKRR layer exactly");
 test.assertIncludes(translationsZh, 'quick_draft_composite: "阅读"', "Figure 01 Read label matches the design");
 test.assertIncludes(translationsZh, 'quick_draft_develop: "冲洗"', "Figure 01 primary action matches the design");
 test.assertIncludes(translationsZh, 'quick_draft_show_materials: "显示材料"', "the menu describes the hidden Materials panel as an action");
@@ -280,5 +341,56 @@ test.assertIncludes(translationsZh, 'quick_draft_hide_sideask: "隐藏 SideAsk"'
 test.assertIncludes(translationsZh, 'quick_draft_command_vent: "树洞"', "the Tools menu names the standalone Vent command group");
 test.assertIncludes(translationsEn, 'quick_draft_command_adjustment: "Adjust · Stack"', "English uses the same inspector object name");
 test.assertIncludes(translationsEn, 'quick_draft_command_vent: "Vent"', "English exposes the same Vent command group");
+
+// 文字亮室's subject is painted from a record, not from data-i18n, so nothing in
+// applyLanguage() reached it and switching language with the window open left
+// the previous language's word on screen until it was closed and reopened.
+// Two halves, and both matter: the hook has to be called, and it must not
+// overwrite a title the writer chose.
+// The durable half must load at the DOOR, not only inside ensureDarkroomReady.
+// enterLightroom branches, and only one branch reaches that function — so the
+// desk-icon route, which is the cold-start route a first-time visitor takes,
+// opened the darkroom with its store never loaded. It then answered every read
+// from a blank record and wrote nothing, silently. A contract that only checks
+// the loader exists cannot see this; this one pins where it is awaited.
+test.assertMatches(
+  handoff,
+  /async function enterLightroom\(\)\s*\{[\s\S]{0,600}?ensureDarkroomModule\(\)[\s\S]{0,200}?currentQuickDraftDisplayMode\(\)/,
+  "entering the lightroom loads the darkroom store before either branch"
+);
+
+test.assertIncludes(coordinator, "function renderLightroomSubject(", "the subject has a named re-render hook");
+test.assertIncludes(
+  app,
+  'if (typeof renderLightroomSubject === "function") renderLightroomSubject();',
+  "applyLanguage calls it, typeof-guarded because draft-desk.js is lazy"
+);
+// "An empty stored title means it was derived" was the obvious test and it is
+// FALSE: the derived default is persisted, so a fresh draft stores the literal
+// "Quick Draft" and reads back looking exactly like a writer's choice. The
+// guard built on it never fired once, measured in a browser.
+test.assertIncludes(
+  coordinator,
+  "function isDerivedQuickDraftTitle(",
+  "a derived title is recognised by comparing against the default in every loaded language"
+);
+test.assertNotIncludes(
+  coordinator,
+  'if (!force && String(record?.workspace?.title || "")) return;',
+  "and not by the empty-string assumption that did not hold"
+);
+// The second half, which the guard alone did not fix: normalizeQuickDraftRecord
+// hands back the STORED title when it is non-empty, so re-rendering from it
+// repaints the frozen language. A derived title has to be recomputed.
+test.assertIncludes(
+  coordinator,
+  "titleFromBody(workspace.body)",
+  "a derived title is recomputed from the body, never re-read from storage"
+);
+test.assertIncludes(
+  coordinator,
+  "renderLightroomSubject({ force: true })",
+  "opening the window still writes the writer's own title"
+);
 
 test.finish();

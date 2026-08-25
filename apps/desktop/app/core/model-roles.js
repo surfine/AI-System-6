@@ -12,6 +12,62 @@ const modelRoleStorageKey = "ai-system6-role-models";
 
 const modelRoleNames = Object.freeze(["researcher", "writer", "critic", "utility", "fallback"]);
 
+// Commands that cannot finish without reaching a model.
+//
+// The writing route used to leave every one of these enabled with no model
+// connected. Pressing one could take a destructive confirmation first and then
+// fail with the transport's own error string - so the writer's first impression
+// of a route that works perfectly well without AI was that the product is
+// broken. ClioTalk already answers this by disabling Send and saying why; this
+// is the same answer, expressed once for the menus and the button rows.
+//
+// Membership means "issues a model request", not "is an AI feature": DocMap,
+// See as Chart and Marp generation are local transforms and stay available.
+const modelBackedActions = new Set([
+  // Question Sheet
+  "organize-question-sheet",
+  "generate-outline",
+  // Outline
+  "mingming-outline",
+  "structure-outline",
+  "expand-outline",
+  // Section Drafts
+  "draft-current-section",
+  "polish-draft",
+  "suggest-draft",
+  "eli5-rewrite-section",
+  "eli5-review-section",
+  // Manuscript
+  "translate-teachtext",
+  "print-to-ai",
+  // Review Desk
+  "review-style-section",
+  "review-facts-section",
+  "review-facts-section-online",
+  "review-facts-online",
+  "review-hkrr-section",
+  "review-mingming-section",
+  "review-mingming-handoff",
+  "review-mingming-handoff-backstage",
+  // Writing Tools and selection services
+  "ai-praise",
+  "ai-describe-change",
+  "ai-proofread",
+  "ai-rewrite",
+  "ai-friendly",
+  "ai-professional",
+  "ai-concise",
+  "ai-summary",
+  "ai-key-points",
+  "ai-list",
+  "ai-table",
+  "selection-translate",
+]);
+
+function actionNeedsModel(action) {
+  return modelBackedActions.has(String(action || ""));
+}
+
 /**
  * Resolve a task's model role from its registered task contract. There is
  * exactly one classification source: taskContractRegistry. Unknown tasks

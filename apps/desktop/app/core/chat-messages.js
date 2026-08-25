@@ -34,7 +34,7 @@ function appendMessageTranslation(actions, item, role, content) {
       translation.innerHTML = `<b>${escapeHtml(formatTranslationMeta(targetLanguage, new Date().toISOString(), role === "user" ? t("you") : t("assistant"), currentTranslationModel()))}</b><div>${markdownToSystemHtml(translated)}</div>`;
       item.querySelector(".message-content")?.append(translation);
       scrollMessagesToLatest();
-      setStatus(t("ready"));
+      clearStatus();
     } catch (error) {
       setStatus(t("translation_failed", error.message));
     } finally {
@@ -85,6 +85,7 @@ let sideAskClioTalkAnchor = "";
 let quickDraftClioTalkSession = null;
 let clioTalkAutoFollow = true;
 let clioTalkTemporaryMode = false;
+let clioProductHelpRoute = { route: "chat", reason: "ordinary-chat", topics: [] };
 let clioTalkFindQuery = "";
 let clioTalkFindMatchIndex = -1;
 let pendingClioTalkFileName = "";
@@ -217,15 +218,35 @@ function renderClioTalkWelcome() {
 
   const body = document.createElement("div");
   body.className = "message-content";
+  const readOnly = window.AISystem6WriteLease?.canMutate?.() !== true;
   const modelReady = clioTalkModelReady();
-  const welcomeKey = !modelReady
-    ? "clio_model_required_message"
-    : (sideAskEnabled && !isMultiFinderMode()
-      ? "sideask_welcome_message"
-      : (clioTalkTemporaryMode ? "temporary_welcome_message" : "welcome_message"));
+  const providerState = window.AISystem6ClioProvider?.snapshot?.() || { status: "idle" };
+  const providerResolving = !modelReady && ["idle", "resolving"].includes(providerState.status);
+  const introducing = typeof isClioIntroductionActive === "function" && isClioIntroductionActive();
+  const welcomeKey = readOnly
+    ? "clio_read_only_message"
+    : providerResolving
+      ? "clio_provider_resolving_message"
+      : !modelReady
+        ? "clio_model_required_message"
+        : (sideAskEnabled && !isMultiFinderMode()
+          ? "sideask_welcome_message"
+          : introducing
+            ? "clio_first_welcome_message"
+            : (clioTalkTemporaryMode ? "temporary_welcome_message" : "welcome_message"));
   body.innerHTML = `<p>${t(welcomeKey)}</p>`;
 
-  if (!modelReady) {
+  if (readOnly) {
+    const actions = document.createElement("div");
+    actions.className = "clio-welcome-actions";
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "btn default";
+    button.dataset.action = "use-this-window-for-clio";
+    button.textContent = t("use_this_window");
+    actions.append(button);
+    body.append(actions);
+  } else if (!modelReady && !providerResolving) {
     const actions = document.createElement("div");
     actions.className = "clio-welcome-actions";
     const button = document.createElement("button");
@@ -235,12 +256,29 @@ function renderClioTalkWelcome() {
     button.textContent = t("clio_connect_ai");
     actions.append(button);
     body.append(actions);
-  } else if (!sideAskEnabled && !clioTalkTemporaryMode) {
+  } else if (modelReady && introducing && !sideAskEnabled && !clioTalkTemporaryMode) {
+    const actions = document.createElement("div");
+    actions.className = "clio-welcome-actions";
+    [
+      ["idea", "clio_starter_idea"],
+      ["notes", "clio_starter_notes"],
+      ["file", "clio_starter_file"],
+      ["explore", "clio_starter_explore"],
+    ].forEach(([starter, labelKey]) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "btn";
+      button.dataset.clioStarter = starter;
+      button.textContent = t(labelKey);
+      actions.append(button);
+    });
+    body.append(actions);
+  } else if (modelReady && !sideAskEnabled && !clioTalkTemporaryMode) {
     const actions = document.createElement("div");
     actions.className = "clio-welcome-actions";
     [
       ["open-clio-attachment-picker", "compose_attach_project_file"],
-      ["open-question-sheet", "clio_welcome_question_sheet"],
+      ["open-writing-studio", "clio_welcome_writing_studio"],
       ["paste-clio-interview", "clio_welcome_paste_interview"],
     ].forEach(([action, labelKey]) => {
       const button = document.createElement("button");
@@ -271,13 +309,20 @@ function clioTalkModelReady() {
   return cloudReady || localReady;
 }
 
+// One readiness question for the whole product. ClioTalk owns the original
+// answer - it has disabled Send and explained why since the beginning - and the
+// writing route now asks the same question instead of inventing a second rule
+// or, as before, asking nothing at all.
+function modelReadyForRequests() {
+  return clioTalkModelReady() === true;
+}
+
 function syncClioTalkModelAvailability() {
   if (!conversation.length && messagesEl?.querySelector(":scope > .clio-welcome")) {
     renderClioTalkWelcome();
   }
   syncClioTalkSendButton();
   if (typeof syncPromptPlaceholder === "function") syncPromptPlaceholder();
-  if (typeof syncWelcomeFloppyState === "function") syncWelcomeFloppyState();
 }
 
 function formatClioTalkContextTokens(tokens) {
@@ -523,7 +568,9 @@ function syncClioTalkSendButton() {
     return;
   }
   const isBusy = !!activeAbortController || form.classList.contains("is-generating");
-  sendButton.disabled = !clioTalkModelReady() || isBusy || !String(promptInput?.value || "").trim();
+  const readOnly = window.AISystem6WriteLease?.canMutate?.() !== true;
+  const canResolve = window.AISystem6ClioProvider?.canAttempt?.() === true;
+  sendButton.disabled = readOnly || (!clioTalkModelReady() && !canResolve) || isBusy || !String(promptInput?.value || "").trim();
 }
 
 function setComposerSubmitMode(isBusy) {
@@ -651,6 +698,7 @@ function recordContextLoadout(payload) {
     harnessFile: window.lastTaskHarnessFile ? { ...window.lastTaskHarnessFile } : null,
     inputFiles: (window.lastTaskInputFiles || []).map((file) => ({ ...file })),
     contextManifest: window.lastContextManifest || null,
+    productHelpTopics: clioProductHelpReceipt(),
   };
   // The Context Manifest is written at retrieval time with model: null; now
   // that the task's role and model are resolved, record the ACTUAL model and
@@ -670,6 +718,7 @@ function recordContextLoadout(payload) {
 
 function resetClioTalkRuntimeState(options = {}) {
   conversation.length = 0;
+  clioProductHelpRoute = { route: "chat", reason: "ordinary-chat", topics: [] };
   activeChatFileId = null;
   lastClioWebSearchCall = null;
   compressedConversationMemory = { text: "", sourceMessages: 0, updatedAt: "" };
@@ -2004,6 +2053,17 @@ function appendMessageActions(item, role, content, options = {}) {
     runRecordBtn.onclick = () => revealChatFileInFinder(options.messageRecord.runRecordId);
 
     actions.append(disposition, useResultBtn, chartBtn, undoBtn, copyBtn, runRecordBtn, ignoreBtn);
+    (Array.isArray(options.messageRecord?.helpActions) ? options.messageRecord.helpActions : [])
+      .slice(0, 3)
+      .forEach((helpAction) => {
+        if (!helpAction?.action || !getApplicationCommandRegistry()?.has(helpAction.action)) return;
+        const button = document.createElement("button");
+        button.className = "btn mini-btn clio-help-action";
+        button.type = "button";
+        button.dataset.action = helpAction.action;
+        button.textContent = String(helpAction.label || helpAction.action);
+        actions.append(button);
+      });
     appendMessageTranslation(actions, item, role, content);
   }
 
@@ -2331,39 +2391,78 @@ function resolvePendingStatus(item, content, options = {}) {
   updateMenuState();
 }
 
-function formatSystemHelpTermsForContext() {
-  const priorityIds = [
-    "ai-system-6",
-    "first-writing-pass",
-    "project-disk",
-    "file-disk",
-    "reader",
-    "scrapbook",
-    "question-sheet",
-    "outline",
-    "section-drafts",
-    "teachtext",
-    "claim-check",
-    "project-cd",
-    "context-window-memory",
-    "assistant",
-    "start-here",
-    "linked-writing-views",
-    "rebuild-article",
-    "system-help",
-  ];
-  const priorityEntries = priorityIds
-    .map((id) => systemDictionaryEntries.find((entry) => entry.id === id))
-    .filter(Boolean);
-  const remainingEntries = systemDictionaryEntries.filter((entry) => !priorityIds.includes(entry.id));
-  return [...priorityEntries, ...remainingEntries].slice(0, 24).map((entry, index) => {
+function localizedProductHelpDefinition(entry) {
+  if (!entry) return "";
+  return currentLanguage === "zh"
+    ? String(entry.definitionZh || entry.chineseExplanation || entry.definition || "")
+    : String(entry.definition || entry.definitionEn || entry.definitionZh || "");
+}
+
+function clioProductHelpContext() {
+  const topics = Array.isArray(clioProductHelpRoute?.topics) ? clioProductHelpRoute.topics : [];
+  if (clioProductHelpRoute?.route !== "product-help" || !topics.length) return "";
+  return topics.map((topic, index) => {
+    const entry = topic.entry || {};
     const aliases = (entry.aliases || []).filter((alias) => alias !== entry.term).slice(0, 3);
     const aliasText = aliases.length ? `; aliases: ${aliases.join(", ")}` : "";
-    const definition = typeof systemHelpLocalizedDefinition === "function"
-      ? systemHelpLocalizedDefinition(entry)
-      : entry.definition || entry.definitionZh || entry.chineseExplanation || "";
-    return `[S${index + 1}] ${entry.term}${aliasText}: ${clipContextContent(definition, 220)}`;
-  }).join("\n");
+    return `[H${index + 1}] ${entry.term || topic.id}${aliasText}: ${clipContextContent(localizedProductHelpDefinition(entry), 760)}`;
+  }).join("\n\n");
+}
+
+function clioProductRuntimeStateContext() {
+  if (clioProductHelpRoute?.route !== "product-help") return "";
+  const snapshot = window.AISystem6ProductContext?.snapshot?.();
+  if (!snapshot) return "";
+  return JSON.stringify(snapshot);
+}
+
+async function prepareClioProductHelp(query = "") {
+  await ensureProductHelpRuntime();
+  await ensureSystemDictionaryData();
+  const explicitWeb = clioWebSearchToggleActive()
+    || window.AISystem6ProductHelpRuntime?.explicitlyRequestsWeb?.(query) === true;
+  clioProductHelpRoute = window.AISystem6ProductHelpRuntime?.resolveProductHelpRoute?.(
+    query,
+    systemDictionaryEntries,
+    { explicitWeb, minTopics: 2, maxTopics: 5 }
+  ) || { route: explicitWeb ? "web" : "chat", reason: "runtime-unavailable", topics: [] };
+  return clioProductHelpRoute;
+}
+
+function clioProductHelpReceipt() {
+  return (clioProductHelpRoute?.topics || []).map((topic) => ({
+    id: String(topic.id || topic.entry?.id || ""),
+    hash: clioRunHash(localizedProductHelpDefinition(topic.entry)),
+    action: String(topic.entry?.action || ""),
+  })).filter((topic) => topic.id);
+}
+
+const clioStudioHelpActions = new Set([
+  "open-question-sheet",
+  "open-outline",
+  "open-section-drafts",
+  "open-review-desk",
+  "open-project-cd",
+  "open-rebuild-flow",
+]);
+
+function clioProductHelpActions() {
+  const seen = new Set();
+  return (clioProductHelpRoute?.topics || []).map((topic) => {
+    const entry = topic.entry || {};
+    let action = String(entry.action || "");
+    if (workspaceProfile === workspaceProfileDesktop && clioStudioHelpActions.has(action)) {
+      action = "open-writing-studio";
+    }
+    if (!action || seen.has(action) || !getApplicationCommandRegistry()?.has(action)) return null;
+    seen.add(action);
+    const ownLabel = currentLanguage === "zh" ? entry.actionLabelZh : entry.actionLabel;
+    const term = currentLanguage === "zh" ? entry.termZh || entry.term : entry.term;
+    return {
+      action,
+      label: ownLabel || (action === "open-writing-studio" ? t("open_writing_studio") : `${t("open")} ${term}`),
+    };
+  }).filter(Boolean).slice(0, 3);
 }
 
 function clioTalkLanguageInstruction() {
@@ -2376,7 +2475,7 @@ function clioTalkPromptMessages(options = {}) {
   const runtime = window.AISystem6PromptFilesRuntime;
   const resolved = runtime?.resolvePromptFile("cliotalk.main", activeProjectId, currentLanguage);
   if (!resolved || resolved.status !== "ready") {
-    throw new Error(currentLanguage === "zh" ? "ClioTalk 主提示词文件不可用。" : "The ClioTalk main prompt file is unavailable.");
+    throw new Error(t("the_cliotalk_main_prompt_file_is"));
   }
   const boundary = runtime.resolvePromptFile("system.model-boundaries", null, currentLanguage);
   if (options.temporaryChat !== true) {
@@ -2391,28 +2490,18 @@ function aiSystem6IdentityContext() {
   if (currentLanguage === "zh") {
     return [
       "AI System 6 产品身份：",
-      "- 它是本地优先、资料优先的写作桌面，不是套了复古皮肤的聊天页，也不是任何模型厂商的产品名。",
-      "- 它帮助写作者把资料、判断、感受和自己的语言，做成真实接收者更容易接住的作品；默认追求更少、更清楚的交付，而不是更多版本。",
-      "- 保护写作者不要变成模型嘴替：粗糙输入、个人细节、犹豫、吐槽和有判断力的缺陷要保留下来。",
-      "- 主路线是：项目硬盘 -> 文件软盘 -> Reader/Scrapbook -> 问题单 -> 大纲 -> 章节草稿 -> TeachText 正文 -> 审校台 -> 项目光盘。",
+      "- 它是本地优先、资料优先的写作桌面，不是套了复古皮肤的聊天页，也不是任何模型厂商的产品名。它帮写作者把资料、判断和自己的语言整理成真实接收者能接住的作品。",
+      "- 保护写作者不要变成模型嘴替：粗糙输入、个人细节、犹豫、吐槽和有判断力的缺陷要保留下来，不要漂洗成千篇一律的模型语言。",
       "- 项目硬盘是持久项目状态；文件软盘、Reader/Searcher 结果和 ClioTalk 输出都是临时的，只有保存、摘录、插入或导出后才成为项目内容。",
-      "- 问题单负责问题、接收者、约束和交付摩擦；TeachText 才是正文；ClioTalk 只是被召唤的助手声音。",
-      "- 输入太稀薄时，先帮用户捕捉具体观察，不要用通用模型语言替用户填满。",
-      "- 被问到 AI System 6 是什么时，只解释可见写作对象、保存边界和主路线；不要把它说成坏词清理器，也不要列举或引用 AI 腔禁词。",
-      "- 回答产品、记忆和写作流程问题时，像桌面向导一样解释可见写作对象和下一步。",
+      "- 问题单负责问题、接收者、约束和交付摩擦；TeachText 才是正文；ClioTalk 只是被召唤的助手声音。默认偏向更少、更清楚的交付，而不是更多版本和额外任务。",
     ].join("\n");
   }
   return [
     "AI System 6 product identity:",
-    "- AI System 6 is a source-first local writing desktop, not a chat page with a retro skin or a model-vendor product.",
-    "- It helps a writer turn sources, judgment, feeling, and their own language into work that a real recipient can receive; it favors fewer, clearer handoffs over more variants.",
-    "- Protect the writer from becoming a model mouthpiece: preserve rough input, personal details, hesitation, complaints, and useful flaws.",
-    "- Core route: Project Hard Disk -> File Floppy -> Reader/Scrapbook -> Question Sheet -> Outline -> Section Drafts -> TeachText Manuscript -> Review Desk -> Project CD.",
+    "- AI System 6 is a source-first local writing desktop, not a chat page with a retro skin or a model-vendor product. It helps writers turn sources, judgment, and their own language into work a real recipient can receive.",
+    "- Protect the writer from becoming a model mouthpiece: preserve rough input, personal details, hesitation, complaints, and useful flaws instead of washing them into generic model language.",
     "- Project Hard Disk is durable state. File Floppy, Reader/Searcher results, and ClioTalk output are temporary until saved, clipped, inserted, or exported.",
-    "- Question Sheet owns the problem, recipient, constraints, and handoff friction; TeachText is the manuscript; ClioTalk is only the summoned assistant voice.",
-    "- When input is thin, help capture concrete observations instead of filling gaps with generic model language.",
-    "- When asked what AI System 6 is, explain visible writing objects, save boundaries, and the core route; do not frame it as a bad-phrase cleaner or quote AI-flavored banned words.",
-    "- For product, memory, or writing-flow questions, answer as a practical guide to the visible writing objects.",
+    "- Question Sheet owns the problem, recipient, constraints, and handoff friction; TeachText is the manuscript; ClioTalk is only the summoned assistant voice. Prefer fewer, clearer handoffs over more variants and unasked extra tasks.",
   ].join("\n");
 }
 
@@ -2742,7 +2831,7 @@ function buildPayload(userText, options = {}) {
     contextSections.push(clioTalkWritingStageInstruction());
   }
 
-  const systemTermsContext = (skipContext || isScopedSideAskChat) ? "" : formatSystemHelpTermsForContext();
+  const systemTermsContext = (skipContext || isScopedSideAskChat) ? "" : clioProductHelpContext();
   if (systemTermsContext) {
     contextSections.push([
       currentLanguage === "zh"
@@ -2750,6 +2839,15 @@ function buildPayload(userText, options = {}) {
         : "AI System 6 System Help terms. Use these canonical definitions for product concepts when relevant:",
       systemTermsContext,
     ].join("\n"));
+    const runtimeState = clioProductRuntimeStateContext();
+    if (runtimeState) {
+      contextSections.push([
+        currentLanguage === "zh"
+          ? "当前 AI System 6 运行状态。只根据这些字段回答当前状态；unknown 不得猜测："
+          : "Current AI System 6 runtime state. Use only these fields for current-state answers; never infer an unknown value:",
+        runtimeState,
+      ].join("\n"));
+    }
   }
 
   const projectTermsContext = (skipContext || isScopedSideAskChat || temporaryChat) ? "" : formatProjectDictionaryTermsForContext();
@@ -3051,6 +3149,19 @@ function isDeepSeekV4ModelName(value = "") {
   return /^(?:deepseek-)?v4-(?:pro|flash)$/i.test(String(value || ""));
 }
 
+const CLOUD_VISION_MODEL_ID = "deepseek-v4-flash-vision-exp";
+
+/**
+ * The DeepSeek text models drop image blocks without an error, so a payload
+ * that carries an image must be sent to the vision model whatever the picker
+ * says. One test here covers every surface that builds image content.
+ */
+function cloudPayloadCarriesImage(messages) {
+  if (!Array.isArray(messages)) return false;
+  return messages.some((message) => Array.isArray(message?.content)
+    && message.content.some((block) => block && block.type === "image_url" && block.image_url?.url));
+}
+
 function cloudTaskMaxTokens(taskKind = "chat") {
   const kind = String(taskKind || "chat").toLowerCase();
   if (/mingming/.test(kind)) return 5200;
@@ -3207,6 +3318,14 @@ function slimMessagesForContinuity(messages = []) {
 }
 
 function compressMarkdownForContinuity(text, limit, label) {
+  // Content blocks: compress the text blocks and keep every image block whole.
+  // String() on the array would flatten it to "[object Object]" and the model
+  // would be asked to read an image it never received.
+  if (Array.isArray(text)) {
+    return text.map((block) => (block && block.type === "text"
+      ? { ...block, text: compressMarkdownForContinuity(block.text, limit, label) }
+      : block));
+  }
   const clean = String(text || "").trim();
   if (clean.length <= limit) return clean;
   const lines = clean.split(/\n+/).map((line) => line.trim()).filter(Boolean);
@@ -3458,7 +3577,26 @@ function stopRunningTaskFromKeyboard() {
   return true;
 }
 
+// A vision message carries an array of content blocks. Stringifying that array
+// counts the base64 image as text, so a single photo reads as ~30k tokens, the
+// budget never fits, and the compressor below throws the image away. Count the
+// text blocks normally and charge each image a flat estimate instead.
+//
+// 384 is the provider's own published ceiling: every image is resized toward a
+// ~800x800 equivalence and costs at most 384 tokens, whatever it started as.
+// This was 1600, which charged every photo about four times what it costs --
+// and IMAGE_ATTACHMENT_MODEL_LIMIT, which decides how many pictures reach the
+// model at all, is a judgement made against this number.
+const IMAGE_BLOCK_TOKEN_ESTIMATE = 384;
+
 function estimateTokenCount(text) {
+  if (Array.isArray(text)) {
+    return text.reduce((sum, block) => {
+      if (!block) return sum;
+      if (block.type === "image_url") return sum + IMAGE_BLOCK_TOKEN_ESTIMATE;
+      return sum + estimateTokenCount(block.text || "");
+    }, 0);
+  }
   const normalized = typeof text === "string" ? text.trim() : JSON.stringify(text || "");
   if (!normalized) return 0;
   return Math.max(1, Math.round(normalized.length / 4));
@@ -3526,6 +3664,10 @@ const CLOUD_PRICING_CNY_PER_1M = {
     offPeak: { inputCacheHit: 0.15, inputCacheMiss: 4.5, output: 13.5 },
   },
 };
+// The vision guide publishes no separate rate for the experimental vision
+// model, so the meter uses the Flash rate it is built on. Image input consumes
+// many more input tokens than text, so treat the number as a floor.
+CLOUD_PRICING_CNY_PER_1M["deepseek-v4-flash-vision-exp"] = CLOUD_PRICING_CNY_PER_1M["deepseek-v4-flash"];
 CLOUD_PRICING_CNY_PER_1M["v4-flash"] = CLOUD_PRICING_CNY_PER_1M["deepseek-v4-flash"];
 CLOUD_PRICING_CNY_PER_1M["v4-pro"] = CLOUD_PRICING_CNY_PER_1M["deepseek-v4-pro"];
 
@@ -3880,7 +4022,10 @@ function fetchModelPayload(payload, signal) {
   const shouldRecordLoadout = nextPayload.ai_system6_record_loadout === true;
 
   if (isCloud) {
-    const cloudModel = cloudConfig.model || nextPayload.model;
+    const carriesImage = cloudPayloadCarriesImage(nextPayload.messages);
+    const cloudModel = carriesImage
+      ? CLOUD_VISION_MODEL_ID
+      : (cloudConfig.model || nextPayload.model);
     nextPayload = {
       ...deepSeekV4CloudDefaults(cloudModel, nextPayload.ai_system6_task_kind || "chat"),
       ...nextPayload,
@@ -3952,14 +4097,20 @@ function fetchModelPayload(payload, signal) {
 
 async function throwModelResponseError(response, endPerf) {
   const detail = await response.text();
+  const structured = (() => {
+    try { return JSON.parse(detail); } catch { return null; }
+  })();
   const routeLabel = typeof cloudConfig !== "undefined" && cloudConfig && cloudConfig.active
     ? "Cloud API"
     : "LM Studio";
   const message = `${routeLabel} returned ${response.status}: ${serviceErrorDetail(response.status, detail)}`;
-  const code = typeof classifyLmStudioError === "function" ? classifyLmStudioError(message, response) : "";
+  const code = String(structured?.code || (
+    typeof classifyLmStudioError === "function" ? classifyLmStudioError(message, response) : ""
+  ));
   endPerf?.({ error: true, status: response.status });
   const error = new Error([code, message].filter(Boolean).join(": "));
   error.status = response.status;
+  error.code = code;
   throw error;
 }
 
@@ -4120,6 +4271,7 @@ function createClioTalkPreflightRunManifest(taskKind = "chat", error = "", optio
       : getClioTalkPendingHarnessDescriptor(),
     inputFiles: (window.lastTaskInputFiles?.length ? window.lastTaskInputFiles : getClioTalkPendingInputDescriptors({ temporaryChat }))
       .map((file) => ({ ...file })),
+    productHelpTopics: clioProductHelpReceipt(),
     agentRun: window.lastWritingAgentRun
       ? window.AISystem6WritingAgentRuntime.snapshotAgentRun(window.lastWritingAgentRun)
       : null,
@@ -4194,6 +4346,8 @@ function createClioTalkAssistantRecord({
     // and it stays a proposal until Use Result writes it.
     manuscriptPatch: clioTalkProposedManuscriptPatch(),
     webSearch: webSearch || null,
+    productHelpTopics: clioProductHelpReceipt(),
+    helpActions: clioProductHelpActions(),
     providerResponse: nativeResponseId && nativeResponseApi ? {
       api: nativeResponseApi,
       id: nativeResponseId,
@@ -4415,12 +4569,25 @@ function appendClioTalkWebSearchCitations(messageElement, citations) {
 
 async function submitUserTextCore(userText, options = {}) {
   if (!userText) return;
-  if (!clioTalkModelReady()) {
-    setStatus(t("clio_model_required_status"));
-    syncClioTalkModelAvailability();
+  if (window.AISystem6WriteLease?.canMutate?.() !== true) {
+    setStatus(t("write_required_status"));
+    renderClioTalkWelcome();
     return;
   }
-  if (clioWebSearchToggleActive() && !clioTalkWebSearchReady()) {
+  await ensureModelUserErrors();
+  await ensureClioProviderResolver();
+  if (!clioTalkModelReady()) {
+    setStatus(t("clio_provider_resolving_status"));
+    await window.AISystem6ClioProvider?.resolve?.({ reason: "submit" });
+    if (!clioTalkModelReady()) {
+      setStatus(t("clio_model_required_status"));
+      syncClioTalkModelAvailability();
+      return;
+    }
+  }
+  await prepareClioProductHelp(userText);
+  const useWebSearch = clioWebSearchToggleActive() || clioProductHelpRoute?.route === "web";
+  if (useWebSearch && !clioTalkWebSearchReady()) {
     setStatus(t("clio_web_search_cloud_required"));
     return;
   }
@@ -4514,6 +4681,13 @@ async function submitUserTextCore(userText, options = {}) {
     openWindow("projects");
     return;
   }
+  if (
+    requiresDurableChatFile
+    && typeof isClioIntroductionActive === "function"
+    && isClioIntroductionActive()
+  ) {
+    void completeClioOnboarding("first-chat");
+  }
   clioTalkAutoFollow = true;
   addMessage("user", userText, { messageRecord: submittedUserRecord });
   const pendingMessage = createPendingMessage();
@@ -4532,7 +4706,7 @@ async function submitUserTextCore(userText, options = {}) {
     const hasMountedProjectDisk = ragChunks.some((chunk) => chunk.projectId === activeProjectId);
     updatePendingMessage(pendingMessage, hasMountedProjectDisk ? 0 : 1, hasMountedProjectDisk ? t("searching_scraps") : `${modelRouteText("consulting_model", "consulting_cloud_model")}.`);
     await prepareStreamingMarkdownPreview();
-    if (clioWebSearchToggleActive()) {
+    if (useWebSearch) {
       updatePendingMessage(pendingMessage, 1, t("clio_web_search_running"));
       const webResult = await runClioTalkWebSearch(userText, activeAbortController.signal, {
         onDelta: (content) => updatePendingStreamContent(pendingMessage, content),
@@ -4566,9 +4740,8 @@ async function submitUserTextCore(userText, options = {}) {
       });
       appendClioTalkWebSearchCitations(pendingMessage, webResult.citations);
       updateLocalModelState({ server: true, selected: true, ready: true, running: false, task: "" });
-      setStatus(finalization.warnings.length
-        ? t("clio_reply_preserved_record_warning")
-        : t("ready"));
+      if (finalization.warnings.length) setStatus(t("clio_reply_preserved_record_warning"));
+      else clearStatus();
       return;
     }
     receivedAssistantText = await sendToLmStudio(userText, activeAbortController.signal, {
@@ -4604,7 +4777,8 @@ async function submitUserTextCore(userText, options = {}) {
       runStatus: assistantRecord.incomplete ? "incomplete" : "completed",
     });
     updateLocalModelState({ server: true, selected: true, ready: true, running: false, task: "" });
-    setStatus(finalization.warnings.length ? t("clio_reply_preserved_record_warning") : t("ready"));
+    if (finalization.warnings.length) setStatus(t("clio_reply_preserved_record_warning"));
+    else clearStatus();
   } catch (error) {
     const interruptedPartial = error?.name !== "AbortError"
       ? String(error?.partialContent || "").trim()

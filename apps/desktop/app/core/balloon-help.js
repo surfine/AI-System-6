@@ -44,6 +44,14 @@ function balloonHelpKeyFor(target) {
 
 function disabledMenuBalloonHelpKey(button) {
   const action = button?.dataset.action || button?.dataset.submenuAction || "";
+  // "Why is this unavailable?" is Balloon Help's job, and with no model
+  // connected it is the answer for every model-backed command at once.
+  if (typeof actionNeedsModel === "function"
+    && actionNeedsModel(action)
+    && typeof modelReadyForRequests === "function"
+    && !modelReadyForRequests()) {
+    return "balloon_disabled_menu_model";
+  }
   if (balloonHelpProjectRequiredActions.has(action)) return "balloon_disabled_menu_project";
   if (balloonHelpSelectionRequiredActions.has(action)) return "balloon_disabled_menu_selection";
   return "balloon_disabled_menu_context";
@@ -113,10 +121,41 @@ function forgetBalloonHelpTarget(target) {
   else target.removeAttribute("aria-describedby");
 }
 
+// The object a balloon explains is often larger than the control the pointer is
+// on. A menu title with its menu pulled down, or a command inside that menu, is
+// read together with the whole open menu - so the balloon is placed against the
+// open menu, not against the title alone. Without this the balloon lands on top
+// of the commands the user is reaching for, which is the one place a help
+// balloon must never be.
+function balloonHelpAnchorRect(target) {
+  const rect = target.getBoundingClientRect();
+  const anchor = { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom };
+  const openSurfaces = [
+    target.closest(".menu.is-open")?.querySelector(":scope > .menu-popover"),
+    target.closest(".menu-item-with-sub.is-open")?.querySelector(":scope > .menu-sub-popover"),
+    target.closest(".menu-submenu")?.querySelector(":scope > .menu-submenu-popover"),
+    target.closest("details[open]")?.querySelector(":scope > .teachtext-command-popover, :scope > .teachtext-command-subpopover"),
+    target.closest(".menu-popover, .menu-sub-popover, .menu-submenu-popover, .teachtext-command-popover, .teachtext-command-subpopover"),
+  ];
+  openSurfaces.forEach((surface) => {
+    if (!surface) return;
+    const surfaceRect = surface.getBoundingClientRect();
+    if (!surfaceRect.width || !surfaceRect.height) return;
+    anchor.left = Math.min(anchor.left, surfaceRect.left);
+    anchor.top = Math.min(anchor.top, surfaceRect.top);
+    anchor.right = Math.max(anchor.right, surfaceRect.right);
+    anchor.bottom = Math.max(anchor.bottom, surfaceRect.bottom);
+  });
+  anchor.width = anchor.right - anchor.left;
+  anchor.height = anchor.bottom - anchor.top;
+  return anchor;
+}
+
 function positionBalloonHelp(target) {
   const balloon = balloonHelpElement();
   if (!balloon || !target) return;
   const targetRect = target.getBoundingClientRect();
+  const anchorRect = balloonHelpAnchorRect(target);
   const balloonRect = balloon.getBoundingClientRect();
   const viewport = window.visualViewport;
   const edge = 10;
@@ -128,10 +167,10 @@ function positionBalloonHelp(target) {
     bottom: (viewport?.offsetTop || 0) + (viewport?.height || window.innerHeight) - edge,
   };
   const available = {
-    below: bounds.bottom - targetRect.bottom - gap,
-    above: targetRect.top - bounds.top - gap,
-    right: bounds.right - targetRect.right - gap,
-    left: targetRect.left - bounds.left - gap,
+    below: bounds.bottom - anchorRect.bottom - gap,
+    above: anchorRect.top - bounds.top - gap,
+    right: bounds.right - anchorRect.right - gap,
+    left: anchorRect.left - bounds.left - gap,
   };
   const required = {
     below: balloonRect.height,
@@ -140,8 +179,13 @@ function positionBalloonHelp(target) {
     left: balloonRect.width,
   };
   // Prefer the familiar vertical callout when it fits, but let edge controls
-  // use the open side instead of squeezing a balloon over their target.
-  const preference = { below: 4, above: 3, right: 2, left: 1 };
+  // use the open side instead of squeezing a balloon over their target. A
+  // pulled-down menu inverts that: the balloon steps aside to the open side of
+  // the menu, the way System 7 explains a menu without hiding it.
+  const menuAnchored = anchorRect.height > targetRect.height + 1 || anchorRect.width > targetRect.width + 1;
+  const preference = menuAnchored
+    ? { right: 4, left: 3, below: 2, above: 1 }
+    : { below: 4, above: 3, right: 2, left: 1 };
   const side = Object.keys(available).sort((a, b) => {
     const aFits = available[a] >= required[a] ? 1 : 0;
     const bFits = available[b] >= required[b] ? 1 : 0;
@@ -151,17 +195,17 @@ function positionBalloonHelp(target) {
     const bRoom = available[b] / Math.max(1, required[b]);
     return bRoom - aRoom || preference[b] - preference[a];
   })[0];
-  const centeredLeft = targetRect.left + (targetRect.width - balloonRect.width) / 2;
-  const centeredTop = targetRect.top + (targetRect.height - balloonRect.height) / 2;
+  const centeredLeft = anchorRect.left + (anchorRect.width - balloonRect.width) / 2;
+  const centeredTop = anchorRect.top + (anchorRect.height - balloonRect.height) / 2;
   const idealLeft = side === "right"
-    ? targetRect.right + gap
+    ? anchorRect.right + gap
     : side === "left"
-      ? targetRect.left - balloonRect.width - gap
+      ? anchorRect.left - balloonRect.width - gap
       : centeredLeft;
   const idealTop = side === "below"
-    ? targetRect.bottom + gap
+    ? anchorRect.bottom + gap
     : side === "above"
-      ? targetRect.top - balloonRect.height - gap
+      ? anchorRect.top - balloonRect.height - gap
       : centeredTop;
   const left = Math.max(bounds.left, Math.min(idealLeft, bounds.right - balloonRect.width));
   const top = Math.max(bounds.top, Math.min(idealTop, bounds.bottom - balloonRect.height));
@@ -257,7 +301,7 @@ function toggleBalloonHelp() {
 }
 
 function revealMultiFinderSwitcherHint() {
-  if (!guideSeen) return;
+  if (!clioOnboardingCompleted) return;
   if (!isMultiFinderMode() || multiFinderSwitcherHintSeen) return;
   const switcher = document.querySelector("#multifinder-button");
   if (!switcher || switcher.closest(".is-hidden")) return;

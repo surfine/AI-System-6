@@ -71,7 +71,8 @@ function systemHelpActionLabel(entry) {
   // opens the object.
   const own = currentLanguage === "zh" ? entry.actionLabelZh : entry.actionLabel;
   if (own) return own;
-  return `${t("system_help_open_feature")} ${entry.term}`;
+  const objectName = currentLanguage === "zh" ? entry.termZh || entry.term : entry.term;
+  return `${t("system_help_open_feature")} ${objectName}`;
 }
 
 function systemHelpLocalizedDefinition(entry) {
@@ -338,7 +339,7 @@ function openDictionaryForSystemHelpEntry(entry) {
   });
   renderDictionaryResult(result);
   openWindow("dictionary");
-  setStatus(t("dictionary_ready"));
+  
 }
 
 function askAssistantAboutSystemHelpEntry(entry) {
@@ -585,14 +586,14 @@ async function lookupSelectionTerm(context = getSelectionServiceContext()) {
   const saved = getProjectDictionaryTerm(term);
   if (saved) {
     renderDictionaryResult(normalizeDictionaryResult(saved, term, context, t("dictionary_project_source")));
-    setStatus(t("dictionary_ready"));
+    
     return;
   }
 
   const systemTerm = getSystemDictionaryTerm(term);
   if (systemTerm) {
     renderDictionaryResult(normalizeSystemDictionaryResult(systemTerm, context));
-    setStatus(t("dictionary_ready"));
+    
     return;
   }
 
@@ -638,7 +639,7 @@ ${sourceContextText(context) || "(none)"}`;
       throw new Error("lmstudio_bad_response: empty dictionary explanation");
     }
     renderDictionaryResult(result);
-    setStatus(t("dictionary_ready"));
+    
   } catch (error) {
     if (!isAbortError(error)) {
       const message = friendlyLocalModelError(error.message || "");

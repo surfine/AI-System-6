@@ -4,7 +4,7 @@
 // model — Finder / MultiFinder still governs how many apps run.
 // See .claude/plans and app/core/window-manager.js.
 
-import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
+import { createFeatureTest, read, windowRegistryRecords } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("mobile-app-shell");
 const foundation = read("styles/00-foundation.css");
@@ -147,6 +147,7 @@ test.assertIncludes(
 for (const appId of [
   "clioTalk",
   "quickDraft",
+  "lightroom",
   "teachText",
   "writingStudio",
   "searcher",
@@ -198,9 +199,8 @@ const fullScreenApps = declaredStringSet(windowManager, "mobileFullScreenAppIds"
 const finderPages = declaredStringSet(windowManager, "mobileFinderPageWindowNames");
 const dialogs = declaredStringSet(windowManager, "mobileDialogWindowNames");
 const systemPages = declaredStringSet(windowManager, "mobileSystemPageWindowNames");
-const appMapBody = multiFinder.match(/const windowAppMap = \{([\s\S]*?)\n\};/)?.[1] || "";
 const appMap = Object.fromEntries(
-  Array.from(appMapBody.matchAll(/^\s*([A-Za-z0-9]+): "([^"]+)",?$/gm), (match) => [match[1], match[2]])
+  Object.entries(windowRegistryRecords()).map(([name, record]) => [name, record.app]),
 );
 const productionWindows = Array.from(html.matchAll(/\bdata-window="([^"]+)"/g), (match) => match[1]);
 const uncoveredWindows = productionWindows.filter((name) => {
@@ -508,5 +508,28 @@ test.assertNotMatches(
   /max-height: \d+px\) \{\s*\.icon-column/,
   "the wrap is decided by the column running out of room, never by a guessed screen height"
 );
+
+// And when it does run out of room, the Trash is not the icon flung alone into
+// the second column. It is last and carries `margin-top: auto`, so at 1366x768
+// -- the most common laptop height -- exactly one icon overflowed and it was
+// always the Trash, which wrap-reverse then placed to the LEFT of everything.
+// The answer measures the actual outcome rather than naming a height: lay the
+// column out at its natural spacing, ask whether it wrapped, and only then
+// close the gap so all of them fit one column again.
+test.assertIncludes(windowManagerSource, "function syncIconColumnDensity(", "the column reports whether it actually wrapped");
+test.assertMatches(
+  windowManagerSource,
+  /syncIconColumnDensity\(\)[\s\S]{0,900}classList\.remove\("is-tight"\)/,
+  "it measures at the natural spacing, never at its own previous answer"
+);
+test.assertMatches(
+  windowManagerSource,
+  /syncIconColumnDensity\(\)[\s\S]{0,1200}lanes\.size > 1/,
+  "the condition is more than one lane, not a screen height"
+);
+test.assertMatches(apps, /\.icon-column\.is-tight \{[^}]*--desktop-icon-column-gap/, "the tightened column closes the gap through the token");
+test.assertMatches(apps, /\.icon-column\.is-tight \[data-open="trash"\] \{[^}]*margin-top: 0/, "and drops the anchor that made the Trash the overflowing icon");
+test.assertIncludes(read("app/core/boot.js"), "syncIconColumnDensity", "the measurement runs once the desktop is on screen");
+test.assertIncludes(read("app/core/wireup.js"), "syncIconColumnDensity", "and again whenever the viewport changes");
 
 test.finish();

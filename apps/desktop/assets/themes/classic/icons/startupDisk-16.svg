@@ -8,5 +8,6 @@
     <path d="M5 3h20l3 3v23H5z" />
     <path d="M10 3v9h13V3M10 20h13v7H10z" />
     <path class="classic-ink" d="M20 5h2v5h-2z" />
+    <circle class="classic-ink" cx="13" cy="23.5" r="1.6" />
   </g>
 </svg>

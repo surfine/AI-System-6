@@ -9,9 +9,11 @@
 const { sendJson } = require("../lib/http.js");
 const {
   deploymentProfile,
+  deploymentTarget,
   isPublicDeployment,
 } = require("../runtime-profile.js");
 const {
+  publicReadiness,
   SESSION_TTL_SECONDS,
   TURNSTILE_ACTION,
 } = require("../security/public-session.js");
@@ -25,7 +27,9 @@ const {
  * @param {import("node:http").ServerResponse} res
  */
 function handleCapabilities(_req, res) {
-  const sharedCloud = isPublicDeployment && sharedCloudConfigured();
+  const publicAccessReady = publicReadiness().ready;
+  const sharedCloud = isPublicDeployment && publicAccessReady && sharedCloudConfigured();
+  const macSharedAvailable = sharedCloud;
   const sharedCloudBudget = sharedCloudBudgetConfig();
   let safariHttpLocalOrigin = "";
   try {
@@ -43,6 +47,7 @@ function handleCapabilities(_req, res) {
   } catch {}
   sendJson(res, 200, {
     deployment_profile: deploymentProfile,
+    deployment_target: deploymentTarget,
     public_deployment: isPublicDeployment,
     public_access: {
       turnstile_required: isPublicDeployment,
@@ -59,6 +64,16 @@ function handleCapabilities(_req, res) {
         max_input_tokens: sharedCloud ? sharedCloudBudget.maxInputTokens : 0,
         max_output_tokens: sharedCloud ? sharedCloudBudget.maxOutputTokens : 0,
       },
+      mac_shared_session: {
+        available: macSharedAvailable,
+        token_endpoint: macSharedAvailable ? "/api/session/mac-token" : "",
+      },
+      mac_shared_relay: {
+        available: deploymentTarget === "mac",
+        session_endpoint: deploymentTarget === "mac" ? "/api/mac-shared/session" : "",
+        chat_endpoint: deploymentTarget === "mac" ? "/api/mac-shared/chat" : "",
+        quota_endpoint: deploymentTarget === "mac" ? "/api/mac-shared/quota" : "",
+      },
     },
     features: {
       cloud_byok: true,
@@ -72,6 +87,9 @@ function handleCapabilities(_req, res) {
       bureaucracy_captions: true,
       local_models: !isPublicDeployment,
       local_vision: !isPublicDeployment,
+      // Cloud vision rides the same BYOK / shared-allowance path as chat, so
+      // the public deployment can read images for the first time.
+      cloud_vision: true,
       server_import: !isPublicDeployment,
       server_ocr: !isPublicDeployment,
       audio_transcription: !isPublicDeployment,

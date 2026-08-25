@@ -26,7 +26,11 @@ const project = addProject("project-a", "# Durable title\n\nDurable body", {
 
 const snapshot = api.quickDraftContextSnapshot(project.quickDraft);
 test.assert(snapshot.body.includes("Durable body"), "context snapshot reads the durable body");
-test.assert(snapshot.materials.length === 1 && snapshot.versionCount === 1, "context snapshot exposes canonical material and version metadata");
+test.assert(snapshot.materials.length === 1, "context snapshot exposes canonical material");
+// The version count and the locks left this snapshot with the darkroom: they
+// are the document's, and a snapshot taken where the darkroom chain has not
+// loaded must not answer for them.
+test.assert(!("versionCount" in snapshot) && !("protectedRanges" in snapshot), "the snapshot no longer answers for what the darkroom owns");
 test.assert(snapshot.projectDocId === "document-1", "context snapshot exposes the public document boundary");
 snapshot.materials[0].label = "mutated";
 test.assert(project.quickDraft.workspace.materials[0].label === "Source", "context snapshot is detached from Project Hard Disk state");
@@ -41,9 +45,31 @@ controls.get("quick-draft-format").value = "bili-dynamic";
 const genericSignals = api.inferStrategySignals("Liquid Glass 和 Apple Pay 都还要再录");
 test.assert(!genericSignals.materialLedger.some((line) => line.includes("Liquid Glass")), "generic preset does not inherit private launch-day detectors");
 
-for (const source of [ai, intake, coordinator]) {
+// The rule is about LOGIC: no private detector, preset, or product rule may be
+// hidden in Draft Desk's core. It is not about a product object's own label --
+// 落落接收 / Luoluo Receive is a named adjustment layer, and its window markup
+// moved into the coordinator when 文字亮室 started building its own window.
+// Scan the code, and scan the markup for rules rather than for the layer names
+// the naming table already owns.
+const lightroomMarkupStart = coordinator.indexOf("function installLightroomWindow");
+const lightroomMarkupEnd = coordinator.indexOf("installLightroomWindow();");
+const coordinatorLogic = lightroomMarkupStart > -1 && lightroomMarkupEnd > lightroomMarkupStart
+  ? coordinator.slice(0, lightroomMarkupStart) + coordinator.slice(lightroomMarkupEnd)
+  : coordinator;
+test.assert(
+  lightroomMarkupStart > -1 && lightroomMarkupEnd > lightroomMarkupStart,
+  "the lightroom markup is a findable block, so the logic scan below cannot silently cover the whole file",
+);
+for (const source of [ai, intake, coordinatorLogic]) {
   test.assert(!/(Aaron|落落|Luoluo|Apple Pay|Apple Music|iPhone Mirroring|Liquid Glass)/.test(source), "Draft Desk core has no private author or product rules");
 }
+// The moved markup still may not carry a private author name or a product rule;
+// only the layer labels the product itself is named for are allowed through.
+const lightroomMarkup = coordinator.slice(lightroomMarkupStart, lightroomMarkupEnd);
+test.assert(
+  !/(Aaron|Apple Pay|Apple Music|iPhone Mirroring|Liquid Glass)/.test(lightroomMarkup),
+  "the lightroom window markup carries no private author or product rule either",
+);
 test.assertIncludes(presets, '"launch-day-tech"', "private launch-day knowledge lives in preset data");
 test.assertIncludes(chatMessages, "window.AISystem6QuickDraft?.getContextSnapshot?.()", "ClioTalk uses the Draft Desk public context API when loaded");
 test.assertIncludes(chatMessages, "quickDraftContextSnapshot(project?.quickDraft", "ClioTalk uses the pure workspace fallback while Draft Desk is lazy");

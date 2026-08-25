@@ -234,6 +234,7 @@ if (
   "Naming Rules",
   "Design Rules",
   "Common Pitfalls",
+  "Parallel Work",
 ].forEach((section) => {
   const sectionPattern = new RegExp(`^##\\s+${section.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "m");
   if (sectionPattern.test(claudeDoc)) ok(`CLAUDE.md section ${section}`);

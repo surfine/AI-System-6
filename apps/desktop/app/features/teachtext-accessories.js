@@ -82,6 +82,7 @@ function renderTeachTextTabs() {
     labelFor: (tab) => tab.title || teachTextRoleLabel(tab.role),
     compactLabelFor: (tab) => tab.title || teachTextRoleLabel(tab.role),
     sublabelFor: (tab) => teachTextRoleLabel(tab.role),
+    iconFor: () => "teachText",
     dirtyFor: (tab) => ["modified", "unsaved"].includes(tab.state?.statusKey || ""),
     closableFor: () => tabs.length > 1,
     onOpen: (tab) => openTeachTextDocumentTab(tab.id, { ensureWindow: false }),
@@ -193,6 +194,11 @@ function openTeachTextStateInTab({
     : null;
   const win = getWindow("teachText");
   win?.classList.toggle("is-help-document", !!helpDocument);
+  // Help and system Prompt files are real documents to inspect, never scratch
+  // text the viewer can accidentally edit. Every ordinary open resets this.
+  teachTextNameInput.readOnly = !!helpDocument;
+  teachTextFolderInput.readOnly = !!helpDocument;
+  teachTextBodyInput.readOnly = !!helpDocument;
   if (tab) loadTeachTextTabState(tab);
   else {
     teachTextDocumentRole = role === "manuscript" ? "manuscript" : "scratch_file";
@@ -212,7 +218,7 @@ function openTeachTextStateInTab({
   scheduleTeachTextTabSave();
   if (typeof renderTeachTextTabs === "function") renderTeachTextTabs();
   if (preview && typeof showTeachTextPreview === "function") {
-    showTeachTextPreview({ announce: false, focus, preserveScroll: false });
+    showTeachTextPreview({ focus, preserveScroll: false });
   } else if (focus) {
     teachTextBodyInput.focus();
   }
@@ -297,20 +303,10 @@ function updateTeachTextStructureClasses() {
   teachTextBodyInput.classList.toggle("has-code", hasCode);
 }
 
-function cloneTeachTextImageAttachments(attachments = []) {
-  return Array.isArray(attachments)
-    ? attachments
-        .filter((item) => item && item.id)
-        .slice(0, teachTextImageAttachmentLimit)
-        .map((item) => ({ ...item }))
-    : [];
-}
-
 function getTeachTextImageAttachments() {
   const project = getActiveProject();
   if (!project) return [];
-  project.imageAttachments = cloneTeachTextImageAttachments(project.imageAttachments);
-  return project.imageAttachments;
+  return imageAttachmentsForProject(project.id, { limit: teachTextImageAttachmentLimit });
 }
 
 function getTeachTextImageAlbumProjectLabel() {
@@ -347,7 +343,10 @@ function insertMarkdownAtTeachTextCursor(markdown) {
 
   teachTextBodyInput.focus();
   teachTextBodyInput.setRangeText(`${prefix}${content}${suffix}`, start, end, "end");
-  markTeachTextModified();
+  // An insert is an edit. The "input" listener marks the document modified and
+  // also carries the linked Manuscript sync, the Review Desk sync, and the
+  // claim and style checks, none of which used to run after a clipping landed.
+  teachTextBodyInput.dispatchEvent(new Event("input", { bubbles: true }));
   syncTeachTextPreview({ force: false });
 }
 
@@ -359,10 +358,6 @@ function getTeachTextVisionModelRequestName() {
     return modelInput.value.trim();
   }
   return "";
-}
-
-function imageAttachmentVisionDataUrl(attachment) {
-  return attachment?.previewDataUrl || attachment?.dataUrl || attachment?.originalDataUrl || "";
 }
 
 function imageAttachmentVisionMarkdown(attachment, mode, text) {
@@ -390,29 +385,22 @@ async function analyzeTeachTextImageAttachment(attachment, mode = "writing-conte
 
   setStatus(t(mode === "ocr" ? "image_vision_ocr_reading" : "image_vision_reading", name));
   try {
-    const result = await sendLocalModelTask({
-      payload: {
-        model: getTeachTextVisionModelRequestName(),
-        messages: window.AISystem6ModelTaskRuntime.buildVisionMessages({ mode, name, dataUrl }),
-        temperature: 0.2,
-        max_tokens: mode === "ocr" ? 1400 : 900,
-        stream: false,
-        ai_system6_task_kind: mode === "ocr" ? "extract-vision-ocr" : "extract-vision-writing-context",
-      },
+    const result = await analyzeImageAttachment(attachment, {
+      mode,
+      modelName: getTeachTextVisionModelRequestName(),
       signal: typeof getLongTaskSignal === "function" ? getLongTaskSignal() : null,
-      taskKind: mode === "ocr" ? "extract-vision-ocr" : "extract-vision-writing-context",
-      streamPreference: "json",
     });
-    const text = String(result.text || "").trim();
+    const text = result.text;
     if (!text) throw new Error(t("image_vision_empty"));
 
-    const attachments = getTeachTextImageAttachments();
-    const storedAttachment = attachments.find((item) => item.id === attachment.id) || attachment;
+    // The album keeps the reading, because the writer asked for it here and
+    // the insert below is what they will edit.
+    const storedAttachment = imageAttachmentById(attachment.id) || attachment;
     storedAttachment.visionNotes = text;
-    storedAttachment.visionMode = mode;
-    storedAttachment.visionModel = getTeachTextVisionModelRequestName();
-    storedAttachment.visionUpdatedAt = new Date().toISOString();
-    project.imageAttachments = attachments;
+    storedAttachment.visionMode = result.mode;
+    storedAttachment.visionModel = result.model;
+    storedAttachment.visionUpdatedAt = result.updatedAt;
+    saveImageAttachments([storedAttachment]);
     project.updatedAt = new Date().toISOString();
     saveDeskState();
 
@@ -544,50 +532,6 @@ function renderTeachTextImageAttachments() {
   });
 }
 
-function readImageAttachmentFile(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result || ""));
-    reader.onerror = () => reject(reader.error || new Error("Could not read image."));
-    reader.readAsDataURL(file);
-  });
-}
-
-function loadImageFromDataUrl(dataUrl) {
-  return new Promise((resolve, reject) => {
-    const image = new Image();
-    image.onload = () => resolve(image);
-    image.onerror = () => reject(new Error("Could not decode image."));
-    image.src = dataUrl;
-  });
-}
-
-async function compressImageAttachmentDataUrl(dataUrl, maxEdge = 960) {
-  const image = await loadImageFromDataUrl(dataUrl);
-  const width = image.naturalWidth || image.width || 1;
-  const height = image.naturalHeight || image.height || 1;
-  const scale = Math.min(1, maxEdge / Math.max(width, height));
-  const previewWidth = Math.max(1, Math.round(width * scale));
-  const previewHeight = Math.max(1, Math.round(height * scale));
-
-  const canvas = document.createElement("canvas");
-  canvas.width = previewWidth;
-  canvas.height = previewHeight;
-  const context = canvas.getContext("2d");
-  context.fillStyle = "#ffffff";
-  context.fillRect(0, 0, previewWidth, previewHeight);
-  context.drawImage(image, 0, 0, previewWidth, previewHeight);
-  const previewDataUrl = canvas.toDataURL("image/jpeg", 0.72);
-  return {
-    previewDataUrl,
-    width,
-    height,
-    previewWidth,
-    previewHeight,
-    previewSize: Math.ceil((previewDataUrl.length * 3) / 4),
-  };
-}
-
 async function addTeachTextImageAttachments(files) {
   const project = getActiveProject();
   if (!project) {
@@ -596,7 +540,7 @@ async function addTeachTextImageAttachments(files) {
     return;
   }
 
-  const incoming = [...(files || [])].filter((file) => /^image\//i.test(file.type || "") || /\.(bmp|jpe?g|png|webp|heic|heif)$/i.test(file.name || ""));
+  const incoming = imageFilesFromList(files);
   if (!incoming.length) return;
 
   const attachments = getTeachTextImageAttachments();
@@ -606,44 +550,17 @@ async function addTeachTextImageAttachments(files) {
     return;
   }
 
-  const now = new Date().toISOString();
   const selected = incoming.slice(0, openSlots);
-  for (const file of selected) {
-    const originalDataUrl = await readImageAttachmentFile(file);
-    let compressed;
-    try {
-      compressed = await compressImageAttachmentDataUrl(originalDataUrl);
-    } catch {
-      compressed = {
-        previewDataUrl: originalDataUrl,
-        width: 0,
-        height: 0,
-        previewWidth: 0,
-        previewHeight: 0,
-        previewSize: Math.ceil((originalDataUrl.length * 3) / 4),
-      };
-    }
-    attachments.unshift({
-      id: crypto.randomUUID(),
-      name: file.name || t("image_attachment"),
-      alt: (file.name || t("image_attachment")).replace(/\.[^.]+$/, ""),
-      type: file.type || "image/*",
-      size: file.size || 0,
-      originalDataUrl,
-      previewDataUrl: compressed.previewDataUrl,
-      width: compressed.width,
-      height: compressed.height,
-      previewWidth: compressed.previewWidth,
-      previewHeight: compressed.previewHeight,
-      previewSize: compressed.previewSize,
-      createdAt: now,
-    });
-  }
+  const built = await buildImageAttachments(selected, {
+    projectId: project.id,
+    surface: "teachtext",
+    limit: openSlots,
+  });
+  saveImageAttachments(built);
 
-  project.imageAttachments = attachments;
   project.updatedAt = new Date().toISOString();
   if (incoming.length > selected.length) setStatus(t("image_attachment_limit", teachTextImageAttachmentLimit));
-  else setStatus(t("image_attachments_added", selected.length));
+  else setStatus(t("image_attachments_added", built.length));
   renderTeachTextImageAttachments();
   renderProjectDisks();
   saveDeskState();
@@ -653,11 +570,7 @@ function removeTeachTextImageAttachment(id) {
   const project = getActiveProject();
   if (!project) return;
 
-  const attachments = getTeachTextImageAttachments();
-  const index = attachments.findIndex((item) => item.id === id);
-  if (index < 0) return;
-  attachments.splice(index, 1);
-  project.imageAttachments = attachments;
+  if (!removeImageAttachment(id)) return;
   project.updatedAt = new Date().toISOString();
   renderTeachTextImageAttachments();
   syncTeachTextPreview({ force: false });
@@ -882,28 +795,19 @@ function dictationDestinationLabel(dest) {
 
 // ---- Note Pad slips ---------------------------------------------------------
 //
-// Being interrupted is normal here, and losing a sentence is the harm this desk
-// exists to prevent. So a Note Pad page is a slip: the words, and where the
-// writer was when the thought arrived. One key holds a thought from anywhere;
-// the slip's own default button puts the writer back on the same sentence.
+// A Note Pad page is a slip you wrote on. It used to also carry where you were
+// when an interruption arrived, because there was nowhere else to put that;
+// there is now — Hold That Thought owns being interrupted, and it owns going
+// back to the sentence. What is left here is the pad itself.
 //
-// Older desks saved plain strings, so the shape migrates on the way in. Nothing
-// is ever dropped to make room — a page that rolls off is a lost thought.
-function normalizeNotePadOrigin(from) {
-  if (!from?.window) return null;
-  return {
-    window: String(from.window),
-    title: String(from.title || ""),
-    caret: Number.isFinite(from.caret) ? from.caret : null,
-    at: String(from.at || ""),
-  };
-}
-
+// Older desks saved plain strings, and older desks stamped an origin. Both
+// shapes are read and neither is kept. Nothing is ever dropped to make room —
+// a page that rolls off is a lost thought.
 function normalizeNotePadPages(pages) {
   const normalized = Array.isArray(pages)
     ? pages.map((page) => (typeof page === "string"
       ? { text: page, from: null }
-      : { text: String(page?.text ?? ""), from: normalizeNotePadOrigin(page?.from) }))
+      : { text: String(page?.text ?? ""), from: null }))
     : [];
   return normalized.length ? normalized : [{ text: "", from: null }];
 }
@@ -920,18 +824,14 @@ function currentNotePadSlip() {
 let notePadParts = null;
 
 function notePadFields() {
-  if (notePadParts?.origin?.isConnected) return notePadParts;
+  if (notePadParts?.destination?.isConnected) return notePadParts;
   const root = document.querySelector('[data-window="notePad"]');
   if (!root) return null;
   notePadParts = {
-    origin: root.querySelector("#note-pad-origin"),
-    originLabel: root.querySelector("#note-pad-origin-label"),
-    originTime: root.querySelector("#note-pad-origin-time"),
     destination: root.querySelector("#note-pad-destination"),
     send: root.querySelector("#note-pad-send"),
-    back: root.querySelector("#note-pad-back"),
   };
-  return notePadParts.origin ? notePadParts : null;
+  return notePadParts.destination ? notePadParts : null;
 }
 
 const notePadDestinations = ["teachtext", "scrapbook", "assistant"];
@@ -956,12 +856,6 @@ function syncCurrentNotePadPage() {
   currentNotePadSlip().text = notePadTextInput.value;
 }
 
-function formatNotePadTime(iso) {
-  const date = iso ? new Date(iso) : null;
-  if (!date || Number.isNaN(date.getTime())) return "";
-  return date.toLocaleTimeString(currentLanguage === "zh" ? "zh-CN" : "en-US", { hour: "2-digit", minute: "2-digit" });
-}
-
 function renderNotePadPage() {
   const slip = currentNotePadSlip();
   notePadTextInput.value = slip.text;
@@ -972,18 +866,9 @@ function renderNotePadPage() {
   const parts = notePadFields();
   if (!parts) return;
   parts.destination.textContent = notePadDestinationLabel();
-  // The way back is the slip's own verb, and it is the default when it exists.
-  // With nowhere to go back to, sending is the only thing this window does.
-  const from = slip.from;
-  parts.back.hidden = !from;
-  parts.back.textContent = from ? t("note_pad_back_to", from.title || from.window) : t("back");
-  parts.back.classList.toggle("default", !!from);
-  parts.send.classList.toggle("default", !from);
-  parts.origin.hidden = !from;
-  if (from) {
-    parts.originLabel.textContent = t("note_pad_from", from.title || from.window);
-    parts.originTime.textContent = formatNotePadTime(from.at);
-  }
+  // Sending is the only thing this window does with a page, so it is the one
+  // default. Going back to where you were belongs to Hold That Thought.
+  parts.send.classList.add("default");
 }
 
 function goToNotePadPage(index) {
@@ -993,9 +878,9 @@ function goToNotePadPage(index) {
   saveDeskState();
 }
 
-function addNotePadPage(from = null) {
+function addNotePadPage() {
   syncCurrentNotePadPage();
-  notePadPages.splice(notePadPageIndex + 1, 0, { text: "", from: normalizeNotePadOrigin(from) });
+  notePadPages.splice(notePadPageIndex + 1, 0, { text: "", from: null });
   notePadPageIndex += 1;
   renderNotePadPage();
   notePadTextInput.focus();
@@ -1031,50 +916,10 @@ function currentWritingPosition() {
   };
 }
 
-// One key from anywhere. The thought lands on a slip that remembers the window
-// and the caret it came from, so the interruption costs the sentence nothing.
-async function holdThatThought() {
-  const from = currentWritingPosition();
-  await openWindow("notePad");
-  // Take what the field is holding before deciding whether this slip is spare.
-  // Waiting for the input listener would let a keystroke that has not been
-  // synced yet decide that a written slip is empty, and overwrite its origin.
-  syncCurrentNotePadPage();
-  const slip = currentNotePadSlip();
-  // An untouched empty slip is reused rather than stacked on, so pressing the
-  // key twice does not leave a trail of blank pages.
-  if (slip.text.trim()) {
-    addNotePadPage(from);
-  } else {
-    slip.from = normalizeNotePadOrigin(from);
-    renderNotePadPage();
-    saveDeskState();
-  }
-  notePadTextInput.focus();
-  setStatus(from ? t("note_pad_held_from", from.title) : t("note_pad_held"));
-}
-
-// The way back: the window opens and the caret returns to the character the
-// writer left. A window that no longer holds that field still opens — being
-// back in the right room is most of the point.
-async function returnToNotePadOrigin() {
-  const from = currentNotePadSlip().from;
-  if (!from) return;
-  await openWindow(from.window);
-  const field = getWindow(from.window)?.querySelector("textarea, [contenteditable='true']");
-  if (!field) return;
-  field.focus();
-  if (Number.isFinite(from.caret) && typeof field.setSelectionRange === "function") {
-    const caret = Math.min(from.caret, field.value.length);
-    field.setSelectionRange(caret, caret);
-  }
-}
-
-function appendToNotePad(text, from = null) {
+function appendToNotePad(text) {
   syncCurrentNotePadPage();
   const slip = currentNotePadSlip();
   slip.text += `${slip.text ? "\n\n" : ""}${text}`;
-  if (from && !slip.from) slip.from = normalizeNotePadOrigin(from);
   renderNotePadPage();
   openWindow("notePad");
   saveDeskState();
@@ -1198,7 +1043,7 @@ function sendTextToDestination(text, dest) {
     const start = teachTextBodyInput.selectionStart ?? teachTextBodyInput.value.length;
     const end = teachTextBodyInput.selectionEnd ?? teachTextBodyInput.value.length;
     teachTextBodyInput.setRangeText(content, start, end, "end");
-    markTeachTextModified();
+    teachTextBodyInput.dispatchEvent(new Event("input", { bubbles: true }));
     openWindow("teachText");
     teachTextBodyInput.focus();
   } else if (dest === "assistant") {
@@ -1260,10 +1105,36 @@ function insertCharacter(character) {
 
 let npmounted=!1;function mountNotePadRuntime(){if(npmounted)return!0;npmounted=!0;notePadTextInput.addEventListener("input",()=>{syncCurrentNotePadPage();saveDeskState()});notePadPrevButton.addEventListener("click",()=>goToNotePadPage(notePadPageIndex-1));notePadNextButton.addEventListener("click",goToNextNotePadPage);return!0}
 function nwin(){return document.querySelector(".window.is-active")?.dataset.window==="notePad"}
-const nav={"open-note-pad":()=>!0,"note-pad-new-slip":()=>nwin(),"note-pad-send":()=>nwin(),"note-pad-back":()=>nwin(),"note-pad-cycle-destination":()=>nwin()};
-const nlist=[["open-note-pad",()=>openWindow("notePad")],["note-pad-new-slip",()=>addNotePadPage(currentWritingPosition())],["note-pad-send",()=>sendNotePadPage()],["note-pad-back",returnToNotePadOrigin],["note-pad-cycle-destination",cycleNotePadDestination]];
+const nav={"open-note-pad":()=>!0,"note-pad-new-slip":()=>nwin(),"note-pad-send":()=>nwin(),"note-pad-cycle-destination":()=>nwin()};
+const nlist=[["open-note-pad",()=>openWindow("notePad")],["note-pad-new-slip",()=>addNotePadPage()],["note-pad-send",()=>sendNotePadPage()],["note-pad-cycle-destination",cycleNotePadDestination]];
 window.AISystem6Runtime?.registerApplication({id:"notePad",windowName:"notePad",mount:mountNotePadRuntime,restore:()=>mountNotePadRuntime(),commands:Object.fromEntries(nlist.map(([a,h])=>[a,{handler:h,isAvailable:()=>a==="open-note-pad"?!0:nav[a]()}]))});
 
 let cmounted=!1;function mountClipboardRuntime(){if(cmounted)return!0;cmounted=!0;clipboardInsertButton.addEventListener("click",insertClipboardIntoTeachText);clipboardClearButton.addEventListener("click",clearClipboardWindow);clipboardTranslateButton?.addEventListener("click",translateClipboardText);clipboardDocMapButton?.addEventListener("click",()=>withDocMap(()=>makeDocMapFromCurrentSource()));clipboardTranslationTeachTextButton?.addEventListener("click",()=>sendClipboardTranslation("teachtext"));clipboardTranslationScrapbookButton?.addEventListener("click",()=>sendClipboardTranslation("scrapbook"));clipboardTranslationAssistantButton?.addEventListener("click",()=>sendClipboardTranslation("assistant"));return!0}
 const clist=[["open-clipboard",()=>{renderClipboard();openWindow("clipboard")}],["clipboard-insert",insertClipboardIntoTeachText],["clipboard-clear",clearClipboardWindow],["clipboard-translate",translateClipboardText],["clipboard-docmap",()=>withDocMap(()=>makeDocMapFromCurrentSource())],["clipboard-translation-teachtext",()=>sendClipboardTranslation("teachtext")],["clipboard-translation-scrapbook",()=>sendClipboardTranslation("scrapbook")],["clipboard-translation-assistant",()=>sendClipboardTranslation("assistant")]];
 window.AISystem6Runtime?.registerApplication({id:"clipboard",windowName:"clipboard",mount:mountClipboardRuntime,restore:()=>mountClipboardRuntime(),commands:Object.fromEntries(clist.map(([a,h])=>[a,{handler:h,isAvailable:()=>a==="open-clipboard"?!0:!0}]))});
+
+/**
+ * The album pictures a piece of writing actually cites.
+ *
+ * Review Desk uses this rather than the whole album, so a review can only ever
+ * discuss a figure the manuscript itself points at. An image the writer keeps
+ * in the album but never placed is not part of the draft, and a finding about
+ * it would be a finding about something the reader will never see.
+ *
+ * @param {string} markdown
+ * @returns {any[]} attachments, in the order the text cites them
+ */
+function teachTextFiguresReferencedIn(markdown) {
+  const text = String(markdown || "");
+  if (!text) return [];
+  const seen = new Set();
+  const cited = [];
+  for (const match of text.matchAll(/!\[[^\]]*\]\(aisystem6-image:([^)]+)\)/g)) {
+    const id = String(match[1] || "").trim();
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    const attachment = imageAttachmentById(id);
+    if (attachment) cited.push(attachment);
+  }
+  return cited;
+}

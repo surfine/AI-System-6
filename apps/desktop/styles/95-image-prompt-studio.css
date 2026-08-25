@@ -1,0 +1,132 @@
+/* Image Prompt Studio is a worksheet in three parts: you say what you want,
+   you press one button, and two finished prompts come back - with what you
+   wrote before kept underneath. Each part is a shared `control-section`, the
+   same framed box every Control Panel section is, so the half you fill in and
+   the half you get back stop wearing the same clothes.
+
+   The window shipped with no stylesheet at all: nothing in the repository
+   matched `.image-prompt-studio-window` or any `.ips-` class, so it computed to
+   0 pixels wide and opened invisible. The first repair gave it a box and a flat
+   column; this is the grouping that column was missing.
+
+   Almost nothing here is new. The frames are `.control-section`, the action row
+   is `.button-row` with its `.spacer`, the labels stack through the shared
+   `settings` grammar, and the fields are the ordinary System 6 controls. What
+   is left is this window's own: its box, one two-column line for the two short
+   choices, and the shape of the outputs and the history list. */
+
+.image-prompt-studio-window {
+  /* Local to this window, the way Soundscape keeps its own; only the window
+     box itself is a shared token, beside its peers in 00-foundation.css. */
+  --ips-gap: 8px;
+  --ips-row-min: 160px;
+  --ips-history-max-height: 132px;
+  width: var(--ips-window-width);
+  /* Content-sized, with the token as the ceiling. A fixed height left 260px of
+     bare pane under the three groups whenever the prompts group was still
+     empty - which is how the window always opens. The pane scrolls once the
+     prompts arrive and the content passes the ceiling. */
+  height: auto;
+  max-height: var(--ips-window-height);
+}
+
+.ips-pane {
+  /* Same reason as the Control Panel's own pane: without an explicit track an
+     implicit column sizes to the widest child's max-content, and a single long
+     unbroken prompt line would stretch the pane past the window. */
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  overflow-y: auto;
+}
+
+/* A section is a grid item, and a grid item's implied minimum is its own
+   content's min-content - clamping the pane's track above is not enough on its
+   own. Control Panel's sections carry the same line for the same reason. */
+.ips-group {
+  min-width: 0;
+}
+
+.ips-legend {
+  margin: 0;
+  font-size: inherit;
+  font-weight: 700;
+}
+
+/* The fields carry the width. A bare <span> label followed by an inline-block
+   field would sit beside it, not above it; full-width fields are what stack
+   the pair, the same way the composer's textarea does. */
+.ips-control > textarea,
+.ips-control > input,
+.ips-control > .select-wrap {
+  display: block;
+  width: 100%;
+}
+
+.ips-control > textarea {
+  resize: vertical;
+}
+
+/* Aspect ratio and Style are one short decision each: side by side they read as
+   a single settings line rather than two more full-width rows, and they fall
+   back to one column when the window is narrow enough that they would not. */
+.ips-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(var(--ips-row-min), 1fr));
+  gap: var(--ips-gap);
+}
+
+/* The file input is hidden, but a hidden flex item still takes the row's gap,
+   which reads as a stray space after the last button. */
+.ips-actions > input[hidden] {
+  display: none;
+}
+
+.ips-outputs {
+  display: grid;
+  gap: var(--ips-gap);
+}
+
+/* Each output is read-only prose the writer copies out, so the Copy button
+   belongs with its own text, right-aligned under it. */
+.ips-outputs > .ips-control {
+  display: grid;
+  justify-items: end;
+  gap: 4px;
+}
+
+.ips-outputs > .ips-control > span {
+  justify-self: start;
+}
+
+/* One line instead of two blank boxes, until there is something to show. Full
+   ink, not grey: Find File and Find Path colour their own empty notes with
+   var(--ink), because a 1-bit system has no grey text to fade into. */
+.ips-empty {
+  margin: 0;
+}
+
+.ips-outputs-group:not(.is-filled) > .ips-outputs,
+.ips-outputs-group.is-filled > .ips-empty {
+  display: none;
+}
+
+.ips-history {
+  margin: 0;
+  padding: 4px;
+  max-height: var(--ips-history-max-height);
+  overflow-y: auto;
+  list-style: none;
+  font-weight: 400;
+  border: var(--system-border);
+  background: var(--paper);
+}
+
+.ips-history > li + li {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: var(--system-control-line) solid var(--separator);
+}
+
+/* The module writes its own empty row into the list rather than leaving the
+   list empty, so `.ips-history:empty` would never match - the line the writer
+   reads is this one, and it needs no rule of its own beyond the list's. */

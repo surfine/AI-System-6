@@ -15,20 +15,16 @@ window.AISystem6MicropolisLoaded = true;
   function installMicropolisWindow() {
     if (typeof document === "undefined") return;
     if (document.querySelector('[data-window="micropolis"]')) return;
-    document.querySelector(".desktop")?.insertAdjacentHTML("beforeend", `
-      <section class="window micropolis-window is-hidden" data-window="micropolis" aria-labelledby="micropolis-title">
-        <div class="title-bar">
-          <button class="close-box" aria-label="${t("close")}" data-i18n-aria-label="close"></button>
-          <h2 id="micropolis-title">Micropolis</h2>
-          <button class="resize-box" aria-label="${t("zoom")}" data-i18n-aria-label="zoom"></button>
-          <button class="shade-box" aria-label="${t("collapse")}" data-i18n-aria-label="collapse"></button>
-        </div>
-        <div class="details-bar micropolis-details-bar">
-          <span data-micropolis-funds></span><span data-micropolis-date></span><span data-micropolis-population></span>
-          <span class="micropolis-status" data-micropolis-status role="status" aria-live="polite"></span>
-        </div>
-        <div class="window-pane micropolis-pane"></div>
-      </section>`);
+    window.AISystem6ApplicationShell.createWindow({
+      windowName: "micropolis",
+      windowClass: "micropolis-window",
+      labelledBy: "micropolis-title",
+      titleKey: "micropolis_label",
+      title: "Micropolis",
+      statusClass: "micropolis-details-bar",
+      statusHtml: '<span data-micropolis-funds></span><span data-micropolis-date></span><span data-micropolis-population></span><span class="micropolis-status" data-micropolis-status role="status" aria-live="polite"></span>',
+      paneClass: "micropolis-pane",
+    });
   }
 
   installMicropolisWindow();

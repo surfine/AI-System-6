@@ -8,8 +8,12 @@ playwright-report/
 internal/archive/runtime-legacy/
 /apps/desktop/styles.bundle.css
 /apps/desktop/styles.theme-lab.css
-/apps/desktop/styles.micropolis.css
-/apps/desktop/styles.openttd.css
+/apps/desktop/styles.draft-desk.css
+/apps/desktop/styles.control-strip.css
+/apps/desktop/styles.cmf-studio.css
+/apps/desktop/styles.soundscape.css
+/apps/desktop/styles.liquid-cover.css
+/apps/desktop/styles.image-prompt-studio.css
 apps/desktop/app/vendor/markmap/*.js
 .venv-markitdown/
 .venv-markitdown-trim/
@@ -59,6 +63,13 @@ internal/evidence/drafts/ui-reform-after/
 internal/evidence/drafts/ui-reform-after-pareto/
 internal/evidence/drafts/theme-lab-current/
 internal/evidence/drafts/theme-lab-fidelity-cache/
+# Appearance pixel baselines are machine-local: font rasterization differs per
+# host, so a committed baseline would false-fail on every other machine. The
+# gate is a local release condition (verify:ship), like the fidelity cache.
+internal/evidence/drafts/appearance-baseline/
+internal/evidence/drafts/appearance-current/
+internal/evidence/drafts/appearance-noise/
+tests/appearance-snapshot.json
 internal/evidence/drafts/theme-lab-fidelity/
 internal/evidence/drafts/appearance-app-coverage/
 internal/evidence/drafts/appearance-phase5/
@@ -82,6 +93,9 @@ tooling/__pycache__/
 __pycache__/
 # local personal scratch output (audit dumps, temp exports)
 internal/evidence/drafts/coverage/
+# Per-commit HIG interaction audit screenshots, traces, videos, and device receipts.
+# The canonical report and machine-readable ledgers live outside drafts/.
+internal/evidence/drafts/hig-ui-ux-audit/
 # local 15MB test photo (bg-1..6 are the shipped backgrounds)
 internal/evidence/drafts/liquid-cover/test-shot.jpg
 platform/macos/native/nohup.out
