@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/DEVELOPMENT.md -->
-<!-- source-sha256: bfdb772db71754110c0b09bde5a927360fbd015be95cb4820cdcb2893b6ee5a0 -->
+<!-- source-sha256: 10913c71abbd3d2b07503b6a5aa0d17d76432bedc2f5dc590f73abd1035c6ece -->
 
 > 英文版为准 ・ 仅供人类参考
 
@@ -10,7 +10,7 @@
 
 ## 环境要求
 
-- Node.js 20 或更新版本
+- Node.js 24 或更新版本
 - 与 Node.js 配套的 npm
 - 现代 Chromium、Firefox 或 Safari 浏览器
 - 可选：用于本地模型测试的 LM Studio 或 Ollama

@@ -962,7 +962,7 @@ range thumb travels within, so the knob lands exactly on the year mark it
 selects.
 
 
-## Public Beta 1.0.50 - 2026-08-23
+## Public Beta 1.0.50 - 2026-08-24
 
 A convergence release. Eight lanes of work that had been running beside each
 other for a day came back together, and what the merge exposed is as much a
@@ -1084,3 +1084,19 @@ The startup payload dropped again, by about 140 KB: seven more windows build
 their own markup instead of carrying it in the boot document. Moving them lost
 three pieces of markup in silence along the way, each caught by counting
 elements rather than by reading the diff.
+
+The final convergence day brought Bonsai City into the public beta. The window
+was rebuilt around the map: commands moved into Macintosh menus, the tool rail
+became a compact palette, the minimap and overlays became permanent
+instruments, and touch gained an explicit Pan tool. Under it sits the largest
+city expansion yet: 128-square maps, transport and utilities, budgets and
+bonds, services and disasters, scenarios and terrain editing, original sound
+and seasonal art, two views over one deterministic snapshot, and clean-room
+browser-local `.sc2` import and export with synthetic fixtures only.
+
+The writing desk closed four quiet breaks exposed by the merge. Status now
+lands in the surface that owns the caret; linked previews repaint without
+resetting the reader's place; sentence focus works; and Find/Change, Balloon
+Help and popovers remain attached to the window they serve. ClioTalk's welcome
+copy follows the selected era's type, and Image Prompt Studio got back the
+stylesheet whose absence had collapsed the whole window to zero width.

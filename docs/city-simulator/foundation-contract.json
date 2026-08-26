@@ -7,7 +7,7 @@
     "codename": "bonsai-city",
     "displayName": "Bonsai City",
     "displayNameZh": "盆景城市",
-    "status": "deferred-from-public-snapshot",
+    "status": "public-beta",
     "finalNameApproved": true
   },
   "layers": {

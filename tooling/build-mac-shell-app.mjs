@@ -213,7 +213,11 @@ if (existsSync(serverPayload)) {
   // tooling/build-mac-server-payload.mjs). The Swift shell keeps launching
   // Resources/ai-system-6-server, which now execs into the payload.
   const bundledPayload = join(resourcesDir, "server-payload");
-  cpSync(serverPayload, bundledPayload, { recursive: true });
+  // npm's .bin entries are relative symlinks inside the payload. Node's
+  // default cpSync behavior resolves them and writes absolute links pointing
+  // back into dist/mac-server-payload, which makes the app non-portable and
+  // invalidates its signature as soon as it leaves this checkout.
+  cpSync(serverPayload, bundledPayload, { recursive: true, verbatimSymlinks: true });
   const bundledServer = join(resourcesDir, "ai-system-6-server");
   writeFileSync(
     bundledServer,

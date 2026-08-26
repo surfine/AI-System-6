@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/city-simulator/README.md -->
-<!-- source-sha256: 612324896d6dc8ec364babf584d8ec8b76326ff4316ded810195de478343b02d -->
+<!-- source-sha256: f25b0ad00790528cbb6693b378cd1bf308e8dcc216ec640626d3efe7babf48e9 -->
 
 > 英文版为准 ・ 仅供人类参考
 
@@ -32,10 +32,10 @@ Phase 0 不实现玩法、地图渲染、窗口、持久化 store 或依赖。
 ## 当前状态
 
 - 无头模拟核心已存在：
-  `apps/desktop/app/features/bonsai-city-sim.js`（64/96 网格、带种子地形预设、
-  独立网络与区域层、施工、公用事业、服务、人口/需求/财政、整数 tick 与 v2
+  `apps/desktop/app/features/bonsai-city-sim.js`（64/96/128 网格、带种子地形预设、
+  独立网络与区域层、施工、公用事业、服务、人口/需求/财政、整数 tick 与 v3
   `serialize`/`deserialize`）。它已接入懒加载的 Applications → Games 窗口，
-  同时继续从策展式公开快照延后发布。
+  并随 1.0.50 策展式公开测试版快照发布。
 - 核心种子策略已由契约强制：外壳必须提供整数种子；核心绝不回退到
   `Math.random()`。
 - 内核现在带有版本化命令层（即时与未来定时排队命令，单调序号）、版本化

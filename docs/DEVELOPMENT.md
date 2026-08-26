@@ -6,7 +6,7 @@ interaction rules, read [Architecture](ARCHITECTURE.md) and the
 
 ## Requirements
 
-- Node.js 20 or newer
+- Node.js 24 or newer
 - npm from the matching Node.js installation
 - a modern Chromium, Firefox, or Safari browser
 - optional: LM Studio or Ollama for local model testing

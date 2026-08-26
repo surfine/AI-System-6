@@ -1,5 +1,5 @@
 <!-- canonical-source: CONTRIBUTING.md -->
-<!-- source-sha256: df6feff22327ac823cdddadef61efc08d4d7a1281ff8ee4f44775d15502f382a -->
+<!-- source-sha256: c748716aacff2e341981a3f447de77e4b97c4f952a7351ad1a64c3a933d34b0e -->
 
 > 英文版为准 ・ 仅供人类参考
 
@@ -19,7 +19,7 @@
 
 ## 本地设置
 
-使用 Node.js 20 或更新版本。
+使用 Node.js 24 或更新版本。
 
 ```bash
 git clone https://github.com/surfine/AI-System-6.git
@@ -76,7 +76,7 @@ npm run verify:checkjs
 npm run verify:public
 ```
 
-迭代时运行最小相关检查，提交前再跑完整公开验证面。CI 使用 Node.js 20 执行同一序列。
+迭代时运行最小相关检查，提交前再跑完整公开验证面。CI 使用 Node.js 24 执行同一序列。
 
 ## Pull request 清单
 

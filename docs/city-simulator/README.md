@@ -33,11 +33,11 @@ persistence store, or dependencies.
 ## Current state
 
 - A headless simulation core exists at
-  `apps/desktop/app/features/bonsai-city-sim.js` (64/96 tile grids, seeded
+  `apps/desktop/app/features/bonsai-city-sim.js` (64/96/128 tile grids, seeded
   terrain presets, independent networks and zoning, construction, utilities,
-  services, population/demand/finance, integer ticks, and v2
+  services, population/demand/finance, integer ticks, and v3
   `serialize`/`deserialize`). It is wired through the lazy Applications →
-  Games window while remaining deferred from the curated public snapshot.
+  Games window and ships in the curated 1.0.50 public beta snapshot.
 - The core's seed policy is now contract-enforced: the shell must provide an
   integer seed; the core never falls back to `Math.random()`.
 - The kernel now carries a versioned command layer (immediate and

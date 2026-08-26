@@ -17,7 +17,7 @@ Security issues follow [SECURITY.md](SECURITY.md), not the public issue tracker.
 
 ## Local setup
 
-Use Node.js 20 or newer.
+Use Node.js 24 or newer.
 
 ```bash
 git clone https://github.com/surfine/AI-System-6.git
@@ -83,7 +83,7 @@ npm run verify:public
 
 Run the smallest relevant check while iterating, then the complete public
 surface before opening the pull request. CI runs the same sequence on Node.js
-20.
+24.
 
 ## Pull request checklist
 
