@@ -889,7 +889,46 @@ function onQuickDraftListenChange(event) {
 
 window.addEventListener("pagehide", stopQuickDraftListen);
 
+// The transport was reachable only by clicking its own buttons. The menu needs
+// the same three moves by name, so they are named.
+function toggleQuickDraftListen() {
+  if (quickDraftListenState?.playing) return pauseQuickDraftListen();
+  return playQuickDraftListen();
+}
+
 window.AISystem6QuickDraftListen = Object.freeze({
+  toggle: toggleQuickDraftListen,
+  stepBack: stepQuickDraftListenBack,
+  markLost: markQuickDraftListenLost,
+  isPlaying: () => Boolean(quickDraftListenState?.playing),
+  isRehearsing: () => Boolean(quickDraftRehearse),
+  voiceRows: () => {
+    const state = quickDraftListenState || ensureQuickDraftListenState();
+    const sampleText = state?.beats?.[0]?.text || "";
+    const active = quickDraftListenVoice(sampleText);
+    // A menu is not a catalogue. This browser offers 40-odd system voices;
+    // the menu names the first few plus whichever one is speaking, and the
+    // full list stays in the transport's own select.
+    const choices = quickDraftListenVoiceChoices(sampleText);
+    const shown = choices.slice(0, 8);
+    if (active && !shown.some((voice) => voice.name === active.name)) shown.push(active);
+    // Two voices can share a short name across languages. The transport's own
+    // select already disambiguates by language; the menu rows do the same, or
+    // the list reads as "Eddy, Eddy, Flo, Flo".
+    const shortCounts = new Map();
+    shown.forEach((voice) => {
+      const short = voice.name.split(" (")[0];
+      shortCounts.set(short, (shortCounts.get(short) || 0) + 1);
+    });
+    return shown.map((voice) => {
+      const short = voice.name.split(" (")[0];
+      return {
+        label: shortCounts.get(short) > 1 ? `${short} · ${voice.lang}` : short,
+        action: `lightroom-listen-voice:${voice.name}`,
+        checked: voice.name === active?.name,
+      };
+    });
+  },
   renderQuickDraftListenView,
   renderQuickDraftFindings,
   setQuickDraftFindings,

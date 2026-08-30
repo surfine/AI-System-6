@@ -383,7 +383,23 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
     if (isWater(snapshot, index)) return "terrain.water";
     const terrain = gridValue(snapshot, ["terrainType", "terrain"], index, null);
     if (terrain === "coast" || gridValue(snapshot, ["coast", "shore"], index, false)) return "terrain.coast";
-    if (terrain === "slope" || gridValue(snapshot, ["slope"], index, false)) return "terrain.slope";
+    if (terrain === "slope" || gridValue(snapshot, ["slope"], index, false)) {
+      // The simulator records THAT a tile is a slope, not which way it falls,
+      // so one sprite used to serve every orientation and a hillside read as a
+      // staircase. Derive the fall from the neighbours that stand higher and
+      // ask for the matching face; mask 0 keeps the flat sprite.
+      const size = mapSize(snapshot);
+      const x = index % size;
+      const y = Math.floor(index / size);
+      const here = altitudeAt(snapshot, index);
+      let mask = 0;
+      if (y > 0 && altitudeAt(snapshot, index - size) > here) mask |= 1;
+      if (x < size - 1 && altitudeAt(snapshot, index + 1) > here) mask |= 2;
+      if (y < size - 1 && altitudeAt(snapshot, index + size) > here) mask |= 4;
+      if (x > 0 && altitudeAt(snapshot, index - 1) > here) mask |= 8;
+      const oriented = `terrain.slope.mask-${mask}`;
+      return atlasFrame(oriented) ? oriented : "terrain.slope";
+    }
     if (terrain === "rock" || terrain === 3) return "terrain.rock";
     if (terrain === "soil" || terrain === 2) return "terrain.soil";
     // Snow: peaks above the snow line always, plus the whole lowland in
@@ -476,11 +492,26 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
     context.fillStyle = "rgba(12, 14, 16, 0.48)";
     fallbackDiamond(context, point.sx, point.sy, "rgba(12,14,16,0.48)", null);
     const mask = connectorMask(snapshot, x, y, (snap, i) => isTunnel(snap, i));
+    // The four shared-edge midpoints, in the same projection the tiles use.
+    const edges = [
+      { bit: 1, ex: 12, ey: -6, ok: y > 0 },
+      { bit: 2, ex: 12, ey: 6, ok: x < size - 1 },
+      { bit: 4, ex: -12, ey: 6, ok: y < size - 1 },
+      { bit: 8, ex: -12, ey: -6, ok: x > 0 },
+    ];
     context.fillStyle = "#0b0d0f";
-    if (!(mask & 1) && y > 0) context.fillRect(point.sx - 13 * zoom, point.sy - 11 * zoom, 26 * zoom, 2 * zoom);
-    if (!(mask & 4) && y < size - 1) context.fillRect(point.sx - 13 * zoom, point.sy + 9 * zoom, 26 * zoom, 2 * zoom);
-    if (!(mask & 2) && x < size - 1) context.fillRect(point.sx + 11 * zoom, point.sy - 10 * zoom, 2 * zoom, 20 * zoom);
-    if (!(mask & 8) && x > 0) context.fillRect(point.sx - 13 * zoom, point.sy - 10 * zoom, 2 * zoom, 20 * zoom);
+    edges.forEach((edge) => {
+      if ((mask & edge.bit) || !edge.ok) return;
+      const mx = point.sx + edge.ex * zoom;
+      const my = point.sy + edge.ey * zoom;
+      // A portal lintel lies along the edge, which runs at the tile's own angle.
+      context.beginPath();
+      context.moveTo(mx - edge.ey * 0.9 * zoom, my + edge.ex * 0.45 * zoom);
+      context.lineTo(mx + edge.ey * 0.9 * zoom, my - edge.ex * 0.45 * zoom);
+      context.lineWidth = Math.max(1, 3 * zoom);
+      context.strokeStyle = "#0b0d0f";
+      context.stroke();
+    });
   }
 
   // Highways and onramps draw their bespoke atlas frames now: a
@@ -569,11 +600,19 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
       }
     }
     if (zone === 5 || zone === "airport") {
-      // A runway centre line makes the airport pad read as an airfield.
+      // A runway centre line makes the airport pad read as an airfield. It has
+      // to run along the tile's own axes: a screen-axis bar crosses the diamond
+      // diagonally and the markings of neighbouring tiles never line up, the
+      // same error the tunnel portals used to make.
       const zoom = state.camera.zoom;
-      context.fillStyle = "rgba(245,245,240,0.75)";
-      context.fillRect(point.sx - 11 * zoom, point.sy - 1 * zoom, 22 * zoom, 2 * zoom);
-      context.fillRect(point.sx - 1 * zoom, point.sy - 9 * zoom, 2 * zoom, 18 * zoom);
+      context.strokeStyle = "rgba(245,245,240,0.75)";
+      context.lineWidth = Math.max(1, 2 * zoom);
+      for (const axis of [{ dx: 12, dy: 6 }, { dx: -12, dy: 6 }]) {
+        context.beginPath();
+        context.moveTo(point.sx - axis.dx * zoom, point.sy - axis.dy * zoom);
+        context.lineTo(point.sx + axis.dx * zoom, point.sy + axis.dy * zoom);
+        context.stroke();
+      }
       if (hashInt(Number(snapshot.seed) || 0, 0, index) % 7 === 0) drawControlTower(context, point);
     }
     if (zone === 6 || zone === "seaport") {
@@ -767,10 +806,7 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
           drawConnector(context, snapshot, x, y, "rail", isRail);
           drawHighway(context, snapshot, x, y);
           drawConnector(context, snapshot, x, y, "wire", isWire);
-          if (isPipe(snapshot, y * size + x)) {
-            const point = projectPoint(snapshot, x, y, altitudeAt(snapshot, y * size + x), true);
-            drawSprite(context, "utility.pipe", point.sx, point.sy);
-          }
+          drawConnector(context, snapshot, x, y, "pipe", isPipe);
         }
       });
       if (state.display.infrastructure) {
@@ -925,10 +961,24 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
     return buildings;
   }
 
+  // How many looks a stage actually has, read from the atlas rather than
+  // assumed. This used to be a hard-coded modulo 4, so when the atlas grew to
+  // eight variants per stage the extra four could never appear on screen —
+  // the art shipped and stayed invisible. Probing keeps the renderer honest
+  // if the count changes again.
+  let variantsPerStage = 0;
+  function buildingVariantCount() {
+    if (variantsPerStage) return variantsPerStage;
+    let found = 0;
+    while (found < 64 && atlasFrame(`building.r.1.${found + 1}.normal`)) found += 1;
+    variantsPerStage = Math.max(1, found);
+    return variantsPerStage;
+  }
+
   function buildingFrame(building, night = false) {
     const prefix = zonePrefix(building.zone || building.type) || "r";
     const stage = Math.max(1, Math.min(3, Number(building.stage || building.level || 1) | 0));
-    const variant = 1 + ((Math.max(1, Number(building.variant) || 1) - 1) % 4);
+    const variant = 1 + ((Math.max(1, Number(building.variant) || 1) - 1) % buildingVariantCount());
     const buildState = normalizeBuildingState(building.state || building.status);
     const preferred = buildState === "normal"
       ? (night ? `building.${prefix}.${stage}.${variant}.night` : `building.${prefix}.${stage}.${variant}.normal`)

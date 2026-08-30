@@ -5,6 +5,9 @@ import { fileURLToPath } from "node:url";
 
 export const GENERATED_COMPATIBILITY_MANIFEST_ERAS = Object.freeze(["aqua", "snow-leopard", "yosemite"]);
 export const THEME_LAB_PACKAGED_ERAS = Object.freeze(["aqua", "snow-leopard", "yosemite", "liquid-glass"]);
+const EXTENDED_ICON_IDS = Object.freeze([
+  "micropolis", "openttd", "doom", "bonsaiCity", "lightroom", "imagePromptStudio",
+]);
 // Standalone PNGs referenced outside the complete per-era icon-family globs.
 // Aqua/Snow sprites remain compatibility artifacts; contextual icon dispatch
 // reads the 16/32/128 family PNGs packaged by themeLabPackagedAssetReport().
@@ -52,8 +55,11 @@ export function generatedEraCompatibilityManifestReport(repositoryRoot = resolve
       .filter((name) => name.endsWith(`-${tier}.png`))
       .sort();
     const manifestNames = files.map((entry) => entry.relativePath.split("/").at(-1)).sort();
-    if (JSON.stringify(matchedNames) !== JSON.stringify(manifestNames)) {
-      throw new Error(`${eraId}: ${pattern} does not match exactly the 56 manifest assets`);
+    const extensionNames = EXTENDED_ICON_IDS.map((id) => `${id}-${tier}.png`).sort();
+    const unexpectedNames = matchedNames.filter((name) => !manifestNames.includes(name) && !extensionNames.includes(name));
+    const missingNames = manifestNames.filter((name) => !matchedNames.includes(name));
+    if (unexpectedNames.length || missingNames.length) {
+      throw new Error(`${eraId}: ${pattern} does not match the 56 manifest assets plus the six reviewed extensions`);
     }
 
     return {
@@ -104,6 +110,19 @@ export function themeLabPackagedAssetReport(repositoryRoot = resolve(moduleDirec
     const packagedNames = readdirSync(join(themeRoot, "icons"))
       .filter((name) => name.endsWith(".png"))
       .sort();
+    for (const name of packagedNames) {
+      const extensionId = EXTENDED_ICON_IDS.find((id) => name.startsWith(`${id}-`));
+      if (!extensionId || expectedNames.has(name)) continue;
+      expectedNames.add(name);
+      const absolutePath = join(themeRoot, "icons", name);
+      const bytes = readFileSync(absolutePath);
+      files.push({
+        iconId: extensionId,
+        relativePath: `assets/themes/${eraId}/icons/${name}`,
+        bytes: bytes.length,
+        sha256: createHash("sha256").update(bytes).digest("hex"),
+      });
+    }
     const declaredNames = [...expectedNames].sort();
     if (JSON.stringify(packagedNames) !== JSON.stringify(declaredNames)) {
       throw new Error(`${eraId}: the broad package glob and complete-family ledger do not name the same PNG set`);

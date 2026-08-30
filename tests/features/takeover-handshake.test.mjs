@@ -158,6 +158,31 @@ const test = createFeatureTest("takeover-handshake");
   await a.lease.release();
 }
 
+// Booting hidden is not a statement of intent. A restored session tab or a
+// window opened behind the one in use must not pull the pen out of the window
+// the writer is typing in - the same invariant the focus reclaim keeps.
+{
+  const storage = new Map();
+  const a = createWriteLeaseInstance(storage);
+  const b = createWriteLeaseInstance(storage);
+  connectWriteLeaseChannels([a, b]);
+  await a.lease.acquire();
+  b.context.document.visibilityState = "hidden";
+  let bFlushedA = 0;
+  a.context.saveDeskState = async () => { bFlushedA += 1; return true; };
+  const booted = await b.lease.acquireAtBoot();
+  test.assert(booted.readOnly === true, "a window that boots hidden opens read-only");
+  test.assert(a.lease.isOwner() === true, "the visible window keeps the pen");
+  test.assert(bFlushedA === 0, "the writer is never asked to flush for a window nobody is looking at");
+
+  // The moment the same window is looked at, the pen follows it.
+  b.context.document.visibilityState = "visible";
+  const reclaimed = await b.lease.reclaimOnFocus();
+  test.assert(reclaimed === true, "focus hands the pen to the window that boots hidden");
+  test.assert(b.lease.isOwner() === true && a.lease.isReadOnly() === true, "the pen moved on focus, not on boot");
+  await b.lease.release();
+}
+
 // --- The handover is silent unless a person must decide ---
 {
   const leaseSource = (await import("node:fs")).readFileSync(
@@ -173,6 +198,7 @@ const test = createFeatureTest("takeover-handshake");
   ).split("\n}")[0];
   test.assertNotIncludes(bootBody, "showWriteLeaseDialog", "boot no longer arbitrates a conflict that the protocol can settle itself");
   test.assertIncludes(leaseSource, "async function reclaimWriteLeaseOnFocus", "the pen follows the window the writer is looking at");
+  test.assertIncludes(bootBody, 'document.visibilityState === "hidden"', "boot keeps the same guard: a hidden window never takes the pen");
   test.assertIncludes(leaseSource, 'document.visibilityState === "hidden"', "a hidden window never takes the pen; that is the whole guard");
   test.assertIncludes(leaseSource, "showWriteLeaseDialog({ denied: true })", "the surviving dialog is the refusal, which names unsaved work");
 }

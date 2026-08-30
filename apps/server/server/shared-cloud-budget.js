@@ -9,6 +9,10 @@ const DEFAULT_DAILY_REQUEST_LIMIT = 100;
 const DEFAULT_SESSION_REQUEST_LIMIT = 12;
 const DEFAULT_MAX_INPUT_TOKENS = 32000;
 const DEFAULT_MAX_OUTPUT_TOKENS = 1800;
+// DeepSeek's published ceiling after vision resizing. Counting a data URL as
+// JSON text makes a modest image look like tens of thousands of text tokens
+// and blocks the shared vision route before the provider can meter it.
+const IMAGE_BLOCK_TOKEN_ESTIMATE = 384;
 
 let cachedStatePath = "";
 let cachedState = null;
@@ -193,8 +197,22 @@ function pseudonymousCloudUserId(sessionNonce) {
 }
 
 function estimatedInputTokens(payload) {
-  const serialized = JSON.stringify(payload || {});
-  return Math.max(1, Math.ceil(Buffer.byteLength(serialized, "utf8") / 3));
+  let imageBlocks = 0;
+  const serialized = JSON.stringify(payload || {}, (_key, value) => {
+    if (value && typeof value === "object" && !Array.isArray(value)) {
+      if (value.type === "image_url") {
+        imageBlocks += 1;
+        return { type: "image_url" };
+      }
+      if (value.type === "file" && typeof value.file_id === "string") {
+        imageBlocks += 1;
+        return { type: "file" };
+      }
+    }
+    return value;
+  });
+  const textTokens = Math.ceil(Buffer.byteLength(serialized, "utf8") / 3);
+  return Math.max(1, textTokens + imageBlocks * IMAGE_BLOCK_TOKEN_ESTIMATE);
 }
 
 function secondsUntilUtcReset(now = new Date()) {
@@ -474,6 +492,7 @@ function resetSharedCloudBudgetCacheForTests() {
 }
 
 module.exports = {
+  IMAGE_BLOCK_TOKEN_ESTIMATE,
   estimatedInputTokens,
   usageTokenTotal,
   pseudonymousCloudUserId,

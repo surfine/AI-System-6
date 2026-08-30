@@ -4132,7 +4132,7 @@
           "provenanceClass": "A",
           "directPrototype": "Mac OS X 10.2 Dock Finder two-tone split smiling face",
           "nearestPeriodAnalog": null,
-          "authoringMethod": "built-in-imagegen-reference-guided-plus-native-size-optical-processing",
+          "authoringMethod": "image-generation-plus-deterministic-processing",
           "authoringStatus": "technically-clean",
           "legacyFamilyReviewStatus": "accepted-generated",
           "historicalReviewStatus": "reference-validated",
@@ -4146,9 +4146,9 @@
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "approved-imagegen-reference-guided-reconstruction",
+          "sourceKind": "original-generated-era-illustration",
           "sourceNote": null
         },
         "fileFloppy": {
@@ -4311,11 +4311,11 @@
           "provenanceClass": "B",
           "directPrototype": null,
           "nearestPeriodAnalog": "Jaguar external hard-drive volume",
-          "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
+          "authoringMethod": "image-generation-plus-deterministic-processing",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "accepted-priority-lineage",
+          "legacyFamilyReviewStatus": "accepted-generated",
           "historicalReviewStatus": "historically-reviewed",
-          "blindMixStatus": "not-run",
+          "blindMixStatus": null,
           "historicalStatusAuthority": "icon-system-continuity-v2",
           "intentionalAnachronism": false,
           "anachronismReason": null,
@@ -4325,10 +4325,10 @@
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
-          "sourceNote": "Original era-specific storage-volume reinterpretations. The project marker remains secondary to the hardware silhouette."
+          "sourceKind": "original-generated-era-illustration",
+          "sourceNote": null
         },
         "projectDisc": {
           "priorityCore16": true,
@@ -4589,11 +4589,11 @@
           "provenanceClass": "B",
           "directPrototype": null,
           "nearestPeriodAnalog": "Jaguar text proofing and spell-check grammar",
-          "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
+          "authoringMethod": "image-generation-plus-deterministic-processing",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "accepted-priority-lineage",
+          "legacyFamilyReviewStatus": "accepted-generated",
           "historicalReviewStatus": "historically-reviewed",
-          "blindMixStatus": "not-run",
+          "blindMixStatus": null,
           "historicalStatusAuthority": "icon-system-continuity-v2",
           "intentionalAnachronism": false,
           "anachronismReason": null,
@@ -4603,10 +4603,10 @@
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
-          "sourceNote": "Original target-era reinterpretation. No native Review Desk artwork is claimed; the lens is deliberately absent so Review Desk cannot collapse into Searcher."
+          "sourceKind": "original-generated-era-illustration",
+          "sourceNote": null
         },
         "searcher": {
           "priorityCore16": true,
@@ -4626,11 +4626,11 @@
           "provenanceClass": "B",
           "directPrototype": null,
           "nearestPeriodAnalog": "Jaguar Sherlock 3 and Finder search grammar",
-          "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
+          "authoringMethod": "image-generation-plus-deterministic-processing",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "accepted-priority-lineage",
+          "legacyFamilyReviewStatus": "accepted-generated",
           "historicalReviewStatus": "historically-reviewed",
-          "blindMixStatus": "not-run",
+          "blindMixStatus": null,
           "historicalStatusAuthority": "icon-system-continuity-v2",
           "intentionalAnachronism": false,
           "anachronismReason": null,
@@ -4640,10 +4640,10 @@
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
-          "sourceNote": "Original target-era reinterpretation. The lens persists as the semantic anchor while result object, perspective, material, depth, and compact construction are re-authored independently for every admitted era."
+          "sourceKind": "original-generated-era-illustration",
+          "sourceNote": null
         },
         "reader": {
           "priorityCore16": false,
@@ -4731,11 +4731,11 @@
           "provenanceClass": "C",
           "directPrototype": null,
           "nearestPeriodAnalog": "Jaguar-era outliner and mind-mapping applications",
-          "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
+          "authoringMethod": "image-generation-plus-deterministic-processing",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "accepted-priority-lineage",
+          "legacyFamilyReviewStatus": "accepted-generated",
           "historicalReviewStatus": "historically-reviewed",
-          "blindMixStatus": "not-run",
+          "blindMixStatus": null,
           "historicalStatusAuthority": "icon-system-continuity-v2",
           "intentionalAnachronism": false,
           "anachronismReason": null,
@@ -4747,8 +4747,8 @@
             ],
             "construction": "deterministic-derivative"
           },
-          "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
-          "sourceNote": "Original era-specific document-structure utilities; geographic-map and magnifier metaphors are deliberately excluded."
+          "sourceKind": "original-generated-era-illustration",
+          "sourceNote": null
         },
         "clioStage": {
           "priorityCore16": false,
@@ -5077,11 +5077,11 @@
           "provenanceClass": "B",
           "directPrototype": "Mac OS X 10.2 System Preferences",
           "nearestPeriodAnalog": null,
-          "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
+          "authoringMethod": "image-generation-plus-deterministic-processing",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "accepted-priority-lineage",
+          "legacyFamilyReviewStatus": "accepted-generated",
           "historicalReviewStatus": "historically-reviewed",
-          "blindMixStatus": "not-run",
+          "blindMixStatus": null,
           "historicalStatusAuthority": "icon-system-continuity-v2",
           "intentionalAnachronism": false,
           "anachronismReason": null,
@@ -5091,10 +5091,10 @@
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
-          "sourceNote": "Original era-specific control surfaces replace the repeated page-and-controls composition."
+          "sourceKind": "original-generated-era-illustration",
+          "sourceNote": null
         },
         "chooser": {
           "priorityCore16": false,
@@ -5629,7 +5629,7 @@
           "provenanceClass": "C",
           "directPrototype": null,
           "nearestPeriodAnalog": "Jaguar Finder identity plus a period-plausible paired treatment",
-          "authoringMethod": "composition-from-approved-current-era-imagegen-finder-identity",
+          "authoringMethod": "image-generation-plus-deterministic-processing",
           "authoringStatus": "technically-clean",
           "legacyFamilyReviewStatus": "accepted-generated",
           "historicalReviewStatus": "historically-reviewed",
@@ -5643,9 +5643,9 @@
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "approved-imagegen-period-plausible-construction",
+          "sourceKind": "original-generated-era-illustration",
           "sourceNote": null
         },
         "daHandler": {
@@ -6098,7 +6098,7 @@
           "provenanceClass": "A",
           "directPrototype": "Mac OS X 10.6 FinderIcon split face with curved profile divider",
           "nearestPeriodAnalog": null,
-          "authoringMethod": "built-in-imagegen-reference-guided-plus-native-size-optical-processing",
+          "authoringMethod": "image-generation-plus-deterministic-processing",
           "authoringStatus": "technically-clean",
           "legacyFamilyReviewStatus": "accepted-generated",
           "historicalReviewStatus": "reference-validated",
@@ -6113,9 +6113,9 @@
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "approved-imagegen-reference-guided-reconstruction",
+          "sourceKind": "original-generated-era-illustration",
           "sourceNote": null
         },
         "fileFloppy": {
@@ -6282,11 +6282,11 @@
           "provenanceClass": "B",
           "directPrototype": null,
           "nearestPeriodAnalog": "Snow Leopard external hard-drive volume",
-          "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
+          "authoringMethod": "image-generation-plus-deterministic-processing",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "accepted-priority-lineage",
+          "legacyFamilyReviewStatus": "accepted-generated",
           "historicalReviewStatus": "historically-reviewed",
-          "blindMixStatus": "not-run",
+          "blindMixStatus": null,
           "historicalStatusAuthority": "icon-system-continuity-v2",
           "intentionalAnachronism": false,
           "anachronismReason": null,
@@ -6297,10 +6297,10 @@
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
-          "sourceNote": "Original era-specific storage-volume reinterpretations. The project marker remains secondary to the hardware silhouette."
+          "sourceKind": "original-generated-era-illustration",
+          "sourceNote": null
         },
         "projectDisc": {
           "priorityCore16": true,
@@ -6568,11 +6568,11 @@
           "provenanceClass": "B",
           "directPrototype": null,
           "nearestPeriodAnalog": "Snow Leopard text proofing and correction grammar",
-          "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
+          "authoringMethod": "image-generation-plus-deterministic-processing",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "accepted-priority-lineage",
+          "legacyFamilyReviewStatus": "accepted-generated",
           "historicalReviewStatus": "historically-reviewed",
-          "blindMixStatus": "not-run",
+          "blindMixStatus": null,
           "historicalStatusAuthority": "icon-system-continuity-v2",
           "intentionalAnachronism": false,
           "anachronismReason": null,
@@ -6583,10 +6583,10 @@
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
-          "sourceNote": "Original target-era reinterpretation. No native Review Desk artwork is claimed; the lens is deliberately absent so Review Desk cannot collapse into Searcher."
+          "sourceKind": "original-generated-era-illustration",
+          "sourceNote": null
         },
         "searcher": {
           "priorityCore16": true,
@@ -6606,11 +6606,11 @@
           "provenanceClass": "B",
           "directPrototype": null,
           "nearestPeriodAnalog": "Snow Leopard Finder search and Spotlight grammar",
-          "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
+          "authoringMethod": "image-generation-plus-deterministic-processing",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "accepted-priority-lineage",
+          "legacyFamilyReviewStatus": "accepted-generated",
           "historicalReviewStatus": "historically-reviewed",
-          "blindMixStatus": "not-run",
+          "blindMixStatus": null,
           "historicalStatusAuthority": "icon-system-continuity-v2",
           "intentionalAnachronism": false,
           "anachronismReason": null,
@@ -6621,10 +6621,10 @@
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
-          "sourceNote": "Original target-era reinterpretation. The lens persists as the semantic anchor while result object, perspective, material, depth, and compact construction are re-authored independently for every admitted era."
+          "sourceKind": "original-generated-era-illustration",
+          "sourceNote": null
         },
         "reader": {
           "priorityCore16": false,
@@ -6714,11 +6714,11 @@
           "provenanceClass": "C",
           "directPrototype": null,
           "nearestPeriodAnalog": "Snow Leopard-era outliner and mind-mapping applications",
-          "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
+          "authoringMethod": "image-generation-plus-deterministic-processing",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "accepted-priority-lineage",
+          "legacyFamilyReviewStatus": "accepted-generated",
           "historicalReviewStatus": "historically-reviewed",
-          "blindMixStatus": "not-run",
+          "blindMixStatus": null,
           "historicalStatusAuthority": "icon-system-continuity-v2",
           "intentionalAnachronism": false,
           "anachronismReason": null,
@@ -6731,8 +6731,8 @@
             ],
             "construction": "deterministic-derivative"
           },
-          "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
-          "sourceNote": "Original era-specific document-structure utilities; geographic-map and magnifier metaphors are deliberately excluded."
+          "sourceKind": "original-generated-era-illustration",
+          "sourceNote": null
         },
         "clioStage": {
           "priorityCore16": false,
@@ -7070,11 +7070,11 @@
           "provenanceClass": "B",
           "directPrototype": "Mac OS X 10.6 System Preferences",
           "nearestPeriodAnalog": null,
-          "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
+          "authoringMethod": "image-generation-plus-deterministic-processing",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "accepted-priority-lineage",
+          "legacyFamilyReviewStatus": "accepted-generated",
           "historicalReviewStatus": "historically-reviewed",
-          "blindMixStatus": "not-run",
+          "blindMixStatus": null,
           "historicalStatusAuthority": "icon-system-continuity-v2",
           "intentionalAnachronism": false,
           "anachronismReason": null,
@@ -7085,10 +7085,10 @@
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
-          "sourceNote": "Original era-specific control surfaces replace the repeated page-and-controls composition."
+          "sourceKind": "original-generated-era-illustration",
+          "sourceNote": null
         },
         "chooser": {
           "priorityCore16": false,
@@ -7213,11 +7213,11 @@
           "provenanceClass": "B",
           "directPrototype": null,
           "nearestPeriodAnalog": "Mac OS X 10.6 TextEdit",
-          "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
+          "authoringMethod": "image-generation-plus-deterministic-processing",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "accepted-priority-lineage",
+          "legacyFamilyReviewStatus": "accepted-generated",
           "historicalReviewStatus": "historically-reviewed",
-          "blindMixStatus": "not-run",
+          "blindMixStatus": null,
           "historicalStatusAuthority": "icon-system-continuity-v2",
           "intentionalAnachronism": false,
           "anachronismReason": null,
@@ -7228,10 +7228,10 @@
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
-          "sourceNote": "Original era-specific writing-application reinterpretations; the exact pen angle and material are not locked across eras."
+          "sourceKind": "original-generated-era-illustration",
+          "sourceNote": null
         },
         "writingDemo": {
           "priorityCore16": false,
@@ -7638,7 +7638,7 @@
           "provenanceClass": "C",
           "directPrototype": null,
           "nearestPeriodAnalog": "Snow Leopard Finder identity plus a period-plausible paired treatment",
-          "authoringMethod": "composition-from-approved-current-era-imagegen-finder-identity",
+          "authoringMethod": "image-generation-plus-deterministic-processing",
           "authoringStatus": "technically-clean",
           "legacyFamilyReviewStatus": "accepted-generated",
           "historicalReviewStatus": "historically-reviewed",
@@ -7653,9 +7653,9 @@
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "approved-imagegen-period-plausible-construction",
+          "sourceKind": "original-generated-era-illustration",
           "sourceNote": null
         },
         "daHandler": {
@@ -8114,7 +8114,7 @@
           "provenanceClass": "A",
           "directPrototype": "OS X 10.10 rounded blue/light split Finder face",
           "nearestPeriodAnalog": null,
-          "authoringMethod": "built-in-imagegen-reference-guided-plus-native-size-optical-processing",
+          "authoringMethod": "image-generation-plus-deterministic-processing",
           "authoringStatus": "technically-clean",
           "legacyFamilyReviewStatus": "accepted-generated",
           "historicalReviewStatus": "reference-validated",
@@ -8129,9 +8129,9 @@
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "approved-imagegen-reference-guided-reconstruction",
+          "sourceKind": "original-generated-era-illustration",
           "sourceNote": null
         },
         "fileFloppy": {
@@ -8190,11 +8190,11 @@
           "provenanceClass": "B",
           "directPrototype": null,
           "nearestPeriodAnalog": "OS X 10.10 Messages communication grammar",
-          "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
+          "authoringMethod": "image-generation-plus-deterministic-processing",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "accepted-priority-lineage",
+          "legacyFamilyReviewStatus": "accepted-generated",
           "historicalReviewStatus": "historically-reviewed",
-          "blindMixStatus": "not-run",
+          "blindMixStatus": null,
           "historicalStatusAuthority": "icon-system-continuity-v2",
           "intentionalAnachronism": false,
           "anachronismReason": null,
@@ -8205,10 +8205,10 @@
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
-          "sourceNote": "Original target-era reinterpretation. Two distinct interlocutors and one model-owned provisional reply replace the fixed two-balloon composition; no native artwork is claimed."
+          "sourceKind": "original-generated-era-illustration",
+          "sourceNote": null
         },
         "quickDraft": {
           "priorityCore16": false,
@@ -8298,11 +8298,11 @@
           "provenanceClass": "B",
           "directPrototype": null,
           "nearestPeriodAnalog": "Yosemite external storage volume",
-          "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
+          "authoringMethod": "image-generation-plus-deterministic-processing",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "accepted-priority-lineage",
+          "legacyFamilyReviewStatus": "accepted-generated",
           "historicalReviewStatus": "historically-reviewed",
-          "blindMixStatus": "not-run",
+          "blindMixStatus": null,
           "historicalStatusAuthority": "icon-system-continuity-v2",
           "intentionalAnachronism": false,
           "anachronismReason": null,
@@ -8313,10 +8313,10 @@
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
-          "sourceNote": "Original era-specific storage-volume reinterpretations. The project marker remains secondary to the hardware silhouette."
+          "sourceKind": "original-generated-era-illustration",
+          "sourceNote": null
         },
         "projectDisc": {
           "priorityCore16": true,
@@ -8584,11 +8584,11 @@
           "provenanceClass": "B",
           "directPrototype": null,
           "nearestPeriodAnalog": "Yosemite text proofing and markup grammar",
-          "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
+          "authoringMethod": "image-generation-plus-deterministic-processing",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "accepted-priority-lineage",
+          "legacyFamilyReviewStatus": "accepted-generated",
           "historicalReviewStatus": "historically-reviewed",
-          "blindMixStatus": "not-run",
+          "blindMixStatus": null,
           "historicalStatusAuthority": "icon-system-continuity-v2",
           "intentionalAnachronism": false,
           "anachronismReason": null,
@@ -8599,10 +8599,10 @@
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
-          "sourceNote": "Original target-era reinterpretation. No native Review Desk artwork is claimed; the lens is deliberately absent so Review Desk cannot collapse into Searcher."
+          "sourceKind": "original-generated-era-illustration",
+          "sourceNote": null
         },
         "searcher": {
           "priorityCore16": true,
@@ -8622,11 +8622,11 @@
           "provenanceClass": "B",
           "directPrototype": null,
           "nearestPeriodAnalog": "Yosemite Finder search and Spotlight grammar",
-          "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
+          "authoringMethod": "image-generation-plus-deterministic-processing",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "accepted-priority-lineage",
+          "legacyFamilyReviewStatus": "accepted-generated",
           "historicalReviewStatus": "historically-reviewed",
-          "blindMixStatus": "not-run",
+          "blindMixStatus": null,
           "historicalStatusAuthority": "icon-system-continuity-v2",
           "intentionalAnachronism": false,
           "anachronismReason": null,
@@ -8637,10 +8637,10 @@
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
-          "sourceNote": "Original target-era reinterpretation. The lens persists as the semantic anchor while result object, perspective, material, depth, and compact construction are re-authored independently for every admitted era."
+          "sourceKind": "original-generated-era-illustration",
+          "sourceNote": null
         },
         "reader": {
           "priorityCore16": false,
@@ -8730,11 +8730,11 @@
           "provenanceClass": "C",
           "directPrototype": null,
           "nearestPeriodAnalog": "Yosemite-era outline and document-map applications",
-          "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
+          "authoringMethod": "image-generation-plus-deterministic-processing",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "accepted-priority-lineage",
+          "legacyFamilyReviewStatus": "accepted-generated",
           "historicalReviewStatus": "historically-reviewed",
-          "blindMixStatus": "not-run",
+          "blindMixStatus": null,
           "historicalStatusAuthority": "icon-system-continuity-v2",
           "intentionalAnachronism": false,
           "anachronismReason": null,
@@ -8747,8 +8747,8 @@
             ],
             "construction": "deterministic-derivative"
           },
-          "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
-          "sourceNote": "Original era-specific document-structure utilities; geographic-map and magnifier metaphors are deliberately excluded."
+          "sourceKind": "original-generated-era-illustration",
+          "sourceNote": null
         },
         "clioStage": {
           "priorityCore16": false,
@@ -9086,11 +9086,11 @@
           "provenanceClass": "B",
           "directPrototype": "OS X 10.10 System Preferences",
           "nearestPeriodAnalog": null,
-          "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
+          "authoringMethod": "image-generation-plus-deterministic-processing",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "accepted-priority-lineage",
+          "legacyFamilyReviewStatus": "accepted-generated",
           "historicalReviewStatus": "historically-reviewed",
-          "blindMixStatus": "not-run",
+          "blindMixStatus": null,
           "historicalStatusAuthority": "icon-system-continuity-v2",
           "intentionalAnachronism": false,
           "anachronismReason": null,
@@ -9101,10 +9101,10 @@
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
-          "sourceNote": "Original era-specific control surfaces replace the repeated page-and-controls composition."
+          "sourceKind": "original-generated-era-illustration",
+          "sourceNote": null
         },
         "chooser": {
           "priorityCore16": false,
@@ -9229,11 +9229,11 @@
           "provenanceClass": "B",
           "directPrototype": null,
           "nearestPeriodAnalog": "OS X 10.10 TextEdit",
-          "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
+          "authoringMethod": "image-generation-plus-deterministic-processing",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "accepted-priority-lineage",
+          "legacyFamilyReviewStatus": "accepted-generated",
           "historicalReviewStatus": "historically-reviewed",
-          "blindMixStatus": "not-run",
+          "blindMixStatus": null,
           "historicalStatusAuthority": "icon-system-continuity-v2",
           "intentionalAnachronism": false,
           "anachronismReason": null,
@@ -9244,10 +9244,10 @@
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
-          "sourceNote": "Original era-specific writing-application reinterpretations; the exact pen angle and material are not locked across eras."
+          "sourceKind": "original-generated-era-illustration",
+          "sourceNote": null
         },
         "writingDemo": {
           "priorityCore16": false,
@@ -9654,7 +9654,7 @@
           "provenanceClass": "C",
           "directPrototype": null,
           "nearestPeriodAnalog": "Yosemite Finder identity plus a period-plausible paired treatment",
-          "authoringMethod": "composition-from-approved-current-era-imagegen-finder-identity",
+          "authoringMethod": "image-generation-plus-deterministic-processing",
           "authoringStatus": "technically-clean",
           "legacyFamilyReviewStatus": "accepted-generated",
           "historicalReviewStatus": "historically-reviewed",
@@ -9669,9 +9669,9 @@
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "approved-imagegen-period-plausible-construction",
+          "sourceKind": "original-generated-era-illustration",
           "sourceNote": null
         },
         "daHandler": {
@@ -9924,7 +9924,7 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
           "sourceKind": "imagegen-original-raster",
           "sourceNote": null
@@ -9962,7 +9962,7 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
           "sourceKind": "imagegen-original-raster",
           "sourceNote": null
@@ -10000,7 +10000,7 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
           "sourceKind": "imagegen-original-raster",
           "sourceNote": null
@@ -10038,7 +10038,7 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
           "sourceKind": "imagegen-original-raster",
           "sourceNote": null
@@ -10074,7 +10074,7 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
           "sourceKind": "imagegen-original-raster",
           "sourceNote": null
@@ -10113,7 +10113,7 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
           "sourceKind": "imagegen-original-raster",
           "sourceNote": null
@@ -10135,9 +10135,9 @@
             "recognizable system-navigation persona"
           ],
           "provenanceClass": "A",
-          "directPrototype": "macOS Tahoe 26 blue enclosure with a separate translucent light face/profile layer",
+          "directPrototype": "macOS 27 Golden Gate Beta 1 Finder with a light outer enclosure and an inset blue right face/profile panel",
           "nearestPeriodAnalog": null,
-          "authoringMethod": "built-in-imagegen-reference-guided-plus-native-size-optical-processing",
+          "authoringMethod": "image-generation-plus-deterministic-processing",
           "authoringStatus": "technically-clean",
           "legacyFamilyReviewStatus": "accepted-imagegen",
           "historicalReviewStatus": "reference-validated",
@@ -10154,7 +10154,7 @@
             ],
             "construction": "direct-or-optical-per-ledger"
           },
-          "sourceKind": "approved-imagegen-reference-guided-reconstruction",
+          "sourceKind": "imagegen-original-raster",
           "sourceNote": null
         },
         "fileFloppy": {
@@ -10191,7 +10191,7 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
           "sourceKind": "imagegen-original-raster",
           "sourceNote": null
@@ -10215,11 +10215,11 @@
           "provenanceClass": "B",
           "directPrototype": null,
           "nearestPeriodAnalog": "macOS Tahoe 26 Messages and layered communication grammar",
-          "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
+          "authoringMethod": "image-generation-plus-deterministic-processing",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "accepted-priority-lineage",
+          "legacyFamilyReviewStatus": "accepted-imagegen",
           "historicalReviewStatus": "historically-reviewed",
-          "blindMixStatus": "not-run",
+          "blindMixStatus": null,
           "historicalStatusAuthority": "icon-system-continuity-v2",
           "intentionalAnachronism": false,
           "anachronismReason": null,
@@ -10232,8 +10232,8 @@
             ],
             "construction": "direct-or-optical-per-ledger"
           },
-          "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
-          "sourceNote": "Original target-era reinterpretation. Two distinct interlocutors and one model-owned provisional reply replace the fixed two-balloon composition; no native artwork is claimed."
+          "sourceKind": "imagegen-original-raster",
+          "sourceNote": null
         },
         "quickDraft": {
           "priorityCore16": false,
@@ -10266,7 +10266,7 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
           "sourceKind": "imagegen-original-raster",
           "sourceNote": null
@@ -10302,7 +10302,7 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
           "sourceKind": "imagegen-original-raster",
           "sourceNote": null
@@ -10326,11 +10326,11 @@
           "provenanceClass": "B",
           "directPrototype": null,
           "nearestPeriodAnalog": "Tahoe external or project storage object",
-          "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
+          "authoringMethod": "image-generation-plus-deterministic-processing",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "accepted-priority-lineage",
+          "legacyFamilyReviewStatus": "accepted-imagegen",
           "historicalReviewStatus": "historically-reviewed",
-          "blindMixStatus": "not-run",
+          "blindMixStatus": null,
           "historicalStatusAuthority": "icon-system-continuity-v2",
           "intentionalAnachronism": false,
           "anachronismReason": null,
@@ -10343,8 +10343,8 @@
             ],
             "construction": "direct-or-optical-per-ledger"
           },
-          "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
-          "sourceNote": "Original era-specific storage-volume reinterpretations. The project marker remains secondary to the hardware silhouette."
+          "sourceKind": "imagegen-original-raster",
+          "sourceNote": null
         },
         "projectDisc": {
           "priorityCore16": true,
@@ -10380,7 +10380,7 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
           "sourceKind": "imagegen-original-raster",
           "sourceNote": null
@@ -10416,7 +10416,7 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
           "sourceKind": "imagegen-original-raster",
           "sourceNote": null
@@ -10452,7 +10452,7 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
           "sourceKind": "imagegen-original-raster",
           "sourceNote": null
@@ -10488,7 +10488,7 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
           "sourceKind": "imagegen-original-raster",
           "sourceNote": null
@@ -10524,7 +10524,7 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
           "sourceKind": "imagegen-original-raster",
           "sourceNote": null
@@ -10560,7 +10560,7 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
           "sourceKind": "imagegen-original-raster",
           "sourceNote": null
@@ -10596,7 +10596,7 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
           "sourceKind": "imagegen-original-raster",
           "sourceNote": null
@@ -10620,11 +10620,11 @@
           "provenanceClass": "B",
           "directPrototype": null,
           "nearestPeriodAnalog": "Tahoe text proofing and markup grammar",
-          "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
+          "authoringMethod": "image-generation-plus-deterministic-processing",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "accepted-priority-lineage",
+          "legacyFamilyReviewStatus": "accepted-imagegen",
           "historicalReviewStatus": "historically-reviewed",
-          "blindMixStatus": "not-run",
+          "blindMixStatus": null,
           "historicalStatusAuthority": "icon-system-continuity-v2",
           "intentionalAnachronism": false,
           "anachronismReason": null,
@@ -10637,8 +10637,8 @@
             ],
             "construction": "direct-or-optical-per-ledger"
           },
-          "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
-          "sourceNote": "Original target-era reinterpretation. No native Review Desk artwork is claimed; the lens is deliberately absent so Review Desk cannot collapse into Searcher."
+          "sourceKind": "imagegen-original-raster",
+          "sourceNote": null
         },
         "searcher": {
           "priorityCore16": true,
@@ -10674,7 +10674,7 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
           "sourceKind": "imagegen-original-raster",
           "sourceNote": null
@@ -10710,7 +10710,7 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
           "sourceKind": "imagegen-original-raster",
           "sourceNote": null
@@ -10746,7 +10746,7 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
           "sourceKind": "imagegen-original-raster",
           "sourceNote": null
@@ -10770,11 +10770,11 @@
           "provenanceClass": "C",
           "directPrototype": null,
           "nearestPeriodAnalog": "Tahoe-era structured-document and spatial-outline applications",
-          "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
+          "authoringMethod": "image-generation-plus-deterministic-processing",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "accepted-priority-lineage",
+          "legacyFamilyReviewStatus": "accepted-imagegen",
           "historicalReviewStatus": "historically-reviewed",
-          "blindMixStatus": "not-run",
+          "blindMixStatus": null,
           "historicalStatusAuthority": "icon-system-continuity-v2",
           "intentionalAnachronism": false,
           "anachronismReason": null,
@@ -10785,10 +10785,10 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
-          "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
-          "sourceNote": "Original era-specific document-structure utilities; geographic-map and magnifier metaphors are deliberately excluded."
+          "sourceKind": "imagegen-original-raster",
+          "sourceNote": null
         },
         "clioStage": {
           "priorityCore16": false,
@@ -10821,7 +10821,7 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
           "sourceKind": "imagegen-original-raster",
           "sourceNote": null
@@ -10857,7 +10857,7 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
           "sourceKind": "imagegen-original-raster",
           "sourceNote": null
@@ -10893,7 +10893,7 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
           "sourceKind": "imagegen-original-raster",
           "sourceNote": null
@@ -10929,7 +10929,7 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
           "sourceKind": "imagegen-original-raster",
           "sourceNote": null
@@ -10965,7 +10965,7 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
           "sourceKind": "imagegen-original-raster",
           "sourceNote": null
@@ -11004,7 +11004,7 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
           "sourceKind": "imagegen-original-raster",
           "sourceNote": null
@@ -11040,7 +11040,7 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
           "sourceKind": "imagegen-original-raster",
           "sourceNote": null
@@ -11076,7 +11076,7 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
           "sourceKind": "imagegen-original-raster",
           "sourceNote": null
@@ -11112,7 +11112,7 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
           "sourceKind": "imagegen-original-raster",
           "sourceNote": null
@@ -11151,7 +11151,7 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
           "sourceKind": "imagegen-original-raster",
           "sourceNote": null
@@ -11187,7 +11187,7 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
           "sourceKind": "imagegen-original-raster",
           "sourceNote": null
@@ -11223,7 +11223,7 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
           "sourceKind": "imagegen-original-raster",
           "sourceNote": null
@@ -11259,7 +11259,7 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
           "sourceKind": "imagegen-original-raster",
           "sourceNote": null
@@ -11283,11 +11283,11 @@
           "provenanceClass": "B",
           "directPrototype": null,
           "nearestPeriodAnalog": "macOS Tahoe 26 TextEdit",
-          "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
+          "authoringMethod": "image-generation-plus-deterministic-processing",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "accepted-priority-lineage",
+          "legacyFamilyReviewStatus": "accepted-imagegen",
           "historicalReviewStatus": "historically-reviewed",
-          "blindMixStatus": "not-run",
+          "blindMixStatus": null,
           "historicalStatusAuthority": "icon-system-continuity-v2",
           "intentionalAnachronism": false,
           "anachronismReason": null,
@@ -11300,8 +11300,8 @@
             ],
             "construction": "direct-or-optical-per-ledger"
           },
-          "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
-          "sourceNote": "Original era-specific writing-application reinterpretations; the exact pen angle and material are not locked across eras."
+          "sourceKind": "imagegen-original-raster",
+          "sourceNote": null
         },
         "writingDemo": {
           "priorityCore16": false,
@@ -11334,7 +11334,7 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
           "sourceKind": "imagegen-original-raster",
           "sourceNote": null
@@ -11370,7 +11370,7 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
           "sourceKind": "imagegen-original-raster",
           "sourceNote": null
@@ -11406,7 +11406,7 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
           "sourceKind": "imagegen-original-raster",
           "sourceNote": null
@@ -11442,7 +11442,7 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
           "sourceKind": "imagegen-original-raster",
           "sourceNote": null
@@ -11478,7 +11478,7 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
           "sourceKind": "imagegen-original-raster",
           "sourceNote": null
@@ -11514,7 +11514,7 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
           "sourceKind": "imagegen-original-raster",
           "sourceNote": null
@@ -11550,7 +11550,7 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
           "sourceKind": "imagegen-original-raster",
           "sourceNote": null
@@ -11586,7 +11586,7 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
           "sourceKind": "imagegen-original-raster",
           "sourceNote": null
@@ -11622,7 +11622,7 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
           "sourceKind": "imagegen-original-raster",
           "sourceNote": null
@@ -11658,7 +11658,7 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
           "sourceKind": "imagegen-original-raster",
           "sourceNote": null
@@ -11696,7 +11696,7 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
           "sourceKind": "imagegen-original-raster",
           "sourceNote": null
@@ -11719,8 +11719,8 @@
           ],
           "provenanceClass": "C",
           "directPrototype": null,
-          "nearestPeriodAnalog": "Tahoe 26 Finder identity plus a layered multiplicity treatment",
-          "authoringMethod": "composition-from-approved-current-era-imagegen-finder-identity",
+          "nearestPeriodAnalog": "Golden Gate Beta 1 Finder identity plus an inverse-field companion using the same inset-panel ratios",
+          "authoringMethod": "image-generation-plus-deterministic-processing",
           "authoringStatus": "technically-clean",
           "legacyFamilyReviewStatus": "accepted-imagegen",
           "historicalReviewStatus": "historically-reviewed",
@@ -11737,7 +11737,7 @@
             ],
             "construction": "direct-or-optical-per-ledger"
           },
-          "sourceKind": "approved-imagegen-period-plausible-construction",
+          "sourceKind": "imagegen-original-raster",
           "sourceNote": null
         },
         "daHandler": {
@@ -11773,7 +11773,7 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
           "sourceKind": "imagegen-original-raster",
           "sourceNote": null
@@ -11809,7 +11809,7 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
           "sourceKind": "imagegen-original-raster",
           "sourceNote": null
@@ -11845,7 +11845,7 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
           "sourceKind": "imagegen-original-raster",
           "sourceNote": null
@@ -11881,7 +11881,7 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
           "sourceKind": "imagegen-original-raster",
           "sourceNote": null
@@ -11917,7 +11917,7 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
           "sourceKind": "imagegen-original-raster",
           "sourceNote": null
@@ -11953,7 +11953,7 @@
               32,
               16
             ],
-            "construction": "deterministic-derivative"
+            "construction": "direct-or-optical-per-ledger"
           },
           "sourceKind": "imagegen-original-raster",
           "sourceNote": null

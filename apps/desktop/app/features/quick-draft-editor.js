@@ -319,6 +319,22 @@ function toggleQuickDraftComposite() {
   else showQuickDraftDisplayMode("read");
 }
 
+// The window can go away by three doors: the footer button, ⌘W, and the close
+// box. Only the first one used to put the display mode back, so closing the
+// darkroom from the menu left the product believing it was still showing the
+// grain -- with nothing on screen showing it. Every door reports here.
+function noteLightroomClosed() {
+  if (quickDraftDisplayMode === "body") return;
+  if (quickDraftDisplayMode === "listen") window.AISystem6QuickDraftListen?.stop?.();
+  const container = refs.preview?.closest(".lightroom-view") || refs.preview?.parentElement;
+  quickDraftDisplayMode = "body";
+  container?.classList.remove("is-previewing", "is-graining", "is-listening");
+  refs.preview?.classList.add("is-hidden");
+  refs.preview?.classList.remove("quick-draft-grain-pane", "draft-desk-listen-pane");
+  syncQuickDraftPreviewButtons(false);
+  if (typeof updateMenuState === "function") updateMenuState();
+}
+
 function leaveQuickDraftPreview() {
   if (!refs.preview || !refs.draft) return;
   const container = refs.preview.closest(".lightroom-view") || refs.preview.parentElement;
@@ -461,6 +477,46 @@ function renderQuickDraftVersions(record = activeProjectQuickDraft({ create: fal
     }));
   }
   if (refs.restoreDumpButton) refs.restoreDumpButton.disabled = !versions.length;
+}
+
+// Keeping a proof you liked. Develop leaves a version behind it, which meant
+// the only way to keep a state was to commit it to the body -- so the Versions
+// list could only ever hold states the writer had already accepted. This keeps
+// the body as it stands right now, under the writer's own reason.
+async function saveLightroomVersion() {
+  const slot = activeProjectQuickDraft();
+  if (!slot) {
+    setQuickDraftStatus(t("quick_draft_no_project"));
+    return false;
+  }
+  const task = createQuickDraftAsyncTask({ create: false });
+  if (!task) {
+    setQuickDraftStatus(t("quick_draft_no_project"));
+    return false;
+  }
+  const body = String(refs.draft?.value || slot.record.workspace.body || "");
+  if (!body.trim()) {
+    setQuickDraftStatus(t("quick_draft_empty_body"));
+    return false;
+  }
+  const version = normalizeQuickDraftVersion({
+    id: stableId("version"),
+    body,
+    title: slot.record.workspace.title,
+    createdAt: new Date().toISOString(),
+    reason: "kept",
+    source: "lightroom",
+  });
+  const committed = await task.commit({ workspace: {
+    versions: [...darkroomOf(task.currentRecord()).versions, version].slice(-100),
+  } }, { captureForm: false });
+  if (!committed.ok) {
+    setQuickDraftStatus(t("quick_draft_save_failed"));
+    return false;
+  }
+  renderQuickDraft(committed.record);
+  setQuickDraftStatus(t("lightroom_version_saved"));
+  return true;
 }
 
 // Going back to a version is not a delete: the body being replaced is kept as

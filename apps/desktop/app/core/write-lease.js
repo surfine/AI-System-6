@@ -148,9 +148,13 @@ function registerReadOnlyRule(rule) {
 }
 
 function elementIsReadOnly(element) {
-  // Handoff freezes new user mutations exactly like read-only: the old writer
-  // may finish pending durable writes but must not accept new edits.
-  if (leaseState.mode !== "writer") return true;
+  // Not holding the lease no longer freezes anything. The lease holds the
+  // database connection, not the user's permission to type: a window without
+  // it hands its writes to the window that has it, and the base check on each
+  // record is what keeps that safe. Handoff still freezes, because there the
+  // holder is flushing its last durable writes before letting go and must not
+  // take on new ones.
+  if (leaseState.mode === "handoff") return true;
   for (const rule of extraReadOnlyRules) {
     try {
       if (rule(element) === true) return true;
@@ -199,6 +203,7 @@ function syncReadOnlySurface() {
 let announcedReadOnly = false;
 
 function setWriter(value, claimedAt = 0, epoch = 0) {
+  const becameWriter = value && leaseState.mode !== "writer";
   if (value && announcedReadOnly) {
     announcedReadOnly = false;
     if (typeof setStatus === "function") clearStatus();
@@ -212,6 +217,20 @@ function setWriter(value, claimedAt = 0, epoch = 0) {
   };
   syncWriteModeDataset();
   syncReadOnlySurface();
+  // Losing the pen refreshes the menus and the status line. Taking it back
+  // refreshed neither, and the silent reclaim on focus is the common way to
+  // take it back - so a window that had already become the writer kept showing
+  // the read-only notice and the greyed commands that explained a lock it no
+  // longer had. The surface unlocked; only the explanation stayed behind.
+  if (becameWriter) refreshWriteLeaseSurfaces();
+}
+
+// The surfaces that explain the lock in words rather than in disabled state:
+// the menu bar, and the ClioTalk greeting that offers to take the pen. Both
+// have to move with the lease in both directions.
+function refreshWriteLeaseSurfaces() {
+  if (typeof updateMenuState === "function") updateMenuState();
+  if (typeof renderClioTalkWelcome === "function") renderClioTalkWelcome();
 }
 
 function post(message) {
@@ -372,7 +391,6 @@ async function forceTakeOverWriteLease() {
     setWriter(true, claimedAt, fence.epoch);
     startHeartbeat();
     post({ type: "takeover", instanceId, claimedAt, epoch: fence.epoch });
-    notifyLeaseListeners({ type: "writer", instanceId, epoch: fence.epoch });
     return { writer: true, readOnly: false, epoch: fence.epoch };
   } catch (error) {
     if (storedLeaseBelongsToMe()) removeStoredLease();
@@ -638,9 +656,10 @@ function enterReadOnly(reason = "write-access-lost") {
   stopHeartbeat();
   setWriter(false);
   if (typeof cancelWorkingSessionAutosave === "function") cancelWorkingSessionAutosave();
-  announcedReadOnly = true;
-  if (typeof setStatus === "function") setStatus(t("read_only_instance_status"));
-  if (typeof updateMenuState === "function") updateMenuState();
+  // Losing the lease is no longer news for the user - the window keeps working
+  // and its writes travel. Saying "read only" here would describe a state that
+  // no longer stops anything.
+  refreshWriteLeaseSurfaces();
   return reason;
 }
 
@@ -762,6 +781,12 @@ async function takeOverSilentlyOrAsk({ announce = true } = {}) {
 async function acquireWriteLeaseAtBoot() {
   const result = await acquireWriteLease();
   if (!result.readOnly) return result;
+  // Booting hidden is not a statement of intent. A restored session tab, a
+  // background window, a second app instance opened behind the one in use -
+  // each used to take the pen out of the window the user was typing in, which
+  // is the same invariant reclaimWriteLeaseOnFocus already keeps: a hidden
+  // window never takes the pen. Focus hands it over the moment they look.
+  if (document.visibilityState === "hidden") return result;
   const handover = await takeOverSilentlyOrAsk();
   return handover.writer ? handover : result;
 }

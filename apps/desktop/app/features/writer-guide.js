@@ -135,12 +135,33 @@ async function openFirstRunClioTalk() {
 }
 
 function activateClioStarter(starterId = "") {
+  const id = String(starterId || "");
+  // The stranger's card plays the 30-second offline tour in every model
+  // state. The demo beats prose: it needs no model, never mutates user data,
+  // and always restores the desk. Prompt-prose introductions are retired.
+  if (id === "explore") {
+    if (typeof handleAction !== "function") return false;
+    handleAction("play-teaser-demo");
+    return true;
+  }
+  const modelReady = typeof clioTalkModelReady === "function" && clioTalkModelReady();
+  if (!modelReady) {
+    // Without a model a prefilled composer cannot send, so each card opens
+    // the nearest working door instead.
+    const openAction = {
+      idea: "open-quick-draft",
+      notes: "open-note-pad",
+      file: "open-import-utility",
+    }[id];
+    if (!openAction || typeof handleAction !== "function") return false;
+    handleAction(openAction);
+    return true;
+  }
   const key = {
     idea: "clio_starter_idea_prompt",
     notes: "clio_starter_notes_prompt",
     file: "clio_starter_file_prompt",
-    explore: "clio_starter_explore_prompt",
-  }[String(starterId || "")];
+  }[id];
   if (!key || !promptInput) return false;
   promptInput.value = t(key);
   promptInput.dispatchEvent(new Event("input", { bubbles: true }));

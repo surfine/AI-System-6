@@ -137,6 +137,28 @@
     },
   });
 
+  window.AISystem6Capabilities?.registerServiceProvider?.("cloud.files.upload", {
+    id: "same-origin-node",
+    request(input = {}) {
+      return sameOriginNode.request({
+        url: "/api/cloud/files",
+        init: input.init,
+        signal: input.signal,
+      });
+    },
+  });
+
+  window.AISystem6Capabilities?.registerServiceProvider?.("cloud.files.delete", {
+    id: "same-origin-node",
+    request(input = {}) {
+      return sameOriginNode.request({
+        url: "/api/cloud/files",
+        init: input.init,
+        signal: input.signal,
+      });
+    },
+  });
+
   window.AISystem6Capabilities?.registerServiceProvider?.("cloud.quota", {
     id: "same-origin-node",
     request(input = {}) {
@@ -368,6 +390,8 @@
         "cloud.status",
         "cloud.models",
         "cloud.chat",
+        "cloud.files.upload",
+        "cloud.files.delete",
         "vision.analyze",
         "cloud.quota",
         "cloud.embeddings",

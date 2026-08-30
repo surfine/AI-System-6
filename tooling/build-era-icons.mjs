@@ -1451,10 +1451,22 @@ if (selectedThemes.includes("platinum")) await import("./build-platinum-imagegen
 const { buildAcceptedGeneratedIcons } = await import("./build-accepted-generated-era-icons.mjs");
 await buildAcceptedGeneratedIcons(selectedThemes);
 
+// A complete family can be approved after the older object-by-object lineage
+// audits. In that case the accepted family is the new historical authority;
+// replaying the legacy overlays would silently restore superseded pixels.
+const acceptedGeneratedLedger = JSON.parse(readFileSync(join(root, "tooling", "icon-generation", "accepted-generated-icons.json"), "utf8"));
+const supersedingAcceptedThemes = new Set([
+  ...(acceptedGeneratedLedger.supersedingCompleteFamilies || []),
+  ...Object.entries(acceptedGeneratedLedger.eras || {})
+    .filter(([, era]) => era.supersedesHistoricalLineageOverlays)
+    .map(([theme]) => theme),
+]);
+
 // Historical acceptance is a separate, later gate. Only eras with an
 // explicitly approved Finder ImageGen master are eligible for this overlay;
 // generated candidates that failed evidence or compact-size review never ship.
-const approvedFinderThemes = selectedThemes.filter((theme) => ["platinum", "aqua", "snow-leopard", "yosemite", "liquid-glass"].includes(theme));
+const approvedFinderThemes = selectedThemes.filter((theme) => ["platinum", "aqua", "snow-leopard", "yosemite", "liquid-glass"].includes(theme)
+  && !supersedingAcceptedThemes.has(theme));
 if (approvedFinderThemes.length) {
   const { buildApprovedFinderLineage } = await import("./build-approved-finder-lineage.mjs");
   await buildApprovedFinderLineage(approvedFinderThemes);
@@ -1463,11 +1475,17 @@ if (approvedFinderThemes.length) {
 // Rows beyond Finder cross the historical gate independently. This overlay is
 // deliberately narrow and ledger-driven: a generated candidate is not
 // eligible merely because generation or technical cleanup succeeded.
-const approvedPriorityThemes = selectedThemes.filter((theme) => ["platinum", "aqua", "snow-leopard", "yosemite", "liquid-glass"].includes(theme));
+const approvedPriorityThemes = selectedThemes.filter((theme) => ["platinum", "aqua", "snow-leopard", "yosemite", "liquid-glass"].includes(theme)
+  && !supersedingAcceptedThemes.has(theme));
 if (approvedPriorityThemes.length) {
   const { buildApprovedPriorityLineage } = await import("./build-approved-priority-lineage.mjs");
   await buildApprovedPriorityLineage(approvedPriorityThemes);
 }
+
+// Compact Liquid Glass tiers are derived last from the accepted 128 px runtime
+// pixels, after every potential authoring overlay. This prevents the broad
+// canvas resampler from baking soft 32/16 px files back into the product.
+if (selectedThemes.includes("liquid-glass")) await import("./build-liquid-glass-optical-small-icons.mjs");
 
 // Contact sheets resolve after every authoring overlay so they show the exact
 // bytes users receive, including historically pending assets.

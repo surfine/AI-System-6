@@ -2340,6 +2340,9 @@ function positionOpenMenu(menu) {
   const maxLeft = Math.max(margin, window.innerWidth - popoverWidth - margin);
   const left = Math.min(Math.max(menuRect.left, margin), maxLeft);
   menu.style.setProperty("--menu-popover-left", `${Math.round(left)}px`);
+  // A balloon that is already showing must step aside for the menu that just
+  // appeared under it, and the open panel is the only chance to measure it.
+  if (typeof refreshBalloonHelpPlacement === "function") refreshBalloonHelpPlacement();
 }
 
 // What actually clips a pulled-down command menu is not always the screen. The

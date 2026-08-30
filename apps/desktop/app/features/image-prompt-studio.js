@@ -27,14 +27,7 @@
     // The cloud reads reference images now: fetchModelPayload sends any payload
     // that carries an image to the DeepSeek vision model, whatever the picker
     // shows. Only a local model with no vision blocks the path.
-    if (typeof cloudConfig !== "undefined" && cloudConfig?.active) return true;
-    if (typeof window.AISystem6LocalLMStudio?.models === "function") {
-      const modelName = typeof getLocalModelRequestName === "function" ? getLocalModelRequestName() : "";
-      const current = window.AISystem6LocalLMStudio.models()
-        .find((model) => model.id === modelName || model.name === modelName);
-      if (current && current.vision === false) return false;
-    }
-    return true;
+    return currentModelSupportsImageInputs();
   }
 
   function updateReferenceImageAvailability() {
@@ -140,7 +133,7 @@
       } else {
         user.content = [
           { type: "text", text: user.content },
-          { type: "image_url", image_url: { url: referenceDataUrl } },
+          { type: "image_url", image_url: { url: referenceDataUrl, detail: "low" } },
         ];
       }
     }
@@ -149,19 +142,25 @@
     const button = $("ips-go");
     if (button) button.disabled = true;
     try {
-      const response = await fetchModelPayload({
-        model: typeof getLocalModelRequestName === "function" ? getLocalModelRequestName() : undefined,
-        messages,
-        temperature: 0.7,
-        ai_system6_task_kind: "chat",
-      }, typeof getLongTaskSignal === "function" ? getLongTaskSignal() : undefined);
-      const data = await response.json().catch(() => ({}));
-      const content = ((data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || "").trim();
+      const modelResult = await sendLocalModelTask({
+        payload: {
+          model: typeof getLocalModelRequestName === "function" ? getLocalModelRequestName() : undefined,
+          messages,
+          temperature: 0.7,
+          max_tokens: 1800,
+          stream: false,
+          ai_system6_task_kind: "image-prompt",
+        },
+        signal: typeof getLongTaskSignal === "function" ? getLongTaskSignal() : undefined,
+        taskKind: "image-prompt",
+        streamPreference: "json",
+      });
+      const content = String(modelResult?.text || "").trim();
       if (!content) throw new Error("empty");
-      const result = window.AISystem6ImagePromptRuntime.parseImagePromptResult(content);
-      if (!result.gptImage && !result.universal) throw new Error("parse");
-      setOutput("ips-gpt-out", result.gptImage);
-      setOutput("ips-universal-out", result.universal);
+      const parsedResult = window.AISystem6ImagePromptRuntime.parseImagePromptResult(content);
+      if (!parsedResult.gptImage && !parsedResult.universal) throw new Error("parse");
+      setOutput("ips-gpt-out", parsedResult.gptImage);
+      setOutput("ips-universal-out", parsedResult.universal);
       saveHistory({ idea, aspect: $("ips-aspect").value || "16:9", at: Date.now() });
       renderHistory();
       setStatus("ips_done", "Prompt ready — copy it.");
@@ -185,24 +184,26 @@
 
   function wireReferenceImage() {
     const button = $("ips-ref");
-    const input = $("ips-ref-file");
-    if (!button || !input) return;
-    button.addEventListener("click", () => input.click());
-    input.addEventListener("change", () => {
-      const file = input.files && input.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        referenceDataUrl = String(reader.result || "");
-        setStatus("ips_ref_ready", "Reference image attached.");
-      };
-      reader.onerror = () => {
-        referenceDataUrl = "";
-        setStatus("ips_ref_error", "Could not read that image.");
-      };
-      reader.readAsDataURL(file);
-      input.value = "";
-    });
+    if (!button) return;
+    button.addEventListener("click", () => openTransientFilePicker({
+      accept: CLIO_IMAGE_ACCEPT,
+      onSelect: async (files) => {
+        const entry = clioVisionImageFilesFromList(files)[0];
+        if (!entry || entry.file.size > CLIO_IMAGE_MAX_SOURCE_BYTES) {
+          referenceDataUrl = "";
+          setStatus("ips_ref_error", "Could not read that image.");
+          return;
+        }
+        try {
+          const prepared = await prepareClioImageInline(entry.file, { detail: "low" });
+          referenceDataUrl = prepared.inlineDataUrl;
+          setStatus("ips_ref_ready", "Reference image attached.");
+        } catch {
+          referenceDataUrl = "";
+          setStatus("ips_ref_error", "Could not read that image.");
+        }
+      },
+    }));
   }
 
   function buildStudioWindow() {
@@ -241,7 +242,6 @@
       '<span class="spacer"></span>',
       '<button class="btn" type="button" id="ips-ref" data-i18n="ips_ref" data-balloon-help="balloon_ips_ref">Attach reference image</button>',
       '<button class="btn default" type="button" id="ips-go" data-i18n="ips_generate" data-balloon-help="balloon_ips_generate">Write Prompt</button>',
-      '<input type="file" id="ips-ref-file" accept="image/*" hidden>',
       '</div>',
       '</section>',
       '<section class="control-section ips-group ips-outputs-group">',

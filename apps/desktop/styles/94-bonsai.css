@@ -252,7 +252,14 @@
     grid-row: 1;
   }
 
+  /* The overlay only works if the panel is positioned. The map's canvases are
+     absolute, and a positioned element always paints above a static one no
+     matter the DOM order — so a static panel spanning the same cell ended up
+     BEHIND the map, showing only the sliver left of it. The inspector is the
+     last child, so position alone puts it on top — no stacking override is
+     needed, and this sheet's budget allows none. */
   .bonsai-window .bonsai-workspace-container .bonsai-inspector {
+    position: relative;
     grid-column: 1 / -1;
     grid-row: 1 / -1;
   }
@@ -328,7 +335,14 @@
     grid-row: 1;
   }
 
+  /* The overlay only works if the panel is positioned. The map's canvases are
+     absolute, and a positioned element always paints above a static one no
+     matter the DOM order — so a static panel spanning the same cell ended up
+     BEHIND the map, showing only the sliver left of it. The inspector is the
+     last child, so position alone puts it on top — no stacking override is
+     needed, and this sheet's budget allows none. */
   .bonsai-window .bonsai-workspace-container .bonsai-inspector {
+    position: relative;
     grid-column: 1 / -1;
     grid-row: 1 / -1;
   }
@@ -390,9 +404,14 @@
   text-transform: uppercase;
 }
 
+/* Fit the columns to the label, not to a fixed count. Two columns came from
+   the old toolbox, which had to stack eight groups in 175px; the sub-palette
+   shows one group in 123px, and the same two columns cut "Subway station"
+   down to "Su…". Below 223px this resolves to one column and the names read;
+   the wider phone sheet still gets two or three. */
 .bonsai-window .bonsai-tool-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
   gap: 3px;
 }
 
@@ -434,8 +453,13 @@
   font-size: 10px;
 }
 
+/* --muted-ink is defined nowhere in this stylesheet tree, so this always fell
+   back to --shade — a SURFACE token used as ink. Grey-on-grey measured 1.8 in
+   Classic and exactly 1.0 in Liquid Glass, where the fallback equals the
+   surface it sits on and the shortcut and price vanished. Derive the muted ink
+   from the era's own two tokens instead, the way 00-foundation.css does. */
 .bonsai-window .bonsai-tool-meta {
-  color: var(--muted-ink, var(--shade));
+  color: color-mix(in srgb, var(--ink) 76%, var(--paper));
   font-size: 8px;
 }
 
@@ -481,38 +505,31 @@
   image-rendering: pixelated;
 }
 
-.bonsai-window .bonsai-goals {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  max-width: min(260px, calc(100% - 12px));
-  padding: 5px 7px;
-  border: var(--system-border);
-  background: var(--paper);
-  box-shadow: var(--system-shadow);
-}
-
-.bonsai-window .bonsai-goals h3,
-.bonsai-window .bonsai-goals ol {
+/* The opening goals stopped floating on the city. They are panel content now,
+   opened from 窗口 → 开局目标; the newspaper's first edition does the teaching
+   that the card used to do. */
+.bonsai-window .bonsai-goals-list {
   margin: 0;
-}
-
-.bonsai-window .bonsai-goals h3 {
-  padding-bottom: 3px;
-  border-bottom: 1px solid var(--shade);
-  font-size: 11px;
-}
-
-.bonsai-window .bonsai-goals ol {
-  padding: 3px 0 0;
+  padding: 0;
   list-style: none;
-  font-size: 10px;
-  line-height: 1.35;
+  font-size: 11px;
+  line-height: 1.45;
 }
 
-.bonsai-window .bonsai-goals li.is-complete {
-  color: var(--muted-ink, var(--shade));
+.bonsai-window .bonsai-goals-list li.is-complete {
+  color: color-mix(in srgb, var(--ink) 62%, var(--paper));
   text-decoration: line-through;
+}
+
+.bonsai-window .bonsai-goals-note {
+  margin: 0 0 6px;
+  font-size: 10px;
+  line-height: 1.4;
+  color: color-mix(in srgb, var(--ink) 76%, var(--paper));
+}
+
+.bonsai-window .bonsai-goals-note:last-child {
+  margin: 6px 0 0;
 }
 
 .bonsai-window .bonsai-map-setup,
@@ -542,7 +559,6 @@
 
 .bonsai-window .bonsai-map-setup[hidden],
 .bonsai-window .bonsai-city-browser[hidden],
-.bonsai-window .bonsai-goals[hidden],
 .bonsai-window .bonsai-inspector[hidden] {
   display: none;
 }
@@ -926,21 +942,8 @@
   .bonsai-window .bonsai-city-row-actions {
     justify-content: flex-end;
   }
-
-  .bonsai-window .bonsai-goals {
-    max-width: calc(100% - 12px);
-  }
 }
 
-@media (max-height: 600px) {
-  .bonsai-window .bonsai-goals {
-    font-size: 9px;
-  }
-
-  .bonsai-window .bonsai-goals li:nth-child(n + 4) {
-    display: none;
-  }
-}
 
 /* Floating playfield instruments (M1): the minimap card and the first-run
    hint. Panels stack by DOM order — the map stack, then this card, then the

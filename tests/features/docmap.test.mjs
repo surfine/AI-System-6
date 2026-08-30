@@ -140,7 +140,7 @@ test.assertIncludes(app, '"xMidYMid meet" : "xMinYMid meet"', "DocMap PDF center
 test.assertIncludes(app, "docMapSvgVisibleElementBox(svg, layout) || docMapSvgFallbackViewportBox(svg)", "DocMap PDF removes wasted viewport whitespace before printing");
 test.assertIncludes(app, "width=${printMetrics.popupWidth},height=${printMetrics.popupHeight}", "DocMap PDF export opens a print surface that matches the selected paper orientation");
 test.assertIncludes(app, "printWindow.print()", "DocMap PDF export invokes the browser print flow");
-test.assertIncludes(app, "/^(?:deepseek-)?v4-(?:pro|flash)$/i", "DeepSeek v4 detection accepts provider short names such as v4-flash");
+test.assertIncludes(app, "/^(?:deepseek-)?v4-(?:pro|flash)(?:-vision-exp)?$/i", "DeepSeek v4 detection accepts provider short names and the Vision variant");
 test.assertIncludes(app, "delete nextPayload.reasoning_effort", "DeepSeek v4 cloud requests do not send reasoning_effort=none");
 test.assertIncludes(app, "delete nextPayload.chat_template_kwargs", "DeepSeek v4 cloud requests do not leak local chat-template kwargs");
 test.assertIncludes(app, "delete nextPayload.top_k", "DeepSeek v4 cloud requests do not leak local top_k sampling");

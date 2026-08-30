@@ -100,6 +100,19 @@ async function readCombination(browser, server, theme, width) {
        // opens windows. Ask the app to render the ones a batch names.
       await page.evaluate(() => {
         try { if (typeof renderMultiFinderMenu === "function") renderMultiFinderMenu(); } catch {}
+        // The system modal and the select popover only exist while summoned.
+        // Summon both so their selectors match; the probe reads computed
+        // styles, so an overlay hiding pixels does not hide values.
+        try {
+          if (typeof showSystemModal === "function" && !document.querySelector("#system-modal-message")) {
+            showSystemModal("probe", "alert");
+          }
+        } catch {}
+        try {
+          if (!document.querySelector(".system-select-option")) {
+            document.querySelector(".system-select-button:not(:disabled)")?.click();
+          }
+        } catch {}
         for (const el of document.querySelectorAll(".multifinder-menu, .menu-popover")) el.classList.remove("is-hidden");
       });
       await page.waitForTimeout(600);

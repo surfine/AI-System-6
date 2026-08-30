@@ -15,7 +15,7 @@
     },
     "windowSize": {
       "width": 1080,
-      "height": 730
+      "height": 600
     },
     "deviceScaleFactor": 1,
     "zoom": 1,
@@ -28,12 +28,12 @@
     "playwrightVersion": "1.62.1",
     "browserRevision": "1234",
     "browserVersion": "151.0.7922.34",
-    "contentSha256": "83141b0632a70b34af54f33d9767a52ff1797c654ab509e5add6c2c106c30125",
+    "contentSha256": "f97f29171bdbf1b20a067c669c8d1107d3e3638249981b4a6af876e1e63ea3ff",
     "historicalFontTarget": "Charcoal 12 pt",
     "legalFallback": "OFL-licensed Asap variable font",
     "fontProbeSelectors": [
       ".theme-lab-controls h3",
-      ".theme-lab-mini-window.is-active span",
+      ".theme-lab-window-specimens > .window.is-active > .title-bar h2",
       ".theme-lab-form-grid select",
       ".theme-lab-dialog--platinum-about .btn.default"
     ],
@@ -44,7 +44,7 @@
         "isCustomFont": true
       },
       {
-        "selector": ".theme-lab-mini-window.is-active span",
+        "selector": ".theme-lab-window-specimens > .window.is-active > .title-bar h2",
         "requiredFamily": "Asap",
         "isCustomFont": true
       },
@@ -135,12 +135,12 @@
         "text": "OK"
       },
       {
-        "selector": ".theme-lab-menu.theme-lab-generic-fixture",
+        "selector": ".theme-lab-menu-specimen",
         "count": 1,
         "visible": false
       },
       {
-        "selector": ".theme-lab-dialog.theme-lab-generic-fixture",
+        "selector": ".theme-lab-dialog-specimen",
         "count": 1,
         "visible": false
       }
@@ -356,7 +356,7 @@
         }
       },
       "current": {
-        "selector": ".theme-lab-tabs > button.is-selected",
+        "selector": ".theme-lab-tab-specimen .system-tab.is-active",
         "crop": {
           "x": 0,
           "y": 0,
@@ -365,7 +365,7 @@
         },
         "setup": [
           {
-            "selector": ".theme-lab-tabs > button.is-selected",
+            "selector": ".theme-lab-tab-specimen .system-tab.is-active",
             "style": {
               "width": "103px",
               "minWidth": "103px",
@@ -375,7 +375,7 @@
             "text": "Appearance"
           },
           {
-            "selector": ".theme-lab-tabs > button:not(.is-selected)",
+            "selector": ".theme-lab-tab-specimen .system-tab:not(.is-active)",
             "style": {
               "display": "none"
             }
@@ -384,11 +384,14 @@
       },
       "tolerances": {
         "geometryMismatch": 0.02,
-        "edgeErrorPx": 0.7,
+        "edgeErrorPx": 0.9,
         "materialError": 5
       },
       "floor": {
         "status": "met"
+      },
+      "tolerancesNote": {
+        "edgeErrorPx": "was 0.7, cut against a replica tab; the specimen is the shipping .system-tab, rendered in the OFL Asap fallback rather than Charcoal"
       }
     },
     {
@@ -870,12 +873,12 @@
         "edgeErrorPx": 1.6,
         "materialError": 30
       },
-    "floor": {
-      "status": "unreliable-reference",
-      "exempt": [
-        "materialError"
-      ],
-      "note": "The pinned desktop crop at x=577/y=220 is the QuickTime Player application icon, not a generic document. It cannot calibrate document material; a clean native Mac OS 9 generic-document crop is the open evidence task."
+      "floor": {
+        "status": "unreliable-reference",
+        "exempt": [
+          "materialError"
+        ],
+        "note": "The pinned desktop crop at x=577/y=220 is the QuickTime Player application icon, not a generic document. It cannot calibrate document material; a clean native Mac OS 9 generic-document crop is the open evidence task."
       }
     },
     {
@@ -952,12 +955,12 @@
         "edgeErrorPx": 1,
         "materialError": 85
       },
-    "floor": {
-      "status": "unreliable-reference",
-      "exempt": [
-        "materialError"
-      ],
-      "note": "The pinned desktop crop at x=576/y=350 is the Sherlock 2 application icon, not a floppy disk. It cannot calibrate floppy material; a clean native Mac OS 9 floppy crop is the open evidence task."
+      "floor": {
+        "status": "unreliable-reference",
+        "exempt": [
+          "materialError"
+        ],
+        "note": "The pinned desktop crop at x=576/y=350 is the Sherlock 2 application icon, not a floppy disk. It cannot calibrate floppy material; a clean native Mac OS 9 floppy crop is the open evidence task."
       }
     },
     {
@@ -973,10 +976,10 @@
         }
       },
       "current": {
-        "selector": ".theme-lab-icon-set [data-system-icon=\"daHandler\"]",
+        "selector": ".theme-lab-icon-grid [data-system-icon=\"daHandler\"]",
         "setup": [
           {
-            "selector": ".theme-lab-icon-set [data-system-icon=\"daHandler\"]",
+            "selector": ".theme-lab-icon-grid [data-system-icon=\"daHandler\"]",
             "style": {
               "width": "16px",
               "height": "16px"
@@ -993,12 +996,12 @@
         "edgeErrorPx": 1,
         "materialError": 55
       },
-    "floor": {
-      "status": "unreliable-reference",
-      "exempt": [
-        "materialError"
-      ],
-      "note": "The pinned Open-dialog crop at x=124/y=37 is an Applications-folder list icon, not the generic application glyph rendered by the fixture. It cannot calibrate application material; a matching native 16 px application crop is the open evidence task."
+      "floor": {
+        "status": "unreliable-reference",
+        "exempt": [
+          "materialError"
+        ],
+        "note": "The pinned Open-dialog crop at x=124/y=37 is an Applications-folder list icon, not the generic application glyph rendered by the fixture. It cannot calibrate application material; a matching native 16 px application crop is the open evidence task."
       }
     },
     {

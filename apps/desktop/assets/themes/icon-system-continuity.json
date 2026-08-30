@@ -88,7 +88,7 @@
         "aqua": "Mac OS X 10.2 Dock Finder two-tone split smiling face",
         "snow-leopard": "Mac OS X 10.6 FinderIcon split face with curved profile divider",
         "yosemite": "OS X 10.10 rounded blue/light split Finder face",
-        "liquid-glass": "macOS Tahoe 26 blue enclosure with a separate translucent light face/profile layer"
+        "liquid-glass": "macOS 27 Golden Gate Beta 1 Finder with a light outer enclosure and an inset blue right face/profile panel"
       },
       "nearestAnalogByEra": {},
       "eraTranslationByEra": {
@@ -97,7 +97,7 @@
         "aqua": "Move to the Jaguar split smiling Finder face; do not retain a beige compact-Mac chassis.",
         "snow-leopard": "Use the mature 10.6 split face and profile geometry, not a higher-resolution Jaguar chassis.",
         "yosemite": "Use the graphic 10.10 split face, palette, side relationship, and shallow depth.",
-        "liquid-glass": "Use the Tahoe 26 Finder enclosure and separate translucent face layer; do not put a beige Macintosh inside a squircle."
+        "liquid-glass": "Use the rarer Golden Gate Beta 1 light ordering: a near-full light outer enclosure, an inset blue right profile with balanced three-side margins, measured R corners, and restrained Liquid Glass edge transmission."
       },
       "allowedChanges": [
         "hardware enclosure",
@@ -155,7 +155,7 @@
         "aqua": "Jaguar Finder identity plus a period-plausible paired treatment",
         "snow-leopard": "Snow Leopard Finder identity plus a period-plausible paired treatment",
         "yosemite": "Yosemite Finder identity plus a period-plausible paired treatment",
-        "liquid-glass": "Tahoe 26 Finder identity plus a layered multiplicity treatment"
+        "liquid-glass": "Golden Gate Beta 1 Finder identity plus an inverse-field companion using the same inset-panel ratios"
       },
       "eraTranslationByEra": {
         "classic": "Express two parallel environments with two readable Classic Finder identities; do not claim a native MultiFinder icon resource.",
@@ -163,12 +163,13 @@
         "aqua": "Pair or overlap the Jaguar split faces rather than two beige computers.",
         "snow-leopard": "Pair or overlap the 10.6 Finder identities with mature Aqua depth.",
         "yosemite": "Use two 10.10 Finder identities with restrained flat overlap.",
-        "liquid-glass": "Use the Tahoe layered Finder identity and express concurrency through layer or object multiplicity."
+        "liquid-glass": "Pair the Golden Gate Beta 1 light-enclosure/blue-inset identity with one inverse dark-enclosure/light-inset companion, preserving identical panel margins and R corners."
       },
       "allowedChanges": [
         "pairing",
         "overlap",
         "relative scale",
+        "light-dark field ordering",
         "enclosure",
         "material",
         "perspective",

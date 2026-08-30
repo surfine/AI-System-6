@@ -63,6 +63,14 @@
   ],
   "fallback": [],
   "runtimeSize": "contextual",
+  "runtimeSizesByContext": {
+    "compactMenuList": 16,
+    "ordinary": 32,
+    "desktopLarge": 42
+  },
+  "compatibilityManifest": "platinum-icon-manifest.json",
+  "compatibilityManifestMeaning": "Stable semantic mapping only; app/core/system-icons.js selects the authored runtime tier by rendering context.",
+  "runtimeDispatch": "apps/desktop/app/core/system-icons.js",
   "icons": {
     "startupDisk": {
       "genre": "hardware",
@@ -550,6 +558,7 @@
       "nearestHistoricalAnalog": null,
       "metaphorKey": "target-era-finder-identity",
       "material": "restrained Platinum pixel-art steps with a selective dark keyline",
+      "blindMixStatus": "not-run",
       "generatedMaster": "internal/evidence/drafts/icon-lineage-audit/imagegen-candidates-v2/platinum-finder-v2.png",
       "reference": "internal/evidence/drafts/theme-lab-fidelity/platinum/icons/finder-app-32.png",
       "exactPixelReplica": false,
@@ -559,8 +568,7 @@
         "42": "optically-reviewed"
       },
       "sizePolicy": "Each target canvas is rendered directly from the approved high-resolution generation; compact tiers use their own bounds and contrast treatment.",
-      "runtimePixelMetrics": null,
-      "blindMixStatus": "not-run"
+      "runtimePixelMetrics": null
     },
     "fileFloppy": {
       "genre": "hardware",
@@ -1870,7 +1878,7 @@
       },
       "metaphorKey": "document-heading-hierarchy",
       "metaphorMetrics": {
-        "version": 1,
+        "version": 2,
         "sourceSize": [
           42,
           42
@@ -1895,7 +1903,21 @@
         "nodeGapDensities": [
           0,
           0
-        ]
+        ],
+        "centerHubDensity": 0.9504,
+        "radialNodeDensities": [
+          1,
+          0.574,
+          1,
+          0.5976
+        ],
+        "radialBranchDensities": [
+          1,
+          0.8727,
+          1,
+          0.9091
+        ],
+        "layoutMode": "radial-mind-map"
       },
       "semanticIdentity": "visualize document heading structure",
       "identityAnchors": [
@@ -2066,39 +2088,39 @@
       "metrics": {
         "16": {
           "bbox": {
-            "minX": 2,
-            "minY": 1,
-            "maxX": 12,
-            "maxY": 14
+            "minX": 0,
+            "minY": 3,
+            "maxX": 15,
+            "maxY": 12
           },
-          "pixels": 151,
-          "colors": 13,
-          "sha256": "7ca66dc5c5eb5b4cf87556239ed48e70a897aa1a7bdd20ea90c802a945f3eb2a",
-          "bytes": 404
+          "pixels": 152,
+          "colors": 148,
+          "sha256": "fd1554bb6d0d7727850fd93f3a788459bec565bb3eba2a8af8666bcd7c08f359",
+          "bytes": 746
         },
         "32": {
           "bbox": {
-            "minX": 5,
-            "minY": 2,
-            "maxX": 25,
-            "maxY": 29
+            "minX": 1,
+            "minY": 7,
+            "maxX": 30,
+            "maxY": 24
           },
-          "pixels": 571,
-          "colors": 13,
-          "sha256": "f509f69822e655663fd61bfedce73fe5b82df1b2529a21176ce2680646174d12",
-          "bytes": 810
+          "pixels": 527,
+          "colors": 482,
+          "sha256": "5efc1f6b8049f07234b58df774203aff095a389e778800011ce508db50260557",
+          "bytes": 1954
         },
         "42": {
           "bbox": {
-            "minX": 6,
-            "minY": 2,
-            "maxX": 34,
-            "maxY": 39
+            "minX": 2,
+            "minY": 9,
+            "maxX": 39,
+            "maxY": 32
           },
-          "pixels": 1072,
-          "colors": 14,
-          "sha256": "793804c80f22bba8685a5bc66aa256cbbd609e16a554a95cf4113a8801e3b9b1",
-          "bytes": 1103
+          "pixels": 894,
+          "colors": 756,
+          "sha256": "b504da30071e86628957feea05467cc71642d8ff34ad8869bb84b76bcf5d0c7d",
+          "bytes": 3002
         }
       }
     },
@@ -3564,9 +3586,9 @@
           "pixels": 127,
           "inkPixels": 127,
           "translucent": 57,
-          "colors": 95,
-          "sha256": "fa2950dc93a76b0570bda7651efc8ac486829e94233527a6900d7ddd3638d519",
-          "bytes": 438,
+          "colors": 87,
+          "sha256": "b7a2a71f65596e5c13fccd19ff101798a1bb083fe4d55416a6ed4e3d56235535",
+          "bytes": 472,
           "gridShape": "square"
         },
         "32": {
@@ -3590,12 +3612,12 @@
             "width": 28,
             "height": 27
           },
-          "pixels": 446,
-          "inkPixels": 446,
-          "translucent": 200,
-          "colors": 240,
-          "sha256": "4ef0eb374935d25b890bd83d349852d68e0f170431eafe48c26ef2abb721fdcc",
-          "bytes": 1033,
+          "pixels": 457,
+          "inkPixels": 457,
+          "translucent": 211,
+          "colors": 235,
+          "sha256": "a278e5f522d121bc92ff848a26ccec1cbd3bf1ecc87f790934dfc273b10674cc",
+          "bytes": 1236,
           "gridShape": "square"
         },
         "42": {
@@ -3619,12 +3641,12 @@
             "width": 36,
             "height": 33
           },
-          "pixels": 843,
-          "inkPixels": 843,
-          "translucent": 305,
-          "colors": 433,
-          "sha256": "d7b84f6cafef5b9b7c1bbf3249a8e9efedd1a6953c91a78570c2259c3b4b967b",
-          "bytes": 2062,
+          "pixels": 855,
+          "inkPixels": 855,
+          "translucent": 317,
+          "colors": 403,
+          "sha256": "1cf52e808da4f32eb41e18410341b2d941c39d82300e8c6589a9a1bb5834ca33",
+          "bytes": 1991,
           "gridShape": "square"
         }
       },
@@ -3637,6 +3659,7 @@
       "nearestHistoricalAnalog": "approved current-era Finder identity plus period-plausible overlap",
       "metaphorKey": "current-finder-identity-plus-multiplicity",
       "material": "restrained Platinum pixel-art steps with a selective dark keyline",
+      "blindMixStatus": "not-run",
       "generatedMaster": "internal/evidence/drafts/icon-lineage-audit/imagegen-candidates-v2/platinum-finder-v2.png",
       "reference": "No native MultiFinder icon artwork is claimed; multiplicity is a product-semantic construction.",
       "exactPixelReplica": false,
@@ -3646,8 +3669,7 @@
         "42": "optically-reviewed"
       },
       "sizePolicy": "Each target canvas is rendered directly from the approved high-resolution generation; compact tiers use their own bounds and contrast treatment.",
-      "runtimePixelMetrics": null,
-      "blindMixStatus": "not-run"
+      "runtimePixelMetrics": null
     },
     "daHandler": {
       "genre": "utility",
@@ -4110,14 +4132,6 @@
   "sizePolicy": "42 px desktop, 32 px regular, and 16 px compact assets are separately reduced from the accepted high-resolution redraw; the inline Platinum runtime selects the context-owned source size.",
   "finderLineageBuilder": "tooling/build-approved-finder-lineage.mjs",
   "finderLineageSource": "built-in ImageGen candidates admitted only after target-era evidence and compact-size review",
-  "runtimeSizesByContext": {
-    "compactMenuList": 16,
-    "ordinary": 32,
-    "desktopLarge": 42
-  },
-  "compatibilityManifest": "platinum-icon-manifest.json",
-  "compatibilityManifestMeaning": "Stable semantic mapping only; app/core/system-icons.js selects the authored runtime tier by rendering context.",
-  "runtimeDispatch": "apps/desktop/app/core/system-icons.js",
   "priorityLineageBuilder": "tooling/build-approved-priority-lineage.mjs",
   "priorityLineageLedger": "tooling/icon-generation/approved-priority-lineage.json",
   "priorityLineageObjects": [

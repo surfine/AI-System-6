@@ -37,7 +37,7 @@ test.assertIncludes(
 );
 test.assertMatches(
   windowManager,
-  /querySelectorAll\("\.window:not\(\.is-hidden\):not\(\.is-app-hidden\):not\(\.is-collapsed\)"\)[\s\S]{0,120}?peer !== win/,
+  /querySelectorAll\("\.window\[data-window\]:not\(\.is-hidden\):not\(\.is-app-hidden\):not\(\.is-collapsed\)"\)[\s\S]{0,120}?peer !== win/,
   "placement considers every visible old window, not only the same app",
 );
 test.assertMatches(

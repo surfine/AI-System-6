@@ -124,6 +124,9 @@ export async function buildAcceptedGeneratedIcons(requestedEras = Object.keys(le
         sizes: sizeFiles,
         runtimePixelMetrics: pixelMetrics,
       };
+      if (iconId === "finderApp") family.icons[iconId].metaphorKey = "target-era-finder-identity";
+      if (iconId === "multiFinderApp") family.icons[iconId].metaphorKey = "current-finder-identity-plus-multiplicity";
+      if (iconId === "finderApp" || iconId === "multiFinderApp") family.icons[iconId].blindMixStatus = "not-run";
       if (iconId === "docMap") {
         family.icons[iconId].metaphorMetrics = await measureDocMapMetaphor(join(themeDir, sizeFiles[128]), eraId);
         assertDocMapMetaphor(family.icons[iconId].metaphorMetrics, `${eraId}/docMap`);

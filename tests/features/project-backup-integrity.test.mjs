@@ -10,6 +10,7 @@ const exportImportSource = read("app/features/export-import.js");
 const manifest = read("tooling/runtime-manifest.mjs");
 
 const context = vm.createContext({
+  atob,
   crypto: webcrypto,
   TextEncoder,
   Uint8Array,
@@ -126,7 +127,7 @@ test.assert(
 );
 
 const v3Bundle = await backup.attachIntegrity(legacyBundle);
-test.assert(v3Bundle.formatVersion === 6, "new exports use the current format v6");
+test.assert(v3Bundle.formatVersion === 7, "new exports use the current format v7");
 test.assert(
   /^[a-f0-9]{64}$/.test(v3Bundle.integrity.contentHash),
   "new exports carry a SHA-256 content hash"
@@ -148,6 +149,95 @@ test.assert(
     && file.repairReceipts[0]?.field === "sourceDocumentId"
   ),
   "attachIntegrity keeps repair receipts on the records"
+);
+
+// v7: ClioTalk may carry a bounded inline fallback, but never a provider
+// handle or live browser object. The backup owns that distinction so an
+// imported Chat cannot smuggle a credential-scoped file token back to a new
+// machine.
+const inlineImageBundle = structuredClone(v3Bundle);
+inlineImageBundle.files.push({
+  id: "chat-with-image",
+  projectId: "project-old",
+  type: "chat",
+  name: "Image Chat",
+  folderId: "folder-root",
+  messages: [{
+    id: "message-with-image",
+    role: "user",
+    content: "What is in this image?",
+    imageInputIds: ["clio-image-old"],
+    imageInputs: [{
+      clientId: "clio-image-old",
+      kind: "image",
+      name: "sample.jpg",
+      type: "image/jpeg",
+      size: 4,
+      width: 1,
+      height: 1,
+      inlineDataUrl: "data:image/jpeg;base64,/9j/2Q==",
+      transport: "inline",
+      attachedAt: "2026-08-27T00:00:00.000Z",
+    }],
+  }],
+});
+const inlineImageExport = await backup.attachIntegrity(inlineImageBundle);
+const inlineImageValidation = backup.validateBackup(inlineImageExport);
+if (!inlineImageValidation.valid) console.error(inlineImageValidation.errors.join("\n"));
+test.assert(inlineImageValidation.valid, "v7 accepts a bounded inline ClioTalk image fallback");
+const remappedInline = backup.remapBackup(inlineImageExport);
+const remappedMessage = remappedInline.files.find((file) => file.name === "Image Chat")?.messages?.[0];
+test.assert(
+  remappedMessage?.imageInputs?.[0]?.clientId
+    && remappedMessage.imageInputs[0].clientId !== "clio-image-old"
+    && remappedMessage.imageInputIds[0] === remappedMessage.imageInputs[0].clientId,
+  "import remaps ClioTalk image identity and every message reference together"
+);
+test.assert(
+  remappedMessage?.imageInputs?.[0]?.inlineDataUrl === "data:image/jpeg;base64,/9j/2Q==",
+  "import preserves the bounded inline fallback bytes"
+);
+const unsafeInlineImage = structuredClone(inlineImageExport);
+unsafeInlineImage.files.find((file) => file.id === "chat-with-image").messages[0].imageInputs[0].fileToken = "signed-provider-handle";
+test.assert(!backup.validateBackup(unsafeInlineImage).valid, "v7 rejects transient provider handles inside imageInputs");
+const oversizedInlineImage = structuredClone(inlineImageExport);
+oversizedInlineImage.files.find((file) => file.id === "chat-with-image").messages[0].imageInputs[0].inlineDataUrl =
+  `data:image/jpeg;base64,${"A".repeat(Math.ceil((512 * 1024 * 4) / 3) + 16)}`;
+test.assert(!backup.validateBackup(oversizedInlineImage).valid, "v7 rejects an inline fallback above 512 KiB decoded");
+const mismatchedInlineImage = structuredClone(inlineImageExport);
+mismatchedInlineImage.files.find((file) => file.id === "chat-with-image").messages[0].imageInputs[0].inlineDataUrl =
+  "data:image/png;base64,/9j/2Q==";
+test.assert(!backup.validateBackup(mismatchedInlineImage).valid, "v7 validates persisted image magic bytes");
+const danglingInlineImage = structuredClone(inlineImageExport);
+danglingInlineImage.files.find((file) => file.id === "chat-with-image").messages[0].imageInputIds = ["missing-image"];
+test.assert(!backup.validateBackup(danglingInlineImage).valid, "v7 refuses a turn whose image origin is missing from its Chat");
+const legacyInlineImage = structuredClone(inlineImageExport);
+legacyInlineImage.formatVersion = 6;
+const remappedLegacyInline = backup.remapBackup(legacyInlineImage);
+const legacyMessage = remappedLegacyInline.files.find((file) => file.name === "Image Chat")?.messages?.[0];
+test.assert(
+  legacyMessage && !("imageInputs" in legacyMessage) && !("imageInputIds" in legacyMessage),
+  "v1-v6 import explicitly migrates to no inline Chat images"
+);
+
+const sceneInlineBundle = structuredClone(inlineImageExport);
+sceneInlineBundle.workingSession = {
+  version: 3,
+  projectId: "project-old",
+  adapters: {
+    assistant: {
+      conversation: structuredClone(sceneInlineBundle.files.find((file) => file.id === "chat-with-image").messages),
+    },
+  },
+};
+const sceneInlineExport = await backup.attachIntegrity(sceneInlineBundle);
+const remappedSceneInline = backup.remapBackup(sceneInlineExport);
+const sceneImageMessage = remappedSceneInline.workingSession?.adapters?.assistant?.conversation?.[0];
+test.assert(
+  sceneImageMessage?.imageInputs?.[0]?.clientId
+    && sceneImageMessage.imageInputIds[0] === sceneImageMessage.imageInputs[0].clientId
+    && sceneImageMessage.imageInputIds[0] !== "clio-image-old",
+  "Working Session v3 remaps persisted image identity with its turn"
 );
 
 const tampered = structuredClone(v3Bundle);
@@ -234,7 +324,7 @@ test.assert(
   "v2 reference chunks point at the imported reference and project"
 );
 const exportedV2 = await backup.attachIntegrity(importedV2);
-test.assert(exportedV2.formatVersion === 6, "imported v2 re-exports as the current v6 format");
+test.assert(exportedV2.formatVersion === 7, "imported v2 re-exports as the current v7 format");
 test.assert(
   Array.isArray(exportedV2.documentRevisions) && exportedV2.documentRevisions.length === 0,
   "the v3 export of an imported v2 backup carries an empty documentRevisions array"
@@ -555,7 +645,7 @@ sceneBundle.workingSession = {
   },
 };
 const sceneExport = await backup.attachIntegrity(sceneBundle);
-test.assert(sceneExport.formatVersion === 6, "a backup carrying a desktop scene exports at the current version");
+test.assert(sceneExport.formatVersion === 7, "a backup carrying a desktop scene exports at the current version");
 const sceneValidation = backup.validateBackup(sceneExport);
 if (!sceneValidation.valid) console.error(sceneValidation.errors.join("\n"));
 test.assert(sceneValidation.valid, "a bundle with a desktop scene satisfies the schema");
@@ -714,10 +804,10 @@ darkroomBundle.darkroomRecords = [
   },
 ];
 const darkroomExport = await backup.attachIntegrity(darkroomBundle);
-test.assert(darkroomExport.formatVersion === 6, "a backup carrying a darkroom exports as v6");
+test.assert(darkroomExport.formatVersion === 7, "a backup carrying a darkroom exports as v7");
 const darkroomValidation = backup.validateBackup(darkroomExport);
 if (!darkroomValidation.valid) console.error(darkroomValidation.errors.join("\n"));
-test.assert(darkroomValidation.valid, "a v6 bundle with a darkroom record satisfies the schema");
+test.assert(darkroomValidation.valid, "a v7 bundle with a darkroom record satisfies the schema");
 test.assert(
   (await backup.verifyIntegrity(darkroomExport)).valid,
   "the darkroom record is covered by the SHA-256 content hash"

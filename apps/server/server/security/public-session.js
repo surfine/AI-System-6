@@ -80,6 +80,7 @@ const turnstileWindows = new TtlLruWindows(5000, 15 * 60 * 1000);
 const activeBySession = new Map();
 const activeByGroup = new Map([
   ["cloud", 0],
+  ["cloud-files", 0],
   ["reader", 0],
   ["cmf", 0],
 ]);
@@ -269,7 +270,9 @@ function requestPath(req) {
 
 function requestGroup(pathname) {
   if (pathname.startsWith("/api/cmf/")) return "cmf";
+  if (pathname === "/api/cloud/files") return "cloud-files";
   if (pathname.startsWith("/api/cloud/")) return "cloud";
+  if (pathname === "/api/vision/analyze") return "cloud";
   if (
     pathname.startsWith("/api/reader")
     || pathname.startsWith("/api/search")
@@ -428,7 +431,11 @@ async function runWithPublicGuard(req, res, handler) {
   }
 
   const group = requestGroup(pathname);
-  const globalLimit = group === "cmf" ? 1 : group === "cloud" ? 8 : group === "reader" ? 4 : Infinity;
+  const globalLimit = group === "cmf" ? 1
+    : group === "cloud-files" ? 4
+      : group === "cloud" ? 8
+        : group === "reader" ? 4
+          : Infinity;
   const sessionLimit = group ? (group === "cloud" ? 2 : 1) : Infinity;
   const sessionKey = `${session.nonce}:${group}`;
   if (

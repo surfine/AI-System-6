@@ -52,11 +52,11 @@ body[data-theme="aqua"] {
   --system-titlebar-inactive-control-filter: grayscale(1);
   --system-titlebar-inactive-title-color: #6d6d6d;
   --system-control-min-height: 22px;
-  /* The push button overrides this with a literal 21px of its own; every other
-     control that reads this token gets 20px. Which number Jaguar intended is
-     not decidable from anything in this repo -- DESIGN.md names Quaqua 9.1's
-     Jaguar look-and-feel as the authority and it is not vendored here. Left as
-     found rather than guessed at; do not "align" them without that evidence. */
+  /* 20px is measured, not chosen: in the canonical 10.2 Shut Down capture the
+     Cancel capsule fills tile rows 1-20 and its outline closes on row 21. The
+     push button used to override this with a literal 21px and paint its first
+     scanline dialog grey to make up the difference, which put a grey bar on
+     the button everywhere the surface was not #e4e4e4. */
   --system-button-min-height: 20px;
   --system-button-small-height: 17px;
   --system-button-mini-height: 17px;
@@ -92,7 +92,6 @@ body[data-theme="aqua"] {
      get the measured-gradient reconstruction below — the 1x sprite blurs
      under Retina scaling and loses the gloss. */
   --traffic-light-close-bg: url("./assets/themes/aqua/lamp-close.png");
-  --traffic-light-minimize-bg: url("./assets/themes/aqua/lamp-minimize.png");
   --traffic-light-resize-bg: url("./assets/themes/aqua/lamp-zoom.png");
   --traffic-light-sprite-size: 14px 14px;
   --select-control-min-height: 20px;
@@ -123,12 +122,15 @@ body[data-theme="aqua"] {
   --system-select-control-min-height: 20px;
   --system-select-control-padding: 1px 27px 1px 9px;
   --system-select-control-border: 1px solid #00005f;
-  --system-select-control-radius: 10px;
+  /* 4px, measured: in the 10.2 General pane the pop-up's top rail reaches
+     within two pixels of both ends, so the control is an 89x21 rounded
+     rectangle, not a capsule and not a 10px bevel. */
+  --system-select-control-radius: 4px;
   --system-select-control-bg:
     linear-gradient(#5f9bc1, #5f9bc1) right 18px top / 1px 100% no-repeat,
     linear-gradient(to bottom, #dde1f4 0 5%, #bed4ef 5% 10%, #a6c8eb 10% 15%, #9ac1ea 15% 25%, #94bdea 25% 30%, #8ebbea 30% 40%, #8ebdec 40% 45%, #64a8f2 45% 50%, #6bb0f6 50% 55%, #73b7fd 55% 60%, #7cbfff 60% 65%, #86c9ff 65% 70%, #93d2ff 70% 75%, #a0dcff 75% 85%, #a9e6ff 85% 95%, #bbffff 95% 100%) right top / 19px 100% no-repeat,
     linear-gradient(to bottom, #fcfcfc 0 5%, #f6f6f6 5% 10%, #f0f0f0 10% 15%, #eeeeee 15% 35%, #e1e1e1 35% 45%, #e6e6e6 45% 50%, #e9e9e9 50% 55%, #ececec 55% 60%, #efefef 60% 65%, #f3f3f3 65% 70%, #f6f6f6 70% 75%, #f8f8f8 75% 80%, #fcfcfc 80% 90%, #ffffff 90% 100%);
-  --system-select-control-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92), 0 1px 2px rgba(0, 0, 0, 0.34);
+  --system-select-control-shadow: var(--aqua-popup-frame);
   --system-select-control-font-weight: 400;
   --search-field-min-height: 22px;
   --search-field-padding: 2px 8px 2px 21px;
@@ -171,6 +173,14 @@ body[data-theme="aqua"] {
   --quiet-panel: #fafafa;
   --shade: #c4c4c4;
   --shade-dark: #8b8b8b;
+  /* Theme Family Contract §5, the two divider roles. System 6 rules a desk in
+     ink — a solid black primary rule and a dotted secondary one — and Platinum
+     keeps the dotted hairline. Aqua rules it in grey hairlines and had never
+     said so, so every divider that reads the family role was still drawing
+     Classic ink: the dotted rules under each Quick Draft field are the ones
+     you can see without looking for them. */
+  --system-primary-divider: 1px solid var(--rule);
+  --system-secondary-divider: 1px solid var(--shade);
   --rule: #a5a5a5;
   --pane-bg: #ffffff;
   --messages-bg: #ffffff;
@@ -196,6 +206,23 @@ body[data-theme="aqua"] {
   --window-radius: 8px 8px 2px 2px;
   /* Real 10.2 windows cast a dense contact shadow with a short falloff,
      not a wide diffuse bloom. */
+  /* Theme Family Contract: the shared object shadow. `2px 2px 0 var(--ink)`
+     is System 6's hard offset shadow, and only Liquid Glass had ever replaced
+     it — so a focused Quick Draft field, a Time Machine popover and a
+     ClioStage frame all stood on a solid black bar in Aqua too. This is the
+     era's own window shadow at object scale. */
+  --system-shadow: 0 1px 1px rgba(0, 0, 0, 0.35), 0 3px 7px rgba(0, 0, 0, 0.22);
+  /* Theme Family Contract: the shadow a small raised object casts — the
+     composer, an action chip, a help tag. The base layer writes System 6's
+     hard offset; Aqua casts the same soft shadow it gives every other object. */
+  --system-object-shadow: var(--system-shadow);
+  /* Mac OS X help tag: a pale yellow slip with a thin grey rule and a small
+     corner. The base layer's balloon is System 6's — white paper inside a
+     black hairline with a 12px corner — and only Platinum had answered with
+     its own, so Aqua was still popping a System 6 balloon. */
+  --balloon-help-bg: #fbfbc8;
+  --balloon-help-border: 1px solid #9d9d7d;
+  --balloon-help-radius: 3px;
   --window-shadow:
     0 1px 1px rgba(0, 0, 0, 0.45),
     0 3px 6px rgba(0, 0, 0, 0.28),
@@ -321,6 +348,22 @@ body[data-theme="aqua"] {
     #eeeeee 63%, #ffffff 89%, #fdfdfd 100%);
   --control-shadow: inset 0 1px 0 #ffffff, 0 1px 1px rgba(0, 0, 0, 0.28);
   --control-active-shadow: inset 0 2px 3px rgba(0, 63, 114, 0.45);
+  /* Theme Family Contract: the keyboard ring. The base layer writes System 6's
+     dotted ink ring, so every era that never answered wore it. Each era already
+     names its own ring for controls; this points the shared role at it. */
+  --system-focus-outline: var(--control-focus-outline);
+  /* One frame for both renderings of the same control: the select harness and
+     the native <select> Aqua paints itself. The 1px side shadows are the left
+     and right edges a scanline body cannot paint; the offset pair is the soft
+     inward shade about three pixels in; the contact row is the capture's own
+     #c4c4c4, not the push button's hard pair — a pop-up sits nearer its
+     surface than a push button does. */
+  --aqua-popup-frame:
+    inset 1px 0 0 #b0b0b0,
+    inset -1px 0 0 #b0b0b0,
+    inset 5px 0 4px -4px rgba(0, 0, 0, 0.12),
+    inset -5px 0 4px -4px rgba(0, 0, 0, 0.12),
+    0 1px 0 #c4c4c4;
   --control-focus-outline: 3px solid rgba(64, 157, 224, 0.72);
   --control-focus-offset: 1px;
   --control-disabled-bg: linear-gradient(#f7f7f7, #dedede 52%, #f4f4f4);
@@ -338,6 +381,11 @@ body[data-theme="aqua"] {
   --system-disabled-fg: #828282;
   --btn-disabled-opacity: 1;
   --btn-disabled-border-color: #cbcbcb;
+  /* A disabled Jaguar button still sits on the surface: the Open dialog's
+     greyed Open carries an #a4a4a4 bottom rim over a soft #cfcfcf contact row,
+     lighter than the enabled button's #565656/#b9b9b9 pair but not absent.
+     box-shadow: none floated it. */
+  --btn-disabled-shadow: 0 1px 0 #cfcfcf;
   --btn-disabled-bg: transparent;
   --control-choice-hover-shadow: 0 0 0 3px rgba(65, 157, 224, 0.45);
   --system-border: 1px solid #909090;
@@ -345,7 +393,14 @@ body[data-theme="aqua"] {
   --control-radius: 7px;
   --btn-border-color: rgba(39, 39, 39, 0.82);
   --btn-active-border-color: #00005f;
-  --btn-radius: 999px;
+  /* Half the push button's own height, not infinity. At 20px the browser
+     clamps either value to the same capsule, so the canonical button is
+     unchanged — but 999px also turned every taller control into a stadium,
+     a shape Aqua never drew. Past 20px this corner is the era's bevel
+     button instead. Controls that really are round (the composer's Add and
+     Send) say so through --clio-composer-control-radius. */
+  --btn-radius: 10px;
+  --clio-composer-control-radius: 50%;
   /* Quaqua's common 10-state Aqua painter supplies the hard material breaks;
      native Jaguar captures and the 2002 HIG correct its Panther fallback. */
   --btn-bg: linear-gradient(to bottom,
@@ -450,7 +505,16 @@ body[data-theme="aqua"] {
   --menu-panel-shadow: 0 6px 14px rgba(0, 0, 0, 0.42);
   --menu-button-active-bg: linear-gradient(#3973c1, #346cbe 50%, #2c61b9);
   --menu-button-active-fg: #ffffff;
-  --menu-item-active-bg: linear-gradient(#3973c1, #346cbe 50%, #2c61b9);
+  /* The Jaguar menu capture is a 1px pinstripe rhythm, not a smooth ramp:
+     one pale separator row followed by base/base-highlight/base-shadow. Keep
+     the measured stop colours, but preserve the source pixel cadence. */
+  --menu-item-active-bg: linear-gradient(to bottom,
+    #dfe1e4 0 1px, #346cbe 1px 3px, #3973c1 3px 4px,
+    #346cbe 4px 5px, #2c61b9 5px 6px, #346cbe 6px 7px,
+    #3973c1 7px 8px, #346cbe 8px 9px, #2c61b9 9px 10px,
+    #346cbe 10px 11px, #3973c1 11px 12px, #346cbe 12px 13px,
+    #2c61b9 13px 14px, #346cbe 14px 15px, #3973c1 15px 16px,
+    #346cbe 16px 17px, #2c61b9 17px 18px, #346cbe 18px 20px);
   --menu-item-active-fg: #ffffff;
   --window-frame-lane: 15px;
   --window-frame-track-bg: linear-gradient(90deg,
@@ -540,7 +604,7 @@ body[data-theme="aqua"] {
   --theme-lab-radio-active-bg: var(--aqua-radio-pressed-image) center / 18px 18px no-repeat;
   --theme-lab-radio-active-shadow: none;
   --theme-lab-form-gap: 7px 12px;
-  --theme-lab-form-label-columns: 88px minmax(0, 1fr);
+  --theme-lab-form-label-columns: minmax(88px, max-content) minmax(0, 1fr);
   --theme-lab-form-label-align: right;
   --theme-lab-form-label-column-gap: 7px;
   --theme-lab-form-label-align-items: center;
@@ -548,24 +612,22 @@ body[data-theme="aqua"] {
   --theme-lab-segmented-button-min-height: 23px;
   --theme-lab-segmented-button-height: 23px;
   --theme-lab-segmented-button-padding: 2px 10px;
-  --theme-lab-tabs-gap: 3px;
-  --theme-lab-tabs-padding: 0 12px 7px;
-  --theme-lab-tabs-border-bottom: 0;
-  --theme-lab-tab-button-min-height: 24px;
-  --theme-lab-tab-button-height: 24px;
-  --theme-lab-tab-button-padding: 3px 13px 2px;
-  --theme-lab-tab-selected-min-height: 24px;
-  --theme-lab-tab-selected-height: 24px;
-  --theme-lab-tab-button-bg: var(--tab-bg);
-  --theme-lab-tab-selected-bg: var(--tab-active-bg);
-  --theme-lab-tab-selected-fg: #06131d;
-  --theme-lab-tab-panel-min-height: 31px;
-  --theme-lab-tab-panel-margin-top: -1px;
-  --theme-lab-tab-panel-padding: 6px 9px;
-  --theme-lab-tab-panel-border: 1px solid #6b8191;
-  --theme-lab-tab-panel-radius: 0 0 3px 3px;
-  --theme-lab-tab-panel-bg: var(--window-bg);
-  --theme-lab-tab-panel-shadow: inset 0 1px 0 #ffffff;
+  --tab-strip-gap: 3px;
+  --tab-strip-padding: 0 12px 7px;
+  --tab-strip-border-bottom: 0;
+  --tab-min-height: 24px;
+  --tab-height: 24px;
+  --tab-padding: 3px 13px 2px;
+  --tab-active-min-height: 24px;
+  --tab-active-height: 24px;
+  --tab-active-fg: #06131d;
+  --tab-panel-min-height: 31px;
+  --tab-panel-margin-top: -1px;
+  --tab-panel-padding: 6px 9px;
+  --tab-panel-border: 1px solid #6b8191;
+  --tab-panel-radius: 0 0 3px 3px;
+  --tab-panel-bg: var(--window-bg);
+  --tab-panel-shadow: inset 0 1px 0 #ffffff;
   --theme-lab-navigation-generic-label-display: none;
   --theme-lab-column-browser-label-display: inline;
   --theme-lab-generic-browser-display: none;
@@ -638,49 +700,17 @@ body[data-theme="aqua"] {
   --theme-lab-layer-bg: rgba(250, 250, 250, 0.94);
   --theme-lab-layer-shadow: 0 5px 11px rgba(0, 0, 0, 0.34);
   --theme-lab-layer-padding: 10px 12px;
-  --theme-lab-menu-grid-row: 1 / span 2;
-  --theme-lab-menu-padding: 3px 0;
-  --theme-lab-menu-item-min-height: 21px;
-  --theme-lab-menu-item-padding: 2px 9px 2px 21px;
-  --theme-lab-menu-item-bg: #f9f9f9;
-  --theme-lab-menu-item-fg: #111111;
-  --theme-lab-menu-item-selected-bg: linear-gradient(to bottom,
-    #dfe1e5 0 1px,
-    #346cbe 1px 3px,
-    #3871c0 3px 4px,
-    #346cbe 4px 5px,
-    #2c61b9 5px 6px,
-    #346cbe 6px 7px,
-    #3973c1 7px 8px,
-    #346cbe 8px 9px,
-    #2c61b9 9px 10px,
-    #346cbe 10px 11px,
-    #3973c1 11px 12px,
-    #346cbe 12px 13px,
-    #2c61b9 13px 14px,
-    #346cbe 14px 15px,
-    #3973c1 15px 16px,
-    #346cbe 16px 17px,
-    #2c61b9 17px 18px,
-    #346cbe 18px 20px);
-  --theme-lab-menu-item-selected-fg: #ffffff;
-  --theme-lab-menu-item-disabled-bg: #f9f9f9;
-  --theme-lab-menu-item-disabled-fg: #a4a4a4;
-  --theme-lab-menu-item-disabled-opacity: 1;
-  --theme-lab-menu-separator-margin: 3px 0;
-  --theme-lab-menu-separator-border-bottom: 1px solid #a7a7a7;
-  --theme-lab-popover-padding: 9px 11px;
-  --theme-lab-popover-bg: #fffcca;
-  --theme-lab-popover-copy-fg: #5f5f5f;
+  --menu-panel-padding: 3px 0;
+  --menu-item-min-height: 21px;
+  --menu-item-padding: 2px 9px 2px 21px;
+  --menu-item-line-height: 16px;
+  --menu-item-disabled-bg: #f9f9f9;
+  --menu-item-disabled-fg: #a4a4a4;
+  --menu-item-disabled-opacity: 1;
+  --menu-separator-margin: 3px 0;
+  --menu-separator-border-bottom: 1px solid #a7a7a7;
   --theme-lab-popover-generic-label-display: none;
   --theme-lab-help-tag-label-display: block;
-  --theme-lab-dialog-columns: 64px minmax(0, 1fr);
-  --theme-lab-dialog-gap: 7px 10px;
-  --theme-lab-dialog-padding: 12px 21px 17px;
-  --theme-lab-dialog-bg: var(--window-bg);
-  --theme-lab-dialog-actions-column: 2;
-  --theme-lab-dialog-action-gap: 6px;
-  --theme-lab-dialog-cancel-display: inline-flex;
   --theme-lab-alert-icon-display: block;
   --theme-lab-alert-icon-size: 64px;
   /* Authored from the 10.2 warning-sheet silhouette; no Quaqua/Apple artwork. */
@@ -701,11 +731,6 @@ body[data-theme="aqua"] {
   --theme-lab-sheet-owner-titlebar-shadow: inset 0 1px 0 #ffffff;
   --theme-lab-sheet-owner-body-height: 92px;
   --theme-lab-sheet-owner-body-bg: #ffffff;
-  --theme-lab-era-titlebar-control-top: 3px;
-  --theme-lab-era-titlebar-control-size: 15px;
-  --theme-lab-era-titlebar-close-left: 7px;
-  --theme-lab-era-titlebar-minimize-left: 28px;
-  --theme-lab-era-titlebar-zoom-left: 49px;
   /* Alarm Clock DA: Aqua window chrome, white face, candy controls. */
   --alarm-clock-frame-border: 1px solid #858585;
   --alarm-clock-frame-radius: 5px;
@@ -737,7 +762,6 @@ body[data-theme="aqua"] {
      capture at the same 14 px box. The gradient it replaces was drawn by hand:
      it came out wider, higher, rimless, and lit from the middle instead of the
      top, so the three lamps did not read as one set. */
-  --theme-lab-era-titlebar-minimize-bg: var(--traffic-light-minimize-bg) center / var(--traffic-light-sprite-size) no-repeat;
   --theme-lab-sheet-display: grid;
   --theme-lab-sheet-position: absolute;
   --theme-lab-sheet-top: 22px;
@@ -775,14 +799,6 @@ body[data-theme="aqua"] {
   --theme-lab-progress-value-radius: 999px;
   --theme-lab-progress-value-bg: var(--progress-fill-bg);
   --theme-lab-progress-value-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.88);
-  --theme-lab-scroll-height: 68px;
-  --theme-lab-scroll-padding: 4px 7px;
-  --theme-lab-scroll-frame-border: 1px solid #8e8e8e;
-  --theme-lab-scroll-frame-radius: 2px;
-  --theme-lab-scroll-frame-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
-  --theme-lab-scroll-bg: #ffffff;
-  --theme-lab-scroll-item-margin: 0;
-  --theme-lab-scroll-item-line-height: 18px;
   --theme-lab-scrollbar-border-left: 0;
   --theme-lab-scrollbar-bg: var(--window-frame-track-bg);
   --theme-lab-scrollbar-track-bg: var(--window-frame-track-bg);
@@ -810,46 +826,8 @@ body[data-theme="aqua"] {
   --theme-lab-scrollbar-arrow-side-border: 3px solid transparent;
   --theme-lab-scrollbar-decrement-border: 0;
   --theme-lab-scrollbar-increment-border: 0;
-  --theme-lab-mini-position: relative;
-  --theme-lab-mini-min-height: 50px;
-  --theme-lab-mini-padding: 22px 0 0;
-  --theme-lab-mini-border: 1px solid #858585;
-  --theme-lab-mini-radius: 7px 7px 2px 2px;
-  --theme-lab-mini-shadow: 0 3px 7px rgba(0, 0, 0, 0.3);
-  --theme-lab-mini-body-content: "";
-  --theme-lab-mini-body-inset: 22px 0 0;
-  --theme-lab-mini-body-border: 0;
-  --theme-lab-mini-body-bg: #ffffff;
-  --theme-lab-mini-control-display: block;
-  --theme-lab-mini-control-top: 3px;
-  --theme-lab-mini-control-edge: 5px;
-  --theme-lab-mini-control-size: 15px;
-  --theme-lab-mini-control-border: 0;
-  --theme-lab-mini-control-radius: 50%;
-  --theme-lab-mini-control-shadow: none;
   /* 10.2 puts all three lamps at the left in close / minimize / zoom order,
      on the same ladder as this era's title-bar specimens above. */
-  --theme-lab-mini-control-close-left: var(--theme-lab-era-titlebar-close-left);
-  --theme-lab-mini-control-minimize-left: var(--theme-lab-era-titlebar-minimize-left);
-  --theme-lab-mini-control-minimize-display: block;
-  --theme-lab-mini-control-zoom-left: var(--theme-lab-era-titlebar-zoom-left);
-  --theme-lab-mini-control-zoom-right: auto;
-  --theme-lab-mini-inactive-control-display: block;
-  --theme-lab-mini-title-position: absolute;
-  --theme-lab-mini-title-left: 50%;
-  --theme-lab-mini-title-top: 3px;
-  --theme-lab-mini-title-width: max-content;
-  --theme-lab-mini-title-max-width: calc(100% - 58px);
-  --theme-lab-mini-title-padding: 0 5px;
-  --theme-lab-mini-title-bg: transparent;
-  --theme-lab-mini-title-weight: 600;
-  --theme-lab-mini-title-line-height: 15px;
-  --theme-lab-mini-title-transform: translateX(-50%);
-  --theme-lab-mini-inactive-border: 1px solid #9b9b9b;
-  --theme-lab-mini-inactive-shadow: 0 2px 5px rgba(0, 0, 0, 0.18);
-  --theme-lab-mini-inactive-opacity: 1;
-  --theme-lab-mini-inactive-title-bg: transparent;
-  --theme-lab-mini-inactive-title-fg: #6d6d6d;
   --theme-lab-finder-window-display: block;
   --theme-lab-finder-window-border: 1px solid #858585;
   --theme-lab-finder-window-radius: 7px 7px 2px 2px;
@@ -1051,34 +1029,14 @@ body[data-theme="snow-leopard"] {
   /* Resolution split, same as Aqua: 1x serves the canonical Finder pixels
      (14x13), dense displays get the measured-gradient sphere below. */
   --traffic-light-close-bg: url("./assets/themes/snow-leopard/lamp-close.png");
-  --traffic-light-minimize-bg: url("./assets/themes/snow-leopard/lamp-minimize.png");
   --traffic-light-resize-bg: url("./assets/themes/snow-leopard/lamp-zoom.png");
   --traffic-light-sprite-size: 14px 13px;
-  --theme-lab-era-titlebar-control-top: 3px;
   /* Real 10.6 lamps are 14px with the ring; the board matches the sprite. */
-  --theme-lab-era-titlebar-control-size: 14px;
   /* Cut from the same 10.6 Finder capture as its two siblings, at the same
      14x13 box, so the three lamps read as one set. */
-  --theme-lab-era-titlebar-minimize-bg: var(--traffic-light-minimize-bg) center / var(--traffic-light-sprite-size) no-repeat;
   /* Window-chrome specimen: 10.6 keeps the Aqua lamp cluster at the left in
      close / minimize / zoom order, on this era's own title-bar ladder. */
-  --theme-lab-mini-position: relative;
-  --theme-lab-mini-control-display: block;
-  --theme-lab-mini-control-top: 4px;
-  --theme-lab-mini-control-size: var(--theme-lab-era-titlebar-control-size);
-  --theme-lab-mini-control-radius: 50%;
-  --theme-lab-mini-control-close-left: 7px;
-  --theme-lab-mini-control-close-bg: var(--traffic-light-close-bg) center / var(--traffic-light-sprite-size) no-repeat;
-  --theme-lab-mini-control-minimize-left: 28px;
-  --theme-lab-mini-control-minimize-display: block;
-  --theme-lab-mini-control-minimize-bg: var(--traffic-light-minimize-bg) center / var(--traffic-light-sprite-size) no-repeat;
-  --theme-lab-mini-control-zoom-left: 49px;
-  --theme-lab-mini-control-zoom-right: auto;
-  --theme-lab-mini-control-zoom-bg: var(--traffic-light-resize-bg) center / var(--traffic-light-sprite-size) no-repeat;
   /* Backdrop windows keep the lamps; 10.6 greys them, same as the real chrome. */
-  --theme-lab-mini-inactive-control-display: block;
-  --theme-lab-mini-inactive-control-filter: grayscale(1);
-  --theme-lab-mini-inactive-control-opacity: 0.48;
   /* Alarm Clock DA: 10.6 silver chrome, light face, restrained controls. */
   --alarm-clock-frame-border: 1px solid #8e8e8e;
   --alarm-clock-frame-radius: 4px;
@@ -1218,6 +1176,14 @@ body[data-theme="snow-leopard"] {
   --shade: #c4c4c4;
   --shade-dark: #707070;
   --md-marker-ink: #6b6b6b;  /* ground #ededed */
+  /* Theme Family Contract §5, the two divider roles. System 6 rules a desk in
+     ink — a solid black primary rule and a dotted secondary one — and Platinum
+     keeps the dotted hairline. Snow Leopard rules it in grey hairlines and had never
+     said so, so every divider that reads the family role was still drawing
+     Classic ink: the dotted rules under each Quick Draft field are the ones
+     you can see without looking for them. */
+  --system-primary-divider: 1px solid var(--rule);
+  --system-secondary-divider: 1px solid var(--shade);
   --rule: #b5b5b5;
   --pane-bg: #ededed;
   --details-bar-bg: linear-gradient(#f3f3f3, #ebebeb);
@@ -1232,6 +1198,23 @@ body[data-theme="snow-leopard"] {
   --window-bg: #ededed;
   --window-border: 1px solid #8b8b8b;
   --window-radius: 5px;
+  /* Theme Family Contract: the shared object shadow. `2px 2px 0 var(--ink)`
+     is System 6's hard offset shadow, and only Liquid Glass had ever replaced
+     it — so a focused Quick Draft field, a Time Machine popover and a
+     ClioStage frame all stood on a solid black bar in Snow Leopard too. This is the
+     era's own window shadow at object scale. */
+  --system-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 9px rgba(0, 0, 0, 0.2);
+  /* Theme Family Contract: the shadow a small raised object casts — the
+     composer, an action chip, a help tag. The base layer writes System 6's
+     hard offset; Snow Leopard casts the same soft shadow it gives every other object. */
+  --system-object-shadow: var(--system-shadow);
+  /* Mac OS X help tag: a pale yellow slip with a thin grey rule and a small
+     corner. The base layer's balloon is System 6's — white paper inside a
+     black hairline with a 12px corner — and only Platinum had answered with
+     its own, so Snow Leopard was still popping a System 6 balloon. */
+  --balloon-help-bg: #fbfbc8;
+  --balloon-help-border: 1px solid #9d9d7d;
+  --balloon-help-radius: 3px;
   --window-shadow: 0 10px 22px rgba(0, 0, 0, 0.34), 0 2px 4px rgba(0, 0, 0, 0.22);
   --active-window-shadow: var(--window-shadow);
   --inactive-window-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
@@ -1377,6 +1360,10 @@ body[data-theme="snow-leopard"] {
   --control-bg: linear-gradient(#fcfcfc, #ededed 52%, #dedede);
   --control-shadow: inset 0 1px 0 #ffffff, 0 1px 1px rgba(0, 0, 0, 0.18);
   --control-active-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.34);
+  /* Theme Family Contract: the keyboard ring. The base layer writes System 6's
+     dotted ink ring, so every era that never answered wore it. Each era already
+     names its own ring for controls; this points the shared role at it. */
+  --system-focus-outline: var(--control-focus-outline);
   --control-focus-outline: 3px solid rgba(83, 154, 219, 0.58);
   --control-focus-offset: 1px;
   --control-disabled-bg: linear-gradient(#f7f7f7, #ececec);
@@ -1390,8 +1377,11 @@ body[data-theme="snow-leopard"] {
   --btn-border-color: #7d7d7d;
   /* Measured from the 10.6 Empty Trash dialog: the Cancel/Empty Trash caps
      inset 7px over an 11-row half-height, i.e. a full pill, not the 6px
-     rounded rectangle this had. */
-  --btn-radius: 999px;
+     rounded rectangle this had. 11px is that half-height stated as a bound:
+     the 22px button is the same pill, and a taller control stops turning
+     into a stadium. Same reasoning as Aqua above. */
+  --btn-radius: 11px;
+  --clio-composer-control-radius: 50%;
   --btn-bg: linear-gradient(#f6f6f6 0%, #ebebeb 38%, #d9d9d9 44%, #e6e6e6 58%, #fdfdfd 100%);
   --btn-shadow: inset 0 1px 0 #ffffff, inset 0 0 0 1px rgba(255, 255, 255, 0.35), 0 1px 2px rgba(0, 0, 0, 0.28);
   --btn-hover-bg: linear-gradient(#f8fbff 0%, #eef4fb 38%, #d8e4ee 44%, #eaf1f7 58%, #ffffff 100%);
@@ -1557,27 +1547,23 @@ body[data-theme="snow-leopard"] {
   --tab-hover-bg: linear-gradient(#ffffff, #f0f0f0);
   --tab-active-bg: linear-gradient(#eaf2fb 0%, #acd1f0 42%, #7ab7e8 48%, #9cd1fb 75%, #cfffff 100%);
   --tab-active-fg: #111111;
-  --theme-lab-tabs-gap: 0;
-  --theme-lab-tabs-border-bottom: 0;
-  --theme-lab-tabs-border-top: 0;
-  --theme-lab-tabs-bg: #ededed;
-  --theme-lab-tabs-padding: 1px 0 0;
-  --theme-lab-tab-button-min-height: 22px;
-  --theme-lab-tab-button-height: 22px;
-  --theme-lab-tab-button-padding: 1px 12px;
-  --theme-lab-tab-button-border: 1px solid #777777;
-  --theme-lab-tab-button-radius: 0;
-  --theme-lab-tab-button-bg: var(--tab-bg);
-  --theme-lab-tab-button-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.74);
-  --theme-lab-tab-selected-min-height: 22px;
-  --theme-lab-tab-selected-height: 22px;
-  --theme-lab-tab-selected-bg: var(--tab-active-bg);
-  --theme-lab-tab-selected-fg: #111111;
-  --theme-lab-tab-selected-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
-  --theme-lab-tab-line-height: 18px;
-  --theme-lab-tab-first-radius: 5px 0 0 5px;
-  --theme-lab-tab-last-radius: 0 5px 5px 0;
-  --theme-lab-tab-last-border-right: 1px solid #777777;
+  --tab-strip-gap: 0;
+  --tab-strip-border-bottom: 0;
+  --tab-strip-border-top: 0;
+  --tab-strip-bg: #ededed;
+  --tab-strip-padding: 1px 0 0;
+  --tab-min-height: 22px;
+  --tab-height: 22px;
+  --tab-padding: 1px 12px;
+  --tab-border: 1px solid #777777;
+  --tab-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.74);
+  --tab-active-min-height: 22px;
+  --tab-active-height: 22px;
+  --tab-active-fg: #111111;
+  --tab-active-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  --tab-first-radius: 5px 0 0 5px;
+  --tab-last-radius: 0 5px 5px 0;
+  --tab-last-border-right: 1px solid #777777;
   /* 10.6 shrank the choice controls that Jaguar drew at 18px. Every Quaqua 9.1
      state strip paints the frame across a 14px cell, and the pinned 10.6
      specimens crop 14x14 while Aqua's crop 18x18 — so the 18px inherited from
@@ -1595,8 +1581,9 @@ body[data-theme="snow-leopard"] {
      (#577dea -> #1d5bf2, owned by --menu-item-active-bg below). These Theme
      Lab fixture tokens keep the selected row at the 10.6 reference geometry
      instead of the generic 22px default row. */
-  --theme-lab-menu-item-min-height: 16px;
-  --theme-lab-menu-item-padding: 2px 9px 2px 21px;
+  --menu-item-min-height: 16px;
+  --menu-item-padding: 2px 9px 2px 21px;
+  --menu-item-line-height: 16px;
 
   /* Control Panel section chooser — the Aqua icon toolbar matured into the
      10.6 unified silver bar: same skeleton as the parent recipe, candy
@@ -1723,7 +1710,6 @@ body[data-theme="aqua"] .theme-lab-window:not(.is-active) {
 /* The Finder toolbar keeps a 56px border-box so its 1px top rail matches the
    Jaguar capture without moving the status strip below it. */
 body[data-theme="aqua"] .theme-lab-toolbar {
-
 
 }
 
@@ -2062,22 +2048,21 @@ body[data-theme="aqua"] :is(.menu-popover, .menu-sub-popover) hr {
    the resting state is unchanged. */
 @keyframes aqua-default-button-pulse {
   0%, 100% {
-    box-shadow: 0 1px 0 #565656, 0 2px 0 #b9b9b9;
+    box-shadow: var(--aqua-btn-frame);
   }
   50% {
     box-shadow:
-      0 1px 0 #565656,
-      0 2px 0 #b9b9b9,
+      var(--aqua-btn-frame),
       0 0 9px 1px rgba(42, 128, 220, 0.55);
   }
 }
 
-body[data-theme="aqua"] button.btn.default {
+body[data-theme="aqua"] .btn.default {
   animation: aqua-default-button-pulse 2.6s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  body[data-theme="aqua"] button.btn.default {
+  body[data-theme="aqua"] .btn.default {
     animation: none;
     /* Pulse off means focus needs the ring back. Setting the token on the
        element feeds the base .btn.default:focus-visible rule. */
@@ -2115,7 +2100,7 @@ body[data-theme="aqua"] select:not([multiple]) {
       #e9e9e9 11px 12px, #ececec 12px 13px, #efefef 13px 14px,
       #f3f3f3 14px 15px, #f6f6f6 15px 16px, #f8f8f8 16px 17px,
       #fcfcfc 17px 18px, #ffffff 18px 20px, #4e4e4e 20px 21px);
-  box-shadow: none;
+  box-shadow: var(--aqua-popup-frame);
   font-family: var(--theme-ui-font);
   font-size: var(--system-control-size);
   font-weight: 400;
@@ -2383,27 +2368,87 @@ body[data-theme="snow-leopard"] .theme-lab-progress span {
 
 }
 
-/* 21px is the Aqua push-button height for a one-line title, not a cap — a fixed
-   height pushes a wrapped two-line title out below the button frame. */
-body[data-theme="aqua"] button.btn {
+/* A Jaguar push button is a capsule with a closed outline and ends that carry
+   volume: the frame runs the whole way round, and the face darkens about nine
+   pixels inward from each cap so the ends read as turned edges rather than a
+   strip cut short. The recipe this replaces drew a straight dark chord across
+   the top, left both caps unstroked, and stood the 20px capsule in a 21px box
+   whose first scanline was painted dialog grey — on any surface that was not
+   #e4e4e4 the button wore a grey bar, and next to a real Aqua button the flat
+   ends gave it away at a glance.
 
+   Row colours are the capture's own pixels (guidebook.macosx102.shutdown-
+   dialog, Cancel at 249,114, text-free column x=70, rows 1-20). Frame and face
+   are element-scoped custom properties: the default, pressed and hover states
+   restate one colour each instead of a second copy of the ladder. */
+body[data-theme="aqua"] .btn {
+
+  --aqua-btn-rim: #9b9b9b;
+  --aqua-btn-rim-top: #6f6f6f;
+  --aqua-btn-arc-ink: rgba(0, 0, 0, 0.17);
+  --aqua-btn-arc-reach: 8px;
+  --aqua-btn-arc-blur: 6px;
+  --aqua-btn-arc-spread: -6px;
+  --aqua-btn-cap-core: rgba(0, 0, 0, 0.26);
+  --aqua-btn-cap-mid: rgba(0, 0, 0, 0.08);
+  --aqua-btn-cap-edge: rgba(0, 0, 0, 0);
+  /* Cap volume, in two parts. The inset pair in the frame follows the border
+     radius, so its falloff is measured from the arc and not from the box —
+     that is the part a background layer cannot do. The radial pair here adds
+     the extra weight the capture carries in rows 3-11 only: on the real
+     button the ends darken against the upper body and let the bright bottom
+     edge through, and one arc-following shade at a single strength either
+     loses the top or smudges the bottom.
+
+     The face is three anchored bands, not one 20px ladder. A ladder measured
+     off a 20px capture only paints a 20px control: every taller button kept
+     the gloss at the top and went flat for the rest, which is what made the
+     chips and the wide command buttons read as balloons. Anchoring the gloss
+     to the top edge and the bounce light to the bottom edge leaves the waist
+     — the one part of an Aqua face that is genuinely a flat two-tone step —
+     as the piece that stretches. At 20px the two bands meet over a 2px waist
+     and the result is the capture, row for row. */
+  --aqua-btn-face:
+    radial-gradient(9px 60% at 0 30%,
+      var(--aqua-btn-cap-core) 0%, var(--aqua-btn-cap-mid) 46%,
+      var(--aqua-btn-cap-edge) 100%) left center / 10px 100% no-repeat,
+    radial-gradient(9px 60% at 100% 30%,
+      var(--aqua-btn-cap-core) 0%, var(--aqua-btn-cap-mid) 46%,
+      var(--aqua-btn-cap-edge) 100%) right center / 10px 100% no-repeat,
+    linear-gradient(to bottom,
+      #f5f5f5 0 2px, #f2f2f2 2px 3px, #efefef 3px 4px,
+      #eaeaea 4px 5px, #e9e9e9 5px 6px, #e8e8e8 6px 7px,
+      #e7e7e7 7px 8px) top / 100% 8px no-repeat,
+    linear-gradient(to bottom,
+      #e8e8e8 0 1px, #eaeaea 1px 2px, #efefef 2px 3px,
+      #f3f3f3 3px 4px, #f8f8f8 4px 5px, #fcfcfc 5px 6px,
+      #ffffff 6px 10px) bottom / 100% 10px no-repeat,
+    linear-gradient(to bottom, #dedede 0 50%, #e1e1e1 50%);
+  /* The two 1px side shadows close the outline around the caps, where a
+     background layer can only ever paint a horizontal row. */
+  --aqua-btn-frame:
+    inset 0 1px 0 var(--aqua-btn-rim-top),
+    inset 1px 0 0 var(--aqua-btn-rim),
+    inset -1px 0 0 var(--aqua-btn-rim),
+    inset var(--aqua-btn-arc-reach) 0 var(--aqua-btn-arc-blur)
+      var(--aqua-btn-arc-spread) var(--aqua-btn-arc-ink),
+    inset calc(-1 * var(--aqua-btn-arc-reach)) 0 var(--aqua-btn-arc-blur)
+      var(--aqua-btn-arc-spread) var(--aqua-btn-arc-ink),
+    0 1px 0 #565656,
+    0 2px 0 #b9b9b9;
+  /* Aqua push buttons do not answer the pointer. Without these the shared
+     hover rule outranks this one and repaints the button in the
+     resolution-free --btn-bg, so the material changed under the cursor. */
+  --btn-hover-bg: var(--aqua-btn-face);
+  --btn-hover-shadow: var(--aqua-btn-frame);
+  --btn-default-hover-bg: var(--aqua-btn-face);
   position: relative;
   min-width: 69px;
-  min-height: 21px;
   border: 0;
   border-radius: var(--btn-radius);
-  background:
-    linear-gradient(#6f6f6f, #6f6f6f) left 1px / 1px calc(100% - 1px) no-repeat,
-    linear-gradient(#6f6f6f, #6f6f6f) right 1px / 1px calc(100% - 1px) no-repeat,
-    linear-gradient(to bottom,
-      #e4e4e4 0 1px, #6f6f6f 1px 2px, #f5f5f5 2px 3px,
-      #f2f2f2 3px 4px, #efefef 4px 5px, #eaeaea 5px 6px,
-      #e9e9e9 6px 7px, #e8e8e8 7px 8px, #e7e7e7 8px 9px,
-      #dcdcdc 9px 10px, #e1e1e1 10px 11px, #e8e8e8 11px 12px,
-      #eaeaea 12px 13px, #efefef 13px 14px, #f3f3f3 14px 15px,
-      #f8f8f8 15px 16px, #fcfcfc 16px 17px, #ffffff 17px 21px);
+  background: var(--aqua-btn-face);
   color: var(--ink);
-  box-shadow: 0 1px 0 #565656, 0 2px 0 #b9b9b9;
+  box-shadow: var(--aqua-btn-frame);
   font-family: var(--theme-ui-font);
   font-size: var(--system-control-size);
   font-weight: 400;
@@ -2411,31 +2456,78 @@ body[data-theme="aqua"] button.btn {
 
 }
 
-body[data-theme="aqua"] button.btn.default {
+body[data-theme="aqua"] .btn.default {
 
-  background:
-    linear-gradient(#00006e, #00006e) left 1px / 1px calc(100% - 1px) no-repeat,
-    linear-gradient(#00006e, #00006e) right 1px / 1px calc(100% - 1px) no-repeat,
+  /* The Aqua-family shared rule below repaints .default from --btn-default-*,
+     at the same specificity and later in the file. Bridging the two tokens on
+     the element means both rules resolve to this recipe instead of one of them
+     quietly winning; element-level custom properties beat the body block
+     whichever rule ends up applying the background. */
+  --btn-default-bg: var(--aqua-btn-face);
+  --btn-default-shadow: var(--aqua-btn-frame);
+  --aqua-btn-rim: #050c9d;
+  --aqua-btn-rim-top: #00006e;
+  /* The blue button's outline is a thicker stroke than the grey one's: the
+     capture keeps near-zero red for about two and a half pixels in from the
+     arc, all the way round the top and both caps. */
+  --aqua-btn-arc-ink: rgba(0, 2, 120, 0.95);
+  --aqua-btn-arc-reach: 5px;
+  --aqua-btn-arc-blur: 3px;
+  --aqua-btn-arc-spread: -3px;
+  --aqua-btn-cap-core: #0142b9;
+  --aqua-btn-cap-mid: #297cd3;
+  --aqua-btn-cap-edge: rgba(80, 150, 220, 0);
+  /* Two shades per cap. The upper blob is the deep navy shoulder the capture
+     carries at about ten o'clock; the wide ellipse under it is the horizontal
+     ramp back to the body blue, which reaches furthest at the widest point of
+     the capsule and shortens toward both ends. */
+  --aqua-btn-face:
+    radial-gradient(7px 7px at 2px 4px,
+      #00046e 0%, rgba(2, 20, 140, 0.75) 38%, rgba(20, 70, 180, 0.35) 62%,
+      var(--aqua-btn-cap-edge) 100%) left center / 19px 100% no-repeat,
+    radial-gradient(7px 7px at calc(100% - 2px) 4px,
+      #00046e 0%, rgba(2, 20, 140, 0.75) 38%, rgba(20, 70, 180, 0.35) 62%,
+      var(--aqua-btn-cap-edge) 100%) right center / 19px 100% no-repeat,
+    radial-gradient(18px 42% at 0 44%,
+      var(--aqua-btn-cap-core) 0%, #0259c3 17%, #0a69ca 23%,
+      var(--aqua-btn-cap-mid) 33%, #3584d6 44%, #438ed8 56%,
+      var(--aqua-btn-cap-edge) 100%) left center / 19px 100% no-repeat,
+    radial-gradient(18px 42% at 100% 44%,
+      var(--aqua-btn-cap-core) 0%, #0259c3 17%, #0a69ca 23%,
+      var(--aqua-btn-cap-mid) 33%, #3584d6 44%, #438ed8 56%,
+      var(--aqua-btn-cap-edge) 100%) right center / 19px 100% no-repeat,
     linear-gradient(to bottom,
-      #e4e4e4 0 1px, #00006e 1px 2px, #d2d3ec 2px 3px,
-      #bac7ea 3px 4px, #9dbee5 4px 5px, #88b4e1 5px 6px,
-      #81b0e0 6px 7px, #7bace0 7px 8px, #77ace0 8px 9px,
-      #478fd8 9px 10px, #5096dc 10px 11px, #5a9de0 11px 12px,
-      #61a3e6 12px 13px, #69aaeb 13px 14px, #70b1f1 14px 15px,
-      #78b8fa 15px 16px, #7fbfff 16px 17px, #86c7ff 17px 18px,
-      #8dceff 18px 19px, #93d8ff 19px 20px, #95dbff 20px 21px);
+      #d2d3ec 0 2px, #bac7ea 2px 3px, #9dbee5 3px 4px,
+      #88b4e1 4px 5px, #81b0e0 5px 6px, #7bace0 6px 7px,
+      #77ace0 7px 8px) top / 100% 8px no-repeat,
+    linear-gradient(to bottom,
+      #5a9de0 0 1px, #61a3e6 1px 2px, #69aaeb 2px 3px,
+      #70b1f1 3px 4px, #78b8fa 4px 5px, #7fbfff 5px 6px,
+      #86c7ff 6px 7px, #8dceff 7px 8px, #93d8ff 8px 9px,
+      #95dbff 9px 10px) bottom / 100% 10px no-repeat,
+    linear-gradient(to bottom, #478fd8 0 50%, #5096dc 50%);
+  background: var(--aqua-btn-face);
   color: var(--btn-default-fg);
-  box-shadow: 0 1px 0 #565656, 0 2px 0 #b9b9b9;
+  box-shadow: var(--aqua-btn-frame);
   text-shadow: var(--btn-default-text-shadow);
 
 }
 
-body[data-theme="aqua"] button.btn:is(.is-active, :active):not(:disabled):not(.is-disabled) {
+body[data-theme="aqua"] .btn:is(.is-active, :active):not(:disabled):not(.is-disabled) {
 
+  /* Same bridge as .default above: the shared pressed rule is later and equal,
+     so the frame has to travel through the token it reads. */
+  --btn-active-shadow: var(--aqua-btn-frame);
+  --aqua-btn-rim: #01236f;
+  --aqua-btn-rim-top: #00005f;
+  --aqua-btn-arc-ink: rgba(0, 24, 120, 0.5);
+  --aqua-btn-arc-reach: 6px;
+  --aqua-btn-arc-blur: 5px;
+  --aqua-btn-arc-spread: -5px;
   border-color: var(--btn-active-border-color);
   background: var(--btn-active-bg);
   color: var(--btn-active-fg);
-  box-shadow: var(--btn-active-shadow);
+  box-shadow: var(--aqua-btn-frame);
 
 }
 
@@ -2449,14 +2541,14 @@ body[data-theme="aqua"] select:disabled {
 
 }
 
-body[data-theme="aqua"] :is(button.btn:disabled, button.btn.is-disabled, .system-select-button:disabled) {
+body[data-theme="aqua"] :is(.btn:disabled, .btn.is-disabled, .system-select-button:disabled) {
 
   border: 1px solid var(--btn-disabled-border-color, #a4a4a4);
   background: var(--btn-disabled-bg, var(--control-disabled-bg));
   /* Reads the appearance token instead of a literal, so Aqua's disabled ink is
      set in one place. #999999 measured 2.35:1 on the era's own button face. */
   color: var(--system-disabled-fg, #999999);
-  box-shadow: none;
+  box-shadow: var(--btn-disabled-shadow, none);
   opacity: var(--btn-disabled-opacity, var(--control-disabled-opacity));
 
 }
@@ -2467,7 +2559,14 @@ body[data-theme="aqua"] .system-select-button:not(:disabled) {
   height: 21px;
   padding: 1px 25px 1px 12px;
   border: 0;
-  border-radius: 999px;
+  /* Measured, not inherited from the push button: in the 10.2 General pane
+     the Number-of-Recent-Items pop-up is an 89x21 rounded RECTANGLE whose
+     corner arc is about 4px — the top rail reaches within two pixels of both
+     ends. The capsule this replaces was a workaround for the missing side
+     rings below: with nothing drawn down the left and right edges the control
+     read as an open strip, and closing it with a 999px radius traded one
+     wrong shape for another. */
+  border-radius: 4px;
   background:
     linear-gradient(to bottom,
       #00005f 0 1px, #dee2f4 1px 2px, #bed4ef 2px 3px,
@@ -2485,14 +2584,7 @@ body[data-theme="aqua"] .system-select-button:not(:disabled) {
       #e9e9e9 11px 12px, #ececec 12px 13px, #efefef 13px 14px,
       #f3f3f3 14px 15px, #f6f6f6 15px 16px, #f8f8f8 16px 17px,
       #fcfcfc 17px 18px, #ffffff 18px 20px, #4e4e4e 20px 21px);
-  /* Jaguar's pop-up button is the push button's shape with a blue arrow well
-     filling its right cap - not a separate rectangular control. At 4px the
-     scanline body (which can only paint horizontal rows) had no left or right
-     edge, so the control read as an open strip with a square blue block jammed
-     in the corner, sitting beside sibling buttons that are proper capsules.
-     The capsule radius closes both ends and turns the well into the right cap;
-     the shadow is the same one every other Aqua control stands on. */
-  box-shadow: 0 1px 0 #565656, 0 2px 0 #b9b9b9;
+  box-shadow: var(--aqua-popup-frame);
 
 }
 
@@ -2513,42 +2605,6 @@ body[data-theme="aqua"] .system-select-option {
   padding: 2px 24px;
   font-family: var(--theme-ui-font);
   line-height: 16px;
-
-}
-
-body[data-theme="aqua"] .theme-lab-mini-window.is-active .theme-lab-mini-control.is-close {
-
-  background: var(--traffic-light-close-bg);
-
-}
-
-body[data-theme="aqua"] .theme-lab-mini-window.is-active .theme-lab-mini-control.is-zoom {
-  background: var(--traffic-light-resize-bg);
-}
-
-body[data-theme="aqua"] .theme-lab-mini-window.is-active .theme-lab-mini-control.is-close::before,
-body[data-theme="snow-leopard"] .theme-lab-mini-window.is-active .theme-lab-mini-control.is-close::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(45deg, transparent calc(50% - 1px), #ffffff calc(50% - 1px) calc(50% + 1px), transparent calc(50% + 1px)) center / 58% 58% no-repeat,
-    linear-gradient(-45deg, transparent calc(50% - 1px), #ffffff calc(50% - 1px) calc(50% + 1px), transparent calc(50% + 1px)) center / 58% 58% no-repeat;
-}
-
-body[data-theme="aqua"] .theme-lab-mini-window.is-active .theme-lab-mini-control.is-zoom::before,
-body[data-theme="snow-leopard"] .theme-lab-mini-window.is-active .theme-lab-mini-control.is-zoom::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(#ffffff, #ffffff) center / 58% 2px no-repeat,
-    linear-gradient(#ffffff, #ffffff) center / 2px 58% no-repeat;
-}
-
-body[data-theme="aqua"] .theme-lab-mini-window.is-inactive .theme-lab-mini-control {
-
-  background: radial-gradient(circle, #f7f7f7 0 4px, #a9a9a9 5px, #777777 6px, transparent 7px);
 
 }
 
@@ -2706,7 +2762,10 @@ body[data-theme="aqua"] :is(.btn:disabled, .btn.is-disabled), body[data-theme="s
 
   background: var(--control-disabled-bg);
   color: var(--system-disabled-fg, var(--shade-dark));
-  box-shadow: none;
+  /* Through the token, not a literal: this rule and the one above it are the
+     same weight and this one is later, so a literal here silently outranks the
+     era's answer. An era that declares nothing still gets none. */
+  box-shadow: var(--btn-disabled-shadow, none);
 
 }
 
@@ -2753,19 +2812,6 @@ body[data-theme="aqua"] .theme-lab-toolbar, body[data-theme="snow-leopard"] .the
 
   border-radius: var(--theme-lab-toolbar-radius);
   box-shadow: var(--toolbar-highlight);
-
-}
-
-body[data-theme="aqua"] .theme-lab-mini-window.is-active, body[data-theme="snow-leopard"] .theme-lab-mini-window.is-active {
-
-  background: var(--toolbar-bg);
-
-}
-
-body[data-theme="aqua"] .theme-lab-mini-window.is-inactive, body[data-theme="snow-leopard"] .theme-lab-mini-window.is-inactive {
-
-  background: var(--toolbar-bg-inactive);
-  opacity: 1;
 
 }
 
@@ -2945,18 +2991,3 @@ body[data-theme="snow-leopard"] .boot-progress span { background: linear-gradien
 @keyframes aqua-mac-in { from { opacity: 0; transform: scale(calc(var(--boot-mac-scale) * 0.97)) } to { opacity: 1; transform: scale(var(--boot-mac-scale)) } }
 @keyframes aqua-progress-sheen { from { transform: translateX(-100%) } to { transform: translateX(100%) } }
 @media (prefers-reduced-motion: reduce) { :where(body[data-theme="aqua"], body[data-theme="snow-leopard"]) :is(.boot-screen, .shutdown-screen), :where(body[data-theme="aqua"], body[data-theme="snow-leopard"]) .happy-mac, :where(body[data-theme="aqua"], body[data-theme="snow-leopard"]) .boot-progress span::after { animation: none } }
-
-
-/* No HiDPI reconstruction for the lamps.
-
-   A CSS-gradient rebuild was tried twice here and measured against the
-   canonical sprites both times: two layers (centre column replayed as a
-   linear gradient, plus a radial ring solved from the sprite's own gloss
-   row) still land at RMS 24-44 per channel, with single channels off by as
-   much as 187. A hand-drawn 14px gel is not a function of one radius.
-
-   So the sprite stays the only source of truth. Scaled up on a dense
-   display it goes slightly soft, which is a smaller lie than a lamp with
-   the wrong internal structure -- the rebuild read as matte rubber next to
-   the glass it was copying. If real @2x art ever turns up, ship it as an
-   image-set() here; do not fit gradients to it again. */

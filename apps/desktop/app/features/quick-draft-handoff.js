@@ -371,6 +371,14 @@ window.AISystem6QuickDraft = Object.freeze({
   setDisplayMode: setQuickDraftDisplayMode,
   panelVisible: quickDraftPanelVisible,
   togglePanel: toggleQuickDraftPanel,
+  // What 文字亮室 needs to answer for its own menu bar.
+  isReadOnlySubject: lightroomIsReadOnly,
+  noteLightroomClosed,
+  hasDraftSelection: hasQuickDraftSelection,
+  hasVersions: () => lightroomMenuRows("versions").length > 0,
+  hasComposite: () => Boolean(darkroomOf(activeProjectQuickDraft({ create: false })?.record).composite),
+  lightroomMenuRows,
+  syncMenuState: syncLightroomMenuState,
   hasInput: () => quickDraftInteractionState().hasInput,
   hasOrganizableMaterial: () => quickDraftInteractionState().hasOrganizableMaterial,
   paperSurface: () => quickDraftPhase(),
@@ -432,9 +440,35 @@ const QUICK_DRAFT_COMMAND_NAMES = [
 function quickDraftCommandAvailable(action) {
   if (action === "open-quick-draft") return true;
   const activeWindow = /** @type {HTMLElement | null} */ (document.querySelector(".window.is-active"));
-  if (activeWindow?.dataset.window !== "quickDraft") return false;
+  const frontWindow = activeWindow?.dataset.window || "";
+  // 文字亮室 is the second front window for the commands the two applications
+  // share -- the three views, 试看 and 冲洗. Asking only for quickDraft is what
+  // greyed the darkroom's whole menu bar the moment it came forward.
+  const inDarkroom = frontWindow === "lightroom";
+  if (!["quickDraft", "lightroom"].includes(frontWindow)) return false;
   const quickDraft = window.AISystem6QuickDraft;
   if (!quickDraft) return false;
+  if (inDarkroom) {
+    // In the darkroom only the shared commands exist; everything else on this
+    // list belongs to the desk that writes.
+    if (["quick-draft-view-grain", "quick-draft-view-read", "quick-draft-view-listen"].includes(action)) {
+      return !!quickDraft.hasBody?.();
+    }
+    if (action === "quick-draft-view-body") return true;
+    if (action === "quick-draft-apply") return !!quickDraft.canPreviewAdjustments?.();
+    // Develop writes the document, so a subject this application does not own
+    // never offers it, however ready the composite is.
+    // Develop writes the proof back. With no proof it would write the body onto
+    // itself and leave a version saying nothing happened, so the row waits for
+    // 试看 rather than offering a move with no effect.
+    if (action === "quick-draft-develop") {
+      return !quickDraft.isReadOnlySubject?.()
+        && !!quickDraft.hasBody?.()
+        && !!quickDraft.hasComposite?.()
+        && !!quickDraft.canDevelop?.();
+    }
+    return false;
+  }
   if (action === "quick-draft-vent-on") return !quickDraft.isVentIntakeActive?.();
   if (action === "quick-draft-vent-off") return !!quickDraft.isVentIntakeActive?.();
   if (action === "quick-draft-vent-summary") return !!quickDraft.modelAvailable?.() && !!quickDraft.hasOrganizableMaterial?.();
@@ -493,6 +527,104 @@ function runQuickDraftRuntimeCommand(action) {
   return quickDraft.runClioTalkAction?.(command === "talk-points" ? "organize" : command);
 }
 
+// ---- 文字亮室 commands ---------------------------------------------------
+// The darkroom's own verbs. They are listed and answered here, beside Quick
+// Draft's, because the two applications share one bundle -- but they are a
+// separate list with a separate availability rule, so neither can silently
+// decide the other is unavailable again.
+const LIGHTROOM_COMMAND_NAMES = [
+  "lightroom-develop-document",
+  "lightroom-save-version",
+  "lightroom-restore-version",
+  "lightroom-zoom-grain",
+  "lightroom-zoom-histogram",
+  "lightroom-zoom-fatbits",
+  "lightroom-toggle-inspector",
+  "lightroom-layer-toggle",
+  "lightroom-layer-strength",
+  "lightroom-layer-move",
+  "lightroom-layer-scope",
+  "lightroom-layer-scope-all",
+  "lightroom-protect-selection",
+  "lightroom-eli5-toggle",
+  "lightroom-eli5-baseline",
+  "lightroom-eli5-review",
+  "lightroom-eli5-rewrite",
+  "lightroom-discard-composite",
+  "lightroom-listen-toggle",
+  "lightroom-listen-back",
+  "lightroom-listen-lost",
+  "lightroom-listen-rehearse",
+  "lightroom-listen-voice",
+];
+
+function lightroomCommandAvailable(action) {
+  const activeWindow = /** @type {HTMLElement | null} */ (document.querySelector(".window.is-active"));
+  if (activeWindow?.dataset.window !== "lightroom") return false;
+  const quickDraft = window.AISystem6QuickDraft;
+  if (!quickDraft) return false;
+  // Opening a document is opening an application's document: always allowed.
+  if (action === "lightroom-develop-document") return true;
+  const hasBody = !!quickDraft.hasBody?.();
+  const readOnly = !!quickDraft.isReadOnlySubject?.();
+  const view = String(quickDraft.displayMode?.() || "");
+  const writable = hasBody && !readOnly;
+  if (action.startsWith("lightroom-zoom-")) return hasBody && view === "grain";
+  if (action === "lightroom-toggle-inspector") return hasBody;
+  if (action === "lightroom-restore-version") return !readOnly && !!quickDraft.hasVersions?.();
+  if (action === "lightroom-save-version") return writable;
+  if (action === "lightroom-discard-composite") return writable && !!quickDraft.hasComposite?.();
+  if (["lightroom-layer-scope", "lightroom-protect-selection"].includes(action)) {
+    return writable && !!quickDraft.hasDraftSelection?.();
+  }
+  if (action.startsWith("lightroom-layer-")) return writable;
+  if (["lightroom-eli5-review", "lightroom-eli5-rewrite"].includes(action)) {
+    return writable && !!quickDraft.modelAvailable?.();
+  }
+  if (action.startsWith("lightroom-eli5-")) return writable;
+  if (action.startsWith("lightroom-listen-")) {
+    if (view !== "listen") return false;
+    if (action === "lightroom-listen-rehearse") return !readOnly;
+    return true;
+  }
+  return hasBody;
+}
+
+function runLightroomRuntimeCommand(action, context = {}) {
+  const args = Array.isArray(context.lightroomArgs) ? context.lightroomArgs : [];
+  const quickDraft = window.AISystem6QuickDraft;
+  if (!quickDraft) return false;
+  if (action === "lightroom-develop-document") return quickDraft.developDocument?.(args[0] || "");
+  if (action === "lightroom-save-version") return saveLightroomVersion();
+  if (action === "lightroom-restore-version") return restoreQuickDraftVersion(args[1] || "", args[0] || "version");
+  if (action.startsWith("lightroom-zoom-")) return setQuickDraftGrainZoom(action.slice("lightroom-zoom-".length), { toggle: false });
+  if (action === "lightroom-toggle-inspector") return toggleQuickDraftPanel("inspector");
+  if (action === "lightroom-layer-toggle") {
+    const kind = args[0] || "";
+    const enabled = adjustmentLayerState(kind)?.enabled === true;
+    return updateAdjustmentLayer(kind, { enabled: !enabled });
+  }
+  if (action === "lightroom-layer-strength") return updateAdjustmentLayer(args[0] || "", { strength: Number(args[1]) || 50 });
+  if (action === "lightroom-layer-move") return moveAdjustmentLayer(args[0] || "", Number(args[1]) || -1);
+  if (action === "lightroom-layer-scope") return scopeSelectionToLayer(args[0] || "");
+  if (action === "lightroom-layer-scope-all") return updateAdjustmentLayer(args[0] || "", { mask: "" });
+  if (action === "lightroom-protect-selection") return protectSelectionFromTextarea();
+  if (action === "lightroom-eli5-toggle") {
+    const lens = getActiveProject()?.explanationLens || {};
+    return updateQuickDraftEli5Lens({ enabled: lens.enabled !== true });
+  }
+  if (action === "lightroom-eli5-baseline") return updateQuickDraftEli5Lens({ baselineKnowledge: args[0] || "secondary-school" });
+  if (action === "lightroom-eli5-review") return window.AISystem6QuickDraftAI?.requestEli5Review?.();
+  if (action === "lightroom-eli5-rewrite") return window.AISystem6QuickDraftAI?.requestEli5Rewrite?.();
+  if (action === "lightroom-discard-composite") return discardLightroomComposite();
+  if (action === "lightroom-listen-toggle") return window.AISystem6QuickDraftListen?.toggle?.();
+  if (action === "lightroom-listen-back") return window.AISystem6QuickDraftListen?.stepBack?.();
+  if (action === "lightroom-listen-lost") return window.AISystem6QuickDraftListen?.markLost?.();
+  if (action === "lightroom-listen-rehearse") return window.AISystem6QuickDraftListen?.startQuickDraftRehearse?.();
+  if (action === "lightroom-listen-voice") return window.AISystem6QuickDraftListen?.setQuickDraftListenVoice?.(args[0] || "");
+  return false;
+}
+
 // 文字亮室 answers the develop intent for any text document, so Writing Studio
 // can hand a manuscript to the darkroom the same way Quick Draft hands one to
 // TeachText: through the registry, not through a private call.
@@ -524,14 +656,18 @@ window.AISystem6Runtime?.registerApplication({
   windowName: "quickDraft",
   mount: () => window.AISystem6QuickDraft.open(),
   restore: () => window.AISystem6QuickDraft.render?.(),
-  commands: Object.fromEntries(
-    ["open-quick-draft", "develop-in-lightroom", ...QUICK_DRAFT_COMMAND_NAMES].map((action) => [action, {
+  commands: Object.fromEntries([
+    ...["open-quick-draft", "develop-in-lightroom", ...QUICK_DRAFT_COMMAND_NAMES].map((action) => [action, {
       handler: () => (action === "develop-in-lightroom"
         ? developActiveDocumentInLightroom()
         : runQuickDraftRuntimeCommand(action)),
       isAvailable: () => (action === "develop-in-lightroom" ? true : quickDraftCommandAvailable(action)),
-    }])
-  ),
+    }]),
+    ...LIGHTROOM_COMMAND_NAMES.map((action) => [action, {
+      handler: (context) => runLightroomRuntimeCommand(action, context),
+      isAvailable: () => lightroomCommandAvailable(action),
+    }]),
+  ]),
 });
 
 window.AISystem6QuickDraftHandoff = Object.freeze({

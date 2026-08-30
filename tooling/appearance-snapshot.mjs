@@ -112,6 +112,18 @@ async function newPage(browser, cell) {
     hasTouch: cell.width < 768,
     isMobile: cell.width < 768,
   });
+  // The showcase desktop includes the live model-status menu and ClioTalk
+  // empty state. Letting those pixels depend on whether LM Studio happens to
+  // be running made the same commit alternate between two 17k-30k pixel
+  // layouts. A visual baseline must own its service state, so every cell sees
+  // the same explicit offline provider instead of probing developer software.
+  await context.route(/https?:\/\/(?:127\.0\.0\.1|localhost):(?:1234|11434)\//, (route) => {
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ models: [] }),
+    });
+  });
   await context.addInitScript(DETERMINISM);
   await context.addInitScript((themeId) => {
     localStorage.setItem("ai-system-6-theme", themeId);
@@ -178,6 +190,7 @@ async function settle(page, themeId, profile) {
  */
 async function settleSurface(page, selector, samples = 12) {
   let previous = "";
+  let stableSamples = 0;
   for (let attempt = 0; attempt < samples; attempt += 1) {
     const signature = await page.evaluate((sel) => {
       const root = sel ? document.querySelector(sel) : document.body;
@@ -192,7 +205,16 @@ async function settleSurface(page, selector, samples = 12) {
         menu?.textContent?.length || 0,
       ].join("/");
     }, selector);
-    if (signature === previous) return true;
+    if (signature === previous) {
+      stableSamples += 1;
+      // A route can report the same geometry once before its deferred
+      // content paint lands (notably the phone Outline after the writing
+      // profile handoff). Require three consecutive matches so the first
+      // stable-looking frame is not mistaken for the settled surface.
+      if (stableSamples >= 3) return true;
+    } else {
+      stableSamples = 0;
+    }
     previous = signature;
     await page.waitForTimeout(250);
   }
@@ -202,6 +224,30 @@ async function settleSurface(page, selector, samples = 12) {
 async function captureCell(page, cell, outDir) {
   const file = join(outDir, `${cell.id}.png`);
   if (cell.target === "desktop") {
+    // The showcase promises ClioTalk in the foreground, not whichever
+    // asynchronous boot task last repainted the menu bar. Pin Finder
+    // single-task mode and the ClioTalk menu owner before waiting for pixels;
+    // otherwise Liquid Glass alternates between a ClioTalk app menu and a
+    // transient MultiFinder switcher with no source-byte change.
+    await page.evaluate(async () => {
+      if (typeof setFinderEnvironment === "function") {
+        await setFinderEnvironment("finder", { persistStartup: false, announce: false });
+      }
+      document.querySelector('[data-workspace-capability="studio"]')?.classList.add("is-hidden");
+      for (const win of document.querySelectorAll(".window")) {
+        const clioTalk = win.dataset.window === "assistant";
+        win.classList.toggle("is-hidden", !clioTalk);
+        win.classList.toggle("is-active", clioTalk);
+      }
+      if (typeof renderAppMenuBar === "function") renderAppMenuBar("clioTalk");
+      document.querySelector(".multifinder-menu")?.classList.add("is-hidden");
+    });
+    await page.waitForFunction(() => {
+      const clioTalk = document.querySelector('.window[data-window="assistant"]');
+      return clioTalk
+        && !clioTalk.textContent?.includes("Getting Clio ready")
+        && !clioTalk.textContent?.includes("正在准备");
+    }, null, { timeout: 10000 });
     await settleSurface(page, null);
     await page.screenshot({ path: file, animations: "disabled", timeout: 30000 });
   } else {

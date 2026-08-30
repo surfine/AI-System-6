@@ -870,6 +870,116 @@ const APPEARANCE_GEOMETRY_FILES = [
   LIQUID_FILE,
 ];
 
+// Theme Lab's cost to the appearance sheets, ratcheted. A specimen made of
+// theme-lab-* classes is a second wardrobe every era has to sew, and the copy
+// drifts from the shipping control it stands for. Converting a specimen to the
+// real component lowers this; nothing may raise it.
+// Era token coverage. A token two eras set is a period decision the appearance
+// system expects every era to answer; a token one era sets is that era's own
+// quirk. Coverage is how many of the first kind an era answers, following its
+// recipe chain, and it is what makes a seventh appearance cheap: the number is
+// its worklist, and Theme Lab shows the same list on screen.
+//
+// The rule is asymmetric on purpose. A NEW era must answer all of them, because
+// arriving complete is the whole point. The six that exist arrived before this
+// gate and carry real debt, so each is held to a count that may only fall — the
+// same ratchet shape the replica budget uses. A gate that is red on the day it
+// lands teaches people to ignore it.
+function eraTokenCoverage() {
+  const registry = readFileSync(resolveProjectPath("apps/desktop/app/core/theme-registry.js"), "utf8");
+  const ids = [...registry.matchAll(/\bid:\s*"([a-z-]+)"/g)].map((match) => match[1]);
+  const bases = [...registry.matchAll(/\brecipeBase:\s*(?:"([a-z-]+)"|null)/g)].map((match) => match[1] || null);
+  const parent = new Map(ids.map((id, index) => [id, bases[index] ?? null]));
+  const sources = APPEARANCE_GEOMETRY_FILES
+    .map((relPath) => readFileSync(resolveProjectPath(relPath), "utf8"))
+    .join("\n");
+  const own = new Map();
+  for (const id of ids) {
+    const blocks = id === "liquid-glass"
+      ? /body\.use-liquid-glass\s*\{([^}]*)\}/g
+      : new RegExp(`(?:html|body)\\[data-theme="${id}"\\][^{]*\\{([^}]*)\\}`, "g");
+    const tokens = new Set();
+    for (const block of sources.matchAll(blocks)) {
+      for (const declaration of block[1].matchAll(/(--[a-z0-9-]+)\s*:/g)) {
+        // Theme Lab's own furniture is not something an appearance owes.
+        if (!declaration[1].startsWith("--theme-lab-")) tokens.add(declaration[1]);
+      }
+    }
+    own.set(id, tokens);
+  }
+  const seen = new Map();
+  for (const tokens of own.values()) {
+    for (const name of tokens) seen.set(name, (seen.get(name) || 0) + 1);
+  }
+  const period = new Set([...seen].filter(([, count]) => count >= 2).map(([name]) => name));
+  const missing = new Map();
+  for (const id of ids) {
+    const answered = new Set();
+    for (let cursor = id; cursor; cursor = parent.get(cursor)) {
+      for (const name of own.get(cursor) || []) if (period.has(name)) answered.add(name);
+    }
+    missing.set(id, [...period].filter((name) => !answered.has(name)).sort());
+  }
+  return { ids, period, missing };
+}
+
+const coverageBudgets = budget.eraTokenCoverage;
+if (!coverageBudgets || typeof coverageBudgets !== "object") {
+  fail("tooling/css-budget.json is missing eraTokenCoverage");
+} else if (!scopedCssCheck || APPEARANCE_GEOMETRY_FILES.some((f) => cssFiles.includes(f))) {
+  const { ids, period, missing } = eraTokenCoverage();
+  for (const id of ids) {
+    if (coverageBudgets.baselineEra === id) {
+      ok(`${id}: baseline appearance, defines the defaults the other eras answer`);
+      continue;
+    }
+    const allowed = coverageBudgets.missing?.[id];
+    const found = missing.get(id) || [];
+    if (typeof allowed !== "number") {
+      if (found.length) {
+        fail(
+          `${id}: a new appearance must answer every period token — ${found.length} of ${period.size} unanswered. `
+            + `Theme Lab's Tokens tab lists them. First few: ${found.slice(0, 6).join(", ")}`
+        );
+      } else {
+        ok(`${id}: new appearance answers all ${period.size} period tokens`);
+      }
+      continue;
+    }
+    if (found.length > allowed) {
+      fail(
+        `${id}: unanswered period tokens = ${found.length}, budget = ${allowed}. `
+          + `An era may only get more complete. Newly unanswered: ${found.slice(0, 6).join(", ")}`
+      );
+    } else {
+      ok(`${id}: unanswered period tokens ${found.length}/${allowed}`);
+    }
+  }
+}
+
+const replicaBudgets = budget.themeLabReplicaMentions;
+if (!replicaBudgets || typeof replicaBudgets !== "object") {
+  fail("tooling/css-budget.json is missing themeLabReplicaMentions");
+} else if (!scopedCssCheck || APPEARANCE_GEOMETRY_FILES.some((f) => cssFiles.includes(f))) {
+  for (const relPath of APPEARANCE_GEOMETRY_FILES) {
+    const allowed = replicaBudgets[relPath];
+    if (typeof allowed !== "number") {
+      fail(`${relPath} has no themeLabReplicaMentions budget entry; add one in tooling/css-budget.json`);
+      continue;
+    }
+    const found = (readFileSync(resolveProjectPath(relPath), "utf8").match(/theme-lab/g) || []).length;
+    if (found > allowed) {
+      fail(
+        `${relPath}: theme-lab mentions = ${found}, budget = ${allowed}. `
+          + `An era dressing a Theme Lab replica is dressing the same object twice, and only the copy is on the board. `
+          + `Convert the specimen to the shipping component and move its era metrics onto that component's tokens.`
+      );
+    } else {
+      ok(`${relPath}: Theme Lab replica mentions ${found}/${allowed}`);
+    }
+  }
+}
+
 const geometryBudgets = budget.appearanceGeometry;
 if (!geometryBudgets || typeof geometryBudgets !== "object") {
   const measured = Object.fromEntries(

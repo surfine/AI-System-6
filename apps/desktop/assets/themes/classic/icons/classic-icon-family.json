@@ -1897,7 +1897,7 @@
         }
       },
       "metaphorMetrics": {
-        "version": 1,
+        "version": 2,
         "sourceSize": [
           32,
           32
@@ -1922,7 +1922,21 @@
         "nodeGapDensities": [
           0.5,
           0
-        ]
+        ],
+        "centerHubDensity": 0.6543,
+        "radialNodeDensities": [
+          1,
+          0.5051,
+          1,
+          0.4848
+        ],
+        "radialBranchDensities": [
+          1,
+          0.5238,
+          1,
+          0.4167
+        ],
+        "layoutMode": "radial-mind-map"
       }
     },
     "clioStage": {

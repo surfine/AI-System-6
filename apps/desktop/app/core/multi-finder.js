@@ -14,6 +14,7 @@ const multiFinderAppLabels = {
   finder: "Finder",
   writingStudio: "Writing Studio",
   quickDraft: "Quick Draft",
+  lightroom: "Lightroom",
   teachText: "TeachText",
   clioTalk: "ClioTalk",
   searcher: "Searcher",
@@ -67,7 +68,10 @@ function getWindowAppId(winOrName) {
 }
 
 function syncWorkspaceAppOwnership() {
-  document.querySelectorAll(".window").forEach((win) => {
+  // Managed windows only: a `.window` with no data-window was never opened by
+  // the manager. Theme Lab shows real windows as specimens so the era paints
+  // them, and a sweep that hides or re-frames one empties the board.
+  document.querySelectorAll(".window[data-window]").forEach((win) => {
     const name = win.dataset.window || "";
     const nextAppId = resolvedWindowAppId(name);
     if (win.dataset.app === nextAppId) return;
@@ -149,17 +153,17 @@ function forgetWindowFromRunningApps(windowName) {
 }
 
 function visibleWindowsForApp(appId) {
-  return Array.from(document.querySelectorAll(".window:not(.is-hidden):not(.is-app-hidden)"))
+  return Array.from(document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden)"))
     .filter((win) => getWindowAppId(win) === appId);
 }
 
 function foregroundVisibleWindows() {
-  return Array.from(document.querySelectorAll(".window:not(.is-hidden):not(.is-app-hidden)"))
+  return Array.from(document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden)"))
     .filter((win) => !hiddenAppIds.has(getWindowAppId(win)));
 }
 
 function windowsForApp(appId) {
-  return Array.from(document.querySelectorAll(".window"))
+  return Array.from(document.querySelectorAll(".window[data-window]"))
     .filter((win) => getWindowAppId(win) === appId);
 }
 
@@ -409,7 +413,7 @@ function showAllApps() {
 
 function foregroundApplicationIds() {
   const ids = new Set();
-  document.querySelectorAll(".window:not(.is-hidden):not(.is-app-hidden):not(.is-collapsed)").forEach((win) => {
+  document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden):not(.is-collapsed)").forEach((win) => {
     const appId = getWindowAppId(win);
     if (appId && !hiddenAppIds.has(appId)) ids.add(appId);
   });

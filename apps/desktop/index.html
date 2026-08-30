@@ -13,19 +13,19 @@
     <meta name="apple-mobile-web-app-title" content="AI System 6" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="theme-color" content="#000000" />
-    <link rel="apple-touch-icon" href="assets/app-icon/app-icon-180.png?v=20260824.1" />
-    <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png?v=20260824.1" />
-    <link rel="manifest" href="assets/app-icon/manifest.json?v=20260824.1" />
-    <script src="app/core/theme-registry.js?v=20260824.1"></script>
-    <link rel="stylesheet" href="styles.bundle.css?v=20260824.1" />
+    <link rel="apple-touch-icon" href="assets/app-icon/app-icon-180.png?v=20260830.1" />
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png?v=20260830.1" />
+    <link rel="manifest" href="assets/app-icon/manifest.json?v=20260830.1" />
+    <script src="app/core/theme-registry.js?v=20260830.1"></script>
+    <link rel="stylesheet" href="styles.bundle.css?v=20260830.1" />
     <!-- The app bundle is referenced at the end of a ~340 KB body, so the
          preload scanner reaches it late. This starts the download beside the
          stylesheet instead. Both URLs carry the same build stamp, so the
          browser serves the script tag from this one request. -->
-    <link rel="preload" as="script" href="app.bundle.js?v=20260824.1" />
+    <link rel="preload" as="script" href="app.bundle.js?v=20260830.1" />
   </head>
   <body class="is-booting">
-    <script src="app/core/theme-body-init.js?v=20260824.1"></script>
+    <script src="app/core/theme-body-init.js?v=20260830.1"></script>
     <header class="menu-bar" aria-label="System menu" data-i18n-aria-label="system_menu">
       <div class="menu">
         <button class="apple" aria-label="Apple menu" data-i18n-aria-label="apple_menu" data-balloon-help="balloon_apple_menu">
@@ -221,9 +221,13 @@
               <span class="sys-icon sys-icon-desktop" data-system-icon="reviewDesk" aria-hidden="true"></span>
               <b data-i18n="review_desk">Review Desk</b>
             </button>
-            <button id="spine-burn-project-cd-button" type="button" data-action="export-teachtext-project-cd" hidden>
+            <!-- Stop 6 stays on the map in every state: a disabled terminus
+                 is navigation, and the balloon carries the reason. -->
+            <button id="spine-burn-project-cd-button" type="button" data-action="export-teachtext-project-cd" disabled data-balloon-help="balloon_project_cd_stop_ready" data-balloon-help-disabled="balloon_project_cd_stop_locked">
+              <span class="spine-step-number" aria-hidden="true">6</span>
+              <!-- No content mark: the terminus never holds the pen. -->
               <span class="sys-icon sys-icon-desktop" data-system-icon="projectDisc" aria-hidden="true"></span>
-              <b data-i18n="burn_project_cd">Burn Project CD</b>
+              <b id="spine-project-cd-label" data-i18n="project_cd">Project CD</b>
             </button>
           </div>
           </div>
@@ -515,6 +519,13 @@
                   <span class="compose-tool-copy">
                     <b data-i18n="compose_attach_project_file">Attach project file</b>
                     <small id="compose-project-file-help" data-i18n="compose_attach_project_file_help">Use one visible document or Chat in the next message</small>
+                  </span>
+                </button>
+                <button class="compose-tools-general" type="button" role="menuitem" data-action="open-clio-image-picker" aria-describedby="compose-image-help" data-i18n-aria-label="compose_attach_image">
+                  <span class="sys-icon" data-system-icon="imagePromptStudio" aria-hidden="true"></span>
+                  <span class="compose-tool-copy">
+                    <b data-i18n="compose_attach_image">Attach image</b>
+                    <small id="compose-image-help" data-i18n="compose_attach_image_help">Choose up to four images. Nothing uploads until you Send.</small>
                   </span>
                 </button>
                 <button class="compose-tools-general" type="button" role="menuitem" data-action="open-import-utility" aria-describedby="compose-hard-disk-help" data-i18n-aria-label="compose_write_hard_disk">
@@ -3201,7 +3212,9 @@
         </div>
         <div class="window-pane info-pane">
           <div class="info-header">
-            <span id="info-file-icon" class="large-mini-icon"></span>
+            <span class="info-icon-stage" aria-hidden="true">
+              <span id="info-file-icon" class="info-icon-artwork"></span>
+            </span>
             <div class="info-main">
               <h3 id="info-file-name">File Name</h3>
               <p class="hint" id="info-file-kind">Kind: Text Document</p>
@@ -3322,6 +3335,16 @@
           <span class="sys-icon sys-icon-desktop" data-system-icon="fileFloppy" aria-hidden="true"></span>
           <span data-i18n="file_floppy">File Floppy</span>
         </button>
+        <!-- Icons pair by lane: the route beside its project disk, the short
+             lane beside the light table. Same DOM order in every era. -->
+        <button class="desktop-icon desktop-app-icon" id="finder-writing-studio-toggle" type="button" data-balloon-help="balloon_writing_studio">
+          <span class="sys-icon sys-icon-desktop" data-system-icon="writingStudio" aria-hidden="true"></span>
+          <span id="finder-writing-studio-toggle-label">Writing Studio</span>
+        </button>
+        <button class="desktop-icon" id="active-project-drop-target" type="button" data-action="open-project-disks" data-balloon-help="balloon_project_disk" aria-hidden="false">
+          <span class="sys-icon sys-icon-desktop" data-system-icon="projectDisk" aria-hidden="true"></span>
+          <span id="current-project-label" data-i18n="current_project_desktop">Project Hard Disk</span>
+        </button>
         <button class="desktop-icon desktop-app-icon" type="button" data-action="open-quick-draft" data-balloon-help="balloon_quick_draft">
           <span class="sys-icon sys-icon-desktop" data-system-icon="quickDraft" aria-hidden="true"></span>
           <span data-i18n="quick_draft_label">Quick Draft</span>
@@ -3329,10 +3352,6 @@
         <button class="desktop-icon desktop-app-icon" type="button" data-action="open-lightroom" data-balloon-help="balloon_lightroom">
           <span class="sys-icon sys-icon-desktop" data-system-icon="lightroom" aria-hidden="true"></span>
           <span data-i18n="lightroom_title">Lightroom</span>
-        </button>
-        <button class="desktop-icon desktop-app-icon" id="finder-writing-studio-toggle" type="button" data-balloon-help="balloon_writing_studio">
-          <span class="sys-icon sys-icon-desktop" data-system-icon="writingStudio" aria-hidden="true"></span>
-          <span id="finder-writing-studio-toggle-label">Writing Studio</span>
         </button>
         <button class="desktop-icon desktop-app-icon" type="button" data-open="assistant" data-balloon-help="balloon_assistant">
           <span class="sys-icon sys-icon-desktop" data-system-icon="assistant" aria-hidden="true"></span>
@@ -3344,10 +3363,6 @@
         </button>
         <!-- The desktop is the current working set. The complete application
              catalogue remains in Applications and MultiFinder. -->
-        <button class="desktop-icon" id="active-project-drop-target" type="button" data-action="open-project-disks" data-balloon-help="balloon_project_disk" aria-hidden="false">
-          <span class="sys-icon sys-icon-desktop" data-system-icon="projectDisk" aria-hidden="true"></span>
-          <span id="current-project-label" data-i18n="current_project_desktop">Project Hard Disk</span>
-        </button>
         <button class="desktop-icon is-mounted-disk" data-drag-type="mounted-disk" draggable="true" type="button" data-open="textDisk" id="mounted-text-disk" hidden data-balloon-help="balloon_text_disk">
           <span class="sys-icon sys-icon-desktop" data-system-icon="fileFloppy" aria-hidden="true"></span>
           <span data-i18n="mounted_text_disk">File Floppy</span>
@@ -3363,7 +3378,7 @@
       </section>
     </main>
 
-    <script src="app/generated/build-info.js?v=20260824.1"></script>
-    <script src="app.bundle.js?v=20260824.1"></script>
+    <script src="app/generated/build-info.js?v=20260830.1"></script>
+    <script src="app.bundle.js?v=20260830.1"></script>
   </body>
 </html>

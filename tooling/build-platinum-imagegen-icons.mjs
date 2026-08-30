@@ -124,11 +124,12 @@ for (const id of ICON_IDS) {
     if (size !== 42) {
       const runtime32 = manifest[id];
       if (!runtime32) throw new Error(`Platinum ${id}: missing broad runtime manifest entry`);
-      if (!/-32\.svg$/.test(runtime32)) {
-        throw new Error(`Platinum ${id}: compatibility manifest must retain a -32.svg path, got ${runtime32}`);
+      if (/-32\.svg$/.test(runtime32)) {
+        const runtimeFile = size === 32 ? runtime32 : runtime32.replace(/-32\.svg$/, "-16.svg");
+        writeFileSync(join(themeDir, runtimeFile), compatibilitySvg(id, size));
+      } else if (!/-32\.png$/.test(runtime32)) {
+        throw new Error(`Platinum ${id}: compatibility manifest must resolve to a 32 px SVG wrapper or PNG, got ${runtime32}`);
       }
-      const runtimeFile = size === 32 ? runtime32 : runtime32.replace(/-32\.svg$/, "-16.svg");
-      writeFileSync(join(themeDir, runtimeFile), compatibilitySvg(id, size));
     }
   }
   const spec = specs[id];

@@ -591,19 +591,13 @@ const classicPlusSystemIconPaths = {
 };
 
 const classicOnlyModernFallbackIconId = {
-  lightroom: "quickDraft",
-  imagePromptStudio: "liquidCover",
-  micropolis: "applications",
-  openttd: "applications",
-  doom: "applications",
-  bonsaiCity: "applications",
 };
 
 // Opt-in "line-art everywhere": when enabled, every non-Classic appearance
 // reuses the Classic one-bit SVG family instead of its own era painter. The
-// four new objects already do this unconditionally; this flag extends the
-// behavior to the whole semantic vocabulary so a user can read the desk in a
-// consistent 1-bit glyph language across appearances.
+// The compatibility table above is reserved for deliberate exceptions; this
+// flag extends the behavior to the whole semantic vocabulary so a user can
+// read the desk in a consistent 1-bit glyph language across appearances.
 let classicLineArtEverywhereEnabled = false;
 
 function setClassicLineArtEverywhere(enabled) {
@@ -616,11 +610,12 @@ function classicLineArtEverywhere() {
 
 function normalizeSystemIconId(iconId) {
   const raw = String(iconId || "").trim();
-  return systemIconPaths[raw] || classicOnlyModernFallbackIconId[raw] ? raw : "document";
+  return systemIconPaths[raw] || completeEraSystemIconIds.has(raw) ? raw : "document";
 }
 
-// Complete 56-object vocabulary. Kept as one split string because this module
-// is eager and every extra array token spends the two-floppy startup budget.
+// Complete renderer vocabulary: the canonical 56 objects plus six extended
+// application ids. Kept as one split string because this module is eager and
+// every extra array token spends the two-floppy startup budget.
 const completeEraSystemIconIds = new Set(("startupDisk hardDisk folder document applications trash finderApp fileFloppy "
   + "assistant quickDraft writingStudio projectDisk projectDisc cloudModel cloudModelOff questionSheet outline "
   + "sectionDrafts manuscript reviewDesk searcher reader timeMachine docMap clioStage clioChart liquidCover "
@@ -632,8 +627,8 @@ const completeEraSystemIconIds = new Set(("startupDisk hardDisk folder document 
 // Theme Lab and other read-only inspection surfaces consume the vocabulary
 // from the painter itself. Keep a frozen array at the boundary: exposing the
 // mutable Set would let an inspector accidentally change which ids render.
-// Four classic-only compatibility ids have no independent era asset family,
-// so they stay valid renderer inputs but are not appearance-atlas entries.
+// Any future classic-only compatibility id stays a valid renderer input but
+// is intentionally omitted from the appearance atlas.
 const appearanceSystemIconIds = Object.freeze(
   [...completeEraSystemIconIds].filter((id) => !classicOnlyModernFallbackIconId[id])
 );
@@ -649,7 +644,7 @@ const platinumCoreSystemIconIds = new Set([
   "controlPanel", "chooser", "systemHelp", "dictionary", "teachText", "writingDemo", "chatFile", "chatImport",
   "systemStatus", "contextPanel", "rebuildArticle", "bureaucracyMeme", "endfieldTerminal", "documents", "alias",
   "systemFile", "multiFinderApp", "daHandler", "writingBell", "trashFull", "control", "localModel", "controlStrip",
-  "clipboard",
+  "micropolis", "openttd", "doom", "bonsaiCity", "lightroom", "imagePromptStudio", "clipboard",
 ]);
 
 // Icon files are served with a long cache lifetime, and these hrefs sit inside
@@ -737,11 +732,13 @@ function liquidGlassSystemIconArt(iconId, sourceSize = 32) {
   const assetId = iconId === "scrap" ? "scrapbook" : iconId;
   const assetSize = [16, 32, 64, 128].includes(Number(sourceSize)) ? Number(sourceSize) : 32;
   const stem = systemIconEscape(assetId);
-  // The complete 56-object Liquid Glass vocabulary owns independent Image Gen
-  // raster artwork. Clipboard remains a legacy inline object and keeps the old
-  // SVG fallback because it is not part of the canonical family.
-  const file = completeEraSystemIconIds.has(assetId) ? `icons/${stem}-${assetSize}-default.png` : `${stem}-${assetSize}.svg`;
-  return `<image href="${systemIconAssetUrl(`assets/themes/liquid-glass/${file}`)}" x="0" y="0" width="32" height="32" preserveAspectRatio="xMidYMid meet" />`;
+  // The asset-backed Liquid Glass vocabulary owns independent Image Gen raster
+  // artwork. Clipboard remains a legacy inline object and keeps the old SVG
+  // fallback because it is not part of the canonical family.
+  const usesEraRaster = completeEraSystemIconIds.has(assetId);
+  const file = usesEraRaster ? `icons/${stem}-${assetSize}-default.png` : `${stem}-${assetSize}.svg`;
+  const rasterClass = usesEraRaster ? ' class="sys-icon-era-raster"' : "";
+  return `<image${rasterClass} href="${systemIconAssetUrl(`assets/themes/liquid-glass/${file}`)}" x="0" y="0" width="32" height="32" preserveAspectRatio="xMidYMid meet" />`;
 }
 
 function systemIconUsesSmallSource(options = {}) {

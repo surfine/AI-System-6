@@ -88,9 +88,12 @@ test.assertIncludes(shellSource, "data-bonsai-graph-canvas", "the chart canvas l
 test.assertIncludes(shellSource, "graphRangeSpec", "the chart offers 10 / 50 / 100 year ranges");
 test.assertIncludes(shellSource, "setDisplay", "the four display toggles switch renderer layers");
 test.assertIncludes(shellSource, "bonsaiDisplay", "the display toggles carry their checked hook into the menu");
-test.assertIncludes(shellSource, "bonsai_menu_rewards", "rewards live in a menu submenu after the rail fold");
-test.assertIncludes(shellSource, "REWARD_TOOL_IDS", "the five reward tools arm from the menu");
-test.assertNotIncludes(shellSource, '{ id: "rewards", labelKey: "bonsai_tool_group_rewards" }', "the rewards rail cell is gone");
+test.assertIncludes(shellSource, '{ id: "rewards", labelKey: "bonsai_tool_group_rewards" }', "rewards is a rail category, as it is a palette group in the original");
+test.assertNotIncludes(shellSource, "bonsai_menu_rewards", "no reward places a building from a menu");
+test.assertNotIncludes(shellSource, "data-bonsai-goals", "the opening checklist no longer floats on the city");
+test.assertIncludes(shellSource, 'state.inspectorMode === "goals"', "the checklist is panel content opened from the Windows menu");
+test.assertIncludes(shellSource, "teachingStory", "the newspaper's first edition carries the teaching");
+test.assertIncludes(shellSource, "markOpeningGoalsMet", "a city that arrives already built is never taught again");
 test.assertIncludes(shellSource, "bonsai-news-masthead", "the newspaper gains a masthead");
 test.assertIncludes(shellSource, "bonsai-budget-section", "the budget controls collapse into sections");
 test.assertIncludes(shellSource, "bonsai-setup-advanced", "the seed hides in a collapsed Advanced disclosure");

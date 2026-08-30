@@ -94,7 +94,7 @@ export const REMAINING_OBJECTS = Object.freeze({
   },
   applications: {
     label: "Applications folder",
-    subject: "a tabbed applications folder with a compact inset grid of four distinct application tiles, still unmistakably a folder",
+    subject: "a tabbed Applications catalogue folder holding a staggered fan of three non-tile app objects: one manuscript sheet, one open Reader book, and one small Writing Studio typewriter keyboard or paper carriage; it represents AI System 6's high-frequency writing, reading, and long-form work and must contain no conversation bubble, no magnifying glass, no grid, no square tiles, no App Store letter, and no launcher dot matrix",
     shape: "landscape",
   },
   fileFloppy: {
@@ -169,8 +169,8 @@ export const REMAINING_OBJECTS = Object.freeze({
   },
   liquidCover: {
     label: "Cover Glass",
-    subject: "a book-cover sheet partly overlaid by one clear glass lens panel, with the opaque cover and transparent material both readable",
-    shape: "portrait",
+    subject: "a landscape Bilibili-video cover artboard whose dominant visual is two large lines of glass typography: thick translucent title strokes with refractive edges over an abstract background color plane and one neutral geometric accent shape, plus a slim offset text/shape layer stack at one side; it is a glass-text cover compositor with SDF typography, material presets, multi-aspect editing, and explicit PNG/video export, never a person, face, character, anime silhouette, book, book cover, ordinary photo compositor, single glass sheet, or generic pane",
+    shape: "landscape",
   },
   cmfStudio: {
     label: "CMF Studio",
@@ -269,7 +269,7 @@ export const REMAINING_OBJECTS = Object.freeze({
   },
   multiFinderApp: {
     label: "MultiFinder",
-    subject: "the target era's current Finder identity repeated with a clear period-plausible overlap to communicate concurrent Finder environments, without locking the design to two computer chassis",
+    subject: "two overlapping versions of the target era's current Finder identity, one with the light and dark colour fields exchanged, to communicate concurrent Finder environments without looking like a duplicate stamp or two computer chassis",
     shape: "landscape",
   },
   writingBell: {

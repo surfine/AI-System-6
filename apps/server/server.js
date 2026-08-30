@@ -95,7 +95,10 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.headersTimeout = 10000;
-server.requestTimeout = 120000;
+// DeepSeek Files API permits a ten-minute streaming upload. Other routes own
+// tighter application timeouts and body limits; headers remain capped at ten
+// seconds, while the public file route has its own concurrency fence.
+server.requestTimeout = 610000;
 server.keepAliveTimeout = 5000;
 server.maxRequestsPerSocket = 100;
 

@@ -128,7 +128,12 @@ test.assertMatches(
   "the palette refreshes with the rest of the menu state",
 );
 test.assertIncludes(wireup, "renderWritingSpineState();", "and follows typing, so a content mark is never a command behind");
-test.assert((html.match(/class="spine-step-mark"/g) || []).length === 5, "each stop carries its content mark");
+test.assert((html.match(/class="spine-step-mark"/g) || []).length === 5, "each writing stop carries its content mark");
+test.assertNotMatches(
+  html,
+  /id="spine-burn-project-cd-button"[\s\S]{0,300}spine-step-mark/,
+  "the Project CD terminus never holds the pen, so it carries no content mark"
+);
 // Reuses the shared .is-selected state rather than a parallel class: a class of
 // our own ties on specificity with every appearance's existing selected twin
 // and loses on source order, which is how the current stop rendered as a blank

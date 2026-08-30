@@ -33,7 +33,9 @@ function showSystemModal(message, type = "confirm", options = {}) {
       // A confirm dialog can offer one named alternative besides Cancel, for
       // the rare question with two real answers ("read this source" versus
       // "keep the text"). It returns "no" so callers keep three outcomes.
-      systemModalCancel.hidden = false;
+      // hideCancel is for the question whose alternatives are already both
+      // named: a third "Cancel" would duplicate one of them.
+      systemModalCancel.hidden = options.hideCancel === true;
       systemModalNo.hidden = !options.altKey;
       if (options.altKey) systemModalNo.textContent = t(options.altKey);
       systemModalCancel.textContent = t("cancel");

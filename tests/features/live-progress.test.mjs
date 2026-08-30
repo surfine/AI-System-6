@@ -82,10 +82,14 @@ test.assertMatches(
   /function setMirroredEditorValue[\s\S]*?dispatchEvent\(new Event\("input"/,
   "mirrored writes go through the input event so the markdown overlay repaints with them",
 );
+// Every window can be typed in now, so "pure reader" is no longer the same
+// thing as "does not hold the lease". A window with uncommitted typing takes
+// the focus-guarded path whatever the lease says, or the mirror repaints over
+// keystrokes that were never saved.
 test.assertMatches(
   persistence,
-  /const isWriter = window\.AISystem6WriteLease\?\.canMutate\?\.\(\) === true;[\s\S]*?if \(isWriter\)/,
-  "the writer keeps the route's focus-guarded syncs; a mirror repaints regardless of focus",
+  /const isWriter = window\.AISystem6WriteLease\?\.canMutate\?\.\(\) === true\s*\|\|\s*liveProgressTimer !== 0;[\s\S]*?if \(isWriter\)/,
+  "a window with uncommitted typing keeps the focus-guarded syncs; a pure reader repaints regardless of focus",
 );
 
 // --- Whatever is persisted is announced (item 9) -------------------------

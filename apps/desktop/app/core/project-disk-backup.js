@@ -3,8 +3,8 @@
 
 window.AISystem6ProjectDiskBackup = (() => {
   const format = "ai-system-6-project-disk";
-  // v6 adds the project's pictures (画片簿).
-  const currentFormatVersion = 6;
+  // v7 carries bounded ClioTalk image inputs and a v3 Working Session.
+  const currentFormatVersion = 7;
   // Version history:
   //   v1 — no SHA-256 integrity, no counts, no documentRevisions
   //   v2 — SHA-256 integrity + counts, no documentRevisions
@@ -20,12 +20,18 @@ window.AISystem6ProjectDiskBackup = (() => {
   //        a picture that was not there, and turned every manuscript figure back
   //        into raw `![](aisystem6-image:...)` markdown. Same silence the
   //        darkroom had before v5.
-  const supportedFormatVersions = [1, 2, 3, 4, 5, currentFormatVersion];
+  //   v7 — + recoverable ClioTalk imageInputs. Only a bounded inline copy and
+  //        safe metadata travel; File objects, object URLs, credentials and
+  //        signed provider tokens are never backup material.
+  const supportedFormatVersions = [1, 2, 3, 4, 5, 6, currentFormatVersion];
   const maxBackupBytes = 100 * 1024 * 1024;
   const maxArrayItems = 100000;
   const maxDepth = 40;
   const maxStringChars = 32 * 1024 * 1024;
   const maxTotalStringChars = 80 * 1024 * 1024;
+  const maxClioImageCharsPerChat = 12 * 1024 * 1024;
+  const maxClioImageCharsPerProject = 48 * 1024 * 1024;
+  const maxClioImageDecodedBytes = 512 * 1024;
   const forbiddenKeys = new Set(["__proto__", "prototype", "constructor"]);
   const arrayKeys = Object.freeze([
     "folders",
@@ -88,6 +94,39 @@ window.AISystem6ProjectDiskBackup = (() => {
 
   function recordId(value) {
     return typeof value === "string" ? value.trim() : "";
+  }
+
+  function clioInlineImageInfo(value) {
+    const match = String(value || "").match(/^data:(image\/(?:jpeg|png|gif|webp));base64,([a-z0-9+/=\s]+)$/i);
+    if (!match) return null;
+    const encoded = match[2].replace(/\s+/g, "");
+    if (!encoded || encoded.length % 4 !== 0
+      || !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(encoded)) {
+      return null;
+    }
+    const padding = encoded.endsWith("==") ? 2 : encoded.endsWith("=") ? 1 : 0;
+    const decodedBytes = Math.max(0, Math.floor((encoded.length * 3) / 4) - padding);
+    let sample;
+    try {
+      const binary = atob(encoded.slice(0, 24));
+      sample = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+    } catch {
+      return null;
+    }
+    const prefix = String.fromCharCode(...sample);
+    const detected = sample.length >= 3 && sample[0] === 0xff && sample[1] === 0xd8 && sample[2] === 0xff
+      ? "image/jpeg"
+      : sample.length >= 8 && [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]
+          .every((byte, index) => sample[index] === byte)
+        ? "image/png"
+        : prefix.startsWith("GIF87a") || prefix.startsWith("GIF89a")
+          ? "image/gif"
+          : prefix.slice(0, 4) === "RIFF" && prefix.slice(8, 12) === "WEBP"
+            ? "image/webp"
+            : "";
+    return detected === match[1].toLowerCase()
+      ? { mimeType: detected, decodedBytes }
+      : null;
   }
 
   function validateBackup(bundle) {
@@ -198,17 +237,87 @@ window.AISystem6ProjectDiskBackup = (() => {
     // already ran inside inspectValue, above.
     const scene = bundle.workingSession;
     if (scene !== undefined && scene !== null) {
-      if (formatVersion < currentFormatVersion) {
-        error(sessionPath, `desktop scene requires format v${currentFormatVersion}`);
-      } else if (!isPlainObject(scene)) {
+      if (!isPlainObject(scene)) {
         error(sessionPath, "desktop scene must be an object");
       } else {
-        if (Number(scene.version) !== 2) {
+        const expectedSceneVersion = formatVersion >= 7 ? 3 : 2;
+        if (Number(scene.version) !== expectedSceneVersion) {
           error(`${sessionPath}.version`, "unsupported desktop scene version");
         }
         if (!isPlainObject(scene.adapters)) {
           error(`${sessionPath}.adapters`, "desktop scene must carry an adapter map");
         }
+      }
+    }
+
+    if (formatVersion >= 7 && Array.isArray(bundle.files)) {
+      const allowedImageInputKeys = new Set([
+        "clientId", "kind", "name", "type", "size", "width", "height",
+        "inlineDataUrl", "transport", "expiresAt", "attachedAt", "removedAt",
+      ]);
+      const projectImages = new Map();
+      const inspectChatImages = (messages, messagesPath) => {
+        let chatImageChars = 0;
+        const chatImages = new Set();
+        const chatReferences = [];
+        (Array.isArray(messages) ? messages : []).forEach((message, messageIndex) => {
+          for (const transientKey of ["fileToken", "file_id", "providerFileId", "objectUrl", "credentialScope", "file"]) {
+            if (Object.prototype.hasOwnProperty.call(message || {}, transientKey)) {
+              error(`${messagesPath}[${messageIndex}].${transientKey}`, "transient image field is not backup material");
+            }
+          }
+          if (message.imageInputIds !== undefined && (!Array.isArray(message.imageInputIds) || message.imageInputIds.length > 4)) {
+            error(`${messagesPath}[${messageIndex}].imageInputIds`, "must be an array of at most four ids");
+          }
+          (Array.isArray(message.imageInputIds) ? message.imageInputIds : []).forEach((id, idIndex) => {
+            const reference = recordId(id);
+            if (!reference) error(`${messagesPath}[${messageIndex}].imageInputIds[${idIndex}]`, "image id is required");
+            else chatReferences.push({ id: reference, path: `${messagesPath}[${messageIndex}].imageInputIds[${idIndex}]` });
+          });
+          if (message.imageInputs !== undefined && (!Array.isArray(message.imageInputs) || message.imageInputs.length > 4)) {
+            error(`${messagesPath}[${messageIndex}].imageInputs`, "must be an array of at most four image descriptors");
+          }
+          (Array.isArray(message.imageInputs) ? message.imageInputs : []).forEach((input, inputIndex) => {
+            const path = `${messagesPath}[${messageIndex}].imageInputs[${inputIndex}]`;
+            if (!isPlainObject(input)) {
+              error(path, "image input must be an object");
+              return;
+            }
+            Object.keys(input).forEach((key) => {
+              if (!allowedImageInputKeys.has(key)) error(`${path}.${key}`, "unsafe or transient image field");
+            });
+            const dataUrl = String(input.inlineDataUrl || "");
+            const imageInfo = clioInlineImageInfo(dataUrl);
+            if (!imageInfo) error(`${path}.inlineDataUrl`, "must contain matching JPEG, PNG, GIF, or WebP base64 bytes");
+            if (imageInfo?.decodedBytes > maxClioImageDecodedBytes) error(`${path}.inlineDataUrl`, "decoded image exceeds 512 KiB");
+            chatImageChars += dataUrl.length;
+            const id = recordId(input.clientId);
+            if (!id) error(`${path}.clientId`, "image id is required");
+            else chatImages.add(id);
+            if (id && projectImages.has(id) && projectImages.get(id) !== dataUrl) {
+              error(`${path}.clientId`, "one image id cannot refer to different inline bytes");
+            } else if (id && !projectImages.has(id)) {
+              projectImages.set(id, dataUrl);
+            }
+          });
+        });
+        chatReferences.forEach((reference) => {
+          if (!chatImages.has(reference.id)) error(reference.path, "must refer to an image descriptor in the same Chat");
+        });
+        if (chatImageChars > maxClioImageCharsPerChat) {
+          error(messagesPath, "Chat image context exceeds 12 MiB characters");
+        }
+      };
+      bundle.files.filter((file) => file?.type === "chat").forEach((file, fileIndex) => {
+        inspectChatImages(file.messages, `backup.files[${fileIndex}].messages`);
+      });
+      const sceneConversation = scene?.adapters?.assistant?.conversation;
+      if (Array.isArray(sceneConversation)) {
+        inspectChatImages(sceneConversation, `${sessionPath}.adapters.assistant.conversation`);
+      }
+      const projectImageChars = [...projectImages.values()].reduce((sum, dataUrl) => sum + dataUrl.length, 0);
+      if (projectImageChars > maxClioImageCharsPerProject) {
+        error("backup.files", "project ClioTalk image context exceeds 48 MiB characters");
       }
     }
     if (errors.length) {
@@ -466,6 +575,9 @@ window.AISystem6ProjectDiskBackup = (() => {
     // v6 the same way: a disk with no pictures exports an explicit empty set, so
     // "no pictures" and "field forgotten" stay apart.
     if (!Array.isArray(copy.imageAttachments)) copy.imageAttachments = [];
+    if (isPlainObject(copy.workingSession) && Number(copy.workingSession.version) === 2) {
+      copy.workingSession = { ...copy.workingSession, version: 3, migratedFrom: 2 };
+    }
     // The desktop scene stays optional: an absent field means "no scene", not
     // "empty scene", so re-exported legacy backups keep their exact shape.
     if (!isPlainObject(copy.workingSession)) delete copy.workingSession;
@@ -547,7 +659,7 @@ window.AISystem6ProjectDiskBackup = (() => {
     selectedProjectCdItemIds: "projectCdItem",
   });
 
-  function remapWorkingSession(session, idMaps, newProjectId) {
+  function remapWorkingSession(session, idMaps, newProjectId, sourceFormatVersion) {
     if (!isPlainObject(session)) return null;
     const remapped = remapRelations(
       clone(session),
@@ -556,7 +668,26 @@ window.AISystem6ProjectDiskBackup = (() => {
       sessionRelationFields,
       sessionRelationArrayFields
     );
-    return { ...remapped, projectId: newProjectId };
+    const conversation = remapped?.adapters?.assistant?.conversation;
+    if (Array.isArray(conversation)) {
+      remapped.adapters.assistant.conversation = conversation.map((message) => {
+        const copy = { ...message };
+        if (sourceFormatVersion < 7) {
+          delete copy.imageInputIds;
+          delete copy.imageInputs;
+          return copy;
+        }
+        copy.imageInputIds = (Array.isArray(copy.imageInputIds) ? copy.imageInputIds : [])
+          .map((id) => idMaps.clioImageInput.get(recordId(id)) || "")
+          .filter(Boolean);
+        copy.imageInputs = (Array.isArray(copy.imageInputs) ? copy.imageInputs : []).map((input) => ({
+          ...input,
+          clientId: idMaps.clioImageInput.get(recordId(input?.clientId)) || "",
+        })).filter((input) => input.clientId);
+        return copy;
+      });
+    }
+    return { ...remapped, version: 3, migratedFrom: Number(session.version || 0) || undefined, projectId: newProjectId };
   }
 
   function remapRunReceiptRelations(receipt, idMaps) {
@@ -592,6 +723,7 @@ window.AISystem6ProjectDiskBackup = (() => {
       reference: new Map(),
       revision: new Map(),
       imageAttachment: new Map(),
+      clioImageInput: new Map(),
     };
     const definitions = [
       ["folder", bundle.folders],
@@ -610,6 +742,21 @@ window.AISystem6ProjectDiskBackup = (() => {
     });
     (bundle.documentRevisions || []).forEach((revision, index) => {
       idMaps.revision.set(recordId(revision?.id) || `revision:${index}`, uuid());
+    });
+    (bundle.files || []).forEach((file) => {
+      (Array.isArray(file?.messages) ? file.messages : []).forEach((message) => {
+        (Array.isArray(message?.imageInputs) ? message.imageInputs : []).forEach((input) => {
+          const id = recordId(input?.clientId);
+          if (id && !idMaps.clioImageInput.has(id)) idMaps.clioImageInput.set(id, uuid());
+        });
+      });
+    });
+    const sceneConversation = bundle.workingSession?.adapters?.assistant?.conversation;
+    (Array.isArray(sceneConversation) ? sceneConversation : []).forEach((message) => {
+      (Array.isArray(message?.imageInputs) ? message.imageInputs : []).forEach((input) => {
+        const id = recordId(input?.clientId);
+        if (id && !idMaps.clioImageInput.has(id)) idMaps.clioImageInput.set(id, uuid());
+      });
     });
 
     function registerNestedRecord(type, record) {
@@ -712,6 +859,24 @@ window.AISystem6ProjectDiskBackup = (() => {
 
     const importedFiles = remapRecords("file", bundle.files).map((file, index) => {
       const copy = { ...file, folderId: file.folderId || ensureDefaultFolder() };
+      if (Array.isArray(copy.messages)) {
+        copy.messages = copy.messages.map((message) => {
+          const remappedMessage = { ...message };
+          if (validation.formatVersion < 7) {
+            delete remappedMessage.imageInputIds;
+            delete remappedMessage.imageInputs;
+            return remappedMessage;
+          }
+          remappedMessage.imageInputIds = (Array.isArray(message.imageInputIds) ? message.imageInputIds : [])
+            .map((id) => idMaps.clioImageInput.get(recordId(id)) || "")
+            .filter(Boolean);
+          remappedMessage.imageInputs = (Array.isArray(message.imageInputs) ? message.imageInputs : []).map((input) => ({
+            ...input,
+            clientId: idMaps.clioImageInput.get(recordId(input?.clientId)) || "",
+          })).filter((input) => input.clientId);
+          return remappedMessage;
+        });
+      }
       // Figures cited in the body follow their picture to its new id.
       if (typeof copy.body === "string" && copy.body.includes("aisystem6-image:")) {
         copy.body = remapImageCitations(copy.body);
@@ -821,7 +986,7 @@ window.AISystem6ProjectDiskBackup = (() => {
       documentRevisions: importedDocumentRevisions,
       darkroomRecords: importedDarkroomRecords,
       imageAttachments: remapRecords("imageAttachment", bundle.imageAttachments || []),
-      workingSession: remapWorkingSession(bundle.workingSession, idMaps, newProjectId),
+      workingSession: remapWorkingSession(bundle.workingSession, idMaps, newProjectId, validation.formatVersion),
     };
   }
 

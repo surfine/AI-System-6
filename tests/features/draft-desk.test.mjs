@@ -236,8 +236,9 @@ test.assertNotIncludes(handoff, "surfaceMode", "handoff no longer exposes retire
 test.assertNotIncludes(handoff, "setView", "public API cannot reopen the retired canvas");
 test.assertIncludes(handoff, "canPreviewAdjustments", "menu availability can reflect whether Preview is actionable");
 test.assertIncludes(handoff, "canDevelop", "menu availability can reflect whether a developed composite exists");
-test.assertIncludes(menus, 'menuItem("quick-draft-apply", "quick_draft_preview_adjustments")', "Preview is also available from the app menu");
-test.assertIncludes(menus, 'menuItem("quick-draft-develop", "quick_draft_develop")', "Develop is also available from the app menu");
+// Both rows carry a key equivalent now, so they name their shortcut id too.
+test.assertIncludes(menus, 'menuItem("quick-draft-apply", "quick_draft_preview_adjustments", "lightroom-apply")', "试看 is also available from the app menu, with a key equivalent");
+test.assertIncludes(menus, 'menuItem("quick-draft-develop", "quick_draft_develop", "lightroom-develop")', "冲洗 is also available from the app menu, with a key equivalent");
 // Quick Draft's View menu offers the paper and the way across, not four ways to
 // look. The grain, composite and listen views moved to 文字亮室: they were never
 // duplicates of its rows -- they drive Quick Draft's OWN display mode -- so this

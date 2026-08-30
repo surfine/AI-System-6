@@ -270,7 +270,8 @@ function renderAttachedClips() {
   const projectInputIds = window.nextTaskInputFileIds instanceof Set
     ? [...window.nextTaskInputFileIds]
     : [];
-  if (attachedClipIds.size === 0 && projectInputIds.length === 0) {
+  const imageChips = window.AISystem6ClioImages?.chips?.() || [];
+  if (attachedClipIds.size === 0 && projectInputIds.length === 0 && imageChips.length === 0) {
     attachedClipsShelfEl.classList.add("is-hidden");
     attachedClipsToolbarEl?.classList.add("is-hidden");
     if (typeof renderClioTalkRunAssembly === "function") renderClioTalkRunAssembly();
@@ -326,7 +327,21 @@ function renderAttachedClips() {
     attachedClipsShelfEl.append(btn);
   });
 
-  if (attachedClipIds.size === 0 && window.nextTaskInputFileIds?.size === 0) renderAttachedClips();
+  imageChips.forEach((record) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "btn mini-btn";
+    btn.dataset.clioImageState = record.state || "pending";
+    btn.dataset.clioImageClientId = record.clientId || "";
+    btn.setAttribute("aria-label", `${record.label} · ${t("clio_remove_attachment", record.name)}`);
+    btn.title = btn.getAttribute("aria-label");
+    btn.innerHTML = `<span class="mini-icon text-file-icon" aria-hidden="true"></span><span>${escapeHtml(record.label)}</span> <small aria-hidden="true">×</small>`;
+    btn.disabled = record.state === "uploading";
+    btn.addEventListener("click", () => record.remove?.());
+    attachedClipsShelfEl.append(btn);
+  });
+
+  if (attachedClipIds.size === 0 && window.nextTaskInputFileIds?.size === 0 && imageChips.length === 0) renderAttachedClips();
   else if (typeof renderClioTalkRunAssembly === "function") renderClioTalkRunAssembly();
 }
 

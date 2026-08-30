@@ -208,7 +208,9 @@ test("ClioTalk sends through a connected local model", async ({ page }) => {
   expect(fakeModel.state.responsesCalls).toBeGreaterThan(responsesCallsBefore);
   expect(fakeModel.state.lastResponsesBody).toMatchObject({
     model: "fake-model-7b",
-    stream: false,
+    // Ordinary chat streams by design so the first visible words arrive
+    // before a long local answer has finished.
+    stream: true,
     store: true,
   });
   expect(fakeModel.state.lastResponsesBody.tools.length).toBeGreaterThan(0);

@@ -80,55 +80,59 @@
                   <label><span data-i18n="theme_lab_disabled_field">Disabled field</span><input type="text" value="Unavailable" disabled /></label>
                   <label><span data-i18n="theme_lab_disabled_popup">Disabled pop-up</span><span class="select-wrap theme-lab-color-popup"><select aria-label="Disabled Theme Lab pop-up" disabled><option>Blue</option></select></span></label>
                 </div>
-                <div class="theme-lab-segmented" role="group" aria-label="Segmented control">
-                  <button class="is-selected" type="button"><span class="theme-lab-view-icon is-icon" aria-hidden="true"></span><span data-i18n="theme_lab_icon_view">Icon</span></button>
-                  <button type="button"><span class="theme-lab-view-icon is-list" aria-hidden="true"></span><span data-i18n="theme_lab_list_view">List</span></button>
-                  <button type="button"><span class="theme-lab-view-icon is-columns" aria-hidden="true"></span><span data-i18n="theme_lab_column_view">Column</span></button>
+                <!-- The shipping view switcher, exactly as a Finder window's
+                     details bar carries it: two icon-only buttons, is-active on
+                     the current view. The replica here had three text-labelled
+                     segments, a control this product has never shipped. -->
+                <div class="view-controls theme-lab-view-specimen" aria-label="View" data-i18n-aria-label="view_controls">
+                  <button class="view-btn is-active" type="button" data-view="icon" aria-label="Icon view" data-i18n-aria-label="view_icon"></button>
+                  <button class="view-btn" type="button" data-view="list" aria-label="List view" data-i18n-aria-label="view_list"></button>
                 </div>
-                <div class="theme-lab-tabs" role="tablist">
-                  <button class="is-selected" type="button" role="tab" aria-selected="true" data-i18n="theme_lab_general">General</button>
-                  <button type="button" role="tab" aria-selected="false" data-i18n="theme_lab_advanced">Advanced</button>
-                  <button type="button" role="tab" aria-selected="false" data-i18n="theme_lab_accounts">Accounts</button>
+                <!-- The shipping tablist. Control Panel's section chooser is the
+                     same control, and every era already dresses it through
+                     --tab-* and --control-chooser-*; the replica that stood here
+                     re-derived that wardrobe under its own token family. -->
+                <div class="system-tabs-sheet theme-lab-tab-specimen">
+                  <div class="system-tabs" role="tablist">
+                    <button class="system-tab is-active" type="button" role="tab" aria-selected="true" data-i18n="theme_lab_tab_themes">Themes</button>
+                    <button class="system-tab" type="button" role="tab" aria-selected="false" data-i18n="theme_lab_tab_fonts">Fonts</button>
+                    <button class="system-tab" type="button" role="tab" aria-selected="false" data-i18n="theme_lab_tab_sound">Sound</button>
+                  </div>
+                  <div class="system-tab-panel" role="tabpanel"><span data-i18n="appearance">Appearance</span></div>
                 </div>
-                <div class="theme-lab-tab-panel" role="tabpanel"><span data-i18n="appearance">Appearance</span></div>
               </section>
 
               <section class="theme-lab-group theme-lab-window-chrome" aria-labelledby="theme-lab-window-chrome-title">
                 <h3 id="theme-lab-window-chrome-title" data-i18n="theme_lab_window_chrome">Window chrome</h3>
-                  <div class="theme-lab-mini-windows">
-                    <div class="theme-lab-mini-window is-active"><i class="theme-lab-mini-control is-close" aria-hidden="true"></i><i class="theme-lab-mini-control is-minimize" aria-hidden="true"></i><i class="theme-lab-mini-control is-zoom" aria-hidden="true"></i><span data-i18n="theme_lab_active_window">Active Window</span></div>
-                    <div class="theme-lab-mini-window is-inactive"><i class="theme-lab-mini-control is-close" aria-hidden="true"></i><i class="theme-lab-mini-control is-minimize" aria-hidden="true"></i><i class="theme-lab-mini-control is-zoom" aria-hidden="true"></i><span data-i18n="theme_lab_inactive_window">Inactive Window</span></div>
-                  </div>
-                  <div class="theme-lab-progress-row"><span data-i18n="theme_lab_progress">Progress</span><div class="theme-lab-progress" aria-label="Progress" role="progressbar" aria-valuenow="62"><span></span></div></div>
-                  <div class="theme-lab-scroll-frame">
-                    <div class="theme-lab-scroll" tabindex="0"><p>System 6</p><p>Platinum</p><p>Aqua</p><p>Snow Leopard</p><p>Yosemite</p><p>Liquid Glass</p></div>
-                    <div class="theme-lab-scrollbar" aria-hidden="true">
-                      <div class="theme-lab-scrollbar-track"><span class="theme-lab-scrollbar-thumb"></span></div>
-                      <span class="theme-lab-scrollbar-button is-decrement"></span>
-                      <span class="theme-lab-scrollbar-button is-increment"></span>
-                    </div>
-                  </div>
+                  <!-- Two real windows, built by the shell that builds the
+                       other seventy-one. Empty here because createTitleBar
+                       returns an element; renderWindowChromeSpecimen fills it. -->
+                  <div class="theme-lab-window-specimens" data-theme-lab-window-specimens></div>
+                  <!-- A framed document window with more lines than it can
+                       show. The scroll bars are the product's own: the frame
+                       installer finds the scroller and fits real arrows, track
+                       and thumb, so the specimen scrolls the way a window
+                       scrolls. Filled by buildWindowChromeSpecimens. -->
+                  <div class="theme-lab-scroll-specimen" data-theme-lab-scroll-specimen></div>
               </section>
             </div>
 
             <div class="system-tab-panel theme-lab-panel" id="theme-lab-panel-objects" role="tabpanel" aria-labelledby="theme-lab-tab-objects" data-theme-lab-panel="objects" hidden>
-              <!-- One object lab for all six eras. The era supplies the art
-                   source and its own background list; the sixteen objects,
-                   the four states, the zoom ladder, and the context checks
-                   are identical, so two eras can be compared by flipping. -->
+              <!-- One object lab for all six eras, and one way in. The full
+                   semantic set is the inventory; the sixteen priority objects
+                   are the tiles you can open, and the card below belongs to the
+                   one you opened. The era supplies the art source and its own
+                   background list; the states, the zoom ladder and the context
+                   checks are identical, so two eras compare by flipping. -->
               <section class="theme-lab-group theme-lab-object-lab" data-theme-lab-object-lab aria-labelledby="theme-lab-object-lab-title">
                 <h3 id="theme-lab-object-lab-title" data-i18n="theme_lab_objects">Priority objects</h3>
                 <p class="theme-lab-object-intro" data-theme-lab-object-intro></p>
                 <p class="theme-lab-object-evidence" data-theme-lab-object-evidence></p>
                 <div class="theme-lab-object-key" data-theme-lab-object-key></div>
+                <div class="theme-lab-icon-grid" data-theme-lab-icon-grid></div>
                 <div class="theme-lab-object-grid" data-theme-lab-object-grid></div>
                 <div class="theme-lab-object-inspector" data-theme-lab-object-inspector aria-live="polite"></div>
                 <div class="theme-lab-object-contexts" data-theme-lab-object-contexts aria-label="Object context checks" data-i18n-aria-label="theme_lab_object_contexts"></div>
-              </section>
-
-              <section class="theme-lab-group theme-lab-icon-set" aria-labelledby="theme-lab-icon-set-title">
-                <h3 id="theme-lab-icon-set-title" data-i18n="theme_lab_icon_set">Icon set</h3>
-                <div class="theme-lab-icon-grid" data-theme-lab-icon-grid></div>
               </section>
             </div>
 
@@ -212,14 +216,21 @@
               <section class="theme-lab-group theme-lab-layered" aria-labelledby="theme-lab-layered-title">
                 <h3 id="theme-lab-layered-title" data-i18n="theme_lab_layered">Menus &amp; layered surfaces</h3>
                 <div class="theme-lab-layer-grid">
-                  <div class="theme-lab-menu theme-lab-generic-fixture" role="menu">
+                  <!-- The shipping menu. Tracking is not a class in this
+                       product: the real menu swaps three item tokens on hover,
+                       so the specimen sets the same three on one row. -->
+                  <div class="menu-popover theme-lab-menu-specimen" role="menu">
                     <button type="button" role="menuitem">Open… <span>⌘O</span></button>
-                    <button class="is-selected" type="button" role="menuitem">Appearance <span class="theme-lab-menu-mark">✓</span></button>
+                    <button type="button" role="menuitem" data-theme-lab-menu-state="tracking">Appearance</button>
                     <hr />
                     <button type="button" role="menuitem" disabled>Duplicate <span>⌘D</span></button>
                     <button type="button" role="menuitem">Close <span>⌘W</span></button>
                   </div>
-                  <div class="theme-lab-popover"><b class="theme-lab-popover-generic-label" data-i18n="theme_lab_popover">Popover</b><b class="theme-lab-balloon-label" data-i18n="theme_lab_balloon_help">Balloon Help</b><b class="theme-lab-help-tag-label" data-i18n="theme_lab_help_tag">Help Tag</b><span data-i18n="theme_lab_popover_copy">A temporary system surface.</span></div>
+                  <!-- The shipping balloon. It is the product's one temporary
+                       explanatory surface, and each era names it differently:
+                       Balloon Help in the classic lineage, a Help Tag from
+                       Aqua on. The labels switch; the object does not. -->
+                  <div class="balloon-help theme-lab-popover-specimen" role="tooltip"><b class="theme-lab-popover-generic-label" data-i18n="theme_lab_popover">Popover</b><b class="theme-lab-balloon-label" data-i18n="theme_lab_balloon_help">Balloon Help</b><b class="theme-lab-help-tag-label" data-i18n="theme_lab_help_tag">Help Tag</b><span data-i18n="theme_lab_popover_copy">A temporary system surface.</span></div>
                   <div class="theme-lab-menu-capture theme-lab-platinum-fixture"
                        data-theme-lab-reference="guidebook.macos90.apple-menu">
                     <div class="theme-lab-menu--platinum" role="menu" aria-label="Mac OS 9 Apple menu" lang="en" translate="no">
@@ -240,10 +251,25 @@
                       <button type="button" role="menuitem"><span class="theme-lab-platinum-menu-icon is-stickies" aria-hidden="true"></span><span>Stickies</span></button>
                     </div>
                   </div>
-                  <div class="theme-lab-dialog theme-lab-generic-fixture">
-                    <span class="theme-lab-alert-icon" aria-hidden="true"></span>
-                    <div class="theme-lab-dialog-copy"><b data-i18n="theme_lab_dialog">Dialog</b><span data-i18n="theme_lab_dialog_copy">Keep this appearance?</span></div>
-                    <div class="theme-lab-dialog-actions"><button class="btn theme-lab-dialog-cancel" type="button" data-i18n="cancel">Cancel</button><button class="btn default" type="button" data-i18n="ok">OK</button></div>
+                  <!-- The shipping modal: same frame, same layout, same action
+                       row as New Project Hard Disk and Erase Disk. The era
+                       caution icon sits in the modal's own subject slot, which
+                       is where a Finder operation puts the object it acts on. -->
+                  <div class="finder-operation-modal theme-lab-dialog-specimen">
+                    <div class="finder-operation-layout">
+                      <aside class="finder-operation-subject">
+                        <span class="theme-lab-alert-icon" aria-hidden="true"></span>
+                        <b data-i18n="appearance">Appearance</b>
+                      </aside>
+                      <section class="finder-operation-body">
+                        <h2 data-i18n="theme_lab_dialog">Dialog</h2>
+                        <p class="finder-operation-lede" data-i18n="theme_lab_dialog_copy">Keep this appearance?</p>
+                      </section>
+                    </div>
+                    <div class="button-row finder-operation-actions">
+                      <button class="btn theme-lab-dialog-cancel" type="button" data-i18n="cancel">Cancel</button>
+                      <button class="btn default" type="button" data-i18n="ok">OK</button>
+                    </div>
                   </div>
                   <div class="theme-lab-about-capture theme-lab-platinum-fixture"
                        data-theme-lab-reference="guidebook.macos90.about-application">
@@ -253,11 +279,8 @@
                       <button class="btn default" type="button">OK</button>
                     </div>
                   </div>
-                  <div class="theme-lab-sheet-specimen" data-theme-lab-reference="macosx102.finder-replace-sheet">
-                    <div class="theme-lab-sheet-owner-titlebar" aria-hidden="true">
-                      <i class="is-close"></i><i class="is-minimize"></i><i class="is-zoom"></i>
-                      <span data-i18n="appearance">Appearance</span>
-                    </div>
+                  <div class="window theme-lab-sheet-specimen is-active" data-theme-lab-specimen="sheet-owner" data-theme-lab-reference="macosx102.finder-replace-sheet">
+                    <div data-theme-lab-owner-titlebar></div>
                     <div class="theme-lab-sheet-owner-body" aria-hidden="true"></div>
                     <div class="theme-lab-sheet" role="dialog" aria-label="Attached sheet">
                       <span class="theme-lab-sheet-icon" aria-hidden="true"></span>
@@ -270,11 +293,12 @@
 
               <section class="theme-lab-group theme-lab-finder" aria-labelledby="theme-lab-finder-title">
                 <h3 id="theme-lab-finder-title" data-i18n="theme_lab_finder">Finder surface</h3>
-                <div class="theme-lab-finder-window" data-theme-lab-reference="guidebook.macosx102.finder">
-                  <div class="theme-lab-finder-window-titlebar" aria-hidden="true" lang="en" translate="no">
-                    <i class="is-close"></i><i class="is-minimize"></i><i class="is-zoom"></i>
-                    <span>Jim McKintie's Computer</span>
-                  </div>
+                <!-- A window from the 10.2 capture, wearing the product's own
+                     title bar. The fixture reproduces the era's Finder body; its
+                     chrome is the System window's, so Close stays at the leading
+                     edge and Zoom at the trailing one in every era. -->
+                <div class="window theme-lab-finder-window is-active" data-theme-lab-specimen="finder-window" data-theme-lab-reference="guidebook.macosx102.finder">
+                  <div data-theme-lab-finder-titlebar></div>
                   <div class="theme-lab-toolbar">
                     <button class="btn theme-lab-toolbar-back" type="button" data-i18n="theme_lab_back">Back</button>
                     <span class="theme-lab-separator" aria-hidden="true"></span>
@@ -423,15 +447,27 @@
 
   // One source-file path for one authored tier. `art.variant` is the appearance
   // suffix; only Liquid Glass has one.
+  function stampedAssetPath(path) {
+    const build = window.AISystem6Config?.getAppBuildInfo?.().build;
+    return build ? `${path}?v=${encodeURIComponent(build)}` : path;
+  }
+
   function assetPath(art, id, tier, appearance) {
     const suffix = art.variant ? `-${appearance || "default"}` : "";
-    return `assets/themes/${art.dir}/icons/${id}-${tier}${suffix}.${art.ext}`;
+    return stampedAssetPath(`assets/themes/${art.dir}/icons/${id}-${tier}${suffix}.${art.ext}`);
   }
 
   // The state grid paints through the real runtime painter, so what the lab
   // shows is what the desktop ships. Only the inspector reaches for a file.
   // The display size arrives as a class from a fixed set, so no cell needs an
   // inline style and the stylesheet keeps every measurement.
+  //
+  // Every source size is named on purpose, which overrides the shared painter's
+  // device-ratio rule. That is the specimen contract, not an oversight: a state
+  // cell shows the authored tier it is labelled with, and Retina doubles those
+  // exact pixels rather than substituting a larger tier
+  // (theme-lab-icon-sharpness). The cell box must equal the tier for that to
+  // read; where it does not, the cell resamples a source it never asked for.
   function runtimeIcon(id, tier, displaySize) {
     return renderSystemIcon(id, {
       size: "object-lab",
@@ -448,6 +484,117 @@
     if (selected) classes.push("is-selected");
     if (className) classes.push(className);
     return `<button type="button" class="${classes.join(" ")}" tabindex="-1">${runtimeIcon(id, tier, display)}<span>${escapeHtml(label)}</span></button>`;
+  }
+
+  // The window chrome specimen is a pair of real windows.
+  //
+  // It used to be a hand-drawn `.theme-lab-mini-window` carrying three lamps in
+  // a row, including a Minimize this product has never had -- the System window
+  // puts Close at the leading edge and Zoom and WindowShade at the trailing
+  // one, and the traffic-light eras keep that split on purpose
+  // (window-frame.test.mjs holds each era to it). Fifty-six --theme-lab-mini-*
+  // tokens existed only to re-derive, era by era, what `.window` and
+  // `.title-bar` already paint.
+  //
+  // A specimen is not a managed window: no data-window, so getWindow cannot
+  // return it, the chrome wiring is never handed it, and its controls stay
+  // inert while still painting their real hover, focus and active states. The
+  // Lab supplies position and size and nothing else; material belongs to the
+  // era.
+  function windowChromeSpecimen(state, titleKey, fallbackTitle) {
+    const shell = window.AISystem6ApplicationShell;
+    const specimen = document.createElement("div");
+    specimen.className = state === "active" ? "window is-active" : "window";
+    specimen.dataset.themeLabSpecimen = `window-${state}`;
+    specimen.append(shell.createTitleBar({ titleKey, title: fallbackTitle }));
+    const pane = document.createElement("div");
+    pane.className = "window-pane";
+    specimen.append(pane);
+    return specimen;
+  }
+
+  // A framed document window showing the era's own scroll bar: the arrows,
+  // dithered track and thumb come from the window frame's own builder, so an
+  // era dresses them exactly once, in the rules real windows already use. The
+  // replica this replaces had its own track, thumb and arrow classes, and every
+  // era had to paint that second set.
+  //
+  // The bar is placed, not driven. A specimen cannot host the live scroller --
+  // a window finds its scroller by descendant query, so a nested one is adopted
+  // by the window the Lab lives in. The thumb reports a fixed position instead,
+  // which is what a still specimen should show.
+  function scrollSpecimen() {
+    const specimen = document.createElement("div");
+    specimen.className = "window is-active";
+    specimen.dataset.themeLabSpecimen = "scroller";
+    const pane = document.createElement("div");
+    pane.className = "window-pane";
+    for (const entry of window.AISystem6Theme?.themes || []) {
+      const line = document.createElement("p");
+      line.textContent = entry.label;
+      pane.append(line);
+    }
+    specimen.append(pane);
+    const frameBar = window.AISystem6WindowFrameBar?.create("vertical");
+    if (frameBar) {
+      // Posed, since a still specimen has no scroll position: a little over
+      // two thirds of the track, near the top, which is what a window showing
+      // most of a short document looks like.
+      frameBar.thumb.style.setProperty("--frame-thumb-size", "70%");
+      frameBar.thumb.style.setProperty("--frame-thumb-position", "6px");
+      specimen.append(frameBar.bar);
+    }
+    return specimen;
+  }
+
+  function buildWindowChromeSpecimens(win) {
+    const host = win.querySelector("[data-theme-lab-window-specimens]");
+    if (host && !host.childElementCount) {
+      host.append(
+        windowChromeSpecimen("active", "theme_lab_active_window", "Active Window"),
+        windowChromeSpecimen("inactive", "theme_lab_inactive_window", "Inactive Window"),
+      );
+      // Built after the boot language sweep, exactly like a lazy window's markup.
+      window.AISystem6TranslateWithin?.(host);
+    }
+    const scrollHost = win.querySelector("[data-theme-lab-scroll-specimen]");
+    if (scrollHost && !scrollHost.childElementCount) scrollHost.append(scrollSpecimen());
+
+    // The two historical fixtures that own a window: the 10.2 Finder capture and
+    // the window a sheet hangs from. The body each reproduces is the era's; the
+    // chrome is the product's, so neither draws a title bar of its own any more.
+    const shell = window.AISystem6ApplicationShell;
+    for (const [selector, title, key] of [
+      ["[data-theme-lab-finder-titlebar]", "Jim McKintie's Computer", null],
+      ["[data-theme-lab-owner-titlebar]", "Appearance", "appearance"],
+    ]) {
+      const host = win.querySelector(selector);
+      if (!host || host.childElementCount) continue;
+      const bar = shell.createTitleBar(key ? { title, titleKey: key } : { title });
+      if (!key) {
+        const heading = bar.querySelector("h2");
+        heading.lang = "en";
+        heading.translate = false;
+      }
+      host.replaceWith(bar);
+    }
+    // Every fixture that reproduces a pinned native capture says so on the
+    // board. These are not replicas of product components -- three lamps in a
+    // row is true of the window they reproduce -- and a reader who cannot tell
+    // them from the specimens beside them will read one as the other.
+    for (const fixture of win.querySelectorAll("[data-theme-lab-reference]")) {
+      if (fixture.previousElementSibling?.classList.contains("theme-lab-fixture-note")) continue;
+      const note = document.createElement("p");
+      note.className = "theme-lab-fixture-note";
+      note.dataset.i18n = "theme_lab_fixture_note";
+      note.textContent = "Historical reference fixture — reproduces a pinned capture, not a product component.";
+      const source = document.createElement("code");
+      source.textContent = fixture.dataset.themeLabReference;
+      note.append(" ", source);
+      fixture.before(note);
+    }
+
+    window.AISystem6TranslateWithin?.(win);
   }
 
   const contextBox = (title, body, cls = "") =>
@@ -582,9 +729,17 @@
       ].map((line) => `<span>${escapeHtml(line)}</span>`).join("");
     }
 
+    // One object at a time. The board used to draw sixteen cards of four states
+    // each above a sixty-two icon inventory that already contained all sixteen:
+    // 1,720px of scrolling to reach one object, and every icon painted twice.
+    // The inventory is the way in now, and the card belongs to what it selected.
+    // Capture is the exception -- the fidelity boards sample named objects, so
+    // the whole set has to be in the DOM for them.
     const grid = section.querySelector("[data-theme-lab-object-grid]");
     if (grid) {
-      grid.innerHTML = OBJECTS.map(([id, label]) => {
+      const captureAll = lab()?.dataset.themeLabCapture === "all";
+      const shown = captureAll ? OBJECTS : OBJECTS.filter(([id]) => id === inspectedObjectId);
+      grid.innerHTML = shown.map(([id, label]) => {
         const cls = provenanceOf(id, themeId);
         const inspected = id === inspectedObjectId;
         return `<article class="theme-lab-object-card${inspected ? " is-inspected" : ""}" data-theme-lab-object="${escapeHtml(id)}">
@@ -612,7 +767,7 @@
     const cls = provenanceOf(id, theme.id);
     const rows = art.appearances.map((appearance) => {
       const figures = art.zoom.map(([tier, display]) => `<figure>
-        <img src="${escapeHtml(assetPath(art, id, tier, appearance))}" width="${display}" height="${display}" alt="" data-native-size="${tier}" />
+        <img class="${art.ext === "png" ? "is-raster" : "is-vector"}" src="${escapeHtml(assetPath(art, id, tier, appearance))}" width="${display}" height="${display}" alt="" data-native-size="${tier}" />
         <figcaption>${escapeHtml(t("theme_lab_zoom_caption", tier, Math.round((display / tier) * 100)))}</figcaption>
       </figure>`).join("");
       const name = art.appearances.length > 1
@@ -661,12 +816,10 @@
     const stem = (themeId === "platinum" || themeId === "yosemite") && id === "startupDisk" ? "startup-disk"
       : (themeId === "platinum" || themeId === "yosemite") && id === "finderApp" ? "finder-app"
         : themeId === "platinum" && id === "fileFloppy" ? "floppy" : id;
-    if (themeId === "classic") return `assets/themes/classic/icons/${stem}-16.svg`;
-    if (themeId === "platinum") {
-      return OBJECT_IDS.has(id) ? `assets/themes/platinum/icons/${id}-16.png` : `assets/themes/platinum/${stem}-16.svg`;
-    }
-    if (themeId === "liquid-glass") return `assets/themes/liquid-glass/icons/${id}-16-default.png`;
-    return `assets/themes/${themeId}/icons/${id}-16.png`;
+    if (themeId === "classic") return stampedAssetPath(`assets/themes/classic/icons/${stem}-16.svg`);
+    if (themeId === "platinum") return stampedAssetPath(`assets/themes/platinum/icons/${id}-16.png`);
+    if (themeId === "liquid-glass") return stampedAssetPath(`assets/themes/liquid-glass/icons/${id}-16-default.png`);
+    return stampedAssetPath(`assets/themes/${themeId}/icons/${id}-16.png`);
   }
 
   // The workbench markup is Theme Lab's alone and the window is lazy, so it is
@@ -681,6 +834,9 @@
       <section class="theme-lab-group theme-lab-token-desk" aria-labelledby="theme-lab-token-desk-title">
         <h3 id="theme-lab-token-desk-title">${escapeHtml(t("theme_lab_tokens"))}</h3>
         <p class="theme-lab-token-summary" data-theme-lab-token-summary aria-live="polite"></p>
+        <!-- What a seventh appearance would still owe. Derived from which
+             tokens any era sets, so it is a worklist that maintains itself. -->
+        <div class="theme-lab-token-coverage" data-theme-lab-token-coverage aria-live="polite"></div>
         <div class="theme-lab-token-filters">
           ${field("theme_lab_token_group", `<span class="select-wrap"><select data-theme-lab-token-group aria-label="${escapeHtml(t("theme_lab_token_group"))}"></select></span>`)}
           ${field("theme_lab_token_scope", `<span class="select-wrap"><select data-theme-lab-token-scope aria-label="${escapeHtml(t("theme_lab_token_scope"))}">
@@ -697,50 +853,35 @@
           <button class="btn default" type="button" data-theme-lab-token-copy>${escapeHtml(t("theme_lab_token_copy"))}</button>
         </div>
         <pre class="theme-lab-desk-output" data-theme-lab-token-output hidden></pre>
-      </section>
-      <section class="theme-lab-group theme-lab-app-contract" aria-labelledby="theme-lab-app-contract-title">
-        <h3 id="theme-lab-app-contract-title">${escapeHtml(t("theme_lab_status"))}</h3>
-        <p class="theme-lab-token-summary" data-theme-lab-app-contract-summary></p>
-        <div class="theme-lab-token-table" data-theme-lab-app-contract></div>
       </section>`);
   }
 
-  function renderAppContract(theme) {
-    const win = lab();
-    const host = win?.querySelector("[data-theme-lab-app-contract]");
-    if (!host || !theme) return;
-    const authoring = authoringOf(theme);
-    const chain = window.AISystem6Theme?.getRecipeChain?.(theme.id) || [theme];
-    const path = chain.map((entry) => t(entry.labelKey)).join(" → ");
-    const summary = win.querySelector("[data-theme-lab-app-contract-summary]");
-    if (summary) {
-      summary.textContent = `${path} · ${authoring?.tokenHome?.file || ""}`;
-    }
-    const rows = [
-      [".window", "theme_lab_window_chrome"],
-      [".title-bar", "theme_lab_active_window"],
-      [".details-bar", "theme_lab_status"],
-      [".window-pane", "theme_lab_surfaces"],
-      [".btn", "theme_lab_controls"],
-      [".system-tabs", "theme_lab_tab_chrome"],
-      [".sys-icon", "theme_lab_icon_set"],
-    ];
-    host.innerHTML = rows.map(([selector, labelKey]) => `<div class="theme-lab-token-row">
-      <code>${escapeHtml(selector)}</code>
-      <span class="theme-lab-token-flag is-inherited">${escapeHtml(t("theme_lab_token_inherited"))}</span>
-      <span class="theme-lab-token-base">${escapeHtml(t(labelKey))}</span>
-      <span class="theme-lab-token-editor"><input type="text" readonly aria-readonly="true" value="${escapeHtml(theme.id)}" /></span>
-    </div>`).join("");
-  }
+
 
   function buildIconSet(win) {
     const grid = win.querySelector("[data-theme-lab-icon-grid]");
     if (!grid || grid.childElementCount) return;
     grid.innerHTML = appearanceIconIds().map((id) => {
-      const label = id === "fileFloppy" ? "floppy" : id.replace(/([A-Z])/g, " $1");
+      // "startupDisk" reads as "Startup Disk", not "startup Disk": splitting on
+      // capitals without recapitalising the first word left every tile in the
+      // inventory half sentence-cased.
+      const label = (id === "fileFloppy" ? "floppy" : id.replace(/([A-Z])/g, " $1"))
+        .replace(/^./, (first) => first.toUpperCase());
+      // A priority object's tile is how you open it; the rest are inventory.
+      if (OBJECT_IDS.has(id)) {
+        return `<button class="theme-lab-icon-tile is-selectable" type="button" data-theme-lab-inspect="${escapeHtml(id)}" aria-pressed="false" aria-label="${escapeHtml(label)}"><span class="sys-icon" data-system-icon="${escapeHtml(id)}" aria-hidden="true"></span><b>${escapeHtml(label)}</b></button>`;
+      }
       return `<div class="theme-lab-icon-tile" role="figure" aria-label="${escapeHtml(label)}"><span class="sys-icon" data-system-icon="${escapeHtml(id)}" aria-hidden="true"></span><b>${escapeHtml(label)}</b></div>`;
     }).join("");
     hydrateSystemIcons(grid);
+  }
+
+  function syncInspectedTile(win) {
+    for (const tile of (win || lab())?.querySelectorAll(".theme-lab-icon-tile.is-selectable") || []) {
+      const chosen = tile.dataset.themeLabInspect === inspectedObjectId;
+      tile.classList.toggle("is-inspected", chosen);
+      tile.setAttribute("aria-pressed", String(chosen));
+    }
   }
 
   function renderIconSet(theme) {
@@ -1038,11 +1179,78 @@
     return /^(#[0-9a-f]{3,8}|rgb|hsl|color\()/i.test(value.trim());
   }
 
+  // What a seventh appearance would still have to fill in.
+  //
+  // Derived, never listed by hand: a token is "era-owned" when at least one era
+  // sets it, which is the codebase saying that value is a period decision
+  // rather than a shared default. Coverage is then how many of those this era
+  // answers. Add an era and this reads as its worklist on the first load; add a
+  // token family to an existing era and every other era's number drops by one
+  // until they answer it too.
+  function eraTokenCoverage(theme, index) {
+    const owned = new Map();
+    for (const [eraId, tokens] of index.eras) {
+      for (const name of tokens.keys()) {
+        // Theme Lab's own furniture is not something an appearance owes.
+        if (name.startsWith("--theme-lab-")) continue;
+        if (!owned.has(name)) owned.set(name, new Set());
+        owned.get(name).add(eraId);
+      }
+    }
+    // Two eras make a period decision; one era makes a quirk. A seventh
+    // appearance owes an answer to the first kind, and nothing to the second.
+    for (const [name, eras] of [...owned]) {
+      if (eras.size < 2) owned.delete(name);
+    }
+    const mine = new Map([...(index.eras.get(theme.id) || new Map())].filter(([name]) => owned.has(name)));
+    const chain = window.AISystem6Theme?.getRecipeChain?.(theme.id) || [theme];
+    const inheritedFrom = new Map();
+    for (const entry of chain.slice(0, -1)) {
+      for (const name of (index.eras.get(entry.id) || new Map()).keys()) {
+        if (owned.has(name)) inheritedFrom.set(name, entry.id);
+      }
+    }
+    const missing = [];
+    for (const [name, eras] of owned) {
+      if (mine.has(name) || inheritedFrom.has(name)) continue;
+      missing.push({ name, group: tokenGroupName(name), setBy: [...eras].sort() });
+    }
+    missing.sort((a, b) => a.group.localeCompare(b.group) || a.name.localeCompare(b.name));
+    return { ownedCount: owned.size, mineCount: mine.size, inheritedCount: inheritedFrom.size, missing };
+  }
+
+  function renderTokenCoverage(theme, index) {
+    const host = lab()?.querySelector("[data-theme-lab-token-coverage]");
+    if (!host) return;
+    const { ownedCount, mineCount, inheritedCount, missing } = eraTokenCoverage(theme, index);
+    const answered = ownedCount - missing.length;
+    const byGroup = new Map();
+    for (const item of missing) {
+      if (!byGroup.has(item.group)) byGroup.set(item.group, []);
+      byGroup.get(item.group).push(item);
+    }
+    const groups = [...byGroup.entries()]
+      .sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]))
+      .map(([group, items]) => `<details class="theme-lab-coverage-group"><summary>${escapeHtml(t("theme_lab_coverage_group", group, items.length))}</summary><ul>${
+        items.map((item) => `<li><code>${escapeHtml(item.name)}</code><small>${escapeHtml(t("theme_lab_coverage_set_by", item.setBy.join(", ")))}</small></li>`).join("")
+      }</ul></details>`).join("");
+    // System 6 is the baseline: it never overrides, because its values ARE the
+    // defaults every other era overrides. Reporting it as "0 answered" would
+    // read as the emptiest era rather than the one everything starts from.
+    const line = theme.id === "classic"
+      ? t("theme_lab_coverage_baseline", t(theme.labelKey), ownedCount)
+      : t("theme_lab_coverage_summary", t(theme.labelKey), answered, ownedCount, mineCount, inheritedCount);
+    host.innerHTML = `<p class="theme-lab-coverage-line${missing.length && theme.id !== "classic" ? "" : " is-complete"}">${
+      escapeHtml(line)
+    }</p>${theme.id === "classic" ? "" : groups}`;
+  }
+
   function renderTokenDesk(theme) {
     const win = lab();
     const table = win?.querySelector("[data-theme-lab-token-table]");
     if (!table) return;
     const rows = tokenRowsFor(theme);
+    renderTokenCoverage(theme, buildTokenIndex());
     const globalRows = rows.filter((row) => row.editable);
     const overriddenCount = globalRows.filter((row) => row.overridden).length;
     const home = authoringOf(theme)?.tokenHome || authoringOf(window.AISystem6Theme?.getTheme?.("classic"))?.tokenHome;
@@ -1212,6 +1420,11 @@
       if (inspect) {
         inspectedObjectId = inspect.dataset.themeLabInspect;
         renderObjectLab(currentTheme());
+        syncInspectedTile(win);
+        if (inspect.classList.contains("theme-lab-icon-tile")) {
+          win.querySelector("[data-theme-lab-object-grid]")
+            ?.scrollIntoView({ block: "nearest", behavior: "auto" });
+        }
         return;
       }
       if (event.target.closest("[data-theme-lab-token-revert]")) {
@@ -1283,9 +1496,9 @@
     if (!win || !theme) return;
     wire(win);
     buildTokenPanel(win);
+    buildWindowChromeSpecimens(win);
     renderEraTimeline(theme);
     renderLineage(theme);
-    renderAppContract(theme);
     if (typeof initSystemSelectControls === "function") initSystemSelectControls();
 
     for (const [selector, value] of [
@@ -1308,6 +1521,7 @@
     else win.querySelector("[data-theme-lab-token-table]")?.replaceChildren();
     buildIconSet(win);
     renderIconSet(theme);
+    syncInspectedTile(win);
   }
 
   // A draft belongs to one era's stylesheet block, so it does not survive an

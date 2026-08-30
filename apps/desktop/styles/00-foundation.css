@@ -65,7 +65,7 @@
     inset -1px -1px 0 var(--shade-dark);
   --btn-default-active-bg: var(--btn-active-bg);
   --btn-default-active-fg: var(--btn-active-fg);
-  --control-status-border: 1px dotted var(--shade-dark);
+  --control-status-border: var(--system-secondary-divider);
   --memory-transfer-note-bg: #f7f7f7;
   --memory-transfer-note-line: var(--ink);
   --memory-transfer-note-border: var(--ink);
@@ -81,8 +81,8 @@
   --clio-file-chip-disabled-border: 1px dotted var(--shade-dark);
   --empty-object-hatch-alt: #f1f1f1;
   --soundscape-count-badge-border: 1px solid currentColor;
-  --teachtext-popover-hr-border: 1px dotted var(--ink);
-  --teachtext-subpopover-border-left: 1px dotted var(--ink);
+  --teachtext-popover-hr-border: var(--system-secondary-divider);
+  --teachtext-subpopover-border-left: var(--system-secondary-divider);
   --chat-transcript-article-border: var(--system-secondary-divider);
   --import-row-border-bottom: var(--system-secondary-divider);
   /* Pane action rows (Project CD / File Floppy / Trash) and toolbar rows sit
@@ -102,7 +102,7 @@
   --outline-item-span-border: 1px solid transparent;
   --outline-item-span-radius: 0;
   --outline-focus-border: var(--ink);
-  --outline-focus-outline: 1px dotted var(--ink);
+  --outline-focus-outline: var(--system-focus-outline);
   --outline-focus-outline-offset: 1px;
   --outline-focus-bg: transparent;
   --outline-focus-shadow: none;
@@ -230,8 +230,8 @@
   --clio-composer-bg: var(--paper);
   --clio-composer-border: var(--system-border);
   --clio-composer-radius: 0;
-  --clio-composer-shadow: 2px 2px 0 var(--shade-dark);
-  --clio-composer-focus-shadow: 2px 2px 0 var(--shade-dark), 0 0 0 2px var(--shade);
+  --clio-composer-shadow: var(--system-object-shadow);
+  --clio-composer-focus-shadow: var(--system-object-shadow), 0 0 0 2px var(--shade);
   /* The Add and Send buttons are push buttons, so they wear whatever corner
      that era's push button wears instead of a hard square in all six: System 6
      8px, Platinum 3px, Aqua a pill, Snow Leopard 6px, Yosemite 5px. Liquid
@@ -242,7 +242,7 @@
   --clio-action-border: 1px solid var(--ink);
   --clio-action-radius: 0;
   --clio-action-item-radius: 0;
-  --clio-action-shadow: 2px 2px 0 var(--shade-dark);
+  --clio-action-shadow: var(--system-object-shadow);
   --clio-context-control-radius: 0;
   --clio-file-chip-bg: transparent;
   --clio-file-chip-border: 1px solid transparent;
@@ -381,6 +381,13 @@
   --system-border: var(--system-control-line) solid var(--ink);
   /* Pinned at one unit on purpose: divider hairlines historically stay 1px
      even where modern-fonts thickens frames to 1.5px. */
+  /* Two more family roles, both stated at the System 6 value so Classic and
+     Platinum are unchanged. They exist because the base sheet used to write
+     these two idioms as literals in nineteen places, which handed every era
+     after 1988 a dotted keyboard ring and a hard offset shadow it never had.
+     An era answers each role once; see the Theme Family Contract. */
+  --system-focus-outline: 1px dotted var(--ink);
+  --system-object-shadow: 2px 2px 0 var(--shade-dark);
   --system-primary-divider: 1px solid var(--ink);
   /* Secondary (light/dotted) separators: one role per family, so app
      dividers stop carrying per-app values (Theme Family Contract §5). */
@@ -1079,7 +1086,7 @@
   --startup-settings-hr-border-top: 1px inset gray;
   --startup-settings-hr-shadow: none;
   --startup-settings-subhead-color: currentColor;
-  --startup-settings-radio-focus-outline: 1px dotted var(--ink);
+  --startup-settings-radio-focus-outline: var(--system-focus-outline);
   --startup-settings-radio-focus-outline-offset: 2px;
   --startup-settings-radio-focus-visible-outline: var(--startup-settings-radio-focus-outline);
   --startup-settings-radio-focus-visible-outline-offset: var(--startup-settings-radio-focus-outline-offset);
@@ -1089,7 +1096,7 @@
   --balloon-help-bg: var(--paper);
   --balloon-help-border: var(--system-border);
   --balloon-help-radius: 12px;
-  --balloon-help-shadow: 2px 2px 0 var(--shade-dark);
+  --balloon-help-shadow: var(--system-object-shadow);
   --balloon-help-padding: 9px 12px;
   --balloon-help-backdrop: none;
   --status-clock-border: var(--system-border);
@@ -1134,7 +1141,7 @@
   --cloud-state-status-font-size: 11px;
   --cloud-state-usage-gap: 2px 10px;
   --cloud-state-usage-padding-top: 5px;
-  --cloud-state-usage-border-top: 1px dotted var(--shade-dark);
+  --cloud-state-usage-border-top: var(--system-secondary-divider);
   --cloud-state-usage-font-size: 11px;
   --cloud-state-usage-label-color: var(--shade-dark);
   --system-status-pane-gap: 12px;
@@ -1232,7 +1239,7 @@
   --dictionary-form-label-color: inherit;
   --dictionary-form-label-shadow: none;
   --dictionary-recent-min-height: 28px;
-  --dictionary-recent-border-top: 1px dotted var(--shade-dark);
+  --dictionary-recent-border-top: var(--system-secondary-divider);
   --dictionary-recent-color: inherit;
   --dictionary-recent-button-border: var(--system-control-line) solid var(--btn-border-color);
   --dictionary-recent-button-radius: 7px;
@@ -1265,7 +1272,7 @@
   --find-file-empty-note-fg: var(--ink);
   --find-file-result-margin-bottom: 0;
   --find-file-result-border: 0;
-  --find-file-result-border-bottom: 1px dotted var(--shade-dark);
+  --find-file-result-border-bottom: var(--system-secondary-divider);
   --find-file-result-radius: 0;
   --find-file-result-bg: transparent;
   --find-file-result-fg: var(--ink);
@@ -1345,7 +1352,7 @@
   --finder-op-caption-color: var(--shade-dark);
   --finder-op-item-min-height: 34px;
   --finder-op-last-border: 0;
-  --select-divider: 1px dotted var(--shade-dark);
+  --select-divider: var(--system-secondary-divider);
   --teachtext-blockquote-border: 1px dashed var(--ink);
   --teachtext-attachments-empty-border: 1px dashed var(--ink);
   --teachtext-preview-bg: var(--paper);
@@ -1408,8 +1415,8 @@
   --time-machine-frame-shadow: var(--system-inset);
   --time-machine-archive-color: var(--ink);
   --time-machine-loading-bg: rgba(255, 255, 255, 0.9);
-  --scrap-selection-actions-border: 1px dotted var(--shade-dark);
-  --notification-item-divider: 1px dotted var(--shade-dark);
+  --scrap-selection-actions-border: var(--system-secondary-divider);
+  --notification-item-divider: var(--system-secondary-divider);
   --view-switch-border: var(--system-border);
   --view-switch-radius: 0;
   --view-switch-bg: var(--paper);
@@ -1419,7 +1426,7 @@
   --view-switch-thumb-shadow: inset 1px 1px 0 var(--shade-dark), inset -1px -1px 0 #ffffff;
   --view-switch-fg: var(--ink);
   --view-switch-active-fg: var(--paper);
-  --view-switch-focus-outline: 1px dotted var(--ink);
+  --view-switch-focus-outline: var(--system-focus-outline);
   /* System Help / dictionary list row states. Defaults reproduce the classic
      System 6 look (hover, focus and selected are all the solid ink fill, sharp
      corners). Liquid glass overrides these to soften + distinguish the states. */
@@ -1434,11 +1441,11 @@
   --system-help-panel-shadow: none;
   --system-help-search-input-border: var(--system-border);
   --system-help-search-input-radius: 0;
-  --system-help-list-button-border-bottom: 1px dotted var(--shade-dark);
+  --system-help-list-button-border-bottom: var(--system-secondary-divider);
   --system-help-group-bg: var(--paper);
   --system-help-group-border-bottom: var(--system-border);
   --system-help-head-border-bottom: var(--system-border);
-  --system-help-actions-border-top: 1px dotted var(--shade-dark);
+  --system-help-actions-border-top: var(--system-secondary-divider);
   --system-help-alias-border: 1px solid var(--shade-dark);
   --system-help-row-icon-size: 20px;
   --system-help-group-menu-width: 132px;
@@ -1469,7 +1476,7 @@
   --shortcut-grid-radius: 0;
   --shortcut-grid-bg: transparent;
   --shortcut-grid-shadow: none;
-  --shortcut-grid-divider: 1px dotted var(--shade-dark);
+  --shortcut-grid-divider: var(--system-secondary-divider);
   --shortcut-grid-key-border-right: var(--system-border);
   --shortcut-grid-key-bg: #eeeeee;
   --character-map-gap: 6px;
@@ -1517,7 +1524,7 @@
   --alarm-clock-lever-hover-bg: transparent;
   --alarm-clock-lever-fg: var(--ink);
   --alarm-clock-lever-shadow: none;
-  --alarm-clock-lever-focus-outline: 1px dotted var(--ink);
+  --alarm-clock-lever-focus-outline: var(--system-focus-outline);
   --alarm-clock-lever-focus-shadow: none;
   --alarm-clock-selection-bg: var(--ink);
   --alarm-clock-selection-fg: var(--paper);
@@ -1839,11 +1846,11 @@
   /* The strip of paper a drawer never covers. */
   --quick-draft-drawer-edge: 16px;
   --quick-draft-panel-bg: var(--quiet-panel);
-  --quick-draft-panel-border: 1px dotted var(--shade-dark);
+  --quick-draft-panel-border: var(--system-secondary-divider);
   --quick-draft-panel-radius: 0;
   --quick-draft-panel-shadow: none;
   --quick-draft-sidebar-border: 1px solid var(--shade-dark);
-  --quick-draft-divider-border: 1px dotted var(--shade-dark);
+  --quick-draft-divider-border: var(--system-secondary-divider);
   --quick-draft-actions-bg: var(--panel);
   --quick-draft-secondary-fg: var(--shade-dark);
   --quick-draft-selected-fg: var(--paper);
@@ -2113,7 +2120,12 @@ body.has-system-modal .menu-bar {
   top: 23px;
   left: 0;
   min-width: 180px;
-  padding: 2px 0;
+  /* Panel and item metrics are era-owned on the same pattern as the panel's
+     colours. Theme Lab used to hold this wardrobe on a menu of its own --
+     Platinum's item padding and its masked check glyph were measured against
+     native evidence and had nowhere else to live. Defaults are the values this
+     menu already had, so an era that sets nothing renders unchanged. */
+  padding: var(--menu-panel-padding, 2px 0);
   background: var(--menu-panel-bg);
   border: var(--menu-panel-border);
   border-radius: var(--menu-panel-radius);
@@ -2133,17 +2145,20 @@ body.has-system-modal .menu-bar {
   width: 100%;
   border: 0;
   background: var(--menu-item-bg);
-  padding: 2px 12px 2px 28px;
+  min-height: var(--menu-item-min-height, auto);
+  padding: var(--menu-item-padding, 2px 12px 2px 28px);
   color: var(--menu-item-fg);
   box-shadow: var(--menu-item-shadow);
   text-align: left;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   justify-content: stretch;
-  gap: 8px;
+  gap: var(--menu-item-gap, 8px);
   align-items: center;
   white-space: nowrap;
-  line-height: 1.4;
+  font-family: var(--menu-item-font-family, inherit);
+  font-size: var(--menu-item-font-size, inherit);
+  line-height: var(--menu-item-line-height, 1.4);
   position: relative;
 }
 
@@ -2155,20 +2170,28 @@ body.has-system-modal .menu-bar {
   white-space: nowrap;
 }
 
+/* The check glyph. A mask lets an era supply its own artwork instead of the
+   text tick: Platinum's check is a drawn glyph, not a character. */
 .menu-popover button.is-checked::before {
-  content: "✓";
+  content: var(--menu-check-content, "✓");
   position: absolute;
-  left: 12px;
+  left: var(--menu-check-left, 12px);
   top: 50%;
   transform: translateY(-50%);
-  width: 12px;
+  width: var(--menu-check-width, 12px);
+  height: var(--menu-check-height, auto);
+  background: var(--menu-check-bg, transparent);
+  font-size: var(--menu-check-font-size, inherit);
+  -webkit-mask: var(--menu-check-mask, none);
+  mask: var(--menu-check-mask, none);
   text-align: center;
 }
 
 .menu-popover hr {
-  margin: 4px 0;
+  margin: var(--menu-separator-margin, 4px 0);
   border: 0;
-  border-bottom: 1px solid var(--menu-divider-color);
+  border-top: var(--menu-separator-border-top, 0);
+  border-bottom: var(--menu-separator-border-bottom, 1px solid var(--menu-divider-color));
 }
 
 .menu-popover button:hover:not(:disabled):not(.is-disabled) {
@@ -2303,8 +2326,11 @@ body.has-system-modal .menu-bar {
   color: var(--paper);
 }
 
-.menu-popover button.is-disabled {
-  color: var(--shade-dark);
+.menu-popover button.is-disabled,
+.menu-popover button:disabled {
+  background: var(--menu-item-disabled-bg, var(--menu-item-bg));
+  color: var(--menu-item-disabled-fg, var(--shade-dark));
+  opacity: var(--menu-item-disabled-opacity, 1);
   pointer-events: none;
 }
 
@@ -3247,7 +3273,9 @@ body[data-menu-bar-model="system-owned"] {
   top: var(--balloon-help-top, 10px);
   margin: 0;
   width: max-content;
-  max-width: min(300px, calc(100vw - 20px));
+  /* Near beats wide: the placer narrows the balloon rather than send it away
+     from the object it explains. */
+  max-width: var(--balloon-help-max-width, min(300px, calc(100vw - 20px)));
   padding: var(--balloon-help-padding);
   border: var(--balloon-help-border);
   border-radius: var(--balloon-help-radius);
@@ -3305,6 +3333,10 @@ body.is-balloon-help [data-balloon-help] {
   cursor: help;
 }
 
+/* --modal-bg, not --paper directly: an era can research a modal's own surface
+   without moving the paper every other window sits on. Yosemite's alert sheet
+   is a near-white translucency measured off the 10.10 capture, which Theme Lab
+   carried on a replica until the specimen became this modal. */
 .finder-operation-modal {
   position: fixed;
   top: 50%;
@@ -3316,7 +3348,7 @@ body.is-balloon-help [data-balloon-help] {
   margin: 0;
   border: 3px solid var(--ink);
   box-shadow: 0 0 0 3px var(--paper), 0 0 0 5px var(--ink);
-  background: var(--paper);
+  background: var(--modal-bg, var(--paper));
   color: var(--ink);
   font-family: var(--ui-font);
   overflow: auto;

@@ -103,7 +103,7 @@ async function handleMacSharedSessionDelete(req, res) {
 
 async function handleMacSharedChat(req, res) {
   if (!requireMac(res)) return;
-  const body = await readJsonBody(req, { limitBytes: 512 * 1024 });
+  const body = await readJsonBody(req, { limitBytes: 10 * 1024 * 1024 });
   delete body._cloud_api_key;
   delete body._cloud_credential_id;
   delete body._cloud_base_url;

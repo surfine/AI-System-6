@@ -491,8 +491,14 @@ export function findUnhandledSurfacedActions({ markup = [], scans = [] } = {}) {
     scan.menuCommands?.forEach((command) => addSurface(command.action, command.location));
     scan.shortcuts?.forEach((shortcut) => addSurface(shortcut.action, shortcut.location));
   }
+  // A row that names its object carries the object in the action string --
+  // open-chat-file:<id>, lightroom-eli5-baseline:<level> -- and handleAction()
+  // splits it back off before dispatching. The prefix must itself be a
+  // registered handler, so an unregistered verb is still reported.
+  const resolves = (action) => handled.has(action)
+    || (action.includes(":") && handled.has(action.slice(0, action.indexOf(":"))));
   return [...surfaced.entries()]
-    .filter(([action]) => !handled.has(action))
+    .filter(([action]) => !resolves(action))
     .map(([action, locations]) => Object.freeze({ action, locations: Object.freeze(sortLocations(locations)) }))
     .sort((left, right) => left.action.localeCompare(right.action));
 }

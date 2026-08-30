@@ -504,33 +504,60 @@ async function readReaderFigure(plate, row) {
   readerStatusEl.textContent = t("reader_figure_reading");
 
   try {
-    // The address, not the picture. A local VLM cannot fetch a link, so the
-    // server inlines it there; the cloud model takes the link itself. Either
-    // way the writer asked for this one figure and nothing else moved.
-    const disclosed = await cloudVisionDisclosure({
-      surface: "reader-figure",
-      kind: "figure-url",
-      name: label || src,
-    });
-    if (!disclosed) return;
-
-    const response = await window.AISystem6Capabilities.requestService("vision.analyze", {
-      init: {
-        method: "POST",
-        signal: typeof getLongTaskSignal === "function" ? getLongTaskSignal() : null,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          images: [src],
-          mode: "writing-context",
-          name: label,
-          detail: "low",
-          allowCloudFallback: true,
-          modelRoute: modelRouteForVisionRequest(),
-        }),
-      },
-    });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(data?.detail || data?.error || t("image_vision_empty"));
+    // The writer clicked this one picture explicitly. On a cloud route the
+    // address can ride the ordinary OpenAI-compatible image block (including
+    // on Pages, which has no dedicated /vision/analyze Function). A local VLM
+    // still uses the Node vision route, which downloads and inlines the image.
+    const signal = typeof getLongTaskSignal === "function" ? getLongTaskSignal() : null;
+    if (typeof ensureClioProviderResolver === "function") {
+      await ensureClioProviderResolver().catch(() => {});
+    }
+    const capabilities = typeof getDeploymentCapabilities === "function"
+      ? await getDeploymentCapabilities()
+      : {};
+    if (capabilities?.public_deployment
+      && !(typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudCredentialReady())) {
+      await window.AISystem6ClioProvider?.resolve?.({ reason: "reader-vision" });
+    }
+    let data;
+    if (typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudCredentialReady()) {
+      const result = await sendLocalModelTask({
+        payload: {
+          model: getLocalModelRequestName(),
+          messages: window.AISystem6ModelTaskRuntime.buildVisionMessages({
+            mode: "writing-context",
+            name: label,
+            dataUrl: src,
+            detail: "low",
+          }),
+          temperature: 0.2,
+          max_tokens: 900,
+          stream: false,
+          ai_system6_task_kind: "extract-vision-writing-context",
+        },
+        signal,
+        taskKind: "extract-vision-writing-context",
+        streamPreference: "json",
+      });
+      data = { text: result?.text, model: result?.model };
+    } else {
+      const response = await window.AISystem6Capabilities.requestService("vision.analyze", {
+        init: {
+          method: "POST",
+          signal,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            images: [src],
+            mode: "writing-context",
+            name: label,
+            detail: "low",
+            modelRoute: modelRouteForVisionRequest(),
+          }),
+        },
+      });
+      data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data?.detail || data?.error || t("image_vision_empty"));
+    }
     const text = String(data?.text || "").trim();
     if (!text) throw new Error(t("image_vision_empty"));
 

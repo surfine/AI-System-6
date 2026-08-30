@@ -5,10 +5,28 @@ import { fileURLToPath } from "node:url";
 import { appRuntimePaths, lazyRuntimePaths } from "./runtime-manifest.mjs";
 import { classicScriptFileSyntaxError } from "./lib/classic-script-syntax.mjs";
 import { resolveProjectPath } from "./lib/paths.mjs";
+import {
+  BASE_REQUIRED_CHECKS,
+  writeBaseVerificationReceipt,
+} from "./lib/verification-receipt.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const failures = [];
 const warnings = [];
+const receiptChecks = [];
+const verificationStartedAt = new Date().toISOString();
+
+function runReceiptCheck(name, command, args, options = {}) {
+  const started = Date.now();
+  const result = spawnSync(command, args, options);
+  receiptChecks.push({
+    name,
+    command: `${command} ${args.join(" ")}`,
+    exitCode: result.status === null ? 1 : result.status,
+    durationMs: Date.now() - started,
+  });
+  return result;
+}
 
 function ok(message) {
   console.log(`OK  ${message}`);
@@ -61,7 +79,7 @@ function listJsFilesRelative(dirRelative) {
 const pkg = readJson("package.json");
 const buildInfo = readJson("build-info.json");
 
-const appBundle = spawnSync(process.execPath, ["tooling/build-app-bundle.mjs"], {
+const appBundle = runReceiptCheck("build-app", process.execPath, ["tooling/build-app-bundle.mjs"], {
   cwd: root,
   encoding: "utf8",
 });
@@ -71,7 +89,7 @@ if (appBundle.status === 0) {
   fail(`app bundle build failed\n${appBundle.stderr || appBundle.stdout}`);
 }
 
-const releaseAssets = spawnSync(process.execPath, ["tooling/check-release-assets.mjs"], {
+const releaseAssets = runReceiptCheck("release-assets", process.execPath, ["tooling/check-release-assets.mjs"], {
   cwd: root,
   encoding: "utf8",
 });
@@ -82,7 +100,7 @@ if (releaseAssets.status === 0) {
 }
 
 const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
-const srcTypecheck = spawnSync(npmCommand, ["--prefix", "apps/server", "run", "typecheck"], {
+const srcTypecheck = runReceiptCheck("server-typecheck", npmCommand, ["--prefix", "apps/server", "run", "typecheck"], {
   cwd: root,
   encoding: "utf8",
 });
@@ -92,7 +110,7 @@ if (srcTypecheck.status === 0) {
   fail(`server typecheck failed\n${srcTypecheck.stderr || srcTypecheck.stdout}`);
 }
 
-const serverLint = spawnSync(npmCommand, ["run", "lint"], {
+const serverLint = runReceiptCheck("server-lint", npmCommand, ["run", "lint"], {
   cwd: root,
   encoding: "utf8",
 });
@@ -119,7 +137,7 @@ if (serverLint.status === 0) {
 checkSyntax("app.bundle.js");
 checkSyntax("apps/server/server.js");
 
-const dataBoundary = spawnSync(process.execPath, ["tooling/verify-data-boundary.mjs"], {
+const dataBoundary = runReceiptCheck("data-boundary", process.execPath, ["tooling/verify-data-boundary.mjs"], {
   cwd: root,
   encoding: "utf8",
 });
@@ -129,7 +147,7 @@ if (dataBoundary.status === 0) {
   fail(`data boundary verification failed\n${dataBoundary.stderr || dataBoundary.stdout}`);
 }
 
-const serviceBoundary = spawnSync(process.execPath, ["tooling/verify-service-boundary.mjs"], {
+const serviceBoundary = runReceiptCheck("service-boundary", process.execPath, ["tooling/verify-service-boundary.mjs"], {
   cwd: root,
   encoding: "utf8",
 });
@@ -148,7 +166,7 @@ if (serviceBoundary.status === 0) {
 // `npm run verify:native-action-audit` still runs them on demand, and should,
 // the day the lane reopens.
 
-const floppyBudget = spawnSync(process.execPath, ["tooling/verify-floppy-budget.mjs"], {
+const floppyBudget = runReceiptCheck("floppy-budget", process.execPath, ["tooling/verify-floppy-budget.mjs"], {
   cwd: root,
   encoding: "utf8",
 });
@@ -163,7 +181,7 @@ if (floppyBudget.status === 0) {
 // its content; on a non-merge HEAD this is a no-op, so releasing from an
 // ordinary commit costs nothing. Intentional one-sided resolutions are
 // acknowledged with --accept in the merge workflow, not here.
-const mergeContent = spawnSync(process.execPath, [
+const mergeContent = runReceiptCheck("merge-content", process.execPath, [
   "tooling/verify-merge-content.mjs", "--merge", "HEAD", "--quiet",
   // The desktop-project-disks merge kept main's generated build identity and
   // the newer measured floppy payload; both are regenerated/remeasured by the
@@ -181,7 +199,7 @@ if (mergeContent.status === 0) {
   fail(`merge content verification failed\n${mergeContent.stderr || mergeContent.stdout}`);
 }
 
-const smokeRelease = spawnSync(process.execPath, ["tooling/smoke-release.mjs"], {
+const smokeRelease = runReceiptCheck("release-smoke", process.execPath, ["tooling/smoke-release.mjs"], {
   cwd: root,
   encoding: "utf8",
 });
@@ -191,7 +209,7 @@ if (smokeRelease.status === 0) {
   fail(`release smoke verification failed\n${smokeRelease.stderr || smokeRelease.stdout}`);
 }
 
-const featureTests = spawnSync(process.execPath, ["tooling/verify-features.mjs"], {
+const featureTests = runReceiptCheck("feature-tests", process.execPath, ["tooling/verify-features.mjs"], {
   cwd: root,
   encoding: "utf8",
   maxBuffer: 64 * 1024 * 1024,
@@ -207,7 +225,7 @@ if (featureTests.status === 0) {
   fail(`feature verification failed\n${featureFailureDetails}`);
 }
 
-const docLocales = spawnSync(process.execPath, ["tooling/verify-doc-locales.mjs"], {
+const docLocales = runReceiptCheck("docs", process.execPath, ["tooling/verify-doc-locales.mjs"], {
   cwd: root,
   encoding: "utf8",
 });
@@ -217,7 +235,7 @@ if (docLocales.status === 0) {
   fail(`doc locale verification failed\n${docLocales.stderr || docLocales.stdout}`);
 }
 
-const cssBudget = spawnSync(process.execPath, ["tooling/verify-css.mjs"], {
+const cssBudget = runReceiptCheck("css", process.execPath, ["tooling/verify-css.mjs"], {
   cwd: root,
   encoding: "utf8",
 });
@@ -227,7 +245,7 @@ if (cssBudget.status === 0) {
   fail(`CSS budget verification failed\n${cssBudget.stderr || cssBudget.stdout}`);
 }
 
-const designGovernance = spawnSync(process.execPath, ["tooling/verify-design.mjs"], {
+const designGovernance = runReceiptCheck("design", process.execPath, ["tooling/verify-design.mjs"], {
   cwd: root,
   encoding: "utf8",
 });
@@ -237,7 +255,7 @@ if (designGovernance.status === 0) {
   fail(`design governance verification failed\n${designGovernance.stderr || designGovernance.stdout}`);
 }
 
-const officialSite = spawnSync(process.execPath, ["tooling/verify-site.mjs"], {
+const officialSite = runReceiptCheck("site", process.execPath, ["tooling/verify-site.mjs"], {
   cwd: root,
   encoding: "utf8",
 });
@@ -458,7 +476,7 @@ if (/^\d{8}\.\d+$/.test(String(releaseBuildStamp || ""))) {
   fail("release build stamp missing or malformed; set build-info.json build or AI_SYSTEM6_BUILD as YYYYMMDD.N");
 }
 
-const versionConsistency = spawnSync(process.execPath, ["tooling/verify-version-consistency.mjs"], {
+const versionConsistency = runReceiptCheck("version-consistency", process.execPath, ["tooling/verify-version-consistency.mjs"], {
   cwd: root,
   encoding: "utf8",
 });
@@ -468,7 +486,7 @@ if (versionConsistency.status === 0) {
   fail(`single version source consistency failed\n${versionConsistency.stderr || versionConsistency.stdout}`);
 }
 
-const frontendCheckJs = spawnSync(process.execPath, ["tooling/verify-frontend-jsdoc.mjs"], {
+const frontendCheckJs = runReceiptCheck("frontend-checkjs", process.execPath, ["tooling/verify-frontend-jsdoc.mjs"], {
   cwd: root,
   encoding: "utf8",
 });
@@ -484,9 +502,28 @@ else fail("smoke release script missing");
 if (pkg.scripts?.bundle) ok("bundle script present");
 else fail("bundle script missing");
 
+receiptChecks.push({
+  name: "static-contracts",
+  command: "verify-release static contracts",
+  exitCode: failures.length ? 1 : 0,
+  durationMs: 0,
+});
+
 if (failures.length) {
   console.error(`\nRelease verification failed: ${failures.length} issue(s).`);
   process.exit(1);
 }
 
+const missingReceiptChecks = BASE_REQUIRED_CHECKS.filter(
+  (name) => !receiptChecks.some((check) => check.name === name),
+);
+if (missingReceiptChecks.length) {
+  console.error(`\nRelease verification receipt is missing checks: ${missingReceiptChecks.join(", ")}`);
+  process.exit(1);
+}
+const { destination: baseReceiptPath } = await writeBaseVerificationReceipt(root, {
+  checks: receiptChecks,
+  startedAt: verificationStartedAt,
+});
+console.log(`Base verification receipt: ${baseReceiptPath}`);
 console.log(`\nRelease verification passed with ${warnings.length} warning(s).`);

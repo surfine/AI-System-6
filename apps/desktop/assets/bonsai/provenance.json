@@ -3,19 +3,19 @@
   "files": [
     {
       "file": "assets/bonsai/atlas-north.png",
-      "sha256": "da997a8ff4e369685e4181aa22b375e0e44218680e5e5b8b7aa87f99d4043468"
+      "sha256": "b3b17927cb2c5e9229c461ab8291d15db82e3e7c410be031f01b9a53e9efe1ba"
     },
     {
       "file": "assets/bonsai/atlas-east.png",
-      "sha256": "41463aba8c6b27386b1d6a43048458f20762f66752fb90680fca7ba25f02a7ff"
+      "sha256": "c80e9a5a509a14afd78d3020e4eb5612e14a00953812f471caf10403fce76e02"
     },
     {
       "file": "assets/bonsai/atlas-south.png",
-      "sha256": "5621174c48416fd2d0e24c0eb1c7b9f4e563b0c6220227856b7beb875920dcf1"
+      "sha256": "991adefe20e48a18105019ed9cbf763be50c487d6aabfb621caf8d6b8a10936b"
     },
     {
       "file": "assets/bonsai/atlas-west.png",
-      "sha256": "0246faa7d2134dac7e3d2c598b5e3e43fb27077a25662efc9c6c6b2d27229e3a"
+      "sha256": "bb4aa38eefbe78571b816a654e56ee3c4b7c56db26036179daa9843643bf3f8f"
     }
   ],
   "metadata": "assets/bonsai/atlas-metadata.json",
@@ -26,8 +26,10 @@
   "license": "MIT",
   "source": "original",
   "notes": [
-    "Original isometric pixel art generated from project-owned geometric recipes; no pixels copied, traced, sampled, or converted from any external game or artwork.",
-    "The generator has no network path and reads only the checked-in source recipe.",
+    "Original isometric pixel art composed from project-owned grammar: massing (single, setback, twin, wing, courtyard, podium, stepped, gable), roof form (flat deck with parapet, pitched, hipped, sawtooth, stepped), roof furniture (tank, stair bulkhead, vents, chimney, stack, sign, antenna), facade treatment (punched or ribbon windows, floor banding, shopfront, loading bay, door) and ordered-dither shading.",
+    "No pixels copied, traced, sampled, measured from, or converted from any external game or artwork; the reference authorized by the 2026-08-24 amendment was not consulted for this build.",
+    "Massing, roof form, wall colour and window rhythm are indexed by different primes of the variant number, so twenty-four variants per stage sample the combinations instead of repeating a handful of silhouettes.",
+    "The generator has no network path and no wall clock, and reads only the checked-in source recipe; a rebuild is byte-identical.",
     "All four rotations share frame ids and dimensions; direction-specific light and small asymmetries are generated deliberately."
   ]
 }

@@ -174,6 +174,10 @@ body[data-theme="platinum"] {
   --control-bg: #dddddd;
   --control-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #888888;
   --control-active-shadow: inset 1px 1px 0 #555555, inset -1px -1px 0 #999999;
+  /* Theme Family Contract: the keyboard ring. The base layer writes System 6's
+     dotted ink ring, so every era that never answered wore it. Each era already
+     names its own ring for controls; this points the shared role at it. */
+  --system-focus-outline: var(--control-focus-outline);
   --control-focus-outline: 2px solid #6666cc;
   --control-focus-offset: 0;
   --control-disabled-bg: #dddddd;
@@ -351,7 +355,7 @@ body[data-theme="platinum"] {
   --theme-lab-radio-disabled-bg: #dddddd;
   --theme-lab-radio-disabled-image: none;
   --theme-lab-form-gap: 6px 12px;
-  --theme-lab-form-label-columns: 82px minmax(0, 1fr);
+  --theme-lab-form-label-columns: minmax(82px, max-content) minmax(0, 1fr);
   --theme-lab-form-label-align: right;
   --theme-lab-form-label-column-gap: 7px;
   --theme-lab-form-label-align-items: center;
@@ -381,55 +385,49 @@ body[data-theme="platinum"] {
   --theme-lab-segmented-selected-bg: #666666;
   --theme-lab-segmented-selected-fg: #ffffff;
   --theme-lab-segmented-selected-shadow: var(--btn-active-shadow);
-  --theme-lab-tabs-gap: 0;
-  --theme-lab-tabs-padding: 0 10px;
-  --theme-lab-tabs-border-bottom: 0;
-  --theme-lab-tabs-overflow: hidden;
-  --theme-lab-tab-button-flex: 0 0 74px;
-  --theme-lab-tab-button-width: 74px;
-  --theme-lab-tab-button-min-height: 23px;
-  --theme-lab-tab-button-height: 23px;
-  --theme-lab-tab-button-margin: 0 -1px 0 0;
-  --theme-lab-tab-button-padding: 0 14px 3px;
-  --theme-lab-tab-font-variation-settings: "wdth" 123;
-  --theme-lab-tab-button-border: 0;
-  --theme-lab-tab-button-radius: 0;
-  --theme-lab-tab-button-bg: #cccccc;
-  --theme-lab-tab-button-shadow: inset 0 1px #000000, inset 0 2px #cccccc, inset 0 3px #dddddd;
-  --theme-lab-tab-edge-content: "";
-  --theme-lab-tab-edge-width: 14px;
-  --theme-lab-tab-edge-height: 23px;
-  --theme-lab-tab-edge-left-bg: url("./assets/vendor/classic-stylesheets/macos9/tab.svg") left top / 74px 23px no-repeat;
-  --theme-lab-tab-edge-right-bg: url("./assets/vendor/classic-stylesheets/macos9/tab.svg") right top / 74px 23px no-repeat;
-  --theme-lab-tab-hover-bg: var(--theme-lab-tab-button-bg);
-  --theme-lab-tab-line-height: 18px;
-  --theme-lab-tab-selected-min-height: 25px;
-  --theme-lab-tab-selected-height: 25px;
-  --theme-lab-tab-selected-bg:
-    linear-gradient(to bottom,
-      #dddddd 0 1px,
-      #000000 1px 2px,
-      #cccccc 2px 3px,
-      #ffffff 3px 4px,
-      #eeeeee 4px 24px)
-      center top / calc(100% - 28px) 24px no-repeat;
-  --theme-lab-tab-selected-fg: #000000;
-  --theme-lab-tab-selected-shadow: none;
-  --theme-lab-tab-selected-edge-top: 0;
-  --theme-lab-tab-selected-edge-height: 24px;
-  --theme-lab-tab-selected-edge-left-bg: url("./assets/themes/platinum/tab-selected-left.svg") left top / 14px 24px no-repeat;
-  --theme-lab-tab-selected-edge-right-bg: url("./assets/themes/platinum/tab-selected-right.svg") right top / 14px 24px no-repeat;
-  --theme-lab-tab-active-bg: transparent url("./assets/vendor/classic-stylesheets/macos9/tab-active.svg") center top / 74px 23px no-repeat;
-  --theme-lab-tab-active-fg: #ffffff;
-  --theme-lab-tab-focus-outline: 0;
-  --theme-lab-tab-focus-text-shadow: 0 0 2px #6666cc;
-  --theme-lab-tab-panel-min-height: 31px;
-  --theme-lab-tab-panel-margin-top: -4px;
-  --theme-lab-tab-panel-padding: 7px 10px 5px;
-  --theme-lab-tab-panel-border: 1px solid #000000;
-  --theme-lab-tab-panel-radius: 0;
-  --theme-lab-tab-panel-bg: #eeeeee;
-  --theme-lab-tab-panel-shadow: inset 1px 1px #cccccc, inset 2px 2px #ffffff, inset -1px -1px #999999, inset -2px -2px #bbbbbb;
+  --tab-strip-gap: 0;
+  --tab-strip-padding: 0 10px;
+  --tab-strip-border-bottom: 0;
+  --tab-strip-overflow: hidden;
+  /* Content width, not the art's width. The tab is drawn as three slices --
+     a 14px cap cut from each end of tab.svg and the flat --tab-bg between them
+     -- which is precisely so it can stretch to its label. Pinning every tab to
+     the 74px of the source drawing defeated that and clipped any word longer
+     than the 46px left between the paddings. */
+  --tab-flex: 0 0 auto;
+  --tab-font-weight: 700;
+  --tab-line-height: 18px;
+  --tab-min-height: 23px;
+  --tab-height: 23px;
+  --tab-margin: 0 -1px 0 0;
+  --tab-padding: 0 14px 3px;
+  --tab-font-variation-settings: "wdth" 123;
+  --tab-border: 0;
+  --tab-shadow: inset 0 1px #000000, inset 0 2px #cccccc, inset 0 3px #dddddd;
+  --tab-edge-content: "";
+  --tab-edge-width: 14px;
+  --tab-edge-height: 23px;
+  --tab-edge-left-bg: url("./assets/vendor/classic-stylesheets/macos9/tab.svg") left top / 74px 23px no-repeat;
+  --tab-edge-right-bg: url("./assets/vendor/classic-stylesheets/macos9/tab.svg") right top / 74px 23px no-repeat;
+  --tab-active-min-height: 25px;
+  --tab-active-height: 25px;
+  --tab-active-fg: #000000;
+  --tab-active-shadow: none;
+  --tab-active-edge-top: 0;
+  --tab-active-edge-height: 24px;
+  --tab-active-edge-left-bg: url("./assets/themes/platinum/tab-selected-left.svg") left top / 14px 24px no-repeat;
+  --tab-active-edge-right-bg: url("./assets/themes/platinum/tab-selected-right.svg") right top / 14px 24px no-repeat;
+  --tab-pressed-bg: transparent url("./assets/vendor/classic-stylesheets/macos9/tab-active.svg") center top / 74px 23px no-repeat;
+  --tab-pressed-fg: #ffffff;
+  --tab-focus-outline: 0;
+  --tab-focus-text-shadow: 0 0 2px #6666cc;
+  --tab-panel-min-height: 31px;
+  --tab-panel-margin-top: -4px;
+  --tab-panel-padding: 7px 10px 5px;
+  --tab-panel-border: 1px solid #000000;
+  --tab-panel-radius: 0;
+  --tab-panel-bg: #eeeeee;
+  --tab-panel-shadow: inset 1px 1px #cccccc, inset 2px 2px #ffffff, inset -1px -1px #999999, inset -2px -2px #bbbbbb;
   --theme-lab-split-min-height: 146px;
   --theme-lab-split-columns: minmax(126px, 0.75fr) minmax(180px, 1.25fr);
   --theme-lab-split-gap: 9px;
@@ -483,52 +481,26 @@ body[data-theme="platinum"] {
   --theme-lab-layer-padding: 10px 12px;
   --theme-lab-generic-fixture-display: none;
   --theme-lab-platinum-fixture-display: grid;
-  --theme-lab-menu-grid-row: 1 / span 2;
-  --theme-lab-menu-padding: 2px 0;
-  --theme-lab-menu-item-min-height: 18px;
-  --theme-lab-menu-item-padding: 1px 3px 1px 21px;
-  --theme-lab-menu-item-bg: #dddddd;
-  --theme-lab-menu-item-fg: #000000;
-  --theme-lab-menu-item-font-family: var(--theme-ui-font);
-  --theme-lab-menu-item-font-size: var(--system-control-size);
-  --theme-lab-menu-item-line-height: 16px;
-  --theme-lab-menu-item-selected-bg: #333399;
-  --theme-lab-menu-item-selected-fg: #ffffff;
-  --theme-lab-menu-item-selected-shadow: inset 1px 0 #6666cc, inset -1px 0 #000088;
-  --theme-lab-menu-item-disabled-bg: #dddddd;
-  --theme-lab-menu-item-disabled-fg: #777777;
-  --theme-lab-menu-item-disabled-opacity: 1;
-  --theme-lab-menu-separator-margin: 2px 0;
-  --theme-lab-menu-separator-border-top: 1px solid #888888;
-  --theme-lab-menu-separator-border-bottom: 1px solid #ffffff;
-  --theme-lab-menu-mark-left: 3px;
-  --theme-lab-menu-mark-width: 9px;
-  --theme-lab-menu-mark-height: 8px;
-  --theme-lab-menu-mark-bg: currentColor;
-  --theme-lab-menu-mark-font-size: 0;
-  --theme-lab-menu-mark-mask: url("./assets/vendor/classic-stylesheets/macos9/checkmark.svg") center / 9px 8px no-repeat;
-  --theme-lab-popover-grid-column: 2;
-  --theme-lab-popover-grid-row: 1;
-  --theme-lab-popover-padding: 7px 9px;
-  --theme-lab-popover-border: 1px solid #000000;
-  --theme-lab-popover-radius: 0;
-  --theme-lab-popover-bg: #ffffcc;
-  --theme-lab-popover-copy-fg: #000000;
-  --theme-lab-popover-shadow: none;
-  --theme-lab-popover-tail-content: "";
-  --theme-lab-popover-tail-bg: #ffffcc;
+  --menu-panel-padding: 2px 0;
+  --menu-item-min-height: 18px;
+  --menu-item-padding: 1px 3px 1px 21px;
+  --menu-item-font-family: var(--theme-ui-font);
+  --menu-item-font-size: var(--system-control-size);
+  --menu-item-line-height: 16px;
+  --menu-item-disabled-bg: #dddddd;
+  --menu-item-disabled-fg: #777777;
+  --menu-item-disabled-opacity: 1;
+  --menu-separator-margin: 2px 0;
+  --menu-separator-border-top: 1px solid #888888;
+  --menu-separator-border-bottom: 1px solid #ffffff;
+  --menu-check-left: 3px;
+  --menu-check-width: 9px;
+  --menu-check-height: 8px;
+  --menu-check-bg: currentColor;
+  --menu-check-font-size: 0;
+  --menu-check-mask: url("./assets/vendor/classic-stylesheets/macos9/checkmark.svg") center / 9px 8px no-repeat;
   --theme-lab-popover-generic-label-display: none;
   --theme-lab-balloon-label-display: block;
-  --theme-lab-dialog-grid-column: 2;
-  --theme-lab-dialog-grid-row: 2;
-  --theme-lab-dialog-columns: 32px minmax(0, 1fr);
-  --theme-lab-dialog-gap: 7px 12px;
-  --theme-lab-dialog-padding: 12px;
-  --theme-lab-dialog-copy-gap: 5px;
-  --theme-lab-dialog-actions-column: 2;
-  --theme-lab-dialog-actions-margin-top: 1px;
-  --theme-lab-dialog-button-margin-top: 0;
-  --theme-lab-dialog-button-min-width: 65px;
   --theme-lab-alert-icon-display: block;
   --theme-lab-alert-icon-image: url("./assets/themes/platinum/alert-32.svg");
   --theme-lab-sheet-display: none;
@@ -544,14 +516,6 @@ body[data-theme="platinum"] {
   --theme-lab-progress-value-radius: 0;
   --theme-lab-progress-value-bg: linear-gradient(to bottom, #333399, #6666cc, #9999ff, #ccccff, #eeeeee, #ccccff, #9999ff, #6666cc, #333399, #000088);
   --theme-lab-progress-value-shadow: inset 1px 0 #6666cc, inset 2px 0 rgba(255, 255, 255, 0.2), inset -1px 0 #000055, inset -2px 0 #333399, 1px 0 #555555, 2px 0 #888888;
-  --theme-lab-scroll-height: 76px;
-  --theme-lab-scroll-padding: 3px 6px;
-  --theme-lab-scroll-frame-border: 1px solid #000000;
-  --theme-lab-scroll-frame-radius: 0;
-  --theme-lab-scroll-frame-shadow: -1px -1px #888888, 1px 1px #ffffff;
-  --theme-lab-scroll-bg: #ffffff;
-  --theme-lab-scroll-item-margin: 0;
-  --theme-lab-scroll-item-line-height: 17px;
   --theme-lab-scrollbar-border-left: 1px solid #000000;
   --theme-lab-scrollbar-bg: #aaaaaa;
   --theme-lab-scrollbar-track-border: 1px solid #000000;
@@ -589,50 +553,6 @@ body[data-theme="platinum"] {
   --theme-lab-scrollbar-decrement-image: url("./assets/vendor/classic-stylesheets/macos9/arrow-up.svg");
   --theme-lab-scrollbar-increment-image: url("./assets/vendor/classic-stylesheets/macos9/arrow-down.svg");
   --theme-lab-scrollbar-arrow-transform: translate(calc(-50% - 1px), calc(-50% - 1px));
-  --theme-lab-mini-position: relative;
-  --theme-lab-mini-min-height: 50px;
-  --theme-lab-mini-padding: 20px 4px 4px;
-  --theme-lab-mini-border: 1px solid #000000;
-  --theme-lab-mini-radius: 0;
-  --theme-lab-mini-shadow: 1px 1px #000000, inset 1px 1px #ffffff, inset -1px -1px #999999;
-  --theme-lab-mini-active-bg: repeating-linear-gradient(to bottom, #ffffff 0 1px, #777777 1px 2px), #cccccc;
-  --theme-lab-mini-body-content: "";
-  --theme-lab-mini-body-inset: 19px 4px 4px;
-  --theme-lab-mini-body-border: 1px solid #000000;
-  --theme-lab-mini-body-bg: #dddddd;
-  --theme-lab-mini-body-shadow: 1px 1px 0 #ffffff, 1px 0 0 #ffffff, 0 1px 0 #ffffff, -1px -1px 0 #999999, -1px 0 0 #999999, 0 -1px 0 #999999;
-  --theme-lab-mini-control-display: block;
-  --theme-lab-mini-control-top: 3px;
-  --theme-lab-mini-control-edge: 4px;
-  --theme-lab-mini-control-size: 11px;
-  --theme-lab-mini-control-border: 1px solid #222222;
-  --theme-lab-mini-control-radius: 0;
-  --theme-lab-mini-control-bg: linear-gradient(to bottom right, #999999, #ffffff);
-  --theme-lab-mini-control-shadow: -1px -1px #888888, 1px 1px #ffffff, inset 1px 1px #cccccc, inset -1px -1px #888888;
-  --theme-lab-mini-zoom-mark-content: "";
-  --theme-lab-mini-zoom-mark-border: 1px solid #222222;
-  --theme-lab-mini-inactive-control-display: none;
-  --theme-lab-mini-title-position: absolute;
-  --theme-lab-mini-title-left: 50%;
-  --theme-lab-mini-title-top: 3px;
-  --theme-lab-mini-title-width: max-content;
-  --theme-lab-mini-title-max-width: calc(100% - 40px);
-  --theme-lab-mini-title-padding: 0 5px;
-  --theme-lab-mini-title-border: 0;
-  --theme-lab-mini-title-border-top: 0;
-  --theme-lab-mini-title-bg: #cccccc;
-  --theme-lab-mini-title-weight: 700;
-  --theme-lab-mini-title-line-height: 13px;
-  --theme-lab-mini-title-transform: translateX(-50%);
-  --theme-lab-mini-inactive-border: 1px solid #555555;
-  --theme-lab-mini-inactive-bg: #dddddd;
-  --theme-lab-mini-inactive-shadow: none;
-  --theme-lab-mini-inactive-opacity: 1;
-  --theme-lab-mini-inactive-body-border: 1px solid #555555;
-  --theme-lab-mini-inactive-body-bg: #eeeeee;
-  --theme-lab-mini-inactive-body-shadow: none;
-  --theme-lab-mini-inactive-title-bg: #dddddd;
-  --theme-lab-mini-inactive-title-fg: #777777;
   --theme-lab-toolbar-min-height: 20px;
   --theme-lab-toolbar-gap: 0;
   --theme-lab-toolbar-padding: 1px 6px;
@@ -1272,6 +1192,12 @@ body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) .desktop
 
 html[data-theme="yosemite"],
 body[data-theme="yosemite"] {
+  /* The 10.10 alert surface, measured from the System Preferences capture:
+     a hair brighter and a hair more opaque than this era's window paper. */
+  --modal-bg: rgba(255, 255, 255, 0.95);
+  /* A background 10.10 window shows one flat grey lamp, not a dimmed red one.
+     Flattening the sprite is how the era does it. */
+  --titlebar-inactive-control-filter: contrast(0) brightness(1.66);
   /* The base sheet owns the progress recipe; the era supplies its numbers. */
   --theme-lab-progress-height: 12px;
   --theme-lab-progress-radius: 6px;
@@ -1294,6 +1220,8 @@ body[data-theme="yosemite"] {
   --system-menu-height: 22px;
   --system-titlebar-height: 22px;
   --system-titlebar-control-slot: 24px;
+  /* 13px menu text sits on a 16px line; the 22px row is min-height. */
+  --menu-item-line-height: 16px;
   --system-titlebar-control-size: 12px;
   --system-titlebar-title-height: 18px;
   --system-titlebar-font-size: 13px;
@@ -1381,15 +1309,11 @@ body[data-theme="yosemite"] {
      at 12px (crisp @2x). Flat #fc615c / #33c748 bodies with their real
      #df4744 / #27aa35 rims — no synthetic highlight; 10.10 has none. */
   --traffic-light-close-bg: url("./assets/themes/yosemite/lamp-close.png");
-  --traffic-light-minimize-bg: url("./assets/themes/yosemite/lamp-minimize.png");
   --traffic-light-resize-bg: url("./assets/themes/yosemite/lamp-zoom.png");
   --traffic-light-sprite-size: 12px 12px;
   /* Real 10.10: the 12px lamps sit ~4px below the window top edge. */
-  --theme-lab-era-titlebar-control-top: 4px;
-  --theme-lab-era-titlebar-control-size: 12px;
   /* Cut from the same 10.10 Finder capture as its siblings, at their 26 px
      box. A flat swatch missed the lamp's own edge and inner shading. */
-  --theme-lab-era-titlebar-minimize-bg: var(--traffic-light-minimize-bg) center / var(--traffic-light-sprite-size) no-repeat;
   /* Real 10.10 hover: the lamp deepens and draws its dark symbol (×, −, +)
      only while the pointer is over it. Resting lamps stay plain circles. */
   /* Real 10.10 hover: the resting disc unchanged, plus the dark glyph.
@@ -1400,31 +1324,13 @@ body[data-theme="yosemite"] {
   --traffic-light-resize-hover-bg:
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3.1 6h5.8M6 3.1v5.8' stroke='%230d5a15' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E"),
     url("./assets/themes/yosemite/lamp-zoom.png");
-  --theme-lab-era-titlebar-minimize-hover-bg:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 6h6' stroke='%238a5e10' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E") center / 12px 12px no-repeat,
-    #e0a92a;
   /* Window-chrome specimen: 10.10 groups the three lamps at the left of the
      bar in close / minimize / zoom order, on this era's own lamp ladder. */
-  --theme-lab-mini-position: relative;
-  --theme-lab-mini-control-display: block;
-  --theme-lab-mini-control-top: 5px;
-  --theme-lab-mini-control-size: var(--theme-lab-era-titlebar-control-size);
-  --theme-lab-mini-control-radius: 50%;
-  --theme-lab-mini-control-close-left: 7px;
-  --theme-lab-mini-control-close-bg: var(--traffic-light-close-bg) center / var(--traffic-light-sprite-size) no-repeat;
-  --theme-lab-mini-control-minimize-left: 28px;
-  --theme-lab-mini-control-minimize-display: block;
-  --theme-lab-mini-control-minimize-bg: var(--traffic-light-minimize-bg) center / var(--traffic-light-sprite-size) no-repeat;
-  --theme-lab-mini-control-zoom-left: 49px;
-  --theme-lab-mini-control-zoom-right: auto;
-  --theme-lab-mini-control-zoom-bg: var(--traffic-light-resize-bg) center / var(--traffic-light-sprite-size) no-repeat;
   /* Backdrop windows keep the lamps and grey them. contrast(0) collapses all
      three to one tone — the 10.10 backdrop lamp is a single flat grey, not a
      dimmed colour — and the brightness lift places that tone at the light grey
      of the real capture. Dimming by opacity instead loses the yellow lamp,
      because grey-of-yellow is already lighter than the title bar. */
-  --theme-lab-mini-inactive-control-display: block;
-  --theme-lab-mini-inactive-control-filter: contrast(0) brightness(1.66);
   /* Alarm Clock: 10.10 flat light chrome, thin borders, blue accent. */
   --alarm-clock-frame-border: 1px solid rgba(0, 0, 0, 0.11);
   --alarm-clock-frame-radius: 6px;
@@ -1459,6 +1365,14 @@ body[data-theme="yosemite"] {
   --shade: #c7c7c7;
   --shade-dark: #777777;
   --md-marker-ink: #717171;  /* ground #f5f5f5 */
+  /* Theme Family Contract §5, the two divider roles. System 6 rules a desk in
+     ink — a solid black primary rule and a dotted secondary one — and Platinum
+     keeps the dotted hairline. Yosemite rules it in grey hairlines and had never
+     said so, so every divider that reads the family role was still drawing
+     Classic ink: the dotted rules under each Quick Draft field are the ones
+     you can see without looking for them. */
+  --system-primary-divider: 1px solid var(--rule);
+  --system-secondary-divider: 1px solid var(--rule);
   --rule: rgba(0, 0, 0, 0.11);
   --pane-bg: #f5f5f5;
   --details-bar-bg: rgba(245, 245, 245, 0.96);
@@ -1474,6 +1388,23 @@ body[data-theme="yosemite"] {
   --window-border: 1px solid rgba(0, 0, 0, 0.16);
   /* Real 10.10 windows: ~5px corner radius at 1x (measured 10px at 2x). */
   --window-radius: 5px;
+  /* Theme Family Contract: the shared object shadow. `2px 2px 0 var(--ink)`
+     is System 6's hard offset shadow, and only Liquid Glass had ever replaced
+     it — so a focused Quick Draft field, a Time Machine popover and a
+     ClioStage frame all stood on a solid black bar in Yosemite too. This is the
+     era's own window shadow at object scale. */
+  --system-shadow: 0 1px 2px rgba(0, 0, 0, 0.12), 0 4px 10px rgba(0, 0, 0, 0.12);
+  /* Theme Family Contract: the shadow a small raised object casts — the
+     composer, an action chip, a help tag. The base layer writes System 6's
+     hard offset; Yosemite casts the same soft shadow it gives every other object. */
+  --system-object-shadow: var(--system-shadow);
+  /* Mac OS X help tag: a pale yellow slip with a thin grey rule and a small
+     corner. The base layer's balloon is System 6's — white paper inside a
+     black hairline with a 12px corner — and only Platinum had answered with
+     its own, so Yosemite was still popping a System 6 balloon. */
+  --balloon-help-bg: #fbfbc8;
+  --balloon-help-border: 1px solid #9d9d7d;
+  --balloon-help-radius: 4px;
   --window-shadow:
     0 5px 5px rgba(0, 0, 0, 0.18),
     0 8px 15px rgba(0, 0, 0, 0.14),
@@ -1551,6 +1482,10 @@ body[data-theme="yosemite"] {
   --control-bg: #ffffff;
   --control-shadow: 0 1px 1px rgba(16, 16, 16, 0.04), 0 1px 2px rgba(16, 16, 16, 0.01);
   --control-active-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.18);
+  /* Theme Family Contract: the keyboard ring. The base layer writes System 6's
+     dotted ink ring, so every era that never answered wore it. Each era already
+     names its own ring for controls; this points the shared role at it. */
+  --system-focus-outline: var(--control-focus-outline);
   --control-focus-outline: 3px solid rgba(78, 158, 255, 0.52);
   --control-focus-offset: 1px;
   --control-disabled-bg: #f3f3f3;
@@ -2119,11 +2054,10 @@ body[data-theme="platinum"] .menu-bar {
   padding-inline: 4px;
   box-shadow: var(--menu-bar-shadow);
 }
-body[data-theme="platinum"] :is(.menu-popover, .menu-sub-popover, .theme-lab-menu) hr {
+body[data-theme="platinum"] :is(.menu-popover, .menu-sub-popover) hr {
   border-top: 1px solid #888888;
   border-bottom: 1px solid #ffffff;
 }
-
 
 body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) .system-select-button:not(:disabled)  {
 
@@ -2154,7 +2088,6 @@ body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) .window:
 
 }
 
-
 body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) :where(.btn)  {
 
   border-color: var(--btn-border-color);
@@ -2164,7 +2097,6 @@ body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) :where(.
   font-weight: 400;
 
 }
-
 
 body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) .btn.default  {
 
@@ -2176,7 +2108,6 @@ body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) .btn.def
 
 }
 
-
 body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) .btn:is(.is-active, :active):not(:disabled):not(.is-disabled)  {
 
   background: var(--btn-active-bg);
@@ -2185,7 +2116,6 @@ body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) .btn:is(
 
 }
 
-
 body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) :is(.btn:disabled, .btn.is-disabled)  {
 
   background: var(--control-disabled-bg);
@@ -2193,7 +2123,6 @@ body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) :is(.btn
   box-shadow: none;
 
 }
-
 
 body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) :where(
   textarea,
@@ -2227,29 +2156,12 @@ body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) :is(inpu
 
 }
 
-
 body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) .theme-lab-toolbar  {
 
   border-radius: var(--theme-lab-toolbar-radius);
   box-shadow: var(--toolbar-highlight);
 
 }
-
-
-body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) .theme-lab-mini-window.is-active  {
-
-  background: var(--toolbar-bg);
-
-}
-
-
-body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) .theme-lab-mini-window.is-inactive  {
-
-  background: var(--toolbar-bg-inactive);
-  opacity: 1;
-
-}
-
 
 body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) :is(.theme-lab-sidebar, .theme-lab-list) button  {
 
@@ -2283,7 +2195,7 @@ body[data-theme="yosemite"] .title-bar > :is(.close-box, .resize-box) {
   background-position: center;
   background-size: 12px 12px;
   background-repeat: no-repeat;
-  filter: none;
+  filter: var(--titlebar-control-filter, none);
 }
 
   /* Not a restatement of the base: these three eras are the traffic-light
@@ -2345,11 +2257,10 @@ body[data-theme="yosemite"] select:not([multiple]) {
 }
 
 body[data-theme="yosemite"] :is(select, input, .system-select-button):disabled {
-  /* Dimmed once, by colour. The opacity here dimmed an already-grey ink a
-     second time and took the pair to 1.76:1 -- the worst of the six by a wide
-     margin. Colour alone reads at 2.31:1, in line with platinum and
-     snow-leopard. */
-  color: #a0a0a0;
+  /* Dimmed once, by ink, on the shared disabled-fg token. The old literal
+     #a0a0a0 read 2.31:1 over this field even before the base rule's opacity
+     dimmed it again to 1.58; the era's disabled ink clears the 3:1 floor. */
+  color: var(--system-disabled-fg, var(--shade-dark));
   background-color: #f1f1f1;
 }
 
@@ -2359,19 +2270,6 @@ body[data-theme="yosemite"] .theme-lab-form-grid input[type="search"] {
   padding: var(--search-field-padding);
   border-radius: var(--search-field-radius);
   background: var(--search-field-background, var(--field-bg));
-}
-
-/* 10.10 non-frontmost windows: the fused titlebar/toolbar falls back to the
-   flat inactive material and the traffic lights lose their saturation.
-   (512 Pixels captures show the inactive chrome as a flat light gray.) */
-body[data-theme="yosemite"] .theme-lab-finder-window.is-inactive .theme-lab-finder-window-titlebar {
-  background: var(--system-titlebar-inactive-bg);
-  box-shadow: none;
-}
-
-body[data-theme="yosemite"] .theme-lab-finder-window.is-inactive .theme-lab-finder-window-titlebar > i {
-  filter: grayscale(1);
-  opacity: 0.5;
 }
 
 /* 10.10 windows have no visible resize handle in the corner: resizing is an
@@ -2399,28 +2297,6 @@ body[data-theme="yosemite"] .grow-box:is(:hover, :focus, :focus-visible)::before
 body[data-theme="yosemite"] .window > .title-bar {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
-}body[data-theme="yosemite"] .theme-lab-finder-window-titlebar > i.is-zoom {
-  left: auto;
-  right: 7px;
-}
-
-body[data-theme="yosemite"] :is(
-  .theme-lab-finder-window-titlebar,
-  .theme-lab-sheet-owner-titlebar
-) > i {
-  border-radius: 50%;
-}
-
-body[data-theme="yosemite"] .theme-lab-finder-window:not(.is-inactive) .theme-lab-finder-window-titlebar > i.is-close:hover {
-  background: var(--traffic-light-close-hover-bg);
-}
-
-body[data-theme="yosemite"] .theme-lab-finder-window:not(.is-inactive) .theme-lab-finder-window-titlebar > i.is-minimize:hover {
-  background: var(--theme-lab-era-titlebar-minimize-hover-bg);
-}
-
-body[data-theme="yosemite"] .theme-lab-finder-window:not(.is-inactive) .theme-lab-finder-window-titlebar > i.is-zoom:hover {
-  background: var(--traffic-light-resize-hover-bg);
 }
 
 /* The Finder toolbar field is a 10.10 NSSearchField, not the generic
@@ -2547,7 +2423,7 @@ body[data-theme="yosemite"] .theme-lab-choice-matrix :is(
   opacity: var(--control-disabled-opacity, 0.56);
 }
 
-body[data-theme="yosemite"] .theme-lab-menu {
+body[data-theme="yosemite"] .menu-popover {
   padding-block: 10px;
 }
 
@@ -2566,10 +2442,6 @@ body[data-theme="yosemite"] .theme-lab-progress span {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26);
 }
 
-body[data-theme="yosemite"] .theme-lab-scroll::-webkit-scrollbar-thumb {
-  background-clip: content-box;
-}
-
 @media (prefers-reduced-transparency: reduce) {
   html[data-theme="yosemite"],
   body[data-theme="yosemite"] {
@@ -2583,7 +2455,6 @@ body[data-theme="yosemite"] .theme-lab-scroll::-webkit-scrollbar-thumb {
     --titlebar-toolbar-backdrop-filter: none;
   }
 }
-
 
 /* Platinum/Yosemite boot/shutdown: same shared harness, era material only. */
 body[data-theme-family="classic"]:not([data-theme="classic"]) :is(.boot-screen, .shutdown-screen) { background: linear-gradient(180deg, #dde3ec, #c4cddb); }

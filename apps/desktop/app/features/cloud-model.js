@@ -353,6 +353,7 @@
 
   function toggleCloud() {
     if (!cloudConfig || !cloudConfig.provider || !cloudCredentialReady()) return;
+    if (cloudConfig.active) window.AISystem6ClioImages?.invalidateCredentials?.();
     cloudConfig.active = !cloudConfig.active;
     if (cloudConfig.active) {
       cloudConfig.baseUrl = PROVIDER_BASE_URLS[cloudConfig.provider] || DEEPSEEK_BASE_URL;
@@ -554,6 +555,7 @@
   cloudProviderEl.addEventListener("change", async function () {
     await ensureClioProviderResolver().catch(() => {});
     const provider = cloudProviderEl.value;
+    if (provider !== cloudConfig?.provider) window.AISystem6ClioImages?.invalidateCredentials?.();
     if (provider) window.AISystem6ClioProvider?.setPreference?.("byok");
     if (!provider) {
       const credentialId = cloudConfig?.credentialId || "";
@@ -615,6 +617,7 @@
   // API key change
   cloudApiKeyEl.addEventListener("input", async function () {
     if (!cloudConfig) cloudConfig = {};
+    window.AISystem6ClioImages?.invalidateCredentials?.();
     setCloudRuntimeApiKey(cloudApiKeyEl.value.trim());
     cloudConfig.credentialMode = cloudRuntimeApiKey
       ? "byok"
@@ -711,6 +714,7 @@
         return false;
       }
     }
+    window.AISystem6ClioImages?.invalidateCredentials?.();
     cloudConfig = {
       ...(cloudConfig || {}),
       provider: "deepseek",
@@ -809,6 +813,7 @@
 
   localAiButton?.addEventListener("click", async function () {
     await ensureClioProviderResolver().catch(() => {});
+    window.AISystem6ClioImages?.invalidateCredentials?.();
     window.AISystem6ClioProvider?.setPreference?.("local");
     if (typeof setControlTab === "function") setControlTab("local");
     document.getElementById("detect-local-models")?.focus();

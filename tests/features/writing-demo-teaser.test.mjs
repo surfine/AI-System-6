@@ -403,4 +403,22 @@ async function runTeaser(runtime, { stopWhen = null } = {}) {
   assertDurableEqual(test, "Case D (scene throws)", before, after);
 }
 
+// --- The closing beat: watching to the end is being introduced --------------
+test.assertIncludes(writingDemo, "completedRun = true;", "only a run that played all three scenes counts as completed");
+test.assertIncludes(writingDemo, "if (completedRun) await showTeaserClosingCard();", "the closing card follows desk restore, and an aborted run shows no card");
+test.assertMatches(
+  writingDemo,
+  /async function showTeaserClosingCard\(\)[\s\S]*?completeClioOnboarding\("toured"\)[\s\S]*?hideCancel: true,/,
+  "a completed tour completes the introduction and asks one question with two named answers"
+);
+test.assertMatches(
+  writingDemo,
+  /choice === "no"[\s\S]{0,80}handleAction\("open-quick-draft"\)/,
+  "the draft answer opens Quick Draft, the first-win door"
+);
+for (const key of ["teaser_closing_message", "teaser_closing_look_around", "teaser_closing_draft_one"]) {
+  test.assertIncludes(en, `${key}:`, `English copy exists for ${key}`);
+  test.assertIncludes(zh, `${key}:`, `Chinese copy exists for ${key}`);
+}
+
 test.finish();

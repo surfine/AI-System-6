@@ -139,7 +139,11 @@ function syncWorkspaceDesktopIcon() {
 }
 
 function hideWorkspaceDisallowedWindows() {
-  document.querySelectorAll(".window").forEach((win) => {
+  // Managed windows only. A `.window` with no data-window was never opened by
+  // the manager and belongs to whatever is showing it -- Theme Lab's specimens
+  // are real windows so the era paints them, and a profile sweep that hid them
+  // would empty the board. `""` is not an unknown app; it is not an app.
+  document.querySelectorAll(".window[data-window]").forEach((win) => {
     const name = win.dataset.window || "";
     if (isWorkspaceWindowAllowed(name)) return;
     win.classList.add("is-hidden");

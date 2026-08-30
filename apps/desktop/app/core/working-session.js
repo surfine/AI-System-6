@@ -5,12 +5,13 @@
 
 // Every Project Hard Disk owns its own desktop scene, stored under one scope
 // key: the desktop (no disk mounted) or one project. The single
-// "workingSession:v1" record is migrated into its v2 scope at boot.
+// v1 and per-project v2 records are migrated into their v3 scopes at boot.
 const workingSessionLegacyStorageKey = "workingSession:v1";
-const workingSessionKeyPrefix = "workingSession:v2:";
-const workingSessionDesktopKey = "workingSession:v2:desktop";
-const workingSessionProjectKeyPrefix = "workingSession:v2:project:";
-const workingSessionVersion = 2;
+const workingSessionV2KeyPrefix = "workingSession:v2:";
+const workingSessionKeyPrefix = "workingSession:v3:";
+const workingSessionDesktopKey = "workingSession:v3:desktop";
+const workingSessionProjectKeyPrefix = "workingSession:v3:project:";
+const workingSessionVersion = 3;
 // Above this many project scenes, the least recently saved one is dropped.
 const workingSessionScopeLimit = 24;
 const workingSessionAdapters = new Map();
@@ -37,6 +38,23 @@ function cloneWorkingSessionValue(value, fallback) {
   } catch {
     return fallback;
   }
+}
+
+function migrateLegacyWorkingSessionValue(value) {
+  const copy = cloneWorkingSessionValue(value, {});
+  const conversation = copy?.adapters?.assistant?.conversation;
+  if (Array.isArray(conversation)) {
+    copy.adapters.assistant.conversation = conversation.map((message) => {
+      const migrated = { ...message };
+      // v1/v2 predate recoverable inline images. Treat unexpected image
+      // fields as unsupported legacy data instead of blessing provider-shaped
+      // material when the envelope moves to v3.
+      delete migrated.imageInputIds;
+      delete migrated.imageInputs;
+      return migrated;
+    });
+  }
+  return copy;
 }
 
 function workingSessionNumber(value, fallback = 0) {
@@ -279,31 +297,43 @@ function migratedWorkingSessionIsReadable(written, legacy) {
   }
 }
 
-// One-way move of "workingSession:v1" into its v2 scope, in a single
-// transaction so the first boot after the upgrade does not spend its restore
-// budget on round trips. Idempotent: a second run finds no legacy record and
-// does nothing. Rollback-safe: the v1 record is deleted only after the v2
-// record reads back with the same adapter payload, and any failure aborts the
-// transaction, so the old scene is still there for the next boot.
+// One-way move of v1 and v2 scenes into v3 scopes. v3 is the first scene
+// format allowed to carry bounded ClioTalk inline image copies; the adapter
+// payload itself is retained byte-for-byte while the envelope version moves.
 async function migrateWorkingSessionStorage() {
   if (!workingSessionMigrationPromise) {
     workingSessionMigrationPromise = workingSessionStoreTask("readwrite", async (store) => {
-      const legacy = await idbRequest(store.get(workingSessionLegacyStorageKey));
-      if (!legacy || typeof legacy !== "object") return { migrated: false, reason: "absent" };
-      const key = workingSessionScopeKey(legacy.projectId);
-      const existing = await idbRequest(store.get(key));
-      // A v2 scene already owning this scope supersedes the legacy record.
-      let reason = "already-migrated";
-      if (!isValidWorkingSessionSnapshot(existing)) {
-        reason = "moved";
-        await idbRequest(store.put({ ...legacy, version: workingSessionVersion, migratedFrom: 1 }, key));
-        const written = await idbRequest(store.get(key));
-        if (!migratedWorkingSessionIsReadable(written, legacy)) {
-          return { migrated: false, reason: "unverified", key };
-        }
+      const keys = await idbRequest(store.getAllKeys());
+      const legacyEntries = [];
+      for (const key of Array.isArray(keys) ? keys : []) {
+        if (typeof key !== "string" || !key.startsWith(workingSessionV2KeyPrefix)) continue;
+        const value = await idbRequest(store.get(key));
+        if (value && typeof value === "object") legacyEntries.push({ key, value, version: 2 });
       }
-      await idbRequest(store.delete(workingSessionLegacyStorageKey));
-      return { migrated: true, key, reason };
+      const v1 = await idbRequest(store.get(workingSessionLegacyStorageKey));
+      if (v1 && typeof v1 === "object") legacyEntries.push({ key: workingSessionLegacyStorageKey, value: v1, version: 1 });
+      if (!legacyEntries.length) return { migrated: false, reason: "absent" };
+
+      let moved = 0;
+      for (const legacy of legacyEntries) {
+        const migratedValue = migrateLegacyWorkingSessionValue(legacy.value);
+        const key = workingSessionScopeKey(migratedValue.projectId);
+        const existing = await idbRequest(store.get(key));
+        if (!isValidWorkingSessionSnapshot(existing)) {
+          await idbRequest(store.put({
+            ...migratedValue,
+            version: workingSessionVersion,
+            migratedFrom: legacy.version,
+          }, key));
+          const written = await idbRequest(store.get(key));
+          if (!migratedWorkingSessionIsReadable(written, migratedValue)) {
+            return { migrated: false, reason: "unverified", key };
+          }
+          moved += 1;
+        }
+        await idbRequest(store.delete(legacy.key));
+      }
+      return { migrated: true, moved, reason: moved ? "moved" : "already-migrated" };
     }).then((result) => (result.ok ? result.value : { migrated: false, reason: "write-failed" }));
   }
   return workingSessionMigrationPromise;
@@ -408,7 +438,7 @@ function installWorkingSessionAutosave() {
 }
 
 function captureWindowWorkingSession() {
-  const windows = Array.from(document.querySelectorAll(".window"))
+  const windows = Array.from(document.querySelectorAll(".window[data-window]"))
     .filter((win) => {
       const name = win.dataset.window || "";
       return name && !workingSessionExcludedWindowNames.has(name);
@@ -706,6 +736,7 @@ function restoreAssistantWorkingSession(state = {}) {
       content: String(item.content || ""),
     })));
   }
+  if (typeof restoreClioImageInputsFromConversation === "function") restoreClioImageInputsFromConversation();
   compressedConversationMemory = {
     text: String(state.compressedConversationMemory?.text || ""),
     sourceMessages: Number(state.compressedConversationMemory?.sourceMessages || 0),

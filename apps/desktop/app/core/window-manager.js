@@ -81,7 +81,7 @@ let quickDraftAssistantHome = null;
 let closingQuickDraftAssistantPair = false;
 
 function visibleLayeredWindows() {
-  return Array.from(document.querySelectorAll(".window:not(.is-hidden):not(.is-app-hidden)"));
+  return Array.from(document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden)"));
 }
 
 function compactWindowLayerStack() {
@@ -238,7 +238,10 @@ function restoreMobileWorkAreaFrame(win) {
 function syncMobileWorkAreaFrames() {
   if (writerMode) return;
   const narrow = isNarrowViewport();
-  document.querySelectorAll(".window").forEach((win) => {
+  // Managed windows only: a `.window` with no data-window was never opened by
+  // the manager. Theme Lab shows real windows as specimens so the era paints
+  // them, and a sweep that hides or re-frames one empties the board.
+  document.querySelectorAll(".window[data-window]").forEach((win) => {
     if (!isMobileWorkAreaCssOwnedWindow(win)) return;
     if (win.classList.contains("is-hidden") || win.classList.contains("is-app-hidden")) return;
     if (narrow) {
@@ -310,7 +313,7 @@ function clampWindowToViewport(win, margin = 16) {
 }
 
 function reconcileVisibleSystemWindowsToViewport() {
-  document.querySelectorAll(".window:not(.is-hidden)").forEach((win) => clampWindowToViewport(win));
+  document.querySelectorAll(".window[data-window]:not(.is-hidden)").forEach((win) => clampWindowToViewport(win));
 }
 
 function saveKeyboardWindowFrame(win) {
@@ -483,7 +486,7 @@ function placeNewWindowAvoidingVisibleWindows(win) {
   const workHeight = maxTop - minTop + height;
   if (width + gap >= workWidth || height + gap >= workHeight) return false;
 
-  const peers = Array.from(document.querySelectorAll(".window:not(.is-hidden):not(.is-app-hidden):not(.is-collapsed)"))
+  const peers = Array.from(document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden):not(.is-collapsed)"))
     .filter((peer) => peer !== win)
     .map((peer) => ({ peer, rect: peer.getBoundingClientRect() }))
     .filter(({ rect: peerRect }) => peerRect.width > 0 && peerRect.height > 0)
@@ -580,7 +583,7 @@ async function prepareFinderModeForApp(appId) {
   if(appId==="accessories")return true;
   const allowSideAskPair = sideAskEnabled && isSideAskPairApp(appId);
   if (sideAskEnabled && !isSideAskPairApp(appId)) clearSideAskMode();
-  const windowsToHide = Array.from(document.querySelectorAll(".window:not(.is-hidden)"))
+  const windowsToHide = Array.from(document.querySelectorAll(".window[data-window]:not(.is-hidden)"))
     .filter((win) => {
       // On a phone the foregrounded app is the full-screen backdrop, so a modal,
       // system window, or desk accessory floats over it instead of replacing it.
@@ -936,7 +939,13 @@ function focusWindow(win, reveal=false) {
     resetDesktopScrollOffset();
   }
 
-  document.querySelectorAll(".window").forEach((item) => {
+  // Managed windows only. `data-window` is what makes a `.window` the window
+  // manager's: every window in index.html carries one and createWindow assigns
+  // one, so this selects exactly the same set as `.window` did. What it now
+  // leaves alone is a `.window` nobody opened -- Theme Lab's chrome specimen,
+  // which is a real window element precisely so the era paints it, and whose
+  // active and inactive states are the specimen rather than the focus order.
+  document.querySelectorAll(".window[data-window]").forEach((item) => {
     item.classList.remove("is-active");
   });
   win.classList.add("is-active");
@@ -1241,9 +1250,9 @@ function syncFinderVolumeSemantics(winOrName) {
 
 function replaceVisibleFinderLocation(targetWindowName) {
   if (!mobileFinderPageWindowNames.has(targetWindowName)) return null;
-  const source = Array.from(document.querySelectorAll(".window.is-active:not(.is-hidden):not(.is-app-hidden)"))
+  const source = Array.from(document.querySelectorAll(".window[data-window].is-active:not(.is-hidden):not(.is-app-hidden)"))
     .find((win) => mobileFinderPageWindowNames.has(win.dataset.window) && win.dataset.window !== targetWindowName)
-    || Array.from(document.querySelectorAll(".window:not(.is-hidden):not(.is-app-hidden)"))
+    || Array.from(document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden)"))
       .find((win) => mobileFinderPageWindowNames.has(win.dataset.window) && win.dataset.window !== targetWindowName);
   const frame = source && !isPortraitDocumentFlow()
     ? windowFrame(source)
@@ -1564,7 +1573,10 @@ function mobileWindowPresentation(win) {
 function syncMobileWindowPresentationClasses() {
   const portrait = isPortraitDocumentFlow();
   const narrow = isNarrowViewport();
-  document.querySelectorAll(".window").forEach((win) => {
+  // Managed windows only: a `.window` with no data-window was never opened by
+  // the manager. Theme Lab shows real windows as specimens so the era paints
+  // them, and a sweep that hides or re-frames one empties the board.
+  document.querySelectorAll(".window[data-window]").forEach((win) => {
     mobilePresentationClassNames.forEach((className) => win.classList.remove(className));
     win.classList.remove("is-mobile-work-area");
     // The mobile work-area CSS owns one shared frame for app pages and Finder
@@ -1600,7 +1612,7 @@ function mobileFullScreenTarget() {
     && window.matchMedia("(orientation:landscape)").matches;
   if (!isPortraitDocumentFlow() && !immersiveLandscape) return null;
   const wins = Array.from(
-    document.querySelectorAll(".window:not(.is-hidden):not(.is-app-hidden):not(.is-collapsed)")
+    document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden):not(.is-collapsed)")
   ).filter((win) => (
     mobileWindowCanFillScreen(win)
     && (!immersiveLandscape || isMobileImmersiveWindow(win))
@@ -1659,7 +1671,7 @@ function repairPortraitDeskAccessoryGeometry() {
 // running app to full-screen instead of revealing the desktop.
 function mobileHomeToDesktop() {
   const appIds = new Set();
-  document.querySelectorAll(".window:not(.is-hidden)").forEach((win) => {
+  document.querySelectorAll(".window[data-window]:not(.is-hidden)").forEach((win) => {
     const appId = getWindowAppId(win);
     if (mobileFullScreenAppIds.has(appId)) appIds.add(appId);
   });
@@ -2041,7 +2053,7 @@ function placeFinderCascadeWindow(win, options = {}) {
   const verticalStep = 26;
   const rowStep = 92;
   const columns = Math.max(1, Math.floor((maxLeft - baseLeft) / horizontalStep) + 1);
-  const openFinderWindows = Array.from(document.querySelectorAll(".window:not(.is-hidden):not(.is-app-hidden)"))
+  const openFinderWindows = Array.from(document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden)"))
     .filter((item) => item !== win && isFinderCascadeWindow(item));
   const index = openFinderWindows.length;
   const column = index % columns;
@@ -2078,6 +2090,9 @@ function getActionAvailability() {
   const quickDraftHasModel = Boolean(quickDraftApi?.modelAvailable?.());
   const quickDraftCanPreview = Boolean(quickDraftApi?.canPreviewAdjustments?.());
   const quickDraftCanDevelop = Boolean(quickDraftApi?.canDevelop?.());
+  const lightroomApi = winName === "lightroom" ? window.AISystem6QuickDraft : null;
+  const lightroomHasBody = Boolean(lightroomApi?.hasBody?.());
+  const lightroomView = String(lightroomApi?.displayMode?.() || "");
   const teachTextWin = getWindow("teachText");
   const teachTextVisible = teachTextWin && !teachTextWin.classList.contains("is-hidden");
   const hasTeachTextBody = teachTextVisible && !!teachTextBodyInput.value.trim();
@@ -2250,6 +2265,7 @@ function getActionAvailability() {
     "find-in-cliotalk": isAssistant && hasConversation,
     "find-next-in-cliotalk": isAssistant && hasConversation && !!clioTalkFindQuery,
     "open-clio-attachment-picker": isAssistant && isProjectMounted,
+    "open-clio-image-picker": isAssistant,
     "paste-clio-interview": isAssistant,
     "attach-selected-to-cliotalk": winName === "documents" && isClioTalkAttachableProjectFile(getSelectedDocumentItem()),
     "install-mounted-skill": hasMountedSkillPackage && isProjectMounted,
@@ -2505,6 +2521,15 @@ function getActionAvailability() {
     // always allowed. Whether a document can be DEVELOPED is a separate gate,
     // "develop-in-lightroom", which greys until a draft exists.
     "open-lightroom": true,
+    // Whole-menu conditions, not rows. Each one names the window whose work
+    // the menu belongs to; a condition nobody produces reads as falsy and
+    // hides its menu forever, which is how both of these menus were lost.
+    "quick-draft-menu": winName === "quickDraft",
+    // The stack menu stands down while the paper is being listened to, so the
+    // darkroom's two contextual menus never both apply and the bar stays at
+    // five.
+    "lightroom-document": winName === "lightroom" && lightroomHasBody && lightroomView !== "listen",
+    "lightroom-listen": winName === "lightroom" && lightroomView === "listen",
     "open-theme-lab": true
   };
   // Explicit runtime commands supply their own availability. Reader has moved
@@ -2553,7 +2578,10 @@ function updateMenuState() {
   const state = getActionAvailability();
   if (typeof syncProjectCdBurnActionVisibility === "function") syncProjectCdBurnActionVisibility();
   const activeWin = document.querySelector(".window.is-active:not(.is-hidden)");
-  const activeQuickDraftApi = activeWin?.dataset.window === "quickDraft"
+  // 文字亮室 is a second front window onto the same drafting API. Asking only
+  // for quickDraft left every view checkmark and every panel label in the
+  // darkroom reading a null API, so no view was ever checked there.
+  const activeQuickDraftApi = ["quickDraft", "lightroom"].includes(activeWin?.dataset.window || "")
     ? window.AISystem6QuickDraft
     : null;
   const quickDraftDisplayMode = activeQuickDraftApi?.displayMode?.() || "body";
@@ -2670,6 +2698,11 @@ function updateMenuState() {
       btn.classList.toggle("is-checked", Boolean(mode) && btn.dataset.repeatMode === mode);
     }
   });
+  // 文字亮室 keeps its own checkmarks and its own greys: the layer rows, the
+  // zoom rows and the listen transport are parameterised actions, so they are
+  // not in the availability map above. Run before the submenu pass below, or a
+  // submenu whose rows are all grey would still read as live.
+  window.AISystem6QuickDraft?.syncMenuState?.();
   document.querySelectorAll(".menu-submenu").forEach((sub) => {
     const children = [...sub.querySelectorAll(".menu-submenu-popover [data-action]")];
     const enabled = children.some((button) => !button.classList.contains("is-disabled"));
@@ -3371,12 +3404,12 @@ function placeUtilityWindow(name, win) {
 }
 
 function visibleDeskAccessories() {
-  return Array.from(document.querySelectorAll(".window:not(.is-hidden):not(.is-app-hidden)"))
+  return Array.from(document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden)"))
     .filter(isDeskAccessoryPlacementWindow);
 }
 
 function visiblePortraitDeskAccessories() {
-  return Array.from(document.querySelectorAll(".window:not(.is-hidden):not(.is-app-hidden):not(.is-collapsed)"))
+  return Array.from(document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden):not(.is-collapsed)"))
     .filter((win) => getWindowAppId(win) === "accessories");
 }
 
@@ -3492,7 +3525,7 @@ function arrangePortraitDeskAccessories(frontWin = null) {
 function getTileCandidateWindows() {
   if (writerMode) return [];
   if (window.matchMedia("(max-width: 860px)").matches) return [];
-  return Array.from(document.querySelectorAll(".window:not(.is-hidden):not(.is-app-hidden)"))
+  return Array.from(document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden)"))
     .filter((win) => {
       if (["about", "saveChat"].includes(win.dataset.window)) return false;
       if (isDeskAccessoryPlacementWindow(win)) return false;
@@ -4108,7 +4141,10 @@ function arrangeScrapbookAssistantSplit() {
   return arrangeWindowAssistantSplit("scrapbook");
 }
 function quietStartup() {
-  document.querySelectorAll(".window").forEach((win) => {
+  // Managed windows only: a `.window` with no data-window was never opened by
+  // the manager. Theme Lab shows real windows as specimens so the era paints
+  // them, and a sweep that hides or re-frames one empties the board.
+  document.querySelectorAll(".window[data-window]").forEach((win) => {
     if (win.dataset.window !== "assistant") {
       win.classList.add("is-hidden");
     }
@@ -4150,7 +4186,10 @@ async function shutDownSystem() {
   }
   closeMenus();
   document.body.classList.add("is-shutting-down");
-  document.querySelectorAll(".window").forEach((win) => win.classList.add("is-hidden"));
+  // Managed windows only: a `.window` with no data-window was never opened by
+  // the manager. Theme Lab shows real windows as specimens so the era paints
+  // them, and a sweep that hides or re-frames one empties the board.
+  document.querySelectorAll(".window[data-window]").forEach((win) => win.classList.add("is-hidden"));
   document.querySelector("#shutdown-screen")?.classList.remove("is-hidden");
   modalScrim.classList.add("is-hidden");
   setStatus(t("shutdown_message"));
@@ -4237,6 +4276,10 @@ async function closeWindow(name, force = false) {
 
   if (name === "themeLab") window.AISystem6ThemeLab?.cleanup?.();
   win.classList.add("is-hidden");
+  // 文字亮室 shows a view of the draft, so the window going away has to put the
+  // view back. Closing it with ⌘W used to leave the display mode on "grain"
+  // with no window to show one.
+  if (name === "lightroom") window.AISystem6QuickDraft?.noteLightroomClosed?.();
   if (name === "memoryCards") {
     pauseMemoryCardsGame();
   }
@@ -4327,7 +4370,7 @@ async function closeWindow(name, force = false) {
     activeAppId = getWindowAppId(restoredSource);
   } else {
     const next = document.querySelector(".window.is-active:not(.is-hidden):not(.is-app-hidden)")
-      || Array.from(document.querySelectorAll(".window:not(.is-hidden):not(.is-app-hidden)"))
+      || Array.from(document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden)"))
         .sort((a, b) => Number(b.style.zIndex || 0) - Number(a.style.zIndex || 0))[0];
     if (next) {
       focusWindow(next);
@@ -4542,7 +4585,7 @@ function avoidWritingSpineOverlap(win, { gap = 18 } = {}) {
 
 function reflowWindowsAroundWritingSpine() {
   let changed = false;
-  document.querySelectorAll(".window:not(.is-hidden):not(.is-app-hidden)").forEach((win) => {
+  document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden)").forEach((win) => {
     changed = avoidWritingSpineOverlap(win) || changed;
   });
   if (changed) scheduleWorkingSessionSave?.();

@@ -1376,6 +1376,12 @@
   display: none;
 }
 
+/* A command popover is a menu: it opens from a control, it holds commands, and
+   it closes on choice. It used to draw its own frame in System 6 ink — a black
+   hairline and a hard 3px offset shadow — so it stayed a System 6 menu in every
+   later era while the real menus followed the era. Reading the menu panel's own
+   roles costs nothing and means one answer per era, not two. (Classic's own
+   shadow moves from an invented 3px to the 1px its menus already cast.) */
 .teachtext-command-popover {
   position: absolute;
   z-index: var(--z-local-popover);
@@ -1383,9 +1389,10 @@
   min-width: 210px;
   gap: 3px;
   padding: 5px;
-  border: var(--system-control-line) solid var(--ink);
-  background: var(--paper);
-  box-shadow: 3px 3px 0 var(--ink);
+  border: var(--menu-panel-border);
+  border-radius: var(--menu-panel-radius);
+  background: var(--menu-panel-bg);
+  box-shadow: var(--menu-panel-shadow);
 }
 
 .teachtext-command-popover {
@@ -2249,7 +2256,7 @@ body:not(.use-liquid-glass) .scrap-list button.is-multi-selected:not(.is-selecte
 }
 
 .scrapbook-page-tick:focus-visible {
-  outline: 1px dotted var(--ink);
+  outline: var(--system-focus-outline);
   outline-offset: -1px;
 }
 

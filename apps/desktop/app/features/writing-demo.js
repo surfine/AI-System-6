@@ -2220,6 +2220,7 @@ async function playTeaserDemo() {
   writingDemoSetTeaserButtons(true);
   setStatus(t("teaser_demo_running"));
   let terminalStatus = "";
+  let completedRun = false;
   try {
     await writingDemoEnsureCorpus();
     teaserDemoEnsureDemoProject();
@@ -2228,6 +2229,7 @@ async function playTeaserDemo() {
     await teaserDemoSceneTransform();
     await teaserDemoSceneResult();
     terminalStatus = t("teaser_demo_done");
+    completedRun = true;
     setStatus(terminalStatus);
   } catch (error) {
     if (error?.name === "AbortError") {
@@ -2246,6 +2248,24 @@ async function playTeaserDemo() {
     await teaserDemoRestore(snapshot);
     if (terminalStatus) setStatus(terminalStatus);
   }
+  // The closing beat runs after the desk is restored and the demo run is
+  // cleared, so the card is a real question and not a scene the demo's own
+  // modal auto-accept could swallow. An aborted run shows no card and does
+  // not complete the introduction: the visitor has not met the product.
+  if (completedRun) await showTeaserClosingCard();
+}
+
+async function showTeaserClosingCard() {
+  // Watching the tour to the end counts as being introduced, whichever
+  // button follows. Replay stays in the Apple menu.
+  if (typeof completeClioOnboarding === "function") await completeClioOnboarding("toured");
+  if (typeof showSystemModal !== "function") return;
+  const choice = await showSystemModal(t("teaser_closing_message"), "confirm", {
+    confirmKey: "teaser_closing_look_around",
+    altKey: "teaser_closing_draft_one",
+    hideCancel: true,
+  });
+  if (choice === "no" && typeof handleAction === "function") handleAction("open-quick-draft");
 }
 
 window.AISystem6WritingDemo = {

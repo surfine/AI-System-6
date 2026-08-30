@@ -43,6 +43,10 @@ export const publicScriptNames = new Set([
   // The HD atlas pipeline ships its tooling file, so the entry that runs it
   // belongs in the public surface too. Its contract reads package.json.
   "build:micropolis-hd",
+  // The era icon extension builders ship their tooling and sources in the
+  // snapshot, so the entries that run them belong in the public surface too.
+  "build:lightroom-era-icons",
+  "build:image-prompt-studio-era-icons",
   "site:sync",
   "site:check",
   "site:capture-frames",

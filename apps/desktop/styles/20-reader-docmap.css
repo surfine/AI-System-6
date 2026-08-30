@@ -174,7 +174,7 @@ body.is-resizing-tdi .tdi-grabber::after {
 }
 
 .tdi-grabber:focus-visible {
-  outline: 1px dotted var(--ink);
+  outline: var(--system-focus-outline);
   outline-offset: -1px;
 }
 
@@ -910,16 +910,23 @@ body.is-resizing-tdi {
   max-height: calc(100vh - 56px);
 }
 
+/* This button floats over every window, so it is the one control a reader sees
+   in front of every era, and it used to be the only one still drawn in System 6
+   ink: square corners, an ink hairline and a hard offset shadow, over an Aqua
+   desk. It is a push button; it reads the push button's roles. Classic is
+   unchanged except that it now casts the same shadow as every other Classic
+   button instead of its own. */
 .dictation-field-button {
   position: fixed;
   z-index: var(--z-floating-field-control);
   min-width: 48px;
   height: 28px;
   padding: 2px 10px;
-  border: var(--system-control-line) solid var(--ink);
-  background: var(--paper);
-  color: var(--ink);
-  box-shadow: 2px 2px 0 var(--ink);
+  border: var(--system-control-line) solid var(--btn-border-color);
+  border-radius: var(--btn-radius);
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  box-shadow: var(--btn-shadow);
   font-family: var(--ui-font);
   font-size: 13px;
   font-weight: bold;
@@ -930,8 +937,8 @@ body.is-resizing-tdi {
 
 .dictation-field-button:hover,
 .dictation-field-button:focus {
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--btn-hover-bg);
+  color: var(--btn-hover-fg);
 }
 
 .dictation-field-button.is-hidden {

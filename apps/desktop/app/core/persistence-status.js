@@ -333,6 +333,144 @@ function openLiveProgressChannel() {
   return liveProgressChannel;
 }
 
+// The record change feed.
+//
+// Every window keeps its own copy of the desk AND its own fingerprint of what
+// it believes is on disk. It writes the records whose fingerprint moved, and
+// deletes the records that are in its fingerprint but no longer in its array.
+// That second rule is the dangerous one: a record another window created is in
+// neither, so it is safe only for as long as exactly one window may write.
+// Take that guarantee away and a window deletes work it never saw.
+//
+// So a committed write announces which records moved, and every other window
+// re-reads exactly those records and merges them into its arrays AND its
+// fingerprints together. Announcing ids rather than payloads keeps image
+// attachments and long manuscripts off the channel, and keeps the store as the
+// single source of what a record now says.
+function broadcastDeskRecordChanges(plans, settingsChanged = false) {
+  const changes = [];
+  const deletes = [];
+  plans.forEach((plan) => {
+    plan.puts.forEach(({ id }) => changes.push({ key: plan.key, id }));
+    plan.deletes.forEach(({ id }) => deletes.push({ key: plan.key, id }));
+  });
+  if (!changes.length && !deletes.length && !settingsChanged) return;
+  try {
+    openLiveProgressChannel()?.postMessage({
+      type: "desk-records",
+      from: liveProgressInstanceId(),
+      changes,
+      deletes,
+      settingsChanged,
+    });
+  } catch {}
+}
+
+async function applyDeskRecordChanges(message) {
+  const touched = new Map();
+  const claim = (key) => {
+    if (!touched.has(key)) touched.set(key, { reads: [], deletes: new Set() });
+    return touched.get(key);
+  };
+  (message.changes || []).forEach(({ key, id }) => claim(key).reads.push(id));
+  (message.deletes || []).forEach(({ key, id }) => claim(key).deletes.add(String(id)));
+  const definitions = deskCollectionDefinitions().filter((definition) => touched.has(definition.key));
+  const settingsChanged = message.settingsChanged === true;
+  if (!definitions.length && !settingsChanged) return;
+
+  let db;
+  try {
+    db = await openAppDb();
+    const storeNames = definitions.map((definition) => definition.storeName);
+    if (settingsChanged) storeNames.push(keyvalStoreName);
+    const transaction = db.transaction(storeNames, "readonly");
+    const completion = window.AISystem6StorageTransactions.transactionDone(transaction);
+    const reads = [];
+    definitions.forEach((definition) => {
+      const store = transaction.objectStore(definition.storeName);
+      touched.get(definition.key).reads.forEach((id) => {
+        reads.push(idbRequest(store.get(id)).then((record) => ({ key: definition.key, id, record })));
+      });
+    });
+    const found = await Promise.all(reads);
+    const incomingSettings = settingsChanged
+      ? await idbRequest(transaction.objectStore(keyvalStoreName).get("settings"))
+      : null;
+    await completion;
+
+    if (settingsChanged) {
+      if (incomingSettings) {
+        applySettings(incomingSettings);
+        storageSnapshotCache.set("settings", JSON.stringify(incomingSettings));
+      } else {
+        storageSnapshotCache.delete("settings");
+      }
+    }
+
+    // The fingerprint cache is not "what is on disk". It is the version this
+    // window's copy DESCENDS FROM - the base its next write will be checked
+    // against. Keeping that distinction is the whole reason a stale window
+    // cannot overwrite a newer record: a record this window is editing keeps
+    // its old base even after the feed reports that disk moved, so the save
+    // that follows is refused instead of silently winning.
+    const bases = new Map(definitions.map((definition) => [
+      definition.key,
+      new Map(storageRecordFingerprintCache.get(definition.key) || []),
+    ]));
+
+    definitions.forEach((definition) => {
+      const state = touched.get(definition.key);
+      if (!state.deletes.size) return;
+      for (let index = definition.items.length - 1; index >= 0; index -= 1) {
+        const id = String(deskRecordIdentity(definition.key, definition.items[index], index));
+        if (state.deletes.has(id)) definition.items.splice(index, 1);
+      }
+      state.deletes.forEach((id) => bases.get(definition.key).delete(id));
+    });
+
+    found.forEach(({ key, id, record }) => {
+      const definition = definitions.find((entry) => entry.key === key);
+      if (!definition) return;
+      const cacheKey = String(id);
+      if (!record) {
+        bases.get(key).delete(cacheKey);
+        return;
+      }
+      const index = definition.items.findIndex(
+        (item, position) => String(deskRecordIdentity(key, item, position)) === String(id)
+      );
+      if (index < 0) {
+        definition.items.push(record);
+        bases.get(key).set(cacheKey, { id, fingerprint: deskRecordFingerprint(record) });
+        return;
+      }
+      // An edit this window has not saved yet outranks the feed. Keeping it is
+      // what makes the refusal on the next save the user's decision rather
+      // than a surprise: their own text is still on screen to compare. The
+      // base is deliberately NOT advanced here - that is what turns the next
+      // save into a refusal rather than an overwrite.
+      const local = definition.items[index];
+      const believed = bases.get(key).get(cacheKey)?.fingerprint;
+      if (believed !== undefined && deskRecordFingerprint(local) !== believed) return;
+      // Merge in place. Replacing the array slot would strand every reference
+      // held elsewhere - getActiveProject() hands out one of these objects.
+      Object.keys(local).forEach((field) => {
+        if (!Object.prototype.hasOwnProperty.call(record, field)) delete local[field];
+      });
+      Object.assign(local, record);
+      bases.get(key).set(cacheKey, { id, fingerprint: deskRecordFingerprint(record) });
+    });
+
+    bases.forEach((map, key) => storageRecordFingerprintCache.set(key, map));
+    if (typeof ensureActiveProject === "function") ensureActiveProject();
+    scheduleWorkspaceRender({ projectLabels: true, projectReferences: true, menuState: true });
+  } catch (error) {
+    console.warn("Could not apply the record changes another window announced.", error);
+  } finally {
+    db?.close();
+  }
+}
+
 function broadcastWorkingText(project) {
   if (!project?.id) return;
   try {
@@ -366,12 +504,16 @@ function applyMirroredWorkingText(message) {
 
   // Repaint. The route's own sync helpers refuse to touch a FOCUSED editor,
   // which is the right guard for the window holding the pen and the wrong one
-  // here: a mirror window keeps focus from the last time it was clicked, and
-  // would then sit stale forever - the exact thing the mirror exists to fix.
-  // A window without the lease cannot be the one being typed into, so it
-  // repaints regardless of focus, keeping its scroll position so the reader's
-  // place on the page does not jump on every keystroke elsewhere.
-  const isWriter = window.AISystem6WriteLease?.canMutate?.() === true;
+  // for a pure reader: a mirror window keeps focus from the last time it was
+  // clicked, and would then sit stale forever - the exact thing the mirror
+  // exists to fix.
+  //
+  // "Pure reader" used to be the same thing as "does not hold the lease". It
+  // is not any more: every window can be typed in, so a window with typing it
+  // has not committed yet is a writer whatever the lease says, and repainting
+  // over it would throw away keystrokes. Such a window takes the careful path.
+  const isWriter = window.AISystem6WriteLease?.canMutate?.() === true
+    || liveProgressTimer !== 0;
   if (isWriter) {
     if (questionSheetBodyInput && document.activeElement !== questionSheetBodyInput) {
       setMirroredEditorValue(questionSheetBodyInput, message.questionSheet);
@@ -402,8 +544,24 @@ function setMirroredEditorValue(element, text) {
 
 function handleLiveProgressMessage(event) {
   const message = event?.data;
-  if (!message || message.type !== "working-text") return;
-  if (!message.from || message.from === liveProgressInstanceId()) return;
+  if (!message || !message.from || message.from === liveProgressInstanceId()) return;
+  if (message.type === "desk-write-request") {
+    handleProxiedDeskWriteRequest(message).catch((error) => {
+      console.warn("A write from another window could not be completed.", error);
+    });
+    return;
+  }
+  if (message.type === "desk-write-reply") {
+    handleProxiedDeskWriteReply(message);
+    return;
+  }
+  if (message.type === "desk-records") {
+    applyDeskRecordChanges(message).catch((error) => {
+      console.warn("Record changes from another window could not be applied.", error);
+    });
+    return;
+  }
+  if (message.type !== "working-text") return;
   // The guard stops the repaint's own input events from bouncing straight back
   // out as a new broadcast.
   applyingMirroredText = true;
@@ -419,7 +577,6 @@ function handleLiveProgressMessage(event) {
 function commitWorkingProgress() {
   liveProgressTimer = 0;
   liveProgressDeadline = 0;
-  if (window.AISystem6WriteLease?.canMutate?.() !== true) return;
   if (typeof savePipelineData !== "function") return;
   savePipelineData();
   // Through the same announcement as every other persist, so one dedupe covers
@@ -431,7 +588,6 @@ function commitWorkingProgress() {
 // continuous run - so a writer who does not stop still cannot outrun the disk.
 function noteWorkingProgress() {
   if (applyingMirroredText) return;
-  if (window.AISystem6WriteLease?.canMutate?.() !== true) return;
   const now = Date.now();
   if (!liveProgressDeadline) liveProgressDeadline = now + liveProgressMaxMs;
   clearTimeout(liveProgressTimer);
@@ -461,7 +617,6 @@ window.addEventListener("pagehide", () => flushWorkingProgress());
 let lastAnnouncedWorkingText = "";
 
 function announceWorkingText() {
-  if (window.AISystem6WriteLease?.canMutate?.() !== true) return;
   const project = typeof getActiveProject === "function" ? getActiveProject() : null;
   if (!project?.id) return;
 
@@ -474,7 +629,10 @@ function announceWorkingText() {
 
 function saveDeskState() {
   if (!deskPersistenceWritable) return Promise.resolve(false);
-  if (window.AISystem6WriteLease?.isReadOnly?.()) return Promise.resolve(false);
+  // A window without the lease is no longer a window that cannot save. It
+  // hands the write to the window that holds the connection, so the only
+  // reason to refuse here is that the desk was never successfully loaded.
+
   if (typeof scheduleWorkingSessionSave === "function") scheduleWorkingSessionSave();
   saveDeskStatePromise = saveDeskStatePromise
     .catch(() => {})
@@ -1305,6 +1463,7 @@ async function detectLocalModelConnection() {
 }
 
 async function resetAiConnection() {
+  window.AISystem6ClioImages?.invalidateCredentials?.("clio_image_connection_reset");
   window.AISystem6ClioProvider?.setPreference?.("auto", { persist: false });
   localLmStudioConnectionEnabled = false;
   const provider = document.getElementById("local-provider");
@@ -1513,6 +1672,20 @@ async function setupLocalLmStudioModel() {
   }
 }
 
+// One list of the durable collections. Save, restore and the cross-window
+// change feed all walk the same set; three copies of it is how one of them
+// quietly stops covering a store.
+function deskCollectionDefinitions() {
+  return [
+    { key: "projects", storeName: projectsStoreName, items: projects },
+    { key: "scraps", storeName: scrapsStoreName, items: scraps },
+    { key: "trash", storeName: trashStoreName, items: trashItems },
+    { key: "chatFolders", storeName: chatFoldersStoreName, items: chatFolders },
+    { key: "chatFiles", storeName: chatFilesStoreName, items: chatFiles },
+    { key: "imageAttachments", storeName: imageAttachmentsStoreName, items: imageAttachments },
+  ];
+}
+
 function deskRecordIdentity(kind, item, index) {
   if (kind === "trash") {
     if (item._storageId === undefined || item._storageId === null || item._storageId === "") {
@@ -1523,6 +1696,109 @@ function deskRecordIdentity(kind, item, index) {
   return item.id ?? `${kind}-legacy-${index}`;
 }
 
+// One definition of what a record's content IS, so the save path, the change
+// feed and the conflict test never disagree about whether two copies match.
+function deskRecordFingerprint(item) {
+  return JSON.stringify(item);
+}
+
+// Optimistic concurrency, one record at a time.
+//
+// A window may overwrite a stored record only when the stored copy still
+// matches the copy this window believes it is editing - the BASE it last saw
+// on disk. If the stored copy has moved, another window wrote that record
+// first, and this write is refused rather than laid over the top.
+//
+// The base is the fingerprint cache the window already keeps, so this needs no
+// revision field, no schema change and no migration. That also removes a whole
+// failure class rather than patching it: a revision NUMBER has to be carried
+// back into memory after every commit, and any path that drops the carry locks
+// the window out of its own records forever. Asking what the record SAYS
+// cannot fall behind, because the answer is recomputed from the record.
+//
+// The read and the write are issued from inside IndexedDB event handlers with
+// no await between them, because an async gap can let WebKit close the
+// transaction underneath us.
+function putDeskRecordAtBase(store, plan, id, item, base, conflicts) {
+  return new Promise((resolve, reject) => {
+    const read = store.get(id);
+    read.addEventListener("error", () => reject(read.error), { once: true });
+    read.addEventListener("success", () => {
+      const stored = read.result;
+      // A record the store has never seen is nobody's older copy. A record
+      // this window has never seen on disk is compared against what it is
+      // about to write, so two windows that independently created identical
+      // content agree instead of fighting over it.
+      const expected = base === undefined ? deskRecordFingerprint(item) : base;
+      if (stored && deskRecordFingerprint(stored) !== expected) {
+        conflicts.push({ key: plan.key, id: String(id) });
+        resolve();
+        return;
+      }
+      const write = plan.key === "trash" ? store.put(item, id) : store.put(item);
+      write.addEventListener("error", () => reject(write.error), { once: true });
+      write.addEventListener("success", () => resolve(), { once: true });
+    }, { once: true });
+  });
+}
+
+// Deletes need the same fence as puts. An unconditional delete would let a
+// stale window erase a record another window changed after this window last
+// saw it. A record that is already gone is harmless; a record whose content
+// moved is a conflict and aborts the whole transaction.
+function deleteDeskRecordAtBase(store, plan, id, base, conflicts) {
+  return new Promise((resolve, reject) => {
+    const read = store.get(id);
+    read.addEventListener("error", () => reject(read.error), { once: true });
+    read.addEventListener("success", () => {
+      const stored = read.result;
+      if (!stored) {
+        resolve();
+        return;
+      }
+      if (base === undefined || deskRecordFingerprint(stored) !== base) {
+        conflicts.push({ key: plan.key, id: String(id) });
+        resolve();
+        return;
+      }
+      const remove = store.delete(id);
+      remove.addEventListener("error", () => reject(remove.error), { once: true });
+      remove.addEventListener("success", () => resolve(), { once: true });
+    }, { once: true });
+  });
+}
+
+// Settings are one more durable record, even though they live in the keyval
+// store. A full settings snapshot from another window must not silently replace
+// a newer snapshot; use the same base fence as collection records.
+function putSettingsAtBase(store, payload, base, conflicts) {
+  return new Promise((resolve, reject) => {
+    const read = store.get("settings");
+    read.addEventListener("error", () => reject(read.error), { once: true });
+    read.addEventListener("success", () => {
+      const stored = read.result;
+      const matches = base === undefined
+        ? !stored || deskRecordFingerprint(stored) === deskRecordFingerprint(payload)
+        : !!stored && deskRecordFingerprint(stored) === base;
+      if (!matches) {
+        conflicts.push({ key: "settings", id: "settings" });
+        resolve();
+        return;
+      }
+      const write = store.put(payload, "settings");
+      write.addEventListener("error", () => reject(write.error), { once: true });
+      write.addEventListener("success", () => resolve(), { once: true });
+    }, { once: true });
+  });
+}
+
+function deskRecordConflictError(conflicts) {
+  const error = new Error("A record changed in another window; nothing was written.");
+  error.code = "DESK_RECORD_CONFLICT";
+  error.conflicts = conflicts;
+  return error;
+}
+
 function deskCollectionPlan(definition) {
   const previous = storageRecordFingerprintCache.get(definition.key) || new Map();
   const current = new Map();
@@ -1530,30 +1806,222 @@ function deskCollectionPlan(definition) {
   definition.items.forEach((item, index) => {
     const id = deskRecordIdentity(definition.key, item, index);
     const cacheKey = String(id);
-    const fingerprint = JSON.stringify(item);
+    const fingerprint = deskRecordFingerprint(item);
     current.set(cacheKey, { id, fingerprint });
     if (
       previous.get(cacheKey)?.fingerprint !== fingerprint
       || dirtyDeskRecords.get(definition.key)?.has(cacheKey)
     ) {
-      puts.push({ id, item });
+      puts.push({ id, item, base: previous.get(cacheKey)?.fingerprint });
     }
   });
   const deletes = [];
   for (const [cacheKey, cached] of previous) {
-    if (!current.has(cacheKey)) deletes.push(cached.id);
+    if (!current.has(cacheKey)) deletes.push({ id: cached.id, base: cached.fingerprint });
   }
   for (const cacheKey of deletedDeskRecords.get(definition.key) || []) {
     const cached = previous.get(cacheKey);
-    if (cached && !deletes.some((id) => String(id) === String(cached.id))) deletes.push(cached.id);
+    if (cached && !deletes.some((entry) => String(entry.id) === String(cached.id))) {
+      deletes.push({ id: cached.id, base: cached.fingerprint });
+    }
   }
   return { ...definition, current, puts, deletes };
+}
+
+// The window that holds the write lease holds the DATABASE CONNECTION, not the
+// user's permission to type. Every other window stays editable and hands its
+// finished write to the lease holder, which applies it at the fence and
+// announces what moved. Ownership is a property of the plumbing, so no window
+// is ever read-only and nobody has to be told to stop.
+//
+// This is only safe because a write carries the base each record must still
+// match: a proxied write is checked exactly like a local one, and a stale one
+// is refused rather than laid over the top.
+async function runDeskCommit({ changedPlans, settingsPayload, settingsBase, shouldWriteSettings }) {
+  const storeNames = changedPlans.map((plan) => plan.storeName);
+  if (shouldWriteSettings) storeNames.push(keyvalStoreName);
+  if (!storeNames.length) return;
+  const conflicts = [];
+  let db;
+  try {
+    db = await openAppDb();
+    await window.AISystem6StorageTransactions.runTransaction(
+      db,
+      storeNames,
+      "readwrite",
+      async (tx) => {
+        // Queue every request synchronously before awaiting. This keeps the
+        // transaction active in Safari/WebKit and avoids async gaps between
+        // object-store operations.
+        const writes = [];
+        changedPlans.forEach((plan) => {
+          const store = tx.objectStore(plan.storeName);
+          plan.puts.forEach(({ id, item, base }) => {
+            writes.push(putDeskRecordAtBase(store, plan, id, item, base, conflicts));
+          });
+          plan.deletes.forEach(({ id, base }) => {
+            writes.push(deleteDeskRecordAtBase(store, plan, id, base, conflicts));
+          });
+        });
+
+        if (shouldWriteSettings) {
+          const settingsStore = tx.objectStore(keyvalStoreName);
+          writes.push(putSettingsAtBase(settingsStore, settingsPayload, settingsBase, conflicts));
+          writes.push(idbRequest(settingsStore.put(storageVersion, "storageVersion")));
+        }
+        await Promise.all(writes);
+        // One refused record refuses the whole save. Aborting is the honest
+        // outcome: the caller rolls its in-memory state back, so the window
+        // never keeps an edit the disk does not have.
+        if (conflicts.length) throw deskRecordConflictError(conflicts);
+      }
+    );
+  } finally {
+    db?.close();
+  }
+}
+
+const deskProxyTimeoutMs = 5000;
+const pendingDeskProxyWrites = new Map();
+
+function deskWriteMustBeProxied() {
+  return window.AISystem6WriteLease?.canMutate?.() !== true;
+}
+
+// Only the records travel, never the fingerprint maps: the sender keeps its own
+// bookkeeping and the holder needs nothing but what to write.
+function serialisableDeskPlans(changedPlans) {
+  return changedPlans.map((plan) => ({
+    key: plan.key,
+    storeName: plan.storeName,
+    puts: plan.puts.map(({ id, item, base }) => ({ id, item, base })),
+    deletes: plan.deletes.map(({ id, base }) => ({ id, base })),
+  }));
+}
+
+function requestProxiedDeskCommit({ changedPlans, settingsPayload, settingsBase, shouldWriteSettings }) {
+  const channel = openLiveProgressChannel();
+  if (!channel) {
+    // No channel means no holder to ask. Refusing is the honest answer; the
+    // caller rolls back rather than believing a write that never happened.
+    return Promise.reject(new Error("No window is available to write for this one."));
+  }
+  const requestId = `${liveProgressInstanceId()}:${Date.now()}:${Math.random().toString(36).slice(2)}`;
+  return new Promise((resolve, reject) => {
+    const settle = (error) => {
+      const pending = pendingDeskProxyWrites.get(requestId);
+      if (!pending) return;
+      clearTimeout(pending.timeoutId);
+      pendingDeskProxyWrites.delete(requestId);
+      if (error) reject(error);
+      else resolve();
+    };
+    pendingDeskProxyWrites.set(requestId, {
+      settle,
+      timeoutId: setTimeout(() => settle(new Error("The window that owns writing did not answer.")), deskProxyTimeoutMs),
+    });
+    try {
+      channel.postMessage({
+        type: "desk-write-request",
+        from: liveProgressInstanceId(),
+        requestId,
+        plans: serialisableDeskPlans(changedPlans),
+        settingsPayload: shouldWriteSettings ? settingsPayload : null,
+        settingsBase: shouldWriteSettings ? settingsBase : undefined,
+        shouldWriteSettings,
+      });
+    } catch (error) {
+      settle(error);
+    }
+  });
+}
+
+async function handleProxiedDeskWriteRequest(message) {
+  // Only the window that can actually write answers. Every other window
+  // ignores the request, so exactly one reply comes back.
+  if (window.AISystem6WriteLease?.canMutate?.() !== true) return;
+  const changedPlans = (message.plans || []).map((plan) => ({ ...plan }));
+  let failure = null;
+  try {
+    await runDeskCommit({
+      changedPlans,
+      settingsPayload: message.settingsPayload,
+      settingsBase: message.settingsBase,
+      shouldWriteSettings: message.shouldWriteSettings === true,
+    });
+  } catch (error) {
+    failure = error?.code === "DESK_RECORD_CONFLICT"
+      ? { code: error.code, conflicts: error.conflicts }
+      : { code: "WRITE_FAILED", message: String(error?.message || error) };
+  }
+  try {
+    openLiveProgressChannel()?.postMessage({
+      type: "desk-write-reply",
+      from: liveProgressInstanceId(),
+      requestId: message.requestId,
+      failure,
+    });
+  } catch {}
+  if (failure) return;
+  // The holder wrote records it does not have in memory. It has to learn them
+  // the same way every other window does, or its own next save reasons from a
+  // copy the disk has already moved past.
+  const changes = [];
+  const deletes = [];
+  changedPlans.forEach((plan) => {
+    plan.puts.forEach(({ id }) => changes.push({ key: plan.key, id }));
+    plan.deletes.forEach(({ id }) => deletes.push({ key: plan.key, id }));
+  });
+  broadcastDeskRecordChanges(changedPlans, message.shouldWriteSettings === true);
+  await applyDeskRecordChanges({ changes, deletes });
+}
+
+function handleProxiedDeskWriteReply(message) {
+  const pending = pendingDeskProxyWrites.get(message.requestId);
+  if (!pending) return;
+  if (!message.failure) {
+    pending.settle(null);
+    return;
+  }
+  if (message.failure.code === "DESK_RECORD_CONFLICT") {
+    pending.settle(deskRecordConflictError(message.failure.conflicts || []));
+    return;
+  }
+  pending.settle(new Error(message.failure.message || "The write could not be completed."));
+}
+
+// Proxying is for the case where another LIVE window holds the connection. A
+// window that merely lost the lease - the only one open, a heartbeat that
+// lapsed while it was backgrounded - must not sit waiting for an answer from
+// nobody, so it tries to take the connection first and only hands the write
+// away when somebody else really has it.
+async function commitDeskPlansWhereverTheConnectionIs(payload) {
+  if (deskWriteMustBeProxied()) {
+    await window.AISystem6WriteLease?.reconcile?.().catch?.(() => null);
+  }
+  if (!deskWriteMustBeProxied()) {
+    await runDeskCommit(payload);
+    return;
+  }
+  try {
+    await requestProxiedDeskCommit(payload);
+  } catch (error) {
+    // A refusal is an answer and stands. Silence is not. A holder that does
+    // not answer is a holder in name only - it may have closed between the
+    // request and the reply, or be wedged - and leaving every other window
+    // unable to write because of it is exactly the failure this whole change
+    // exists to remove. So ask for the lease through the safe handshake, which
+    // makes a live holder flush and release before it lets go, and write here.
+    if (error?.code === "DESK_RECORD_CONFLICT") throw error;
+    const takeover = await window.AISystem6WriteLease?.requestTakeover?.().catch?.(() => null);
+    if (!takeover?.ok || deskWriteMustBeProxied()) throw error;
+    await runDeskCommit(payload);
+  }
 }
 
 async function persistDeskState() {
   const endPerf = window.AISystem6Perf?.start("state_save");
   const startedAt = performance.now();
-  let db;
   try {
     if (!deskPersistenceWritable) {
       endPerf?.({ blocked: true });
@@ -1561,18 +2029,12 @@ async function persistDeskState() {
     }
     ensureActiveProject();
     syncCurrentNotePadPage();
-    const plans = [
-      { key: "projects", storeName: projectsStoreName, items: projects },
-      { key: "scraps", storeName: scrapsStoreName, items: scraps },
-      { key: "trash", storeName: trashStoreName, items: trashItems },
-      { key: "chatFolders", storeName: chatFoldersStoreName, items: chatFolders },
-      { key: "chatFiles", storeName: chatFilesStoreName, items: chatFiles },
-      { key: "imageAttachments", storeName: imageAttachmentsStoreName, items: imageAttachments },
-    ].map(deskCollectionPlan);
+    const plans = deskCollectionDefinitions().map(deskCollectionPlan);
     const changedPlans = plans.filter((plan) => plan.puts.length || plan.deletes.length);
     const settingsPayload = settingsSnapshotPayload();
     const settingsSnapshot = JSON.stringify(settingsPayload);
-    const shouldWriteSettings = storageSnapshotCache.get("settings") !== settingsSnapshot;
+    const settingsBase = storageSnapshotCache.get("settings");
+    const shouldWriteSettings = settingsBase !== settingsSnapshot;
     if (!changedPlans.length && !shouldWriteSettings) {
       lastDeskPersistenceStats = {
         storesTouched: [],
@@ -1585,35 +2047,14 @@ async function persistDeskState() {
       return true;
     }
 
-    db = await openAppDb();
-    const storeNames = changedPlans.map((plan) => plan.storeName);
-    if (shouldWriteSettings) storeNames.push(keyvalStoreName);
-    await window.AISystem6StorageTransactions.runTransaction(
-      db,
-      storeNames,
-      "readwrite",
-      async (tx) => {
-        // Queue every request synchronously before awaiting. This keeps the
-        // transaction active in Safari/WebKit and avoids async gaps between
-        // object-store operations.
-        const writes = [];
-        changedPlans.forEach((plan) => {
-          const store = tx.objectStore(plan.storeName);
-          plan.puts.forEach(({ id, item }) => {
-            writes.push(idbRequest(plan.key === "trash" ? store.put(item, id) : store.put(item)));
-          });
-          plan.deletes.forEach((id) => writes.push(idbRequest(store.delete(id))));
-        });
-
-        if (shouldWriteSettings) {
-          const settingsStore = tx.objectStore(keyvalStoreName);
-          writes.push(idbRequest(settingsStore.put(settingsPayload, "settings")));
-          writes.push(idbRequest(settingsStore.put(storageVersion, "storageVersion")));
-        }
-        await Promise.all(writes);
-      }
-    );
+    await commitDeskPlansWhereverTheConnectionIs({
+      changedPlans,
+      settingsPayload,
+      settingsBase,
+      shouldWriteSettings,
+    });
     plans.forEach((plan) => storageRecordFingerprintCache.set(plan.key, plan.current));
+    broadcastDeskRecordChanges(changedPlans, shouldWriteSettings);
     if (shouldWriteSettings) storageSnapshotCache.set("settings", settingsSnapshot);
     changedPlans.forEach((plan) => {
       dirtyDeskRecords.delete(plan.key);
@@ -1635,7 +2076,12 @@ async function persistDeskState() {
     });
     return true;
   } catch (error) {
-    console.error("Failed to save state to IDB:", error);
+    const conflicted = error?.code === "DESK_RECORD_CONFLICT";
+    // A refused write is not a broken one. The disk is intact, the other
+    // window's version stands, and this window is about to roll its own edit
+    // back - so say which record moved instead of logging a failure.
+    if (conflicted) console.warn("Desk save refused: a record changed in another window.", error.conflicts);
+    else console.error("Failed to save state to IDB:", error);
     lastDeskPersistenceStats = {
       storesTouched: [],
       puts: 0,
@@ -1643,11 +2089,11 @@ async function persistDeskState() {
       settingsWritten: false,
       durationMs: performance.now() - startedAt,
       error: true,
+      conflicts: conflicted ? error.conflicts : undefined,
     };
-    endPerf?.({ error: true });
+    if (conflicted && typeof setStatus === "function") setStatus(t("desk_record_conflict_status"));
+    endPerf?.({ error: true, conflict: conflicted });
     return false;
-  } finally {
-    db?.close();
   }
 }
 
@@ -1726,22 +2172,15 @@ async function loadDeskState() {
     deskPersistenceWritable = true;
     storageSnapshotCache.clear();
     storageRecordFingerprintCache.clear();
-    [
-      { key: "projects", storeName: projectsStoreName, items: projects },
-      { key: "scraps", storeName: scrapsStoreName, items: scraps },
-      { key: "trash", storeName: trashStoreName, items: trashItems },
-      { key: "chatFolders", storeName: chatFoldersStoreName, items: chatFolders },
-      { key: "chatFiles", storeName: chatFilesStoreName, items: chatFiles },
-      { key: "imageAttachments", storeName: imageAttachmentsStoreName, items: imageAttachments },
-    ].forEach((definition) => {
+    deskCollectionDefinitions().forEach((definition) => {
       const plan = deskCollectionPlan(definition);
       storageRecordFingerprintCache.set(definition.key, plan.current);
     });
     dirtyDeskRecords.clear();
     deletedDeskRecords.clear();
     dirtyDeskCollections.clear();
-    if (!shouldRewriteSanitizedSettings) {
-      storageSnapshotCache.set("settings", JSON.stringify(settingsSnapshotPayload()));
+    if (settings !== undefined) {
+      storageSnapshotCache.set("settings", JSON.stringify(settings));
     }
 
   } catch (error) {

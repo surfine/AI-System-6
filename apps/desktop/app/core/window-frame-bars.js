@@ -412,3 +412,18 @@ function installWindowFrameBars() {
   }
   window.refreshFinderContinuationIndicators = () => installedFrameSyncs.forEach((sync) => sync());
 }
+
+// The bar structure on its own, for a specimen that shows the material rather
+// than scrolling: Theme Lab paints one and reports its thumb position itself.
+//
+// A specimen cannot simply be a framed window nested in a pane. A window finds
+// its scroller with a descendant query and expects to find one, so a nested
+// .window-frame-scroller is adopted by the outer window -- Theme Lab grew frame
+// bars of its own and measured the specimen's content with them. The structure
+// is shared; the scroll wiring stays with real windows.
+window.AISystem6WindowFrameBar = Object.freeze({
+  create(axis = "vertical") {
+    const { bar, thumb } = createFrameBar(axis);
+    return { bar, thumb };
+  },
+});

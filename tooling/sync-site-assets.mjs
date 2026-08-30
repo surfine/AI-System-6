@@ -8,12 +8,15 @@
 //
 // Run: node tooling/sync-site-assets.mjs        (add --check for CI dry run)
 
-import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { SITE_ICON_ERAS, SITE_ICON_NAMES } from "./site-assets-manifest.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const require = createRequire(import.meta.url);
+const sharp = require("sharp");
 const themesRoot = path.join(repoRoot, "apps", "desktop", "assets", "themes");
 const siteThemesRoot = path.join(repoRoot, "site", "img", "themes");
 
@@ -30,6 +33,15 @@ function filesMatch(left, right) {
   return existsSync(left) && existsSync(right) && readFileSync(left).equals(readFileSync(right));
 }
 
+async function siteAssetBytes(sourcePath, extension) {
+  if (extension !== "png") return readFileSync(sourcePath);
+  // The app keeps full-colour masters. The official site displays these at at
+  // most 64 CSS px, so a deterministic 256-colour PNG preserves the 128 px
+  // Retina canvas and alpha edge while keeping the direct-upload site inside
+  // its 4 MiB payload budget.
+  return sharp(sourcePath).png({ palette: true, quality: 100, compressionLevel: 9, effort: 10 }).toBuffer();
+}
+
 for (const [era, source] of Object.entries(SITE_ICON_ERAS)) {
   const outDir = path.join(siteThemesRoot, era);
   if (!checkOnly) mkdirSync(outDir, { recursive: true });
@@ -43,10 +55,11 @@ for (const [era, source] of Object.entries(SITE_ICON_ERAS)) {
       continue;
     }
     const to = path.join(outDir, outName);
+    const expectedBytes = await siteAssetBytes(from, source.ext);
     if (checkOnly) {
-      if (!filesMatch(from, to)) drift.push(path.relative(repoRoot, to));
+      if (!existsSync(to) || !expectedBytes.equals(readFileSync(to))) drift.push(path.relative(repoRoot, to));
     } else {
-      copyFileSync(from, to);
+      writeFileSync(to, expectedBytes);
     }
   }
 }

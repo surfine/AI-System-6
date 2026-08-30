@@ -35,10 +35,10 @@ Current floor standing (derived from the committed manifests, not estimated):
 | Board | Specimens | Meets the floor | Recorded gap | Unusable reference |
 | --- | --- | --- | --- | --- |
 | Platinum | 20 | 12 | 2 | 6 (three photo-thumbnail crops plus three crops of the wrong object) |
-| Aqua | 19 | 19 | 0 | 0 |
+| Aqua | 18 | 17 | 1 | 0 (default push button: reference frames the pre-fix 21px box) |
 | Snow Leopard | 18 | 18 | 0 | 0 |
-| Yosemite | 19 | 6 | 11 | 2 (checkbox/radio marks pinned only to clone assets) |
-| Yosemite 2x | 5 | 4 | 0 | 1 (checkbox pinned only to a scaled clone asset) |
+| Yosemite | 17 | 5 | 10 | 2 (checkbox/radio marks pinned only to clone assets) |
+| Yosemite 2x | 4 | 3 | 0 | 1 (checkbox pinned only to a scaled clone asset) |
 
 `tests/features/appearance-qa-ledger.test.mjs` derives these counts from each
 manifest's `specimens[].floor.status` and requires both language versions of

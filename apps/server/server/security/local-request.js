@@ -229,9 +229,15 @@ async function runWithLocalRequestGuard(req, res, policy, handler) {
     return;
   }
 
+  const method = String(req.method || "GET").toUpperCase();
+  const contentType = String(req.headers["content-type"] || "").toLowerCase().split(";")[0].trim();
+  const rawCloudFileUpload = method === "POST"
+    && pathname === "/api/cloud/files"
+    && new Set(["image/jpeg", "image/png", "image/gif", "image/webp"]).has(contentType);
   if (
-    modifyingMethods.has(String(req.method || "GET").toUpperCase())
-    && !String(req.headers["content-type"] || "").toLowerCase().startsWith("application/json")
+    modifyingMethods.has(method)
+    && !rawCloudFileUpload
+    && !contentType.startsWith("application/json")
   ) {
     sendJson(res, 415, {
       error: "Expected application/json",

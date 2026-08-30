@@ -58,7 +58,15 @@ const EXCLUDED_WORKING_CELLS = new Set([
   "working-liquid-glass-desktop-reviewDesk",
 ]);
 
-/** Every cell in the promised matrix: 6 showcase + 25 working = 31. */
+// Two surfaces whose era clothes used to live on Theme Lab replicas and now
+// live on the shipping control: the Control Panel section chooser, and the
+// Lab's own tab, menu and dialog specimens, which are the real controls. The
+// route windows never show a tab strip, a menu or a modal, so nothing in the
+// two tiers above would have caught a regression in them.
+export const CONTROL_THEMES = SHOWCASE_THEMES;
+export const CONTROL_WINDOWS = ["control", "themeLab"];
+
+/** Every cell in the promised matrix: 6 showcase + 25 working + 12 controls = 43. */
 export function snapshotCells() {
   const cells = [];
   for (const theme of SHOWCASE_THEMES) {
@@ -85,6 +93,19 @@ export function snapshotCells() {
           height: width.height,
         });
       }
+    }
+  }
+  for (const theme of CONTROL_THEMES) {
+    for (const windowId of CONTROL_WINDOWS) {
+      cells.push({
+        id: `controls-${theme}-${windowId}`,
+        tier: "controls",
+        theme,
+        target: windowId,
+        widthId: DESKTOP_WIDTH.id,
+        width: DESKTOP_WIDTH.width,
+        height: DESKTOP_WIDTH.height,
+      });
     }
   }
   return cells.filter((cell) => !EXCLUDED_WORKING_CELLS.has(cell.id));

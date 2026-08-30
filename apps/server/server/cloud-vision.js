@@ -18,12 +18,27 @@ const {
 } = require("./cloud.js");
 const { modelContentFromChatData, scrubVisibleModelOutput } = require("./chat.js");
 const { resolveCloudCredential } = require("./credential-vault.js");
+const { CLOUD_FILE_LIMITS, detectCloudFileMimeType } = require("./cloud-files.js");
 const { postJsonWithFallback } = require("./lib/fetch.js");
 const { preparePublicCloudCall } = require("./lib/cloud-route.js");
 const { isPublicDeployment } = require("./runtime-profile.js");
 const { parseImageDataUrl, visionPromptForMode } = require("./vision.js");
 
 const MAX_IMAGE_URL_LENGTH = 8192;
+
+/**
+ * Return true for either of the two DeepSeek vision wire forms used by the
+ * product: an inline/URL image, or a Files API reference. The latter is still
+ * represented by a signed AI System 6 token until cloud-chat resolves it.
+ *
+ * @param {unknown} block
+ * @returns {boolean}
+ */
+function isCloudVisionContentBlock(block) {
+  if (!block || typeof block !== "object") return false;
+  const value = /** @type {any} */ (block);
+  return value.type === "image_url" || value.type === "file";
+}
 
 /**
  * @param {string} message
@@ -57,7 +72,16 @@ function imageContentBlock(source, detail) {
         `Cloud vision accepts ${CLOUD_VISION_LIMITS.mimeTypes.join(", ")}. This image is ${mimeType || "an unknown type"}.`
       );
     }
-    const approxBytes = Math.ceil((parsed.base64.length * 3) / 4);
+    if (!parsed.base64 || parsed.base64.length % 4 !== 0
+      || !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(parsed.base64)) {
+      throw visionInputError("Image data URL has invalid base64 encoding.");
+    }
+    const detectedMimeType = detectCloudFileMimeType(Buffer.from(parsed.base64.slice(0, 24), "base64"));
+    if (!detectedMimeType || detectedMimeType !== mimeType) {
+      throw visionInputError("Image content does not match its declared JPEG, PNG, GIF, or WebP format.");
+    }
+    const padding = parsed.base64.endsWith("==") ? 2 : parsed.base64.endsWith("=") ? 1 : 0;
+    const approxBytes = Math.floor((parsed.base64.length * 3) / 4) - padding;
     if (approxBytes > CLOUD_VISION_LIMITS.maxImageBytes) {
       throw visionInputError("Image is larger than the 32 MiB cloud vision limit. Send a smaller copy.", 413);
     }
@@ -77,6 +101,54 @@ function imageContentBlock(source, detail) {
     throw visionInputError("Image URL is longer than the 8192-character limit.");
   }
   return { type: "image_url", image_url: { url: value, detail } };
+}
+
+/**
+ * Validate and canonicalize image_url blocks in an OpenAI-compatible message
+ * list. DeepSeek accepts image input only in user messages. Files API blocks
+ * are counted here but intentionally left unresolved; cloud-files verifies the
+ * signed token against the active session and credential immediately before
+ * the upstream call.
+ *
+ * @param {any[]} messages
+ * @returns {{ messages: any[], imageCount: number, fileCount: number, hasVision: boolean }}
+ */
+function normalizeCloudVisionMessages(messages) {
+  const source = Array.isArray(messages) ? messages : [];
+  let imageCount = 0;
+  let fileCount = 0;
+  const normalized = source.map((message) => {
+    if (!Array.isArray(message?.content)) return message;
+    const carriesVision = message.content.some(isCloudVisionContentBlock);
+    if (carriesVision && message.role !== "user") {
+      throw visionInputError("Cloud vision images are allowed only in user messages.");
+    }
+    const content = message.content.map((block) => {
+      if (block?.type === "image_url") {
+        const imageUrl = block.image_url;
+        const url = typeof imageUrl === "string" ? imageUrl : imageUrl?.url;
+        const detail = normalizeDetail(typeof imageUrl === "object" ? imageUrl?.detail : "");
+        imageCount += 1;
+        return imageContentBlock(url, detail);
+      }
+      if (block?.type === "file") {
+        if (typeof block.file_id !== "string" || !block.file_id.trim()) {
+          throw visionInputError("Cloud file blocks require a signed file token.");
+        }
+        fileCount += 1;
+        return { type: "file", file_id: block.file_id.trim() };
+      }
+      return block;
+    });
+    return { ...message, content };
+  });
+  const total = imageCount + fileCount;
+  if (total > CLOUD_FILE_LIMITS.maxFilesPerRequest) {
+    throw visionInputError(
+      `AI System 6 accepts at most ${CLOUD_FILE_LIMITS.maxFilesPerRequest} images in one request.`
+    );
+  }
+  return { messages: normalized, imageCount, fileCount, hasVision: total > 0 };
 }
 
 /**
@@ -139,8 +211,8 @@ async function postCloudVisionAnalysis(options) {
   ).filter((image) => typeof image === "string" && image.trim());
 
   if (!images.length) throw visionInputError("Missing image data URL.");
-  if (images.length > CLOUD_VISION_LIMITS.maxImagesPerRequest) {
-    throw visionInputError(`Cloud vision accepts at most ${CLOUD_VISION_LIMITS.maxImagesPerRequest} images in one request.`);
+  if (images.length > CLOUD_FILE_LIMITS.maxFilesPerRequest) {
+    throw visionInputError(`AI System 6 accepts at most ${CLOUD_FILE_LIMITS.maxFilesPerRequest} images in one request.`);
   }
 
   const built = buildCloudVisionMessages({
@@ -158,7 +230,10 @@ async function postCloudVisionAnalysis(options) {
     temperature: built.temperature,
     max_tokens: built.max_tokens,
     stream: false,
-    ai_system6_task_kind: built.taskKind,
+    // Vision extraction is an instant, bounded task. Do not let the provider's
+    // default thinking mode consume the answer budget, and never send the
+    // product's internal task-routing field upstream.
+    thinking: { type: "disabled" },
   };
 
   let response;
@@ -268,6 +343,8 @@ module.exports = {
   buildCloudVisionMessages,
   imageBlocksFromSources,
   imageContentBlock,
+  isCloudVisionContentBlock,
+  normalizeCloudVisionMessages,
   normalizeDetail,
   postCloudVisionAnalysis,
 };

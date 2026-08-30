@@ -234,11 +234,23 @@ if (
   "Naming Rules",
   "Design Rules",
   "Common Pitfalls",
+  "Context Economy",
   "Parallel Work",
 ].forEach((section) => {
   const sectionPattern = new RegExp(`^##\\s+${section.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "m");
   if (sectionPattern.test(claudeDoc)) ok(`CLAUDE.md section ${section}`);
   else fail(`CLAUDE.md section missing: ${section}`);
+});
+
+[
+  [".jspace/WORKSPACE.md", "phase checkpoints survive compaction"],
+  ["Never pour a full", "large command output stays out of model context"],
+  ["one final full gate", "expensive verification runs once after scoped fixes"],
+  ["do not fork full task history by default", "subagents receive minimal context"],
+  ["recommend a fresh task", "materially different follow-up work starts fresh"],
+].forEach(([token, purpose]) => {
+  if (claudeDoc.includes(token)) ok(`CLAUDE.md context economy: ${purpose}`);
+  else fail(`CLAUDE.md context economy missing: ${token}`);
 });
 
 // Guardrails moved out of the always-loaded CLAUDE.md live in path-scoped rules

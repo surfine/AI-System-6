@@ -21,6 +21,34 @@
     return control;
   }
 
+  // The System window title bar: Close at the leading edge, the title, then
+  // Zoom and WindowShade at the trailing edge. Every appearance dresses these
+  // three controls -- Aqua and Yosemite make the same buttons into lamps
+  // through --traffic-light-* tokens and still keep Close left and Zoom right.
+  //
+  // It is separate from createWindow because a title bar has a second reader:
+  // Theme Lab shows one as a specimen. A specimen that copied this markup would
+  // be a second birthplace for it, free to drift from the shipping anatomy --
+  // which is what the Lab's hand-drawn three-lamp title bar had already done.
+  // Callers that are not opening a window pass no windowName, get no window
+  // element, and are therefore invisible to the window manager.
+  function createTitleBar(options = {}) {
+    const labelledBy = String(options.labelledBy || "").trim();
+    const titleBar = document.createElement("div");
+    titleBar.className = "title-bar";
+    titleBar.append(button("close-box", "close", "Close"));
+
+    const heading = document.createElement(options.titleTag === "h1" ? "h1" : "h2");
+    if (labelledBy) heading.id = labelledBy;
+    if (options.titleKey) heading.dataset.i18n = String(options.titleKey);
+    heading.textContent = String(options.title || options.windowName || "");
+    titleBar.append(heading);
+
+    if (options.resizable !== false) titleBar.append(button("resize-box", "zoom", "Zoom"));
+    if (options.shade !== false) titleBar.append(button("shade-box", "collapse", "Collapse"));
+    return titleBar;
+  }
+
   function createWindow(options = {}) {
     const windowName = String(options.windowName || "").trim();
     const labelledBy = String(options.labelledBy || "").trim();
@@ -40,18 +68,7 @@
     win.dataset.window = windowName;
     win.setAttribute("aria-labelledby", labelledBy);
 
-    const titleBar = document.createElement("div");
-    titleBar.className = "title-bar";
-    titleBar.append(button("close-box", "close", "Close"));
-
-    const heading = document.createElement(options.titleTag === "h1" ? "h1" : "h2");
-    heading.id = labelledBy;
-    if (options.titleKey) heading.dataset.i18n = String(options.titleKey);
-    heading.textContent = String(options.title || windowName);
-    titleBar.append(heading);
-
-    if (options.resizable !== false) titleBar.append(button("resize-box", "zoom", "Zoom"));
-    if (options.shade !== false) titleBar.append(button("shade-box", "collapse", "Collapse"));
+    const titleBar = createTitleBar(options);
     win.append(titleBar);
 
     let statusBar = null;
@@ -92,5 +109,5 @@
     return Object.assign(win, { applicationTitleBar: titleBar, applicationStatusBar: statusBar, applicationPane: pane });
   }
 
-  global.AISystem6ApplicationShell = Object.freeze({ createWindow });
+  global.AISystem6ApplicationShell = Object.freeze({ createWindow, createTitleBar });
 })(window);

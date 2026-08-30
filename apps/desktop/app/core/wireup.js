@@ -1227,7 +1227,7 @@ function wireAppEvents() {
   }
 
   window.AISystem6WireWindowChrome = wireWindowChrome;
-  document.querySelectorAll(".window").forEach(wireWindowChrome);
+  document.querySelectorAll(".window[data-window]").forEach(wireWindowChrome);
 
   const documentVersionsDialog = document.querySelector("#document-versions-modal");
   documentVersionsDialog?.addEventListener("close", () => {

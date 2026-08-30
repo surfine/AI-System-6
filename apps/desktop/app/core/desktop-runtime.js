@@ -738,7 +738,7 @@ function normalizeStartupOpenedWindowNames(names) {
 
 function captureStartupOpenedWindowNames() {
   return normalizeStartupOpenedWindowNames(
-    Array.from(document.querySelectorAll(".window:not(.is-hidden):not(.is-app-hidden)"))
+    Array.from(document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden)"))
       .map((win) => win.dataset.window)
   );
 }
@@ -966,9 +966,14 @@ function openFileInfo() {
     if (typeof renderFinderObjectInfo === "function" && fileInfoItem === item) renderFinderObjectInfo(item);
   });
 
-  fileInfoIconEl.className = `large-mini-icon sys-icon ${iconClass}`;
+  fileInfoIconEl.className = `info-icon-artwork sys-icon ${iconClass}`;
   fileInfoIconEl.dataset.systemIcon = normalizeSystemIconId(iconId);
-  fileInfoIconEl.innerHTML = systemIconSvg(iconId, { size: 48, title: kindLabel });
+  fileInfoIconEl.innerHTML = systemIconSvg(iconId, {
+    displaySize: 128,
+    modernSourceSize: 128,
+    platinumSourceSize: 42,
+    title: kindLabel,
+  });
 
   renderFileInfoKindActions(item);
   openWindow("fileInfo");

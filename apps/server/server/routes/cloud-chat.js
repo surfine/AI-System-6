@@ -44,7 +44,10 @@ const {
   DEEPSEEK_PUBLIC_BASE_URL,
   isTrustedDeepSeekCredentialTarget,
   resolveCloudTarget,
+  resolveCloudVisionModel,
 } = require("../cloud.js");
+const { normalizeCloudVisionMessages } = require("../cloud-vision.js");
+const { handleCloudFileTokenMessages } = require("../cloud-files.js");
 const { isPublicDeployment } = require("../runtime-profile.js");
 const { resolveCloudCredential } = require("../credential-vault.js");
 const { sharedSessionFromRequest } = require("../security/public-session.js");
@@ -269,7 +272,7 @@ async function handleCloudChat(req, res) {
 
   try {
     const raw = /** @type {any} */ (
-      applyChatTaskContract(await readJsonBody(req, { limitBytes: 512 * 1024 }))
+      applyChatTaskContract(await readJsonBody(req, { limitBytes: 10 * 1024 * 1024 }))
     );
     timeoutHandle = withTimeoutSignal(
       requestAbortSignal,
@@ -318,6 +321,34 @@ async function handleCloudChat(req, res) {
     }
     const policy = resolveTaskPolicy(taskKind);
     const deepSeekTarget = isTrustedDeepSeekCredentialTarget("deepseek", targetBaseUrl);
+    const vision = normalizeCloudVisionMessages(payload.messages);
+    payload.messages = vision.messages;
+    if (vision.fileCount && usingSharedCloud) {
+      send(res, 400, JSON.stringify({
+        error: "DeepSeek Files API requires your own API key",
+        code: "cloud_files_byok_required",
+      }), { "Content-Type": "application/json" });
+      return;
+    }
+    if (vision.fileCount) {
+      const files = handleCloudFileTokenMessages(payload.messages, {
+        apiKey,
+        baseUrl: targetBaseUrl,
+        sessionNonce: isPublicDeployment ? sharedSessionFromRequest(req)?.nonce || "" : "",
+        isPublic: isPublicDeployment,
+      });
+      payload.messages = files.messages;
+    }
+    if (vision.hasVision) {
+      if (!deepSeekTarget) {
+        send(res, 400, JSON.stringify({
+          error: "Cloud image input needs the DeepSeek vision endpoint",
+          code: "cloud_vision_endpoint_required",
+        }), { "Content-Type": "application/json" });
+        return;
+      }
+      payload.model = resolveCloudVisionModel(payload.model);
+    }
     if (isAutoModelId(payload.model)) {
       if (!deepSeekTarget) {
         send(res, 400, JSON.stringify({
@@ -407,6 +438,10 @@ async function handleCloudChat(req, res) {
       if (!isPublicDeployment) {
         payload.max_tokens = answerBudget + reasoningAllowance;
       }
+    }
+    if (vision.hasVision) {
+      payload.thinking = { type: "disabled" };
+      delete payload.reasoning_effort;
     }
     if (shouldStripDeepseekV4Sampling(payload)) {
       delete payload.temperature;

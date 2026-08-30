@@ -103,7 +103,9 @@ const runtimeCommandIds = new Set(
       "micropolis-speed-fast",
     ],
     ...endfieldTerminal.matchAll(/"(open-endfield-terminal|endfield-[a-z0-9-]+)"/g).map((match) => match[1]),
-    ...quickDraftHandoff.matchAll(/"(open-quick-draft|quick-draft-[a-z0-9-]+)"/g).map((match) => match[1]),
+    // 文字亮室's verbs are registered beside Quick Draft's but answer to their
+    // own rule, lightroomCommandAvailable(), so they are gated the same way.
+    ...quickDraftHandoff.matchAll(/"(open-quick-draft|quick-draft-[a-z0-9-]+|lightroom-[a-z0-9-]+)"/g).map((match) => match[1]),
     ...docMap.matchAll(/"(open-docmap|docmap-[a-z0-9-]+|focus-docmap-question)"/g).map((match) => match[1]),
   ]
 );
@@ -145,6 +147,16 @@ const TIME_MACHINE_UNGATED_BUDGET = 0;
 test.assert(
   timeMachineActions.length <= TIME_MACHINE_UNGATED_BUDGET,
   `Time Machine ungated verbs stay within budget (${timeMachineActions.length}/${TIME_MACHINE_UNGATED_BUDGET})`
+);
+test.assertIncludes(
+  quickDraftHandoff,
+  "function lightroomCommandAvailable",
+  "the darkroom answers for its own rows instead of borrowing Quick Draft's rule"
+);
+test.assertIncludes(
+  quickDraftHandoff,
+  'if (!["quickDraft", "lightroom"].includes(frontWindow)) return false;',
+  "the shared rows accept either front window, so the darkroom's bar is not grey by construction"
 );
 test.assertIncludes(
   timeMachine,

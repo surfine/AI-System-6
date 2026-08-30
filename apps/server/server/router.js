@@ -56,6 +56,8 @@ const handleCloudQuota = lazyHandler(() => require("./routes/cloud-quota.js"), "
 const handleCloudCredentials = lazyHandler(() => require("./routes/cloud-credentials.js"), "./routes/cloud-credentials.js", "handleCloudCredentials");
 const handleCloudEmbeddings = lazyHandler(() => require("./routes/cloud-embeddings.js"), "./routes/cloud-embeddings.js", "handleCloudEmbeddings");
 const handleCloudChat = lazyHandler(() => require("./routes/cloud-chat.js"), "./routes/cloud-chat.js", "handleCloudChat");
+const handleCloudFilesUpload = lazyHandler(() => require("./routes/cloud-files.js"), "./routes/cloud-files.js", "handleCloudFilesUpload");
+const handleCloudFilesDelete = lazyHandler(() => require("./routes/cloud-files.js"), "./routes/cloud-files.js", "handleCloudFilesDelete");
 const handleEmbeddings = lazyHandler(() => require("./routes/embeddings.js"), "./routes/embeddings.js", "handleEmbeddings");
 const handleModelBudget = lazyHandler(() => require("./routes/model-budget.js"), "./routes/model-budget.js", "handleModelBudget");
 const handleModels = lazyHandler(() => require("./routes/models.js"), "./routes/models.js", "handleModels");
@@ -111,6 +113,8 @@ const localExactRoutes = new Map([
   ["POST /api/cloud/credentials", handleCloudCredentials],
   ["POST /api/cloud/embeddings", handleCloudEmbeddings],
   ["POST /api/cloud/chat", handleCloudChat],
+  ["POST /api/cloud/files", handleCloudFilesUpload],
+  ["DELETE /api/cloud/files", handleCloudFilesDelete],
   ["POST /api/embeddings", handleEmbeddings],
   ["POST /api/model-budget", handleModelBudget],
   ["GET /api/models", handleModels],
@@ -153,6 +157,8 @@ const publicExactRouteKeys = new Set([
   "POST /api/cloud/status",
   "GET /api/cloud/quota",
   "POST /api/cloud/chat",
+  "POST /api/cloud/files",
+  "DELETE /api/cloud/files",
   // Vision was local-only, so the public profile hid it. The cloud vision
   // model gives the public deployment a real image path, guarded by the same
   // Turnstile session and shared-cloud budget as /api/cloud/chat.

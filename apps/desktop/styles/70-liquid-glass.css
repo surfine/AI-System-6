@@ -52,6 +52,9 @@ body.use-liquid-glass {
   --menu-panel-radius: var(--liquid-menu-radius);
   --menu-panel-backdrop-filter: blur(34px) saturate(160%) brightness(1.04);
   --surface-backdrop-filter: var(--menu-panel-backdrop-filter);
+  /* The glass row is min-height-driven; the text line stays the shared
+     16px menu cadence so the period token is answered, not inherited. */
+  --menu-item-line-height: 16px;
   --field-border: 1px solid rgba(255, 255, 255, 0.62);
   --field-radius: 12px;
   --select-radius: 12px;
@@ -680,24 +683,8 @@ body.use-liquid-glass {
   --glass-lamp-mark-opacity: 0.62;
   /* Window-chrome specimen: the lamp cluster sits at the left of the bar in
      close / minimize / zoom order, the same 15px disc the real chrome draws. */
-  --theme-lab-era-titlebar-minimize-bg: var(--glass-lamp-minimize);
-  --theme-lab-mini-position: relative;
-  --theme-lab-mini-control-display: block;
-  --theme-lab-mini-control-top: 4px;
-  --theme-lab-mini-control-size: 15px;
-  --theme-lab-mini-control-border: 1px solid rgba(16, 17, 20, 0.28);
-  --theme-lab-mini-control-radius: 50%;
-  --theme-lab-mini-control-close-left: 7px;
-  --theme-lab-mini-control-close-bg: var(--glass-lamp-close);
-  --theme-lab-mini-control-minimize-left: 28px;
-  --theme-lab-mini-control-minimize-display: block;
-  --theme-lab-mini-control-zoom-left: 49px;
-  --theme-lab-mini-control-zoom-right: auto;
-  --theme-lab-mini-control-zoom-bg: var(--glass-lamp-zoom);
   /* Glass keeps backdrop lamps but turns them one flat grey, not a dimmed
      colour — the same rule the real title bar follows. */
-  --theme-lab-mini-inactive-control-display: block;
-  --theme-lab-mini-inactive-control-bg: var(--glass-lamp-inactive);
   --glass-accent: #0a84ff;
   /* A focused field stays glass. Classic marks focus with a hard dark frame;
      glass marks it by lighting the same material — brighter rim, denser fill,
@@ -924,6 +911,10 @@ body.use-liquid-glass {
   --tab-bg: rgba(16, 17, 20, 0.06);
   --tab-hover-bg: rgba(255, 255, 255, 0.42);
   --tab-active-bg: rgba(255, 255, 255, 0.72);
+  /* Theme Family Contract: the keyboard ring. The base layer writes System 6's
+     dotted ink ring, so every era that never answered wore it. Each era already
+     names its own ring for controls; this points the shared role at it. */
+  --system-focus-outline: var(--control-focus-outline);
   --control-focus-outline: 2px solid rgba(0, 122, 255, 0.92);
   --control-choice-hover-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.86),
@@ -2518,14 +2509,15 @@ body.use-liquid-glass .btn.default.is-disabled:active {
 }
 
 body.use-liquid-glass .composer {
-  /* The composer is flush with the window, and the window clips its children,
-     so its bottom corners must follow the window curve or the clip leaves a
-     sliver of frame in each corner. The top corners stay the composer's own. */
-  border-radius:
-    var(--clio-composer-radius) var(--clio-composer-radius)
-    var(--container-radius) var(--container-radius);
+  /* Liquid Glass changes the entry pane's material, not its attachment. The
+     bar is docked, so its left and right sides ARE the window edges: a side
+     border and a top corner draw a card inside the window and cut a notch of
+     transcript out of each top corner. The base rule already leaves only the
+     entry divider on top, so this declares no border at all. The bottom
+     corners still follow the window curve, because the window clips its
+     children. The glass keeps its lift. */
+  border-radius: 0 0 var(--container-radius) var(--container-radius);
   background: var(--clio-composer-bg);
-  border: var(--clio-composer-border);
   box-shadow: var(--clio-composer-shadow);
   backdrop-filter: blur(22px) saturate(150%);
   -webkit-backdrop-filter: blur(22px) saturate(150%);

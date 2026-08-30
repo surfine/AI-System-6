@@ -518,7 +518,7 @@
 .review-result-column th {
   border-bottom: var(--review-th-border);
   font-family: var(--title-font);
-  font-weight: var(--system-strong-weight);
+  font-weight: var(--tab-active-weight, var(--tab-font-weight, var(--system-strong-weight)));
   background: var(--review-th-bg);
 }
 
@@ -586,7 +586,7 @@
 /* Info Window Styles */
 .info-window {
   width: 320px;
-  height: auto;
+  height: min(640px, calc(100vh - 48px));
   min-height: 380px;
 }
 
@@ -595,6 +595,8 @@
   flex-direction: column;
   gap: 10px;
   padding: 15px;
+  min-height: 0;
+  overflow: auto;
 }
 
 .info-pane hr {
@@ -606,9 +608,32 @@
 }
 
 .info-header {
-  display: flex;
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
   gap: 15px;
   align-items: center;
+}
+
+/* Finder Get Info is the object's inspection surface, so it requests the
+   authored large icon tier instead of repeating the list-view thumbnail. */
+.info-icon-stage {
+  width: 112px;
+  height: 112px;
+  display: grid;
+  place-items: center;
+  border: var(--large-mini-icon-border);
+  background: var(--large-mini-icon-bg);
+  overflow: hidden;
+}
+
+.info-icon-artwork.sys-icon {
+  width: 104px;
+  height: 104px;
+}
+
+.info-icon-artwork .sys-icon-svg {
+  width: 100%;
+  height: 100%;
 }
 
 .info-main h3 {
@@ -1229,28 +1254,46 @@
   width: 100%;
 }
 
+/* The plain tablist wearing era-owned clothes, on the pattern .control-chooser
+   already follows below: every value resolves through a --tab-* token whose
+   default is the base harness value, so an era that sets nothing renders
+   exactly as before. The metrics come from Theme Lab, which used to keep a
+   second tab control of its own purely to carry them -- Aqua's 24px tabs and
+   its wrap-tab end caps were measured against native evidence and then had
+   nowhere to live but the specimen. */
 .system-tabs {
   display: flex;
-  gap: 3px;
+  align-items: var(--tab-strip-align-items, stretch);
+  gap: var(--tab-strip-gap, 3px);
   width: 100%;
   margin-bottom: 0;
-  border-bottom: var(--system-border);
+  padding: var(--tab-strip-padding, 0);
+  background: var(--tab-strip-bg, transparent);
+  border-top: var(--tab-strip-border-top, 0);
+  border-bottom: var(--tab-strip-border-bottom, var(--system-border));
+  overflow: var(--tab-strip-overflow, visible);
 }
 
 .system-tab {
-  flex: 1 1 0;
-  min-width: 0;
-  min-height: 28px;
+  flex: var(--tab-flex, 1 1 0);
+  min-width: var(--tab-min-width, 0);
+  width: var(--tab-width, auto);
+  min-height: var(--tab-min-height, 28px);
+  height: var(--tab-height, auto);
   position: relative;
   bottom: calc(0px - var(--tab-overlap));
-  padding: 4px 10px;
-  border: var(--system-border);
-  border-bottom: none;
+  margin: var(--tab-margin, 0);
+  padding: var(--tab-padding, 4px 10px);
+  border: var(--tab-border, var(--system-border));
+  border-bottom: var(--tab-border-bottom, none);
   border-radius: var(--tab-radius) var(--tab-radius) 0 0;
   background: var(--tab-bg);
+  box-shadow: var(--tab-shadow, none);
+  font-variation-settings: var(--tab-font-variation-settings, inherit);
   color: var(--ink);
   font: inherit;
-  line-height: 1.2;
+  font-weight: var(--tab-font-weight, inherit);
+  line-height: var(--tab-line-height, 1.2);
   text-align: center;
   cursor: pointer;
   white-space: nowrap;
@@ -1265,14 +1308,81 @@
   background: var(--tab-hover-bg);
 }
 
+/* Pressed is not selected. Platinum inks a held tab the way its cdev tabs do
+   and lets go again; the selected tab keeps its own --tab-active-* clothes. */
+.system-tab:not(.is-active):active {
+  background: var(--tab-pressed-bg, var(--tab-active-bg));
+  color: var(--tab-pressed-fg, inherit);
+}
+
+.system-tab:first-child {
+  border-radius: var(--tab-first-radius, var(--tab-radius) var(--tab-radius) 0 0);
+}
+
+.system-tab:last-child {
+  /* The strip closes on a real edge even where an era drew no border on the
+     tabs themselves: Platinum sets --tab-border to 0 and still ends the strip
+     with the system line, which is what the Mac OS 9 capture shows. */
+  border-right: var(--tab-last-border-right, var(--system-border));
+  border-radius: var(--tab-last-radius, var(--tab-radius) var(--tab-radius) 0 0);
+}
+
 .system-tab:focus-visible {
-  outline: var(--control-focus-outline);
+  outline: var(--tab-focus-outline, var(--control-focus-outline));
   outline-offset: var(--control-focus-offset);
+  text-shadow: var(--tab-focus-text-shadow, none);
 }
 
 .system-tab.is-active {
+  min-height: var(--tab-active-min-height, var(--tab-min-height, 28px));
+  height: var(--tab-active-height, var(--tab-height, auto));
+  /* The selected tab merges into the panel below it, so its bottom edge is the
+     panel's surface rather than a line. Transparent would show whatever sits
+     behind the strip and read as an edge in a pixel comparison. */
+  border-bottom-color: var(--tab-active-border-bottom-color, var(--surface-primary));
   background: var(--tab-active-bg);
+  color: var(--tab-active-fg, inherit);
   font-weight: var(--system-strong-weight);
+  box-shadow: var(--tab-active-shadow, var(--tab-shadow, none));
+}
+
+/* Wrap-tab end caps. Aqua draws a rounded cap at each end of a tab; every
+   other era leaves the content token unset and the pseudo-elements never
+   render. */
+.system-tab::before,
+.system-tab::after {
+  content: var(--tab-edge-content, none);
+  position: absolute;
+  top: var(--tab-edge-top, 0);
+  width: var(--tab-edge-width, 0);
+  height: var(--tab-edge-height, 100%);
+  pointer-events: none;
+}
+
+.system-tab::before {
+  left: 0;
+  background: var(--tab-edge-left-bg, none);
+}
+
+.system-tab::after {
+  right: 0;
+  background: var(--tab-edge-right-bg, none);
+}
+
+/* The selected tab may carry its own caps: Platinum's selected tab is drawn
+   from two end SVGs and a repeating middle. */
+.system-tab.is-active::before,
+.system-tab.is-active::after {
+  top: var(--tab-active-edge-top, var(--tab-edge-top, 0));
+  height: var(--tab-active-edge-height, var(--tab-edge-height, 100%));
+}
+
+.system-tab.is-active::before {
+  background: var(--tab-active-edge-left-bg, var(--tab-edge-left-bg, none));
+}
+
+.system-tab.is-active::after {
+  background: var(--tab-active-edge-right-bg, var(--tab-edge-right-bg, none));
 }
 
 .system-tab:disabled {
@@ -1314,6 +1424,36 @@
   background: var(--control-chooser-item-bg);
   color: var(--control-chooser-item-fg);
   box-shadow: var(--control-chooser-item-shadow);
+  /* The chooser is a settings-navigation object, not a tab strip that happens
+     to sit in a window: an era clothes it as an icon rail or a toolbar. So it
+     answers to its own tokens for the metrics the plain tablist now takes from
+     --tab-*, or Platinum's 23px tab height would squash a rail of icons. */
+  min-height: var(--control-chooser-item-min-height, 28px);
+  height: var(--control-chooser-item-height, auto);
+  width: var(--control-chooser-item-width, auto);
+  min-width: var(--control-chooser-item-min-width, 0);
+  margin: var(--control-chooser-item-margin, 0);
+  font-variation-settings: var(--control-chooser-item-font-variation-settings, normal);
+  font-weight: var(--control-chooser-item-font-weight, inherit);
+  line-height: var(--control-chooser-item-line-height, 1.2);
+}
+
+/* Wrap-tab end caps belong to the tab strip. A chooser item never wears them,
+   whatever the era set for the tablist. */
+.control-chooser .system-tab::before,
+.control-chooser .system-tab::after {
+  content: none;
+}
+
+.control-chooser .system-tab:first-child,
+.control-chooser .system-tab:last-child {
+  border-right: var(--control-chooser-item-border-right, var(--control-chooser-item-border));
+  border-radius: var(--control-chooser-item-radius);
+}
+
+.control-chooser .system-tab:not(.is-active):active {
+  background: var(--control-chooser-pressed-bg, var(--control-chooser-active-bg));
+  color: var(--control-chooser-pressed-fg, var(--control-chooser-active-fg));
 }
 
 .control-chooser .system-tab:not(.is-active):hover {
@@ -1359,6 +1499,11 @@
   white-space: nowrap;
 }
 
+/* Deliberately not tokenised. An era's tab-panel metrics are measured from a
+   tabbed dialog, and the only tab strip in the product is Theme Lab's own
+   specimen; Control Panel's sections are also .system-tab-panel but they hang
+   off a settings navigation, and giving them Aqua's 6px 9px and its 3px bottom
+   radius rewrote a third of that window. The specimen carries those values. */
 .system-tab-panel {
   display: grid;
   gap: 8px;
@@ -1708,7 +1853,7 @@
 }
 
 .alarm-clock-mode:focus-visible {
-  outline: 1px dotted var(--ink);
+  outline: var(--system-focus-outline);
   outline-offset: -4px;
 }
 
@@ -2733,7 +2878,7 @@ body.alarm-clock-ringing .alarm-clock-menu-icon {
 }
 
 .file-picker-input:focus-visible + .file-picker-button {
-  outline: 1px dotted var(--ink);
+  outline: var(--system-focus-outline);
   outline-offset: 2px;
 }
 

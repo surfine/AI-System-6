@@ -86,6 +86,23 @@
     "styles/60-responsive.css": 1,
     "styles/67-aqua-appearance.css": 190
   },
+  "_eraTokenCoverageNote": "What a seventh appearance owes. A token two eras set is a period decision; a token one era sets is that era's quirk. Coverage counts the first kind an era answers, following its recipeBase chain, and Theme Lab's Tokens tab shows the same list on screen so the number is a worklist rather than a score. The rule is asymmetric on purpose: an era with no entry here -- a NEW appearance -- must answer all of them, because arriving complete is the point of the gate; the six that predate it carry real debt and are ratcheted instead, each count may only fall. baselineEra is exempt because its values ARE the defaults the others override. Measured 2026-08-30 against 406 period tokens. Lower a number when you answer tokens; never raise one.",
+  "eraTokenCoverage": {
+    "baselineEra": "classic",
+    "missing": {
+      "platinum": 127,
+      "aqua": 18,
+      "snow-leopard": 8,
+      "yosemite": 132,
+      "liquid-glass": 162
+    }
+  },
+  "_themeLabReplicaNote": "Ratchet over what Theme Lab costs the appearance sheets. The Lab exists to cut the per-theme workload -- one place to change, six themes served -- and a specimen built from theme-lab-* classes inverts that: every era dresses the real control once and the Lab's copy a second time, and the copy drifts. It drew a three-lamp title bar with a Minimize this product has never had. Measured 2026-08-29 after the chrome, scrollbar, tab, menu, dialog, balloon and window fixtures became real parts: 723 mentions, down from 1,039. The count may only fall. To lower it, convert a specimen to the shipping component and move any era metrics onto that component's own token family -- not by deleting the era knowledge, which is the evidence. What legitimately remains: the historical reproductions (a Mac OS 9 Apple menu, the 10.2 column browser), the board's own furniture, and specimens whose component the product does not have yet -- a list, a segmented control, a progress bar. Build the product part first; the Lab never invents one.",
+  "themeLabReplicaMentions": {
+    "styles/65-appearance-themes.css": 351,
+    "styles/67-aqua-appearance.css": 365,
+    "styles/70-liquid-glass.css": 7
+  },
   "_appearanceGeometryNote": "Ratchet over the layout carried by the three appearance stylesheets. A declaration that recolors or re-materials cannot move anything, so its correctness is a token diff; a declaration that sets geometry makes that appearance a separate layout at that spot, and only an eye or a pixel snapshot can check it. Measured 2026-08-21: 848 geometry declarations out of 5,969 across the three files — that count, not the six appearances, is what multiplies the verification matrix. Both numbers may only shrink. DRAINING IS NOT A SWEEP. The obvious candidate — rewriting `border: 1px solid <color>` as border-color — was checked and rejected, though not for the reason first written here: base .btn draws `var(--system-control-line) solid`, and that token is 1.5px only under body.use-modern-fonts, which theme-registry.js applies when fontStrategy is \"modern\" (liquid-glass, always) or \"preference\" with the preference on (classic). Platinum is fontStrategy \"theme\" and can never carry that class, so Platinum's literal 1px is NOT the deliberate override the earlier note claimed. The conclusion stands and the rule generalises: the token resolves per appearance, so converting border to border-color blindly would silently change liquid-glass, and classic under modern fonts — the exact historical failure this budget exists to stop. Check the token for the appearance you are editing, never for appearances in general. Drain a site only when you are touching it anyway and can show the base rule it inherits; the honest form is usually a per-appearance token override, which this counter does not charge for. An era typeface or an era title-bar height is real geometry and stays. 'unprefixed' counts top-level rules in an appearance sheet that declare a real property with no appearance prefix: such a rule ships to all six appearances from inside a theme file, where neither this ratchet nor the twin audit can see that it does not belong. Rules that declare nothing but custom properties are exempt — the sprite-cell mappings are theme-independent data and a token lays nothing out.",
   "appearanceGeometry": {
     "styles/65-appearance-themes.css": {

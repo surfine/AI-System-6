@@ -510,7 +510,7 @@ body.quick-draft-focus .writing-spine-panel {
 }
 
 .hold-thought-mode:focus-visible {
-  outline: 1px dotted var(--ink);
+  outline: var(--system-focus-outline);
   outline-offset: -3px;
 }
 
@@ -1968,7 +1968,7 @@ html:lang(zh-Hans) .title-bar h2 {
 .sideask-source-link:hover,
 .sideask-source-link:focus-visible {
   background: var(--panel);
-  outline: 1px dotted var(--ink);
+  outline: var(--system-focus-outline);
   outline-offset: 1px;
 }
 
@@ -1992,7 +1992,7 @@ html:lang(zh-Hans) .title-bar h2 {
 }
 
 .clio-chat-file-link:focus-visible {
-  outline: 1px dotted var(--ink);
+  outline: var(--system-focus-outline);
   outline-offset: 1px;
 }
 
@@ -2050,7 +2050,7 @@ html:lang(zh-Hans) .title-bar h2 {
 
 .assistant-meter:hover,
 .assistant-meter:focus-visible {
-  outline: 1px dotted var(--ink);
+  outline: var(--system-focus-outline);
   opacity: 1;
 }
 
@@ -2374,12 +2374,12 @@ html:lang(zh-Hans) .title-bar h2 {
 }
 
 .clio-inline-citation:focus-visible {
-  outline: 1px dotted var(--ink);
+  outline: var(--system-focus-outline);
   outline-offset: 2px;
 }
 
 .clio-basis-chip:focus-visible {
-  outline: 1px dotted var(--ink);
+  outline: var(--system-focus-outline);
   outline-offset: 2px;
 }
 
@@ -2402,7 +2402,7 @@ html:lang(zh-Hans) .title-bar h2 {
 }
 
 .clio-context-link:focus-visible {
-  outline: 1px dotted var(--ink);
+  outline: var(--system-focus-outline);
   outline-offset: 2px;
 }
 
@@ -2885,7 +2885,7 @@ html:lang(zh-Hans) .title-bar h2 {
 }
 
 .clio-tally-unkept:focus-visible {
-  outline: 1px dotted var(--ink);
+  outline: var(--system-focus-outline);
   outline-offset: 2px;
 }
 
@@ -3785,7 +3785,14 @@ select:focus {
   display: none;
 }
 
-.select-wrap.has-system-select > select {
+/* The harness has taken this select over, so the native control must not paint
+   at all. The :disabled twin is not redundant: an era that dims a native
+   disabled select (Aqua sets opacity .65 so a real <select> reads as
+   unavailable) outranks the plain selector, and the hidden control came back
+   at 65% under the button — the pop-up drew its label twice. Two selectors
+   here cost less than teaching every era to exempt a control it cannot see. */
+.select-wrap.has-system-select > select,
+.select-wrap.has-system-select > select:disabled {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -3844,13 +3851,16 @@ select:focus {
   border-top: 6px solid var(--ink);
 }
 
+/* Dimmed once, by ink — the same doctrine as .btn:disabled above. This rule
+   kept the second dim (grey ink AND opacity) after the buttons were fixed,
+   which is how the select harness stayed at 2.30:1 (Classic), 2.06 (Snow
+   Leopard) and 1.58 (Yosemite) while every disabled button read 3.3+. */
 .system-select-button:disabled {
-  color: var(--shade-dark);
+  color: var(--system-disabled-fg, var(--shade-dark));
   background: var(
     --control-disabled-bg,
     repeating-linear-gradient(45deg, var(--paper) 0, var(--paper) 4px, #eeeeee 4px, #eeeeee 8px)
   );
-  opacity: var(--control-disabled-opacity);
 }
 
 .system-select-button:focus-visible {

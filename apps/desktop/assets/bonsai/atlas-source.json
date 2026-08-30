@@ -164,9 +164,9 @@
       255
     ],
     "glass": [
-      142,
-      188,
-      196,
+      122,
+      158,
+      182,
       255
     ],
     "windowNight": [
@@ -176,9 +176,9 @@
       255
     ],
     "roofTile": [
-      128,
-      92,
-      66,
+      150,
+      78,
+      62,
       255
     ],
     "roofDark": [
@@ -305,6 +305,192 @@
       136,
       138,
       130,
+      255
+    ],
+    "glassCool": [
+      126,
+      158,
+      176,
+      255
+    ],
+    "awning": [
+      154,
+      76,
+      62,
+      255
+    ],
+    "awningAlt": [
+      72,
+      96,
+      118,
+      255
+    ],
+    "sign": [
+      206,
+      168,
+      76,
+      255
+    ],
+    "signCool": [
+      96,
+      132,
+      156,
+      255
+    ],
+    "stack": [
+      176,
+      172,
+      164,
+      255
+    ],
+    "brick": [
+      142,
+      92,
+      74,
+      255
+    ],
+    "steel": [
+      148,
+      156,
+      162,
+      255
+    ],
+    "door": [
+      74,
+      62,
+      56,
+      255
+    ],
+    "parapet": [
+      196,
+      194,
+      186,
+      255
+    ],
+    "roofDeck": [
+      86,
+      84,
+      82,
+      255
+    ],
+    "resBrick": [
+      152,
+      92,
+      78,
+      255
+    ],
+    "resCream": [
+      196,
+      176,
+      142,
+      255
+    ],
+    "resOlive": [
+      126,
+      130,
+      96,
+      255
+    ],
+    "resSlate": [
+      128,
+      132,
+      142,
+      255
+    ],
+    "comBlue": [
+      92,
+      122,
+      158,
+      255
+    ],
+    "comTeal": [
+      84,
+      140,
+      138,
+      255
+    ],
+    "comSand": [
+      186,
+      166,
+      124,
+      255
+    ],
+    "comGrey": [
+      142,
+      146,
+      152,
+      255
+    ],
+    "indTan": [
+      176,
+      150,
+      96,
+      255
+    ],
+    "indRust": [
+      158,
+      104,
+      70,
+      255
+    ],
+    "indOlive": [
+      132,
+      128,
+      88,
+      255
+    ],
+    "indSteel": [
+      140,
+      146,
+      150,
+      255
+    ],
+    "roofClay": [
+      150,
+      78,
+      62,
+      255
+    ],
+    "roofSlate": [
+      96,
+      100,
+      110,
+      255
+    ],
+    "roofGreen": [
+      92,
+      110,
+      88,
+      255
+    ],
+    "roofRust": [
+      132,
+      88,
+      58,
+      255
+    ],
+    "roofLead": [
+      118,
+      118,
+      122,
+      255
+    ],
+    "subway": [
+      92,
+      88,
+      104,
+      255
+    ],
+    "subwayLight": [
+      136,
+      130,
+      150,
+      255
+    ],
+    "pipeLight": [
+      150,
+      176,
+      190,
       255
     ]
   },
@@ -445,6 +631,16 @@
       "family": "bridge-highway",
       "color": "road",
       "accent": "roadLight"
+    },
+    {
+      "family": "pipe",
+      "color": "pipe",
+      "accent": "pipeLight"
+    },
+    {
+      "family": "subway",
+      "color": "subway",
+      "accent": "subwayLight"
     }
   ],
   "connectorShapes": [
@@ -530,7 +726,7 @@
         1,
         1
       ],
-      "height": 24
+      "height": 20
     },
     {
       "stage": 2,
@@ -539,7 +735,7 @@
         2,
         2
       ],
-      "height": 46
+      "height": 44
     },
     {
       "stage": 3,
@@ -548,10 +744,10 @@
         3,
         3
       ],
-      "height": 70
+      "height": 76
     }
   ],
-  "normalVariantsPerStage": 4,
+  "normalVariantsPerStage": 24,
   "buildingStates": [
     "foundation",
     "construction",
@@ -1806,5 +2002,1436 @@
       "light": "glass",
       "variant": 1
     }
-  ]
+  ],
+  "buildingGrammar": {
+    "residential": {
+      "1": {
+        "walls": [
+          "resBrick",
+          "resCream",
+          "resOlive",
+          "resSlate"
+        ],
+        "massing": [
+          "single",
+          "wing",
+          "single",
+          "gable"
+        ],
+        "roof": [
+          "pitched",
+          "hipped"
+        ],
+        "clutter": [
+          "chimney"
+        ],
+        "groundFloor": {
+          "kind": "door",
+          "height": 6
+        },
+        "floorHeight": 9,
+        "rhythms": [
+          {
+            "columnPitch": 7,
+            "windowWidth": 4,
+            "windowHeight": 4
+          },
+          {
+            "columnPitch": 9,
+            "windowWidth": 5,
+            "windowHeight": 5
+          },
+          {
+            "columnPitch": 11,
+            "windowWidth": 6,
+            "windowHeight": 4
+          },
+          {
+            "columnPitch": 8,
+            "windowWidth": 4,
+            "windowHeight": 6
+          }
+        ],
+        "ribbon": false,
+        "sparseWindows": true,
+        "banding": false,
+        "roofColors": [
+          "roofClay",
+          "roofSlate",
+          "roofGreen",
+          "roofRust",
+          "roofLead"
+        ],
+        "inset": 0.2
+      },
+      "2": {
+        "walls": [
+          "resBrick",
+          "resCream",
+          "resOlive",
+          "resSlate"
+        ],
+        "massing": [
+          "single",
+          "setback",
+          "twin",
+          "wing",
+          "courtyard",
+          "stepped"
+        ],
+        "roof": [
+          "flat",
+          "pitched",
+          "stepped"
+        ],
+        "clutter": [
+          "tank",
+          "bulkhead",
+          "vents",
+          "chimney"
+        ],
+        "groundFloor": {
+          "kind": "door",
+          "height": 7
+        },
+        "floorHeight": 10,
+        "rhythms": [
+          {
+            "columnPitch": 7,
+            "windowWidth": 4,
+            "windowHeight": 4
+          },
+          {
+            "columnPitch": 9,
+            "windowWidth": 5,
+            "windowHeight": 5
+          },
+          {
+            "columnPitch": 11,
+            "windowWidth": 6,
+            "windowHeight": 4
+          },
+          {
+            "columnPitch": 8,
+            "windowWidth": 4,
+            "windowHeight": 6
+          }
+        ],
+        "ribbon": false,
+        "sparseWindows": true,
+        "banding": true,
+        "roofColors": [
+          "roofClay",
+          "roofSlate",
+          "roofGreen",
+          "roofRust",
+          "roofLead"
+        ],
+        "inset": 0.07
+      },
+      "3": {
+        "walls": [
+          "resBrick",
+          "resCream",
+          "resOlive",
+          "resSlate"
+        ],
+        "massing": [
+          "setback",
+          "podium",
+          "twin",
+          "stepped",
+          "single",
+          "wing"
+        ],
+        "roof": [
+          "flat",
+          "stepped"
+        ],
+        "clutter": [
+          "tank",
+          "antenna",
+          "bulkhead",
+          "vents"
+        ],
+        "groundFloor": {
+          "kind": "door",
+          "height": 8
+        },
+        "floorHeight": 10,
+        "rhythms": [
+          {
+            "columnPitch": 7,
+            "windowWidth": 4,
+            "windowHeight": 4
+          },
+          {
+            "columnPitch": 9,
+            "windowWidth": 5,
+            "windowHeight": 5
+          },
+          {
+            "columnPitch": 11,
+            "windowWidth": 6,
+            "windowHeight": 4
+          },
+          {
+            "columnPitch": 8,
+            "windowWidth": 4,
+            "windowHeight": 6
+          }
+        ],
+        "ribbon": false,
+        "sparseWindows": true,
+        "banding": true,
+        "roofColors": [
+          "roofClay",
+          "roofSlate",
+          "roofGreen",
+          "roofRust",
+          "roofLead"
+        ],
+        "inset": 0.07
+      }
+    },
+    "commercial": {
+      "1": {
+        "walls": [
+          "comBlue",
+          "comTeal",
+          "comSand",
+          "comGrey"
+        ],
+        "massing": [
+          "single",
+          "wing",
+          "gable",
+          "single"
+        ],
+        "roof": [
+          "flat",
+          "pitched"
+        ],
+        "clutter": [
+          "sign"
+        ],
+        "groundFloor": {
+          "kind": "shopfront",
+          "height": 8
+        },
+        "floorHeight": 9,
+        "rhythms": [
+          {
+            "columnPitch": 7,
+            "windowWidth": 4,
+            "windowHeight": 4
+          },
+          {
+            "columnPitch": 9,
+            "windowWidth": 5,
+            "windowHeight": 5
+          },
+          {
+            "columnPitch": 11,
+            "windowWidth": 6,
+            "windowHeight": 4
+          },
+          {
+            "columnPitch": 8,
+            "windowWidth": 4,
+            "windowHeight": 6
+          }
+        ],
+        "ribbon": true,
+        "sparseWindows": false,
+        "banding": true,
+        "roofColors": [
+          "roofClay",
+          "roofSlate",
+          "roofGreen",
+          "roofRust",
+          "roofLead"
+        ],
+        "inset": 0.2
+      },
+      "2": {
+        "walls": [
+          "comBlue",
+          "comTeal",
+          "comSand",
+          "comGrey"
+        ],
+        "massing": [
+          "single",
+          "setback",
+          "twin",
+          "wing",
+          "courtyard",
+          "podium"
+        ],
+        "roof": [
+          "flat",
+          "stepped"
+        ],
+        "clutter": [
+          "sign",
+          "bulkhead",
+          "vents",
+          "antenna"
+        ],
+        "groundFloor": {
+          "kind": "shopfront",
+          "height": 9
+        },
+        "floorHeight": 9,
+        "rhythms": [
+          {
+            "columnPitch": 7,
+            "windowWidth": 4,
+            "windowHeight": 4
+          },
+          {
+            "columnPitch": 9,
+            "windowWidth": 5,
+            "windowHeight": 5
+          },
+          {
+            "columnPitch": 11,
+            "windowWidth": 6,
+            "windowHeight": 4
+          },
+          {
+            "columnPitch": 8,
+            "windowWidth": 4,
+            "windowHeight": 6
+          }
+        ],
+        "ribbon": true,
+        "sparseWindows": false,
+        "banding": true,
+        "roofColors": [
+          "roofClay",
+          "roofSlate",
+          "roofGreen",
+          "roofRust",
+          "roofLead"
+        ],
+        "inset": 0.07
+      },
+      "3": {
+        "walls": [
+          "comBlue",
+          "comTeal",
+          "comSand",
+          "comGrey"
+        ],
+        "massing": [
+          "podium",
+          "setback",
+          "stepped",
+          "twin",
+          "single",
+          "courtyard"
+        ],
+        "roof": [
+          "flat",
+          "stepped"
+        ],
+        "clutter": [
+          "sign",
+          "antenna",
+          "bulkhead",
+          "tank"
+        ],
+        "groundFloor": {
+          "kind": "shopfront",
+          "height": 9
+        },
+        "floorHeight": 9,
+        "rhythms": [
+          {
+            "columnPitch": 7,
+            "windowWidth": 4,
+            "windowHeight": 4
+          },
+          {
+            "columnPitch": 9,
+            "windowWidth": 5,
+            "windowHeight": 5
+          },
+          {
+            "columnPitch": 11,
+            "windowWidth": 6,
+            "windowHeight": 4
+          },
+          {
+            "columnPitch": 8,
+            "windowWidth": 4,
+            "windowHeight": 6
+          }
+        ],
+        "ribbon": true,
+        "sparseWindows": false,
+        "banding": true,
+        "roofColors": [
+          "roofClay",
+          "roofSlate",
+          "roofGreen",
+          "roofRust",
+          "roofLead"
+        ],
+        "inset": 0.07
+      }
+    },
+    "industrial": {
+      "1": {
+        "walls": [
+          "indTan",
+          "indRust",
+          "indOlive",
+          "indSteel"
+        ],
+        "massing": [
+          "single",
+          "wing",
+          "gable",
+          "single"
+        ],
+        "roof": [
+          "sawtooth",
+          "flat"
+        ],
+        "clutter": [
+          "vents",
+          "stack"
+        ],
+        "groundFloor": {
+          "kind": "loading",
+          "height": 8
+        },
+        "floorHeight": 11,
+        "rhythms": [
+          {
+            "columnPitch": 7,
+            "windowWidth": 4,
+            "windowHeight": 4
+          },
+          {
+            "columnPitch": 9,
+            "windowWidth": 5,
+            "windowHeight": 5
+          },
+          {
+            "columnPitch": 11,
+            "windowWidth": 6,
+            "windowHeight": 4
+          },
+          {
+            "columnPitch": 8,
+            "windowWidth": 4,
+            "windowHeight": 6
+          }
+        ],
+        "ribbon": false,
+        "sparseWindows": true,
+        "banding": false,
+        "roofColors": [
+          "roofClay",
+          "roofSlate",
+          "roofGreen",
+          "roofRust",
+          "roofLead"
+        ],
+        "inset": 0.2
+      },
+      "2": {
+        "walls": [
+          "indTan",
+          "indRust",
+          "indOlive",
+          "indSteel"
+        ],
+        "massing": [
+          "wing",
+          "single",
+          "twin",
+          "courtyard",
+          "stepped",
+          "setback"
+        ],
+        "roof": [
+          "sawtooth",
+          "flat"
+        ],
+        "clutter": [
+          "stack",
+          "tank",
+          "vents"
+        ],
+        "groundFloor": {
+          "kind": "loading",
+          "height": 9
+        },
+        "floorHeight": 12,
+        "rhythms": [
+          {
+            "columnPitch": 7,
+            "windowWidth": 4,
+            "windowHeight": 4
+          },
+          {
+            "columnPitch": 9,
+            "windowWidth": 5,
+            "windowHeight": 5
+          },
+          {
+            "columnPitch": 11,
+            "windowWidth": 6,
+            "windowHeight": 4
+          },
+          {
+            "columnPitch": 8,
+            "windowWidth": 4,
+            "windowHeight": 6
+          }
+        ],
+        "ribbon": false,
+        "sparseWindows": true,
+        "banding": false,
+        "roofColors": [
+          "roofClay",
+          "roofSlate",
+          "roofGreen",
+          "roofRust",
+          "roofLead"
+        ],
+        "inset": 0.07
+      },
+      "3": {
+        "walls": [
+          "indTan",
+          "indRust",
+          "indOlive",
+          "indSteel"
+        ],
+        "massing": [
+          "twin",
+          "wing",
+          "podium",
+          "stepped",
+          "single",
+          "courtyard"
+        ],
+        "roof": [
+          "flat",
+          "sawtooth"
+        ],
+        "clutter": [
+          "stack",
+          "tank",
+          "vents",
+          "antenna"
+        ],
+        "groundFloor": {
+          "kind": "loading",
+          "height": 10
+        },
+        "floorHeight": 12,
+        "rhythms": [
+          {
+            "columnPitch": 7,
+            "windowWidth": 4,
+            "windowHeight": 4
+          },
+          {
+            "columnPitch": 9,
+            "windowWidth": 5,
+            "windowHeight": 5
+          },
+          {
+            "columnPitch": 11,
+            "windowWidth": 6,
+            "windowHeight": 4
+          },
+          {
+            "columnPitch": 8,
+            "windowWidth": 4,
+            "windowHeight": 6
+          }
+        ],
+        "ribbon": false,
+        "sparseWindows": true,
+        "banding": false,
+        "roofColors": [
+          "roofClay",
+          "roofSlate",
+          "roofGreen",
+          "roofRust",
+          "roofLead"
+        ],
+        "inset": 0.07
+      }
+    }
+  },
+  "facilityGrammar": {
+    "facility.coal": {
+      "massing": [
+        "wing"
+      ],
+      "roof": [
+        "flat"
+      ],
+      "clutter": [
+        "stack",
+        "stack",
+        "stack"
+      ],
+      "floorHeight": 11,
+      "columnPitch": 10,
+      "windowWidth": 5,
+      "windowHeight": 4,
+      "sparseWindows": true,
+      "banding": false
+    },
+    "facility.oil": {
+      "massing": [
+        "wing"
+      ],
+      "roof": [
+        "flat"
+      ],
+      "clutter": [
+        "stack",
+        "stack",
+        "tank"
+      ],
+      "floorHeight": 11,
+      "columnPitch": 10,
+      "windowWidth": 5,
+      "windowHeight": 4,
+      "sparseWindows": true,
+      "banding": false
+    },
+    "facility.gas": {
+      "massing": [
+        "twin"
+      ],
+      "roof": [
+        "flat"
+      ],
+      "clutter": [
+        "stack",
+        "tank",
+        "tank"
+      ],
+      "floorHeight": 11,
+      "columnPitch": 10,
+      "windowWidth": 5,
+      "windowHeight": 4,
+      "sparseWindows": true,
+      "banding": false
+    },
+    "facility.nuclear": {
+      "massing": [
+        "setback"
+      ],
+      "roof": [
+        "flat"
+      ],
+      "clutter": [
+        "coolingTower",
+        "coolingTower",
+        "vents"
+      ],
+      "floorHeight": 11,
+      "columnPitch": 10,
+      "windowWidth": 5,
+      "windowHeight": 4,
+      "sparseWindows": true,
+      "banding": false,
+      "roofRise": 0
+    },
+    "facility.fusion": {
+      "massing": [
+        "setback"
+      ],
+      "roof": [
+        "flat"
+      ],
+      "clutter": [
+        "coolingTower",
+        "antenna"
+      ],
+      "floorHeight": 11,
+      "columnPitch": 10,
+      "windowWidth": 5,
+      "windowHeight": 4,
+      "sparseWindows": true,
+      "banding": false
+    },
+    "facility.hydro": {
+      "massing": [
+        "single"
+      ],
+      "roof": [
+        "flat"
+      ],
+      "clutter": [
+        "vents"
+      ],
+      "floorHeight": 11,
+      "columnPitch": 10,
+      "windowWidth": 5,
+      "windowHeight": 4,
+      "sparseWindows": true,
+      "banding": false,
+      "groundFloor": {
+        "kind": "loading",
+        "height": 10
+      }
+    },
+    "facility.solar": {
+      "massing": [
+        "single"
+      ],
+      "roof": [
+        "sawtooth"
+      ],
+      "clutter": [],
+      "floorHeight": 11,
+      "columnPitch": 10,
+      "windowWidth": 5,
+      "windowHeight": 4,
+      "sparseWindows": true,
+      "banding": false
+    },
+    "facility.microwave": {
+      "massing": [
+        "single"
+      ],
+      "roof": [
+        "flat"
+      ],
+      "clutter": [
+        "antenna",
+        "antenna",
+        "vents"
+      ],
+      "floorHeight": 11,
+      "columnPitch": 10,
+      "windowWidth": 5,
+      "windowHeight": 4,
+      "sparseWindows": true,
+      "banding": false
+    },
+    "facility.pump": {
+      "massing": [
+        "single"
+      ],
+      "roof": [
+        "flat"
+      ],
+      "clutter": [
+        "tank"
+      ],
+      "floorHeight": 11,
+      "columnPitch": 10,
+      "windowWidth": 5,
+      "windowHeight": 4,
+      "sparseWindows": true,
+      "banding": false,
+      "groundFloor": {
+        "kind": "loading",
+        "height": 8
+      }
+    },
+    "facility.treatment": {
+      "massing": [
+        "wing"
+      ],
+      "roof": [
+        "flat"
+      ],
+      "clutter": [
+        "tank",
+        "vents"
+      ],
+      "floorHeight": 11,
+      "columnPitch": 10,
+      "windowWidth": 5,
+      "windowHeight": 4,
+      "sparseWindows": true,
+      "banding": false
+    },
+    "facility.desal": {
+      "massing": [
+        "wing"
+      ],
+      "roof": [
+        "flat"
+      ],
+      "clutter": [
+        "tank",
+        "tank"
+      ],
+      "floorHeight": 11,
+      "columnPitch": 10,
+      "windowWidth": 5,
+      "windowHeight": 4,
+      "sparseWindows": true,
+      "banding": false
+    },
+    "facility.police": {
+      "massing": [
+        "single"
+      ],
+      "roof": [
+        "pitched"
+      ],
+      "clutter": [
+        "antenna"
+      ],
+      "floorHeight": 11,
+      "columnPitch": 10,
+      "windowWidth": 5,
+      "windowHeight": 4,
+      "sparseWindows": true,
+      "banding": false,
+      "roofRise": 8,
+      "groundFloor": {
+        "kind": "door",
+        "height": 8
+      }
+    },
+    "facility.fire": {
+      "massing": [
+        "single"
+      ],
+      "roof": [
+        "pitched"
+      ],
+      "clutter": [
+        "bulkhead"
+      ],
+      "floorHeight": 11,
+      "columnPitch": 10,
+      "windowWidth": 5,
+      "windowHeight": 4,
+      "sparseWindows": true,
+      "banding": false,
+      "roofRise": 8,
+      "groundFloor": {
+        "kind": "loading",
+        "height": 9
+      }
+    },
+    "facility.school": {
+      "massing": [
+        "wing"
+      ],
+      "roof": [
+        "pitched"
+      ],
+      "clutter": [
+        "chimney"
+      ],
+      "floorHeight": 11,
+      "columnPitch": 10,
+      "windowWidth": 5,
+      "windowHeight": 4,
+      "sparseWindows": true,
+      "banding": false,
+      "roofRise": 7,
+      "groundFloor": {
+        "kind": "door",
+        "height": 8
+      }
+    },
+    "facility.clinic": {
+      "massing": [
+        "single"
+      ],
+      "roof": [
+        "flat"
+      ],
+      "clutter": [
+        "bulkhead",
+        "vents"
+      ],
+      "floorHeight": 11,
+      "columnPitch": 10,
+      "windowWidth": 5,
+      "windowHeight": 4,
+      "sparseWindows": true,
+      "banding": false,
+      "groundFloor": {
+        "kind": "door",
+        "height": 8
+      }
+    },
+    "facility.station": {
+      "massing": [
+        "wing"
+      ],
+      "roof": [
+        "sawtooth"
+      ],
+      "clutter": [],
+      "floorHeight": 11,
+      "columnPitch": 10,
+      "windowWidth": 5,
+      "windowHeight": 4,
+      "sparseWindows": true,
+      "banding": false,
+      "groundFloor": {
+        "kind": "loading",
+        "height": 9
+      }
+    },
+    "facility.bus": {
+      "massing": [
+        "wing"
+      ],
+      "roof": [
+        "sawtooth"
+      ],
+      "clutter": [],
+      "floorHeight": 11,
+      "columnPitch": 10,
+      "windowWidth": 5,
+      "windowHeight": 4,
+      "sparseWindows": true,
+      "banding": false,
+      "groundFloor": {
+        "kind": "loading",
+        "height": 9
+      }
+    },
+    "facility.subway-station": {
+      "massing": [
+        "single"
+      ],
+      "roof": [
+        "flat"
+      ],
+      "clutter": [
+        "vents"
+      ],
+      "floorHeight": 11,
+      "columnPitch": 10,
+      "windowWidth": 5,
+      "windowHeight": 4,
+      "sparseWindows": true,
+      "banding": false,
+      "groundFloor": {
+        "kind": "door",
+        "height": 8
+      }
+    },
+    "catalog.city_hall": {
+      "massing": [
+        "setback"
+      ],
+      "roof": [
+        "pitched"
+      ],
+      "clutter": [
+        "sign"
+      ],
+      "floorHeight": 11,
+      "columnPitch": 8,
+      "windowWidth": 5,
+      "windowHeight": 4,
+      "sparseWindows": true,
+      "banding": false,
+      "roofRise": 9,
+      "groundFloor": {
+        "kind": "door",
+        "height": 9
+      }
+    },
+    "catalog.hospital": {
+      "massing": [
+        "wing"
+      ],
+      "roof": [
+        "flat"
+      ],
+      "clutter": [
+        "bulkhead",
+        "vents"
+      ],
+      "floorHeight": 11,
+      "columnPitch": 8,
+      "windowWidth": 5,
+      "windowHeight": 4,
+      "sparseWindows": true,
+      "banding": false,
+      "groundFloor": {
+        "kind": "door",
+        "height": 8
+      }
+    },
+    "catalog.museum": {
+      "massing": [
+        "single"
+      ],
+      "roof": [
+        "pitched"
+      ],
+      "clutter": [],
+      "floorHeight": 11,
+      "columnPitch": 9,
+      "windowWidth": 5,
+      "windowHeight": 4,
+      "sparseWindows": true,
+      "banding": false,
+      "roofRise": 9,
+      "groundFloor": {
+        "kind": "door",
+        "height": 9
+      }
+    },
+    "catalog.stadium": {
+      "massing": [
+        "single"
+      ],
+      "roof": [
+        "flat"
+      ],
+      "clutter": [
+        "sign",
+        "sign"
+      ],
+      "floorHeight": 11,
+      "columnPitch": 10,
+      "windowWidth": 5,
+      "windowHeight": 4,
+      "sparseWindows": true,
+      "banding": false,
+      "groundFloor": {
+        "kind": "loading",
+        "height": 10
+      }
+    },
+    "catalog.prison": {
+      "massing": [
+        "twin"
+      ],
+      "roof": [
+        "flat"
+      ],
+      "clutter": [
+        "vents"
+      ],
+      "floorHeight": 11,
+      "columnPitch": 12,
+      "windowWidth": 5,
+      "windowHeight": 4,
+      "sparseWindows": true,
+      "banding": false
+    },
+    "catalog.college": {
+      "massing": [
+        "wing"
+      ],
+      "roof": [
+        "pitched"
+      ],
+      "clutter": [
+        "chimney"
+      ],
+      "floorHeight": 11,
+      "columnPitch": 8,
+      "windowWidth": 5,
+      "windowHeight": 4,
+      "sparseWindows": true,
+      "banding": false,
+      "roofRise": 8,
+      "groundFloor": {
+        "kind": "door",
+        "height": 8
+      }
+    },
+    "catalog.library": {
+      "massing": [
+        "single"
+      ],
+      "roof": [
+        "pitched"
+      ],
+      "clutter": [],
+      "floorHeight": 11,
+      "columnPitch": 10,
+      "windowWidth": 5,
+      "windowHeight": 4,
+      "sparseWindows": true,
+      "banding": false,
+      "roofRise": 8,
+      "groundFloor": {
+        "kind": "door",
+        "height": 8
+      }
+    },
+    "catalog.mayors_house": {
+      "massing": [
+        "single"
+      ],
+      "roof": [
+        "pitched"
+      ],
+      "clutter": [
+        "chimney"
+      ],
+      "floorHeight": 11,
+      "columnPitch": 10,
+      "windowWidth": 5,
+      "windowHeight": 4,
+      "sparseWindows": true,
+      "banding": false,
+      "roofRise": 10,
+      "groundFloor": {
+        "kind": "door",
+        "height": 7
+      }
+    },
+    "catalog.water_treatment": {
+      "massing": [
+        "wing"
+      ],
+      "roof": [
+        "flat"
+      ],
+      "clutter": [
+        "tank",
+        "vents"
+      ],
+      "floorHeight": 11,
+      "columnPitch": 10,
+      "windowWidth": 5,
+      "windowHeight": 4,
+      "sparseWindows": true,
+      "banding": false
+    },
+    "catalog.desalination": {
+      "massing": [
+        "wing"
+      ],
+      "roof": [
+        "flat"
+      ],
+      "clutter": [
+        "tank",
+        "tank"
+      ],
+      "floorHeight": 11,
+      "columnPitch": 10,
+      "windowWidth": 5,
+      "windowHeight": 4,
+      "sparseWindows": true,
+      "banding": false
+    },
+    "catalog.power_plant": {
+      "massing": [
+        "wing"
+      ],
+      "roof": [
+        "flat"
+      ],
+      "clutter": [
+        "stack",
+        "stack",
+        "coolingTower"
+      ],
+      "floorHeight": 11,
+      "columnPitch": 10,
+      "windowWidth": 5,
+      "windowHeight": 4,
+      "sparseWindows": true,
+      "banding": false
+    },
+    "catalog.arcology": {
+      "massing": [
+        "setback"
+      ],
+      "roof": [
+        "flat"
+      ],
+      "clutter": [
+        "antenna",
+        "tank"
+      ],
+      "floorHeight": 11,
+      "columnPitch": 7,
+      "windowWidth": 5,
+      "windowHeight": 4,
+      "sparseWindows": true,
+      "banding": true,
+      "ribbon": true
+    },
+    "catalog.dome": {
+      "massing": [
+        "single"
+      ],
+      "roof": [
+        "flat"
+      ],
+      "clutter": [
+        "antenna"
+      ],
+      "floorHeight": 11,
+      "columnPitch": 7,
+      "windowWidth": 5,
+      "windowHeight": 4,
+      "sparseWindows": true,
+      "banding": false,
+      "ribbon": true
+    },
+    "catalog.control_tower": {
+      "massing": [
+        "setback"
+      ],
+      "roof": [
+        "flat"
+      ],
+      "clutter": [
+        "antenna"
+      ],
+      "floorHeight": 11,
+      "columnPitch": 8,
+      "windowWidth": 5,
+      "windowHeight": 4,
+      "sparseWindows": true,
+      "banding": false
+    },
+    "catalog.bus_depot": {
+      "massing": [
+        "wing"
+      ],
+      "roof": [
+        "sawtooth"
+      ],
+      "clutter": [],
+      "floorHeight": 11,
+      "columnPitch": 10,
+      "windowWidth": 5,
+      "windowHeight": 4,
+      "sparseWindows": true,
+      "banding": false,
+      "groundFloor": {
+        "kind": "loading",
+        "height": 9
+      }
+    },
+    "catalog.subway_station": {
+      "massing": [
+        "single"
+      ],
+      "roof": [
+        "flat"
+      ],
+      "clutter": [
+        "vents"
+      ],
+      "floorHeight": 11,
+      "columnPitch": 10,
+      "windowWidth": 5,
+      "windowHeight": 4,
+      "sparseWindows": true,
+      "banding": false,
+      "groundFloor": {
+        "kind": "door",
+        "height": 8
+      }
+    },
+    "catalog.crane": {
+      "floorHeight": 11,
+      "columnPitch": 10,
+      "windowWidth": 5,
+      "windowHeight": 4,
+      "sparseWindows": true,
+      "banding": false,
+      "rhythms": [
+        {
+          "columnPitch": 10,
+          "windowWidth": 5,
+          "windowHeight": 4
+        }
+      ],
+      "roofColors": [
+        "roofClay",
+        "roofSlate",
+        "roofGreen"
+      ],
+      "inset": 0.34,
+      "massing": [
+        "single"
+      ],
+      "roof": [
+        "flat"
+      ],
+      "clutter": [
+        "antenna",
+        "antenna"
+      ],
+      "walls": [
+        "indSteel"
+      ],
+      "groundFloor": null
+    },
+    "catalog.missile_silo": {
+      "floorHeight": 11,
+      "columnPitch": 10,
+      "windowWidth": 5,
+      "windowHeight": 4,
+      "sparseWindows": true,
+      "banding": false,
+      "rhythms": [
+        {
+          "columnPitch": 10,
+          "windowWidth": 5,
+          "windowHeight": 4
+        }
+      ],
+      "roofColors": [
+        "roofClay",
+        "roofSlate",
+        "roofGreen"
+      ],
+      "inset": 0.28,
+      "massing": [
+        "single"
+      ],
+      "roof": [
+        "flat"
+      ],
+      "clutter": [
+        "tank"
+      ],
+      "walls": [
+        "indSteel",
+        "concrete"
+      ],
+      "groundFloor": null
+    },
+    "catalog.infrastructure": {
+      "massing": [
+        "wing"
+      ],
+      "roof": [
+        "flat"
+      ],
+      "clutter": [
+        "vents"
+      ],
+      "floorHeight": 11,
+      "columnPitch": 10,
+      "windowWidth": 5,
+      "windowHeight": 4,
+      "sparseWindows": true,
+      "banding": false
+    },
+    "catalog.service": {
+      "massing": [
+        "single"
+      ],
+      "roof": [
+        "flat"
+      ],
+      "clutter": [
+        "bulkhead"
+      ],
+      "floorHeight": 11,
+      "columnPitch": 10,
+      "windowWidth": 5,
+      "windowHeight": 4,
+      "sparseWindows": true,
+      "banding": false,
+      "groundFloor": {
+        "kind": "loading",
+        "height": 8
+      }
+    },
+    "catalog.statue": {
+      "floorHeight": 11,
+      "columnPitch": 10,
+      "windowWidth": 5,
+      "windowHeight": 4,
+      "sparseWindows": true,
+      "banding": false,
+      "rhythms": [
+        {
+          "columnPitch": 10,
+          "windowWidth": 5,
+          "windowHeight": 4
+        }
+      ],
+      "roofColors": [
+        "roofClay",
+        "roofSlate",
+        "roofGreen"
+      ],
+      "inset": 0.36,
+      "massing": [
+        "single"
+      ],
+      "roof": [
+        "stepped"
+      ],
+      "clutter": [
+        "antenna"
+      ],
+      "walls": [
+        "parapet"
+      ],
+      "groundFloor": null
+    },
+    "catalog.zoo": {
+      "floorHeight": 11,
+      "columnPitch": 10,
+      "windowWidth": 5,
+      "windowHeight": 4,
+      "sparseWindows": true,
+      "banding": false,
+      "rhythms": [
+        {
+          "columnPitch": 10,
+          "windowWidth": 5,
+          "windowHeight": 4
+        }
+      ],
+      "roofColors": [
+        "roofClay",
+        "roofSlate",
+        "roofGreen"
+      ],
+      "inset": 0.16,
+      "massing": [
+        "courtyard"
+      ],
+      "roof": [
+        "pitched"
+      ],
+      "roofRise": 7,
+      "clutter": [
+        "chimney"
+      ],
+      "walls": [
+        "resCream",
+        "resOlive"
+      ],
+      "groundFloor": {
+        "kind": "door",
+        "height": 6
+      }
+    }
+  },
+  "slopes": {
+    "colors": [
+      "grassLight",
+      "grass",
+      "grassDark"
+    ],
+    "step": 8
+  }
 }

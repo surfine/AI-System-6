@@ -162,12 +162,10 @@ window.AISystem6BonsaiCityLoaded = true;
     { id: "zones", labelKey: "bonsai_tool_group_zones" },
     { id: "utilities", labelKey: "bonsai_tool_group_utilities" },
     { id: "services", labelKey: "bonsai_tool_group_services" },
+    { id: "rewards", labelKey: "bonsai_tool_group_rewards" },
     { id: "inspect", labelKey: "bonsai_tool_group_inspect" },
     { id: "pan", labelKey: "bonsai_tool_pan" },
   ]);
-  // Rewards left the rail by owner decision (M2 fold): the five reward tools
-  // live in 选项 → 奖励 and arm directly from the menu.
-  const REWARD_TOOL_IDS = Object.freeze(["mayors-house", "city-hall", "statue", "dome", "arco"]);
   const EVENT_KEYS = Object.freeze({
     "construction-started": "bonsai_event_construction_started",
     "building-completed": "bonsai_event_building_completed",
@@ -212,7 +210,6 @@ window.AISystem6BonsaiCityLoaded = true;
     previewReceipt: null,
     latestMessage: { key: "bonsai_status_ready", args: [] },
     firstHintTimer: null,
-    goalsForced: false,
     // The minimap card is expanded by default on desktop/tablet and starts
     // collapsed on phones — portrait (≤560 wide) and landscape (≤480 tall) —
     // where it opens as a half-height sheet (M3 §3.5).
@@ -373,7 +370,7 @@ window.AISystem6BonsaiCityLoaded = true;
         <span class="bonsai-gauge-population" data-bonsai-status-population data-bonsai-population></span>
         <span class="bonsai-gauge-rci" data-bonsai-status-rci><canvas class="bonsai-rci-gauge" data-bonsai-rci-gauge width="26" height="14" role="img" aria-label="RCI"></canvas></span>
         <span class="bonsai-gauge-speed bonsai-speed-controls" role="group" aria-label="${t("bonsai_speed")}">
-          ${SPEEDS.map((speed) => `<button class="btn mini-btn" type="button" data-bonsai-speed="${speed.value}" aria-pressed="${state.speed === speed.value}" aria-label="${t(`bonsai_speed_${speed.id}`)}" title="${t(`bonsai_speed_${speed.id}`)}">${speed.glyph}</button>`).join("")}
+          ${SPEEDS.map((speed) => `<button class="btn mini-btn${state.speed === speed.value ? " is-selected" : ""}" type="button" data-bonsai-speed="${speed.value}" aria-pressed="${state.speed === speed.value}" aria-label="${t(`bonsai_speed_${speed.id}`)}" title="${t(`bonsai_speed_${speed.id}`)}">${speed.glyph}</button>`).join("")}
         </span>
         <span class="bonsai-gauge-undo-redo">
           <button class="btn mini-btn" type="button" data-bonsai-action="undo" aria-label="${t("bonsai_undo")}">↶</button>
@@ -393,7 +390,6 @@ window.AISystem6BonsaiCityLoaded = true;
                 ${MAP_LAYERS.map((layer) => `<canvas class="bonsai-map-layer bonsai-map-layer-${layer}" data-bonsai-layer="${layer}" width="1" height="1" aria-hidden="true"></canvas>`).join("")}
               </div>
               <section class="bonsai-minimap-card" data-bonsai-minimap-card aria-label="${t("bonsai_minimap")}" hidden></section>
-              <section class="bonsai-goals" data-bonsai-goals aria-label="${t("bonsai_opening_goals")}"></section>
               <section class="bonsai-tile-balloon" data-bonsai-tile-balloon aria-label="${t("bonsai_tile_inspector")}" hidden></section>
               <section class="bonsai-map-setup" data-bonsai-map-setup aria-labelledby="bonsai-map-setup-title" hidden></section>
               <section class="bonsai-city-browser" data-bonsai-city-browser aria-labelledby="bonsai-city-browser-title" hidden></section>
@@ -424,7 +420,7 @@ window.AISystem6BonsaiCityLoaded = true;
       button.className = "bonsai-rail-cell";
       button.dataset.bonsaiCategory = category.id;
       if (category.id === "pan") button.dataset.bonsaiTool = "pan";
-      button.setAttribute("aria-pressed", String(state.tool === lastTool));
+      setArmed(button, state.tool === lastTool);
       const label = `${t(category.labelKey)} · ${t(`bonsai_tool_${lastTool.replaceAll("-", "_")}`)}`;
       button.setAttribute("aria-label", label);
       button.title = label;
@@ -471,7 +467,7 @@ window.AISystem6BonsaiCityLoaded = true;
       button.className = "btn mini-btn bonsai-tool";
       button.dataset.bonsaiTool = tool.id;
       button.dataset.bonsaiCategory = group.id;
-      button.setAttribute("aria-pressed", String(state.tool === tool.id));
+      setArmed(button, state.tool === tool.id);
       button.setAttribute("aria-label", `${t(`bonsai_tool_${tool.id.replaceAll("-", "_")}`)} · ${t("bonsai_unit_cost", cost)} · ${tool.shortcut || "—"}`);
       const icon = document.createElement("span");
       icon.className = "bonsai-tool-icon";
@@ -648,26 +644,50 @@ window.AISystem6BonsaiCityLoaded = true;
     }
   }
 
-  function renderGoals() {
-    const target = query("[data-bonsai-goals]");
-    if (!target) return;
-    if (!state.current || (state.completedGoals.size === GOALS.length && !state.goalsForced)) {
-      target.hidden = true;
-      return;
-    }
-    if (state.goalsForced && (!state.current || state.completedGoals.size === GOALS.length)) {
-      target.hidden = false;
-      target.innerHTML = `<h3>${t("bonsai_opening_goals")}</h3><ol>${GOALS.map((goal) => {
-        const done = state.completedGoals.has(goal.id);
-        return `<li class="${done ? "is-complete" : ""}">${done ? "✓" : "□"} ${t(`bonsai_goal_${goal.id}`)}</li>`;
-      }).join("")}</ol>`;
-      return;
-    }
-    target.hidden = false;
-    target.innerHTML = `<h3>${t("bonsai_opening_goals")}</h3><ol>${GOALS.map((goal) => {
-      const done = state.completedGoals.has(goal.id);
-      return `<li class="${done ? "is-complete" : ""}">${done ? "✓" : "□"} ${t(`bonsai_goal_${goal.id}`)}</li>`;
-    }).join("")}</ol>`;
+  // A city that arrives already built — a saved game, a scenario, an example —
+  // is not a first city, so the opening checklist has nothing left to teach it.
+  // Marking every goal met is what keeps the card away; clearing the set here
+  // is what used to greet a metropolis with "drag a short road" unticked.
+  function markOpeningGoalsMet() {
+    GOALS.forEach((goal) => state.completedGoals.add(goal.id));
+  }
+
+  // A pressed .btn must also carry .is-selected. The Liquid Glass sheet repaints
+  // every .btn that is NOT .default/.is-active/.is-selected/.is-multi-selected
+  // with its own dark action ink, at a higher specificity than this app's
+  // scoped sheet — so an armed control kept our black background and took the
+  // theme's black text, and went invisible. The class is the sanctioned opt-out;
+  // raising specificity here would only fight it.
+  function setArmed(button, on) {
+    if (!button) return;
+    button.setAttribute("aria-pressed", String(on));
+    button.classList.toggle("is-selected", on);
+  }
+
+  // The opening goals are a first-run TEACHING aid, not a score. The museum
+  // record for the original defines that game by its refusal of imposed goals,
+  // so this list no longer sits on the city: it is a panel the player opens
+  // from 窗口 → 开局目标, and the first edition of the newspaper does the real
+  // teaching in the game's own voice. A city that arrives already built has
+  // every goal marked met (markOpeningGoalsMet), so it never teaches again.
+  // The paper teaches, once. A city the player just founded still has opening
+  // goals outstanding, and its first edition carries a story naming the five
+  // things a mayor does. A city that arrived from disk, a scenario or an
+  // example has every goal met already, so its paper never carries it.
+  function teachingStory() {
+    const city = state.current;
+    if (!city) return "";
+    const paper = city.newspaper || { edition: 0 };
+    if ((paper.edition ?? 0) > 1) return "";
+    if (state.completedGoals.size === GOALS.length) return "";
+    return `<p class="bonsai-news-story">${t("bonsai_news_first_edition")}</p>`;
+  }
+
+  function openGoals() {
+    if (!state.current) return;
+    state.inspectorMode = "goals";
+    renderInspector();
+    scheduleSessionCommit();
   }
 
   function selectTool(toolId, options = {}) {
@@ -707,9 +727,8 @@ window.AISystem6BonsaiCityLoaded = true;
       if (state.dirty) scheduleAutosave();
     }
     query(".bonsai-speed-controls")?.querySelectorAll("[data-bonsai-speed]").forEach((button) => {
-      button.setAttribute("aria-pressed", String(Number(button.dataset.bonsaiSpeed) === speed));
+      setArmed(button, Number(button.dataset.bonsaiSpeed) === speed);
     });
-    renderGoals();
     renderStatus();
   }
 
@@ -819,7 +838,6 @@ window.AISystem6BonsaiCityLoaded = true;
     // The minimap is a permanent instrument (M3): every city change redraws
     // it, whether or not any panel is open.
     renderMiniMap();
-    renderGoals();
     renderInspector();
     syncUndoButtons();
     syncNewspaperMenu();
@@ -1135,7 +1153,7 @@ window.AISystem6BonsaiCityLoaded = true;
     state.previewReceipt = receipt;
     if (!receipt?.accepted) {
       setRendererPreview(receipt || { accepted: false, footprint: [] });
-      setMessage("bonsai_status_rejected", t("bonsai_rejection_reason", receipt?.code || "invalid"));
+      setMessage("bonsai_rejection_reason", receipt?.code || "invalid");
       audioEngine()?.sfx("reject");
       renderStatus();
       return;
@@ -1541,7 +1559,7 @@ window.AISystem6BonsaiCityLoaded = true;
       if (!key) return;
       const on = state.display[key] === true;
       button.classList.toggle("is-checked", on);
-      if (button.hasAttribute("aria-pressed")) button.setAttribute("aria-pressed", String(on));
+      if (button.hasAttribute("aria-pressed")) setArmed(button, on);
     });
   }
 
@@ -1764,11 +1782,6 @@ window.AISystem6BonsaiCityLoaded = true;
     }
   }
 
-  function toggleGoalsCard() {
-    state.goalsForced = !state.goalsForced;
-    renderGoals();
-  }
-
   function setAudioMode(mode) {
     if (!["music", "sfx", "off"].includes(mode)) return;
     state.audioMode = mode;
@@ -1788,7 +1801,7 @@ window.AISystem6BonsaiCityLoaded = true;
     const receipt = sim().submitCommand(state.current, command);
     state.previewReceipt = receipt;
     if (!receipt?.accepted) {
-      setMessage("bonsai_status_rejected", t("bonsai_rejection_reason", receipt?.code || "invalid"));
+      setMessage("bonsai_rejection_reason", receipt?.code || "invalid");
       renderStatus();
       return;
     }
@@ -1879,10 +1892,10 @@ window.AISystem6BonsaiCityLoaded = true;
             ? t("bonsai_news_edition_extra", paper.edition, date.year)
             : t("bonsai_news_edition_regular", paper.edition, date.year)}</div>
         </div>
-        <div class="bonsai-news-stories">${(paper.stories || []).map((story) => {
+        <div class="bonsai-news-stories">${teachingStory()}${(paper.stories || []).map((story) => {
           const shaped = story.key === "ordinance" ? { ...story, id: t(`bonsai_ordinance_${story.id}`) } : story;
           return `<p class="bonsai-news-story">${t(`bonsai_news_${story.key}`, shaped)}</p>`;
-        }).join("") || `<p class="bonsai-news-story">${t("bonsai_news_none")}</p>`}</div>
+        }).join("") || (teachingStory() ? "" : `<p class="bonsai-news-story">${t("bonsai_news_none")}</p>`)}</div>
         <label class="bonsai-ordinance"><input type="checkbox" data-bonsai-policy-newspaper${state.current.paperDelivery ? " checked" : ""}><span>${t("bonsai_news_subscribe")}</span></label>`;
     } else if (state.inspectorMode === "graphs") {
       titleKey = "bonsai_graphs";
@@ -1911,6 +1924,17 @@ window.AISystem6BonsaiCityLoaded = true;
         bonsai_commerce_demand: state.current.demand?.c ?? 0,
         bonsai_residential_demand: state.current.demand?.r ?? 0,
       };
+    } else if (state.inspectorMode === "goals") {
+      titleKey = "bonsai_opening_goals";
+      rows = {};
+      const done = state.completedGoals.size;
+      controls = `
+        <p class="bonsai-goals-note">${t("bonsai_goals_note")}</p>
+        <ol class="bonsai-goals-list">${GOALS.map((goal) => {
+          const met = state.completedGoals.has(goal.id);
+          return `<li class="${met ? "is-complete" : ""}">${met ? "\u2713" : "\u25a1"} ${t(`bonsai_goal_${goal.id}`)}</li>`;
+        }).join("")}</ol>
+        <p class="bonsai-goals-note">${t("bonsai_goals_progress", done, GOALS.length)}</p>`;
     } else if (state.inspectorMode === "neighbors") {
       titleKey = "bonsai_neighbors";
       const rail = state.current.railService || {};
@@ -2016,7 +2040,11 @@ window.AISystem6BonsaiCityLoaded = true;
         state.dirty = !unchanged;
         setMessage(unchanged ? "bonsai_status_saved" : "bonsai_status_saved_pending_changes");
         return true;
-      } catch {
+      } catch (error) {
+        // Keep the player's message plain, but never discard the reason: a
+        // refused write (a second window holding the write lease, a quota, a
+        // codec fault) is otherwise invisible to anyone debugging it.
+        console.error("bonsai-save-failed", error);
         setMessage("bonsai_status_save_failed");
         return false;
       } finally {
@@ -2055,7 +2083,11 @@ window.AISystem6BonsaiCityLoaded = true;
         });
         setMessage("bonsai_status_saved_copy");
         return true;
-      } catch {
+      } catch (error) {
+        // Keep the player's message plain, but never discard the reason: a
+        // refused write (a second window holding the write lease, a quota, a
+        // codec fault) is otherwise invisible to anyone debugging it.
+        console.error("bonsai-save-failed", error);
         setMessage("bonsai_status_save_failed");
         return false;
       } finally {
@@ -2131,7 +2163,7 @@ window.AISystem6BonsaiCityLoaded = true;
       state.playing = false;
       state.speed = 0;
       state.tickCarry = 0;
-      state.completedGoals.clear();
+      markOpeningGoalsMet();
       clearHistory("bonsai_history_cleared_load");
       hideCityBrowser();
       const setup = query("[data-bonsai-map-setup]");
@@ -2330,7 +2362,7 @@ window.AISystem6BonsaiCityLoaded = true;
       state.speed = 0;
       state.lastRunningSpeed = 1;
       state.tickCarry = 0;
-      state.completedGoals.clear();
+      markOpeningGoalsMet();
       clearHistory("bonsai_history_cleared_new");
       hideCityBrowser();
       const setup = query("[data-bonsai-map-setup]");
@@ -2415,7 +2447,7 @@ window.AISystem6BonsaiCityLoaded = true;
       state.speed = 0;
       state.lastRunningSpeed = 1;
       state.tickCarry = 0;
-      state.completedGoals.clear();
+      markOpeningGoalsMet();
       clearHistory("bonsai_history_cleared_new");
       hideCityBrowser();
       const setup = query("[data-bonsai-map-setup]");
@@ -2953,6 +2985,7 @@ window.AISystem6BonsaiCityLoaded = true;
     "open-population": () => openPopulation(),
     "open-industry": () => openIndustry(),
     "open-neighbors": () => openNeighbors(),
+    "open-goals": () => openGoals(),
     "ordinances": () => openBudget(),
     "toggle-renderer": () => setRendererBackend(state.rendererBackend === "three-voxel" ? "canvas-2d" : "three-voxel"),
     "minimap": () => toggleMinimapCard(),
@@ -2968,16 +3001,14 @@ window.AISystem6BonsaiCityLoaded = true;
     "disasters-off": () => submitPolicy({ policy: "disasters", enabled: false }),
   };
   OVERLAYS.forEach((overlay) => { bonsaiMenuCommands[`overlay-${overlay}`] = () => setOverlay(overlay); });
-  REWARD_TOOL_IDS.forEach((toolId) => { bonsaiMenuCommands[`reward-${toolId}`] = () => selectTool(toolId); });
   ["fire", "flood", "tornado", "earthquake", "monster"].forEach((kind) => { bonsaiMenuCommands[`disaster-${kind}`] = () => submitDisaster(kind); });
   SPEEDS.forEach((speed) => { bonsaiMenuCommands[`speed-${speed.value}`] = () => setSpeed(speed.value); });
 
   const commandsNeedingCity = new Set([
     "save", "save-as", "export-sc2", "undo", "redo", "report", "budget", "news", "ordinances", "minimap", "disasters-off",
-    "open-graphs", "open-population", "open-industry", "open-neighbors",
+    "open-graphs", "open-population", "open-industry", "open-neighbors", "open-goals",
     "display-buildings", "display-infrastructure", "display-zones", "display-underground",
     ...OVERLAYS.map((overlay) => `overlay-${overlay}`),
-    ...REWARD_TOOL_IDS.map((toolId) => `reward-${toolId}`),
     ...["fire", "flood", "tornado", "earthquake", "monster"].map((kind) => `disaster-${kind}`),
   ]);
 
@@ -3002,7 +3033,6 @@ window.AISystem6BonsaiCityLoaded = true;
     const separator = { type: "separator" };
     const submenu = (labelKey, items) => ({ type: "submenu", labelKey, items });
     const overlayItems = OVERLAYS.map((overlay) => item(`overlay-${overlay}`, `bonsai_overlay_${overlay.replaceAll("-", "_")}`));
-    const rewardItems = REWARD_TOOL_IDS.map((toolId) => item(`reward-${toolId}`, `bonsai_tool_${toolId.replaceAll("-", "_")}`));
     const disasterItems = ["fire", "flood", "tornado", "earthquake", "monster"].map((kind) => item(`disaster-${kind}`, `bonsai_tool_disaster_${kind}`));
     // Speed cells borrow registry shortcut ids purely for their ⌘1..⌘4 menu
     // labels; the keys themselves are handled by the shell's window listener
@@ -3043,8 +3073,6 @@ window.AISystem6BonsaiCityLoaded = true;
           separator,
           submenu("bonsai_menu_data_views", overlayItems),
           separator,
-          submenu("bonsai_menu_rewards", rewardItems),
-          separator,
           displayItem("buildings"),
           displayItem("infrastructure"),
           displayItem("zones"),
@@ -3068,6 +3096,8 @@ window.AISystem6BonsaiCityLoaded = true;
           item("open-population", "bonsai_population"),
           item("open-industry", "bonsai_industry"),
           item("open-neighbors", "bonsai_neighbors"),
+          { type: "separator" },
+          item("open-goals", "bonsai_opening_goals"),
         ],
       },
       {

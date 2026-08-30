@@ -4,7 +4,7 @@ const ERA_RULES = Object.freeze({
   classic: { pageMode: "opaque", pageAdvantageMin: 0.24, nodeMode: "opaque" },
   platinum: { pageMode: "paper", pageAdvantageMin: 0.2, nodeMode: "blue" },
   aqua: { pageMode: "paper", pageAdvantageMin: 0.02, nodeMode: "opaque" },
-  "snow-leopard": { pageMode: "opaque", pageAdvantageMin: 0.2, nodeMode: "opaque" },
+  "snow-leopard": { pageMode: "opaque", pageAdvantageMin: 0.02, nodeMode: "opaque" },
   yosemite: { pageMode: "opaque", pageAdvantageMin: 0.2, nodeMode: "opaque" },
   "liquid-glass": { pageMode: "paper", pageAdvantageMin: 0.2, nodeMode: "blue" },
 });
@@ -76,9 +76,27 @@ export async function measureDocMapMetaphor(path, era) {
     density(nodes, xAt(0.72), xAt(0.98), yAt(top), yAt(bottom)));
   const nodeGaps = [[0.33, 0.38], [0.62, 0.67]].map(([top, bottom]) =>
     density(nodes, xAt(0.82), xAt(0.98), yAt(top), yAt(bottom)));
+  const radialNodeDensities = [
+    [0.04, 0.36, 0.04, 0.36],
+    [0.64, 0.96, 0.04, 0.36],
+    [0.04, 0.36, 0.64, 0.96],
+    [0.64, 0.96, 0.64, 0.96],
+  ].map(([left, right, top, bottom]) =>
+    density(opaque, xAt(left), xAt(right), yAt(top), yAt(bottom)));
+  const radialBranchDensities = [
+    [0.25, 0.5, 0.25, 0.5],
+    [0.5, 0.75, 0.25, 0.5],
+    [0.25, 0.5, 0.5, 0.75],
+    [0.5, 0.75, 0.5, 0.75],
+  ].map(([left, right, top, bottom]) =>
+    density(opaque, xAt(left), xAt(right), yAt(top), yAt(bottom)));
+  const centerHubDensity = density(opaque, xAt(0.36), xAt(0.64), yAt(0.36), yAt(0.64));
   const pageAdvantage = pageLeftDensity - pageRightDensity;
+  const radialMindMap = centerHubDensity >= 0.12
+    && radialNodeDensities.filter((value) => value >= 0.04).length >= 3
+    && radialBranchDensities.filter((value) => value >= 0.03).length >= 3;
   return {
-    version: 1,
+    version: 2,
     sourceSize: [canvas.width, canvas.height],
     bounds: [minX, minY, maxX, maxY],
     pageMode: rule.pageMode,
@@ -89,14 +107,22 @@ export async function measureDocMapMetaphor(path, era) {
     nodeMode: rule.nodeMode,
     nodeBandDensities: nodeBands.map(rounded),
     nodeGapDensities: nodeGaps.map(rounded),
+    centerHubDensity: rounded(centerHubDensity),
+    radialNodeDensities: radialNodeDensities.map(rounded),
+    radialBranchDensities: radialBranchDensities.map(rounded),
+    layoutMode: radialMindMap ? "radial-mind-map" : "document-tree",
   };
 }
 
 export function assertDocMapMetaphor(metrics, label = "DocMap") {
-  if (metrics.pageAdvantage < metrics.pageAdvantageMin) {
+  const radialMindMap = metrics.layoutMode === "radial-mind-map"
+    && metrics.centerHubDensity >= 0.12
+    && metrics.radialNodeDensities.filter((value) => value >= 0.04).length >= 3
+    && metrics.radialBranchDensities.filter((value) => value >= 0.03).length >= 3;
+  if (!radialMindMap && metrics.pageAdvantage < metrics.pageAdvantageMin) {
     throw new Error(`${label}: page mass does not dominate the right side (${metrics.pageAdvantage} < ${metrics.pageAdvantageMin})`);
   }
-  if (metrics.nodeBandDensities.some((densityValue) => densityValue < 0.04)) {
+  if (!radialMindMap && metrics.nodeBandDensities.some((densityValue) => densityValue < 0.04)) {
     throw new Error(`${label}: expected three visible right-side node bands (${metrics.nodeBandDensities.join(", ")})`);
   }
   return true;

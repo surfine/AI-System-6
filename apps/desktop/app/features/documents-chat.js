@@ -782,6 +782,12 @@ function renderDocuments() {
 }
 
 function renderChatTranscript(messages) {
+  const imageOrigins = new Map();
+  messages.forEach((item) => {
+    normalizeClioImageInputs(item?.imageInputs || []).forEach((input) => {
+      imageOrigins.set(input.clientId, input);
+    });
+  });
   return `<div class="chat-transcript">${messages
     .map((item) => {
       const states = [];
@@ -803,20 +809,39 @@ function renderChatTranscript(messages) {
       const stateLine = states.length
         ? `<small>${states.map((state) => escapeHtml(state)).join(" · ")}</small>`
         : "";
-      return `<article><b>${item.role === "user" ? t("you") : t("assistant")}</b><div>${markdownToSystemHtml(item.displayContent || item.content)}${stateLine}</div></article>`;
+      const imageIds = Array.isArray(item.imageInputIds)
+        ? [...new Set(item.imageInputIds.map((id) => String(id || "")).filter(Boolean))]
+        : [];
+      const imageNames = imageIds.map((id, index) => (
+        imageOrigins.get(id)?.name || `${t("image_attachment")} ${index + 1}`
+      ));
+      const imageLine = imageNames.length
+        ? `<small>${escapeHtml(t("clio_message_images", imageNames.join(" · ")))}</small>`
+        : "";
+      return `<article><b>${item.role === "user" ? t("you") : t("assistant")}</b><div>${markdownToSystemHtml(item.displayContent || item.content)}${imageLine}${stateLine}</div></article>`;
     })
     .join("")}</div>`;
 }
 
 function normalizeChatMessageRecords(messages = []) {
-  return messages.map((item) => ({
-    ...item,
-    id: String(item.id || crypto.randomUUID()),
-    role: item.role === "assistant" ? "assistant" : "user",
-    content: String(item.content || ""),
-    deliveryState: item.deliveryState === "sending" ? "failed" : String(item.deliveryState || ""),
-    createdAt: String(item.createdAt || new Date().toISOString()),
-  }));
+  return messages.map((item) => {
+    const normalized = {
+      ...item,
+      id: String(item.id || crypto.randomUUID()),
+      role: item.role === "assistant" ? "assistant" : "user",
+      content: String(item.content || ""),
+      imageInputIds: Array.isArray(item.imageInputIds)
+        ? item.imageInputIds.map((id) => String(id || "")).filter(Boolean).slice(0, IMAGE_ATTACHMENT_MODEL_LIMIT)
+        : [],
+      imageInputs: normalizeClioImageInputs(item.imageInputs || []),
+      deliveryState: item.deliveryState === "sending" ? "failed" : String(item.deliveryState || ""),
+      createdAt: String(item.createdAt || new Date().toISOString()),
+    };
+    for (const transientKey of ["fileToken", "file_id", "providerFileId", "objectUrl", "credentialScope", "file"]) {
+      delete normalized[transientKey];
+    }
+    return normalized;
+  });
 }
 
 function normalizeChatFileMetadata(file) {
@@ -1310,6 +1335,7 @@ async function editAndResendConversationMessage({ messageId = "", messageIndex =
   selectedChatFileId = branch.id;
   conversation.length = 0;
   conversation.push(...branch.messages.map((item) => ({ ...item })));
+  restoreClioImageInputsFromConversation?.();
   compressedConversationMemory = { ...branch.compressedMemory };
   messagesEl.replaceChildren();
   conversation.forEach((item, candidateIndex) => addMessage(item.role, item.content, {
@@ -2201,6 +2227,7 @@ async function openChatFile() {
   };
   file.messages = normalizeChatMessageRecords(file.messages);
   conversation.push(...file.messages.map((item) => ({ ...item })));
+  restoreClioImageInputsFromConversation?.();
   activeChatFileId = file.id;
   messagesEl.replaceChildren();
   file.messages.forEach((item, index) => addMessage(item.role, item.content, {

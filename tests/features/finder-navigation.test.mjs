@@ -160,7 +160,7 @@ test.assertIncludes(writingFlowPanel, 'id="spine-file-floppy-button"', "Writing 
 test.assertIncludes(writingFlowPanel, 'data-action="open-rag"', "the insertion action opens the File Floppy mounting surface");
 test.assertNotIncludes(writingFlowPanel, 'data-action="open-text-disk"', "Writing Flow never duplicates the mounted File Floppy volume");
 test.assertIncludes(fileDisk, "spineFileFloppyButtonEl.hidden = mounted;", "mounting swaps the Writing Flow insertion action for the desktop volume");
-test.assertIncludes(writingFlowPanel, 'id="spine-burn-project-cd-button"', "Writing Flow offers a Burn Project CD action before delivery media exists");
+test.assertIncludes(writingFlowPanel, 'id="spine-burn-project-cd-button"', "Writing Flow keeps the Project CD terminus on the map as stop 6");
 test.assertIncludes(writingFlowPanel, 'data-action="export-teachtext-project-cd"', "the burn action uses the production TeachText export path");
 test.assertIncludes(writingFlowPanel, 'data-action-availability="independent"', "Writing Flow owns route action availability instead of inheriting the active window menu state");
 test.assertIncludes(windowManager, "btn.closest(\"[data-action-availability='independent']\")", "menu availability clears stale disabled state from independent Writing Flow actions");
@@ -168,7 +168,7 @@ test.assertIncludes(exportImport, "function projectCdBurnIsAvailable()", "Projec
 test.assertIncludes(exportImport, "if (!getActiveProject()) return false;", "burning stays hidden until a project is mounted");
 test.assertIncludes(exportImport, 'const body = String(teachTextBodyInput?.value || "").trim();', "burning stays hidden while the manuscript is empty");
 test.assertIncludes(exportImport, 'activeTeachTextAllows("projectCdExport")', "burning follows the active TeachText document role");
-test.assertIncludes(exportImport, "visibleItems.length > 0 || !projectCdBurnIsAvailable()", "the Writing Flow burn action appears only before media exists and while burning is available");
+test.assertIncludes(exportImport, "spineBurnProjectCdButtonEl.disabled = !burned && !ready;", "the Writing Flow terminus stays visible and disables instead of hiding when nothing can burn");
 test.assertIncludes(windowManager, "syncProjectCdBurnActionVisibility();", "Writing Flow burn visibility refreshes with shared menu and document state");
 test.assertIncludes(actions, '"export-teachtext-project-cd": exportTeachTextToProjectCd', "the Writing Flow burn action creates a real Project CD item");
 test.assertIncludes(en, 'burn_project_cd: "Burn Project CD"', "English names the pre-media action as a burn operation");

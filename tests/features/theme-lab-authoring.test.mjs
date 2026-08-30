@@ -115,7 +115,7 @@ test.assert(globalDisabled?.editable === true && globalDisabled.eraValue === "gl
 test.assert(menuDisabled?.editable === false && menuDisabled.eraValue === "menu-gray", "a contextual token is present but read-only");
 
 test.assert(!source.includes("const ERA_ART") && !source.includes("const ERA_TOKEN_HOME") && !source.includes("const ICON_SET"), "Theme Lab has no private appearance or icon registries");
-test.assert(!source.includes("data-theme-lab-new-build") && source.includes("data-theme-lab-app-contract"), "the broken new-appearance form is replaced by the shared app contract specimen");
+test.assert(!source.includes("data-theme-lab-new-build"), "the broken new-appearance form is gone");
 test.assertIncludes(source, "theme-lab-token-computed", "editable global rows expose the live computed value beside their declaration");
 
 window.AISystem6Theme = {

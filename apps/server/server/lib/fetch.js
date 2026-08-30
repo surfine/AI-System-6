@@ -24,6 +24,7 @@ const http = require("node:http");
 const https = require("node:https");
 const net = require("node:net");
 const zlib = require("node:zlib");
+const { once } = require("node:events");
 const { StringDecoder } = require("node:string_decoder");
 
 const { decodeResponseText } = require("./charset.js");
@@ -460,6 +461,175 @@ function nodePostJsonStream(targetUrl, payload, signal, extraHeaders = {}, optio
     if (typeof options.onRequest === "function") request.once("finish", options.onRequest);
     signal?.addEventListener("abort", () => request.destroy(new Error("Request aborted")), { once: true });
     request.end(body);
+  });
+}
+
+/**
+ * @param {number} expectedBytes
+ * @param {number} actualBytes
+ * @returns {Error & { code: string, statusCode: number, expectedBytes: number, actualBytes: number }}
+ */
+function requestLengthMismatchError(expectedBytes, actualBytes) {
+  const error = /** @type {Error & { code: string, statusCode: number, expectedBytes: number, actualBytes: number }} */ (
+    new Error("Request body length did not match the declared Content-Length.")
+  );
+  error.code = "ERR_REQUEST_LENGTH_MISMATCH";
+  error.statusCode = 400;
+  error.expectedBytes = expectedBytes;
+  error.actualBytes = actualBytes;
+  return error;
+}
+
+/**
+ * Send an async iterable through the direct Node client without buffering or
+ * replaying it. The caller supplies the exact body length; this helper checks
+ * the bytes while they are written and does not call `request.end()` unless
+ * the count matches. `request.write()` backpressure is observed before the
+ * next source chunk is requested.
+ *
+ * This is intentionally a single-transport primitive. File uploads cannot be
+ * retried through fetch after the provider may already have accepted bytes.
+ *
+ * @param {string} targetUrl
+ * @param {AsyncIterable<Buffer | Uint8Array | string> | Iterable<Buffer | Uint8Array | string> | null} body
+ * @param {AbortSignal | null | undefined} signal
+ * @param {Record<string, string>} [extraHeaders]
+ * @param {{
+ *   method?: "POST" | "DELETE",
+ *   contentLength?: number,
+ *   maxBytes?: number,
+ *   pinnedAddress?: string,
+ *   pinnedFamily?: number,
+ *   onRequest?: () => void,
+ * }} [options]
+ * @returns {Promise<{
+ *   ok: boolean,
+ *   status: number,
+ *   headers: { get: (name: string) => string },
+ *   text: () => Promise<string>,
+ * }>}
+ */
+function nodeRequestWithStream(targetUrl, body, signal, extraHeaders = {}, options = {}) {
+  const maxBytes = normalizedMaxBytes(options.maxBytes);
+  const method = String(options.method || "POST").toUpperCase();
+  if (!new Set(["POST", "DELETE"]).has(method)) {
+    throw new TypeError("nodeRequestWithStream supports POST and DELETE requests only.");
+  }
+  const contentLength = options.contentLength === undefined
+    ? undefined
+    : normalizedMaxBytes(options.contentLength);
+
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new Error("Request aborted"));
+      return;
+    }
+
+    const parsed = new URL(targetUrl);
+    const isHttps = parsed.protocol === "https:";
+    if (!isHttps && parsed.protocol !== "http:") {
+      reject(new TypeError("Streaming requests require an HTTP or HTTPS URL."));
+      return;
+    }
+    const client = isHttps ? https : http;
+    let settled = false;
+    /** @type {import("node:http").IncomingMessage | null} */
+    let upstream = null;
+
+    const cleanup = () => {
+      signal?.removeEventListener("abort", onAbort);
+    };
+    const finishReject = (error) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      upstream?.destroy();
+      reject(error);
+    };
+    const onAbort = () => {
+      const error = new Error("Request aborted");
+      /** @type {any} */ (error).code = "ERR_REQUEST_ABORTED";
+      request.destroy(error);
+    };
+
+    const request = client.request(
+      {
+        protocol: parsed.protocol,
+        hostname: parsed.hostname,
+        port: parsed.port,
+        path: `${parsed.pathname}${parsed.search}`,
+        method,
+        agent: isHttps ? httpsAgent : httpAgent,
+        servername: tlsServerName(parsed),
+        lookup: pinnedLookup(options),
+        headers: {
+          ...extraHeaders,
+          ...(contentLength === undefined ? {} : { "Content-Length": contentLength }),
+        },
+      },
+      (response) => {
+        upstream = response;
+        readIncomingText(response, maxBytes).then((text) => {
+          if (settled) return;
+          settled = true;
+          cleanup();
+          // An upstream may reject from headers before consuming the upload.
+          // Stop pulling the caller's source once that response is complete.
+          if (!request.writableEnded) request.destroy();
+          const status = response.statusCode || 0;
+          resolve({
+            ok: status >= 200 && status < 300,
+            status,
+            headers: {
+              get(name) {
+                const value = /** @type {any} */ (response.headers)[String(name).toLowerCase()];
+                return Array.isArray(value) ? value.join(", ") : String(value || "");
+              },
+            },
+            text() {
+              return Promise.resolve(text);
+            },
+          });
+        }, finishReject);
+      }
+    );
+
+    request.once("error", finishReject);
+    if (typeof options.onRequest === "function") request.once("finish", options.onRequest);
+    signal?.addEventListener("abort", onAbort, { once: true });
+
+    (async () => {
+      let writtenBytes = 0;
+      try {
+        if (body) {
+          for await (const chunk of body) {
+            if (settled) return;
+            if (signal?.aborted) throw new Error("Request aborted");
+            let buffer;
+            if (Buffer.isBuffer(chunk)) buffer = chunk;
+            else if (typeof chunk === "string") buffer = Buffer.from(chunk);
+            else buffer = Buffer.from(chunk.buffer, chunk.byteOffset || 0, chunk.byteLength);
+            if (!buffer.byteLength) continue;
+            const nextBytes = writtenBytes + buffer.byteLength;
+            if (contentLength !== undefined && nextBytes > contentLength) {
+              throw requestLengthMismatchError(contentLength, nextBytes);
+            }
+            writtenBytes = nextBytes;
+            if (!request.write(buffer)) {
+              if (signal) await once(request, "drain", { signal });
+              else await once(request, "drain");
+            }
+          }
+        }
+        if (contentLength !== undefined && writtenBytes !== contentLength) {
+          throw requestLengthMismatchError(contentLength, writtenBytes);
+        }
+        if (settled) return;
+        request.end();
+      } catch (error) {
+        request.destroy(/** @type {Error} */ (error));
+      }
+    })();
   });
 }
 
@@ -937,6 +1107,7 @@ module.exports = {
   headerValue,
   decodeTextBuffer,
   nodePostJson,
+  nodeRequestWithStream,
   nodeGetText,
   nodeGetTextViaProxy,
   proxyJsonStream,
@@ -945,5 +1116,6 @@ module.exports = {
   getTextOnceWithFallback,
   responseTooLargeError,
   isResponseTooLargeError,
+  requestLengthMismatchError,
   createSseJsonParser,
 };

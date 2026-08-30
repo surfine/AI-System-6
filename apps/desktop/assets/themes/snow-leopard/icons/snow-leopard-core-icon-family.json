@@ -11,7 +11,7 @@
   ],
   "referenceLedger": "icons/src/snow-leopard-core-icons.json",
   "referenceBoard": "internal/evidence/drafts/era-icons/snow-leopard-core-reference-board.png",
-  "sizeRule": "Runtime surfaces downscale the 128 px tier. For the twelve programmatic cores, 512 carries fine texture while 32 and 16 are separately composed review hints; accepted Image Gen cores use separately processed ledger artifacts.",
+  "sizeRule": "Runtime selects the authored 16, 32, or 128 px tier by context. The 512 tier is review-only; accepted ImageGen cores use the size provenance recorded in their ledger.",
   "selectionRecipe": "Finder selection belongs to the label and the view surface; normal and selected states use the same artwork.",
   "icons": {
     "finderApp": {
@@ -34,13 +34,13 @@
       },
       "metrics": {
         "16": {
-          "pixels": 170,
-          "colors": 154,
+          "pixels": 202,
+          "colors": 194,
           "bbox": {
             "minX": 1,
-            "minY": 1,
+            "minY": 0,
             "maxX": 14,
-            "maxY": 14
+            "maxY": 15
           },
           "ink": {
             "minX": 1,
@@ -51,71 +51,71 @@
             "height": 14
           },
           "gridShape": "square",
-          "sha256": "1aabada039da5843284e37ba640ee32486a24e269099f376438e6508ff2d43de",
-          "bytes": 591
+          "sha256": "fe5867cc7ad4f6d6a9f973d451ffb9df5f439096567a0dc9d4143f3e8931e47e",
+          "bytes": 825
         },
         "32": {
-          "pixels": 632,
-          "colors": 526,
+          "pixels": 797,
+          "colors": 638,
           "bbox": {
-            "minX": 3,
-            "minY": 2,
-            "maxX": 29,
-            "maxY": 30
+            "minX": 0,
+            "minY": 0,
+            "maxX": 31,
+            "maxY": 31
           },
           "ink": {
-            "minX": 3,
-            "minY": 2,
+            "minX": 2,
+            "minY": 1,
             "maxX": 29,
             "maxY": 30,
-            "width": 27,
-            "height": 29
+            "width": 28,
+            "height": 30
           },
           "gridShape": "square",
-          "sha256": "85a03404970ab96e9f22055edf66b610eea2224a504436acc9dc6f8cd66a670c",
-          "bytes": 1534
+          "sha256": "a478ee7b837571bf2a85168e96e582d718b5c481afac5a7571ceb5449fd8e85f",
+          "bytes": 2107
         },
         "128": {
-          "pixels": 9789,
-          "colors": 3643,
+          "pixels": 11139,
+          "colors": 5057,
           "bbox": {
-            "minX": 12,
-            "minY": 6,
-            "maxX": 115,
-            "maxY": 121
+            "minX": 9,
+            "minY": 4,
+            "maxX": 118,
+            "maxY": 123
           },
           "ink": {
-            "minX": 12,
+            "minX": 11,
             "minY": 6,
-            "maxX": 115,
-            "maxY": 121,
-            "width": 104,
-            "height": 116
+            "maxX": 116,
+            "maxY": 120,
+            "width": 106,
+            "height": 115
           },
           "gridShape": "square",
-          "sha256": "f028d444c546211ca35f198dc89e90f38dbf6191bf855565c5f4fef8c2acdf57",
-          "bytes": 12866
+          "sha256": "8ee134bb0d3521b00347421d558371fca729ded96317011ab766629eedd58c19",
+          "bytes": 17227
         },
         "512": {
-          "pixels": 155008,
-          "colors": 17109,
+          "pixels": 172300,
+          "colors": 27224,
           "bbox": {
-            "minX": 48,
-            "minY": 24,
-            "maxX": 463,
-            "maxY": 487
+            "minX": 43,
+            "minY": 23,
+            "maxX": 468,
+            "maxY": 486
           },
           "ink": {
-            "minX": 48,
-            "minY": 24,
-            "maxX": 463,
-            "maxY": 487,
-            "width": 416,
-            "height": 464
+            "minX": 45,
+            "minY": 25,
+            "maxX": 466,
+            "maxY": 484,
+            "width": 422,
+            "height": 460
           },
           "gridShape": "square",
-          "sha256": "cdc9d7bd3f52e9e7a6bf80413c81b88a1c16d6029c9adcd95f8672599b523718",
-          "bytes": 137285
+          "sha256": "9eb7fd0e9aa8a738117fdbe85001f7c95512d68105e895bb3c3007abce955236",
+          "bytes": 195911
         }
       },
       "runtimePixelMetrics": {
@@ -123,24 +123,24 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.6641,
-          "meanLum": 157.78,
-          "lumStd": 48.25,
-          "edgeEnergy": 81
+          "coverage": 0.7031,
+          "meanLum": 147.55,
+          "lumStd": 64.05,
+          "edgeEnergy": 112
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.6172,
-          "meanLum": 156.63,
-          "lumStd": 54.63,
-          "edgeEnergy": 217
+          "coverage": 0.6631,
+          "meanLum": 145.5,
+          "lumStd": 68.91,
+          "edgeEnergy": 289
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.6049,
-          "meanLum": 156.54,
-          "lumStd": 56.06,
-          "edgeEnergy": 341
+          "coverage": 0.6627,
+          "meanLum": 145.97,
+          "lumStd": 69.31,
+          "edgeEnergy": 433
         }
       }
     },
@@ -1228,88 +1228,88 @@
       },
       "metrics": {
         "16": {
-          "pixels": 125,
-          "colors": 33,
+          "pixels": 179,
+          "colors": 166,
           "bbox": {
-            "minX": 1,
-            "minY": 2,
-            "maxX": 14,
-            "maxY": 13
+            "minX": 0,
+            "minY": 0,
+            "maxX": 15,
+            "maxY": 15
           },
           "ink": {
-            "minX": 1,
+            "minX": 0,
             "minY": 2,
-            "maxX": 14,
+            "maxX": 15,
             "maxY": 13,
-            "width": 14,
+            "width": 16,
             "height": 12
           },
           "gridShape": "square",
-          "sha256": "aef64db05d15273c2b3c94d3d8447f66dabb3a0cd16ea1eaaac9520c56de5c28",
-          "bytes": 342
+          "sha256": "7211909ff5a3912b8947a6913ed4b6393754ea8aa79f0599e5be61bca107549d",
+          "bytes": 837
         },
         "32": {
-          "pixels": 513,
-          "colors": 141,
+          "pixels": 620,
+          "colors": 525,
           "bbox": {
-            "minX": 2,
-            "minY": 3,
-            "maxX": 29,
-            "maxY": 28
+            "minX": 0,
+            "minY": 1,
+            "maxX": 31,
+            "maxY": 30
           },
           "ink": {
-            "minX": 2,
+            "minX": 1,
             "minY": 3,
-            "maxX": 29,
-            "maxY": 28,
-            "width": 28,
-            "height": 26
+            "maxX": 30,
+            "maxY": 27,
+            "width": 30,
+            "height": 25
           },
           "gridShape": "square",
-          "sha256": "c0f3b2233ca7cf0f347ae72aa2e76c144048c5a90052f96f9494e347eddcd8f1",
-          "bytes": 1008
+          "sha256": "c9b1547212598cf6d40312e098de31c5bc2e89ddca54ab43191d9b860a88ac96",
+          "bytes": 2154
         },
         "128": {
-          "pixels": 8293,
-          "colors": 3979,
+          "pixels": 8518,
+          "colors": 4284,
           "bbox": {
-            "minX": 9,
+            "minX": 4,
             "minY": 12,
-            "maxX": 118,
-            "maxY": 115
+            "maxX": 123,
+            "maxY": 114
           },
           "ink": {
-            "minX": 10,
-            "minY": 13,
-            "maxX": 117,
-            "maxY": 113,
-            "width": 108,
-            "height": 101
+            "minX": 6,
+            "minY": 15,
+            "maxX": 121,
+            "maxY": 111,
+            "width": 116,
+            "height": 97
           },
           "gridShape": "square",
-          "sha256": "ecc1dcb3bb27b55ba9bac99f70c8b24bf78c2ea9ed2edc194253bc7ec89a7b87",
-          "bytes": 14203
+          "sha256": "12036e754a3765734522ed15a760476a72d10f4cd997122f0a12c21b362055e2",
+          "bytes": 17725
         },
         "512": {
-          "pixels": 130192,
-          "colors": 24562,
+          "pixels": 131023,
+          "colors": 25893,
           "bbox": {
-            "minX": 39,
-            "minY": 51,
-            "maxX": 473,
-            "maxY": 461
+            "minX": 23,
+            "minY": 58,
+            "maxX": 487,
+            "maxY": 451
           },
           "ink": {
-            "minX": 40,
-            "minY": 52,
-            "maxX": 470,
-            "maxY": 457,
-            "width": 431,
-            "height": 406
+            "minX": 25,
+            "minY": 60,
+            "maxX": 485,
+            "maxY": 447,
+            "width": 461,
+            "height": 388
           },
           "gridShape": "square",
-          "sha256": "75cfcf656025a3b414584d75ec485430d3749df89b630b853daaa8566a083824",
-          "bytes": 158593
+          "sha256": "20f6ded394d47402d7c079de6dcbe7081b5d8a5c6ec745762e4fd59421071a68",
+          "bytes": 204041
         }
       },
       "runtimePixelMetrics": {
@@ -1317,24 +1317,24 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.5313,
-          "meanLum": 146.6,
-          "lumStd": 55.2,
-          "edgeEnergy": 59
+          "coverage": 0.5156,
+          "meanLum": 152.9,
+          "lumStd": 51.46,
+          "edgeEnergy": 48
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.5098,
-          "meanLum": 144.75,
-          "lumStd": 62.67,
-          "edgeEnergy": 224
+          "coverage": 0.4932,
+          "meanLum": 150.4,
+          "lumStd": 55.64,
+          "edgeEnergy": 159
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.5017,
-          "meanLum": 143.79,
-          "lumStd": 64.27,
-          "edgeEnergy": 332
+          "coverage": 0.4819,
+          "meanLum": 151.47,
+          "lumStd": 55.66,
+          "edgeEnergy": 241
         }
       }
     },

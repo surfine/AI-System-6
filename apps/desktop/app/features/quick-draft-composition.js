@@ -835,6 +835,39 @@ async function developAdjustmentLayers() {
   return true;
 }
 
+// Throwing away a proof. Until now the only way out of a composite you did not
+// want was to toggle layers until the cache key changed, which is not a way
+// out, it is a coincidence. This clears the darkroom's composite fields and
+// the in-memory cache of the last one; the body was never touched, so there is
+// nothing to restore.
+async function discardLightroomComposite() {
+  const slot = activeProjectQuickDraft();
+  if (!slot) {
+    setQuickDraftStatus(t("quick_draft_no_project"));
+    return false;
+  }
+  const task = createQuickDraftAsyncTask({ create: false });
+  if (!task) {
+    setQuickDraftStatus(t("quick_draft_no_project"));
+    return false;
+  }
+  quickDraftLastComposite = "";
+  quickDraftLastCompositeKey = "";
+  const committed = await task.commit({ workspace: { composition: {
+    ...darkroomOf(task.currentRecord()),
+    currentKey: "",
+    composite: "",
+    generatedAt: "",
+  } } }, { captureForm: false });
+  if (!committed.ok) {
+    setQuickDraftStatus(t("quick_draft_save_failed"));
+    return false;
+  }
+  renderQuickDraft(committed.record);
+  setQuickDraftStatus(t("lightroom_composite_discarded"));
+  return true;
+}
+
 function looksLikePlaceholderDraft(text = "") {
   const value = String(text || "");
   return /(?:请(?:您|你)?提供|此处需要|待填写|需要(?:您|你)?提供|placeholder)/i.test(value);
@@ -1364,9 +1397,16 @@ async function commitFatBitsCell(element) {
   return writeFatBitsCell(cell, nextText);
 }
 
-function setQuickDraftGrainZoom(zoom = "grain") {
+// The zoom buttons toggle: pressing the lit one returns to plain grain. A menu
+// row is a radio, not a button -- choosing the row you are already on must not
+// take you somewhere else -- so the menu asks for the exact value.
+function currentQuickDraftGrainZoom() {
+  return quickDraftGrainZoom;
+}
+
+function setQuickDraftGrainZoom(zoom = "grain", { toggle = true } = {}) {
   const next = zoom === "fatbits" || zoom === "histogram" ? zoom : "grain";
-  quickDraftGrainZoom = quickDraftGrainZoom === next ? "grain" : next;
+  quickDraftGrainZoom = toggle && quickDraftGrainZoom === next ? "grain" : next;
   if (!quickDraftFatBitsRuleRegistered && window.AISystem6WriteLease?.registerReadOnlyRule) {
     window.AISystem6WriteLease.registerReadOnlyRule(fatBitsReadOnlyRule);
     quickDraftFatBitsRuleRegistered = true;

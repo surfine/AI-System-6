@@ -258,30 +258,112 @@ const teachTextMenus = [
 // 文字亮室 is its own application, so it carries its own menu bar. The views
 // belong to it now, and so does Develop; what writes the draft stays with the
 // desk that writes it.
+const lightroomLayerKinds = ["mingming", "luoluo", "hkrr", "density"];
+const lightroomLayerLabelKey = (kind) => (kind === "density"
+  ? "quick_draft_adjustment_density"
+  : `quick_draft_chip_${kind}`);
+const lightroomStrengthKeys = (kind) => (kind === "density"
+  ? ["quick_draft_adjustment_density_light", "quick_draft_adjustment_density_standard", "quick_draft_adjustment_density_heavy"]
+  : ["quick_draft_adjustment_light", "quick_draft_adjustment_standard", "quick_draft_adjustment_heavy"]);
+
+// One layer, one submenu: the same four controls the inspector shows, in the
+// same order, so the menu is not a second vocabulary for the same object.
+const lightroomLayerSubmenu = (kind) => submenu(lightroomLayerLabelKey(kind), [
+  menuItem(`lightroom-layer-toggle:${kind}`, "quick_draft_layer_enabled", "", {
+    dataset: { lightroomLayer: kind, lightroomLayerRow: "enabled" },
+  }),
+  menuSeparator,
+  ...lightroomStrengthKeys(kind).map((labelKey, index) => menuItem(
+    `lightroom-layer-strength:${kind}:${[25, 50, 75][index]}`,
+    labelKey,
+    "",
+    { dataset: { lightroomLayer: kind, lightroomLayerStrength: String([25, 50, 75][index]) } }
+  )),
+  menuSeparator,
+  menuItem(`lightroom-layer-move:${kind}:-1`, "quick_draft_adjustment_move_up", "", {
+    dataset: { lightroomLayer: kind, lightroomLayerRow: "move" },
+  }),
+  menuItem(`lightroom-layer-move:${kind}:1`, "quick_draft_adjustment_move_down", "", {
+    dataset: { lightroomLayer: kind, lightroomLayerRow: "move" },
+  }),
+  menuSeparator,
+  menuItem(`lightroom-layer-scope:${kind}`, "quick_draft_scope_selection_row", "", {
+    dataset: { lightroomLayer: kind, lightroomLayerRow: "scope-selection" },
+  }),
+  menuItem(`lightroom-layer-scope-all:${kind}`, "quick_draft_scope_whole", "", {
+    dataset: { lightroomLayer: kind, lightroomLayerRow: "scope-all" },
+  }),
+]);
+
+// 文字亮室 is its own application, so it carries its own menu bar. The views
+// belong to it now, and so does Develop; what writes the draft stays with the
+// desk that writes it.
+//
+// Every row here used to be registered as a Quick Draft command, and Quick
+// Draft's availability rule opens with "the front window must be mine" — so
+// the whole bar was grey the moment the darkroom came forward. The rows are
+// the same commands; what changed is who answers for them.
 const lightroomMenus = [
   menu("file", "menu_file", [
+    submenu("lightroom_open_document", [{ type: "lightroom-rows", rowKind: "documents" }], { dataset: { lightroomRows: "documents" } }),
     menuItem("close-active-window", "close", "close-window"),
-  ]),
-  menu("edit", "menu_edit", [menuItem("copy", "copy", "copy")]),
-  menu("view", "menu_view", [
-    menuItem("quick-draft-view-grain", "quick_draft_grain"),
-    menuItem("quick-draft-view-read", "quick_draft_composite"),
-    menuItem("quick-draft-view-listen", "quick_draft_listen"),
-  ]),
-  // The application's own verbs are the contextual menu, the way Quick Draft's
-  // are: four stable menus is the rule, and the fifth appears with the work.
-  // The darkroom vocabulary lives in the darkroom. These three are one-shot
-  // rewrites named for the adjustment layers, not the layers themselves -- but
-  // a writer reading "读者视角" in the drafting window has no way to know that,
-  // and the split says write here, look there.
-  menu("lightroom", "lightroom_title", [
-    menuItem("quick-draft-apply", "quick_draft_preview_adjustments"),
-    menuItem("quick-draft-develop", "quick_draft_develop"),
     menuSeparator,
-    menuItem("quick-draft-mingming", "quick_draft_chip_mingming"),
-    menuItem("quick-draft-luoluo", "quick_draft_chip_luoluo"),
-    menuItem("quick-draft-hkrr", "quick_draft_chip_hkrr"),
-  ], { menuCondition: "quick-draft-menu" }),
+    menuItem("lightroom-save-version", "lightroom_save_version", "lightroom-save-version"),
+    submenu("lightroom_restore_version", [{ type: "lightroom-rows", rowKind: "versions" }], { dataset: { lightroomRows: "versions" } }),
+  ]),
+  menu("edit", "menu_edit", [
+    ...editBasics,
+    menuSeparator,
+    ...findCommands,
+    menuSeparator,
+    ...flatSelectionTools,
+  ]),
+  menu("view", "menu_view", [
+    menuItem("quick-draft-view-grain", "quick_draft_grain", "lightroom-view-grain"),
+    menuItem("quick-draft-view-read", "quick_draft_composite", "lightroom-view-read"),
+    menuItem("quick-draft-view-listen", "quick_draft_listen", "lightroom-view-listen"),
+    menuSeparator,
+    menuItem("lightroom-zoom-grain", "quick_draft_zoom_grain", "", { dataset: { lightroomZoom: "grain" } }),
+    menuItem("lightroom-zoom-histogram", "quick_draft_histogram", "", { dataset: { lightroomZoom: "histogram" } }),
+    menuItem("lightroom-zoom-fatbits", "quick_draft_fatbits", "", { dataset: { lightroomZoom: "fatbits" } }),
+    menuSeparator,
+    menuItem("lightroom-toggle-inspector", "quick_draft_hide_adjustments"),
+  ]),
+  // The application's own verbs, and the darkroom vocabulary lives in the
+  // darkroom: these three words name the LAYERS here, never a one-shot
+  // rewrite. The one-shot rewrites are a writing move and went back to the
+  // desk that writes -- the split says write there, look here.
+  menu("adjust", "menu_adjust", [
+    ...lightroomLayerKinds.map(lightroomLayerSubmenu),
+    menuSeparator,
+    menuItem("lightroom-protect-selection", "quick_draft_protect_selection"),
+    menuSeparator,
+    submenu("quick_draft_eli5_enabled", [
+      menuItem("lightroom-eli5-toggle", "quick_draft_layer_enabled", "", { dataset: { lightroomEli5: "enabled" } }),
+      menuSeparator,
+      menuItem("lightroom-eli5-baseline:secondary-school", "quick_draft_eli5_baseline_general", "", { dataset: { lightroomEli5Baseline: "secondary-school" } }),
+      menuItem("lightroom-eli5-baseline:some-familiarity", "quick_draft_eli5_baseline_some", "", { dataset: { lightroomEli5Baseline: "some-familiarity" } }),
+      menuItem("lightroom-eli5-baseline:familiar", "quick_draft_eli5_baseline_familiar", "", { dataset: { lightroomEli5Baseline: "familiar" } }),
+    ]),
+    menuSeparator,
+    menuItem("quick-draft-apply", "quick_draft_preview_adjustments", "lightroom-apply"),
+    menuItem("quick-draft-develop", "quick_draft_develop", "lightroom-develop"),
+    menuItem("lightroom-discard-composite", "lightroom_discard_composite"),
+  ], { menuCondition: "lightroom-document" }),
+  // The sixth menu appears with the view, the way the fifth appears with the
+  // work: these verbs exist only while the paper is being listened to.
+  menu("listen", "quick_draft_listen", [
+    menuItem("lightroom-listen-toggle", "quick_draft_listen_play", "lightroom-listen-toggle"),
+    menuItem("lightroom-listen-back", "quick_draft_listen_back"),
+    menuSeparator,
+    menuItem("lightroom-listen-lost", "quick_draft_listen_mark_lost"),
+    menuItem("lightroom-listen-rehearse", "quick_draft_listen_rehearse"),
+    menuSeparator,
+    menuItem("lightroom-eli5-review", "quick_draft_eli5_review"),
+    menuItem("lightroom-eli5-rewrite", "quick_draft_eli5_rewrite"),
+    menuSeparator,
+    submenu("quick_draft_listen_voice", [{ type: "lightroom-rows", rowKind: "voices" }], { dataset: { lightroomRows: "voices" } }),
+  ], { menuCondition: "lightroom-listen" }),
   specialMenu(),
 ];
 
@@ -321,6 +403,13 @@ const quickDraftMenus = [
     menuSeparator,
     menuItem("quick-draft-talk-points", "quick_draft_chip_talk_points"),
     menuItem("quick-draft-praise", "quick_draft_chip_praise"),
+    menuSeparator,
+    // One-shot rewrites named after the adjustment layers. They read as layers
+    // in the darkroom and as rewrites here, and only one of those two can be
+    // true in one window -- so they live where the writing happens.
+    menuItem("quick-draft-mingming", "quick_draft_chip_mingming"),
+    menuItem("quick-draft-luoluo", "quick_draft_chip_luoluo"),
+    menuItem("quick-draft-hkrr", "quick_draft_chip_hkrr"),
     menuSeparator,
     menuItem("quick-draft-toggle-sideask", "quick_draft_show_sideask"),
     menuItem("quick-draft-open-writing-studio", "enter_writing_studio"),
@@ -717,10 +806,37 @@ function renderApplicationMenuItem(item) {
     });
     return fragment;
   }
+  // Rows the darkroom fills in from its own state: the project's documents,
+  // the version chain, the voices this browser actually has. Same shape as the
+  // recent-chats rows above -- the menu asks the feature, the feature answers
+  // with what exists, and an empty answer says so rather than lying.
+  if (item.type === "lightroom-rows") {
+    const fragment = document.createDocumentFragment();
+    const rows = window.AISystem6QuickDraft?.lightroomMenuRows?.(item.rowKind) || [];
+    if (!rows.length) {
+      const empty = document.createElement("div");
+      empty.className = "menu-section-label";
+      empty.textContent = typeof t === "function" ? t("lightroom_rows_empty") : "None";
+      fragment.append(empty);
+      return fragment;
+    }
+    rows.forEach((row) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.dataset.action = row.action;
+      button.textContent = row.label;
+      if (row.checked) button.classList.add("is-checked");
+      fragment.append(button);
+    });
+    return fragment;
+  }
   if (item.type === "submenu") {
     const wrapper = document.createElement("div");
     wrapper.className = "menu-submenu menu-item-with-sub";
     if (item.surface) wrapper.dataset.menuSurface = item.surface;
+    if (item.dataset) {
+      Object.entries(item.dataset).forEach(([key, value]) => { wrapper.dataset[key] = value; });
+    }
     const trigger = document.createElement("button");
     trigger.type = "button";
     trigger.className = "menu-submenu-trigger";

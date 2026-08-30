@@ -115,4 +115,34 @@ test.assertIncludes(writingFlow, "lastEditedWritingSurface = null;", "renderPipe
 test.assertIncludes(wireup, "noteWritingSurfaceEdit(\"draft\")", "draft edits update the marker");
 test.assertIncludes(wireup, "noteWritingSurfaceEdit(\"manuscript\")", "manuscript edits update the marker");
 
+// --- Stop 6: the terminus stays on the map ----------------------------------
+// The route charter ends at the Project CD, so the rail shows the finish line
+// in every state: locked (disabled, Balloon Help says why), ready (the verb),
+// and burned (opens the disc). Hiding the terminus was navigation loss.
+const flowIndex = read("index.html");
+const flowPanel = flowIndex.match(/<section class="writing-spine-panel"[\s\S]*?<\/section>\s*<\/section>/)?.[0] || "";
+const flowExportImport = read("app/features/export-import.js");
+const flowActions = read("app/core/actions.js");
+const flowEn = read("app/data/translations-en.js");
+const flowZh = read("app/data/translations-zh.js");
+
+test.assertMatches(
+  flowPanel,
+  /id="spine-burn-project-cd-button"[^>]*disabled[^>]*data-balloon-help="balloon_project_cd_stop_ready"[^>]*data-balloon-help-disabled="balloon_project_cd_stop_locked"/,
+  "stop 6 ships visible but disabled, and Balloon Help carries the reason"
+);
+test.assertIncludes(flowPanel, '<span class="spine-step-number" aria-hidden="true">6</span>', "the Project CD is a numbered stop, not an appearing shortcut");
+test.assertIncludes(flowExportImport, "spineBurnProjectCdButtonEl.disabled = !burned && !ready;", "the terminus disables instead of hiding when there is nothing to burn");
+test.assertIncludes(flowExportImport, 'spineBurnProjectCdButtonEl.dataset.action = burned ? "open-project-cd" : "export-teachtext-project-cd";', "a burned CD opens read-only; an unburned one burns");
+test.assertIncludes(flowExportImport, 'const labelKey = ready ? "burn_project_cd" : "project_cd";', "only the ready state shows the verb; otherwise the stop carries the object name");
+test.assertMatches(
+  flowActions,
+  /function receiptProjectCdBurn\(item\)[\s\S]*?project_cd_burn_receipt[\s\S]*?windowName: "projectCd",/,
+  "every burn leaves a durable System Messages receipt with a way back"
+);
+for (const key of ["project_cd_burn_receipt", "balloon_project_cd_stop_locked", "balloon_project_cd_stop_ready", "balloon_project_cd_stop_burned"]) {
+  test.assertIncludes(flowEn, `${key}:`, `English copy exists for ${key}`);
+  test.assertIncludes(flowZh, `${key}:`, `Chinese copy exists for ${key}`);
+}
+
 test.finish();

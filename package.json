@@ -20,6 +20,8 @@
     "build": "npm run build:app",
     "build:app": "node tooling/build-app-bundle.mjs",
     "build:cmf-renderer-vendor": "node tooling/build-cmf-renderer-vendor.mjs",
+    "build:image-prompt-studio-era-icons": "node tooling/build-image-prompt-studio-era-icons.mjs",
+    "build:lightroom-era-icons": "node tooling/build-lightroom-era-icons.mjs",
     "build:micropolis-hd": "node tooling/build-micropolis-hd-assets.mjs",
     "build:stream-markdown-vendor": "node tooling/build-stream-markdown-vendor.mjs",
     "docs:sync-hashes": "node tooling/update-doc-locale-hashes.mjs",
@@ -65,7 +67,8 @@
     "esbuild": "^0.28.2",
     "eslint": "^10.8.1",
     "three": "^0.185.1",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "wrangler": "^4.126.0"
   },
   "dependencies": {
     "@extractus/article-extractor": "^9.0.0",

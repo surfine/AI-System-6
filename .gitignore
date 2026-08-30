@@ -98,6 +98,19 @@ internal/evidence/drafts/coverage/
 internal/evidence/drafts/hig-ui-ux-audit/
 # local 15MB test photo (bg-1..6 are the shipped backgrounds)
 internal/evidence/drafts/liquid-cover/test-shot.jpg
+# lane image-gen masters and review boards (candidate evidence; manifests and
+# layered runtime sources stay the product of record until approved)
+internal/evidence/drafts/aqua-imagegen-redraw/
+internal/evidence/drafts/cover-glass-five-era-redraw/
+internal/evidence/drafts/game-six-era-icons/
+internal/evidence/drafts/get-info-icon-stage/
+internal/evidence/drafts/lightroom-six-era-icons/
+internal/evidence/drafts/liquid-glass-golden-gate-redraw/
+internal/evidence/drafts/project-disk-imagegen/
+internal/evidence/drafts/snow-leopard-imagegen-redraw/
+internal/evidence/drafts/yosemite-imagegen-redraw/
+# lightroom lane design preview board (canonical design doc is the tracked .md)
+.claude/design/lightroom-app-design.html
 platform/macos/native/nohup.out
 .wrangler/
 # j-space controller ledger (per-task state, never committed)

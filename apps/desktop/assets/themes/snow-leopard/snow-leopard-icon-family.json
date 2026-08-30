@@ -63,6 +63,14 @@
   ],
   "fallback": [],
   "runtimeSize": "contextual",
+  "runtimeSizesByContext": {
+    "compactMenuList": 16,
+    "ordinary": 32,
+    "desktopLargeRetina": 128
+  },
+  "compatibilityManifest": "snow-leopard-icon-manifest.json",
+  "compatibilityManifestMeaning": "Stable 32 px semantic mapping only; app/core/system-icons.js selects 16, 32, or 128 px by rendering context.",
+  "runtimeDispatch": "apps/desktop/app/core/system-icons.js",
   "icons": {
     "startupDisk": {
       "genre": "hardware",
@@ -91,24 +99,24 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.6641,
-          "meanLum": 165.7,
-          "lumStd": 55.78,
-          "edgeEnergy": 37
+          "coverage": 0.7422,
+          "meanLum": 177.94,
+          "lumStd": 48.59,
+          "edgeEnergy": 67
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.6533,
-          "meanLum": 157.76,
-          "lumStd": 66.02,
-          "edgeEnergy": 214
+          "coverage": 0.6836,
+          "meanLum": 177.75,
+          "lumStd": 54.2,
+          "edgeEnergy": 150
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.6429,
-          "meanLum": 158.75,
-          "lumStd": 65.68,
-          "edgeEnergy": 287
+          "coverage": 0.6729,
+          "meanLum": 178.08,
+          "lumStd": 54.44,
+          "edgeEnergy": 230
         }
       }
     },
@@ -134,24 +142,24 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.4258,
-          "meanLum": 119.45,
-          "lumStd": 53.11,
-          "edgeEnergy": 99
+          "coverage": 0.6406,
+          "meanLum": 158.35,
+          "lumStd": 44.48,
+          "edgeEnergy": 46
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.3877,
-          "meanLum": 121.51,
-          "lumStd": 58.13,
-          "edgeEnergy": 279
+          "coverage": 0.6201,
+          "meanLum": 160.71,
+          "lumStd": 51.63,
+          "edgeEnergy": 122
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.3883,
-          "meanLum": 121.43,
-          "lumStd": 60.44,
-          "edgeEnergy": 417
+          "coverage": 0.5873,
+          "meanLum": 159.3,
+          "lumStd": 51.17,
+          "edgeEnergy": 264
         }
       },
       "authoringMethod": "image-generation-plus-deterministic-processing",
@@ -182,24 +190,24 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.668,
-          "meanLum": 113.69,
-          "lumStd": 36.75,
-          "edgeEnergy": 42
+          "coverage": 0.5586,
+          "meanLum": 152.56,
+          "lumStd": 15.21,
+          "edgeEnergy": 1
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.6426,
-          "meanLum": 114.6,
-          "lumStd": 37.45,
-          "edgeEnergy": 127
+          "coverage": 0.5439,
+          "meanLum": 151.8,
+          "lumStd": 17.53,
+          "edgeEnergy": 44
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.6298,
-          "meanLum": 114.85,
-          "lumStd": 37.6,
-          "edgeEnergy": 171
+          "coverage": 0.5437,
+          "meanLum": 148.59,
+          "lumStd": 25.08,
+          "edgeEnergy": 74
         }
       },
       "authoringMethod": "image-generation-plus-deterministic-processing",
@@ -230,24 +238,24 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.5352,
-          "meanLum": 201.31,
-          "lumStd": 27.73,
-          "edgeEnergy": 26
+          "coverage": 0.5586,
+          "meanLum": 224.22,
+          "lumStd": 18.2,
+          "edgeEnergy": 46
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.5811,
-          "meanLum": 184.21,
-          "lumStd": 67.72,
-          "edgeEnergy": 228
+          "coverage": 0.5391,
+          "meanLum": 222.35,
+          "lumStd": 31.29,
+          "edgeEnergy": 107
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.5811,
-          "meanLum": 186.36,
-          "lumStd": 63.54,
-          "edgeEnergy": 313
+          "coverage": 0.5351,
+          "meanLum": 220.15,
+          "lumStd": 38.96,
+          "edgeEnergy": 167
         }
       },
       "authoringMethod": "image-generation-plus-deterministic-processing",
@@ -263,7 +271,7 @@
         "fitted": 0.9219,
         "scale": 1.0442
       },
-      "physicalMetaphor": "a tabbed applications folder with a compact inset grid of four distinct application tiles, still unmistakably a folder",
+      "physicalMetaphor": "a tabbed Applications catalogue folder holding a staggered fan of three non-tile app objects: one manuscript sheet, one open Reader book, and one small Writing Studio typewriter keyboard or paper carriage; it represents AI System 6's high-frequency writing, reading, and long-form work and must contain no conversation bubble, no magnifying glass, no grid, no square tiles, no App Store letter, and no launcher dot matrix",
       "semanticMark": "applications",
       "sourceKind": "original-generated-era-illustration",
       "reviewStatus": "accepted-generated",
@@ -283,24 +291,24 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.7148,
-          "meanLum": 126.77,
-          "lumStd": 45.43,
-          "edgeEnergy": 104
+          "coverage": 0.625,
+          "meanLum": 159.19,
+          "lumStd": 36.88,
+          "edgeEnergy": 76
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.6699,
-          "meanLum": 124.46,
-          "lumStd": 53.7,
-          "edgeEnergy": 299
+          "coverage": 0.5898,
+          "meanLum": 159.33,
+          "lumStd": 41.53,
+          "edgeEnergy": 218
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.6542,
-          "meanLum": 124.77,
-          "lumStd": 54.3,
-          "edgeEnergy": 482
+          "coverage": 0.5811,
+          "meanLum": 159.32,
+          "lumStd": 42.33,
+          "edgeEnergy": 314
         }
       }
     },
@@ -326,24 +334,24 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.4414,
-          "meanLum": 115.24,
-          "lumStd": 33.54,
-          "edgeEnergy": 78
+          "coverage": 0.5625,
+          "meanLum": 97.72,
+          "lumStd": 39.06,
+          "edgeEnergy": 81
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.415,
-          "meanLum": 115.68,
-          "lumStd": 38.24,
-          "edgeEnergy": 235
+          "coverage": 0.5391,
+          "meanLum": 96.85,
+          "lumStd": 43.64,
+          "edgeEnergy": 246
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.4104,
-          "meanLum": 115.39,
-          "lumStd": 38.78,
-          "edgeEnergy": 331
+          "coverage": 0.5249,
+          "meanLum": 95.97,
+          "lumStd": 43.83,
+          "edgeEnergy": 446
         }
       },
       "authoringMethod": "image-generation-plus-deterministic-processing",
@@ -353,15 +361,15 @@
       "runtimeAsset": true
     },
     "finderApp": {
-      "genre": "system identity",
+      "genre": "application",
       "grid": {
         "shape": "square",
         "fitted": 0.8437,
         "scale": 1.0093
       },
-      "physicalMetaphor": "Mac OS X 10.6 FinderIcon mature split face with a curved black profile divider",
+      "physicalMetaphor": "the target era's real Finder identity, preserving its documented facial fields, eyes, and continuous smile without importing a computer chassis from another era",
       "semanticMark": "finder",
-      "sourceKind": "approved-imagegen-reference-guided-reconstruction",
+      "sourceKind": "original-generated-era-illustration",
       "reviewStatus": "accepted-generated",
       "sizes": {
         "16": "icons/finderApp-16.png",
@@ -375,167 +383,31 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.6641,
-          "meanLum": 157.78,
-          "lumStd": 48.25,
-          "edgeEnergy": 81
+          "coverage": 0.7031,
+          "meanLum": 147.55,
+          "lumStd": 64.05,
+          "edgeEnergy": 112
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.6172,
-          "meanLum": 156.63,
-          "lumStd": 54.63,
-          "edgeEnergy": 217
+          "coverage": 0.6631,
+          "meanLum": 145.5,
+          "lumStd": 68.91,
+          "edgeEnergy": 289
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.6049,
-          "meanLum": 156.54,
-          "lumStd": 56.06,
-          "edgeEnergy": 341
+          "coverage": 0.6627,
+          "meanLum": 145.97,
+          "lumStd": 69.31,
+          "edgeEnergy": 433
         }
       },
-      "authoringMethod": "built-in-imagegen-reference-guided-plus-native-size-optical-processing",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
       "generationStatus": "technically-clean",
       "provenanceClass": "A",
       "historicalReviewStatus": "reference-validated",
       "runtimeAsset": true,
-      "semanticIdentity": "friendly Finder and system-navigation identity",
-      "identityAnchors": [
-        "target-era Finder identity",
-        "recognizable system-navigation persona"
-      ],
-      "historicalPrototype": "Mac OS X 10.6 FinderIcon mature split face with a curved black profile divider",
-      "nearestHistoricalAnalog": null,
-      "material": "mature Aqua illustration with restrained lighting and a narrow profile divider",
-      "generatedMaster": "internal/evidence/drafts/icon-lineage-audit/imagegen-candidates-v2/snow-leopard-finder-v2.png",
-      "reference": "internal/evidence/drafts/snow-leopard-icon-reference/iconsets/FinderIcon.iconset/icon_128x128.png",
-      "exactPixelReplica": false,
-      "sizeStatus": {
-        "16": "optically-reviewed",
-        "32": "optically-reviewed",
-        "128": "optically-reviewed",
-        "512": "optically-reviewed"
-      },
-      "sizePolicy": "Each target canvas is rendered directly from the approved high-resolution generation; compact tiers use their own bounds and contrast treatment.",
-      "metrics": {
-        "16": {
-          "bbox": {
-            "minX": 1,
-            "minY": 1,
-            "maxX": 14,
-            "maxY": 14
-          },
-          "bounds": [
-            1,
-            1,
-            14,
-            14
-          ],
-          "ink": {
-            "minX": 1,
-            "minY": 1,
-            "maxX": 14,
-            "maxY": 14,
-            "width": 14,
-            "height": 14
-          },
-          "pixels": 170,
-          "inkPixels": 170,
-          "translucent": 30,
-          "colors": 154,
-          "sha256": "1aabada039da5843284e37ba640ee32486a24e269099f376438e6508ff2d43de",
-          "bytes": 591,
-          "gridShape": "square"
-        },
-        "32": {
-          "bbox": {
-            "minX": 3,
-            "minY": 2,
-            "maxX": 29,
-            "maxY": 30
-          },
-          "bounds": [
-            3,
-            2,
-            29,
-            30
-          ],
-          "ink": {
-            "minX": 3,
-            "minY": 2,
-            "maxX": 29,
-            "maxY": 30,
-            "width": 27,
-            "height": 29
-          },
-          "pixels": 631,
-          "inkPixels": 631,
-          "translucent": 8,
-          "colors": 525,
-          "sha256": "85a03404970ab96e9f22055edf66b610eea2224a504436acc9dc6f8cd66a670c",
-          "bytes": 1534,
-          "gridShape": "square"
-        },
-        "128": {
-          "bbox": {
-            "minX": 12,
-            "minY": 6,
-            "maxX": 115,
-            "maxY": 121
-          },
-          "bounds": [
-            12,
-            6,
-            115,
-            121
-          ],
-          "ink": {
-            "minX": 12,
-            "minY": 6,
-            "maxX": 115,
-            "maxY": 121,
-            "width": 104,
-            "height": 116
-          },
-          "pixels": 9775,
-          "inkPixels": 9775,
-          "translucent": 387,
-          "colors": 3633,
-          "sha256": "f028d444c546211ca35f198dc89e90f38dbf6191bf855565c5f4fef8c2acdf57",
-          "bytes": 12866,
-          "gridShape": "square"
-        },
-        "512": {
-          "bbox": {
-            "minX": 48,
-            "minY": 24,
-            "maxX": 463,
-            "maxY": 487
-          },
-          "bounds": [
-            48,
-            24,
-            463,
-            487
-          ],
-          "ink": {
-            "minX": 48,
-            "minY": 24,
-            "maxX": 463,
-            "maxY": 487,
-            "width": 416,
-            "height": 464
-          },
-          "pixels": 154532,
-          "inkPixels": 154532,
-          "translucent": 2246,
-          "colors": 17076,
-          "sha256": "cdc9d7bd3f52e9e7a6bf80413c81b88a1c16d6029c9adcd95f8672599b523718",
-          "bytes": 137285,
-          "gridShape": "square"
-        }
-      },
       "blindMixStatus": "not-run"
     },
     "fileFloppy": {
@@ -565,24 +437,24 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.7617,
-          "meanLum": 124.53,
-          "lumStd": 78.82,
-          "edgeEnergy": 83
+          "coverage": 0.8086,
+          "meanLum": 139.18,
+          "lumStd": 73.89,
+          "edgeEnergy": 86
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.6973,
-          "meanLum": 131.22,
-          "lumStd": 82.26,
-          "edgeEnergy": 210
+          "coverage": 0.7891,
+          "meanLum": 137.64,
+          "lumStd": 76.28,
+          "edgeEnergy": 254
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.6893,
-          "meanLum": 131.73,
-          "lumStd": 81.7,
-          "edgeEnergy": 294
+          "coverage": 0.8129,
+          "meanLum": 131.86,
+          "lumStd": 79.05,
+          "edgeEnergy": 364
         }
       }
     },
@@ -609,24 +481,24 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.5313,
-          "meanLum": 146.6,
-          "lumStd": 55.2,
-          "edgeEnergy": 59
+          "coverage": 0.5156,
+          "meanLum": 152.9,
+          "lumStd": 51.46,
+          "edgeEnergy": 48
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.5098,
-          "meanLum": 144.75,
-          "lumStd": 62.67,
-          "edgeEnergy": 224
+          "coverage": 0.4932,
+          "meanLum": 150.4,
+          "lumStd": 55.64,
+          "edgeEnergy": 159
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.5017,
-          "meanLum": 143.79,
-          "lumStd": 64.27,
-          "edgeEnergy": 332
+          "coverage": 0.4819,
+          "meanLum": 151.47,
+          "lumStd": 55.66,
+          "edgeEnergy": 241
         }
       },
       "authoringMethod": "image-generation-plus-deterministic-processing",
@@ -662,24 +534,24 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.5977,
-          "meanLum": 207.54,
-          "lumStd": 43.55,
-          "edgeEnergy": 60
+          "coverage": 0.6133,
+          "meanLum": 207.48,
+          "lumStd": 36.11,
+          "edgeEnergy": 91
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.5576,
-          "meanLum": 208.08,
-          "lumStd": 48.3,
-          "edgeEnergy": 264
+          "coverage": 0.5752,
+          "meanLum": 206.83,
+          "lumStd": 42.63,
+          "edgeEnergy": 242
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.5493,
-          "meanLum": 208.43,
-          "lumStd": 48.52,
-          "edgeEnergy": 376
+          "coverage": 0.5709,
+          "meanLum": 206.82,
+          "lumStd": 43.23,
+          "edgeEnergy": 332
         }
       }
     },
@@ -710,215 +582,75 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.6758,
-          "meanLum": 106.51,
-          "lumStd": 71.96,
-          "edgeEnergy": 92
+          "coverage": 0.6406,
+          "meanLum": 124,
+          "lumStd": 71.14,
+          "edgeEnergy": 99
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.6484,
-          "meanLum": 107.57,
-          "lumStd": 77.16,
-          "edgeEnergy": 380
+          "coverage": 0.6006,
+          "meanLum": 120.4,
+          "lumStd": 74.64,
+          "edgeEnergy": 422
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.6327,
-          "meanLum": 106.53,
-          "lumStd": 77.53,
-          "edgeEnergy": 564
+          "coverage": 0.5969,
+          "meanLum": 119.49,
+          "lumStd": 76.57,
+          "edgeEnergy": 683
         }
       }
     },
     "projectDisk": {
-      "genre": "application",
+      "genre": "hardware",
       "grid": {
         "shape": "square",
         "fitted": 0.8437,
         "scale": 1.0286
       },
-      "physicalMetaphor": "Snow Leopard mature external hardware volume with integrated project plate",
+      "physicalMetaphor": "a labelled external storage volume with one restrained project label cue, distinct from the unlabelled local hard disk",
       "semanticMark": "project",
-      "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
-      "reviewStatus": "accepted-priority-lineage",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
         "16": "icons/projectDisk-16.png",
         "32": "icons/projectDisk-32.png",
         "128": "icons/projectDisk-128.png",
         "512": "icons/projectDisk-512.png"
       },
-      "metaphorKey": "project-storage-volume",
+      "metaphorKey": "labelled-external-volume",
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.4219,
-          "meanLum": 156.06,
-          "lumStd": 55.38,
-          "edgeEnergy": 59
+          "coverage": 0.457,
+          "meanLum": 123.17,
+          "lumStd": 51.34,
+          "edgeEnergy": 64
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.4043,
-          "meanLum": 157.1,
-          "lumStd": 61.9,
-          "edgeEnergy": 193
+          "coverage": 0.417,
+          "meanLum": 123.65,
+          "lumStd": 54.84,
+          "edgeEnergy": 158
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.4002,
-          "meanLum": 158.16,
-          "lumStd": 60.77,
-          "edgeEnergy": 262
+          "coverage": 0.4082,
+          "meanLum": 121.39,
+          "lumStd": 57.59,
+          "edgeEnergy": 266
         }
       },
-      "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
       "generationStatus": "technically-clean",
       "provenanceClass": "B",
       "historicalReviewStatus": "historically-reviewed",
-      "runtimeAsset": true,
-      "semanticIdentity": "durable project storage",
-      "identityAnchors": [
-        "mounted storage volume",
-        "restrained project marker"
-      ],
-      "historicalPrototype": null,
-      "nearestHistoricalAnalog": "Snow Leopard mature external hardware volume with integrated project plate",
-      "material": "realistic aluminum and graphite hardware with restrained amber index",
-      "blindMixStatus": "not-run",
-      "generatedMaster": "internal/evidence/drafts/icon-lineage-audit/imagegen-candidates-v2/project-disk/snow-leopard-projectDisk-v2-clean.png",
-      "reference": "No native Project Disk artwork is claimed; each target era's real hard-disk or mounted-volume grammar supplies the prototype.",
-      "exactPixelReplica": false,
-      "referenceValidated": false,
-      "nativeReplica": false,
-      "sourceNote": "Original era-specific storage-volume reinterpretations. The project marker remains secondary to the hardware silhouette.",
-      "sizeStatus": {
-        "16": "optically-reviewed",
-        "32": "optically-reviewed",
-        "128": "optically-reviewed",
-        "512": "optically-reviewed"
-      },
-      "sizePolicy": "Large tiers follow reviewed ImageGen directions; 32 and 16 px are independent optical constructions with the project marker simplified before the storage silhouette.",
-      "metrics": {
-        "16": {
-          "bbox": {
-            "minX": 1,
-            "minY": 4,
-            "maxX": 14,
-            "maxY": 11
-          },
-          "bounds": [
-            1,
-            4,
-            14,
-            11
-          ],
-          "ink": {
-            "minX": 1,
-            "minY": 4,
-            "maxX": 14,
-            "maxY": 11,
-            "width": 14,
-            "height": 8
-          },
-          "pixels": 110,
-          "inkPixels": 110,
-          "translucent": 18,
-          "colors": 31,
-          "sha256": "33e2f4ad575543a08231fbc2778ffb9fbc88b5ba690fa52c907c7e41c12fe742",
-          "bytes": 316,
-          "gridShape": "landscape"
-        },
-        "32": {
-          "bbox": {
-            "minX": 2,
-            "minY": 8,
-            "maxX": 29,
-            "maxY": 23
-          },
-          "bounds": [
-            2,
-            8,
-            29,
-            23
-          ],
-          "ink": {
-            "minX": 2,
-            "minY": 8,
-            "maxX": 29,
-            "maxY": 23,
-            "width": 28,
-            "height": 16
-          },
-          "pixels": 422,
-          "inkPixels": 422,
-          "translucent": 36,
-          "colors": 43,
-          "sha256": "3d30447900a6bd4270a5be1e1061403373967c17bd1ae32bbb2ab6a12812f954",
-          "bytes": 529,
-          "gridShape": "landscape"
-        },
-        "128": {
-          "bbox": {
-            "minX": 9,
-            "minY": 32,
-            "maxX": 118,
-            "maxY": 95
-          },
-          "bounds": [
-            9,
-            32,
-            118,
-            95
-          ],
-          "ink": {
-            "minX": 9,
-            "minY": 32,
-            "maxX": 118,
-            "maxY": 95,
-            "width": 110,
-            "height": 64
-          },
-          "pixels": 6453,
-          "inkPixels": 6453,
-          "translucent": 460,
-          "colors": 511,
-          "sha256": "f7cf0b1ae0eabdf0c2f7a1c68d97829dd98101d69fa622bc26feaa9d0efc5f08",
-          "bytes": 3120,
-          "gridShape": "landscape"
-        },
-        "512": {
-          "bbox": {
-            "minX": 36,
-            "minY": 129,
-            "maxX": 475,
-            "maxY": 381
-          },
-          "bounds": [
-            36,
-            129,
-            475,
-            381
-          ],
-          "ink": {
-            "minX": 36,
-            "minY": 129,
-            "maxX": 475,
-            "maxY": 381,
-            "width": 440,
-            "height": 253
-          },
-          "pixels": 101690,
-          "inkPixels": 101690,
-          "translucent": 4714,
-          "colors": 2034,
-          "sha256": "6ae944c0cdedcb47d3d594203ebf4509e1f6c4d4369baa71627b6f74a09faeec",
-          "bytes": 16925,
-          "gridShape": "landscape"
-        }
-      }
+      "runtimeAsset": true
     },
     "projectDisc": {
       "genre": "hardware",
@@ -947,24 +679,24 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.668,
-          "meanLum": 186.94,
-          "lumStd": 28.66,
-          "edgeEnergy": 59
+          "coverage": 0.7031,
+          "meanLum": 186.47,
+          "lumStd": 25.24,
+          "edgeEnergy": 68
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.6211,
-          "meanLum": 184.1,
-          "lumStd": 43.93,
-          "edgeEnergy": 174
+          "coverage": 0.6484,
+          "meanLum": 187.18,
+          "lumStd": 29.36,
+          "edgeEnergy": 184
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.6117,
-          "meanLum": 186.05,
-          "lumStd": 39.97,
-          "edgeEnergy": 265
+          "coverage": 0.6548,
+          "meanLum": 184.68,
+          "lumStd": 37.73,
+          "edgeEnergy": 258
         }
       }
     },
@@ -995,24 +727,24 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.5195,
-          "meanLum": 127.54,
-          "lumStd": 64.37,
-          "edgeEnergy": 58
+          "coverage": 0.5898,
+          "meanLum": 144.7,
+          "lumStd": 47.74,
+          "edgeEnergy": 66
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.4951,
-          "meanLum": 128.46,
-          "lumStd": 66.3,
-          "edgeEnergy": 151
+          "coverage": 0.5547,
+          "meanLum": 144.63,
+          "lumStd": 52.07,
+          "edgeEnergy": 195
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.483,
-          "meanLum": 129.59,
-          "lumStd": 66.34,
-          "edgeEnergy": 253
+          "coverage": 0.5397,
+          "meanLum": 144.7,
+          "lumStd": 52.97,
+          "edgeEnergy": 287
         }
       }
     },
@@ -1043,24 +775,24 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.5547,
-          "meanLum": 97.95,
-          "lumStd": 65.43,
-          "edgeEnergy": 42
+          "coverage": 0.6172,
+          "meanLum": 105.97,
+          "lumStd": 58.49,
+          "edgeEnergy": 55
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.5518,
-          "meanLum": 101.98,
-          "lumStd": 66.45,
-          "edgeEnergy": 158
+          "coverage": 0.5752,
+          "meanLum": 101.03,
+          "lumStd": 63.58,
+          "edgeEnergy": 215
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.5283,
-          "meanLum": 99.35,
-          "lumStd": 66.71,
-          "edgeEnergy": 235
+          "coverage": 0.5607,
+          "meanLum": 101.22,
+          "lumStd": 64.68,
+          "edgeEnergy": 295
         }
       }
     },
@@ -1091,24 +823,24 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.6953,
-          "meanLum": 199.78,
-          "lumStd": 58.34,
-          "edgeEnergy": 94
+          "coverage": 0.6602,
+          "meanLum": 222.85,
+          "lumStd": 23.27,
+          "edgeEnergy": 44
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.6211,
-          "meanLum": 208.33,
-          "lumStd": 51.17,
-          "edgeEnergy": 255
+          "coverage": 0.5957,
+          "meanLum": 221.59,
+          "lumStd": 28.86,
+          "edgeEnergy": 177
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.5975,
-          "meanLum": 213.55,
-          "lumStd": 46.01,
-          "edgeEnergy": 309
+          "coverage": 0.5828,
+          "meanLum": 217.67,
+          "lumStd": 40.51,
+          "edgeEnergy": 217
         }
       }
     },
@@ -1139,24 +871,24 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.6328,
-          "meanLum": 201.88,
-          "lumStd": 27.04,
-          "edgeEnergy": 24
+          "coverage": 0.6211,
+          "meanLum": 192.01,
+          "lumStd": 51.69,
+          "edgeEnergy": 46
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.6484,
-          "meanLum": 200.95,
-          "lumStd": 43.68,
-          "edgeEnergy": 404
+          "coverage": 0.5879,
+          "meanLum": 196.21,
+          "lumStd": 48.4,
+          "edgeEnergy": 339
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.623,
-          "meanLum": 199.19,
-          "lumStd": 51.15,
-          "edgeEnergy": 579
+          "coverage": 0.5924,
+          "meanLum": 199.31,
+          "lumStd": 47.95,
+          "edgeEnergy": 550
         }
       }
     },
@@ -1187,24 +919,24 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.6445,
-          "meanLum": 191.11,
-          "lumStd": 51.48,
-          "edgeEnergy": 47
+          "coverage": 0.5352,
+          "meanLum": 205.55,
+          "lumStd": 24.08,
+          "edgeEnergy": 26
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.6006,
-          "meanLum": 195.87,
-          "lumStd": 44.19,
-          "edgeEnergy": 245
+          "coverage": 0.4941,
+          "meanLum": 205.07,
+          "lumStd": 27.71,
+          "edgeEnergy": 142
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.5998,
-          "meanLum": 196.22,
-          "lumStd": 45.72,
-          "edgeEnergy": 353
+          "coverage": 0.4711,
+          "meanLum": 205.46,
+          "lumStd": 29.55,
+          "edgeEnergy": 276
         }
       }
     },
@@ -1235,24 +967,24 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.5742,
-          "meanLum": 157.27,
-          "lumStd": 75.91,
-          "edgeEnergy": 61
+          "coverage": 0.6367,
+          "meanLum": 175.32,
+          "lumStd": 56.41,
+          "edgeEnergy": 75
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.5518,
-          "meanLum": 157.56,
-          "lumStd": 77.81,
-          "edgeEnergy": 177
+          "coverage": 0.6074,
+          "meanLum": 175.73,
+          "lumStd": 60.05,
+          "edgeEnergy": 227
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.5448,
-          "meanLum": 157.75,
-          "lumStd": 77.93,
-          "edgeEnergy": 245
+          "coverage": 0.6009,
+          "meanLum": 175.97,
+          "lumStd": 60.58,
+          "edgeEnergy": 331
         }
       }
     },
@@ -1263,187 +995,47 @@
         "fitted": 0.8606,
         "scale": 1.0153
       },
-      "physicalMetaphor": "Snow Leopard professional proofing board with paper stack, aluminum clamp, editorial marks, and docked pencil",
+      "physicalMetaphor": "a marked manuscript page under a magnifying lens, reduced to one readable proofing object",
       "semanticMark": "proof",
-      "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
-      "reviewStatus": "accepted-priority-lineage",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
         "16": "icons/reviewDesk-16.png",
         "32": "icons/reviewDesk-32.png",
         "128": "icons/reviewDesk-128.png",
         "512": "icons/reviewDesk-512.png"
       },
-      "metaphorKey": "marked-manuscript-plus-correction-action",
+      "metaphorKey": "marked-manuscript-with-lens",
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.6758,
-          "meanLum": 158.86,
-          "lumStd": 64.86,
-          "edgeEnergy": 100
+          "coverage": 0.6133,
+          "meanLum": 157.5,
+          "lumStd": 56.92,
+          "edgeEnergy": 136
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.6426,
-          "meanLum": 162.59,
-          "lumStd": 68.6,
-          "edgeEnergy": 349
+          "coverage": 0.5781,
+          "meanLum": 159.56,
+          "lumStd": 62.91,
+          "edgeEnergy": 438
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.6332,
-          "meanLum": 163.25,
-          "lumStd": 69.86,
-          "edgeEnergy": 517
+          "coverage": 0.5748,
+          "meanLum": 159.47,
+          "lumStd": 64.31,
+          "edgeEnergy": 664
         }
       },
-      "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
       "generationStatus": "technically-clean",
       "provenanceClass": "B",
       "historicalReviewStatus": "historically-reviewed",
-      "runtimeAsset": true,
-      "semanticIdentity": "writer-controlled manuscript proofing and correction application",
-      "identityAnchors": [
-        "marked manuscript",
-        "visible inspection or correction action"
-      ],
-      "historicalPrototype": null,
-      "nearestHistoricalAnalog": "Snow Leopard professional proofing board with paper stack, aluminum clamp, editorial marks, and docked pencil",
-      "material": "mature realistic paper, graphite frame, brushed aluminum, and controlled correction red",
-      "blindMixStatus": "not-run",
-      "generatedMaster": "internal/evidence/drafts/icon-lineage-audit/imagegen-candidates-v2/review-desk/snow-leopard-review-desk-v2.png",
-      "reference": "No native Review Desk icon artwork is claimed; target-era application-icon grammar supplies the nearest analog.",
-      "exactPixelReplica": false,
-      "referenceValidated": false,
-      "nativeReplica": false,
-      "sourceNote": "Original target-era reinterpretation. No native Review Desk artwork is claimed; the lens is deliberately absent so Review Desk cannot collapse into Searcher.",
-      "sizeStatus": {
-        "16": "optically-reviewed",
-        "32": "optically-reviewed",
-        "128": "optically-reviewed",
-        "512": "optically-reviewed"
-      },
-      "sizePolicy": "Large tiers derive from the approved high-resolution candidate. The 32 px and 16 px tiers are independent era-specific optical redraws that delete paragraph texture, preserve the correction anchor, and own their final pixel geometry.",
-      "metrics": {
-        "16": {
-          "bbox": {
-            "minX": 1,
-            "minY": 1,
-            "maxX": 14,
-            "maxY": 14
-          },
-          "bounds": [
-            1,
-            1,
-            14,
-            14
-          ],
-          "ink": {
-            "minX": 1,
-            "minY": 1,
-            "maxX": 14,
-            "maxY": 14,
-            "width": 14,
-            "height": 14
-          },
-          "pixels": 184,
-          "inkPixels": 184,
-          "translucent": 47,
-          "colors": 127,
-          "sha256": "146c84dd7e65ba840e8fddada4032acf51ed914483f08235cc3aa5621e1f5658",
-          "bytes": 615,
-          "gridShape": "square"
-        },
-        "32": {
-          "bbox": {
-            "minX": 2,
-            "minY": 3,
-            "maxX": 29,
-            "maxY": 29
-          },
-          "bounds": [
-            2,
-            3,
-            29,
-            29
-          ],
-          "ink": {
-            "minX": 2,
-            "minY": 3,
-            "maxX": 29,
-            "maxY": 29,
-            "width": 28,
-            "height": 27
-          },
-          "pixels": 682,
-          "inkPixels": 682,
-          "translucent": 92,
-          "colors": 283,
-          "sha256": "f3ef1281ea9995a6d2866ccdfe9c056a532c65abd0b848f4bd37e4d0755e289a",
-          "bytes": 1240,
-          "gridShape": "square"
-        },
-        "128": {
-          "bbox": {
-            "minX": 9,
-            "minY": 3,
-            "maxX": 118,
-            "maxY": 125
-          },
-          "bounds": [
-            9,
-            3,
-            118,
-            125
-          ],
-          "ink": {
-            "minX": 9,
-            "minY": 3,
-            "maxX": 118,
-            "maxY": 125,
-            "width": 110,
-            "height": 123
-          },
-          "pixels": 10068,
-          "inkPixels": 10068,
-          "translucent": 407,
-          "colors": 4972,
-          "sha256": "d702d22e2086abfd582d97f43e7bc9103b4617332f7a1d476d7d34bc5a661c36",
-          "bytes": 23338,
-          "gridShape": "square"
-        },
-        "512": {
-          "bbox": {
-            "minX": 36,
-            "minY": 11,
-            "maxX": 475,
-            "maxY": 500
-          },
-          "bounds": [
-            36,
-            11,
-            475,
-            500
-          ],
-          "ink": {
-            "minX": 36,
-            "minY": 11,
-            "maxX": 475,
-            "maxY": 500,
-            "width": 440,
-            "height": 490
-          },
-          "pixels": 158362,
-          "inkPixels": 158362,
-          "translucent": 2120,
-          "colors": 39239,
-          "sha256": "0e12c1eb1631e6231a6f24f8c8d7c32a554ebcdb379ea630625967f9089b64e5",
-          "bytes": 308266,
-          "gridShape": "square"
-        }
-      }
+      "runtimeAsset": true
     },
     "searcher": {
       "genre": "application",
@@ -1452,187 +1044,47 @@
         "fitted": 0.9403,
         "scale": 1.0892
       },
-      "physicalMetaphor": "Snow Leopard Finder and Spotlight search tool with a controlled clear lens over an indexed ledger",
+      "physicalMetaphor": "a single magnifying glass overlapping a document page, with the lens and page both readable",
       "semanticMark": "magnify",
-      "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
-      "reviewStatus": "accepted-priority-lineage",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
         "16": "icons/searcher-16.png",
         "32": "icons/searcher-32.png",
         "128": "icons/searcher-128.png",
         "512": "icons/searcher-512.png"
       },
-      "metaphorKey": "lens-plus-visible-search-relationship",
+      "metaphorKey": "magnifier-over-page",
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.5469,
-          "meanLum": 159.53,
-          "lumStd": 55.34,
-          "edgeEnergy": 117
+          "coverage": 0.5781,
+          "meanLum": 187.82,
+          "lumStd": 47.14,
+          "edgeEnergy": 97
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.5039,
-          "meanLum": 163.23,
-          "lumStd": 60.31,
-          "edgeEnergy": 309
+          "coverage": 0.5449,
+          "meanLum": 188.22,
+          "lumStd": 51.04,
+          "edgeEnergy": 291
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.4955,
-          "meanLum": 163.33,
-          "lumStd": 61.09,
-          "edgeEnergy": 458
+          "coverage": 0.5408,
+          "meanLum": 187.47,
+          "lumStd": 52.91,
+          "edgeEnergy": 506
         }
       },
-      "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
       "generationStatus": "technically-clean",
       "provenanceClass": "B",
       "historicalReviewStatus": "historically-reviewed",
-      "runtimeAsset": true,
-      "semanticIdentity": "writer-controlled search and discovery utility",
-      "identityAnchors": [
-        "magnifying lens",
-        "visible search-result relationship"
-      ],
-      "historicalPrototype": null,
-      "nearestHistoricalAnalog": "Snow Leopard Finder and Spotlight search tool with a controlled clear lens over an indexed ledger",
-      "material": "mature graphite, brushed aluminum, clear glass, and flat off-white paper with texture removed at compact sizes",
-      "blindMixStatus": "not-run",
-      "generatedMaster": "internal/evidence/drafts/icon-lineage-audit/imagegen-candidates-v2/searcher/snow-leopard-searcher-v2.png",
-      "reference": "No native AI System 6 Searcher icon artwork is claimed; target-era Sherlock, Finder search, and Spotlight grammar supplies the nearest analog.",
-      "exactPixelReplica": false,
-      "referenceValidated": false,
-      "nativeReplica": false,
-      "sourceNote": "Original target-era reinterpretation. The lens persists as the semantic anchor while result object, perspective, material, depth, and compact construction are re-authored independently for every admitted era.",
-      "sizeStatus": {
-        "16": "optically-reviewed",
-        "32": "optically-reviewed",
-        "128": "optically-reviewed",
-        "512": "optically-reviewed"
-      },
-      "sizePolicy": "Large tiers derive from the approved high-resolution candidate. The 32 px and 16 px tiers are independent era-specific optical paintings: Platinum uses hard pixels; Aqua simplifies the lens and result cards; Snow Leopard removes texture and fine detail; Yosemite keeps only the lens and one result slip.",
-      "metrics": {
-        "16": {
-          "bbox": {
-            "minX": 1,
-            "minY": 2,
-            "maxX": 12,
-            "maxY": 13
-          },
-          "bounds": [
-            1,
-            2,
-            12,
-            13
-          ],
-          "ink": {
-            "minX": 1,
-            "minY": 2,
-            "maxX": 12,
-            "maxY": 13,
-            "width": 12,
-            "height": 12
-          },
-          "pixels": 113,
-          "inkPixels": 113,
-          "translucent": 42,
-          "colors": 105,
-          "sha256": "a3ed544db5cd131894411579e761b4c0a30050944e0b2b5704e1c097b83b427c",
-          "bytes": 611,
-          "gridShape": "square"
-        },
-        "32": {
-          "bbox": {
-            "minX": 1,
-            "minY": 4,
-            "maxX": 27,
-            "maxY": 29
-          },
-          "bounds": [
-            1,
-            4,
-            27,
-            29
-          ],
-          "ink": {
-            "minX": 1,
-            "minY": 4,
-            "maxX": 27,
-            "maxY": 29,
-            "width": 27,
-            "height": 26
-          },
-          "pixels": 511,
-          "inkPixels": 511,
-          "translucent": 88,
-          "colors": 348,
-          "sha256": "a402ad3bb60b3581ecb822353076abc733cecf3de3141841856edf2247357e74",
-          "bytes": 1638,
-          "gridShape": "square"
-        },
-        "128": {
-          "bbox": {
-            "minX": 12,
-            "minY": 9,
-            "maxX": 116,
-            "maxY": 118
-          },
-          "bounds": [
-            12,
-            9,
-            116,
-            118
-          ],
-          "ink": {
-            "minX": 12,
-            "minY": 9,
-            "maxX": 116,
-            "maxY": 118,
-            "width": 105,
-            "height": 110
-          },
-          "pixels": 7886,
-          "inkPixels": 7886,
-          "translucent": 380,
-          "colors": 4931,
-          "sha256": "7acf988b29347b907896ec650a3eab290d3f17bfdd1d0950df8a0cfee289fe07",
-          "bytes": 20729,
-          "gridShape": "square"
-        },
-        "512": {
-          "bbox": {
-            "minX": 46,
-            "minY": 36,
-            "maxX": 465,
-            "maxY": 475
-          },
-          "bounds": [
-            46,
-            36,
-            465,
-            475
-          ],
-          "ink": {
-            "minX": 46,
-            "minY": 36,
-            "maxX": 465,
-            "maxY": 475,
-            "width": 420,
-            "height": 440
-          },
-          "pixels": 124296,
-          "inkPixels": 124296,
-          "translucent": 2055,
-          "colors": 34435,
-          "sha256": "ccae3a65a5d0833bed8e8e78f74cdf70141fb4bd052045a4319b70ad2bb48718",
-          "bytes": 249448,
-          "gridShape": "square"
-        }
-      }
+      "runtimeAsset": true
     },
     "reader": {
       "genre": "application",
@@ -1661,24 +1113,24 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.5703,
-          "meanLum": 171.94,
-          "lumStd": 68.62,
-          "edgeEnergy": 78
+          "coverage": 0.4141,
+          "meanLum": 162.19,
+          "lumStd": 49.51,
+          "edgeEnergy": 40
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.5137,
-          "meanLum": 180.27,
-          "lumStd": 65.8,
-          "edgeEnergy": 185
+          "coverage": 0.3574,
+          "meanLum": 168.37,
+          "lumStd": 53.89,
+          "edgeEnergy": 119
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.5113,
-          "meanLum": 179.7,
-          "lumStd": 67.83,
-          "edgeEnergy": 287
+          "coverage": 0.3509,
+          "meanLum": 168.72,
+          "lumStd": 53.74,
+          "edgeEnergy": 203
         }
       }
     },
@@ -1709,24 +1161,24 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.707,
-          "meanLum": 135.68,
-          "lumStd": 49.15,
-          "edgeEnergy": 119
+          "coverage": 0.7578,
+          "meanLum": 135.45,
+          "lumStd": 48.63,
+          "edgeEnergy": 124
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.6699,
-          "meanLum": 136.54,
-          "lumStd": 55.47,
-          "edgeEnergy": 411
+          "coverage": 0.7207,
+          "meanLum": 137.38,
+          "lumStd": 53.53,
+          "edgeEnergy": 501
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.6655,
-          "meanLum": 135.49,
-          "lumStd": 58.36,
-          "edgeEnergy": 619
+          "coverage": 0.7029,
+          "meanLum": 137.73,
+          "lumStd": 55.35,
+          "edgeEnergy": 715
         }
       }
     },
@@ -1737,215 +1189,89 @@
         "fitted": 0.9219,
         "scale": 1.0351
       },
-      "physicalMetaphor": "Snow Leopard manuscript binder with sober outline tree",
-      "semanticMark": "outline",
-      "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
-      "reviewStatus": "accepted-priority-lineage",
+      "physicalMetaphor": "a document page whose heading lines grow into one simple stem with a few branches and nodes, a document structure map rather than a geographic map",
+      "semanticMark": "none",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
         "16": "icons/docMap-16.png",
         "32": "icons/docMap-32.png",
         "128": "icons/docMap-128.png",
         "512": "icons/docMap-512.png"
       },
-      "metaphorKey": "document-heading-hierarchy",
+      "metaphorKey": "branching-document-map",
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.7109,
-          "meanLum": 175.53,
-          "lumStd": 45.7,
-          "edgeEnergy": 144
+          "coverage": 0.7656,
+          "meanLum": 162.83,
+          "lumStd": 57.82,
+          "edgeEnergy": 161
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.6865,
-          "meanLum": 175.28,
-          "lumStd": 54.07,
-          "edgeEnergy": 372
+          "coverage": 0.7813,
+          "meanLum": 159.21,
+          "lumStd": 70.61,
+          "edgeEnergy": 453
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.6865,
-          "meanLum": 172.42,
-          "lumStd": 57.57,
-          "edgeEnergy": 581
+          "coverage": 0.7574,
+          "meanLum": 161.27,
+          "lumStd": 69.03,
+          "edgeEnergy": 685
         }
       },
       "metaphorMetrics": {
-        "version": 1,
+        "version": 2,
         "sourceSize": [
           128,
           128
         ],
         "bounds": [
-          19,
-          5,
-          116,
-          122
+          8,
+          6,
+          119,
+          120
         ],
         "pageMode": "opaque",
-        "pageLeftDensity": 0.9248,
-        "pageRightDensity": 0.1392,
-        "pageAdvantage": 0.7855,
-        "pageAdvantageMin": 0.2,
+        "pageLeftDensity": 1,
+        "pageRightDensity": 0.9568,
+        "pageAdvantage": 0.0432,
+        "pageAdvantageMin": 0.02,
         "nodeMode": "opaque",
         "nodeBandDensities": [
-          0.2023,
-          0.2108,
-          0.0826
+          0.8962,
+          0.9679,
+          0.9926
         ],
         "nodeGapDensities": [
-          0,
-          0
-        ]
+          0.9098,
+          1
+        ],
+        "centerHubDensity": 1,
+        "radialNodeDensities": [
+          0.9993,
+          0.8948,
+          1,
+          1
+        ],
+        "radialBranchDensities": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "layoutMode": "radial-mind-map"
       },
-      "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
       "generationStatus": "technically-clean",
       "provenanceClass": "C",
       "historicalReviewStatus": "historically-reviewed",
-      "runtimeAsset": true,
-      "semanticIdentity": "visualize document heading structure",
-      "identityAnchors": [
-        "document",
-        "branching heading hierarchy"
-      ],
-      "historicalPrototype": null,
-      "nearestHistoricalAnalog": "Snow Leopard manuscript binder with sober outline tree",
-      "material": "ivory paper, brushed aluminum and desaturated blue-gray nodes",
-      "blindMixStatus": "not-run",
-      "generatedMaster": "internal/evidence/drafts/icon-lineage-audit/imagegen-candidates-v2/doc-map/snow-leopard-docMap-v1.png",
-      "reference": "No exact period application icon is claimed. Each era combines its document grammar with its own outline/tree disclosure idiom.",
-      "exactPixelReplica": false,
-      "referenceValidated": false,
-      "nativeReplica": false,
-      "sourceNote": "Original era-specific document-structure utilities; geographic-map and magnifier metaphors are deliberately excluded.",
-      "sizeStatus": {
-        "16": "optically-reviewed",
-        "32": "optically-reviewed",
-        "128": "optically-reviewed",
-        "512": "optically-reviewed"
-      },
-      "sizePolicy": "Large tiers follow reviewed generation directions; 32 and 16 px use independent bold trunks and three nodes rather than reduced detail.",
-      "metrics": {
-        "16": {
-          "bbox": {
-            "minX": 3,
-            "minY": 1,
-            "maxX": 13,
-            "maxY": 14
-          },
-          "bounds": [
-            3,
-            1,
-            13,
-            14
-          ],
-          "ink": {
-            "minX": 3,
-            "minY": 1,
-            "maxX": 13,
-            "maxY": 14,
-            "width": 11,
-            "height": 14
-          },
-          "pixels": 151,
-          "inkPixels": 151,
-          "translucent": 3,
-          "colors": 17,
-          "sha256": "4e45e7acac9cf3e3101e915c27fe1d38c82958f8f385332c1bab5b1b1982593e",
-          "bytes": 285,
-          "gridShape": "portrait"
-        },
-        "32": {
-          "bbox": {
-            "minX": 6,
-            "minY": 2,
-            "maxX": 27,
-            "maxY": 29
-          },
-          "bounds": [
-            6,
-            2,
-            27,
-            29
-          ],
-          "ink": {
-            "minX": 6,
-            "minY": 2,
-            "maxX": 27,
-            "maxY": 29,
-            "width": 22,
-            "height": 28
-          },
-          "pixels": 601,
-          "inkPixels": 601,
-          "translucent": 6,
-          "colors": 22,
-          "sha256": "a5b5bc9ad27965c132dff3499f402cfde58d15cecadc7d93a2080ec346ed74b1",
-          "bytes": 397,
-          "gridShape": "portrait"
-        },
-        "128": {
-          "bbox": {
-            "minX": 12,
-            "minY": 8,
-            "maxX": 116,
-            "maxY": 119
-          },
-          "bounds": [
-            12,
-            8,
-            116,
-            119
-          ],
-          "ink": {
-            "minX": 12,
-            "minY": 8,
-            "maxX": 116,
-            "maxY": 119,
-            "width": 105,
-            "height": 112
-          },
-          "pixels": 10992,
-          "inkPixels": 10992,
-          "translucent": 537,
-          "colors": 4028,
-          "sha256": "6b928bd7d105297e0623533481504d8e55e047d1b1a5bb02a0a7ece49ce501d9",
-          "bytes": 17958,
-          "gridShape": "square"
-        },
-        "512": {
-          "bbox": {
-            "minX": 46,
-            "minY": 32,
-            "maxX": 465,
-            "maxY": 479
-          },
-          "bounds": [
-            46,
-            32,
-            465,
-            479
-          ],
-          "ink": {
-            "minX": 46,
-            "minY": 32,
-            "maxX": 465,
-            "maxY": 479,
-            "width": 420,
-            "height": 448
-          },
-          "pixels": 174931,
-          "inkPixels": 174931,
-          "translucent": 5251,
-          "colors": 23494,
-          "sha256": "2de96069363743176fea528bda71f774b8a536c61c79e83900859ef1279bc6f5",
-          "bytes": 268712,
-          "gridShape": "square"
-        }
-      }
+      "runtimeAsset": true
     },
     "clioStage": {
       "genre": "application",
@@ -1974,24 +1300,24 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.7148,
-          "meanLum": 110.1,
-          "lumStd": 69.95,
-          "edgeEnergy": 143
+          "coverage": 0.8125,
+          "meanLum": 117.21,
+          "lumStd": 73.55,
+          "edgeEnergy": 139
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.666,
-          "meanLum": 112.69,
-          "lumStd": 78.36,
-          "edgeEnergy": 275
+          "coverage": 0.7959,
+          "meanLum": 116.78,
+          "lumStd": 77.88,
+          "edgeEnergy": 381
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.6468,
-          "meanLum": 112.51,
-          "lumStd": 79.61,
-          "edgeEnergy": 382
+          "coverage": 0.7749,
+          "meanLum": 115.04,
+          "lumStd": 79.2,
+          "edgeEnergy": 487
         }
       }
     },
@@ -2022,24 +1348,24 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.5313,
-          "meanLum": 175.93,
-          "lumStd": 59.14,
-          "edgeEnergy": 84
+          "coverage": 0.4883,
+          "meanLum": 163.49,
+          "lumStd": 65.64,
+          "edgeEnergy": 94
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.4854,
-          "meanLum": 178.78,
-          "lumStd": 66.1,
-          "edgeEnergy": 280
+          "coverage": 0.4482,
+          "meanLum": 165.51,
+          "lumStd": 71,
+          "edgeEnergy": 297
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.4864,
-          "meanLum": 177.85,
-          "lumStd": 67.72,
-          "edgeEnergy": 433
+          "coverage": 0.445,
+          "meanLum": 165.48,
+          "lumStd": 72.4,
+          "edgeEnergy": 447
         }
       }
     },
@@ -2050,7 +1376,7 @@
         "fitted": 0.9219,
         "scale": 1.0442
       },
-      "physicalMetaphor": "a book-cover sheet partly overlaid by one clear glass lens panel, with the opaque cover and transparent material both readable",
+      "physicalMetaphor": "a landscape Bilibili-video cover artboard whose dominant visual is two large lines of glass typography: thick translucent title strokes with refractive edges over an abstract background color plane and one neutral geometric accent shape, plus a slim offset text/shape layer stack at one side; it is a glass-text cover compositor with SDF typography, material presets, multi-aspect editing, and explicit PNG/video export, never a person, face, character, anime silhouette, book, book cover, ordinary photo compositor, single glass sheet, or generic pane",
       "semanticMark": "cover",
       "sourceKind": "original-generated-era-illustration",
       "reviewStatus": "accepted-generated",
@@ -2070,24 +1396,24 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.4102,
-          "meanLum": 123.24,
-          "lumStd": 47.99,
-          "edgeEnergy": 33
+          "coverage": 0.5938,
+          "meanLum": 95.73,
+          "lumStd": 27.03,
+          "edgeEnergy": 62
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.3896,
-          "meanLum": 121.78,
-          "lumStd": 52.02,
-          "edgeEnergy": 103
+          "coverage": 0.5186,
+          "meanLum": 95.9,
+          "lumStd": 31.91,
+          "edgeEnergy": 294
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.3849,
-          "meanLum": 121.97,
-          "lumStd": 51.95,
-          "edgeEnergy": 151
+          "coverage": 0.5102,
+          "meanLum": 95.26,
+          "lumStd": 32.85,
+          "edgeEnergy": 430
         }
       }
     },
@@ -2118,24 +1444,24 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.5352,
-          "meanLum": 129.5,
-          "lumStd": 57.9,
-          "edgeEnergy": 112
+          "coverage": 0.5,
+          "meanLum": 136.27,
+          "lumStd": 51.08,
+          "edgeEnergy": 105
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.5068,
-          "meanLum": 132.04,
-          "lumStd": 61.62,
-          "edgeEnergy": 256
+          "coverage": 0.4648,
+          "meanLum": 136.34,
+          "lumStd": 56.9,
+          "edgeEnergy": 263
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.5051,
-          "meanLum": 130.67,
-          "lumStd": 63.54,
-          "edgeEnergy": 349
+          "coverage": 0.458,
+          "meanLum": 136.51,
+          "lumStd": 58.2,
+          "edgeEnergy": 378
         }
       }
     },
@@ -2166,24 +1492,24 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.2695,
-          "meanLum": 101.93,
-          "lumStd": 47.07,
-          "edgeEnergy": 55
+          "coverage": 0.4141,
+          "meanLum": 118.53,
+          "lumStd": 44.33,
+          "edgeEnergy": 93
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.2441,
-          "meanLum": 98.11,
-          "lumStd": 52,
-          "edgeEnergy": 170
+          "coverage": 0.375,
+          "meanLum": 115.27,
+          "lumStd": 51.37,
+          "edgeEnergy": 329
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.2358,
-          "meanLum": 99.58,
-          "lumStd": 53.01,
-          "edgeEnergy": 256
+          "coverage": 0.3707,
+          "meanLum": 115.09,
+          "lumStd": 53.07,
+          "edgeEnergy": 494
         }
       }
     },
@@ -2210,24 +1536,24 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.7383,
-          "meanLum": 107.69,
-          "lumStd": 59.43,
-          "edgeEnergy": 118
+          "coverage": 0.5469,
+          "meanLum": 130.48,
+          "lumStd": 62.07,
+          "edgeEnergy": 115
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.6953,
-          "meanLum": 109.19,
-          "lumStd": 66.69,
-          "edgeEnergy": 282
+          "coverage": 0.5166,
+          "meanLum": 132.17,
+          "lumStd": 68.29,
+          "edgeEnergy": 354
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.6638,
-          "meanLum": 112.52,
-          "lumStd": 65.75,
-          "edgeEnergy": 403
+          "coverage": 0.5068,
+          "meanLum": 133.47,
+          "lumStd": 69.56,
+          "edgeEnergy": 524
         }
       },
       "authoringMethod": "image-generation-plus-deterministic-processing",
@@ -2263,24 +1589,24 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.6563,
-          "meanLum": 150.14,
-          "lumStd": 24.97,
-          "edgeEnergy": 14
+          "coverage": 0.6367,
+          "meanLum": 154.71,
+          "lumStd": 25.08,
+          "edgeEnergy": 15
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.6494,
-          "meanLum": 150.9,
-          "lumStd": 28.76,
-          "edgeEnergy": 140
+          "coverage": 0.6162,
+          "meanLum": 155.53,
+          "lumStd": 27.46,
+          "edgeEnergy": 113
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.6474,
-          "meanLum": 149.2,
-          "lumStd": 30.67,
-          "edgeEnergy": 197
+          "coverage": 0.6162,
+          "meanLum": 156.55,
+          "lumStd": 29.09,
+          "edgeEnergy": 181
         }
       }
     },
@@ -2312,23 +1638,23 @@
         "derived16": {
           "displaySize": 16,
           "coverage": 0.6172,
-          "meanLum": 133.63,
-          "lumStd": 42.18,
-          "edgeEnergy": 72
+          "meanLum": 134.82,
+          "lumStd": 37.45,
+          "edgeEnergy": 48
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.5898,
-          "meanLum": 133.15,
-          "lumStd": 48.09,
-          "edgeEnergy": 225
+          "coverage": 0.5742,
+          "meanLum": 136.61,
+          "lumStd": 37.52,
+          "edgeEnergy": 205
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.585,
-          "meanLum": 131.99,
-          "lumStd": 51.18,
-          "edgeEnergy": 361
+          "coverage": 0.5601,
+          "meanLum": 138.15,
+          "lumStd": 35.85,
+          "edgeEnergy": 288
         }
       }
     },
@@ -2359,38 +1685,38 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.5508,
-          "meanLum": 153.72,
-          "lumStd": 65.47,
-          "edgeEnergy": 86
+          "coverage": 0.6289,
+          "meanLum": 174.03,
+          "lumStd": 56.34,
+          "edgeEnergy": 84
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.5293,
-          "meanLum": 150.53,
-          "lumStd": 73.73,
-          "edgeEnergy": 261
+          "coverage": 0.6367,
+          "meanLum": 167.22,
+          "lumStd": 68.75,
+          "edgeEnergy": 257
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.5193,
-          "meanLum": 151.24,
-          "lumStd": 73.71,
-          "edgeEnergy": 374
+          "coverage": 0.6253,
+          "meanLum": 168.88,
+          "lumStd": 65.01,
+          "edgeEnergy": 402
         }
       }
     },
     "controlPanel": {
-      "genre": "application",
+      "genre": "utility",
       "grid": {
         "shape": "square",
         "fitted": 0.8438,
         "scale": 0.9558
       },
-      "physicalMetaphor": "Snow Leopard sober single-purpose utility console",
-      "semanticMark": "adjust",
-      "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
-      "reviewStatus": "accepted-priority-lineage",
+      "physicalMetaphor": "the era's settings object, expressed as a compact panel of physical controls rather than a modern gear glyph",
+      "semanticMark": "sliders",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
         "16": "icons/controlPanel-16.png",
         "32": "icons/controlPanel-32.png",
@@ -2402,172 +1728,31 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.7422,
-          "meanLum": 109.25,
-          "lumStd": 45,
-          "edgeEnergy": 128
+          "coverage": 0.7813,
+          "meanLum": 118.77,
+          "lumStd": 52.74,
+          "edgeEnergy": 135
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.6797,
-          "meanLum": 106.32,
-          "lumStd": 50.24,
-          "edgeEnergy": 394
+          "coverage": 0.7441,
+          "meanLum": 118.36,
+          "lumStd": 55.39,
+          "edgeEnergy": 437
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.674,
-          "meanLum": 105.89,
-          "lumStd": 52.67,
-          "edgeEnergy": 529
+          "coverage": 0.7319,
+          "meanLum": 118.3,
+          "lumStd": 56.08,
+          "edgeEnergy": 692
         }
       },
-      "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
       "generationStatus": "technically-clean",
       "provenanceClass": "B",
       "historicalReviewStatus": "historically-reviewed",
-      "runtimeAsset": true,
-      "semanticIdentity": "system configuration",
-      "identityAnchors": [
-        "adjustable system controls",
-        "period control-surface grammar"
-      ],
-      "historicalPrototype": null,
-      "nearestHistoricalAnalog": "Snow Leopard sober single-purpose utility console",
-      "metaphorKey": "system-control-surface",
-      "material": "graphite faceplate, aluminum dial and toggles, restrained green status",
-      "blindMixStatus": "not-run",
-      "generatedMaster": "internal/evidence/drafts/icon-lineage-audit/imagegen-candidates-v2/control-settings/snow-leopard-controlPanel-v1.png",
-      "reference": "Target-era System Preferences supplies the system-utility genre; no native application icon is claimed as a replica.",
-      "exactPixelReplica": false,
-      "referenceValidated": false,
-      "nativeReplica": false,
-      "sourceNote": "Original era-specific control surfaces replace the repeated page-and-controls composition.",
-      "sizeStatus": {
-        "16": "optically-reviewed",
-        "32": "optically-reviewed",
-        "128": "optically-reviewed",
-        "512": "optically-reviewed"
-      },
-      "sizePolicy": "Large tiers follow reviewed generation directions; 32 and 16 px are independently painted control surfaces with two dominant controls.",
-      "metrics": {
-        "16": {
-          "bbox": {
-            "minX": 1,
-            "minY": 1,
-            "maxX": 14,
-            "maxY": 14
-          },
-          "bounds": [
-            1,
-            1,
-            14,
-            14
-          ],
-          "ink": {
-            "minX": 1,
-            "minY": 1,
-            "maxX": 14,
-            "maxY": 14,
-            "width": 14,
-            "height": 14
-          },
-          "pixels": 192,
-          "inkPixels": 192,
-          "translucent": 48,
-          "colors": 77,
-          "sha256": "d533ab24827c2fca926c54d520a4e7f0f4d9f1df61075d11579061a4754525d0",
-          "bytes": 616,
-          "gridShape": "square"
-        },
-        "32": {
-          "bbox": {
-            "minX": 2,
-            "minY": 2,
-            "maxX": 29,
-            "maxY": 29
-          },
-          "bounds": [
-            2,
-            2,
-            29,
-            29
-          ],
-          "ink": {
-            "minX": 2,
-            "minY": 2,
-            "maxX": 29,
-            "maxY": 29,
-            "width": 28,
-            "height": 28
-          },
-          "pixels": 712,
-          "inkPixels": 712,
-          "translucent": 92,
-          "colors": 139,
-          "sha256": "41693b548b86e837a83297095fd482257f83028d9d1e5b8b12a1cc4b1662a6bb",
-          "bytes": 1358,
-          "gridShape": "square"
-        },
-        "128": {
-          "bbox": {
-            "minX": 8,
-            "minY": 14,
-            "maxX": 119,
-            "maxY": 114
-          },
-          "bounds": [
-            8,
-            14,
-            119,
-            114
-          ],
-          "ink": {
-            "minX": 8,
-            "minY": 14,
-            "maxX": 119,
-            "maxY": 114,
-            "width": 112,
-            "height": 101
-          },
-          "pixels": 10652,
-          "inkPixels": 10652,
-          "translucent": 389,
-          "colors": 2625,
-          "sha256": "b5a01cc63e9cb8066c35232cb2b412e83fac548f0e1a3dee9dc17fa86cc841bc",
-          "bytes": 19455,
-          "gridShape": "square"
-        },
-        "512": {
-          "bbox": {
-            "minX": 32,
-            "minY": 54,
-            "maxX": 479,
-            "maxY": 457
-          },
-          "bounds": [
-            32,
-            54,
-            479,
-            457
-          ],
-          "ink": {
-            "minX": 32,
-            "minY": 54,
-            "maxX": 479,
-            "maxY": 457,
-            "width": 448,
-            "height": 404
-          },
-          "pixels": 169362,
-          "inkPixels": 169362,
-          "translucent": 1753,
-          "colors": 11482,
-          "sha256": "dd17b32592b4fff959bdc9518666d194fea8b40fc10ef984f0d03275670e0e06",
-          "bytes": 267364,
-          "gridShape": "square"
-        }
-      }
+      "runtimeAsset": true
     },
     "chooser": {
       "genre": "utility",
@@ -2596,24 +1781,24 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.2969,
-          "meanLum": 126.14,
-          "lumStd": 45.42,
-          "edgeEnergy": 33
+          "coverage": 0.3438,
+          "meanLum": 130.73,
+          "lumStd": 45.13,
+          "edgeEnergy": 25
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.2568,
-          "meanLum": 129.9,
-          "lumStd": 47.35,
-          "edgeEnergy": 108
+          "coverage": 0.3027,
+          "meanLum": 131.55,
+          "lumStd": 42.3,
+          "edgeEnergy": 113
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.2568,
-          "meanLum": 128.58,
-          "lumStd": 49.77,
-          "edgeEnergy": 170
+          "coverage": 0.3005,
+          "meanLum": 132.07,
+          "lumStd": 44.37,
+          "edgeEnergy": 227
         }
       }
     },
@@ -2644,24 +1829,24 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.7539,
-          "meanLum": 83.53,
-          "lumStd": 37.28,
-          "edgeEnergy": 93
+          "coverage": 0.5742,
+          "meanLum": 87.33,
+          "lumStd": 37.47,
+          "edgeEnergy": 66
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.6904,
-          "meanLum": 86.58,
-          "lumStd": 43.42,
-          "edgeEnergy": 239
+          "coverage": 0.5518,
+          "meanLum": 87.62,
+          "lumStd": 44.79,
+          "edgeEnergy": 219
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.6831,
-          "meanLum": 87.19,
-          "lumStd": 43.4,
-          "edgeEnergy": 335
+          "coverage": 0.542,
+          "meanLum": 88.12,
+          "lumStd": 45.68,
+          "edgeEnergy": 321
         }
       }
     },
@@ -2692,24 +1877,24 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.7031,
-          "meanLum": 82.35,
-          "lumStd": 39.11,
-          "edgeEnergy": 65
+          "coverage": 0.7617,
+          "meanLum": 83.4,
+          "lumStd": 44.26,
+          "edgeEnergy": 71
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.6504,
-          "meanLum": 85.64,
-          "lumStd": 44.76,
-          "edgeEnergy": 229
+          "coverage": 0.7285,
+          "meanLum": 84.76,
+          "lumStd": 51.37,
+          "edgeEnergy": 274
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.6406,
-          "meanLum": 85.85,
-          "lumStd": 46.08,
-          "edgeEnergy": 321
+          "coverage": 0.7171,
+          "meanLum": 85.07,
+          "lumStd": 52.74,
+          "edgeEnergy": 374
         }
       }
     },
@@ -2720,187 +1905,47 @@
         "fitted": 0.8942,
         "scale": 1.1222
       },
-      "physicalMetaphor": "Snow Leopard realistic TextEdit manuscript stack with subordinate metal writing tool",
-      "semanticMark": "write",
-      "sourceKind": "approved-imagegen-era-idiom-reinterpretation",
-      "reviewStatus": "accepted-priority-lineage",
+      "physicalMetaphor": "writing paper with a pen resting across it, clearly an editable writing object",
+      "semanticMark": "writing",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
       "sizes": {
         "16": "icons/teachText-16.png",
         "32": "icons/teachText-32.png",
         "128": "icons/teachText-128.png",
         "512": "icons/teachText-512.png"
       },
-      "metaphorKey": "editable-manuscript",
+      "metaphorKey": "writing-paper-and-pen",
       "runtimePixelMetrics": {
         "sourceSize": 128,
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.6211,
-          "meanLum": 216.15,
-          "lumStd": 33.83,
-          "edgeEnergy": 40
+          "coverage": 0.6289,
+          "meanLum": 199.23,
+          "lumStd": 55.24,
+          "edgeEnergy": 91
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.5732,
-          "meanLum": 219.88,
-          "lumStd": 31.28,
-          "edgeEnergy": 163
+          "coverage": 0.5986,
+          "meanLum": 198.21,
+          "lumStd": 60.93,
+          "edgeEnergy": 309
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.5595,
-          "meanLum": 221.31,
-          "lumStd": 29.22,
-          "edgeEnergy": 239
+          "coverage": 0.5901,
+          "meanLum": 198.66,
+          "lumStd": 61.34,
+          "edgeEnergy": 478
         }
       },
-      "authoringMethod": "built-in-imagegen-plus-native-size-optical-processing",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
       "generationStatus": "technically-clean",
       "provenanceClass": "B",
       "historicalReviewStatus": "historically-reviewed",
-      "runtimeAsset": true,
-      "semanticIdentity": "writing and editing application",
-      "identityAnchors": [
-        "editable manuscript",
-        "period writing or editing cue"
-      ],
-      "historicalPrototype": null,
-      "nearestHistoricalAnalog": "Snow Leopard realistic TextEdit manuscript stack with subordinate metal writing tool",
-      "material": "mature paper, graphite marks, brushed aluminum and restrained blue",
-      "blindMixStatus": "not-run",
-      "generatedMaster": "internal/evidence/drafts/icon-lineage-audit/imagegen-candidates-v2/teach-text/snow-leopard-teachText-v3.png",
-      "reference": "No native post-Classic TeachText artwork is claimed; SimpleText and target-era TextEdit grammar supply the nearest analogs.",
-      "exactPixelReplica": false,
-      "referenceValidated": false,
-      "nativeReplica": false,
-      "sourceNote": "Original era-specific writing-application reinterpretations; the exact pen angle and material are not locked across eras.",
-      "sizeStatus": {
-        "16": "optically-reviewed",
-        "32": "optically-reviewed",
-        "128": "optically-reviewed",
-        "512": "optically-reviewed"
-      },
-      "sizePolicy": "Large tiers follow reviewed generation directions; 32 and 16 px are independent optical drawings with fewer writing marks and a subordinate editing tool.",
-      "metrics": {
-        "16": {
-          "bbox": {
-            "minX": 3,
-            "minY": 1,
-            "maxX": 13,
-            "maxY": 13
-          },
-          "bounds": [
-            3,
-            1,
-            13,
-            13
-          ],
-          "ink": {
-            "minX": 3,
-            "minY": 1,
-            "maxX": 13,
-            "maxY": 13,
-            "width": 11,
-            "height": 13
-          },
-          "pixels": 140,
-          "inkPixels": 140,
-          "translucent": 3,
-          "colors": 12,
-          "sha256": "5d5b2387bf2fb04e0f90e03c94aaae0da230f5a8f2382abee0566993a2d8242a",
-          "bytes": 258,
-          "gridShape": "portrait"
-        },
-        "32": {
-          "bbox": {
-            "minX": 6,
-            "minY": 2,
-            "maxX": 27,
-            "maxY": 27
-          },
-          "bounds": [
-            6,
-            2,
-            27,
-            27
-          ],
-          "ink": {
-            "minX": 6,
-            "minY": 2,
-            "maxX": 27,
-            "maxY": 27,
-            "width": 22,
-            "height": 26
-          },
-          "pixels": 557,
-          "inkPixels": 557,
-          "translucent": 6,
-          "colors": 7,
-          "sha256": "b1bad598095edbd7750e9ffd85ed922bc931d49e5057ac3404048018ae7fd652",
-          "bytes": 262,
-          "gridShape": "portrait"
-        },
-        "128": {
-          "bbox": {
-            "minX": 14,
-            "minY": 5,
-            "maxX": 113,
-            "maxY": 122
-          },
-          "bounds": [
-            14,
-            5,
-            113,
-            122
-          ],
-          "ink": {
-            "minX": 14,
-            "minY": 5,
-            "maxX": 113,
-            "maxY": 122,
-            "width": 100,
-            "height": 118
-          },
-          "pixels": 8952,
-          "inkPixels": 8952,
-          "translucent": 483,
-          "colors": 1461,
-          "sha256": "8b597b75d2ab27b8dc4b19dea5737a44fee28c20703f2d8ed1626e6b1af40f88",
-          "bytes": 13233,
-          "gridShape": "portrait"
-        },
-        "512": {
-          "bbox": {
-            "minX": 56,
-            "minY": 21,
-            "maxX": 455,
-            "maxY": 490
-          },
-          "bounds": [
-            56,
-            21,
-            455,
-            490
-          ],
-          "ink": {
-            "minX": 56,
-            "minY": 21,
-            "maxX": 455,
-            "maxY": 490,
-            "width": 400,
-            "height": 470
-          },
-          "pixels": 141036,
-          "inkPixels": 141036,
-          "translucent": 3867,
-          "colors": 8470,
-          "sha256": "a166c0bfb07893458a7313106b5edc2ade82bf0a0ced1e3b5183bd279f006a19",
-          "bytes": 182138,
-          "gridShape": "portrait"
-        }
-      }
+      "runtimeAsset": true
     },
     "writingDemo": {
       "genre": "document",
@@ -2929,24 +1974,24 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.7031,
-          "meanLum": 203.05,
-          "lumStd": 50.01,
-          "edgeEnergy": 66
+          "coverage": 0.6484,
+          "meanLum": 207.19,
+          "lumStd": 35.48,
+          "edgeEnergy": 76
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.6172,
-          "meanLum": 205.95,
-          "lumStd": 49.75,
-          "edgeEnergy": 183
+          "coverage": 0.5918,
+          "meanLum": 205.92,
+          "lumStd": 46.92,
+          "edgeEnergy": 214
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.6463,
-          "meanLum": 204.09,
-          "lumStd": 50.55,
-          "edgeEnergy": 338
+          "coverage": 0.572,
+          "meanLum": 204.67,
+          "lumStd": 51.16,
+          "edgeEnergy": 308
         }
       }
     },
@@ -2977,24 +2022,24 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.6992,
-          "meanLum": 195.51,
-          "lumStd": 57.65,
-          "edgeEnergy": 91
+          "coverage": 0.582,
+          "meanLum": 209.23,
+          "lumStd": 34.7,
+          "edgeEnergy": 55
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.6172,
-          "meanLum": 200.65,
-          "lumStd": 53.38,
-          "edgeEnergy": 215
+          "coverage": 0.5928,
+          "meanLum": 207.55,
+          "lumStd": 38.03,
+          "edgeEnergy": 162
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.5947,
-          "meanLum": 204.39,
-          "lumStd": 46.57,
-          "edgeEnergy": 292
+          "coverage": 0.5754,
+          "meanLum": 205.2,
+          "lumStd": 44.49,
+          "edgeEnergy": 224
         }
       }
     },
@@ -3025,24 +2070,24 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.543,
-          "meanLum": 161.65,
-          "lumStd": 63.86,
-          "edgeEnergy": 95
+          "coverage": 0.6367,
+          "meanLum": 171.78,
+          "lumStd": 55.11,
+          "edgeEnergy": 102
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.5215,
-          "meanLum": 156.22,
-          "lumStd": 72.66,
-          "edgeEnergy": 266
+          "coverage": 0.5928,
+          "meanLum": 172.63,
+          "lumStd": 58.78,
+          "edgeEnergy": 290
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.5119,
-          "meanLum": 158.51,
-          "lumStd": 71.76,
-          "edgeEnergy": 383
+          "coverage": 0.5754,
+          "meanLum": 171.58,
+          "lumStd": 60.16,
+          "edgeEnergy": 419
         }
       }
     },
@@ -3073,24 +2118,24 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.6992,
-          "meanLum": 94.81,
-          "lumStd": 57.84,
-          "edgeEnergy": 117
+          "coverage": 0.8281,
+          "meanLum": 92.03,
+          "lumStd": 50.08,
+          "edgeEnergy": 134
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.6426,
-          "meanLum": 90.11,
-          "lumStd": 64.45,
-          "edgeEnergy": 366
+          "coverage": 0.7715,
+          "meanLum": 93.75,
+          "lumStd": 59.12,
+          "edgeEnergy": 364
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.6548,
-          "meanLum": 92.36,
-          "lumStd": 66.22,
-          "edgeEnergy": 529
+          "coverage": 0.7579,
+          "meanLum": 96.68,
+          "lumStd": 61.4,
+          "edgeEnergy": 625
         }
       }
     },
@@ -3121,24 +2166,24 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.625,
-          "meanLum": 146.95,
-          "lumStd": 55.61,
-          "edgeEnergy": 69
+          "coverage": 0.6484,
+          "meanLum": 147.54,
+          "lumStd": 58.18,
+          "edgeEnergy": 96
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.5859,
-          "meanLum": 146.46,
-          "lumStd": 60.05,
-          "edgeEnergy": 188
+          "coverage": 0.6025,
+          "meanLum": 154.84,
+          "lumStd": 58.1,
+          "edgeEnergy": 190
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.5941,
-          "meanLum": 146.97,
-          "lumStd": 61.06,
-          "edgeEnergy": 337
+          "coverage": 0.606,
+          "meanLum": 154.57,
+          "lumStd": 61.19,
+          "edgeEnergy": 349
         }
       }
     },
@@ -3169,24 +2214,24 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.5625,
-          "meanLum": 102.65,
-          "lumStd": 62.24,
-          "edgeEnergy": 124
+          "coverage": 0.4883,
+          "meanLum": 103.73,
+          "lumStd": 55.46,
+          "edgeEnergy": 102
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.5176,
-          "meanLum": 105.21,
-          "lumStd": 71.14,
-          "edgeEnergy": 336
+          "coverage": 0.4521,
+          "meanLum": 104.95,
+          "lumStd": 63.88,
+          "edgeEnergy": 325
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.5011,
-          "meanLum": 106.03,
-          "lumStd": 72.33,
-          "edgeEnergy": 470
+          "coverage": 0.445,
+          "meanLum": 105.37,
+          "lumStd": 65.67,
+          "edgeEnergy": 480
         }
       }
     },
@@ -3217,24 +2262,24 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.4531,
-          "meanLum": 127.75,
-          "lumStd": 72.32,
-          "edgeEnergy": 80
+          "coverage": 0.3984,
+          "meanLum": 109.85,
+          "lumStd": 50.68,
+          "edgeEnergy": 25
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.4219,
-          "meanLum": 125.81,
-          "lumStd": 78.07,
-          "edgeEnergy": 221
+          "coverage": 0.3604,
+          "meanLum": 112.02,
+          "lumStd": 55.78,
+          "edgeEnergy": 153
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.4167,
-          "meanLum": 125.55,
-          "lumStd": 78.67,
-          "edgeEnergy": 300
+          "coverage": 0.3509,
+          "meanLum": 110.52,
+          "lumStd": 55.69,
+          "edgeEnergy": 231
         }
       }
     },
@@ -3265,24 +2310,24 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.75,
-          "meanLum": 89.52,
-          "lumStd": 52.11,
-          "edgeEnergy": 87
+          "coverage": 0.832,
+          "meanLum": 84.36,
+          "lumStd": 54.56,
+          "edgeEnergy": 116
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.7051,
-          "meanLum": 87.51,
-          "lumStd": 56.66,
-          "edgeEnergy": 293
+          "coverage": 0.8232,
+          "meanLum": 80.44,
+          "lumStd": 58.48,
+          "edgeEnergy": 355
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.6893,
-          "meanLum": 85.25,
-          "lumStd": 54.65,
-          "edgeEnergy": 448
+          "coverage": 0.8107,
+          "meanLum": 78.47,
+          "lumStd": 57.3,
+          "edgeEnergy": 509
         }
       }
     },
@@ -3313,24 +2358,24 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.7188,
-          "meanLum": 162.28,
-          "lumStd": 60.65,
-          "edgeEnergy": 44
+          "coverage": 0.7305,
+          "meanLum": 162.81,
+          "lumStd": 61.38,
+          "edgeEnergy": 32
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.6553,
-          "meanLum": 165.44,
-          "lumStd": 56.59,
-          "edgeEnergy": 127
+          "coverage": 0.6924,
+          "meanLum": 165.43,
+          "lumStd": 56.7,
+          "edgeEnergy": 92
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.6463,
-          "meanLum": 165.92,
-          "lumStd": 56.27,
-          "edgeEnergy": 221
+          "coverage": 0.691,
+          "meanLum": 164.99,
+          "lumStd": 56.78,
+          "edgeEnergy": 161
         }
       }
     },
@@ -3361,24 +2406,24 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.6914,
-          "meanLum": 202.19,
-          "lumStd": 60.04,
-          "edgeEnergy": 62
+          "coverage": 0.6523,
+          "meanLum": 227.5,
+          "lumStd": 22.63,
+          "edgeEnergy": 28
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.6094,
-          "meanLum": 209.87,
-          "lumStd": 54.26,
-          "edgeEnergy": 164
+          "coverage": 0.5869,
+          "meanLum": 226.95,
+          "lumStd": 28.03,
+          "edgeEnergy": 80
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.5918,
-          "meanLum": 214.06,
-          "lumStd": 50.79,
-          "edgeEnergy": 189
+          "coverage": 0.576,
+          "meanLum": 222.91,
+          "lumStd": 40.43,
+          "edgeEnergy": 127
         }
       }
     },
@@ -3409,37 +2454,37 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.4023,
-          "meanLum": 208.18,
-          "lumStd": 41.46,
-          "edgeEnergy": 29
+          "coverage": 0.6484,
+          "meanLum": 222.9,
+          "lumStd": 30.31,
+          "edgeEnergy": 52
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.3613,
-          "meanLum": 212.31,
-          "lumStd": 40.3,
-          "edgeEnergy": 102
+          "coverage": 0.5908,
+          "meanLum": 218.62,
+          "lumStd": 47.48,
+          "edgeEnergy": 136
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.3532,
-          "meanLum": 210.03,
-          "lumStd": 48.53,
-          "edgeEnergy": 173
+          "coverage": 0.5714,
+          "meanLum": 216.42,
+          "lumStd": 51.35,
+          "edgeEnergy": 230
         }
       }
     },
     "multiFinderApp": {
-      "genre": "system environment",
+      "genre": "application",
       "grid": {
         "shape": "square",
         "fitted": 0.8438,
         "scale": 0.9391
       },
-      "physicalMetaphor": "two overlapping current-era Finder identities",
+      "physicalMetaphor": "two overlapping versions of the target era's current Finder identity, one with the light and dark colour fields exchanged, to communicate concurrent Finder environments without looking like a duplicate stamp or two computer chassis",
       "semanticMark": "finder",
-      "sourceKind": "approved-imagegen-period-plausible-construction",
+      "sourceKind": "original-generated-era-illustration",
       "reviewStatus": "accepted-generated",
       "sizes": {
         "16": "icons/multiFinderApp-16.png",
@@ -3447,7 +2492,7 @@
         "128": "icons/multiFinderApp-128.png",
         "512": "icons/multiFinderApp-512.png"
       },
-      "authoringMethod": "composition-from-approved-current-era-imagegen-finder-identity",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
       "generationStatus": "technically-clean",
       "provenanceClass": "C",
       "historicalReviewStatus": "historically-reviewed",
@@ -3457,163 +2502,27 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.5313,
-          "meanLum": 155.77,
-          "lumStd": 47.96,
-          "edgeEnergy": 63
+          "coverage": 0.6836,
+          "meanLum": 169.39,
+          "lumStd": 35.18,
+          "edgeEnergy": 68
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.5381,
-          "meanLum": 152.94,
-          "lumStd": 53.27,
-          "edgeEnergy": 246
+          "coverage": 0.6309,
+          "meanLum": 170.23,
+          "lumStd": 38.28,
+          "edgeEnergy": 210
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.5057,
-          "meanLum": 156.01,
-          "lumStd": 52.8,
-          "edgeEnergy": 306
+          "coverage": 0.6032,
+          "meanLum": 170.02,
+          "lumStd": 40.15,
+          "edgeEnergy": 269
         }
       },
-      "semanticIdentity": "multiple concurrent Finder environments",
-      "identityAnchors": [
-        "current-era Finder identity",
-        "multiplicity"
-      ],
-      "historicalPrototype": null,
-      "nearestHistoricalAnalog": "approved current-era Finder identity plus period-plausible overlap",
       "metaphorKey": "current-finder-identity-plus-multiplicity",
-      "material": "mature Aqua illustration with restrained lighting and a narrow profile divider",
-      "generatedMaster": "internal/evidence/drafts/icon-lineage-audit/imagegen-candidates-v2/snow-leopard-finder-v2.png",
-      "reference": "No native MultiFinder icon artwork is claimed; multiplicity is a product-semantic construction.",
-      "exactPixelReplica": false,
-      "sizeStatus": {
-        "16": "optically-reviewed",
-        "32": "optically-reviewed",
-        "128": "optically-reviewed",
-        "512": "optically-reviewed"
-      },
-      "sizePolicy": "Each target canvas is rendered directly from the approved high-resolution generation; compact tiers use their own bounds and contrast treatment.",
-      "metrics": {
-        "16": {
-          "bbox": {
-            "minX": 1,
-            "minY": 1,
-            "maxX": 14,
-            "maxY": 14
-          },
-          "bounds": [
-            1,
-            1,
-            14,
-            14
-          ],
-          "ink": {
-            "minX": 1,
-            "minY": 1,
-            "maxX": 14,
-            "maxY": 14,
-            "width": 14,
-            "height": 14
-          },
-          "pixels": 152,
-          "inkPixels": 152,
-          "translucent": 90,
-          "colors": 148,
-          "sha256": "4d38ce0782116dda97966ce87a1f6fd7b012526b033e2abe8c063687f171fc03",
-          "bytes": 649,
-          "gridShape": "square"
-        },
-        "32": {
-          "bbox": {
-            "minX": 2,
-            "minY": 2,
-            "maxX": 29,
-            "maxY": 30
-          },
-          "bounds": [
-            2,
-            2,
-            29,
-            30
-          ],
-          "ink": {
-            "minX": 2,
-            "minY": 2,
-            "maxX": 29,
-            "maxY": 30,
-            "width": 28,
-            "height": 29
-          },
-          "pixels": 510,
-          "inkPixels": 510,
-          "translucent": 296,
-          "colors": 462,
-          "sha256": "eedf7b5d0779b8e29d5db328eb411a5b8aadbe6013201fb53333516a0d0ae132",
-          "bytes": 1344,
-          "gridShape": "square"
-        },
-        "128": {
-          "bbox": {
-            "minX": 10,
-            "minY": 7,
-            "maxX": 116,
-            "maxY": 120
-          },
-          "bounds": [
-            10,
-            7,
-            116,
-            120
-          ],
-          "ink": {
-            "minX": 10,
-            "minY": 7,
-            "maxX": 116,
-            "maxY": 120,
-            "width": 107,
-            "height": 114
-          },
-          "pixels": 8151,
-          "inkPixels": 8151,
-          "translucent": 3806,
-          "colors": 4212,
-          "sha256": "350512170a39d4c09b2175c93f754f19546bbba051544705c50b7dd0e6a985ef",
-          "bytes": 12316,
-          "gridShape": "square"
-        },
-        "512": {
-          "bbox": {
-            "minX": 41,
-            "minY": 25,
-            "maxX": 468,
-            "maxY": 485
-          },
-          "bounds": [
-            41,
-            25,
-            468,
-            485
-          ],
-          "ink": {
-            "minX": 41,
-            "minY": 25,
-            "maxX": 468,
-            "maxY": 485,
-            "width": 428,
-            "height": 461
-          },
-          "pixels": 127552,
-          "inkPixels": 127552,
-          "translucent": 55269,
-          "colors": 18779,
-          "sha256": "a31441a6ee4adf15a3a3334aada27ef0d893101d4f8bc8ff3f0773fff46c113c",
-          "bytes": 123353,
-          "gridShape": "square"
-        }
-      },
       "blindMixStatus": "not-run"
     },
     "daHandler": {
@@ -3638,24 +2547,24 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.7031,
-          "meanLum": 98.13,
-          "lumStd": 43.8,
-          "edgeEnergy": 72
+          "coverage": 0.9766,
+          "meanLum": 118.12,
+          "lumStd": 46.97,
+          "edgeEnergy": 110
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.7051,
-          "meanLum": 93.06,
-          "lumStd": 54.17,
-          "edgeEnergy": 276
+          "coverage": 0.875,
+          "meanLum": 115.5,
+          "lumStd": 48.54,
+          "edgeEnergy": 295
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.6723,
-          "meanLum": 95.37,
-          "lumStd": 53.45,
-          "edgeEnergy": 385
+          "coverage": 0.8186,
+          "meanLum": 114.21,
+          "lumStd": 51.03,
+          "edgeEnergy": 402
         }
       },
       "authoringMethod": "image-generation-plus-deterministic-processing",
@@ -3691,24 +2600,24 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.5352,
-          "meanLum": 106.98,
-          "lumStd": 40.22,
-          "edgeEnergy": 92
+          "coverage": 0.5508,
+          "meanLum": 110.4,
+          "lumStd": 43.66,
+          "edgeEnergy": 111
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.5029,
-          "meanLum": 107.18,
-          "lumStd": 46.03,
-          "edgeEnergy": 290
+          "coverage": 0.5322,
+          "meanLum": 109.05,
+          "lumStd": 51.4,
+          "edgeEnergy": 419
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.4926,
-          "meanLum": 107.81,
-          "lumStd": 46.86,
-          "edgeEnergy": 397
+          "coverage": 0.5238,
+          "meanLum": 110.08,
+          "lumStd": 51.95,
+          "edgeEnergy": 563
         }
       }
     },
@@ -3739,24 +2648,24 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.4063,
-          "meanLum": 138.03,
-          "lumStd": 46.8,
-          "edgeEnergy": 70
+          "coverage": 0.4727,
+          "meanLum": 123.14,
+          "lumStd": 57.89,
+          "edgeEnergy": 77
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.373,
-          "meanLum": 138.7,
-          "lumStd": 51.66,
-          "edgeEnergy": 232
+          "coverage": 0.4521,
+          "meanLum": 124.55,
+          "lumStd": 61.43,
+          "edgeEnergy": 298
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.3685,
-          "meanLum": 139.48,
-          "lumStd": 52.18,
-          "edgeEnergy": 310
+          "coverage": 0.4456,
+          "meanLum": 124.65,
+          "lumStd": 62.42,
+          "edgeEnergy": 546
         }
       }
     },
@@ -3787,24 +2696,24 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.6406,
-          "meanLum": 137.15,
-          "lumStd": 67.72,
-          "edgeEnergy": 120
+          "coverage": 0.6641,
+          "meanLum": 131.58,
+          "lumStd": 57.52,
+          "edgeEnergy": 133
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.6006,
-          "meanLum": 135.16,
-          "lumStd": 72.95,
-          "edgeEnergy": 349
+          "coverage": 0.6074,
+          "meanLum": 130.7,
+          "lumStd": 64.82,
+          "edgeEnergy": 383
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.6037,
-          "meanLum": 130.66,
-          "lumStd": 75.94,
-          "edgeEnergy": 512
+          "coverage": 0.6066,
+          "meanLum": 130.1,
+          "lumStd": 65.99,
+          "edgeEnergy": 623
         }
       }
     },
@@ -3835,24 +2744,24 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.8047,
-          "meanLum": 98.22,
-          "lumStd": 45.44,
-          "edgeEnergy": 60
+          "coverage": 0.7891,
+          "meanLum": 106.31,
+          "lumStd": 46.77,
+          "edgeEnergy": 87
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.7354,
-          "meanLum": 100.25,
-          "lumStd": 46.21,
-          "edgeEnergy": 234
+          "coverage": 0.7275,
+          "meanLum": 108.3,
+          "lumStd": 49.67,
+          "edgeEnergy": 343
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.7234,
-          "meanLum": 100.47,
-          "lumStd": 48.19,
-          "edgeEnergy": 452
+          "coverage": 0.7205,
+          "meanLum": 108.16,
+          "lumStd": 51.44,
+          "edgeEnergy": 595
         }
       }
     },
@@ -3883,24 +2792,24 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.25,
-          "meanLum": 121.62,
-          "lumStd": 45.78,
-          "edgeEnergy": 40
+          "coverage": 0.2344,
+          "meanLum": 120.93,
+          "lumStd": 32.76,
+          "edgeEnergy": 34
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.2266,
-          "meanLum": 114.14,
-          "lumStd": 61.52,
-          "edgeEnergy": 206
+          "coverage": 0.1758,
+          "meanLum": 128.94,
+          "lumStd": 39.75,
+          "edgeEnergy": 144
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.2239,
-          "meanLum": 114.61,
-          "lumStd": 63,
-          "edgeEnergy": 305
+          "coverage": 0.1723,
+          "meanLum": 131.11,
+          "lumStd": 43.42,
+          "edgeEnergy": 217
         }
       }
     }
@@ -3926,7 +2835,7 @@
   "generatedOverlayBuilder": "tooling/build-accepted-generated-era-icons.mjs",
   "runtimeAsset": true,
   "completeFamilyMeaning": "All 56 runtime ids resolve to technically accepted artwork. Historical review is a separate per-icon state.",
-  "generatedAcceptanceMeaning": "Authoring acceptance is separate from historical validation; the Finder pair carries explicit per-object historical status.",
+  "generatedAcceptanceMeaning": "Authoring acceptance confirms source and technical quality; it never implies historical validation.",
   "generatedAcceptanceLedger": "tooling/icon-generation/accepted-generated-icons.json",
   "imageGenerationSource": "assets/themes/snow-leopard/icons/imagegen-source",
   "reviewedGenerated": [
@@ -3986,26 +2895,5 @@
     "controlPanel",
     "teachText",
     "daHandler"
-  ],
-  "finderLineageBuilder": "tooling/build-approved-finder-lineage.mjs",
-  "finderLineageSource": "built-in ImageGen candidates admitted only after target-era evidence and compact-size review",
-  "runtimeSizesByContext": {
-    "compactMenuList": 16,
-    "ordinary": 32,
-    "desktopLargeRetina": 128
-  },
-  "compatibilityManifest": "snow-leopard-icon-manifest.json",
-  "compatibilityManifestMeaning": "Stable semantic mapping only; app/core/system-icons.js selects the authored runtime tier by rendering context.",
-  "runtimeDispatch": "apps/desktop/app/core/system-icons.js",
-  "priorityLineageBuilder": "tooling/build-approved-priority-lineage.mjs",
-  "priorityLineageLedger": "tooling/icon-generation/approved-priority-lineage.json",
-  "priorityLineageObjects": [
-    "reviewDesk",
-    "searcher",
-    "projectDisk",
-    "teachText",
-    "controlPanel",
-    "docMap"
-  ],
-  "priorityLineageMeaning": "Only explicitly reviewed v2 rows override the broad generated archive; per-object provenance never implies native replication or reference validation."
+  ]
 }

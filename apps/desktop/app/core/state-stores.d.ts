@@ -49,6 +49,9 @@ declare function t(key: string, ...args: any[]): string;
 declare function renderPipeline(): void;
 declare function scheduleRenderTasks(kind: string): void;
 declare function updateMenuState(): void;
+// The menu bar caches its [data-action] rows. A feature that rebuilds rows
+// inside a popover has to say so, or the next pass greys yesterday's buttons.
+declare function invalidateMenuActionCache(): void;
 declare function createDocumentRevision(options: any): Promise<any>;
 declare const crypto: Crypto;
 declare const structuredClone: typeof globalThis.structuredClone;

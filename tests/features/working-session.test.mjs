@@ -1,10 +1,10 @@
-// Working Session scope, commit boundaries, and the v1 -> v2 migration.
+// Working Session scope, commit boundaries, and the v1/v2 -> v3 migration.
 //
 // Every Project Hard Disk owns its own desktop scene under its own storage
 // key. Switching disks flushes the old scene, mounts the new disk, and brings
 // that disk's scene back; Startup Items open only when a disk has no scene.
-// The single legacy "workingSession:v1" record must reach its v2 scope with
-// nothing lost, idempotently, and without being deleted before the v2 record
+// Legacy v1/v2 records must reach their v3 scope with nothing lost,
+// idempotently, and without being deleted before the v3 record
 // reads back intact.
 
 import vm from "node:vm";
@@ -16,15 +16,16 @@ const switchProjectSource = read("app/core/desktop-runtime.js");
 const exportImportSource = read("app/features/export-import.js");
 const bootSource = read("app/core/boot.js");
 
-const desktopKey = "workingSession:v2:desktop";
-const projectKey = (id) => `workingSession:v2:project:${id}`;
+const desktopKey = "workingSession:v3:desktop";
+const projectKey = (id) => `workingSession:v3:project:${id}`;
+const legacyV2ProjectKey = (id) => `workingSession:v2:project:${id}`;
 
 function createWorkingSessionVm({ failWrites = false } = {}) {
   const snapshots = new Map();
   const store = {
     get: async (key) => snapshots.get(key),
     put: async (value, key) => {
-      if (failWrites && String(key).startsWith("workingSession:v2:")) throw new Error("forced write failure");
+      if (failWrites && String(key).startsWith("workingSession:v3:")) throw new Error("forced write failure");
       snapshots.set(key, value);
       return key;
     },
@@ -115,8 +116,8 @@ function registerSceneAdapter(runtime) {
     "the desktop scene is untouched by a project's scene"
   );
   test.assert(
-    runtime.snapshots.get(projectKey("project-a")).version === 2,
-    "scenes are written at Working Session version 2"
+    runtime.snapshots.get(projectKey("project-a")).version === 3,
+    "scenes are written at Working Session version 3"
   );
 }
 
@@ -188,7 +189,7 @@ const legacyV1 = {
   runtime.snapshots.set("workingSession:v1", structuredClone(legacyV1));
 
   const first = await runtime.context.migrateWorkingSessionStorage();
-  test.assert(first.migrated === true && first.key === projectKey("project-a"), "the legacy scene moves to its project scope");
+  test.assert(first.migrated === true && first.moved === 1 && runtime.snapshots.has(projectKey("project-a")), "the legacy scene moves to its project scope");
   const moved = runtime.snapshots.get(projectKey("project-a"));
   test.assert(
     JSON.stringify(moved.adapters) === JSON.stringify(legacyV1.adapters),
@@ -200,7 +201,7 @@ const legacyV1 = {
       && JSON.stringify(moved.viewport) === JSON.stringify(legacyV1.viewport),
     "the legacy scene keeps its timestamp, owner, and viewport"
   );
-  test.assert(moved.version === 2 && moved.migratedFrom === 1, "the moved scene is stamped v2 and records where it came from");
+  test.assert(moved.version === 3 && moved.migratedFrom === 1, "the moved scene is stamped v3 and records where it came from");
   test.assert(!runtime.snapshots.has("workingSession:v1"), "the legacy record is dropped only after the move is verified");
 }
 
@@ -229,7 +230,7 @@ const legacyV1 = {
   const orphan = { ...structuredClone(legacyV1), projectId: null };
   runtime.snapshots.set("workingSession:v1", orphan);
   const result = await runtime.context.migrateWorkingSessionStorage();
-  test.assert(result.key === desktopKey, "a legacy scene with no project id lands on the desktop scope");
+  test.assert(result.migrated === true && runtime.snapshots.has(desktopKey), "a legacy scene with no project id lands on the desktop scope");
   test.assert(
     JSON.stringify(runtime.snapshots.get(desktopKey).adapters) === JSON.stringify(orphan.adapters),
     "the desktop-scoped migration loses nothing either"
@@ -237,7 +238,7 @@ const legacyV1 = {
 }
 
 {
-  // Rollback: the v2 write fails, so v1 must still be there for the next boot.
+  // Rollback: the v3 write fails, so v1 must still be there for the next boot.
   const runtime = createWorkingSessionVm({ failWrites: true });
   runtime.mount("project-a");
   runtime.snapshots.set("workingSession:v1", structuredClone(legacyV1));
@@ -250,18 +251,51 @@ const legacyV1 = {
 }
 
 {
-  // A v2 scene already owns the scope: it wins, and the stale v1 record goes.
+  // A v3 scene already owns the scope: it wins, and the stale v1 record goes.
   const runtime = createWorkingSessionVm();
   runtime.mount("project-a");
   runtime.snapshots.set("workingSession:v1", structuredClone(legacyV1));
-  runtime.snapshots.set(projectKey("project-a"), { version: 2, savedAt: "2026-08-16T00:00:00.000Z", projectId: "project-a", adapters: { windows: { windows: [] } } });
+  runtime.snapshots.set(projectKey("project-a"), { version: 3, savedAt: "2026-08-16T00:00:00.000Z", projectId: "project-a", adapters: { windows: { windows: [] } } });
   const result = await runtime.context.migrateWorkingSessionStorage();
   test.assert(result.migrated === true, "an already-migrated scope completes the migration");
   test.assert(
     runtime.snapshots.get(projectKey("project-a")).savedAt === "2026-08-16T00:00:00.000Z",
-    "the newer v2 scene is never overwritten by the legacy record"
+    "the newer v3 scene is never overwritten by the legacy record"
   );
   test.assert(!runtime.snapshots.has("workingSession:v1"), "the superseded legacy record is cleaned up");
+}
+
+{
+  // A scoped v2 scene migrates without needing the older global v1 key.
+  const runtime = createWorkingSessionVm();
+  runtime.mount("project-v2");
+  runtime.snapshots.set(legacyV2ProjectKey("project-v2"), {
+    version: 2,
+    savedAt: "2026-08-16T00:00:00.000Z",
+    projectId: "project-v2",
+    adapters: {
+      scene: { scene: "v2-scene" },
+      assistant: {
+        conversation: [{
+          role: "user",
+          content: "legacy",
+          imageInputIds: ["unsupported-v2-image"],
+          imageInputs: [{ clientId: "unsupported-v2-image", fileToken: "must-not-migrate" }],
+        }],
+      },
+    },
+  });
+  const result = await runtime.context.migrateWorkingSessionStorage();
+  const migrated = runtime.snapshots.get(projectKey("project-v2"));
+  test.assert(result.migrated === true && migrated?.version === 3 && migrated?.migratedFrom === 2,
+    "a scoped v2 scene migrates to v3 with provenance");
+  test.assert(migrated?.adapters?.scene?.scene === "v2-scene", "v2 adapter payload survives the v3 migration");
+  test.assert(
+    !("imageInputIds" in migrated.adapters.assistant.conversation[0])
+      && !("imageInputs" in migrated.adapters.assistant.conversation[0]),
+    "v2 explicitly migrates with no inline Chat images"
+  );
+  test.assert(!runtime.snapshots.has(legacyV2ProjectKey("project-v2")), "the v2 key is deleted only after the v3 copy verifies");
 }
 
 // --- erasing a disk and capping growth -------------------------------------
@@ -276,7 +310,7 @@ const legacyV1 = {
   await runtime.context.flushWorkingSessionCommit();
   // The desktop scene still carries A's File Floppy from before the eject.
   runtime.snapshots.set(desktopKey, {
-    version: 2, savedAt: "2026-08-16T00:00:00.000Z", projectId: null,
+    version: 3, savedAt: "2026-08-16T00:00:00.000Z", projectId: null,
     adapters: { scene: { projectId: "project-a", scene: "left over" } },
   });
 
@@ -299,20 +333,20 @@ const legacyV1 = {
     const id = `project-${String(index).padStart(2, "0")}`;
     if (index > 0) runtime.context.projects.push({ id, name: id, archived: false });
     runtime.snapshots.set(projectKey(id), {
-      version: 2,
+      version: 3,
       savedAt: `2026-08-${String(index + 1).padStart(2, "0")}T00:00:00.000Z`,
       projectId: id,
       adapters: {},
     });
   }
   runtime.mount("project-29");
-  runtime.snapshots.set(desktopKey, { version: 2, savedAt: "2026-08-01T00:00:00.000Z", projectId: null, adapters: {} });
+  runtime.snapshots.set(desktopKey, { version: 3, savedAt: "2026-08-01T00:00:00.000Z", projectId: null, adapters: {} });
 
   await runtime.context.pruneWorkingSessionScopes();
   test.assert(!runtime.snapshots.has(projectKey("project-00")), "an orphan scene of an erased disk is dropped");
   test.assert(runtime.snapshots.has(desktopKey), "the desktop scene is never evicted");
   test.assert(runtime.snapshots.has(projectKey("project-29")), "the mounted disk's scene is never evicted");
-  const remaining = [...runtime.snapshots.keys()].filter((key) => key.startsWith("workingSession:v2:project:"));
+  const remaining = [...runtime.snapshots.keys()].filter((key) => key.startsWith("workingSession:v3:project:"));
   test.assert(remaining.length === 24, "project scenes are capped, oldest evicted first");
   test.assert(
     !remaining.includes(projectKey("project-01")) && remaining.includes(projectKey("project-28")),
@@ -325,7 +359,7 @@ const legacyV1 = {
   const runtime = createWorkingSessionVm();
   registerSceneAdapter(runtime);
   runtime.snapshots.set(projectKey("project-gone"), {
-    version: 2, savedAt: "2026-08-16T00:00:00.000Z", projectId: "project-gone", adapters: { scene: { scene: "x" } },
+    version: 3, savedAt: "2026-08-16T00:00:00.000Z", projectId: "project-gone", adapters: { scene: { scene: "x" } },
   });
   const resumed = await runtime.context.restoreWorkingSession({ projectId: "project-gone" });
   test.assert(resumed === false, "a scene whose disk was erased does not resume");
@@ -333,7 +367,7 @@ const legacyV1 = {
 
   runtime.context.projects.push({ id: "project-away", name: "Away", archived: true });
   runtime.snapshots.set(projectKey("project-away"), {
-    version: 2, savedAt: "2026-08-16T00:00:00.000Z", projectId: "project-away", adapters: { scene: { scene: "y" } },
+    version: 3, savedAt: "2026-08-16T00:00:00.000Z", projectId: "project-away", adapters: { scene: { scene: "y" } },
   });
   test.assert(
     await runtime.context.restoreWorkingSession({ projectId: "project-away" }) === false,
@@ -350,7 +384,7 @@ const legacyV1 = {
   const runtime = createWorkingSessionVm();
   runtime.mount("project-a");
   runtime.snapshots.set(projectKey("project-a"), {
-    version: 2,
+    version: 3,
     savedAt: "2026-08-16T00:00:00.000Z",
     projectId: "project-a",
     adapters: {
@@ -375,9 +409,55 @@ const legacyV1 = {
   );
 }
 
+// --- v3 assistant image context --------------------------------------------
+{
+  const runtime = createWorkingSessionVm();
+  runtime.mount("project-a");
+  Object.assign(runtime.context, {
+    clioTalkTemporaryMode: false,
+    sideAskClioTalkSession: null,
+    isSideAskClioTalkActive: () => false,
+    activeChatFileId: "chat-a",
+    promptInput: { value: "follow up" },
+    conversation: [{
+      id: "message-image",
+      role: "user",
+      content: "Read this",
+      imageInputIds: ["image-a"],
+      imageInputs: [{
+        clientId: "image-a",
+        kind: "image",
+        name: "saved.jpg",
+        type: "image/jpeg",
+        size: 4,
+        width: 1,
+        height: 1,
+        inlineDataUrl: "data:image/jpeg;base64,/9j/2Q==",
+        transport: "inline",
+        attachedAt: "2026-08-27T00:00:00.000Z",
+      }],
+    }],
+    compressedConversationMemory: { text: "", sourceMessages: 0, updatedAt: "" },
+    lastAssistantText: "",
+    lastUserText: "Read this",
+    messagesEl: { scrollTop: 0, replaceChildren() {} },
+  });
+  runtime.context.window.nextTaskInputFileIds = new Set();
+  const captured = runtime.context.captureAssistantWorkingSession();
+  test.assert(
+    captured.conversation[0].imageInputs[0].inlineDataUrl === "data:image/jpeg;base64,/9j/2Q==",
+    "Working Session v3 carries the bounded inline image fallback"
+  );
+  test.assert(
+    !JSON.stringify(captured).includes("fileToken") && !JSON.stringify(captured).includes("provider_file_id"),
+    "Working Session v3 carries no transient provider handle"
+  );
+}
+
 // --- static contracts -------------------------------------------------------
-test.assertIncludes(source, 'const workingSessionDesktopKey = "workingSession:v2:desktop"', "the desktop scope key is explicit");
-test.assertIncludes(source, 'const workingSessionProjectKeyPrefix = "workingSession:v2:project:"', "project scope keys are namespaced per disk");
+test.assertIncludes(source, 'const workingSessionDesktopKey = "workingSession:v3:desktop"', "the desktop scope key is explicit");
+test.assertIncludes(source, 'const workingSessionProjectKeyPrefix = "workingSession:v3:project:"', "project scope keys are namespaced per disk");
+test.assertIncludes(source, 'const workingSessionV2KeyPrefix = "workingSession:v2:"', "the v2 scope prefix remains known for migration");
 test.assertIncludes(source, 'const workingSessionLegacyStorageKey = "workingSession:v1"', "the legacy key is still known, so it can be migrated");
 test.assertNotIncludes(
   source,
@@ -387,8 +467,8 @@ test.assertNotIncludes(
 
 const migrationBlock = source.match(/async function migrateWorkingSessionStorage\(\)[\s\S]*?\n\}\n/)?.[0] || "";
 test.assert(
-  migrationBlock.indexOf("migratedWorkingSessionIsReadable") < migrationBlock.lastIndexOf("store.delete(workingSessionLegacyStorageKey)"),
-  "the legacy record is deleted only after the v2 record reads back intact"
+  migrationBlock.indexOf("migratedWorkingSessionIsReadable") < migrationBlock.lastIndexOf("store.delete(legacy.key)"),
+  "a legacy record is deleted only after the v3 record reads back intact"
 );
 test.assertIncludes(
   migrationBlock,

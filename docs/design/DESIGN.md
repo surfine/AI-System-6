@@ -96,6 +96,12 @@ Progressive discovery divides responsibility instead of building one tutorial:
 - Balloon Help targets unfamiliar icons, system objects, and disabled-state
   reasons. It does not repeat visible button labels. Pointer hover or keyboard
   focus can reveal it; touch uses an explicit help mode followed by a tap.
+- Where a balloon stands is part of what it says, in this order: its tail points
+  at the object it explains; it never covers that object; it never covers what
+  the object opens, including a menu that has not been pulled down yet; it
+  leaves the object's peers alone — the next icon in the column, the next title
+  in the bar; and only then is it as near as it can be. It re-places itself when
+  a panel opens or closes under it, and it gets narrower before it gets far.
 
 In short: **System 6 is the grammar; Classic Mac OS is the vocabulary library.**
 
@@ -221,6 +227,26 @@ Prefer existing primitives before adding classes:
 
 Do not add a new component shape because it looks modern. Add one only when an
 existing object role cannot express the task.
+
+**These primitives carry all six appearances already.** An application built
+from them inherits every era without writing a line of theme CSS, which is the
+whole reason the list above is a list and not a suggestion:
+
+| Primitive | Carries |
+| --- | --- |
+| `.window`, `.title-bar`, `.details-bar`, `.window-pane` | Window frame, its controls, the status strip |
+| `.btn`, `.mini-btn`, `.button-row` | Every push control and its states |
+| `.field-row`, `.control-field`, `.select-wrap` | Choice controls, text fields, the System 6 select harness |
+| `.system-tabs`, `.system-tab`, `.system-tab-panel` | The tab strip and the panel it opens |
+| `.view-controls`, `.view-btn` | The view switcher |
+| `.menu-popover`, `.balloon-help`, `.finder-operation-modal` | Menus, the temporary explanatory surface, modals |
+| `.finder-item`, `.sys-icon` | Objects and their icons |
+
+The reverse is the rule Theme Lab enforces: a control that is **not** on this
+list has no era wardrobe to inherit, so building one for a specimen means
+paying for six eras of dressing that no user interface ever benefits from.
+Theme Lab shows these primitives and nothing else; `verify:css` ratchets what
+it costs the appearance sheets (`themeLabReplicaMentions`).
 
 ## Layout And Geometry
 

@@ -103,6 +103,7 @@ async function handleVisionAnalyze(req, res) {
     async function runLocalVision() {
       const result = await postLocalVisionAnalysis({
         dataUrl: dataUrl || images[0],
+        images,
         mode,
         model,
         name,
@@ -143,10 +144,15 @@ async function handleVisionAnalyze(req, res) {
     const message = /** @type {Error} */ (error).message;
     const status = /** @type {any} */ (error)?.statusCode
       || (/too large/i.test(message) ? 413 : /data URL|Missing image/i.test(message) ? 400 : 502);
+    const headers = /** @type {any} */ (error)?.retryAfter > 0
+      ? { "Retry-After": String(/** @type {any} */ (error).retryAfter) }
+      : {};
     sendJson(res, status, {
       error: "Vision analysis failed",
       detail: message,
-    });
+      ...(/** @type {any} */ (error)?.code ? { code: String(/** @type {any} */ (error).code) } : {}),
+      ...(/** @type {any} */ (error)?.warning ? { warning: String(/** @type {any} */ (error).warning) } : {}),
+    }, headers);
   } finally {
     timeout.cleanup();
   }

@@ -47,28 +47,51 @@ test.assertMatches(
 // --- The introduction surface ----------------------------------------------
 
 test.assertIncludes(guide, "return clioIntroductionReplay || !clioOnboardingCompleted;", "the introduction is active for new users and during a replay");
+// Write access used to lead this chain. It no longer appears in it: a window
+// that does not hold the write lease still talks and still saves, because its
+// writes travel to the window that holds the database connection. A true first
+// use greets before any model gate, as it always did.
 test.assertMatches(
   chatMessages,
-  /const welcomeKey = readOnly\s*\n\s*\? "clio_read_only_message"\s*\n\s*: providerResolving\s*\n\s*\? "clio_provider_resolving_message"/,
-  "the empty state tells the truth about read-only and connecting states first"
+  /const welcomeKey = introducing && !sideAskEnabled && !clioTalkTemporaryMode\s*\n\s*\? "clio_first_welcome_message"\s*\n\s*: providerResolving\s*\n\s*\? "clio_provider_resolving_message"/,
+  "a true first use greets before any model gate"
 );
 test.assertIncludes(chatMessages, '? "clio_first_welcome_message"', "a true first use greets with the Clio introduction");
 test.assertIncludes(chatMessages, ': (clioTalkTemporaryMode ? "temporary_welcome_message" : "welcome_message")', "returning users keep the ordinary ClioTalk welcome");
+test.assertIncludes(chatMessages, 't("clio_first_welcome_no_model")', "a first use without a model gets a quiet note inside the greeting, not a gate");
 for (const starter of ["idea", "notes", "file", "explore"]) {
   test.assertMatches(chatMessages, new RegExp(`\\["${starter}", "clio_starter_${starter}"\\]`), `the introduction offers the ${starter} starter`);
 }
 test.assertMatches(
   guide,
   /function activateClioStarter\(starterId = ""\)[\s\S]*?promptInput\.value = t\(key\);[\s\S]*?promptInput\.focus\(\);/,
-  "a starter only puts an editable phrase into the composer"
+  "with a model, a starter only puts an editable phrase into the composer"
+);
+test.assertMatches(
+  guide,
+  /if \(id === "explore"\) \{\s*\n\s*if \(typeof handleAction !== "function"\) return false;\s*\n\s*handleAction\("play-teaser-demo"\);/,
+  "the stranger's card plays the offline tour in every model state, never a prompt-prose introduction"
+);
+test.assertNotIncludes(guide, "clio_starter_explore_prompt", "the prompt-prose introduction is retired");
+test.assertNotIncludes(en, "clio_starter_explore_prompt:", "the retired explore prompt is gone from English copy");
+test.assertNotIncludes(zh, "clio_starter_explore_prompt:", "the retired explore prompt is gone from Chinese copy");
+test.assertMatches(
+  guide,
+  /idea: "open-quick-draft",\s*\n\s*notes: "open-note-pad",\s*\n\s*file: "open-import-utility",\s*\n\s*\}\[id\];/,
+  "without a model, the intent starters open the nearest working door instead of prefilling a composer that cannot send"
 );
 test.assertNotMatches(
   guide,
-  /function activateClioStarter\(starterId = ""\)[\s\S]*?(requestSubmit|submitUserText|handleAction)/,
-  "starters never auto-send or auto-execute a feature"
+  /function activateClioStarter\(starterId = ""\)[\s\S]*?(requestSubmit|submitUserText)/,
+  "starters never auto-send a message"
 );
+test.assertIncludes(chatMessages, 'button.dataset.balloonHelp = "balloon_clio_starter_explore"', "Balloon Help says the tour is offline, 30 seconds, and restores the desk");
 test.assertIncludes(en, "clio_first_welcome_message:", "English copy exists for the Clio introduction");
 test.assertIncludes(zh, "clio_first_welcome_message:", "Chinese copy exists for the Clio introduction");
+test.assertIncludes(en, "clio_first_welcome_no_model:", "English copy exists for the no-model greeting note");
+test.assertIncludes(zh, "clio_first_welcome_no_model:", "Chinese copy exists for the no-model greeting note");
+test.assertNotIncludes(en, "Tell me what you are working on", "charter: desktop first copy never asks what the user is working on");
+test.assertNotIncludes(zh, "告诉我你正在做什么", "charter: desktop 首句文案不以询问对方在做什么开场");
 
 // --- Completion and migration ----------------------------------------------
 

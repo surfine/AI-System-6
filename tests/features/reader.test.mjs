@@ -111,6 +111,8 @@ for (const key of ["balloon_reader_figure", "balloon_reader_figure_ask"]) {
 }
 test.assertNotIncludes(reader, "image.loading = \"lazy\"", "no remote image is left in the document to load");
 test.assertIncludes(reader, "images: [src]", "the address travels, not the picture");
+test.assertIncludes(reader, "AISystem6ModelTaskRuntime.buildVisionMessages", "a cloud figure reading uses the same image-block path that Pages serves");
+test.assertNotIncludes(reader, "cloudVisionDisclosure", "the explicit Ask button no longer calls a missing disclosure helper");
 test.assertIncludes(reader, "readerFigureReading = null", "figure notes are held in memory until the writer clips them");
 test.assertIncludes(reader, "\"reader-figure\"", "a clipped figure reading is a scrap with its own provenance");
 test.assertIncludes(reader, "Read by: ", "a clipped reading names the model that produced it");

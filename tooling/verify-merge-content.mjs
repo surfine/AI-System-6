@@ -87,8 +87,30 @@ function shortLog(commit) {
   return git("log", "-1", "--format=%h %ad %s", "--date=short", commit);
 }
 
+// Paths whose bytes are a measurement of the merged tree, not content anyone
+// wrote. "One side's change was discarded" cannot describe them: after a merge
+// the only correct value is the one you get by measuring again, and that value
+// will equal whichever side happened to measure the same tree. Regenerate with
+// `npm run sync:readme-payload` -- if a path here ever stops being an output of
+// that command, take it off this list.
+const REGENERATED_MEASUREMENTS = new Set([
+  "README.md",
+  "README.zh-CN.md",
+  "site/data/floppy-budget.json",
+  "tests/appearance-snapshot.json",
+]);
+
+// The appearance baseline is the same thing in image form: a photograph of the
+// merged tree, recaptured with `npm run snapshot:appearance`. Two lanes that
+// both re-baselined will always look like one discarded the other.
+const REGENERATED_PREFIXES = ["internal/evidence/drafts/appearance-baseline/"];
+
 let findings = 0;
 function report(kind, path, detail) {
+  if (REGENERATED_MEASUREMENTS.has(path) || REGENERATED_PREFIXES.some((prefix) => path.startsWith(prefix))) {
+    if (!quiet) console.log(`OK  ${path} — regenerated measurement, not discarded content`);
+    return;
+  }
   if (accepted.has(path)) {
     if (!quiet) console.log(`OK  ${path} — ${kind} acknowledged via --accept`);
     return;

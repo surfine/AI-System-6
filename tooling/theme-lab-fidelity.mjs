@@ -565,7 +565,11 @@ async function prepareCurrentPage(browser, serverUrl, manifest, outputDir) {
     document.documentElement.style.zoom = "1";
     document.body.classList.remove("is-writer-mode", "is-cloud-active", "quick-draft-focus");
     for (const dialog of document.querySelectorAll("dialog[open]")) dialog.close();
-    for (const win of document.querySelectorAll(".window")) {
+    // Managed windows only. Theme Lab's specimens are real .window elements so
+    // the era paints them; hiding every .window on the page would empty the
+    // board this harness exists to photograph. A specimen carries no
+    // data-window, which is exactly what says nobody opened it.
+    for (const win of document.querySelectorAll(".window[data-window]")) {
       win.classList.add("is-hidden");
       win.classList.remove("is-active");
     }

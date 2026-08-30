@@ -108,7 +108,7 @@ test.assert(
 test.assertIncludes(multiFinder, "function foregroundApplicationIds", "one helper answers which apps are on screen");
 test.assertIncludes(
   multiFinder,
-  '".window:not(.is-hidden):not(.is-app-hidden):not(.is-collapsed)"',
+  '".window[data-window]:not(.is-hidden):not(.is-app-hidden):not(.is-collapsed)"',
   "a collapsed, app-hidden or closed window is not foreground",
 );
 test.assertIncludes(multiFinder, "hiddenAppIds.has(appId)", "a MultiFinder-hidden app is background even with an open window");

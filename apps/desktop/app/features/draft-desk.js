@@ -675,6 +675,172 @@ async function developDocument(documentId = "") {
   return true;
 }
 
+// ---- 文字亮室 menu state -------------------------------------------------
+// A menu bar is the complete list of what this application can do, so the rows
+// that name an object -- a document, a version, a voice -- are filled from the
+// state that owns those objects, and the checkmarks are painted here rather
+// than in window-manager.js, which has no business knowing what a layer is.
+
+function hasQuickDraftSelection() {
+  const el = refs.draft;
+  return Boolean(
+    el
+    && el.selectionStart !== null
+    && el.selectionEnd !== null
+    && el.selectionStart !== el.selectionEnd
+  );
+}
+
+function lightroomVersionRows() {
+  const record = activeProjectQuickDraft({ create: false })?.record;
+  const darkroom = darkroomOf(record);
+  const stampOf = (value) => (value
+    ? new Date(value).toLocaleTimeString(currentLanguage === "zh" ? "zh-CN" : "en-US", { hour: "2-digit", minute: "2-digit" })
+    : "");
+  const rows = [...(darkroom.versions || [])].reverse().slice(0, 12).map((entry) => ({
+    label: [stampOf(entry.createdAt), textExcerpt(entry.body, 18) || t("quick_draft_versions")].filter(Boolean).join(" · "),
+    action: `lightroom-restore-version:version:${entry.id}`,
+  }));
+  if (darkroom.negativeUpdatedAt) {
+    rows.push({
+      label: [stampOf(darkroom.negativeUpdatedAt), t("quick_draft_negative")].filter(Boolean).join(" · "),
+      action: "lightroom-restore-version:negative:negative",
+    });
+  }
+  return rows;
+}
+
+function lightroomDocumentRows() {
+  if (typeof getProjectFiles !== "function") return [];
+  const current = lightroomSubjectDocumentId();
+  return getProjectFiles()
+    .filter((file) => file.type === "text" && String(file.body || "").trim())
+    .slice(0, 20)
+    .map((file) => ({
+      label: String(file.name || t("quick_draft_versions")),
+      action: `lightroom-develop-document:${file.id}`,
+      checked: file.id === current,
+    }));
+}
+
+function lightroomMenuRows(kind = "") {
+  if (kind === "versions") return lightroomVersionRows();
+  if (kind === "documents") return lightroomDocumentRows();
+  if (kind === "voices") return window.AISystem6QuickDraftListen?.voiceRows?.() || [];
+  return [];
+}
+
+/**
+ * @param {HTMLElement} button
+ * @param {{ checked?: boolean, disabled?: boolean }} [state]
+ */
+function paintLightroomMenuRow(button, { checked = false, disabled = false } = {}) {
+  button.classList.toggle("is-checked", checked === true);
+  button.classList.toggle("is-disabled", disabled === true);
+  // Only a real button carries `disabled`, and only a row inside a popover is
+  // a menu row: the same painter is safe to point at anything the bar holds.
+  if (button instanceof HTMLButtonElement && button.closest(".menu-popover, .menu-submenu-popover, .menu-sub-popover")) {
+    button.disabled = disabled === true;
+  }
+}
+
+function syncLightroomMenuState() {
+  const bar = document.querySelector(".menu-bar");
+  if (!bar || !bar.querySelector('[data-menu-id="adjust"], [data-menu-id="listen"], [data-lightroom-rows]')) return;
+  const record = activeProjectQuickDraft({ create: false })?.record;
+  const readOnly = lightroomIsReadOnly();
+  const zoom = typeof currentQuickDraftGrainZoom === "function" ? currentQuickDraftGrainZoom() : "grain";
+  const lens = (typeof getActiveProject === "function" && getActiveProject()?.explanationLens) || {};
+  const inspectorOpen = quickDraftPanelVisible("inspector");
+
+  /** @type {NodeListOf<HTMLElement>} */ (bar.querySelectorAll("[data-lightroom-zoom]")).forEach((button) => {
+    button.classList.toggle("is-checked", button.dataset.lightroomZoom === zoom);
+  });
+  const inspectorRow = /** @type {HTMLElement | null} */ (bar.querySelector('[data-action="lightroom-toggle-inspector"]'));
+  if (inspectorRow) {
+    const labelKey = inspectorOpen ? "quick_draft_hide_adjustments" : "quick_draft_show_adjustments";
+    inspectorRow.dataset.i18n = labelKey;
+    inspectorRow.textContent = t(labelKey);
+    inspectorRow.classList.toggle("is-checked", inspectorOpen);
+  }
+  /** @type {NodeListOf<HTMLElement>} */ (bar.querySelectorAll("[data-lightroom-layer]")).forEach((button) => {
+    const layer = adjustmentLayerState(button.dataset.lightroomLayer || "", record);
+    const enabled = layer?.enabled === true;
+    if (button.dataset.lightroomLayerStrength) {
+      paintLightroomMenuRow(button, {
+        checked: Number(button.dataset.lightroomLayerStrength) === Number(layer?.strength ?? ADJUSTMENT_DEFAULT_STRENGTH),
+        disabled: readOnly || !enabled,
+      });
+      return;
+    }
+    if (button.dataset.lightroomLayerRow === "enabled") {
+      paintLightroomMenuRow(button, { checked: enabled, disabled: readOnly });
+      return;
+    }
+    if (button.dataset.lightroomLayerRow === "scope-selection") {
+      paintLightroomMenuRow(button, { disabled: readOnly || !hasQuickDraftSelection() });
+      return;
+    }
+    if (button.dataset.lightroomLayerRow === "scope-all") {
+      paintLightroomMenuRow(button, {
+        checked: !String(layer?.mask || "").trim(),
+        disabled: readOnly || !String(layer?.mask || "").trim(),
+      });
+      return;
+    }
+    paintLightroomMenuRow(button, { disabled: readOnly });
+  });
+  const eli5Row = /** @type {HTMLElement | null} */ (bar.querySelector('[data-lightroom-eli5="enabled"]'));
+  if (eli5Row) paintLightroomMenuRow(eli5Row, { checked: lens.enabled === true, disabled: readOnly });
+  /** @type {NodeListOf<HTMLElement>} */ (bar.querySelectorAll("[data-lightroom-eli5-baseline]")).forEach((button) => {
+    paintLightroomMenuRow(button, {
+      checked: (lens.baselineKnowledge || "secondary-school") === button.dataset.lightroomEli5Baseline,
+      disabled: readOnly || lens.enabled !== true,
+    });
+  });
+  const listen = window.AISystem6QuickDraftListen;
+  const playRow = /** @type {HTMLElement | null} */ (bar.querySelector('[data-action="lightroom-listen-toggle"]'));
+  if (playRow) {
+    const labelKey = listen?.isPlaying?.() ? "quick_draft_listen_pause" : "quick_draft_listen_play";
+    playRow.dataset.i18n = labelKey;
+    playRow.textContent = t(labelKey);
+  }
+  const rehearseRow = /** @type {HTMLElement | null} */ (bar.querySelector('[data-action="lightroom-listen-rehearse"]'));
+  if (rehearseRow) {
+    const labelKey = listen?.isRehearsing?.() ? "quick_draft_listen_rehearse_stop" : "quick_draft_listen_rehearse";
+    rehearseRow.dataset.i18n = labelKey;
+    rehearseRow.textContent = t(labelKey);
+  }
+  // Rows that name an object are rebuilt, not restyled: the version chain, the
+  // project's documents and this browser's voices all change while the window
+  // is open, and a menu drawn once at boot would name yesterday's list.
+  /** @type {NodeListOf<HTMLElement>} */ (bar.querySelectorAll("[data-lightroom-rows]")).forEach((wrapper) => {
+    const popover = /** @type {HTMLElement | null} */ (wrapper.querySelector(".menu-submenu-popover"));
+    if (!popover) return;
+    const rows = lightroomMenuRows(wrapper.dataset.lightroomRows || "");
+    const signature = rows.map((row) => `${row.action}|${row.label}|${row.checked ? 1 : 0}`).join("\n");
+    if (popover.dataset.lightroomRowsSignature === signature) return;
+    popover.dataset.lightroomRowsSignature = signature;
+    popover.replaceChildren();
+    if (!rows.length) {
+      const empty = document.createElement("div");
+      empty.className = "menu-section-label";
+      empty.textContent = t("lightroom_rows_empty");
+      popover.append(empty);
+      return;
+    }
+    rows.forEach((row) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.dataset.action = row.action;
+      button.textContent = row.label;
+      button.classList.toggle("is-checked", row.checked === true);
+      popover.append(button);
+    });
+    if (typeof invalidateMenuActionCache === "function") invalidateMenuActionCache();
+  });
+}
+
 function clearLightroomSubject() {
   lightroomSubject = null;
 }

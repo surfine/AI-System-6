@@ -80,7 +80,16 @@ for (const prefix of ["r", "c", "i"]) {
 for (const stateName of ["foundation", "construction", "normal", "declined", "abandoned", "recovering"]) {
   test.assert(atlas.completeness.buildingStates.includes(stateName), `building completeness includes the ${stateName} state`);
 }
-test.assert(atlas.completeness.nightFrames === 88, "the night family covers 36 growable buildings, 20 facilities, and 32 catalog specials");
+// Counted, not pinned. The night family grows whenever catalog art does, and a
+// magic number turns that growth into a failing test instead of a covered one:
+// the count reached 124 while this line still said 88. What matters is that
+// every frame with a night variant actually has one.
+const nightFrames = frames.filter(([name]) => name.endsWith(".night") || /\.night\./.test(name));
+test.assert(
+  atlas.completeness.nightFrames === nightFrames.length,
+  `the night family count matches the frames that carry it (${nightFrames.length})`,
+);
+test.assert(atlas.completeness.nightFrames >= 88, "the night family never shrinks below the growable, facility and special set it started from");
 test.assert(atlas.completeness.buildingStates.includes("night"), "the night frame state is part of building completeness");
 test.assert(Boolean(atlas.frames["terrain.snow"]), "the atlas includes the snow-capped terrain frame");
 test.assert(Boolean(atlas.frames["tree.maple"]), "the atlas includes the red maple tree frame");
@@ -163,31 +172,62 @@ const notes = JSON.stringify(provenance.notes).toLowerCase();
 test.assertIncludes(notes, "no pixels copied", "provenance states the no-copy boundary");
 test.assertIncludes(notes, "no network path", "provenance states the offline generation boundary");
 
-// Connector arms must run toward the neighbour tiles, which in this
-// projection (sx = (x - y) * 24, sy = (x + y) * 12) sit diagonally on screen.
-// An arm aimed straight along a screen axis points at the diamond's corner,
-// where no edge-adjacent neighbour is, and the network renders as a field of
-// disconnected studs instead of a continuous road.
+// Connector continuity, checked for every family and every mask rather than
+// eyeballed on one tile. In this projection (sx = (x - y) * 24,
+// sy = (x + y) * 12) a tile's four edge-adjacent neighbours sit diagonally on
+// screen, so an arm has to reach the MIDPOINT of the shared edge — half the
+// neighbour offset. Aim it along a screen axis instead and it points at the
+// diamond's bare corner, where no neighbour ever is, and the network renders
+// as a field of disconnected studs. Pipes had no mask family at all and were
+// stamped one sprite per tile, which is the same failure by another route.
 {
-  const frame = atlas.frames["road.mask-2"]; // bit 2 = the neighbour at x + 1
   const image = await loadImage(readFileSync(resolveProjectPath(atlas.directions.north.file)));
-  const canvas = createCanvas(frame.w, frame.h);
-  const context2d = canvas.getContext("2d");
-  context2d.drawImage(image, frame.x, frame.y, frame.w, frame.h, 0, 0, frame.w, frame.h);
-  const pixels = context2d.getImageData(0, 0, frame.w, frame.h).data;
-  const opaqueAt = (dx, dy) => {
-    const x = frame.anchor.x + dx;
-    const y = frame.anchor.y + dy;
-    if (x < 0 || y < 0 || x >= frame.w || y >= frame.h) return false;
-    return pixels[(y * frame.w + x) * 4 + 3] > 0;
-  };
-  // Halfway to the x+1 neighbour is the midpoint of the shared edge.
-  test.assert(opaqueAt(12, 6), "a road's east arm is painted toward the shared edge with the x+1 neighbour");
-  test.assert(opaqueAt(6, 3), "the arm is continuous from the tile centre out to that edge");
-  test.assert(!opaqueAt(22, 0) && !opaqueAt(0, 11),
-    "no arm runs to the diamond's bare corners, where no edge-adjacent neighbour exists");
+  // bit 0 = y-1, bit 1 = x+1, bit 2 = y+1, bit 3 = x-1 — the renderer's order.
+  const edges = [
+    { bit: 1, dx: 12, dy: -6, name: "y-1" },
+    { bit: 2, dx: 12, dy: 6, name: "x+1" },
+    { bit: 4, dx: -12, dy: 6, name: "y+1" },
+    { bit: 8, dx: -12, dy: -6, name: "x-1" },
+  ];
+  const families = ["road", "rail", "wire", "highway", "pipe", "subway", "bridge-road", "bridge-rail", "bridge-highway"];
+  for (const family of families) {
+    for (let mask = 0; mask < 16; mask += 1) {
+      const frame = atlas.frames[`${family}.mask-${mask}`];
+      test.assert(Boolean(frame), `${family}.mask-${mask} exists so the renderer never falls back to a procedural stub`);
+      if (!frame) continue;
+      const canvas = createCanvas(frame.w, frame.h);
+      const context2d = canvas.getContext("2d");
+      context2d.drawImage(image, frame.x, frame.y, frame.w, frame.h, 0, 0, frame.w, frame.h);
+      const pixels = context2d.getImageData(0, 0, frame.w, frame.h).data;
+      const opaqueNear = (dx, dy, radius = 1) => {
+        for (let oy = -radius; oy <= radius; oy += 1) {
+          for (let ox = -radius; ox <= radius; ox += 1) {
+            const x = frame.anchor.x + dx + ox;
+            const y = frame.anchor.y + dy + oy;
+            if (x < 0 || y < 0 || x >= frame.w || y >= frame.h) continue;
+            if (pixels[(y * frame.w + x) * 4 + 3] > 0) return true;
+          }
+        }
+        return false;
+      };
+      for (const edge of edges) {
+        const connected = (mask & edge.bit) !== 0;
+        if (connected) {
+          test.assert(opaqueNear(edge.dx, edge.dy),
+            `${family}.mask-${mask} reaches the shared edge toward ${edge.name}`);
+          test.assert(opaqueNear(Math.round(edge.dx / 2), Math.round(edge.dy / 2)),
+            `${family}.mask-${mask} is continuous from the centre out toward ${edge.name}`);
+        } else {
+          test.assert(!opaqueNear(edge.dx * 1.4, edge.dy * 1.4, 0),
+            `${family}.mask-${mask} paints nothing past the tile toward ${edge.name}`);
+        }
+      }
+    }
+  }
   const isolated = atlas.frames["road.mask-0"];
-  test.assert(isolated.w === frame.w && isolated.h === frame.h, "an unconnected road still occupies a full connector cell");
+  const straight = atlas.frames["road.mask-2"];
+  test.assert(isolated.w === straight.w && isolated.h === straight.h,
+    "an unconnected road still occupies a full connector cell");
 }
 
 const buildSource = read("tooling/build-bonsai-atlas.mjs");

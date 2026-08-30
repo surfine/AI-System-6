@@ -10,7 +10,7 @@
   ],
   "referenceLedger": "icons/src/aqua-core-icons.json",
   "referenceBoard": "internal/evidence/drafts/era-icons/aqua-core-reference-board.png",
-  "sizeRule": "Runtime surfaces downscale the 128 px master. The ten programmatic cores own separately composed 32 px and 16 px review hints; accepted Image Gen cores use separately processed ledger artifacts.",
+  "sizeRule": "Runtime selects the authored 16, 32, or 128 px tier by context. Programmatic cores own separately composed compact hints; accepted ImageGen cores use the size provenance recorded in their ledger.",
   "selectionRecipe": "Finder selection belongs to the label and view surface; normal and selected states use the same Aqua artwork.",
   "icons": {
     "finderApp": {
@@ -36,67 +36,67 @@
       },
       "metrics": {
         "16": {
-          "pixels": 168,
-          "colors": 152,
+          "pixels": 220,
+          "colors": 218,
           "bbox": {
-            "minX": 1,
-            "minY": 2,
-            "maxX": 14,
-            "maxY": 13
+            "minX": 0,
+            "minY": 0,
+            "maxX": 15,
+            "maxY": 15
           },
           "ink": {
             "minX": 1,
-            "minY": 2,
+            "minY": 0,
             "maxX": 14,
-            "maxY": 13,
+            "maxY": 15,
             "width": 14,
-            "height": 12
+            "height": 16
           },
           "gridShape": "square",
-          "sha256": "48ceb1224e2cdcd7b20bf924bc1f3e10fe554a5c078735dc85e484d1f27af0fe",
-          "bytes": 523
+          "sha256": "f154ebc47ab22f11793884057daf165f2257c0bfe75ed431da196bc76b6da275",
+          "bytes": 864
         },
         "32": {
-          "pixels": 700,
-          "colors": 534,
+          "pixels": 866,
+          "colors": 796,
           "bbox": {
-            "minX": 2,
-            "minY": 4,
-            "maxX": 29,
-            "maxY": 28
+            "minX": 0,
+            "minY": 0,
+            "maxX": 31,
+            "maxY": 31
           },
           "ink": {
             "minX": 2,
-            "minY": 4,
+            "minY": 1,
             "maxX": 29,
-            "maxY": 28,
+            "maxY": 30,
             "width": 28,
-            "height": 25
+            "height": 30
           },
           "gridShape": "square",
-          "sha256": "7e2473e770f2465dfd479ee31ff9b6e3799c78dee71ea71f7104772aaa864ff8",
-          "bytes": 1482
+          "sha256": "dae72b95f3e6a1198aa0e5a11fca0b9c2510651d295b08bd3c8d1e8c26cee110",
+          "bytes": 2531
         },
         "128": {
-          "pixels": 9556,
-          "colors": 3342,
+          "pixels": 12341,
+          "colors": 7448,
           "bbox": {
-            "minX": 12,
-            "minY": 18,
-            "maxX": 115,
-            "maxY": 109
+            "minX": 6,
+            "minY": 4,
+            "maxX": 121,
+            "maxY": 123
           },
           "ink": {
-            "minX": 12,
-            "minY": 18,
-            "maxX": 115,
-            "maxY": 109,
-            "width": 104,
-            "height": 92
+            "minX": 8,
+            "minY": 6,
+            "maxX": 119,
+            "maxY": 121,
+            "width": 112,
+            "height": 116
           },
           "gridShape": "square",
-          "sha256": "be9d5eb6f4a48eade9b293880046e42affbb7ef00930cfb9ffe2adef8ddff4f3",
-          "bytes": 11475
+          "sha256": "c19819105531df6a051187d5e6dc97c3a85f70b63bfdc1a81ed07fde1624db30",
+          "bytes": 21399
         }
       },
       "runtimePixelMetrics": {
@@ -104,24 +104,24 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.6563,
-          "meanLum": 157.99,
-          "lumStd": 41.17,
-          "edgeEnergy": 55
+          "coverage": 0.7656,
+          "meanLum": 170.84,
+          "lumStd": 37.31,
+          "edgeEnergy": 103
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.6094,
-          "meanLum": 158.66,
-          "lumStd": 45.14,
-          "edgeEnergy": 186
+          "coverage": 0.751,
+          "meanLum": 170.76,
+          "lumStd": 43.75,
+          "edgeEnergy": 304
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.5782,
-          "meanLum": 161.74,
-          "lumStd": 42.98,
-          "edgeEnergy": 237
+          "coverage": 0.7409,
+          "meanLum": 170.4,
+          "lumStd": 45.19,
+          "edgeEnergy": 457
         }
       }
     },
@@ -982,67 +982,67 @@
       },
       "metrics": {
         "16": {
-          "pixels": 120,
-          "colors": 38,
+          "pixels": 185,
+          "colors": 175,
           "bbox": {
-            "minX": 1,
-            "minY": 2,
-            "maxX": 14,
-            "maxY": 13
+            "minX": 0,
+            "minY": 0,
+            "maxX": 15,
+            "maxY": 15
           },
           "ink": {
-            "minX": 1,
-            "minY": 2,
-            "maxX": 14,
-            "maxY": 13,
-            "width": 14,
-            "height": 12
+            "minX": 0,
+            "minY": 1,
+            "maxX": 15,
+            "maxY": 14,
+            "width": 16,
+            "height": 14
           },
           "gridShape": "square",
-          "sha256": "cf5f19edb139b398d5a257de983bdb7e258e203eb28daab010e63ecb8a18557f",
-          "bytes": 342
+          "sha256": "6f1bac16a01b46bed495bdd25d86ace291088966cd23166754aba2aad0b80a7b",
+          "bytes": 845
         },
         "32": {
-          "pixels": 491,
-          "colors": 127,
+          "pixels": 655,
+          "colors": 567,
           "bbox": {
-            "minX": 3,
-            "minY": 3,
-            "maxX": 28,
-            "maxY": 28
+            "minX": 0,
+            "minY": 1,
+            "maxX": 31,
+            "maxY": 30
           },
           "ink": {
-            "minX": 3,
+            "minX": 1,
             "minY": 3,
-            "maxX": 28,
+            "maxX": 30,
             "maxY": 28,
-            "width": 26,
+            "width": 30,
             "height": 26
           },
           "gridShape": "square",
-          "sha256": "bc5814492af365ba33e281e0a1dcaf83c07ea1c21815e50865029888926328e8",
-          "bytes": 891
+          "sha256": "14172d06e4f761857f8d5bc003c888df850b972d7d7bc4a9e59311311ef1d07d",
+          "bytes": 2232
         },
         "128": {
-          "pixels": 8129,
-          "colors": 3842,
+          "pixels": 8587,
+          "colors": 5130,
           "bbox": {
-            "minX": 11,
+            "minX": 4,
             "minY": 12,
-            "maxX": 116,
+            "maxX": 123,
             "maxY": 115
           },
           "ink": {
-            "minX": 12,
-            "minY": 13,
-            "maxX": 115,
-            "maxY": 114,
-            "width": 104,
-            "height": 102
+            "minX": 6,
+            "minY": 14,
+            "maxX": 121,
+            "maxY": 113,
+            "width": 116,
+            "height": 100
           },
           "gridShape": "square",
-          "sha256": "63d49cbe70587cb2bfeee8373dee31eeb3308351bceeba1e25994e2584f5b2cb",
-          "bytes": 13020
+          "sha256": "1f469ca588558a91542231ca2d9b524c63c21b7450c69bb5a7d5b1346faeda79",
+          "bytes": 18576
         }
       },
       "runtimePixelMetrics": {
@@ -1050,24 +1050,24 @@
         "keyHueFringe128": 0,
         "derived16": {
           "displaySize": 16,
-          "coverage": 0.5313,
-          "meanLum": 154.28,
-          "lumStd": 55.39,
-          "edgeEnergy": 70
+          "coverage": 0.5469,
+          "meanLum": 178.36,
+          "lumStd": 45.43,
+          "edgeEnergy": 77
         },
         "derived32": {
           "displaySize": 32,
-          "coverage": 0.498,
-          "meanLum": 154.19,
-          "lumStd": 60.64,
-          "edgeEnergy": 175
+          "coverage": 0.5205,
+          "meanLum": 179.44,
+          "lumStd": 48.77,
+          "edgeEnergy": 218
         },
         "derived42": {
           "displaySize": 42,
-          "coverage": 0.4921,
-          "meanLum": 154.09,
-          "lumStd": 61.71,
-          "edgeEnergy": 263
+          "coverage": 0.5113,
+          "meanLum": 180.24,
+          "lumStd": 48.91,
+          "edgeEnergy": 303
         }
       }
     },

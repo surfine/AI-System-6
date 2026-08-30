@@ -407,6 +407,15 @@ body.use-liquid-glass .menu-bar {
   --glass-lamp-close: var(--glass-lamp-inactive);
   --glass-lamp-zoom: var(--glass-lamp-inactive);
   --glass-lamp-mark-opacity: 0;
+  /* An era whose lamps are sprites cannot go grey by swapping a colour token:
+     the art carries the colour. Yosemite flattens the sprite instead, which is
+     knowledge Theme Lab's replica held while the real control kept showing a
+     red lamp on a background window. Unset elsewhere, so nothing else moves. */
+  /* Handed to the era's own lamp rule rather than applied here: Yosemite paints
+     its lamps with a more specific selector that pins filter, so the value has
+     to arrive as a variable it already reads. Set only in this context, so an
+     active lamp never sees it. */
+  --titlebar-control-filter: var(--titlebar-inactive-control-filter, none);
   visibility: var(--system-titlebar-inactive-control-visibility);
   filter: var(--system-titlebar-inactive-control-filter);
   opacity: var(--system-titlebar-inactive-control-opacity);
@@ -559,7 +568,7 @@ select {
 textarea:focus,
 input:focus,
 select:focus {
-  outline: 1px dotted var(--ink);
+  outline: var(--system-focus-outline);
   outline-offset: 2px;
   box-shadow: var(--system-inset);
 }
@@ -1984,6 +1993,16 @@ body.use-modern-fonts .mde-surface * {
   font-size: var(--system-readable-min);
 }
 
+/* Same trap, one surface further on: the ink longhand above outranks the era's
+   border shorthand, so a command popover kept a System 6 frame in every later
+   era while the real menus followed their own. A command popover is a menu, so
+   it takes the menu panel's frame; eras that declare nothing still resolve to
+   ink through the foundation value. */
+.teachtext-command-popover,
+.teachtext-command-subpopover {
+  border: var(--menu-panel-border);
+}
+
 /* The surface rule above paints every listed surface with ink, and its longhand
    outranks foundation's border-bottom shorthand -- so an appearance that sets
    --menu-bar-border never reached the screen. Hand the menu bar its own colour
@@ -2016,8 +2035,12 @@ body.use-modern-fonts .mde-surface * {
 .menu-popover button,
 .menu-sub-popover button,
 .menu-submenu-trigger {
-  min-height: var(--system-control-min-height);
-  padding: 3px 14px 3px 30px;
+  /* The responsive fallback owns the generic menu metrics; historical
+     appearances may narrow them through the same tokens used by the base
+     menu rule. Keeping the fallback here preserves Classic while allowing
+     Aqua/Snow/Yosemite Theme Lab specimens to reach their measured rows. */
+  min-height: var(--menu-item-min-height, var(--system-control-min-height));
+  padding: var(--menu-item-padding, 3px 14px 3px 30px);
   font-family: var(--ui-font);
   font-size: var(--system-readable-min);
   font-weight: 400;
@@ -2213,7 +2236,7 @@ option:checked {
 
 input:focus,
 select:focus {
-  outline: 1px dotted var(--ink);
+  outline: var(--system-focus-outline);
   outline-offset: 2px;
   box-shadow: var(--system-inset);
 }
@@ -2281,7 +2304,7 @@ select:focus-visible {
 }
 
 textarea:focus:not(.mde-input) {
-  outline: 1px dotted var(--ink);
+  outline: var(--system-focus-outline);
   outline-offset: 2px;
   background: var(--field-focus-bg);
   color: var(--ink);

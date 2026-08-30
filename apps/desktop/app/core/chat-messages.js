@@ -218,45 +218,31 @@ function renderClioTalkWelcome() {
 
   const body = document.createElement("div");
   body.className = "message-content";
-  const readOnly = window.AISystem6WriteLease?.canMutate?.() !== true;
   const modelReady = clioTalkModelReady();
   const providerState = window.AISystem6ClioProvider?.snapshot?.() || { status: "idle" };
   const providerResolving = !modelReady && ["idle", "resolving"].includes(providerState.status);
   const introducing = typeof isClioIntroductionActive === "function" && isClioIntroductionActive();
-  const welcomeKey = readOnly
-    ? "clio_read_only_message"
-    : providerResolving
-      ? "clio_provider_resolving_message"
-      : !modelReady
-        ? "clio_model_required_message"
-        : (sideAskEnabled && !isMultiFinderMode()
-          ? "sideask_welcome_message"
-          : introducing
-            ? "clio_first_welcome_message"
+  // A true first visit greets before any model gate: the greeting is scripted
+  // and needs no model, and desktop-profile first copy must not be a gate.
+  // No read-only branch: a window that does not hold the write lease still
+  // talks, still saves, and must not be greeted by an explanation of a lock
+  // that no longer stops it.
+  const welcomeKey = introducing && !sideAskEnabled && !clioTalkTemporaryMode
+      ? "clio_first_welcome_message"
+      : providerResolving
+        ? "clio_provider_resolving_message"
+        : !modelReady
+          ? "clio_model_required_message"
+          : (sideAskEnabled && !isMultiFinderMode()
+            ? "sideask_welcome_message"
             : (clioTalkTemporaryMode ? "temporary_welcome_message" : "welcome_message"));
   body.innerHTML = `<p>${t(welcomeKey)}</p>`;
+  const introducingWelcome = welcomeKey === "clio_first_welcome_message";
+  if (introducingWelcome && !modelReady && !providerResolving) {
+    body.insertAdjacentHTML("beforeend", `<p><span>${t("clio_first_welcome_no_model")}</span></p>`);
+  }
 
-  if (readOnly) {
-    const actions = document.createElement("div");
-    actions.className = "clio-welcome-actions";
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "btn default";
-    button.dataset.action = "use-this-window-for-clio";
-    button.textContent = t("use_this_window");
-    actions.append(button);
-    body.append(actions);
-  } else if (!modelReady && !providerResolving) {
-    const actions = document.createElement("div");
-    actions.className = "clio-welcome-actions";
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "btn default";
-    button.dataset.action = "open-clio-model-settings";
-    button.textContent = t("clio_connect_ai");
-    actions.append(button);
-    body.append(actions);
-  } else if (modelReady && introducing && !sideAskEnabled && !clioTalkTemporaryMode) {
+  if (introducingWelcome) {
     const actions = document.createElement("div");
     actions.className = "clio-welcome-actions";
     [
@@ -270,8 +256,27 @@ function renderClioTalkWelcome() {
       button.className = "btn";
       button.dataset.clioStarter = starter;
       button.textContent = t(labelKey);
+      if (starter === "explore") button.dataset.balloonHelp = "balloon_clio_starter_explore";
       actions.append(button);
     });
+    if (!modelReady && !providerResolving) {
+      const connect = document.createElement("button");
+      connect.type = "button";
+      connect.className = "btn";
+      connect.dataset.action = "open-clio-model-settings";
+      connect.textContent = t("clio_connect_ai");
+      actions.append(connect);
+    }
+    body.append(actions);
+  } else if (!modelReady && !providerResolving) {
+    const actions = document.createElement("div");
+    actions.className = "clio-welcome-actions";
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "btn default";
+    button.dataset.action = "open-clio-model-settings";
+    button.textContent = t("clio_connect_ai");
+    actions.append(button);
     body.append(actions);
   } else if (modelReady && !sideAskEnabled && !clioTalkTemporaryMode) {
     const actions = document.createElement("div");
@@ -316,6 +321,527 @@ function clioTalkModelReady() {
 function modelReadyForRequests() {
   return clioTalkModelReady() === true;
 }
+
+// Direct ClioTalk images have two lives. A pending entry owns the browser File
+// the writer just chose. An active entry owns the bounded inline copy that may
+// be saved with the Chat and, for an own-key cloud route, a signed one-hour
+// token that exists only in this tab. No entry from either map is serialized.
+let pendingClioImageInputs = new Map();
+let activeClioImageInputs = new Map();
+let clioImageGeneration = 0;
+let clioImageCredentialGeneration = 0;
+let clioImageExpiryTimer = null;
+let clioImagePreparationTail = Promise.resolve();
+let clioImageOriginRevision = 0;
+let clioImageOriginCache = { revision: -1, origins: new Map() };
+
+function clioImageOwnKeyMode() {
+  if (typeof cloudConfig === "undefined" || !cloudConfig?.active || cloudConfig.provider !== "deepseek") return false;
+  const mode = typeof cloudCredentialMode === "function" ? cloudCredentialMode() : "none";
+  return mode === "byok" || mode === "stored";
+}
+
+function currentClioImageCredentialScope() {
+  if (!clioImageOwnKeyMode()) return "inline";
+  const mode = cloudCredentialMode();
+  return `deepseek:${mode}:${String(cloudConfig?.credentialId || clioImageCredentialGeneration)}`;
+}
+
+function clioImageSafeDescriptor(input) {
+  return normalizeClioImageInput(input) || null;
+}
+
+function invalidateClioImageOriginCache() {
+  clioImageOriginRevision += 1;
+  clioImageOriginCache = { revision: -1, origins: new Map() };
+}
+
+function clioImageInputOrigins(messages = conversation) {
+  if (messages === conversation && clioImageOriginCache.revision === clioImageOriginRevision) {
+    return clioImageOriginCache.origins;
+  }
+  const byId = new Map();
+  (Array.isArray(messages) ? messages : []).forEach((message) => {
+    normalizeClioImageInputs(message?.imageInputs || []).forEach((input) => byId.set(input.clientId, input));
+  });
+  if (messages === conversation) {
+    clioImageOriginCache = { revision: clioImageOriginRevision, origins: byId };
+  }
+  return byId;
+}
+
+function clioImageInlineCharsForMessages(messages = []) {
+  return [...clioImageInputOrigins(messages).values()]
+    .reduce((sum, input) => sum + String(input.inlineDataUrl || "").length, 0);
+}
+
+function clioImageProjectInlineChars() {
+  const files = typeof getProjectFiles === "function" ? getProjectFiles() : [];
+  const stored = files
+    .filter((file) => file?.type === "chat")
+    .reduce((sum, file) => sum + clioImageInlineCharsForMessages(file.messages || []), 0);
+  const activeFile = typeof getActiveConversationFile === "function" ? getActiveConversationFile() : null;
+  return activeFile ? stored - clioImageInlineCharsForMessages(activeFile.messages || []) + clioImageInlineCharsForMessages(conversation) : stored;
+}
+
+function clioImagePersistentDescriptors(ids = []) {
+  return Array.from(ids || [])
+    .map((id) => activeClioImageInputs.get(String(id || "")))
+    .map(clioImageSafeDescriptor)
+    .filter(Boolean);
+}
+
+function clioImageReceiptDescriptors(ids = []) {
+  return clioImagePersistentDescriptors(ids).map(({ inlineDataUrl, ...input }) => ({
+    ...input,
+    inlineBytes: imageDataUrlDecodedBytes(inlineDataUrl),
+  }));
+}
+
+function clioImageActiveIds() {
+  const now = Date.now();
+  const scope = currentClioImageCredentialScope();
+  activeClioImageInputs.forEach((input) => {
+    if (input.fileToken && (input.fileExpiresAt <= now || input.credentialScope !== scope)) {
+      input.fileToken = "";
+      input.fileExpiresAt = 0;
+      input.transport = "inline";
+    }
+  });
+  return [...activeClioImageInputs.values()]
+    .filter((input) => !input.removedAt && input.inlineDataUrl)
+    .slice(0, IMAGE_ATTACHMENT_MODEL_LIMIT)
+    .map((input) => input.clientId);
+}
+
+function clioImageInputsForIds(ids = []) {
+  const requested = Array.isArray(ids) && ids.length ? ids : clioImageActiveIds();
+  const scope = currentClioImageCredentialScope();
+  const now = Date.now();
+  return requested.map((id) => activeClioImageInputs.get(String(id || ""))).filter(Boolean).map((input) => {
+    if (input.fileToken && (input.fileExpiresAt <= now || input.credentialScope !== scope)) {
+      input.fileToken = "";
+      input.fileExpiresAt = 0;
+      input.transport = "inline";
+    }
+    return input;
+  }).filter((input) => input.inlineDataUrl && !input.removedAt).slice(0, IMAGE_ATTACHMENT_MODEL_LIMIT);
+}
+
+function scheduleClioImageExpiry() {
+  clearTimeout(clioImageExpiryTimer);
+  const expiries = [...activeClioImageInputs.values()]
+    .map((input) => Number(input.fileExpiresAt || 0))
+    .filter((value) => value > Date.now());
+  if (!expiries.length) return;
+  const delay = Math.max(50, Math.min(...expiries) - Date.now() + 25);
+  clioImageExpiryTimer = setTimeout(() => {
+    clioImageActiveIds();
+    renderAttachedClips();
+    scheduleClioImageExpiry();
+  }, Math.min(delay, 0x7fffffff));
+}
+
+function clioImageCredentialHeaders() {
+  const headers = {};
+  if (typeof cloudRuntimeApiKey === "string" && cloudRuntimeApiKey) {
+    headers["X-AI-System6-Cloud-API-Key"] = cloudRuntimeApiKey;
+  } else if (cloudConfig?.credentialId) {
+    headers["X-AI-System6-Cloud-Credential-ID"] = String(cloudConfig.credentialId);
+  }
+  return headers;
+}
+
+async function deleteClioRemoteImage(input, signal = null) {
+  const token = String(input?.fileToken || "");
+  if (!token) return false;
+  try {
+    const response = await window.AISystem6Capabilities.requestService("cloud.files.delete", {
+      init: {
+        method: "DELETE",
+        signal,
+        headers: { "Content-Type": "application/json", ...clioImageCredentialHeaders() },
+        body: JSON.stringify({ file_token: token }),
+      },
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+function markClioImageRemoved(clientId) {
+  const removedAt = new Date().toISOString();
+  conversation.forEach((message) => {
+    if (!Array.isArray(message?.imageInputs)) return;
+    message.imageInputs = message.imageInputs.map((input) => input?.clientId === clientId ? { ...input, removedAt } : input);
+  });
+  invalidateClioImageOriginCache();
+}
+
+function releasePendingClioImageSource(pending) {
+  pending?.prepareController?.abort?.();
+  if (pending?.objectUrl) URL.revokeObjectURL(pending.objectUrl);
+  if (pending?.prepared) pending.prepared.inlineBlob = null;
+  if (pending) {
+    pending.file = null;
+    pending.objectUrl = "";
+    pending.prepared = null;
+  }
+}
+
+function releaseActiveClioImageSource(input) {
+  if (!input) return;
+  if (input.objectUrl) URL.revokeObjectURL(input.objectUrl);
+  input.file = null;
+  input.objectUrl = "";
+  input.inlineBlob = null;
+}
+
+function removeClioImageInput(clientId, options = {}) {
+  const id = String(clientId || "");
+  const pending = pendingClioImageInputs.get(id);
+  releasePendingClioImageSource(pending);
+  pendingClioImageInputs.delete(id);
+  const active = activeClioImageInputs.get(id);
+  activeClioImageInputs.delete(id);
+  releaseActiveClioImageSource(active);
+  if (active?.fileToken) void deleteClioRemoteImage(active);
+  if (options.persist !== false) {
+    markClioImageRemoved(id);
+    persistClioTalkConversationMutation();
+  }
+  renderAttachedClips();
+  scheduleClioImageExpiry();
+  return !!(pending || active);
+}
+
+function clearClioImageInputs(options = {}) {
+  if ([...pendingClioImageInputs.values()].some((input) => input.state === "uploading")) {
+    activeAbortController?.abort();
+  }
+  clioImageGeneration += 1;
+  [...pendingClioImageInputs.keys()].forEach((id) => removeClioImageInput(id, { persist: options.persist }));
+  [...activeClioImageInputs.keys()].forEach((id) => removeClioImageInput(id, { persist: options.persist }));
+  pendingClioImageInputs = new Map();
+  activeClioImageInputs = new Map();
+  clearTimeout(clioImageExpiryTimer);
+  renderAttachedClips();
+}
+
+function invalidateClioImageFileTokens(reasonKey = "clio_image_credential_changed") {
+  if ([...pendingClioImageInputs.values()].some((input) => input.state === "uploading")) {
+    activeAbortController?.abort();
+  }
+  clioImageGeneration += 1;
+  clioImageCredentialGeneration += 1;
+  activeClioImageInputs.forEach((input) => {
+    if (input.fileToken) void deleteClioRemoteImage(input);
+    input.fileToken = "";
+    input.fileExpiresAt = 0;
+    input.transport = "inline";
+    input.credentialScope = "";
+  });
+  if (activeClioImageInputs.size && typeof setStatus === "function") setStatus(t(reasonKey));
+  renderAttachedClips();
+}
+
+function restoreClioImageInputsFromConversation() {
+  clearClioImageInputs({ persist: false });
+  invalidateClioImageOriginCache();
+  const origins = clioImageInputOrigins(conversation);
+  for (const input of origins.values()) {
+    if (input.removedAt || !input.inlineDataUrl) continue;
+    const runtime = normalizeClioImageInput({ ...input, state: "active", transport: "inline" }, { includeRuntime: true });
+    if (runtime) activeClioImageInputs.set(runtime.clientId, runtime);
+    if (activeClioImageInputs.size >= IMAGE_ATTACHMENT_MODEL_LIMIT) break;
+  }
+  renderAttachedClips();
+}
+
+function startPendingClioImagePreparation(pending) {
+  if (pending?.prepared) return Promise.resolve(pending.prepared);
+  if (pending?.preparePromise && !pending.prepareError && !pending.prepareController?.signal?.aborted) {
+    return pending.preparePromise;
+  }
+  const controller = new AbortController();
+  pending.prepareController = controller;
+  pending.prepareError = null;
+  const queued = clioImagePreparationTail.then(async () => {
+    if (pendingClioImageInputs.get(pending.clientId) !== pending || controller.signal.aborted) {
+      throw new DOMException("Aborted", "AbortError");
+    }
+    pending.state = "preparing";
+    renderAttachedClips();
+    return prepareClioImageInline(pending.file, { signal: controller.signal });
+  });
+  pending.preparePromise = queued.then((prepared) => {
+    if (pendingClioImageInputs.get(pending.clientId) !== pending) return null;
+    pending.prepared = prepared;
+    pending.prepareError = null;
+    pending.state = "pending";
+    renderAttachedClips();
+    return prepared;
+  }, (error) => {
+    pending.prepareError = error;
+    if (pendingClioImageInputs.get(pending.clientId) === pending) {
+      pending.state = error?.name === "AbortError" ? "pending" : "failed";
+      renderAttachedClips();
+    }
+    return null;
+  });
+  clioImagePreparationTail = pending.preparePromise.then(() => undefined);
+  return pending.preparePromise;
+}
+
+function addPendingClioImageFiles(files = []) {
+  const available = Math.max(0, IMAGE_ATTACHMENT_MODEL_LIMIT - activeClioImageInputs.size - pendingClioImageInputs.size);
+  const accepted = clioVisionImageFilesFromList(files);
+  const incoming = accepted.slice(0, available);
+  let added = 0;
+  for (const entry of incoming) {
+    const { file, type } = entry;
+    if ((file.size || 0) > CLIO_IMAGE_MAX_SOURCE_BYTES) {
+      setStatus(t("clio_image_too_large", file.name || t("image_attachment")));
+      continue;
+    }
+    const clientId = crypto.randomUUID();
+    const pending = {
+      clientId,
+      file,
+      objectUrl: "",
+      name: file.name || t("image_attachment"),
+      type,
+      size: Number(file.size || 0),
+      state: "pending",
+      generation: clioImageGeneration,
+      prepared: null,
+      prepareError: null,
+      preparePromise: null,
+      prepareController: null,
+    };
+    // Selection performs only local work: build the bounded persistent copy
+    // now, while the original File remains untouched for a later Files upload.
+    // The first network request is still gated on Send.
+    pendingClioImageInputs.set(clientId, pending);
+    startPendingClioImagePreparation(pending);
+    added += 1;
+  }
+  if ([...(files || [])].length > accepted.length) setStatus(t("clio_image_unsupported"));
+  else if (accepted.length > incoming.length) setStatus(t("clio_image_limit", IMAGE_ATTACHMENT_MODEL_LIMIT));
+  renderAttachedClips();
+  scheduleWorkingSessionSave?.();
+  return added;
+}
+
+function openClioImagePicker() {
+  openTransientFilePicker({
+    accept: CLIO_IMAGE_ACCEPT,
+    multiple: true,
+    onSelect: addPendingClioImageFiles,
+  });
+}
+
+function clioTalkImageChipRecords() {
+  const now = Date.now();
+  return [
+    ...[...pendingClioImageInputs.values()].map((input) => ({
+      clientId: input.clientId,
+      name: input.name,
+      state: input.state || "pending",
+      label: t(input.state === "preparing"
+        ? "clio_image_preparing"
+        : input.state === "uploading"
+          ? "clio_image_uploading"
+          : input.state === "failed"
+            ? "clio_image_upload_failed"
+            : "clio_image_pending", input.name),
+      remove: () => removeClioImageInput(input.clientId, { persist: false }),
+    })),
+    ...[...activeClioImageInputs.values()].map((input) => ({
+      clientId: input.clientId,
+      name: input.name,
+      state: input.fileToken && input.fileExpiresAt > now ? "active" : "inline",
+      label: input.fileToken && input.fileExpiresAt > now
+        ? t("clio_image_active", input.name, Math.max(1, Math.ceil((input.fileExpiresAt - now) / 60000)))
+        : t("clio_image_inline_active", input.name),
+      remove: () => removeClioImageInput(input.clientId),
+    })),
+  ];
+}
+
+async function uploadClioImageFile(input, body, signal) {
+  const response = await window.AISystem6Capabilities.requestService("cloud.files.upload", {
+    init: {
+      method: "POST",
+      signal,
+      headers: {
+        "Content-Type": body.type || "application/octet-stream",
+        "X-AI-System6-File-Name": encodeURIComponent(input.name || "image"),
+        "X-AI-System6-File-Bytes": String(body.size || 0),
+        ...clioImageCredentialHeaders(),
+      },
+      body,
+    },
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || !data.file_token) throw new Error(data?.detail || data?.error || "clio_image_upload_failed");
+  const providerExpiry = Number(data.expires_at || 0) > 1000000000000
+    ? Number(data.expires_at)
+    : Number(data.expires_at || 0) * 1000;
+  return {
+    fileToken: String(data.file_token),
+    fileExpiresAt: Math.min(providerExpiry || Date.now() + 3600000, Date.now() + 3600000),
+    fileBytes: Math.max(0, Number(data.bytes || body.size || 0) || 0),
+  };
+}
+
+async function preparePendingClioImages(signal) {
+  if (!pendingClioImageInputs.size) return { ok: true, newIds: [] };
+  const generation = ++clioImageGeneration;
+  const staged = [];
+  let addedChars = 0;
+  const existingChatImageChars = clioImageInlineCharsForMessages(conversation);
+  const existingProjectImageChars = clioImageProjectInlineChars();
+  let requestFileBytes = [...activeClioImageInputs.values()]
+    .filter((input) => input.fileToken && input.fileExpiresAt > Date.now())
+    .reduce((sum, input) => sum + Math.max(0, Number(input.fileBytes || input.size || 0) || 0), 0);
+  try {
+    for (const pending of pendingClioImageInputs.values()) {
+      signal?.throwIfAborted?.();
+      pending.generation = generation;
+      const abortPreparation = () => pending.prepareController?.abort();
+      signal?.addEventListener?.("abort", abortPreparation, { once: true });
+      const prepared = pending.prepared || await startPendingClioImagePreparation(pending);
+      signal?.removeEventListener?.("abort", abortPreparation);
+      signal?.throwIfAborted?.();
+      if (!prepared) throw pending.prepareError || new Error("clio_image_prepare_failed");
+      addedChars += prepared.inlineDataUrl.length;
+      if (existingChatImageChars + addedChars > CLIO_IMAGE_CHAT_CHAR_BUDGET) {
+        throw new Error("clio_image_chat_budget");
+      }
+      if (existingProjectImageChars + addedChars > CLIO_IMAGE_PROJECT_CHAR_BUDGET) {
+        throw new Error("clio_image_project_budget");
+      }
+      const now = new Date().toISOString();
+      const runtime = normalizeClioImageInput({
+        ...pending,
+        inlineDataUrl: prepared.inlineDataUrl,
+        inlineBlob: prepared.inlineBlob,
+        width: prepared.width,
+        height: prepared.height,
+        animated: prepared.animated,
+        transport: clioImageOwnKeyMode() ? "file" : "inline",
+        attachedAt: now,
+        expiresAt: "",
+        state: "active",
+        generation,
+      }, { includeRuntime: true });
+      if (!runtime) throw new Error("clio_image_prepare_failed");
+      if (clioImageOwnKeyMode()) {
+        pending.state = "uploading";
+        renderAttachedClips();
+        const uploadBody = prepared.animated && /image\/(?:gif|webp)/i.test(runtime.type)
+          ? (pending.file.type ? pending.file : new Blob([pending.file], { type: runtime.type }))
+          : prepared.inlineBlob;
+        if (!uploadBody) throw new Error("clio_image_prepare_failed");
+        if (requestFileBytes + uploadBody.size > CLIO_IMAGE_MAX_REQUEST_BYTES) {
+          throw new Error("clio_image_request_budget");
+        }
+        requestFileBytes += uploadBody.size;
+        Object.assign(runtime, await uploadClioImageFile(runtime, uploadBody, signal));
+        runtime.credentialScope = currentClioImageCredentialScope();
+        runtime.expiresAt = new Date(runtime.fileExpiresAt).toISOString();
+      }
+      releaseActiveClioImageSource(runtime);
+      staged.push(runtime);
+    }
+    if (generation !== clioImageGeneration) throw new DOMException("Aborted", "AbortError");
+    staged.forEach((input) => activeClioImageInputs.set(input.clientId, input));
+    staged.forEach((input) => {
+      const pending = pendingClioImageInputs.get(input.clientId);
+      releasePendingClioImageSource(pending);
+      pendingClioImageInputs.delete(input.clientId);
+    });
+    renderAttachedClips();
+    scheduleClioImageExpiry();
+    return { ok: true, newIds: staged.map((input) => input.clientId) };
+  } catch (error) {
+    const cleanupSignal = typeof AbortSignal !== "undefined" && typeof AbortSignal.timeout === "function"
+      ? AbortSignal.timeout(10000)
+      : null;
+    await Promise.all(staged
+      .filter((input) => input.fileToken)
+      .map((input) => deleteClioRemoteImage(input, cleanupSignal)));
+    staged.forEach(releaseActiveClioImageSource);
+    pendingClioImageInputs.forEach((input) => { input.state = signal?.aborted ? "pending" : "failed"; });
+    renderAttachedClips();
+    if (!signal?.aborted) {
+      const budgetError = ["clio_image_chat_budget", "clio_image_project_budget", "clio_image_request_budget"]
+        .includes(error?.message);
+      setStatus(t(budgetError ? error.message : "clio_image_upload_failed", ""));
+    }
+    return { ok: false, newIds: [], error };
+  }
+}
+
+function attachClioImageInputsToMessages(messages, ids = []) {
+  const inputs = clioImageInputsForIds(ids);
+  if (!inputs.length) return messages;
+  return attachImagesToModelMessages(messages, inputs, { limit: IMAGE_ATTACHMENT_MODEL_LIMIT });
+}
+
+function clioPayloadCarriesFileToken(messages = []) {
+  return Array.isArray(messages) && messages.some((message) => Array.isArray(message?.content)
+    && message.content.some((block) => block?.type === "file" && block.file_id));
+}
+
+function clioInlineFallbackPayload(payload) {
+  const byToken = new Map(
+    [...activeClioImageInputs.values()]
+      .filter((input) => input.fileToken && input.inlineDataUrl)
+      .map((input) => [input.fileToken, input.inlineDataUrl])
+  );
+  return {
+    ...payload,
+    messages: (payload.messages || []).map((message) => !Array.isArray(message?.content) ? message : ({
+      ...message,
+      content: message.content.map((block) => {
+        if (block?.type !== "file") return block;
+        const inlineDataUrl = byToken.get(String(block.file_id || ""));
+        return inlineDataUrl
+          ? { type: "image_url", image_url: { url: inlineDataUrl, detail: "original" } }
+          : block;
+      }),
+    })),
+  };
+}
+
+async function retryCloudFilePayloadInline(response, payload, signal) {
+  if (response.ok || !clioPayloadCarriesFileToken(payload?.messages)) return response;
+  let code = "";
+  try {
+    code = String((await response.clone().json())?.code || "");
+  } catch {}
+  if (!["invalid_cloud_file_token", "cloud_file_credential_scope_mismatch", "cloud_file_expired"].includes(code)) {
+    return response;
+  }
+  const inlinePayload = clioInlineFallbackPayload(payload);
+  if (clioPayloadCarriesFileToken(inlinePayload.messages)) return response;
+  invalidateClioImageFileTokens("clio_image_reattach_required");
+  return fetchModelPayload(inlinePayload, signal);
+}
+
+window.AISystem6ClioImages = Object.freeze({
+  addFiles: addPendingClioImageFiles,
+  openPicker: openClioImagePicker,
+  remove: removeClioImageInput,
+  clear: clearClioImageInputs,
+  invalidateCredentials: invalidateClioImageFileTokens,
+  restore: restoreClioImageInputsFromConversation,
+  chips: clioTalkImageChipRecords,
+  activeIds: clioImageActiveIds,
+});
 
 function syncClioTalkModelAvailability() {
   if (!conversation.length && messagesEl?.querySelector(":scope > .clio-welcome")) {
@@ -568,9 +1094,8 @@ function syncClioTalkSendButton() {
     return;
   }
   const isBusy = !!activeAbortController || form.classList.contains("is-generating");
-  const readOnly = window.AISystem6WriteLease?.canMutate?.() !== true;
   const canResolve = window.AISystem6ClioProvider?.canAttempt?.() === true;
-  sendButton.disabled = readOnly || (!clioTalkModelReady() && !canResolve) || isBusy || !String(promptInput?.value || "").trim();
+  sendButton.disabled = (!clioTalkModelReady() && !canResolve) || isBusy || !String(promptInput?.value || "").trim();
 }
 
 function setComposerSubmitMode(isBusy) {
@@ -637,14 +1162,15 @@ function renderClioTalkRunAssembly() {
 function recordContextLoadout(payload) {
   const messages = Array.isArray(payload?.messages) ? payload.messages : [];
   const entries = messages.map((message, index) => {
-    const content = String(message?.content || "");
+    const rawContent = message?.content || "";
+    const content = modelMessageContentReceipt(rawContent);
     const kind = /Project Memory|项目长期记忆/.test(content) ? "project-memory"
       : /retrospective files|复盘文件/.test(content) ? "retrospective"
       : /^# Conversation Memory/.test(content) ? "compressed-memory"
         : /small, curated local context|小而精选的本地上下文|主要依据/.test(content) ? "retrieved-context"
           : message?.role === "user" ? "current-conversation"
             : index < 2 ? "system" : "conversation";
-    return { id: `${kind}:${index}`, kind, label: kind, estimatedTokens: estimateTokenCount(content) + 6, content };
+    return { id: `${kind}:${index}`, kind, label: kind, estimatedTokens: estimateTokenCount(rawContent) + 6, content };
   });
   const skipped = (lastRetrievedContextItems || [])
     .filter((item) => item.included === false || item.excluded)
@@ -658,7 +1184,7 @@ function recordContextLoadout(payload) {
   };
   const promptFiles = (window.lastTaskPromptFiles || []).map((file) => ({ ...file }));
   const labelPromptMessage = (message, index) => {
-    const content = String(message?.content || "");
+    const content = modelMessageContentReceipt(message?.content || "");
     const matchedFile = promptFiles.find((file) => file.hash === clioRunHash(content));
     if (matchedFile) return matchedFile.name;
     if (content.includes(window.AISystem6SystemIntegrity?.marker || "\u0000")) return "System Integrity · runtime";
@@ -673,8 +1199,8 @@ function recordContextLoadout(payload) {
     index,
     role: String(message?.role || ""),
     label: labelPromptMessage(message, index),
-    body: String(message?.content || ""),
-    hash: clioRunHash(message?.content || ""),
+    body: modelMessageContentReceipt(message?.content || ""),
+    hash: clioRunHash(modelMessageContentIdentity(message?.content || "")),
   }));
   window.lastTaskRunManifest = {
     schemaVersion: 1,
@@ -682,7 +1208,9 @@ function recordContextLoadout(payload) {
     scopeNote: t("clio_run_runtime_note"),
     capturedAt: new Date().toISOString(),
     taskKind: String(payload?.ai_system6_task_kind || "chat"),
-    model: String(payload?.model || ""),
+    model: String(payload?._cloud_model || payload?.model || ""),
+    requestedModel: String(payload?.model || ""),
+    effectiveModel: String(payload?._cloud_model || payload?.model || ""),
     modelRole: String(payload?.ai_system6_model_role || "default"),
     modelFallbackReason: String(payload?.ai_system6_model_fallback_reason || ""),
     parameters: {
@@ -697,6 +1225,7 @@ function recordContextLoadout(payload) {
     skillFiles: (window.lastTaskSkillFiles || []).map((file) => ({ ...file })),
     harnessFile: window.lastTaskHarnessFile ? { ...window.lastTaskHarnessFile } : null,
     inputFiles: (window.lastTaskInputFiles || []).map((file) => ({ ...file })),
+    imageInputs: (window.lastTaskImageInputs || []).map((input) => ({ ...input })),
     contextManifest: window.lastContextManifest || null,
     productHelpTopics: clioProductHelpReceipt(),
   };
@@ -717,7 +1246,9 @@ function recordContextLoadout(payload) {
 }
 
 function resetClioTalkRuntimeState(options = {}) {
+  clearClioImageInputs({ persist: false });
   conversation.length = 0;
+  invalidateClioImageOriginCache();
   clioProductHelpRoute = { route: "chat", reason: "ordinary-chat", topics: [] };
   activeChatFileId = null;
   lastClioWebSearchCall = null;
@@ -741,6 +1272,7 @@ function resetClioTalkRuntimeState(options = {}) {
   window.lastTaskHarnessFile = null;
   window.lastTaskInputFiles = [];
   window.lastTaskExplicitInputFiles = [];
+  window.lastTaskImageInputs = [];
   window.nextTaskInputFileIds = new Set();
   renderClioTalkContextSpace();
   lastRetrievedContextItems = [];
@@ -778,6 +1310,7 @@ function restoreClioTalkRuntimeState(state = null) {
     content: String(item.content || ""),
     deliveryState: item.deliveryState === "sending" ? "failed" : String(item.deliveryState || ""),
   })));
+  restoreClioImageInputsFromConversation();
   activeChatFileId = String(state.activeChatFileId || "") || null;
   compressedConversationMemory = {
     text: String(state.compressedConversationMemory?.text || ""),
@@ -1213,6 +1746,9 @@ function clioTalkReplayOptions(options = {}, taskKind = "chat") {
   if (String(options.continuationMessageId || "").trim()) {
     replay.continuationMessageId = String(options.continuationMessageId);
   }
+  if (Array.isArray(options.imageInputIds) && options.imageInputIds.length) {
+    replay.imageInputIds = options.imageInputIds.map((id) => String(id || "")).filter(Boolean).slice(0, IMAGE_ATTACHMENT_MODEL_LIMIT);
+  }
   return replay;
 }
 
@@ -1259,6 +1795,10 @@ function updateClioTalkMessageRecord(messageId, updates = {}) {
   const record = conversation.find((candidate) => candidate.id === messageId);
   if (!record) return null;
   Object.assign(record, updates);
+  if (Object.prototype.hasOwnProperty.call(updates, "imageInputs")
+    || Object.prototype.hasOwnProperty.call(updates, "imageInputIds")) {
+    invalidateClioImageOriginCache();
+  }
   persistClioTalkConversationMutation();
   return record;
 }
@@ -1268,6 +1808,7 @@ function removeClioTalkMessageRecord(messageId) {
   const index = conversation.findIndex((candidate) => candidate.id === messageId);
   if (index < 0) return false;
   conversation.splice(index, 1);
+  invalidateClioImageOriginCache();
   lastAssistantText = [...conversation].reverse().find((candidate) => candidate.role === "assistant")?.content || "";
   lastUserText = [...conversation].reverse().find((candidate) => candidate.role === "user")?.content || "";
   persistClioTalkConversationMutation();
@@ -1332,10 +1873,16 @@ function appendClioTalkRunState(item, record) {
     }
     const retryText = String(record.content || "").trim();
     if (!retryText) return;
+    const retryOptions = clioTalkReplayOptions(record.requestOptions || {}, record.taskKind || "chat");
+    if (retryOptions.imageInputIds?.some((id) => !activeClioImageInputs.has(id))) {
+      setStatus(t("clio_image_reattach_required"));
+      openClioImagePicker();
+      return;
+    }
     removeClioTalkMessageRecord(record.id);
     item.remove();
     submitUserText(retryText, {
-      ...clioTalkReplayOptions(record.requestOptions || {}, record.taskKind || "chat"),
+      ...retryOptions,
       retryOf: record.id,
     });
   };
@@ -2085,6 +2632,23 @@ function refreshMessageTranslationButtons() {
   });
 }
 
+function appendClioTalkImageHistory(item, messageRecord) {
+  item?.querySelector?.("[data-clio-image-history]")?.remove();
+  const ids = Array.isArray(messageRecord?.imageInputIds)
+    ? [...new Set(messageRecord.imageInputIds.map((id) => String(id || "")).filter(Boolean))]
+    : [];
+  if (!ids.length) return;
+  const origins = clioImageInputOrigins(conversation);
+  const names = ids.map((id, index) => (
+    origins.get(id)?.name || `${t("image_attachment")} ${index + 1}`
+  ));
+  const marker = document.createElement("div");
+  marker.className = "hint";
+  marker.dataset.clioImageHistory = "true";
+  marker.textContent = t("clio_message_images", names.join(" · "));
+  item.querySelector(".message-content")?.append(marker);
+}
+
 function addMessage(role, content, options = {}) {
   const item = document.createElement("article");
   item.className = `message ${role}`;
@@ -2111,6 +2675,7 @@ function addMessage(role, content, options = {}) {
   }
   appendClioTalkRunState(item, options.messageRecord);
   appendClioTalkRunReceipt(item, options.messageRecord);
+  appendClioTalkImageHistory(item, options.messageRecord);
   appendMessageActions(item, role, content, options);
   markClioTalkCurrentTurn(item);
   renderClioTalkTally();
@@ -2335,6 +2900,7 @@ function resolvePendingMessage(item, role, content, options = {}) {
   }
   appendClioTalkRunState(item, options.messageRecord);
   appendClioTalkRunReceipt(item, options.messageRecord);
+  appendClioTalkImageHistory(item, options.messageRecord);
   appendMessageActions(item, role, content, options);
   markClioTalkCurrentTurn(item);
   scrollMessagesToLatest();
@@ -3037,6 +3603,9 @@ function buildPayload(userText, options = {}) {
   Object.assign(payload, localDefaults);
   if (Number.isFinite(options.maxTokens)) payload.max_tokens = Math.max(1, Math.round(options.maxTokens));
 
+  attachClioImageInputsToMessages(payload.messages, options.imageInputIds || []);
+  window.lastTaskImageInputs = clioImageReceiptDescriptors(options.imageInputIds || []);
+
   return payload;
 }
 
@@ -3146,7 +3715,7 @@ function qwen35AppMaxTokens(taskKind = "chat") {
 }
 
 function isDeepSeekV4ModelName(value = "") {
-  return /^(?:deepseek-)?v4-(?:pro|flash)$/i.test(String(value || ""));
+  return /^(?:deepseek-)?v4-(?:pro|flash)(?:-vision-exp)?$/i.test(String(value || ""));
 }
 
 const CLOUD_VISION_MODEL_ID = "deepseek-v4-flash-vision-exp";
@@ -3159,7 +3728,10 @@ const CLOUD_VISION_MODEL_ID = "deepseek-v4-flash-vision-exp";
 function cloudPayloadCarriesImage(messages) {
   if (!Array.isArray(messages)) return false;
   return messages.some((message) => Array.isArray(message?.content)
-    && message.content.some((block) => block && block.type === "image_url" && block.image_url?.url));
+    && message.content.some((block) => block && (
+      (block.type === "image_url" && block.image_url?.url)
+      || (block.type === "file" && block.file_id)
+    )));
 }
 
 function cloudTaskMaxTokens(taskKind = "chat") {
@@ -3298,11 +3870,33 @@ function isRetrievedContextMessage(message) {
   return /^Use this small, curated local context\b/.test(String(message?.content || ""));
 }
 
+function modelMessageContentIdentity(content) {
+  if (!Array.isArray(content)) return String(content || "");
+  return JSON.stringify(content.map((block) => {
+    if (!block || typeof block !== "object") return block;
+    if (block.type === "image_url") return { type: "image_url", url: String(block.image_url?.url || "") };
+    if (block.type === "file") return { type: "file", file_id: String(block.file_id || "") };
+    if (block.type === "text") return { type: "text", text: String(block.text || "") };
+    return block;
+  }));
+}
+
+function modelMessageContentReceipt(content) {
+  if (!Array.isArray(content)) return String(content || "");
+  return content.map((block) => {
+    if (!block) return "";
+    if (block.type === "text") return String(block.text || "");
+    if (block.type === "image_url") return "[Image: inline data omitted]";
+    if (block.type === "file") return "[Image: temporary file reference omitted]";
+    return `[${String(block.type || "content")} block omitted]`;
+  }).filter(Boolean).join("\n");
+}
+
 function uniqueMessages(messages) {
   const seen = new Set();
   return messages.filter((message) => {
     if (!message) return false;
-    const key = `${message.role}\n${message.content}`;
+    const key = `${message.role}\n${modelMessageContentIdentity(message.content)}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
@@ -3480,10 +4074,11 @@ function fitChatPayloadToContext(payload, options = {}) {
   const promptTokensFor = (items) => items.reduce((sum, message) => sum + messageTokens(message), 0);
   if (promptTokensFor(messages) <= promptBudget) return payload;
 
-  messages = [
-    ...messages.slice(0, 2),
-    ...(messages.at(-1) ? [messages.at(-1)] : []),
-  ];
+  const headMessages = messages.slice(0, 2);
+  const lastMessage = messages.at(-1);
+  messages = lastMessage && !headMessages.includes(lastMessage)
+    ? [...headMessages, lastMessage]
+    : headMessages;
   if (promptTokensFor(messages) <= promptBudget) {
     return { ...payload, messages };
   }
@@ -3493,18 +4088,41 @@ function fitChatPayloadToContext(payload, options = {}) {
     .reduce((sum, message) => sum + messageTokens(message), 0);
   const userBudget = Math.max(120, promptBudget - fixedTokens - 6);
   const userMessage = messages.at(-1) || { role: "user", content: "" };
-  const clean = String(userMessage.content || "").trim();
-  const charBudget = Math.max(0, Math.floor(userBudget * contextCharsPerToken));
+  const structured = Array.isArray(userMessage.content);
+  const atomicTokens = structured
+    ? userMessage.content.reduce((sum, block) => block?.type === "text" ? sum : sum + estimateTokenCount([block]), 0)
+    : 0;
+  const charBudget = Math.max(0, Math.floor(Math.max(0, userBudget - atomicTokens) * contextCharsPerToken));
   const notice = currentLanguage === "zh"
     ? "\n\n[已裁剪]\n\n"
     : "\n\n[Clipped]\n\n";
-  const available = Math.max(120, charBudget - notice.length);
-  const head = Math.floor(available * 0.62);
+  const clipText = (value, budget = charBudget) => {
+    const clean = String(value || "").trim();
+    const normalizedBudget = Math.max(0, Number(budget) || 0);
+    const available = Math.max(0, normalizedBudget - notice.length);
+    const head = Math.floor(available * 0.62);
+    if (clean.length <= normalizedBudget) return clean;
+    if (normalizedBudget < 240) return clean.slice(0, normalizedBudget).trim();
+    return `${clean.slice(0, head).trim()}${notice}${clean.slice(-(available - head)).trim()}`;
+  };
+  let remainingTextBudget = charBudget;
+  let remainingTextBlocks = structured
+    ? userMessage.content.filter((block) => block?.type === "text").length
+    : 0;
   messages[messages.length - 1] = {
     ...userMessage,
-    content: clean.length > charBudget && charBudget >= 240
-      ? `${clean.slice(0, head).trim()}${notice}${clean.slice(-(available - head)).trim()}`
-      : clean.slice(0, charBudget).trim(),
+    content: structured
+      ? userMessage.content.map((block) => {
+          if (block?.type !== "text") return block;
+          const fairBudget = remainingTextBlocks > 0
+            ? Math.floor(remainingTextBudget / remainingTextBlocks)
+            : 0;
+          const text = clipText(block.text, fairBudget);
+          remainingTextBudget = Math.max(0, remainingTextBudget - text.length);
+          remainingTextBlocks -= 1;
+          return { ...block, text };
+        })
+      : clipText(userMessage.content),
   };
   return { ...payload, messages };
 }
@@ -3593,7 +4211,7 @@ function estimateTokenCount(text) {
   if (Array.isArray(text)) {
     return text.reduce((sum, block) => {
       if (!block) return sum;
-      if (block.type === "image_url") return sum + IMAGE_BLOCK_TOKEN_ESTIMATE;
+      if (block.type === "image_url" || block.type === "file") return sum + IMAGE_BLOCK_TOKEN_ESTIMATE;
       return sum + estimateTokenCount(block.text || "");
     }, 0);
   }
@@ -3664,9 +4282,9 @@ const CLOUD_PRICING_CNY_PER_1M = {
     offPeak: { inputCacheHit: 0.15, inputCacheMiss: 4.5, output: 13.5 },
   },
 };
-// The vision guide publishes no separate rate for the experimental vision
-// model, so the meter uses the Flash rate it is built on. Image input consumes
-// many more input tokens than text, so treat the number as a floor.
+// DeepSeek publishes the experimental Vision model at the same token rate as
+// Flash. Keep the alias explicit so the meter follows that provider contract
+// without duplicating a second price table that could drift.
 CLOUD_PRICING_CNY_PER_1M["deepseek-v4-flash-vision-exp"] = CLOUD_PRICING_CNY_PER_1M["deepseek-v4-flash"];
 CLOUD_PRICING_CNY_PER_1M["v4-flash"] = CLOUD_PRICING_CNY_PER_1M["deepseek-v4-flash"];
 CLOUD_PRICING_CNY_PER_1M["v4-pro"] = CLOUD_PRICING_CNY_PER_1M["deepseek-v4-pro"];
@@ -3931,6 +4549,7 @@ async function readJsonModelResult(response, startedAt, endPerf, streamFallback 
   endPerf?.({ streamed: false, streamFallback, tokens: metrics.tokens });
   return {
     text: trimmed,
+    model: String(data?.ai_system6_metrics?.model || data?.model || ""),
     metrics,
     budget: lastContextBudget,
     message,
@@ -4141,7 +4760,8 @@ async function sendLocalModelTask(options = {}) {
   const shouldStream = streamPreference === "stream" || (streamPreference === "auto" && normalizedTaskKind === "chat" && !localNeedsVisibleRepair);
   const finalPayload = { ...budgetedPayload, stream: shouldStream };
 
-  const response = await fetchModelPayload(finalPayload, signal);
+  let response = await fetchModelPayload(finalPayload, signal);
+  response = await retryCloudFilePayloadInline(response, finalPayload, signal);
   if (!response.ok) await throwModelResponseError(response, endPerf);
 
   const contentType = response.headers.get("content-type") || "";
@@ -4172,9 +4792,14 @@ async function sendLocalModelTask(options = {}) {
       updateModelMeter(metrics);
       window.lastLocalModelResponseId = String(responseId || "");
       window.lastLocalModelResponseApi = String(responseApi || "");
+      if (window.lastTaskRunManifest && servedModel) {
+        window.lastTaskRunManifest.servedModel = servedModel;
+        window.lastTaskRunManifest.model = servedModel;
+      }
       endPerf?.({ streamed: true, tokens: metrics.tokens });
       return {
         text,
+        model: servedModel,
         metrics,
         budget: lastContextBudget,
         // The tool loop reads the assistant turn back off this result, so a
@@ -4188,10 +4813,16 @@ async function sendLocalModelTask(options = {}) {
       if (signal?.aborted) throw streamError;
       if (String(streamError?.partialContent || "").trim()) throw streamError;
       window.AISystem6Perf?.record("model_request", performance.now() - startedAt, { streamFallback: true });
-      const retryResponse = await fetchModelPayload({ ...budgetedPayload, stream: false }, signal);
+      const retryPayload = { ...budgetedPayload, stream: false };
+      let retryResponse = await fetchModelPayload(retryPayload, signal);
+      retryResponse = await retryCloudFilePayloadInline(retryResponse, retryPayload, signal);
       if (!retryResponse.ok) await throwModelResponseError(retryResponse);
       const fallbackResult = await readJsonModelResult(retryResponse, startedAt, endPerf, true);
       const repairedResult = await maybeRepairBrowserLocalResult(fallbackResult, budgetedPayload, taskKind, streamPreference, signal);
+      if (window.lastTaskRunManifest && repairedResult?.model) {
+        window.lastTaskRunManifest.servedModel = String(repairedResult.model);
+        window.lastTaskRunManifest.model = String(repairedResult.model);
+      }
       window.lastLocalModelResponseId = String(repairedResult?.responseId || fallbackResult.responseId || "");
       window.lastLocalModelResponseApi = String(repairedResult?.responseApi || fallbackResult.responseApi || "");
       return repairedResult;
@@ -4203,6 +4834,10 @@ async function sendLocalModelTask(options = {}) {
   }
   const jsonResult = await readJsonModelResult(response, startedAt, endPerf);
   const finalResult = await maybeRepairBrowserLocalResult(jsonResult, budgetedPayload, taskKind, streamPreference, signal);
+  if (window.lastTaskRunManifest && finalResult?.model) {
+    window.lastTaskRunManifest.servedModel = String(finalResult.model);
+    window.lastTaskRunManifest.model = String(finalResult.model);
+  }
   window.lastLocalModelResponseId = String(finalResult?.responseId || jsonResult.responseId || "");
   window.lastLocalModelResponseApi = String(finalResult?.responseApi || jsonResult.responseApi || "");
   return finalResult;
@@ -4569,11 +5204,6 @@ function appendClioTalkWebSearchCitations(messageElement, citations) {
 
 async function submitUserTextCore(userText, options = {}) {
   if (!userText) return;
-  if (window.AISystem6WriteLease?.canMutate?.() !== true) {
-    setStatus(t("write_required_status"));
-    renderClioTalkWelcome();
-    return;
-  }
   await ensureModelUserErrors();
   await ensureClioProviderResolver();
   if (!clioTalkModelReady()) {
@@ -4587,6 +5217,15 @@ async function submitUserTextCore(userText, options = {}) {
   }
   await prepareClioProductHelp(userText);
   const useWebSearch = clioWebSearchToggleActive() || clioProductHelpRoute?.route === "web";
+  const hasClioImages = pendingClioImageInputs.size > 0 || activeClioImageInputs.size > 0 || (options.imageInputIds?.length || 0) > 0;
+  if (hasClioImages && !currentModelSupportsImageInputs()) {
+    setStatus(t("clio_image_local_vision_required"));
+    return;
+  }
+  if (useWebSearch && hasClioImages) {
+    setStatus(t("clio_image_web_search_incompatible"));
+    return;
+  }
   if (useWebSearch && !clioTalkWebSearchReady()) {
     setStatus(t("clio_web_search_cloud_required"));
     return;
@@ -4605,7 +5244,7 @@ async function submitUserTextCore(userText, options = {}) {
   });
 
   const quickDraftAction = options.quickDraftAction || quickDraftActionFromText(userText);
-  if (quickDraftAction && typeof window !== "undefined" && typeof window.AISystem6QuickDraft?.runClioTalkAction === "function") {
+  if (!hasClioImages && quickDraftAction && typeof window !== "undefined" && typeof window.AISystem6QuickDraft?.runClioTalkAction === "function") {
     addMessage("user", options.displayText || userText);
     promptInput.value = "";
     promptInput.focus();
@@ -4613,7 +5252,7 @@ async function submitUserTextCore(userText, options = {}) {
     return;
   }
 
-  if (shouldCaptureQuickDraftVentInput(options)) {
+  if (!hasClioImages && shouldCaptureQuickDraftVentInput(options)) {
     const captured = await window.AISystem6QuickDraft.captureVentText(userText, {
       sourceKind: "clioTalk-vent",
     });
@@ -4647,6 +5286,34 @@ async function submitUserTextCore(userText, options = {}) {
     return;
   }
 
+  let newlyPreparedImageIds = [];
+  if (pendingClioImageInputs.size) {
+    activeAbortController = new AbortController();
+    setComposerBusy(true);
+    const firstPendingImage = [...pendingClioImageInputs.values()][0];
+    const preflightStatusKey = clioImageOwnKeyMode() && firstPendingImage?.prepared
+      ? "clio_image_uploading"
+      : "clio_image_preparing";
+    setStatus(t(preflightStatusKey, firstPendingImage?.name || t("image_attachment")));
+    updateLocalModelState({ running: true, task: t(preflightStatusKey, "") });
+    const prepared = await preparePendingClioImages(activeAbortController.signal);
+    activeAbortController = null;
+    setComposerBusy(false);
+    updateLocalModelState({ running: false, task: "" });
+    if (!prepared.ok) return;
+    newlyPreparedImageIds = prepared.newIds;
+  }
+  const requestedImageIds = Array.isArray(options.imageInputIds) && options.imageInputIds.length
+    ? options.imageInputIds.map(String)
+    : clioImageActiveIds();
+  if (requestedImageIds.some((id) => !activeClioImageInputs.has(id))) {
+    setStatus(t("clio_image_reattach_required"));
+    return;
+  }
+  const existingImageOrigins = clioImageInputOrigins(conversation);
+  const imageIdsNeedingOrigin = requestedImageIds.filter((id) =>
+    newlyPreparedImageIds.includes(id) || !existingImageOrigins.has(id));
+
   lastUserText = userText;
   window.lastTaskRunManifest = null;
   window.lastTaskPromptFiles = [];
@@ -4654,7 +5321,9 @@ async function submitUserTextCore(userText, options = {}) {
   window.lastTaskHarnessFile = null;
   window.lastTaskInputFiles = [];
   window.lastTaskExplicitInputFiles = [];
+  window.lastTaskImageInputs = [];
   window.lastWritingAgentRun = null;
+  runtimeOptions.imageInputIds = requestedImageIds;
   const replayOptions = clioTalkReplayOptions(runtimeOptions, messageTaskKind);
   const submittedUserRecord = {
     id: crypto.randomUUID(),
@@ -4663,11 +5332,14 @@ async function submitUserTextCore(userText, options = {}) {
     displayContent: options.displayText && options.displayText !== userText ? options.displayText : "",
     taskKind: messageTaskKind,
     requestOptions: replayOptions,
+    imageInputIds: requestedImageIds,
+    imageInputs: clioImagePersistentDescriptors(imageIdsNeedingOrigin),
     temporaryChat: isTemporaryChat,
     deliveryState: "sending",
     createdAt: new Date().toISOString(),
   };
   conversation.push(submittedUserRecord);
+  invalidateClioImageOriginCache();
   // Keep this run-local file distinct from the active-file lookup above. A
   // declaration named activeConversationFile made the earlier retry receipt
   // either hit its temporal dead zone or reference a missing global, so both
@@ -4677,6 +5349,7 @@ async function submitUserTextCore(userText, options = {}) {
     : (isTemporaryChat ? null : getActiveConversationFile());
   if (requiresDurableChatFile && !conversationFile) {
     conversation.pop();
+    invalidateClioImageOriginCache();
     setStatus(t("clio_project_required_for_chat"));
     openWindow("projects");
     return;

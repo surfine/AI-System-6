@@ -178,13 +178,14 @@ test.assertMatches(html, /<header class="menu-bar"[\s\S]*id="balloon-help"[\s\S]
 test.assertMatches(foundation, /\.balloon-help \{[\s\S]*var\(--balloon-help-bg\)/, "Classic uses the shared system balloon geometry");
 test.assertMatches(foundation, /\.balloon-help \{[\s\S]*inset: auto;[\s\S]*margin: 0;/, "the top-layer balloon keeps its measured viewport position instead of popover auto-centering");
 test.assertIncludes(balloon, "window.visualViewport", "balloons stay inside the visible viewport during zoom and mobile resizing");
-test.assertIncludes(balloon, "const available = {", "balloon placement measures all four open sides around its target");
-test.assertIncludes(balloon, "{ below: 4, above: 3, right: 2, left: 1 }", "balloons prefer familiar vertical placement when it fits");
-// A pulled-down menu is measured whole, so the balloon lands beside the open
-// menu instead of over the commands the user is reaching for next.
-test.assertIncludes(balloon, "function balloonHelpAnchorRect", "the balloon anchors on the open menu, not only on the pointed-at control");
-test.assertIncludes(balloon, "{ right: 4, left: 3, below: 2, above: 1 }", "a menu-anchored balloon steps aside instead of covering the menu");
-test.assertIncludes(balloon, "const menuAnchored =", "the placement rule knows when a menu surface joined the anchor");
+test.assertIncludes(balloon, "function placeBalloonHelp", "balloon placement is one pure function over rectangles");
+test.assertIncludes(balloon, '["below", "above", "right", "left"]', "balloons prefer the familiar vertical callout, and the order is the preference");
+// A menu the balloon belongs to is kept clear whether it is already pulled down
+// or about to be, so the balloon never lands on the commands the user is
+// reaching for next. The geometry itself is held by balloon-help-placement.
+test.assertIncludes(balloon, "function balloonHelpOpenSurfaces", "an open menu joins the rectangles the balloon keeps clear");
+test.assertIncludes(balloon, "function balloonHelpPredictedPanelRect", "so does the menu a control has not pulled down yet");
+test.assertIncludes(balloon, "function balloonHelpPushClear", "a balloon steps aside by the smallest move rather than abandoning the side");
 test.assertIncludes(balloon, 'balloon.style.setProperty("--balloon-help-tail-top"', "side callouts keep their tail aimed at the target");
 test.assertMatches(foundation, /\.balloon-help\[data-side="left"\]::before[\s\S]*\.balloon-help\[data-side="right"\]::before/,
   "edge targets can use horizontal balloon tails instead of being covered");

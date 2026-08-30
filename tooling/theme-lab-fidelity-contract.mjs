@@ -51,8 +51,11 @@ export const REQUIRED_FIDELITY_SPECIMENS = Object.freeze({
     "menu-selected-item",
     "button-disabled",
     "list-row-disabled",
+    // Two lamps, not three. The window frame is Close at the leading edge and
+    // Zoom at the trailing one in every era; the middle lamp existed only while
+    // Theme Lab drew a title bar of its own, and requiring a specimen for it
+    // made this contract certify a control that ships nowhere.
     "titlebar-lamps",
-    "titlebar-lamps-minimize",
     "titlebar-lamps-zoom",
     "search-field-focused",
   ]),
@@ -79,15 +82,22 @@ export const REQUIRED_FIDELITY_SPECIMENS = Object.freeze({
     "checkbox-checked",
     "checkbox-unchecked",
     "radio-checked",
+    // No Minimize. The System window is Close at the leading edge, Zoom and
+    // WindowShade at the trailing one, and every era keeps that split. A
+    // required title-minimize specimen only existed while Theme Lab drew a
+    // three-lamp title bar of its own; measuring it certified a control that
+    // ships nowhere.
     "title-close",
-    "title-minimize",
     "title-maximize",
     "menu-selected",
     "list-selected",
     "sidebar-active",
     "sidebar-inactive",
     "search-field",
-    "segmented-control",
+    // No segmented control. Theme Lab shows the shipping view switcher
+    // (.view-controls), and the 10.10 System Preferences segmented control it
+    // used to be measured against is a different object. Requiring the
+    // specimen kept a comparison alive between two unrelated controls.
     "textfield",
     "dialog",
     "button-pressed",
@@ -156,7 +166,6 @@ export const REQUIRED_DPR2_SPECIMENS = Object.freeze({
     "checkbox-checked",
     "radio-checked",
     "title-close",
-    "title-minimize",
     "title-maximize",
   ]),
 });

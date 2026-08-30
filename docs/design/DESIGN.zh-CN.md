@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/design/DESIGN.md -->
-<!-- source-sha256: d7d45794e82bb68fcb650c4fd90066cf5008f0a1ee502d43c4791be514336188 -->
+<!-- source-sha256: f96a77c6191cdfe86e950a9e54d1eb4c4a9173ddb1ea427db1e1a454400aa7e0 -->
 
 # AI System 6 设计合约
 
@@ -75,6 +75,10 @@ Classic Mac OS 思想，只要能改善产品，就可以被引进、消化和�
   不能变成自动 OOBE 导览，也不能取代面向任务的 System Help。
 - Balloon Help 只面向陌生图标、系统对象和禁用原因，不重复可见按钮文字。指针悬停或键盘
   聚焦可以显示它；触控则先显式进入帮助模式，再点击对象查看。
+- 气球站在哪里也是它说的话的一部分，按这个顺序：尾巴指向它解释的对象；不盖住这个对象；
+  不盖住这个对象按下去会打开的东西——包括还没有拉下来的菜单；不盖住它的同类邻居——
+  同一列的下一个图标、同一行的下一个菜单标题；做到以上几条之后，才是尽量近。面板在它
+  底下开合时它会重新落位；地方不够时它先变窄，而不是先走远。
 
 一句话：**System 6 是语法，Classic Mac OS 是词汇库。**
 
@@ -186,6 +190,23 @@ agent 发明 UI 前必须先选择一个对象角色：
 - 通过 `apps/desktop/app/core/system-icons.js` 使用现有 system icon id
 
 不要因为某个形状看起来现代就新增组件。只有现有对象角色无法表达任务时，才添加新形状。
+
+**这些原语已经承载全部六个纪元。** 用它们搭出来的应用，不写一行主题 CSS 就继承
+了每一个纪元——这正是上面那份清单是规则而不是建议的原因：
+
+| 原语 | 承载什么 |
+| --- | --- |
+| `.window`、`.title-bar`、`.details-bar`、`.window-pane` | 窗口框、它的控件、状态条 |
+| `.btn`、`.mini-btn`、`.button-row` | 每一个按压控件及其状态 |
+| `.field-row`、`.control-field`、`.select-wrap` | 选择控件、文本字段、System 6 甄选架 |
+| `.system-tabs`、`.system-tab`、`.system-tab-panel` | 标签条与它打开的面板 |
+| `.view-controls`、`.view-btn` | 视图切换 |
+| `.menu-popover`、`.balloon-help`、`.finder-operation-modal` | 菜单、临时说明面、模态框 |
+| `.finder-item`、`.sys-icon` | 对象与它们的图标 |
+
+反过来就是 Theme Lab 执行的规则：**不在**这份清单上的控件没有纪元行头可继承，
+为一个标本造一个，等于为六个纪元的装修买单而没有任何用户界面因此受益。Theme Lab
+只展示这些原语；`verify:css` 用 `themeLabReplicaMentions` 棘轮锁住它对外观表的开销。
 
 ## 布局和几何
 

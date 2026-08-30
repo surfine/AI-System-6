@@ -41,8 +41,21 @@ for (const action of mutatingActions) {
 for (const action of ["copy", "share", "download", "open", "read", "search"]) {
   test.assertNotMatches(actions, new RegExp(`^[\\s\\S]*writeRequiredActions = new Set\\(\\[[^\\]]*"${action}"[^\\]]*\\]`, "m"), `${action} is not marked as requiring write`);
 }
-test.assertIncludes(actions, "AISystem6WriteLease?.canMutate?.() !== true", "the action router rejects writes before handlers run");
-test.assertIncludes(actions, 'setStatus(t("write_required_status"))', "a rejected write explains itself in user copy");
+// The marking still matters - it is how the app knows which commands touch
+// durable state - but it no longer gates the command. A write-required command
+// runs in any window and its write travels to the one holding the connection,
+// so the router reconciles the lease instead of refusing the command.
+test.assertIncludes(actions, "AISystem6WriteLease?.canMutate?.() !== true", "the router still knows whether this window holds the connection");
+test.assertMatches(
+  actions,
+  /if \(writeRequiredActions\.has\(action\) \|\| command\?\.writeRequired === true\) \{[\s\S]{0,320}?reconcile/,
+  "a write-required command reconciles the lease rather than being refused",
+);
+test.assertNotMatches(
+  actions,
+  /setStatus\(t\("write_required_status"\)\)/,
+  "no command is turned away for being in the wrong window",
+);
 
 test.assertIncludes(writeLease, "function canMutate()", "the lease exposes a mutation gate");
 test.assertIncludes(writeLease, 'document.querySelectorAll("[data-requires-write]")', "the UI layer is declarative");

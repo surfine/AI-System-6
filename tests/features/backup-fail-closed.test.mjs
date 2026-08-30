@@ -98,7 +98,7 @@ function makeContext({ readRevisionsFails = false } = {}) {
     { id: "rev-2", projectId: "p1", documentId: "doc-1", body: "v2", contentHash: "b", operation: "save", origin: "user", parentRevisionId: "rev-1", phase: "final", createdAt: "2026-08-08T00:01:00.000Z" },
   ]);
   const bundle = await context.buildProjectDiskExport(context.getActiveProject());
-  test.assert(!!bundle && bundle.formatVersion === 6, "a healthy export produces a v6 bundle");
+  test.assert(!!bundle && bundle.formatVersion === 7, "a healthy export produces a v7 bundle");
   test.assert(
     Array.isArray(bundle.documentRevisions) && bundle.documentRevisions.length === 2,
     "the bundle carries the stored revisions"

@@ -486,7 +486,21 @@ function projectCdBurnIsAvailable() {
 
 function syncProjectCdBurnActionVisibility(visibleItems = getProjectCdItems()) {
   if (!spineBurnProjectCdButtonEl) return;
-  spineBurnProjectCdButtonEl.hidden = visibleItems.length > 0 || !projectCdBurnIsAvailable();
+  const burned = visibleItems.length > 0;
+  const ready = !burned && projectCdBurnIsAvailable();
+  spineBurnProjectCdButtonEl.disabled = !burned && !ready;
+  spineBurnProjectCdButtonEl.dataset.action = burned ? "open-project-cd" : "export-teachtext-project-cd";
+  spineBurnProjectCdButtonEl.dataset.balloonHelp = burned
+    ? "balloon_project_cd_stop_burned"
+    : "balloon_project_cd_stop_ready";
+  const label = spineBurnProjectCdButtonEl.querySelector("#spine-project-cd-label");
+  if (label) {
+    // The stop carries the object name; only the ready state shows the verb.
+    // dataset.i18n moves with the text so a language switch keeps the state.
+    const labelKey = ready ? "burn_project_cd" : "project_cd";
+    label.dataset.i18n = labelKey;
+    label.textContent = t(labelKey);
+  }
 }
 
 function renderProjectCd() {
@@ -1283,37 +1297,34 @@ async function repairImportedTextWithLocalModel(text, file, signal) {
 // browser, because on the public web it does.
 async function extractImageTextWithCloudVision(file, options = {}) {
   throwIfAborted(options.signal);
-  const originalDataUrl = await readImageAttachmentFile(file);
+  const prepared = await prepareClioImageInline(file, { detail: "original" });
   throwIfAborted(options.signal);
-  let dataUrl = originalDataUrl;
-  try {
-    // Bigger than a writing preview: small print has to survive the resize.
-    const compressed = await compressImageAttachmentDataUrl(originalDataUrl, 1600);
-    dataUrl = compressed.previewDataUrl;
-  } catch {
-    dataUrl = originalDataUrl;
+  if (typeof ensureClioProviderResolver === "function") {
+    await ensureClioProviderResolver().catch(() => {});
   }
-
+  if (!(typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudCredentialReady())) {
+    await window.AISystem6ClioProvider?.resolve?.({ reason: "vision-import" });
+  }
   throwIfAborted(options.signal);
-  const response = await window.AISystem6Capabilities.requestService("vision.analyze", {
-    init: {
-      method: "POST",
-      signal: options.signal,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        dataUrl,
+  const result = await sendLocalModelTask({
+    payload: {
+      model: getLocalModelRequestName(),
+      messages: window.AISystem6ModelTaskRuntime.buildVisionMessages({
         mode: "ocr",
         name: file.name || "",
-        detail: "high",
-        modelRoute: { cloud: { active: true, ...cloudCredentialTransportFields("status") } },
+        dataUrl: prepared.inlineDataUrl,
+        detail: "original",
       }),
+      temperature: 0.2,
+      max_tokens: 1400,
+      stream: false,
+      ai_system6_task_kind: "extract-vision-ocr",
     },
+    signal: options.signal,
+    taskKind: "extract-vision-ocr",
+    streamPreference: "json",
   });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(data?.detail || data?.error || t("import_vision_failed"));
-  }
-  const text = String(data?.text || "").trim();
+  const text = String(result?.text || "").trim();
   if (!text) throw new Error(t("import_vision_failed"));
   return text;
 }

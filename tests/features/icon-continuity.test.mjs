@@ -78,8 +78,8 @@ test.assert(new Set(ERAS.map((era) => finder.historicalPrototypeByEra[era])).siz
   "Finder names a different native prototype for every appearance");
 test.assertIncludes(finder.eraTranslationByEra.aqua, "Jaguar split smiling Finder face",
   "Jaguar follows its split-face identity instead of a recoloured compact Macintosh");
-test.assertIncludes(finder.eraTranslationByEra["liquid-glass"], "separate translucent face layer",
-  "Liquid Glass follows Tahoe Finder anatomy instead of wrapping Classic hardware in glass");
+test.assertIncludes(finder.eraTranslationByEra["liquid-glass"], "Golden Gate Beta 1",
+  "Liquid Glass follows Golden Gate Beta 1 Finder anatomy instead of wrapping Classic hardware in glass");
 test.assert(ERAS.every((era) => multiFinder.provenanceClassByEra[era] === "C"),
   "MultiFinder is honestly class C because no native icon resource is claimed");
 test.assert(Object.keys(multiFinder.historicalPrototypeByEra).length === 0,
@@ -154,7 +154,7 @@ for (const [theme, paths] of Object.entries(DOCMAP_ARTWORK)) {
   } catch {
     passes = false;
   }
-  test.assert(passes, `${theme}/docMap pixels contain a page mass and three right-side node bands`);
+  test.assert(passes, `${theme}/docMap pixels contain either a document tree or a connected radial mind map`);
   test.assert(family.icons?.docMap?.metaphorKey === "branching-document-map",
     `${theme}/docMap family ledger keeps the branching-document-map contract`);
   test.assert(JSON.stringify(recorded) === JSON.stringify(measured),
@@ -167,6 +167,10 @@ try {
     pageAdvantage: 0.01,
     pageAdvantageMin: 0.2,
     nodeBandDensities: [0.8, 0.8, 0.8],
+    centerHubDensity: 0,
+    radialNodeDensities: [0, 0, 0, 0],
+    radialBranchDensities: [0, 0, 0, 0],
+    layoutMode: "document-tree",
   }, "negative-control/page-less-node-graph");
 } catch {
   rejectedPageLessGraph = true;

@@ -63,6 +63,14 @@
   ],
   "fallback": [],
   "runtimeSize": "contextual",
+  "runtimeSizesByContext": {
+    "compactMenuList": 16,
+    "ordinary": 32,
+    "desktopLarge": 42
+  },
+  "compatibilityManifest": "platinum-icon-manifest.json",
+  "compatibilityManifestMeaning": "Stable 32 px SVG-wrapper mapping only; app/core/system-icons.js selects 16, 32, or 42 px by rendering context.",
+  "runtimeDispatch": "apps/desktop/app/core/system-icons.js",
   "icons": {
     "startupDisk": {
       "genre": "hardware",
@@ -431,22 +439,22 @@
       }
     },
     "finderApp": {
-      "genre": "system identity",
+      "genre": "application",
       "grid": {
         "shape": "square",
         "fitted": 0.8125,
         "scale": 1.0947
       },
-      "physicalMetaphor": "Mac OS 9 Finder three-quarter lavender folder with a Finder face panel attached at the lower-left front",
+      "physicalMetaphor": "finder",
       "semanticMark": "finder",
-      "sourceKind": "approved-imagegen-reference-guided-reconstruction",
+      "sourceKind": "accepted-imagegen-period-pixel-redraw",
       "reviewStatus": "accepted-imagegen",
       "sizes": {
         "16": "icons/finderApp-16.png",
         "32": "icons/finderApp-32.png",
         "42": "icons/finderApp-42.png"
       },
-      "authoringMethod": "built-in-imagegen-reference-guided-plus-native-size-optical-processing",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
       "generationStatus": "technically-clean",
       "provenanceClass": "A",
       "historicalReviewStatus": "reference-validated",
@@ -460,27 +468,10 @@
             "maxX": 14,
             "maxY": 14
           },
-          "bounds": [
-            1,
-            2,
-            14,
-            14
-          ],
-          "ink": {
-            "minX": 1,
-            "minY": 2,
-            "maxX": 14,
-            "maxY": 14,
-            "width": 14,
-            "height": 13
-          },
           "pixels": 152,
-          "inkPixels": 152,
-          "translucent": 1,
           "colors": 94,
           "sha256": "17b2728032a77d219b5ad85854e74222472fc860137220772c89c9076266856c",
-          "bytes": 509,
-          "gridShape": "square"
+          "bytes": 509
         },
         "32": {
           "bbox": {
@@ -489,27 +480,10 @@
             "maxX": 30,
             "maxY": 29
           },
-          "bounds": [
-            2,
-            3,
-            30,
-            29
-          ],
-          "ink": {
-            "minX": 2,
-            "minY": 3,
-            "maxX": 30,
-            "maxY": 29,
-            "width": 29,
-            "height": 27
-          },
           "pixels": 649,
-          "inkPixels": 649,
-          "translucent": 2,
           "colors": 293,
           "sha256": "04850b1738ba60f5dac319b7419ea407b661baa83b702a9e402c52cf3e8f0a53",
-          "bytes": 1462,
-          "gridShape": "square"
+          "bytes": 1462
         },
         "42": {
           "bbox": {
@@ -518,48 +492,12 @@
             "maxX": 39,
             "maxY": 38
           },
-          "bounds": [
-            2,
-            4,
-            39,
-            38
-          ],
-          "ink": {
-            "minX": 2,
-            "minY": 4,
-            "maxX": 39,
-            "maxY": 38,
-            "width": 38,
-            "height": 35
-          },
-          "pixels": 1100,
-          "inkPixels": 1100,
-          "translucent": 7,
-          "colors": 444,
+          "pixels": 1099,
+          "colors": 443,
           "sha256": "7347e52f52319e81974a39efa07d0691234d3f31d864097cd13c1b6abf1d15f2",
-          "bytes": 2210,
-          "gridShape": "square"
+          "bytes": 2210
         }
-      },
-      "semanticIdentity": "friendly Finder and system-navigation identity",
-      "identityAnchors": [
-        "target-era Finder identity",
-        "recognizable system-navigation persona"
-      ],
-      "historicalPrototype": "Mac OS 9 Finder three-quarter lavender folder with a Finder face panel attached at the lower-left front",
-      "nearestHistoricalAnalog": null,
-      "metaphorKey": "target-era-finder-identity",
-      "material": "restrained Platinum pixel-art steps with a selective dark keyline",
-      "generatedMaster": "internal/evidence/drafts/icon-lineage-audit/imagegen-candidates-v2/platinum-finder-v2.png",
-      "reference": "internal/evidence/drafts/theme-lab-fidelity/platinum/icons/finder-app-32.png",
-      "exactPixelReplica": false,
-      "sizeStatus": {
-        "16": "optically-reviewed",
-        "32": "optically-reviewed",
-        "42": "optically-reviewed"
-      },
-      "sizePolicy": "Each target canvas is rendered directly from the approved high-resolution generation; compact tiers use their own bounds and contrast treatment.",
-      "runtimePixelMetrics": null
+      }
     },
     "fileFloppy": {
       "genre": "hardware",
@@ -823,8 +761,8 @@
       },
       "authoringMethod": "image-generation-plus-deterministic-processing",
       "generationStatus": "technically-clean",
-      "provenanceClass": "B",
-      "historicalReviewStatus": "pending",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "historically-reviewed",
       "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
@@ -1309,6 +1247,11 @@
         "32": "icons/reviewDesk-32.png",
         "42": "icons/reviewDesk-42.png"
       },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "historically-reviewed",
+      "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
         "16": {
@@ -1368,7 +1311,7 @@
       "authoringMethod": "image-generation-plus-deterministic-processing",
       "generationStatus": "technically-clean",
       "provenanceClass": "B",
-      "historicalReviewStatus": "pending",
+      "historicalReviewStatus": "historically-reviewed",
       "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
@@ -1550,8 +1493,8 @@
       },
       "authoringMethod": "image-generation-plus-deterministic-processing",
       "generationStatus": "technically-clean",
-      "provenanceClass": "B",
-      "historicalReviewStatus": "pending",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "historically-reviewed",
       "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
@@ -1594,7 +1537,7 @@
       },
       "metaphorKey": "branching-document-map",
       "metaphorMetrics": {
-        "version": 1,
+        "version": 2,
         "sourceSize": [
           42,
           42
@@ -1619,7 +1562,21 @@
         "nodeGapDensities": [
           0,
           0
-        ]
+        ],
+        "centerHubDensity": 0.9504,
+        "radialNodeDensities": [
+          1,
+          0.574,
+          1,
+          0.5976
+        ],
+        "radialBranchDensities": [
+          1,
+          0.8727,
+          1,
+          0.9091
+        ],
+        "layoutMode": "radial-mind-map"
       }
     },
     "clioStage": {
@@ -1769,39 +1726,39 @@
       "metrics": {
         "16": {
           "bbox": {
-            "minX": 2,
-            "minY": 1,
-            "maxX": 12,
-            "maxY": 14
+            "minX": 0,
+            "minY": 3,
+            "maxX": 15,
+            "maxY": 12
           },
-          "pixels": 151,
-          "colors": 13,
-          "sha256": "7ca66dc5c5eb5b4cf87556239ed48e70a897aa1a7bdd20ea90c802a945f3eb2a",
-          "bytes": 404
+          "pixels": 152,
+          "colors": 148,
+          "sha256": "fd1554bb6d0d7727850fd93f3a788459bec565bb3eba2a8af8666bcd7c08f359",
+          "bytes": 746
         },
         "32": {
           "bbox": {
-            "minX": 5,
-            "minY": 2,
-            "maxX": 25,
-            "maxY": 29
+            "minX": 1,
+            "minY": 7,
+            "maxX": 30,
+            "maxY": 24
           },
-          "pixels": 571,
-          "colors": 13,
-          "sha256": "f509f69822e655663fd61bfedce73fe5b82df1b2529a21176ce2680646174d12",
-          "bytes": 810
+          "pixels": 527,
+          "colors": 482,
+          "sha256": "5efc1f6b8049f07234b58df774203aff095a389e778800011ce508db50260557",
+          "bytes": 1954
         },
         "42": {
           "bbox": {
-            "minX": 6,
-            "minY": 2,
-            "maxX": 34,
-            "maxY": 39
+            "minX": 2,
+            "minY": 9,
+            "maxX": 39,
+            "maxY": 32
           },
-          "pixels": 1072,
-          "colors": 14,
-          "sha256": "793804c80f22bba8685a5bc66aa256cbbd609e16a554a95cf4113a8801e3b9b1",
-          "bytes": 1103
+          "pixels": 894,
+          "colors": 756,
+          "sha256": "b504da30071e86628957feea05467cc71642d8ff34ad8869bb84b76bcf5d0c7d",
+          "bytes": 3002
         }
       }
     },
@@ -2434,7 +2391,7 @@
       "authoringMethod": "image-generation-plus-deterministic-processing",
       "generationStatus": "technically-clean",
       "provenanceClass": "B",
-      "historicalReviewStatus": "pending",
+      "historicalReviewStatus": "historically-reviewed",
       "runtimeAsset": true,
       "sourceNote": "Built-in Image Gen redraw grounded in real Mac OS 8/9 references and Aqua/Snow Leopard/Yosemite continuity, reviewed at desktop 42 px plus native 32/16 px.",
       "metrics": {
@@ -3148,22 +3105,22 @@
       }
     },
     "multiFinderApp": {
-      "genre": "system environment",
+      "genre": "application",
       "grid": {
         "shape": "square",
         "fitted": 0.8125,
         "scale": 0.9369
       },
-      "physicalMetaphor": "two overlapping current-era Finder identities",
+      "physicalMetaphor": "finderPair",
       "semanticMark": "finder",
-      "sourceKind": "approved-imagegen-period-plausible-construction",
+      "sourceKind": "accepted-imagegen-period-pixel-redraw",
       "reviewStatus": "accepted-imagegen",
       "sizes": {
         "16": "icons/multiFinderApp-16.png",
         "32": "icons/multiFinderApp-32.png",
         "42": "icons/multiFinderApp-42.png"
       },
-      "authoringMethod": "composition-from-approved-current-era-imagegen-finder-identity",
+      "authoringMethod": "image-generation-plus-deterministic-processing",
       "generationStatus": "technically-clean",
       "provenanceClass": "C",
       "historicalReviewStatus": "historically-reviewed",
@@ -3177,27 +3134,10 @@
             "maxX": 14,
             "maxY": 14
           },
-          "bounds": [
-            1,
-            1,
-            14,
-            14
-          ],
-          "ink": {
-            "minX": 1,
-            "minY": 1,
-            "maxX": 14,
-            "maxY": 14,
-            "width": 14,
-            "height": 14
-          },
           "pixels": 127,
-          "inkPixels": 127,
-          "translucent": 57,
-          "colors": 95,
-          "sha256": "fa2950dc93a76b0570bda7651efc8ac486829e94233527a6900d7ddd3638d519",
-          "bytes": 438,
-          "gridShape": "square"
+          "colors": 87,
+          "sha256": "b7a2a71f65596e5c13fccd19ff101798a1bb083fe4d55416a6ed4e3d56235535",
+          "bytes": 472
         },
         "32": {
           "bbox": {
@@ -3206,27 +3146,10 @@
             "maxX": 29,
             "maxY": 29
           },
-          "bounds": [
-            2,
-            3,
-            29,
-            29
-          ],
-          "ink": {
-            "minX": 2,
-            "minY": 3,
-            "maxX": 29,
-            "maxY": 29,
-            "width": 28,
-            "height": 27
-          },
-          "pixels": 446,
-          "inkPixels": 446,
-          "translucent": 200,
-          "colors": 240,
-          "sha256": "4ef0eb374935d25b890bd83d349852d68e0f170431eafe48c26ef2abb721fdcc",
-          "bytes": 1033,
-          "gridShape": "square"
+          "pixels": 457,
+          "colors": 235,
+          "sha256": "a278e5f522d121bc92ff848a26ccec1cbd3bf1ecc87f790934dfc273b10674cc",
+          "bytes": 1236
         },
         "42": {
           "bbox": {
@@ -3235,48 +3158,12 @@
             "maxX": 38,
             "maxY": 37
           },
-          "bounds": [
-            3,
-            5,
-            38,
-            37
-          ],
-          "ink": {
-            "minX": 3,
-            "minY": 5,
-            "maxX": 38,
-            "maxY": 37,
-            "width": 36,
-            "height": 33
-          },
-          "pixels": 843,
-          "inkPixels": 843,
-          "translucent": 305,
-          "colors": 433,
-          "sha256": "d7b84f6cafef5b9b7c1bbf3249a8e9efedd1a6953c91a78570c2259c3b4b967b",
-          "bytes": 2062,
-          "gridShape": "square"
+          "pixels": 855,
+          "colors": 403,
+          "sha256": "1cf52e808da4f32eb41e18410341b2d941c39d82300e8c6589a9a1bb5834ca33",
+          "bytes": 1991
         }
-      },
-      "semanticIdentity": "multiple concurrent Finder environments",
-      "identityAnchors": [
-        "current-era Finder identity",
-        "multiplicity"
-      ],
-      "historicalPrototype": null,
-      "nearestHistoricalAnalog": "approved current-era Finder identity plus period-plausible overlap",
-      "metaphorKey": "current-finder-identity-plus-multiplicity",
-      "material": "restrained Platinum pixel-art steps with a selective dark keyline",
-      "generatedMaster": "internal/evidence/drafts/icon-lineage-audit/imagegen-candidates-v2/platinum-finder-v2.png",
-      "reference": "No native MultiFinder icon artwork is claimed; multiplicity is a product-semantic construction.",
-      "exactPixelReplica": false,
-      "sizeStatus": {
-        "16": "optically-reviewed",
-        "32": "optically-reviewed",
-        "42": "optically-reviewed"
-      },
-      "sizePolicy": "Each target canvas is rendered directly from the approved high-resolution generation; compact tiers use their own bounds and contrast treatment.",
-      "runtimePixelMetrics": null
+      }
     },
     "daHandler": {
       "genre": "utility",
@@ -3669,7 +3556,7 @@
   "schemaVersion": 2,
   "runtimeAsset": true,
   "completeFamilyMeaning": "All 56 runtime ids resolve to technically accepted artwork. Historical review is a separate per-icon state.",
-  "generatedAcceptanceMeaning": "Authoring acceptance is separate from historical validation; the Finder pair carries explicit per-object historical status.",
+  "generatedAcceptanceMeaning": "Authoring acceptance confirms source and technical quality; it never implies historical validation.",
   "nativeSizes": [
     42,
     32,
@@ -3736,15 +3623,5 @@
   ],
   "imageGenerationMode": "built-in-imagegen-one-call-per-asset",
   "imageGenerationSource": "assets/themes/platinum/icons/imagegen-source",
-  "sizePolicy": "42 px desktop, 32 px regular, and 16 px compact assets are separately reduced from the accepted high-resolution redraw; the inline Platinum runtime selects the context-owned source size.",
-  "finderLineageBuilder": "tooling/build-approved-finder-lineage.mjs",
-  "finderLineageSource": "built-in ImageGen candidates admitted only after target-era evidence and compact-size review",
-  "runtimeSizesByContext": {
-    "compactMenuList": 16,
-    "ordinary": 32,
-    "desktopLarge": 42
-  },
-  "compatibilityManifest": "platinum-icon-manifest.json",
-  "compatibilityManifestMeaning": "Stable semantic mapping only; app/core/system-icons.js selects the authored runtime tier by rendering context.",
-  "runtimeDispatch": "apps/desktop/app/core/system-icons.js"
+  "sizePolicy": "42 px desktop, 32 px regular, and 16 px compact assets are separately reduced from the accepted high-resolution redraw; the inline Platinum runtime selects the context-owned source size."
 }

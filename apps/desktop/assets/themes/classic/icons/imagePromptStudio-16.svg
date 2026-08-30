@@ -1,13 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 32 32" fill="none" stroke="#000000" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" shape-rendering="geometricPrecision">
-  <style>
-
-    .classic-ink{fill:#000000;stroke:#000000;stroke-width:.25}
-    .classic-paper{fill:#ffffff;stroke:none}
-    .sys-icon-detail{display:none}
-  </style>
-  <g transform="translate(0 0)">
-
-    <rect x="6" y="6" width="20" height="20" rx="2.5" />
-    <path d="M16 11v10M11 16h10" />
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 32 32" fill="none" shape-rendering="crispEdges" stroke="#000" stroke-width="1.25" stroke-linecap="square" stroke-linejoin="miter">
+  <path d="M3 5h21v15H3z" fill="#fff"/>
+  <circle cx="19" cy="9" r="2" fill="#000" stroke="none"/>
+  <path d="m5 18 5-6 4 4 3-3 5 5"/>
+  <path d="M9 18h20v10H9z" fill="#fff"/>
+  <path d="M12 21h11M12 24h8M25 21v4"/>
 </svg>

@@ -29,6 +29,7 @@ const {
 function handleCapabilities(_req, res) {
   const publicAccessReady = publicReadiness().ready;
   const sharedCloud = isPublicDeployment && publicAccessReady && sharedCloudConfigured();
+  const cloudFilesAvailable = !isPublicDeployment || publicAccessReady;
   const macSharedAvailable = sharedCloud;
   const sharedCloudBudget = sharedCloudBudgetConfig();
   let safariHttpLocalOrigin = "";
@@ -90,6 +91,14 @@ function handleCapabilities(_req, res) {
       // Cloud vision rides the same BYOK / shared-allowance path as chat, so
       // the public deployment can read images for the first time.
       cloud_vision: true,
+      cloud_files_byok: cloudFilesAvailable,
+      cloud_files: {
+        available: cloudFilesAvailable,
+        max_file_bytes: 64 * 1024 * 1024,
+        max_request_bytes: 200 * 1024 * 1024,
+        max_files_per_request: 4,
+        expires_after_seconds: 3600,
+      },
       server_import: !isPublicDeployment,
       server_ocr: !isPublicDeployment,
       audio_transcription: !isPublicDeployment,

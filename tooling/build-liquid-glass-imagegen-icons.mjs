@@ -24,6 +24,7 @@ const continuity = JSON.parse(readFileSync(join(root, "apps/desktop/assets/theme
 const priorityCore16 = new Set(continuity.priorityCore16);
 const sizes = [128, 64, 32, 16];
 const appearances = ["default", "dark", "clear"];
+const LIQUID_FINDER_ALLOWANCE = Object.freeze({ finderApp: 1.16, multiFinderApp: 1.16 });
 
 mkdirSync(assetDir, { recursive: true });
 mkdirSync(proofDir, { recursive: true });
@@ -112,7 +113,9 @@ function renderSize(id, image, box, size, appearance) {
   ctx.imageSmoothingQuality = "high";
   const aspect = box.width / box.height;
   const gridShape = shapeClass(box);
-  const baseTarget = ICON_GRID["liquid-glass"][gridShape] * (OPTICAL_ALLOWANCE[id] || 1);
+  const baseTarget = ICON_GRID["liquid-glass"][gridShape]
+    * (OPTICAL_ALLOWANCE[id] || 1)
+    * (LIQUID_FINDER_ALLOWANCE[id] || 1);
   const smallHint = size === 16 ? 1.04 : size === 32 ? 1.02 : 1;
   const liveDimension = Math.min(size - 2, baseTarget / ICON_GRID["liquid-glass"].canvas * size * smallHint);
   let width;
@@ -313,13 +316,13 @@ for (const id of ICON_IDS) {
   const image = await loadImage(file);
   const box = contentBox(image);
   if (box.visible < image.width * image.height * 0.025) throw new Error(`${id}: master coverage is too small`);
-  if (!box.translucent) throw new Error(`${id}: master lost its translucent glass edge`);
+  if (box.visible >= image.width * image.height * 0.975) throw new Error(`${id}: master lost its transparent isolation`);
   images.set(id, image);
 }
 
 const family = {
   schemaVersion: 2,
-  target: "macOS Tahoe 26 Liquid Glass",
+  target: "macOS 27 Golden Gate Beta 1 Liquid Glass",
   generatedBy: "tooling/build-liquid-glass-imagegen-icons.mjs",
   generationMode: "built-in Image Gen — one independent call per icon",
   promptLedger: "icons/src/liquid-glass-imagegen-prompts.json",
@@ -365,7 +368,13 @@ for (const spec of ICON_SPECS) {
     grid: {
       canvas: ICON_GRID["liquid-glass"].canvas,
       shape: shapeClass(box),
-      fitted: ICON_GRID["liquid-glass"][shapeClass(box)] * (OPTICAL_ALLOWANCE[id] || 1) / ICON_GRID["liquid-glass"].canvas,
+      fitted: Math.min(
+        ICON_GRID["liquid-glass"][shapeClass(box)]
+          * (OPTICAL_ALLOWANCE[id] || 1)
+          * (LIQUID_FINDER_ALLOWANCE[id] || 1)
+          / ICON_GRID["liquid-glass"].canvas,
+        (ICON_GRID["liquid-glass"].canvas - 2) / ICON_GRID["liquid-glass"].canvas,
+      ),
     },
     sizes: {},
     appearanceSizes: {},
@@ -373,10 +382,12 @@ for (const spec of ICON_SPECS) {
   };
   if (id === "finderApp") {
     entry.metaphorKey = "target-era-finder-identity";
-    entry.physicalMetaphor = "Tahoe Finder enclosure with a separate translucent light face/profile panel";
+    entry.physicalMetaphor = "Golden Gate Beta 1 Finder with a light outer enclosure and an inset blue right face/profile panel";
+    entry.blindMixStatus = "not-run";
   } else if (id === "multiFinderApp") {
     entry.metaphorKey = "current-finder-identity-plus-multiplicity";
-    entry.physicalMetaphor = "current-era Finder identity repeated with a period-plausible overlap";
+    entry.physicalMetaphor = "Golden Gate Beta 1 Finder paired with an inverse-field companion using identical inset-panel ratios";
+    entry.blindMixStatus = "not-run";
   }
   for (const size of sizes) {
     for (const appearance of appearances) {

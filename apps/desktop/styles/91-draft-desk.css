@@ -92,7 +92,10 @@
   min-width: 0;
   padding: 1px 2px;
   border: 0;
-  border-bottom: var(--system-control-line) solid var(--ink);
+  /* A writing rule under the title, not a control edge: it follows the era's
+     primary divider so it is an ink hairline in System 6 and the era's own
+     rule everywhere after. */
+  border-bottom: var(--system-primary-divider);
   border-radius: 0;
   outline: 0;
   background: transparent;

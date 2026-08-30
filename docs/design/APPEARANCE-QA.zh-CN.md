@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/design/APPEARANCE-QA.md -->
-<!-- source-sha256: e7097398953d2f4e089909f7cb1a488c643bf0ab427c2dee22510a2785339bc2 -->
+<!-- source-sha256: 71fe7611812df0436cf82e541bd1e4d809ba004d4f8da593c91537325f6cc67c -->
 
 英文版为准。本文档仅供人类参考。
 
@@ -39,10 +39,10 @@ reference、一边自称 canonical。详见
 | Board | specimen 数 | 达到 floor | 已记录差距 | reference 不可用 |
 | --- | --- | --- | --- | --- |
 | Platinum | 20 | 12 | 2 | 6（3 个照片缩略图裁片，加 3 个裁错对象的裁片） |
-| Aqua | 19 | 19 | 0 | 0 |
+| Aqua | 18 | 17 | 1 | 0（默认按钮：参照框的是修正前的 21px 盒子） |
 | Snow Leopard | 18 | 18 | 0 | 0 |
-| Yosemite | 19 | 6 | 11 | 2（checkbox/radio 标记只有 clone 资产） |
-| Yosemite 2x | 5 | 4 | 0 | 1（checkbox 只有缩放后的 clone 资产） |
+| Yosemite | 17 | 5 | 10 | 2（checkbox/radio 标记只有 clone 资产） |
+| Yosemite 2x | 4 | 3 | 0 | 1（checkbox 只有缩放后的 clone 资产） |
 
 `tests/features/appearance-qa-ledger.test.mjs` 从各 manifest 的
 `specimens[].floor.status` 推导这些计数，并要求中英文表格一致。Aqua 新增的三个

@@ -62,6 +62,16 @@ const keyboardShortcutRegistry = [
   { id: "route-advance", key: "arrowright", shift: true, action: "advance-writing-route", display: "⇧⌘→", labelKey: "advance_writing_route", keyCaps: true, scope: ["teachText"] },
   { id: "writing-preview", key: "p", shift: true, action: "toggle-writing-preview", display: "⇧⌘P", labelKey: "preview", keyCaps: true, scope: ["teachText", "quickDraft"] },
   { id: "writing-focus", key: "f", option: true, action: "cycle-writing-focus", display: "⌥⌘F", labelKey: "focus_mode_cycle", scope: ["teachText", "quickDraft"] },
+  // 文字亮室. The three views take the scoped number keys ClioChart already
+  // uses; suppressInEditable is load-bearing here because the FatBits cells in
+  // the grain view are editable, and ⌘1 inside one must type nothing.
+  { id: "lightroom-view-grain", key: "1", action: "quick-draft-view-grain", display: "⌘1/2/3", menuDisplay: "⌘1", labelKey: "lightroom_views", keyCaps: true, suppressInEditable: true, scope: ["lightroom"] },
+  { id: "lightroom-view-read", key: "2", action: "quick-draft-view-read", display: "⌘2", labelKey: "quick_draft_composite", suppressInEditable: true, scope: ["lightroom"] },
+  { id: "lightroom-view-listen", key: "3", action: "quick-draft-view-listen", display: "⌘3", labelKey: "quick_draft_listen", suppressInEditable: true, scope: ["lightroom"] },
+  { id: "lightroom-apply", key: "y", action: "quick-draft-apply", display: "⌘Y", labelKey: "quick_draft_preview_adjustments", keyCaps: true, suppressInEditable: true, scope: ["lightroom"] },
+  { id: "lightroom-develop", key: "d", action: "quick-draft-develop", display: "⌘D", labelKey: "quick_draft_develop", keyCaps: true, suppressInEditable: true, scope: ["lightroom"] },
+  { id: "lightroom-save-version", key: "s", action: "lightroom-save-version", display: "⌘S", labelKey: "lightroom_save_version", suppressInEditable: true, scope: ["lightroom"] },
+  { id: "lightroom-listen-toggle", key: "r", action: "lightroom-listen-toggle", display: "⌘R", labelKey: "quick_draft_listen_play", suppressInEditable: true, scope: ["lightroom"] },
   { id: "clio-chart-view-1", key: "1", action: "clio-chart-bars", display: "⌘1", labelKey: "clio_chart_bars", suppressInEditable: true, scope: ["clioChart"] },
   { id: "clio-chart-view-2", key: "2", action: "clio-chart-matrix", display: "⌘2", labelKey: "clio_chart_matrix", suppressInEditable: true, scope: ["clioChart"] },
   { id: "clio-chart-view-3", key: "3", action: "clio-chart-trace", display: "⌘3", labelKey: "clio_chart_trace", suppressInEditable: true, scope: ["clioChart"] },
@@ -809,6 +819,16 @@ function reviewDeskReportMarkdown() {
   return { markdown, name: `${baseName} Reviewed` };
 }
 
+// Every successful burn leaves a durable trace in System Messages, so the
+// finish survives the receipt window and a reload.
+function receiptProjectCdBurn(item) {
+  if (typeof pushSystemNotification !== "function" || !item) return;
+  pushSystemNotification(t("project_cd_burn_receipt", item.title), {
+    state: "done",
+    windowName: "projectCd",
+  });
+}
+
 async function exportReviewDeskReport() {
   if (!ensureTeachTextReviewState({ promoteSavedFinal: true, openTeachText: false })) {
     if ((reviewDeskBodyInput?.value || teachTextBodyInput?.value || "").trim()) {
@@ -832,6 +852,7 @@ async function exportReviewDeskReport() {
   });
   if (!item) return;
   markTeachTextExported("markdown");
+  receiptProjectCdBurn(item);
   await openWindow("projectCd");
   setStatus(t("export_saved", item.title));
   await showFinishingReceiptForBurn(item);
@@ -862,6 +883,7 @@ async function exportTeachTextToProjectCd() {
   });
   if (!item) return;
   markTeachTextExported("markdown");
+  receiptProjectCdBurn(item);
   await openWindow("projectCd");
   setStatus(t("export_saved", item.title));
   // The writing route ends at the burn, so this is where the work is
@@ -1341,6 +1363,7 @@ function getApplicationActionHandlers() {
     },
     "clear-attached-clips": () => {
       attachedClipIds.clear();
+      window.AISystem6ClioImages?.clear?.();
       renderAttachedClips();
       setStatus(t("context_cleared"));
     },
@@ -1356,7 +1379,7 @@ function getApplicationActionHandlers() {
         // A blocked close (unsaved save prompt, failed flush) keeps the window
         // foreground; never hand focus to another window over it.
         if (closed === false) return;
-        const next = Array.from(document.querySelectorAll(".window:not(.is-hidden):not(.is-app-hidden)"))
+        const next = Array.from(document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden)"))
           .sort((a, b) => Number(b.style.zIndex) - Number(a.style.zIndex))[0];
         if (next) focusWindow(next);
       }
@@ -1455,6 +1478,14 @@ async function handleAction(action, commandContext = {}) {
     commandContext = { ...commandContext, dropletId: String(action).slice("open-droplet:".length) };
     action = "open-droplet";
   }
+  // 文字亮室 rows that name their object: a layer, a strength, a version, a
+  // document, a voice. The name travels in the action string because a menu
+  // click carries nothing else, and the handler reads it back as arguments.
+  if (/^lightroom-[a-z0-9-]+:/.test(String(action))) {
+    const parts = String(action).split(":");
+    commandContext = { ...commandContext, lightroomArgs: parts.slice(1) };
+    action = parts[0];
+  }
   if (String(action).startsWith("open-control-strip-module:")) {
     commandContext = { ...commandContext, controlStripModuleId: String(action).slice("open-control-strip-module:".length) };
     action = "open-control-strip-module";
@@ -1478,35 +1509,15 @@ async function handleAction(action, commandContext = {}) {
     updateMenuState();
     return;
   }
-  if (
-    (writeRequiredActions.has(action) || command?.writeRequired === true)
-    && window.AISystem6WriteLease?.canMutate?.() !== true
-  ) {
-    // Coming back to a backgrounded tab is the ordinary case: browsers freeze
-    // timers, the heartbeat lapses, and the instance demotes itself while still
-    // being the stored owner. That is reclaimable, so reconcile before refusing
-    // anything - otherwise Save is denied for a reason that no longer holds.
-    await window.AISystem6WriteLease?.reconcile?.().catch?.(() => null);
-    // Still read-only means another window holds the pen. Trying to write is
-    // the writer saying which window they meant, so take it over silently; the
-    // handover flushes the other window's work before it releases.
+  // A write-required command used to have to win the lease first, and was
+  // refused outright when another window held it. The write now travels to
+  // whichever window holds the connection, so the command just runs. Reconcile
+  // anyway: a backgrounded tab's heartbeat lapses while it is still the stored
+  // owner, and the cheapest moment to notice is the one where it is used again.
+  if (writeRequiredActions.has(action) || command?.writeRequired === true) {
     if (window.AISystem6WriteLease?.canMutate?.() !== true) {
-      await window.AISystem6WriteLease?.reclaimOnFocus?.().catch?.(() => null);
+      await window.AISystem6WriteLease?.reconcile?.().catch?.(() => null);
     }
-  }
-  if (
-    (writeRequiredActions.has(action) || command?.writeRequired === true)
-    && window.AISystem6WriteLease?.canMutate?.() !== true
-  ) {
-    if (typeof setStatus === "function") setStatus(t("write_required_status"));
-    // The refusal used to be a whisper: setStatus writes into a span that lives
-    // in ClioTalk's info bar, so with ClioTalk closed - the normal writing
-    // layout - Save and New Document simply did nothing and said nothing. The
-    // lease already owns a proper alert with Reload / Continue Read-Only; show
-    // it, because losing write access is exactly what it is for.
-    window.AISystem6WriteLease?.showLost?.();
-    updateMenuState();
-    return;
   }
   const result = command.handler(commandContext);
   updateMenuState();
@@ -1520,6 +1531,7 @@ function closeMenus() {
   document.querySelectorAll(".menu-item-with-sub.is-open").forEach((item) => {
     item.classList.remove("is-open");
   });
+  if (typeof refreshBalloonHelpPlacement === "function") refreshBalloonHelpPlacement();
 }
 
 function closeTeachTextCommandMenus() {
@@ -1628,6 +1640,7 @@ window.AISystem6Runtime?.registerCommand?.("open-writing-flow-windows",{handler:
 window.AISystem6Runtime?.registerCommand?.("open-teachtext",{handler:openTeachTextForWorkspace,isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-finishing-receipt",{handler:()=>openFinishingReceiptForSelection(),isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-clio-attachment-picker",{handler:beginClioTalkAttachmentPicker,isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-clio-image-picker",{handler:openClioImagePicker,isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-local-ai-settings",{handler:()=>{openWindow("control");if(typeof setControlTab==="function")setControlTab("local");return true;},isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-cloud-ai-settings",{handler:()=>{openWindow("control");if(typeof setControlTab==="function")setControlTab("cloud");return true;},isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-menu-selection",{handler:openFinderMenuSelection,isAvailable:()=>!0});
