@@ -2748,6 +2748,26 @@ input[type="radio"]:checked:disabled {
   gap: 4px;
 }
 
+/* A project disk at risk of stalling carries the diamond — the classic
+   Application-menu mark for "this one has something in it", the same 1-bit
+   figure the Writing Flow palette already uses. It states two existing facts
+   (two weeks without a record write, nothing burned to the Project CD) and
+   Balloon Help says them in words. It is deliberately not dimmed with an
+   ejected disk: the warning stays readable even when the disk is not. */
+.desktop-icon.has-disk-risk {
+  position: relative;
+}
+
+.desktop-icon .disk-risk-mark {
+  position: absolute;
+  top: 0;
+  right: calc(50% - 24px);
+  width: 7px;
+  height: 7px;
+  background: var(--ink);
+  transform: rotate(45deg);
+}
+
 .desktop-icon.is-prominent {
   width: 88px;
 }

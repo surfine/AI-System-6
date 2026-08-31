@@ -23,6 +23,7 @@ const timeMachine = read("app/features/time-machine.js");
 const bureaucracyMeme = read("app/features/bureaucracy-meme.js");
 const soundscape = read("app/features/soundscape.js");
 const clioChart = read("app/features/clio-chart.js");
+const clioProject = read("app/features/clio-project-window.js");
 const clioStage = read("app/features/clio-stage.js");
 const cmfStudio = read("app/features/cmf-studio.js");
 const liquidCover = read("app/features/liquid-cover.js");
@@ -81,6 +82,8 @@ const runtimeCommandIds = new Set(
     ...bureaucracyMeme.matchAll(/"(open-bureaucracy-meme|meme-[a-z0-9-]+)"/g).map((match) => match[1]),
     ...soundscape.matchAll(/"(open-soundscape|soundscape-[a-z0-9-]+)"/g).map((match) => match[1]),
     ...clioChart.matchAll(/"(open-clio-chart|see-as-chart|clio-chart-[a-z0-9-]+)"/g).map((match) => match[1]),
+    // ClioProject registers its verbs with their own isAvailable, ClioChart's way.
+    ...clioProject.matchAll(/"(open-clio-project|clio-project-[a-z0-9-]+)"/g).map((match) => match[1]),
     ...clioStage.matchAll(/"(open-clio-stage|clio-stage-[a-z0-9-]+|focus-clio-stage-question)"/g).map((match) => match[1]),
     ...cmfStudio.matchAll(/"(open-cmf-studio|cmf-[a-z0-9-]+)"/g).map((match) => match[1]),
     ...liquidCover.matchAll(/"(open-liquid-cover|cover-[a-z0-9-]+)"/g).map((match) => match[1]),

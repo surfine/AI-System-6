@@ -11,6 +11,11 @@
 // Pixels are compared in the browser: Chromium already decodes PNG, so the
 // diff needs no image dependency.
 //
+// This net no longer renders the four middle eras in the controls tier: after
+// the geometry drain their layout lives only in ratcheted sheet declarations
+// and token tables, so tooling/appearance-token-check.mjs holds them as
+// computed deltas against Classic instead of eight more screenshot cells.
+//
 // Usage:
 //   node tooling/appearance-snapshot.mjs --capture           # write baseline
 //   node tooling/appearance-snapshot.mjs --noise             # capture twice, report drift
@@ -229,7 +234,7 @@ async function captureCell(page, cell, outDir) {
     // single-task mode and the ClioTalk menu owner before waiting for pixels;
     // otherwise Liquid Glass alternates between a ClioTalk app menu and a
     // transient MultiFinder switcher with no source-byte change.
-    await page.evaluate(async () => {
+    await page.evaluate(async (epoch) => {
       if (typeof setFinderEnvironment === "function") {
         await setFinderEnvironment("finder", { persistStartup: false, announce: false });
       }
@@ -241,7 +246,14 @@ async function captureCell(page, cell, outDir) {
       }
       if (typeof renderAppMenuBar === "function") renderAppMenuBar("clioTalk");
       document.querySelector(".multifinder-menu")?.classList.add("is-hidden");
-    });
+      // The menu clock shows FROZEN_EPOCH plus real elapsed time, so a page
+      // that lives across a minute boundary displays a different minute. A
+      // baseline cannot depend on how long the capture happened to take —
+      // render the clock at the frozen epoch explicitly.
+      if (typeof renderSystemClock === "function") {
+        renderSystemClock(new Date(epoch));
+      }
+    }, FROZEN_EPOCH);
     await page.waitForFunction(() => {
       const clioTalk = document.querySelector('.window[data-window="assistant"]');
       return clioTalk
@@ -458,6 +470,7 @@ try {
       "--disable-gpu",
       "--disable-gpu-compositing",
       "--disable-lcd-text",
+      "--font-render-hinting=none",
       "--deterministic-mode",
     ],
   });

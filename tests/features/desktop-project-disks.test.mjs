@@ -65,13 +65,27 @@ function fakeNode(tag = "span") {
     children: [],
     attributes: {},
     className: "",
+    classes: new Set(),
     textContent: "",
     draggable: false,
     removed: false,
     setAttribute(name, value) { this.attributes[name] = value; },
     append(...items) { this.children.push(...items); },
+    prepend(...items) { this.children.unshift(...items); },
+    querySelector(selector) {
+      return this.children.find((child) => `.${child.className}` === selector) || null;
+    },
     get firstChild() { return this.children[0]; },
     get lastChild() { return this.children[this.children.length - 1]; },
+  };
+  node.classList = {
+    toggle: (name, force) => {
+      if (force === undefined ? !node.classes.has(name) : force) node.classes.add(name);
+      else node.classes.delete(name);
+    },
+    add: (name) => node.classes.add(name),
+    remove: (name) => node.classes.delete(name),
+    contains: (name) => node.classes.has(name),
   };
   return node;
 }
@@ -102,7 +116,7 @@ const label = fakeNode();
 label.closest = (selector) => (selector === ".icon-column" ? column : mountedIcon);
 
 const source = projectDisk.slice(
-  projectDisk.indexOf("function renderProjectDiskDesktopIcons"),
+  projectDisk.indexOf("const PROJECT_DISK_STALL_DAYS"),
   projectDisk.indexOf("function setProjectDiskActionVisible"),
 );
 
@@ -204,5 +218,53 @@ test.assertIncludes(
   "if (applicationCommandRegistryCache && applicationCommandRegistryRuntimeCount === runtimeCommandCount) {",
   "and rebuilds itself when a lazily loaded module has registered more",
 );
+
+// --- The risk mark states two facts the desk already has ---------------------
+//
+// A small diamond beside a disk whose project is long-unmodified AND not
+// burned to a Project CD. No delivery-date field exists and none is invented:
+// the predicate reads `updatedAt` (stamped by every record write) and the
+// Project CD items, nothing else, and a missing timestamp is unknown — an
+// unknown is never claimed as a risk. Pure, so it is executed here.
+const atRisk = context.projectDiskAtRisk;
+
+const now = Date.parse("2026-08-31T00:00:00.000Z");
+const staleDate = "2026-08-01T00:00:00.000Z"; // 30 days before
+const freshDate = "2026-08-29T00:00:00.000Z"; // 2 days before
+
+test.assert(
+  atRisk({ id: "p1", updatedAt: staleDate }, [], now) === true,
+  "a month untouched with nothing burned is at risk"
+);
+test.assert(
+  atRisk({ id: "p1", updatedAt: staleDate }, [{ projectId: "p1" }], now) === false,
+  "a burned Project CD answers the risk, however old the disk"
+);
+test.assert(
+  atRisk({ id: "p1", updatedAt: staleDate }, [{ projectId: "other" }], now) === true,
+  "another project's CD answers nothing for this one"
+);
+test.assert(
+  atRisk({ id: "p1", updatedAt: freshDate }, [], now) === false,
+  "a disk written to this week is not at risk"
+);
+test.assert(
+  atRisk({ id: "p1", updatedAt: "" }, [], now) === false,
+  "a missing timestamp is unknown, and an unknown is never claimed as a risk"
+);
+test.assert(
+  atRisk({ id: "p1", updatedAt: staleDate }, undefined, now) === true,
+  "absent CD records read as nothing burned, not as an error"
+);
+
+// The mark is drawn where the disks are drawn, prepended so the disk's name
+// label stays `lastChild`, and Balloon Help carries the words for it.
+test.assertIncludes(projectDisk, "applyProjectDiskRiskMark(icon, project);", "every ejected disk is checked as it is drawn");
+test.assertIncludes(projectDisk, "applyProjectDiskRiskMark(mountedIcon,", "and the mounted disk too");
+test.assertIncludes(projectDisk, "icon.prepend(mark);", "the mark never displaces the label at lastChild");
+test.assertIncludes(projectDisk, 'icon.dataset.balloonHelp = "balloon_project_disk_risk"', "Balloon Help explains the mark");
+test.assertIncludes(read("styles/50-apps.css"), ".disk-risk-mark", "the diamond has its 1-bit dress");
+test.assertIncludes(en, "balloon_project_disk_risk:", "English says what the mark means");
+test.assertIncludes(zh, "balloon_project_disk_risk:", "Chinese says it too");
 
 test.finish();

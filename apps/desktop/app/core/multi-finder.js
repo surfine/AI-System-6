@@ -24,6 +24,7 @@ const multiFinderAppLabels = {
   docMap: "DocMap",
   clioStage: "ClioStage",
   clioChart: "ClioChart",
+  clioProject: "ClioProject",
   liquidCover: "Cover Glass",
   cmfStudio: "CMF Studio",
   imagePromptStudio: "Image Prompt Studio",

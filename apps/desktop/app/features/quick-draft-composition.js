@@ -200,12 +200,18 @@ function renderAdjustmentLayers(record = activeProjectQuickDraft({ create: false
 
 function syncQuickDraftMobileAdjustmentActions(record = activeProjectQuickDraft({ create: false })?.record) {
   const normalized = normalizeQuickDraftRecord(record);
-  const hasBody = Boolean(String(refs.draft?.value || normalized.workspace.body || "").trim());
+  // The buttons follow the darkroom's subject, like the menu rows they
+  // shortcut. 试看 needs no write access — it writes only the darkroom
+  // record — but Develop writes the document, so this writer must respect
+  // the read-only sweep instead of silently re-enabling what it disabled.
+  const hasBody = Boolean(String(lightroomBodyText() || normalized.workspace.body || "").trim());
   const enabled = darkroomOf(record).adjustmentLayers.some((layer) => layer.enabled);
   const previewButton = quickDraftQuery("[data-quick-draft-adjustment-apply]");
   const developButton = quickDraftQuery("[data-quick-draft-adjustment-develop]");
   if (previewButton) previewButton.disabled = !hasBody || !enabled || !quickDraftModelAvailable();
-  if (developButton) developButton.disabled = !hasBody || !currentCompositeState(normalized).ready;
+  if (developButton) {
+    developButton.disabled = lightroomIsReadOnly() || !hasBody || !currentCompositeState(normalized).ready;
+  }
 }
 
 async function updateAdjustmentLayer(kind = "", patch = {}) {
@@ -509,9 +515,13 @@ let quickDraftLastCompositeKey = "";
 
 function quickDraftCompositeSource(record = activeProjectQuickDraft({ create: false })?.record) {
   const workspace = normalizeQuickDraftWorkspace(record?.workspace, record);
-  return hasRecordedNegative(record)
-    ? darkroomOf(record).negative
+  // The composite reads the darkroom's subject: usually the draft in front of
+  // the writer, but a developed document composes from its own text — the
+  // instruments must never read one text and report on another.
+  const base = lightroomIsReadOnly()
+    ? lightroomBodyText()
     : String(refs.draft?.value || workspace.body || "");
+  return hasRecordedNegative(record) ? darkroomOf(record).negative : base;
 }
 
 function enabledAdjustmentLayers(record = activeProjectQuickDraft({ create: false })?.record) {
@@ -532,7 +542,9 @@ function compositionCacheContext(record = activeProjectQuickDraft({ create: fals
 
 function currentCompositeState(record = activeProjectQuickDraft({ create: false })?.record) {
   const workspace = normalizeQuickDraftWorkspace(record?.workspace, record);
-  const body = String(refs.draft?.value || workspace.body || "");
+  const body = lightroomIsReadOnly()
+    ? lightroomBodyText()
+    : String(refs.draft?.value || workspace.body || "");
   const layers = enabledAdjustmentLayers(record);
   if (!layers.length) return { text: body, ready: true, stale: false };
   const source = quickDraftCompositeSource(record);
@@ -721,6 +733,7 @@ async function applyAdjustmentLayers() {
       && quickDraftDisplayMode === "read";
     if (!showingComposite) setQuickDraftDisplayMode("read");
     setQuickDraftStatus(t("quick_draft_apply_done"));
+    noteLightroomReceipt("quick_draft_preview_adjustments", { model: quickDraftConnectedModelName() });
     window.AISystem6ModelUserErrors?.clearRetryable?.("quickDraft-adjustment");
     return true;
   } catch (error) {
@@ -743,6 +756,13 @@ async function applyAdjustmentLayers() {
 // body is saved and (2) the writer confirms this becomes the new working body.
 // Any failure leaves the original body untouched.
 async function developAdjustmentLayers() {
+  // Develop writes the document, and a subject this application does not own
+  // never accepts a write — the menu row and the button both grey, and this
+  // guard holds even for a caller that reached the verb some other way.
+  if (lightroomIsReadOnly()) {
+    setQuickDraftStatus(t("lightroom_read_only"));
+    return false;
+  }
   const slot = activeProjectQuickDraft();
   if (!slot) {
     setQuickDraftStatus(t("quick_draft_no_project"));
@@ -832,6 +852,7 @@ async function developAdjustmentLayers() {
   }
   renderQuickDraft(committed.record);
   setQuickDraftStatus(t("quick_draft_develop_done"));
+  noteLightroomReceipt("quick_draft_develop", { model: quickDraftConnectedModelName() });
   return true;
 }
 

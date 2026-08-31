@@ -472,6 +472,146 @@ body.quick-draft-focus .writing-spine-panel {
   resize: none;
 }
 
+/* ClioProject: the plan for one project, drawn fresh from the route and the
+   Outline on every render. Cards sit on an absolutely positioned canvas over
+   one SVG of arrows; the bolded run is the chain blocking the handoff, and
+   bold — heavier border, heavier line — is the whole vocabulary, exactly the
+   1-bit weight MacProject used for its own marked chain. */
+.clio-project-window {
+  top: 72px;
+  left: 140px;
+  width: 560px;
+}
+
+.clio-project-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow: auto;
+}
+
+.clio-project-canvas {
+  position: relative;
+  flex: none;
+}
+
+.clio-project-edges {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.clio-project-edges line {
+  stroke: var(--ink);
+  stroke-width: 1;
+}
+
+.clio-project-edges line.is-blocking {
+  stroke-width: 3;
+}
+
+.clio-project-node {
+  position: absolute;
+  /* Layout comes in as custom properties so the geometry stays a CSS
+     decision and the render loop never writes element.style left/top. */
+  left: var(--clio-project-x, 0);
+  top: var(--clio-project-y, 0);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0 6px;
+  width: 200px;
+  height: 56px;
+  padding: 3px 6px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+}
+
+.clio-project-node.is-blocking {
+  border-width: 2px;
+}
+
+.clio-project-node.is-blocking .clio-project-node-title {
+  font-weight: bold;
+}
+
+.clio-project-node-title {
+  overflow: hidden;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clio-project-date {
+  grid-column: 2;
+  min-width: 0;
+}
+
+.clio-project-done-list {
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.clio-project-done-list li {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 1px 2px;
+  color: var(--shade-dark);
+}
+
+/* To Do 待办: the cross-project next-action list. A plan belongs to a project
+   (ClioProject); a next action belongs to a person, so this is a separate
+   Desk Accessory with Note Pad's shared vocabulary — two status slots, one
+   button row with one default, the .da-origin provenance row. */
+.todo-da-window {
+  top: 92px;
+  right: 146px;
+  width: var(--da-width-pad);
+}
+
+.todo-da-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.todo-da-list {
+  max-height: 220px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+  border: 1px solid var(--shade-dark);
+}
+
+.todo-da-item {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 2px 5px;
+}
+
+.todo-da-item.is-done .todo-da-item-text {
+  color: var(--shade-dark);
+  text-decoration: line-through;
+}
+
+.todo-da-item small {
+  flex: none;
+  margin-left: auto;
+  color: var(--shade-dark);
+}
+
+.todo-da-empty {
+  color: var(--shade-dark);
+}
+
 /* Hold That Thought.
 
    The mode row borrows the Alarm Clock's figure — equal cells, dividers
@@ -1257,6 +1397,9 @@ html:lang(zh-Hans) .title-bar h2 {
   left: var(--frame-thumb-position, 0);
   width: var(--frame-thumb-size, 0);
   border-bottom: 0;
+  /* An era whose thumb recipe is directional (Aqua's cross-width ramp) hands
+     over a rotated twin; flat eras fall through to the shared value. */
+  background: var(--window-frame-thumb-bg-horizontal, var(--window-frame-thumb-bg));
 }
 
 /* An arrow box is closed off against the track and open against the window

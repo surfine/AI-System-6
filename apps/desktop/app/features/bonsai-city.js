@@ -1511,6 +1511,14 @@ window.AISystem6BonsaiCityLoaded = true;
     scheduleSessionCommit();
   }
 
+  // The Population window's graph button pre-selects the demographic series
+  // before handing over to the shared graphs panel.
+  function openDemographicGraphs() {
+    if (!state.current) return;
+    state.graphSeries = [...DEMOGRAPHIC_SERIES];
+    openGraphs();
+  }
+
   function openPopulation() {
     if (!state.current) return;
     state.inspectorMode = "population";
@@ -1660,6 +1668,13 @@ window.AISystem6BonsaiCityLoaded = true;
     return { tier: "halfYearly", slice: -20, labelKey: "bonsai_graph_years_10" };
   }
 
+  // Series ids are camelCase XGRP names; the language tables key their
+  // labels in snake_case. Without this bridge, citySize and friends show
+  // as raw keys in the series picker.
+  function graphSeriesLabel(seriesId) {
+    return t(`bonsai_graph_${seriesId.replace(/([A-Z])/g, "_$1").toLowerCase()}`);
+  }
+
   function graphSeriesData(seriesId) {
     const spec = graphRangeSpec(state.graphRange);
     const list = state.current?.graphs?.[spec.tier]?.[seriesId] || [];
@@ -1729,18 +1744,166 @@ window.AISystem6BonsaiCityLoaded = true;
           ${rangeSpecs.map((range) => `<label><input type="radio" name="bonsai-graph-range" value="${range}"${state.graphRange === range ? " checked" : ""}> <span>${rangeLabel(range)}</span></label>`).join("")}
         </fieldset>
         <fieldset class="bonsai-graph-series"><legend>${t("bonsai_graph_series")}</legend>
-          ${graphSeriesIds.map((seriesId) => `<label class="bonsai-graph-series-item"><input type="checkbox" data-bonsai-graph-series="${seriesId}"${state.graphSeries.includes(seriesId) ? " checked" : ""}> <span>${t(`bonsai_graph_${seriesId}`)}</span></label>`).join("")}
+          ${graphSeriesIds.map((seriesId) => `<label class="bonsai-graph-series-item"><input type="checkbox" data-bonsai-graph-series="${seriesId}"${state.graphSeries.includes(seriesId) ? " checked" : ""}> <span>${graphSeriesLabel(seriesId)}</span></label>`).join("")}
         </fieldset>
       </div>
-      <div class="bonsai-graph-legend" data-bonsai-graph-legend aria-hidden="true">${state.graphSeries.map((seriesId, index) => `<span class="bonsai-graph-legend-item is-pattern-${index}">${t(`bonsai_graph_${seriesId}`)}</span>`).join("")}</div>`;
+      <div class="bonsai-graph-legend" data-bonsai-graph-legend aria-hidden="true">${state.graphSeries.map((seriesId, index) => `<span class="bonsai-graph-legend-item is-pattern-${index}">${graphSeriesLabel(seriesId)}</span>`).join("")}</div>`;
   }
 
   function refreshGraphPanel() {
     drawGraphChart(query("[data-bonsai-graph-canvas]"));
     const legend = query("[data-bonsai-graph-legend]");
     if (legend) {
-      legend.innerHTML = state.graphSeries.map((seriesId, index) => `<span class="bonsai-graph-legend-item is-pattern-${index}">${t(`bonsai_graph_${seriesId}`)}</span>`).join("");
+      legend.innerHTML = state.graphSeries.map((seriesId, index) => `<span class="bonsai-graph-legend-item is-pattern-${index}">${graphSeriesLabel(seriesId)}</span>`).join("");
     }
+  }
+
+  // The three city data windows (Population / Industry / Neighbors) draw in
+  // the same 1-bit instrument style as the graphs panel. One shared canvas
+  // prep keeps their pixel handling identical to drawGraphChart.
+  const DEMOGRAPHIC_SERIES = Object.freeze(["health", "education", "unemployment"]);
+
+  function prepChartCanvas(canvas) {
+    if (!canvas || !state.current) return null;
+    const context = canvas.getContext("2d");
+    if (!context) return null;
+    const dpr = Math.max(1, Math.min(2, Number(window.devicePixelRatio) || 1));
+    const width = Math.max(80, Math.round(canvas.clientWidth || 220));
+    const height = Math.max(60, Math.round(canvas.clientHeight || 150));
+    if (canvas.width !== Math.round(width * dpr)) canvas.width = Math.round(width * dpr);
+    if (canvas.height !== Math.round(height * dpr)) canvas.height = Math.round(height * dpr);
+    context.setTransform(dpr, 0, 0, dpr, 0, 0);
+    context.clearRect(0, 0, width, height);
+    context.fillStyle = getComputedStyle(canvas).color || "#000";
+    context.font = "9px monospace";
+    return { context, width, height };
+  }
+
+  // Age structure: ten ten-year cohorts, oldest on top, bars scaled to the
+  // widest cohort — the classic pyramid, folded to one side to fit 240px.
+  function drawPopulationPyramid(canvas) {
+    const chart = prepChartCanvas(canvas);
+    const breakdown = sim().populationBreakdown?.(state.current);
+    if (!chart || !breakdown) return;
+    const { context, width, height } = chart;
+    const cohorts = breakdown.cohorts.slice().reverse();
+    if (!breakdown.total) {
+      context.fillText(t("bonsai_graph_empty"), 8, Math.round(height / 2));
+      return;
+    }
+    const labelW = 30;
+    const countW = 48;
+    const rowH = Math.floor((height - 8) / cohorts.length);
+    const barMax = Math.max(1, ...cohorts.map((cohort) => cohort.population));
+    const barSpan = Math.max(20, width - labelW - countW - 12);
+    cohorts.forEach((cohort, index) => {
+      const y = 4 + index * rowH;
+      const label = cohort.toAge == null ? `${cohort.fromAge}+` : String(cohort.fromAge);
+      context.fillText(label, 2, y + rowH - 3);
+      const barW = Math.round((cohort.population / barMax) * barSpan);
+      context.fillRect(labelW, y + 2, Math.max(cohort.population > 0 ? 1 : 0, barW), Math.max(2, rowH - 4));
+      context.fillText(String(cohort.population), labelW + barSpan + 4, y + rowH - 3);
+    });
+  }
+
+  // Health, education, and unemployment over the half-yearly tier — the two
+  // SC2K-style demographic graphs plus the line that explains them.
+  function drawDemographicsChart(canvas) {
+    const chart = prepChartCanvas(canvas);
+    if (!chart) return;
+    const { context, width, height } = chart;
+    const tier = state.current?.graphs?.halfYearly || {};
+    const patterns = [[1], [1, 0], [1, 1, 0, 0]];
+    const pad = 8;
+    const plotW = width - pad * 2;
+    const plotH = height - pad * 2;
+    const drawn = DEMOGRAPHIC_SERIES.filter((seriesId) => (tier[seriesId] || []).length > 1);
+    if (!drawn.length) {
+      context.fillText(t("bonsai_graph_empty"), 8, Math.round(height / 2));
+      return;
+    }
+    context.fillRect(pad, pad, 1, plotH);
+    context.fillRect(pad, pad + plotH - 1, plotW, 1);
+    drawn.forEach((seriesId) => {
+      const values = (tier[seriesId] || []).slice(-20).map(Number);
+      const min = Math.min(...values);
+      const max = Math.max(...values);
+      const span = Math.max(1, max - min);
+      const step = plotW / Math.max(1, values.length - 1);
+      const pattern = patterns[DEMOGRAPHIC_SERIES.indexOf(seriesId) % patterns.length];
+      for (let index = 0; index < values.length - 1; index += 1) {
+        drawGraphLine1bit(context,
+          pad + index * step, pad + plotH - ((values[index] - min) / span) * plotH,
+          pad + (index + 1) * step, pad + plotH - ((values[index + 1] - min) / span) * plotH,
+          pattern);
+      }
+    });
+  }
+
+  // Industry mix: one row per sector — name, share bar, share and demand.
+  function drawIndustryChart(canvas) {
+    const chart = prepChartCanvas(canvas);
+    const industry = sim().industryBreakdown?.(state.current);
+    if (!chart || !industry) return;
+    const { context, width, height } = chart;
+    const sectors = industry.sectors;
+    const labelW = 78;
+    const textW = 58;
+    const rowH = Math.floor((height - 6) / sectors.length);
+    const barSpan = Math.max(20, width - labelW - textW - 10);
+    const ratioMax = Math.max(1, ...sectors.map((sector) => sector.ratio));
+    sectors.forEach((sector, index) => {
+      const y = 3 + index * rowH;
+      const name = t(`bonsai_sector_${sector.id}`);
+      context.fillText(name.length > 12 ? `${name.slice(0, 11)}…` : name, 2, y + rowH - 3);
+      const barW = Math.round((sector.ratio / ratioMax) * barSpan);
+      context.fillRect(labelW, y + 2, Math.max(sector.ratio > 0 ? 1 : 0, barW), Math.max(2, rowH - 4));
+      const demand = sector.demand > 0 ? `+${sector.demand}` : String(sector.demand);
+      context.fillText(`${sector.ratio}% ${demand}`, labelW + barSpan + 4, y + rowH - 3);
+    });
+  }
+
+  // Neighbors: the four cities around the map on a compass card. A solid
+  // spoke is a built land link to that edge; a dotted spoke is none yet.
+  function drawNeighborsMap(canvas) {
+    const chart = prepChartCanvas(canvas);
+    const report = sim().neighborsReport?.(state.current);
+    if (!chart || !report) return;
+    const { context, width, height } = chart;
+    // Three boxes share a row (west · city · east); the 8px gutters keep the
+    // centre card from wiping its neighbours' edges.
+    const boxW = Math.min(86, Math.floor((width - 24) / 3));
+    const boxH = 24;
+    const cx = Math.round(width / 2);
+    const cy = Math.round(height / 2);
+    const spots = {
+      north: { x: cx, y: 4 + boxH / 2 },
+      south: { x: cx, y: height - 4 - boxH / 2 },
+      west: { x: 4 + boxW / 2, y: cy },
+      east: { x: width - 4 - boxW / 2, y: cy },
+    };
+    const drawBox = (x, y, title, subtitle) => {
+      const left = Math.round(x - boxW / 2);
+      const top = Math.round(y - boxH / 2);
+      context.clearRect(left, top, boxW, boxH);
+      context.strokeStyle = context.fillStyle;
+      context.strokeRect(left + 0.5, top + 0.5, boxW, boxH);
+      const clipped = title.length > 10 ? `${title.slice(0, 9)}…` : title;
+      context.fillText(clipped, left + 4, top + 10);
+      context.fillText(subtitle, left + 4, top + 20);
+    };
+    report.neighbors.forEach((neighbor) => {
+      const spot = spots[neighbor.direction];
+      if (!spot) return;
+      drawGraphLine1bit(context, cx, cy, spot.x, spot.y, neighbor.linked ? [1] : [1, 0, 0]);
+    });
+    report.neighbors.forEach((neighbor) => {
+      const spot = spots[neighbor.direction];
+      if (!spot) return;
+      drawBox(spot.x, spot.y, t(`bonsai_neighbor_name_${neighbor.nameIndex}`), String(neighbor.population));
+    });
+    const cityName = String(state.record?.name || t("bonsai_city_unnamed"));
+    drawBox(cx, cy, cityName, String((Number(state.current.population) || 0) + (Number(state.current.arcoPopulation) || 0)));
   }
 
   function renderMiniMap() {
@@ -1905,17 +2068,27 @@ window.AISystem6BonsaiCityLoaded = true;
         ${graphControlsMarkup()}`;
     } else if (state.inspectorMode === "population") {
       titleKey = "bonsai_population";
+      const breakdown = sim().populationBreakdown?.(state.current) || null;
       rows = {
-        bonsai_population: state.current.population ?? 0,
+        bonsai_population_total: breakdown?.total ?? state.current.population ?? 0,
+        ...(breakdown?.arcoPopulation ? { bonsai_arco_population: breakdown.arcoPopulation } : {}),
         bonsai_jobs: state.current.jobs ?? 0,
-        bonsai_commercial_jobs: state.current.cJobs ?? 0,
-        bonsai_industrial_jobs: state.current.iJobs ?? 0,
         bonsai_workforce: `${state.current.workforcePercent ?? 0}%`,
         bonsai_unemployed: state.current.unemployed ?? 0,
+        bonsai_education_quotient: state.current.eq ?? 0,
+        bonsai_life_expectancy: state.current.le ?? 0,
         bonsai_national_population: state.current.nationalPopulation ?? 0,
       };
+      controls = `
+        <p class="bonsai-goals-note">${t("bonsai_population_pyramid")}</p>
+        <canvas class="bonsai-graph-canvas" data-bonsai-population-pyramid aria-label="${t("bonsai_population_pyramid")}"></canvas>
+        <p class="bonsai-goals-note">${t("bonsai_population_trends")}</p>
+        <canvas class="bonsai-graph-canvas" data-bonsai-demographics-canvas aria-label="${t("bonsai_population_trends")}"></canvas>
+        <div class="bonsai-graph-legend" aria-hidden="true">${DEMOGRAPHIC_SERIES.map((seriesId, index) => `<span class="bonsai-graph-legend-item is-pattern-${index}">${graphSeriesLabel(seriesId)}</span>`).join("")}</div>
+        <div class="button-row"><button class="btn" type="button" data-bonsai-open-demographic-graphs>${t("bonsai_view_graphs")}</button></div>`;
     } else if (state.inspectorMode === "industry") {
       titleKey = "bonsai_industry";
+      const industry = sim().industryBreakdown?.(state.current) || null;
       rows = {
         bonsai_industrial_jobs: state.current.iJobs ?? 0,
         bonsai_commercial_jobs: state.current.cJobs ?? 0,
@@ -1924,6 +2097,10 @@ window.AISystem6BonsaiCityLoaded = true;
         bonsai_commerce_demand: state.current.demand?.c ?? 0,
         bonsai_residential_demand: state.current.demand?.r ?? 0,
       };
+      controls = `
+        <p class="bonsai-goals-note">${t("bonsai_industry_mix", industry?.year ?? "")}</p>
+        <canvas class="bonsai-graph-canvas" data-bonsai-industry-canvas aria-label="${t("bonsai_industry_mix", industry?.year ?? "")}"></canvas>
+        <p class="bonsai-goals-note">${t("bonsai_industry_note")}</p>`;
     } else if (state.inspectorMode === "goals") {
       titleKey = "bonsai_opening_goals";
       rows = {};
@@ -1937,19 +2114,17 @@ window.AISystem6BonsaiCityLoaded = true;
         <p class="bonsai-goals-note">${t("bonsai_goals_progress", done, GOALS.length)}</p>`;
     } else if (state.inspectorMode === "neighbors") {
       titleKey = "bonsai_neighbors";
-      const rail = state.current.railService || {};
-      const subway = state.current.subwayService || {};
-      const bus = state.current.busService || {};
-      rows = {
-        bonsai_rail_passengers: rail.passengerCapacity ?? 0,
-        bonsai_rail_freight: rail.freightCapacity ?? 0,
-        bonsai_rail_stations: rail.connectedStations ?? 0,
-        bonsai_subway_passengers: subway.passengerCapacity ?? 0,
-        bonsai_subway_stations: subway.connectedStations ?? 0,
-        bonsai_bus_capacity: bus.capacity ?? 0,
-        bonsai_bus_relief: bus.roadTrafficRelief ?? 0,
-        bonsai_national_population: state.current.nationalPopulation ?? 0,
-      };
+      const report = sim().neighborsReport?.(state.current) || null;
+      rows = { bonsai_national_population: state.current.nationalPopulation ?? 0 };
+      (report?.neighbors || []).forEach((neighbor) => {
+        const name = t(`bonsai_neighbor_name_${neighbor.nameIndex}`);
+        rows[`bonsai_neighbor_${neighbor.direction}`] = neighbor.linked
+          ? `${name} — ${t("bonsai_neighbor_detail", neighbor.population, neighbor.trade)}`
+          : `${name} — ${t("bonsai_neighbor_detail_unlinked", neighbor.population)}`;
+      });
+      controls = `
+        <canvas class="bonsai-graph-canvas" data-bonsai-neighbors-canvas aria-label="${t("bonsai_neighbors")}"></canvas>
+        <p class="bonsai-goals-note">${t("bonsai_neighbors_note")}</p>`;
     }
     inspector.innerHTML = `
       <div class="bonsai-subwindow-title">
@@ -1962,6 +2137,13 @@ window.AISystem6BonsaiCityLoaded = true;
     query(".bonsai-pane")?.classList.add("has-inspector");
     if (state.inspectorMode === "graphs") {
       drawGraphChart(query("[data-bonsai-graph-canvas]"));
+    } else if (state.inspectorMode === "population") {
+      drawPopulationPyramid(query("[data-bonsai-population-pyramid]"));
+      drawDemographicsChart(query("[data-bonsai-demographics-canvas]"));
+    } else if (state.inspectorMode === "industry") {
+      drawIndustryChart(query("[data-bonsai-industry-canvas]"));
+    } else if (state.inspectorMode === "neighbors") {
+      drawNeighborsMap(query("[data-bonsai-neighbors-canvas]"));
     }
   }
 
@@ -2571,6 +2753,7 @@ window.AISystem6BonsaiCityLoaded = true;
       const toolButton = event.target.closest("[data-bonsai-tool]");
       if (toolButton) return selectTool(toolButton.dataset.bonsaiTool);
       if (event.target.closest("[data-bonsai-open-graphs]")) return openGraphs();
+      if (event.target.closest("[data-bonsai-open-demographic-graphs]")) return openDemographicGraphs();
       const overlayChip = event.target.closest("[data-bonsai-overlay-chip]");
       if (overlayChip) return setOverlay(overlayChip.dataset.bonsaiOverlayChip);
       if (event.target.closest("[data-bonsai-found-city]")) return foundCity();
@@ -2706,6 +2889,9 @@ window.AISystem6BonsaiCityLoaded = true;
           if (state.sessionRestore.view) renderer()?.resetView?.(state.sessionRestore.view);
           if (state.sessionRestore.inspectorMode === "report") openReport();
           else if (state.sessionRestore.inspectorMode === "budget") openBudget();
+          else if (state.sessionRestore.inspectorMode === "population") openPopulation();
+          else if (state.sessionRestore.inspectorMode === "industry") openIndustry();
+          else if (state.sessionRestore.inspectorMode === "neighbors") openNeighbors();
           else if (state.sessionRestore.inspectorMode === "tile" && state.sessionRestore.selectedTile) {
             openTileBalloon(state.sessionRestore.selectedTile);
           }

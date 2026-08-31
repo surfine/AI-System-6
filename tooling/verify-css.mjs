@@ -21,6 +21,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { resolveProjectPath } from "./lib/paths.mjs";
+import { GEOMETRY_PROPERTIES, BORDER_SHORTHAND } from "./lib/appearance-geometry.mjs";
 import { styleLayerByPath } from "./style-manifest.mjs";
 import {
   applicationCssPrefixes,
@@ -743,29 +744,10 @@ cssFiles
 // override, which this counter does not charge for. An era typeface or an era
 // title-bar height is real geometry and stays.
 
-const GEOMETRY_PROPERTIES = new Set([
-  "width", "height", "min-width", "max-width", "min-height", "max-height",
-  "padding", "padding-top", "padding-right", "padding-bottom", "padding-left",
-  "padding-inline", "padding-block", "padding-inline-start", "padding-inline-end",
-  "margin", "margin-top", "margin-right", "margin-bottom", "margin-left",
-  "margin-inline", "margin-block", "margin-inline-start", "margin-inline-end",
-  "position", "top", "right", "bottom", "left", "inset",
-  "display", "flex", "flex-basis", "flex-direction", "flex-wrap", "flex-grow", "flex-shrink",
-  "grid", "grid-template", "grid-template-columns", "grid-template-rows",
-  "grid-auto-flow", "grid-auto-rows", "grid-auto-columns", "grid-column", "grid-row",
-  "gap", "row-gap", "column-gap",
-  "align-items", "align-self", "align-content",
-  "justify-content", "justify-items", "justify-self", "place-items", "place-content",
-  "order", "font-size", "font-family", "font-weight", "font", "line-height",
-  "letter-spacing", "word-spacing",
-  "border-width", "border-top-width", "border-right-width", "border-bottom-width", "border-left-width",
-  "overflow", "overflow-x", "overflow-y", "white-space", "columns",
-  "aspect-ratio", "transform", "translate", "scale", "rotate",
-  "box-sizing", "content", "float", "vertical-align", "text-indent",
-  "writing-mode", "container-type",
-]);
-
-const BORDER_SHORTHAND = /^border(-(top|right|bottom|left))?$/;
+// GEOMETRY_PROPERTIES and BORDER_SHORTHAND moved to lib/appearance-geometry.mjs
+// (imported at the top of this file): the same vocabulary this ratchet charges
+// is what appearance-token-check.mjs probes in the browser, and two copies of
+// the list would let the two gates disagree about what layout is.
 
 /**
  * Count the declarations in one stylesheet that can move something on screen.

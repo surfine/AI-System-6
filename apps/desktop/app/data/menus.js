@@ -310,6 +310,11 @@ const lightroomMenus = [
     menuSeparator,
     menuItem("lightroom-save-version", "lightroom_save_version", "lightroom-save-version"),
     submenu("lightroom_restore_version", [{ type: "lightroom-rows", rowKind: "versions" }], { dataset: { lightroomRows: "versions" } }),
+    menuSeparator,
+    // Printing belongs to the reading view: the composite is the one paper
+    // this application puts on a page, so both rows grey outside it.
+    menuItem("lightroom-page-setup", "page_setup"),
+    menuItem("lightroom-print", "print"),
   ]),
   menu("edit", "menu_edit", [
     ...editBasics,
@@ -348,16 +353,24 @@ const lightroomMenus = [
     menuSeparator,
     menuItem("quick-draft-apply", "quick_draft_preview_adjustments", "lightroom-apply"),
     menuItem("quick-draft-develop", "quick_draft_develop", "lightroom-develop"),
+    // Undo answers for one thing here: the last develop, while its
+    // before-develop version is still the newest link in the chain.
+    menuItem("lightroom-undo-develop", "lightroom_undo_develop", "lightroom-undo-develop"),
     menuItem("lightroom-discard-composite", "lightroom_discard_composite"),
   ], { menuCondition: "lightroom-document" }),
   // The sixth menu appears with the view, the way the fifth appears with the
   // work: these verbs exist only while the paper is being listened to.
   menu("listen", "quick_draft_listen", [
     menuItem("lightroom-listen-toggle", "quick_draft_listen_play", "lightroom-listen-toggle"),
+    menuItem("lightroom-listen-stop", "quick_draft_listen_stop"),
     menuItem("lightroom-listen-back", "quick_draft_listen_back"),
+    menuItem("lightroom-listen-forward", "quick_draft_listen_forward"),
     menuSeparator,
     menuItem("lightroom-listen-lost", "quick_draft_listen_mark_lost"),
     menuItem("lightroom-listen-rehearse", "quick_draft_listen_rehearse"),
+    // A partner listens read-only: one mark, one short note, no roles and no
+    // history — the product never models the relationship.
+    menuItem("lightroom-listen-partner", "quick_draft_listen_partner"),
     menuSeparator,
     menuItem("lightroom-eli5-review", "quick_draft_eli5_review"),
     menuItem("lightroom-eli5-rewrite", "quick_draft_eli5_rewrite"),
@@ -641,6 +654,19 @@ const clioChartMenus = [
   specialMenu(),
 ];
 
+// ClioProject: the plan is derived, so the menus hold only what the writer
+// decides — the layout nudges they want back, and the window itself.
+const clioProjectMenus = [
+  menu("file", "menu_file", [
+    menuItem("close-active-window", "close", "close-window"),
+  ]),
+  menu("edit", "menu_edit", editWithSelection),
+  menu("plan", "menu_plan", [
+    menuItem("clio-project-reset-layout", "clio_project_reset_layout"),
+  ]),
+  specialMenu(),
+];
+
 const liquidCoverMenus = [
   menu("file", "menu_file", [
     menuItem("cover-choose-background", "liquid_cover_choose_background"),
@@ -755,6 +781,7 @@ const applicationMenuSets = Object.freeze({
   searcher: searcherMenus,
   clioStage: clioStageMenus,
   clioChart: clioChartMenus,
+  clioProject: clioProjectMenus,
   liquidCover: liquidCoverMenus,
   cmfStudio: cmfStudioMenus,
   soundscape: soundscapeMenus,

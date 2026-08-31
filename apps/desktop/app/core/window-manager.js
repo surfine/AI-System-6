@@ -1028,6 +1028,7 @@ const mobileFullScreenAppIds = new Set([
   "docMap",
   "clioStage",
   "clioChart",
+  "clioProject",
   "liquidCover",
   "cmfStudio",
   "soundscape",
@@ -2091,7 +2092,9 @@ function getActionAvailability() {
   const quickDraftCanPreview = Boolean(quickDraftApi?.canPreviewAdjustments?.());
   const quickDraftCanDevelop = Boolean(quickDraftApi?.canDevelop?.());
   const lightroomApi = winName === "lightroom" ? window.AISystem6QuickDraft : null;
-  const lightroomHasBody = Boolean(lightroomApi?.hasBody?.());
+  // The darkroom's menus follow its subject: a developed document's text
+  // counts as the body even when the desk's own draft is empty.
+  const lightroomHasBody = Boolean(lightroomApi?.hasSubjectBody?.() ?? lightroomApi?.hasBody?.());
   const lightroomView = String(lightroomApi?.displayMode?.() || "");
   const teachTextWin = getWindow("teachText");
   const teachTextVisible = teachTextWin && !teachTextWin.classList.contains("is-hidden");

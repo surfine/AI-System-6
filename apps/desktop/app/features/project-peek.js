@@ -30,7 +30,7 @@ function installProjectPeekWindow() {
     windowName: "projectPeek",
     windowClass: "project-peek-window",
     labelledBy: "project-peek-title",
-    title: "Project Hard Disk",
+    title: "Project Peek",
     statusClass: "compact-status-bar",
     statusHtml: `<span class="status-bar-leading" id="project-peek-count">0 items</span>
           <span class="status-bar-trailing" data-i18n="read_only">Read only</span>`,

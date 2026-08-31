@@ -27,6 +27,7 @@ const SHIP_REQUIRED_CHECKS = Object.freeze([
   "bonsai-acceptance",
   "appearance-phase5",
   "appearance-snapshot",
+  "appearance-token-tables",
 ]);
 const checks = [
   {
@@ -53,6 +54,14 @@ const checks = [
     name: "appearance-snapshot",
     command: process.execPath,
     args: ["tooling/appearance-snapshot.mjs", "--verify"],
+  },
+  {
+    // The fast half of the collapsed matrix: the controls-tier cells the pixel
+    // net no longer renders for the four middle eras are held as computed
+    // token/geometry deltas against Classic instead of screenshots.
+    name: "appearance-token-tables",
+    command: process.execPath,
+    args: ["tooling/appearance-token-check.mjs", "--verify"],
   },
 ];
 

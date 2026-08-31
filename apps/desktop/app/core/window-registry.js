@@ -88,6 +88,16 @@ const windowRegistry = Object.freeze({
     attach: () => window.AISystem6ClioChart?.attach?.(),
   },
   },
+  clioProject: {
+    app: "clioProject",
+    builtByModule: true,
+    width: 560,
+    lazy: {
+      ensure: () => ensureClioProjectModule(),
+      attach: () => window.AISystem6ClioProjectWindow?.attach?.(),
+    },
+    onOpen: () => window.AISystem6ClioProjectWindow?.render?.(),
+  },
   clioStage: {
     app: "clioStage",
     lazy: {
@@ -482,6 +492,19 @@ const windowRegistry = Object.freeze({
     ensure: () => ensureTimeMachineModule(),
     attach: () => window.AISystem6TimeMachine?.attach?.(),
   },
+  },
+  todo: {
+    builtByModule: true,
+    app: "accessories",
+    width: ["--da-width-pad", 340],
+    mobileOverlay: true,
+    sidebar: true,
+    lazy: {
+      ensure: () => ensureTodoDaModule(),
+      attach: () => window.AISystem6TodoDa?.attach?.(),
+      appearanceAttach: () => window.AISystem6TodoDa?.attach?.(),
+    },
+    onOpen: () => window.AISystem6TodoDa?.render?.(),
   },
   translationPad: {
     app: "accessories",

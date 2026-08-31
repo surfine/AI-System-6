@@ -8,6 +8,11 @@
 
 let selectedQuickDraftSourceId = "";
 
+// The one shootable-visual classifier (可拍画面). The intake strategy signals
+// and the listen shot list both read THIS pattern — a second copy would be a
+// second classifier, and the two would drift.
+const QUICK_DRAFT_SHOOTABLE_PATTERN = /(能拍|录屏|画面|展示|演示)/;
+
 function intakeSnapshot(record = activeProjectQuickDraft({ create: false })?.record) {
   return normalizeQuickDraftWorkspace(record?.workspace, record).intake;
 }
@@ -226,7 +231,7 @@ function inferStrategySignals(text = "") {
   }
   if (/(官方|发布会|官网|资料)/.test(value)) addMaterial("官方资料", "适合放入快速扫功能段，不能替代亲测");
   if (/(亲测|我试了|我看到了|实测|上手)/.test(value)) addMaterial("亲测体验", "优先进入可拍展示段");
-  if (/(能拍|录屏|画面|展示|演示)/.test(value)) addMaterial("可拍画面", "优先映射成口播镜头");
+  if (QUICK_DRAFT_SHOOTABLE_PATTERN.test(value)) addMaterial("可拍画面", "优先映射成口播镜头");
   if (/(没测|未测|不能测|不好展示|不能展示|待核|不确定)/.test(value)) {
     addMaterial("未测/不好展示", "标边界、降权或删除");
     addRow("未测功能", "标边界或删除，不能写成亲测结论", "待处理");

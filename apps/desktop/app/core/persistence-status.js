@@ -217,6 +217,7 @@ function settingsSnapshotPayload() {
     notePadPages,
     notePadPageIndex,
     notePadDestination,
+    todoDaItems,
     systemNotifications: serializeSystemNotifications(),
     projectCdItems,
     clipboardText,
@@ -2019,6 +2020,23 @@ async function commitDeskPlansWhereverTheConnectionIs(payload) {
   }
 }
 
+// A refused save has two edges. While it stands, no surface may claim the
+// work is saved (the capsule and the desk cells would contradict the status
+// bar); when a later commit succeeds, every one of those surfaces must return
+// to normal. One flag, one refresh, called from both transitions.
+let standingDeskRecordConflict = false;
+
+function isDeskRecordConflictStanding() {
+  return standingDeskRecordConflict;
+}
+
+function setDeskRecordConflictStanding(next) {
+  const value = next === true;
+  if (standingDeskRecordConflict === value) return;
+  standingDeskRecordConflict = value;
+  if (typeof refreshTeachTextConflictSurfaces === "function") refreshTeachTextConflictSurfaces();
+}
+
 async function persistDeskState() {
   const endPerf = window.AISystem6Perf?.start("state_save");
   const startedAt = performance.now();
@@ -2053,6 +2071,7 @@ async function persistDeskState() {
       settingsBase,
       shouldWriteSettings,
     });
+    setDeskRecordConflictStanding(false);
     plans.forEach((plan) => storageRecordFingerprintCache.set(plan.key, plan.current));
     broadcastDeskRecordChanges(changedPlans, shouldWriteSettings);
     if (shouldWriteSettings) storageSnapshotCache.set("settings", settingsSnapshot);
@@ -2091,7 +2110,10 @@ async function persistDeskState() {
       error: true,
       conflicts: conflicted ? error.conflicts : undefined,
     };
-    if (conflicted && typeof setStatus === "function") setStatus(t("desk_record_conflict_status"));
+    if (conflicted) {
+      if (typeof setStatus === "function") setStatus(t("desk_record_conflict_status"));
+      setDeskRecordConflictStanding(true);
+    }
     endPerf?.({ error: true, conflict: conflicted });
     return false;
   }
@@ -2394,6 +2416,9 @@ function applySettings(settings) {
   }
   if (Number.isInteger(settings.notePadPageIndex)) notePadPageIndex = settings.notePadPageIndex;
   if (typeof settings.notePadDestination === "string") notePadDestination = settings.notePadDestination;
+  // Both halves of the To Do list's trip are eager on purpose: the items come
+  // back on every boot whether or not the lazy accessory window ever loads.
+  if (Array.isArray(settings.todoDaItems)) todoDaItems = normalizeTodoDaItems(settings.todoDaItems);
   restoreSystemNotifications(settings.systemNotifications);
   renderNotePadPage();
   if (Array.isArray(settings.projectCdItems)) {

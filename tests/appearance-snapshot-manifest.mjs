@@ -63,10 +63,25 @@ const EXCLUDED_WORKING_CELLS = new Set([
 // Lab's own tab, menu and dialog specimens, which are the real controls. The
 // route windows never show a tab strip, a menu or a modal, so nothing in the
 // two tiers above would have caught a regression in them.
-export const CONTROL_THEMES = SHOWCASE_THEMES;
+//
+// The controls tier used to render all six eras. After the geometry drain the
+// four middle eras carry layout ONLY through the ratcheted declarations in
+// their appearance sheets (tooling/css-budget.json appearanceGeometry), so
+// their layout equivalence is proven by tooling/appearance-token-check.mjs —
+// a computed token/geometry-delta comparison against Classic, seconds instead
+// of eight more screenshot cells. Pixels stay where pixels are the promise:
+// Classic (the proof appearance), Liquid Glass (blur cannot be token-compared),
+// and one showcase desktop frame per era so the era art stays guarded.
+export const CONTROL_THEMES = WORKING_THEMES;
 export const CONTROL_WINDOWS = ["control", "themeLab"];
 
-/** Every cell in the promised matrix: 6 showcase + 25 working + 12 controls = 43. */
+// The appearances the pixel net no longer renders in the controls tier; the
+// token-table check owns their per-appearance layout and token material.
+export const TOKEN_COMPARED_THEMES = SHOWCASE_THEMES.filter(
+  (theme) => !WORKING_THEMES.includes(theme)
+);
+
+/** Every cell in the promised matrix: 6 showcase + 25 working + 4 controls = 35. */
 export function snapshotCells() {
   const cells = [];
   for (const theme of SHOWCASE_THEMES) {

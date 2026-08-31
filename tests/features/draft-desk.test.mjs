@@ -394,4 +394,64 @@ test.assertIncludes(
   "opening the window still writes the writer's own title"
 );
 
+// --- the read-only subject ---------------------------------------------------
+// 试看 needs no write access: it writes only the darkroom record, which is
+// this application's own state. Develop, protection, and layer edits write the
+// document, so they keep the write gate. The gate has ONE owner — the
+// write-lease sweep over [data-requires-write] — so the menu rows and the
+// buttons they shortcut can never give two different answers.
+test.assertMatches(
+  lightroomMarkup,
+  /<button type="button" class="btn mini-btn" data-quick-draft-adjustment-apply/,
+  "试看 carries no write gate: previewing a read-only subject is allowed"
+);
+test.assertMatches(
+  lightroomMarkup,
+  /data-requires-write data-quick-draft-adjustment-develop/,
+  "冲洗 keeps the write gate: it writes the document"
+);
+test.assertMatches(
+  coordinator,
+  /registerReadOnlyRule\?\.\(\(element\) => \(\s*lightroomIsReadOnly\(\)/,
+  "the read-only subject greys the window through the one owner of that property"
+);
+test.assertIncludes(
+  composition,
+  "if (lightroomIsReadOnly()) {",
+  "Develop refuses a read-only subject even when a caller bypasses the greyed controls"
+);
+// The darkroom's reads and writes follow its subject: a developed document's
+// record, not the draft's. Without this, 试看 on a subject filed its composite
+// under the draft's record — the instruments read one text and reported on
+// another.
+test.assertIncludes(coordinator, "function darkroomTargetDocumentId(", "darkroom reads and writes resolve their target through the subject");
+test.assertMatches(coordinator, /const documentId = darkroomTargetDocumentId\(record, projectId\);/, "darkroomOf and the darkroom patch route both use the subject-aware target");
+test.assertIncludes(composition, "lightroomIsReadOnly()\n    ? lightroomBodyText()", "the composite and the reading view read the subject's own text");
+// The subject expires with the window that opened it: every close door reports
+// through noteLightroomClosed, and a subject that survived the close showed a
+// foreign document nothing on screen accounted for.
+test.assertMatches(editor, /function noteLightroomClosed\(\) \{[\s\S]{0,400}?clearLightroomSubject/, "closing the darkroom by any door releases the read-only subject");
+test.assertMatches(coordinator, /function clearLightroomSubject\(\) \{[\s\S]{0,500}?syncReadOnlySurface/, "releasing the subject unlocks the window's own controls again");
+
+// --- receipts (不写没有发生的事) ---------------------------------------------
+// The status line's right half names only operations that completed, with the
+// clock time and the model that ran. Every call sits AFTER the commit result.
+test.assertIncludes(coordinator, "function noteLightroomReceipt(", "the darkroom has one receipt writer");
+test.assertMatches(composition, /setQuickDraftStatus\(t\("quick_draft_apply_done"\)\);\s*noteLightroomReceipt\("quick_draft_preview_adjustments"/, "试看 receipts only after the composite landed");
+test.assertMatches(composition, /setQuickDraftStatus\(t\("quick_draft_develop_done"\)\);\s*noteLightroomReceipt\("quick_draft_develop"/, "冲洗 receipts only after the document was written");
+
+// --- 页面设置 / 打印 and 撤销冲洗 --------------------------------------------
+// Printing belongs to the reading view: the composite is the one paper this
+// application puts on a page, and reading needs no write access. Undo answers
+// for exactly one thing: the last develop, while its before-develop version is
+// still the newest link.
+test.assertMatches(menus, /menuItem\("lightroom-page-setup", "page_setup"\),\s*menuItem\("lightroom-print", "print"\)/, "the File menu carries Page Setup and Print");
+test.assertIncludes(menus, 'menuItem("lightroom-undo-develop", "lightroom_undo_develop", "lightroom-undo-develop")', "the Adjust menu carries Undo Develop with its key equivalent");
+test.assertMatches(handoff, /\["lightroom-page-setup", "lightroom-print"\]\.includes\(action\)[\s\S]{0,80}?view === "read"/, "Page Setup and Print exist only in the reading view");
+test.assertMatches(handoff, /action === "lightroom-undo-develop"[\s\S]{0,100}?writable && Boolean\(lastLightroomDevelopVersion\(\)\)/, "Undo Develop needs the pen and a develop still on top of the chain");
+test.assertMatches(editor, /function lastLightroomDevelopVersion\([\s\S]{0,300}?latest\.reason === "before-develop"/, "undo is available only while the develop is the newest link");
+test.assertMatches(editor, /async function undoLightroomDevelop\(\)[\s\S]{0,700}?restoreQuickDraftVersion\(version\.id, "version"\)/, "undo goes back through the same restore path every version row uses");
+test.assertMatches(editor, /async function printLightroomComposite\(\)[\s\S]{0,400}?lightroom_print_none/, "a page that cannot be built refuses instead of opening a blank window");
+test.assertIncludes(actions, '{ id: "lightroom-undo-develop", key: "z", code: "KeyZ", option: true, action: "lightroom-undo-develop"', "⌥⌘Z is scoped to the darkroom, beside the text undo instead of on top of it");
+
 test.finish();

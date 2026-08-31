@@ -1018,6 +1018,10 @@
     var(--paper);
   --window-frame-track-border: 1px solid var(--ink);
   --window-frame-thumb-bg: var(--paper);
+  /* A horizontal lane reuses the era's thumb recipe; eras whose recipe is
+     directional (Aqua's ramp, Snow Leopard's capsule) override this with a
+     rotated twin in their own appearance block. */
+  --window-frame-thumb-bg-horizontal: var(--window-frame-thumb-bg);
   --window-frame-thumb-border: 1px solid var(--ink);
   --window-frame-thumb-radius: 0;
   --window-frame-arrow-bg: var(--paper);

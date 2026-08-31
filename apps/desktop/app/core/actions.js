@@ -71,6 +71,7 @@ const keyboardShortcutRegistry = [
   { id: "lightroom-apply", key: "y", action: "quick-draft-apply", display: "⌘Y", labelKey: "quick_draft_preview_adjustments", keyCaps: true, suppressInEditable: true, scope: ["lightroom"] },
   { id: "lightroom-develop", key: "d", action: "quick-draft-develop", display: "⌘D", labelKey: "quick_draft_develop", keyCaps: true, suppressInEditable: true, scope: ["lightroom"] },
   { id: "lightroom-save-version", key: "s", action: "lightroom-save-version", display: "⌘S", labelKey: "lightroom_save_version", suppressInEditable: true, scope: ["lightroom"] },
+  { id: "lightroom-undo-develop", key: "z", code: "KeyZ", option: true, action: "lightroom-undo-develop", display: "⌥⌘Z", labelKey: "lightroom_undo_develop", suppressInEditable: true, scope: ["lightroom"] },
   { id: "lightroom-listen-toggle", key: "r", action: "lightroom-listen-toggle", display: "⌘R", labelKey: "quick_draft_listen_play", suppressInEditable: true, scope: ["lightroom"] },
   { id: "clio-chart-view-1", key: "1", action: "clio-chart-bars", display: "⌘1", labelKey: "clio_chart_bars", suppressInEditable: true, scope: ["clioChart"] },
   { id: "clio-chart-view-2", key: "2", action: "clio-chart-matrix", display: "⌘2", labelKey: "clio_chart_matrix", suppressInEditable: true, scope: ["clioChart"] },
@@ -1591,6 +1592,9 @@ window.AISystem6Runtime?.registerLazyCommand?.("open-clio-stage",{ensure:ensureC
 window.AISystem6Runtime?.registerLazyCommand?.("open-liquid-cover",{ensure:ensureLiquidCoverModule});
 window.AISystem6Runtime?.registerLazyCommand?.("open-clio-chart",{ensure:ensureClioChartModule});
 window.AISystem6Runtime?.registerLazyCommand?.("see-as-chart",{ensure:ensureClioChartModule});
+window.AISystem6Runtime?.registerLazyCommand?.("open-clio-project",{ensure:ensureClioProjectModule});
+window.AISystem6Runtime?.registerLazyCommand?.("clio-project-reset-layout",{ensure:ensureClioProjectModule});
+window.AISystem6Runtime?.registerLazyCommand?.("open-todo-da",{ensure:ensureTodoDaModule});
 window.AISystem6Runtime?.registerLazyCommand?.("open-theme-lab",{ensure:ensureThemeLabModule});
 window.AISystem6Runtime?.registerLazyCommand?.("open-quick-draft",{ensure:ensureQuickDraftModule});
 window.AISystem6Runtime?.registerLazyCommand?.("open-docmap",{ensure:ensureDocMapModule});

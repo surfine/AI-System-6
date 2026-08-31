@@ -581,6 +581,20 @@ function mdeCenterCaret(textarea) {
   }
 }
 
+// The overlay is the ink. When a state change outside the editor must make
+// sure the paper shows the textarea's current text (a refused save keeps the
+// local copy, and the writer must see what was kept), it asks for a repaint
+// here instead of faking an input event.
+const mdeRepainters = new WeakMap();
+
+function mdeRepaintHighlight(textarea) {
+  if (!textarea) return false;
+  const repaint = mdeRepainters.get(textarea);
+  if (!repaint) return false;
+  repaint();
+  return true;
+}
+
 // Wrap a textarea with a synced highlight overlay. Idempotent.
 function attachMarkdownHighlight(textarea) {
   if (!textarea || textarea.dataset.mdeHighlight === "true" || !textarea.parentNode) return;
@@ -642,6 +656,8 @@ function attachMarkdownHighlight(textarea) {
   // clipping inserts all write the textarea straight and fire no "input"
   // event; the paper used to stay blank while the text was there to select.
   watchControlWrites(textarea, HTMLTextAreaElement.prototype, "value", schedulePaint);
+
+  mdeRepainters.set(textarea, paint);
 
   paint();
 

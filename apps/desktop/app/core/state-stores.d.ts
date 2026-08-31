@@ -52,12 +52,19 @@ declare function updateMenuState(): void;
 // The menu bar caches its [data-action] rows. A feature that rebuilds rows
 // inside a popover has to say so, or the next pass greys yesterday's buttons.
 declare function invalidateMenuActionCache(): void;
+// The lazy print module's loader lives in config.js, across a lazy boundary
+// from the darkroom's print command, so it is declared here beside
+// updateMenuState() rather than left as an unresolved name.
+declare function ensureProjectCdPrintModule(): Promise<any>;
 declare function createDocumentRevision(options: any): Promise<any>;
 declare const crypto: Crypto;
 declare const structuredClone: typeof globalThis.structuredClone;
 declare const localStorage: Storage;
 
 interface Window {
+  // Installed by installLazyFunctionStub in config.js; a lazy stub until the
+  // project-cd-print module replaces it with the real function.
+  openPageSetup?: () => void | Promise<any>;
   lastTaskRunManifest?: any;
   lastContextManifest?: any;
   AISystem6StorageTransactions?: any;

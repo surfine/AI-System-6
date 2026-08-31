@@ -81,7 +81,11 @@ if (quickDraftListenSupported()) {
 }
 
 function quickDraftListenBody() {
-  return String(refs.draft?.value || "");
+  // The listen view reads the darkroom's subject: the developed document's
+  // text when one is open, the draft's otherwise.
+  return typeof lightroomBodyText === "function"
+    ? String(lightroomBodyText() || "")
+    : String(refs.draft?.value || "");
 }
 
 function ensureQuickDraftListenState() {
@@ -106,6 +110,9 @@ function ensureQuickDraftListenState() {
     lostBeatIndexes: new Set(),
     findings: previous && previous.projectId === activeProjectId ? previous.findings : [],
     keep: previous && previous.projectId === activeProjectId ? previous.keep || [] : [],
+    // Visual-cue production notes anchor by quote, like findings, so they
+    // survive a body edit and re-locate honestly at export time.
+    visualCues: previous && previous.projectId === activeProjectId ? previous.visualCues || [] : [],
     findingsFingerprint: previous?.findingsFingerprint || "",
     pendingFix: null,
   };
@@ -297,6 +304,22 @@ function seekQuickDraftListen(index) {
   else syncQuickDraftListenBeatUi();
 }
 
+function stepQuickDraftListenForward() {
+  const state = quickDraftListenState || ensureQuickDraftListenState();
+  seekQuickDraftListen(state.currentBeat + 1);
+}
+
+// 停止 is a full stop, not a bookmark: the audio ends and the prompter goes
+// back to the top. Pause is the one that remembers its place.
+function stopQuickDraftListenPlayback() {
+  stopQuickDraftListen();
+  const state = quickDraftListenState;
+  if (state) state.currentBeat = 0;
+  syncQuickDraftListenBeatUi();
+  setQuickDraftStatus(t("quick_draft_listen_stopped"));
+  return true;
+}
+
 // --- rehearse (自己排练) ---------------------------------------------------
 //
 // The prompter follows the author's own voice: SpeechRecognition (the same
@@ -446,16 +469,58 @@ function markQuickDraftListenLost() {
   const state = quickDraftListenState || ensureQuickDraftListenState();
   const beat = state.beats[state.currentBeat];
   if (!beat) return;
+  // While a partner is listening, the mark is theirs — same button, same
+  // beat, a different label on the row so the creator knows whose ear it was.
+  const kind = quickDraftPartnerListen ? "partner" : "lost";
   state.lostBeatIndexes.add(beat.index);
-  const already = state.findings.some((finding) => finding.kind === "lost" && finding.beatIndex === beat.index);
+  const already = state.findings.some((finding) => finding.kind === kind && finding.beatIndex === beat.index);
   if (!already) {
     const wasEmpty = !state.findings.length;
-    state.findings.push({ kind: "lost", beatIndex: beat.index, quote: beat.text });
+    state.findings.push({ kind, beatIndex: beat.index, quote: beat.text });
     if (wasEmpty) state.findingsFingerprint = state.fingerprint;
+    if (quickDraftPartnerListen) quickDraftPartnerListen.marks += 1;
   }
   syncQuickDraftListenBeatUi();
   renderQuickDraftFindings();
   setQuickDraftStatus(t("quick_draft_listen_marked", beat.index + 1));
+}
+
+// --- partner listen (伙伴听稿) ----------------------------------------------
+//
+// A partner listener is read-only, with exactly two inputs: the 「这里没跟上」
+// mark and one short note. No names, no roles, no history of who said what
+// about whom — the product never models the relationship. The session is a
+// counter and a note field, nothing more, and it never touches the document.
+
+let quickDraftPartnerListen = null;
+
+function togglePartnerListen() {
+  if (quickDraftPartnerListen) return stopPartnerListen();
+  if (quickDraftRehearse) stopQuickDraftRehearse({ silent: true });
+  const state = ensureQuickDraftListenState();
+  if (!state.beats.length) return false;
+  quickDraftPartnerListen = { marks: 0, note: "" };
+  renderQuickDraftFindings();
+  setQuickDraftStatus(t("quick_draft_listen_partner_on"));
+  if (typeof updateMenuState === "function") updateMenuState();
+  return true;
+}
+
+function stopPartnerListen() {
+  const session = quickDraftPartnerListen;
+  if (!session) return false;
+  quickDraftPartnerListen = null;
+  const note = String(session.note || "").trim();
+  if (note) {
+    const state = ensureQuickDraftListenState();
+    const wasEmpty = !state.findings.length;
+    state.findings.push({ kind: "partner-note", quote: note });
+    if (wasEmpty) state.findingsFingerprint = state.fingerprint;
+  }
+  renderQuickDraftFindings();
+  setQuickDraftStatus(t("quick_draft_listen_partner_summary", session.marks));
+  if (typeof updateMenuState === "function") updateMenuState();
+  return true;
 }
 
 // --- findings --------------------------------------------------------------
@@ -492,8 +557,16 @@ function quickDraftFindingsHost() {
   section.hidden = true;
   refs.eli5Bar.after(section);
   section.addEventListener("click", onQuickDraftFindingClick);
+  section.addEventListener("change", onQuickDraftFindingChange);
   quickDraftFindingsSection = section;
   return section;
+}
+
+// The partner's one note is typed where the marks land; it becomes a row only
+// when the session ends and the note is not empty.
+function onQuickDraftFindingChange(event) {
+  const note = event.target.closest?.("[data-quick-draft-partner-note]");
+  if (note && quickDraftPartnerListen) quickDraftPartnerListen.note = String(note.value || "");
 }
 
 function quickDraftFindingTypeLabel(type) {
@@ -506,7 +579,7 @@ function renderQuickDraftFindings() {
   if (!host) return;
   const state = quickDraftListenState;
   const hasContent = state && state.projectId === activeProjectId
-    && (state.findings.length || (state.keep || []).length);
+    && (state.findings.length || (state.keep || []).length || quickDraftPartnerListen);
   if (!hasContent) {
     host.hidden = true;
     host.innerHTML = "";
@@ -523,26 +596,45 @@ function renderQuickDraftFindings() {
   const rows = state.findings.map((finding, index) => {
     const label = finding.kind === "lost"
       ? t("quick_draft_finding_lost_label")
-      : finding.kind === "spoken"
-        ? t("quick_draft_finding_spoken_label")
-        : quickDraftFindingTypeLabel(finding.type);
+      : finding.kind === "partner"
+        ? t("quick_draft_finding_partner_label")
+        : finding.kind === "partner-note"
+          ? t("quick_draft_finding_partner_note_label")
+          : finding.kind === "spoken"
+            ? t("quick_draft_finding_spoken_label")
+            : quickDraftFindingTypeLabel(finding.type);
     const why = finding.kind === "review" && finding.why
       ? `<p class="draft-desk-finding-why">${escapeHtml(finding.why)}</p>` : "";
     const change = finding.kind === "review" && finding.change
       ? `<p class="draft-desk-finding-change">${escapeHtml(finding.change)}</p>` : "";
     const spoken = finding.kind === "spoken"
       ? `<p class="draft-desk-finding-spoken">${escapeHtml(finding.spoken)}</p>` : "";
-    const actions = finding.kind === "spoken"
+    // When audio alone fails, a rewrite is sometimes the wrong instruction:
+    // the honest exits are more narration, an on-screen visual cue, or both.
+    // They record a production note for the shot list and never touch the text.
+    const visualExits = finding.kind === "review" && finding.type === "visual-dependence"
       ? [
-        `<button class="btn mini-btn default" type="button" data-quick-draft-spoken-adopt="${index}">${escapeHtml(t("quick_draft_finding_use_spoken"))}</button>`,
-        `<button class="btn mini-btn" type="button" data-quick-draft-finding-jump="${index}">${escapeHtml(t("quick_draft_finding_jump"))}</button>`,
+        `<button class="btn mini-btn" type="button" data-quick-draft-visual-exit="narration" data-quick-draft-visual-index="${index}">${escapeHtml(t("quick_draft_finding_visual_narration"))}</button>`,
+        `<button class="btn mini-btn" type="button" data-quick-draft-visual-exit="visual" data-quick-draft-visual-index="${index}">${escapeHtml(t("quick_draft_finding_visual_cue"))}</button>`,
+        `<button class="btn mini-btn" type="button" data-quick-draft-visual-exit="both" data-quick-draft-visual-index="${index}">${escapeHtml(t("quick_draft_finding_visual_both"))}</button>`,
+      ]
+      : [];
+    const actions = finding.kind === "partner-note"
+      ? [
         `<button class="btn mini-btn" type="button" data-quick-draft-finding-keep="${index}">${escapeHtml(t("quick_draft_finding_keep"))}</button>`,
       ]
-      : [
-        `<button class="btn mini-btn" type="button" data-quick-draft-finding-jump="${index}">${escapeHtml(t("quick_draft_finding_jump"))}</button>`,
-        `<button class="btn mini-btn" type="button" data-quick-draft-finding-fix="${index}">${escapeHtml(t("quick_draft_finding_fix"))}</button>`,
-        `<button class="btn mini-btn" type="button" data-quick-draft-finding-keep="${index}">${escapeHtml(t("quick_draft_finding_keep"))}</button>`,
-      ];
+      : finding.kind === "spoken"
+        ? [
+          `<button class="btn mini-btn default" type="button" data-quick-draft-spoken-adopt="${index}">${escapeHtml(t("quick_draft_finding_use_spoken"))}</button>`,
+          `<button class="btn mini-btn" type="button" data-quick-draft-finding-jump="${index}">${escapeHtml(t("quick_draft_finding_jump"))}</button>`,
+          `<button class="btn mini-btn" type="button" data-quick-draft-finding-keep="${index}">${escapeHtml(t("quick_draft_finding_keep"))}</button>`,
+        ]
+        : [
+          ...visualExits,
+          `<button class="btn mini-btn" type="button" data-quick-draft-finding-jump="${index}">${escapeHtml(t("quick_draft_finding_jump"))}</button>`,
+          `<button class="btn mini-btn" type="button" data-quick-draft-finding-fix="${index}">${escapeHtml(t("quick_draft_finding_fix"))}</button>`,
+          `<button class="btn mini-btn" type="button" data-quick-draft-finding-keep="${index}">${escapeHtml(t("quick_draft_finding_keep"))}</button>`,
+        ];
     return [
       `<li class="draft-desk-finding-row" data-quick-draft-finding="${index}">`,
       `<span class="draft-desk-finding-type">${escapeHtml(label)}</span>`,
@@ -555,13 +647,23 @@ function renderQuickDraftFindings() {
       "</li>",
     ].join("");
   }).join("");
+  // While the partner listens, their one note is typed here; it becomes a row
+  // only when the session ends and the note says something.
+  const partnerNoteRow = quickDraftPartnerListen
+    ? [
+      '<li class="draft-desk-finding-row draft-desk-finding-partner-note">',
+      `<span class="draft-desk-finding-type">${escapeHtml(t("quick_draft_finding_partner_note_label"))}</span>`,
+      `<input type="text" maxlength="120" data-quick-draft-partner-note aria-label="${escapeHtml(t("quick_draft_finding_partner_note_label"))}" placeholder="${escapeHtml(t("quick_draft_listen_partner_note_hint"))}" value="${escapeHtml(String(quickDraftPartnerListen.note || ""))}" />`,
+      "</li>",
+    ].join("")
+    : "";
   host.innerHTML = [
     '<div class="draft-desk-region-head">',
     `<b>${escapeHtml(t("quick_draft_findings_title"))}</b>`,
     `<button class="btn mini-btn" type="button" data-quick-draft-finding-praise>${escapeHtml(t("quick_draft_chip_praise"))}</button>`,
     "</div>",
     stale ? `<p class="draft-desk-findings-stale">${escapeHtml(t("quick_draft_findings_stale"))}</p>` : "",
-    `<ol class="draft-desk-finding-list">${keepRows}${rows}</ol>`,
+    `<ol class="draft-desk-finding-list">${keepRows}${rows}${partnerNoteRow}</ol>`,
   ].join("");
   host.hidden = false;
 }
@@ -593,11 +695,34 @@ function jumpToQuickDraftFinding(index) {
   return true;
 }
 
+// A visual-cue exit resolves the finding without a rewrite: the beat gets a
+// production note (add narration, add an on-screen cue, or both) that the
+// shot list will carry. The note anchors by quote and re-locates at export —
+// an unlocatable beat refuses here rather than guessing.
+function noteVisualCueExit(index, exit = "visual") {
+  const state = quickDraftListenState;
+  const finding = state?.findings[index];
+  if (!finding) return false;
+  const located = quickDraftFixBeat(finding);
+  if (!located) {
+    setQuickDraftStatus(t("quick_draft_finding_jump_missing"));
+    return false;
+  }
+  state.visualCues.push({
+    quote: located.beat.text,
+    narration: exit === "narration" || exit === "both",
+    visual: exit === "visual" || exit === "both",
+  });
+  dismissQuickDraftFinding(index);
+  setQuickDraftStatus(t("quick_draft_visual_cue_noted", located.beat.index + 1));
+  return true;
+}
+
 function dismissQuickDraftFinding(index) {
   const state = quickDraftListenState;
   if (!state) return;
   const [removed] = state.findings.splice(index, 1);
-  if (removed?.kind === "lost") state.lostBeatIndexes.delete(removed.beatIndex);
+  if (removed?.kind === "lost" || removed?.kind === "partner") state.lostBeatIndexes.delete(removed.beatIndex);
   state.pendingFix = null;
   renderQuickDraftFindings();
   syncQuickDraftListenBeatUi();
@@ -623,6 +748,13 @@ function quickDraftFixBeat(finding) {
 }
 
 async function requestEli5FixOne(index) {
+  // A fix writes the document; a read-only subject never accepts one. The
+  // listen view can read a developed document, but the pen stays with the
+  // application that owns it.
+  if (typeof lightroomIsReadOnly === "function" && lightroomIsReadOnly()) {
+    setQuickDraftStatus(t("lightroom_read_only"));
+    return false;
+  }
   const state = quickDraftListenState;
   const finding = state?.findings[index];
   if (!finding) return false;
@@ -733,6 +865,10 @@ function renderQuickDraftFixDiff(index) {
 }
 
 async function applyQuickDraftEli5Fix(index) {
+  if (typeof lightroomIsReadOnly === "function" && lightroomIsReadOnly()) {
+    setQuickDraftStatus(t("lightroom_read_only"));
+    return false;
+  }
   const state = quickDraftListenState;
   const fix = state?.pendingFix;
   if (!fix || fix.findingIndex !== index || fix.projectId !== activeProjectId) return false;
@@ -784,6 +920,10 @@ async function applyQuickDraftEli5Fix(index) {
 // The spoken version came out of the author's own mouth during rehearsal:
 // adopting it is a splice of their words, no model involved.
 async function adoptSpokenRewording(index) {
+  if (typeof lightroomIsReadOnly === "function" && lightroomIsReadOnly()) {
+    setQuickDraftStatus(t("lightroom_read_only"));
+    return false;
+  }
   const state = quickDraftListenState;
   const finding = state?.findings[index];
   if (!finding || finding.kind !== "spoken" || !finding.spoken) return false;
@@ -811,6 +951,13 @@ function onQuickDraftFindingClick(event) {
   if (praise) return void window.AISystem6QuickDraftAI?.runClioTalkAction?.("praise", { announceUser: true });
   const spokenAdopt = event.target.closest("[data-quick-draft-spoken-adopt]");
   if (spokenAdopt) return void adoptSpokenRewording(Number(spokenAdopt.dataset.quickDraftSpokenAdopt));
+  const visualExit = event.target.closest("[data-quick-draft-visual-exit]");
+  if (visualExit) {
+    return void noteVisualCueExit(
+      Number(visualExit.dataset.quickDraftVisualIndex),
+      visualExit.dataset.quickDraftVisualExit || "visual"
+    );
+  }
   const jump = event.target.closest("[data-quick-draft-finding-jump]");
   if (jump) return void jumpToQuickDraftFinding(Number(jump.dataset.quickDraftFindingJump));
   const fixButton = event.target.closest("[data-quick-draft-finding-fix]");
@@ -896,10 +1043,100 @@ function toggleQuickDraftListen() {
   return playQuickDraftListen();
 }
 
+// --- Deliver-menu exports (P3) ----------------------------------------------
+//
+// Subtitles and the shot list go out through the existing Deliver menu — no
+// new panel. Both are built from the same listen beats the prompter reads;
+// SRT timings are estimates from reading speed and the export's own receipt
+// says so.
+
+function quickDraftListenExportName() {
+  const slot = activeProjectQuickDraft({ create: false });
+  const title = String(
+    refs.titleInput?.value
+    || slot?.record.workspace.title
+    || titleFromBody(quickDraftListenBody())
+    || "quick-draft"
+  ).trim();
+  return title.replace(/[\\/:*?"<>|]/g, "-").slice(0, 80) || "quick-draft";
+}
+
+async function exportQuickDraftListenSrt() {
+  const state = ensureQuickDraftListenState();
+  if (!state.beats.length) {
+    setQuickDraftStatus(t("quick_draft_listen_empty"));
+    return false;
+  }
+  const srt = window.AISystem6ListenBeats.buildListenSrt(state.beats, { rate: Number(state.rate) || 1 });
+  window.AISystem6WebPlatform.saveArtifact({
+    text: srt,
+    fileName: `${quickDraftListenExportName()}.srt`,
+    mimeType: "text/plain;charset=utf-8",
+  });
+  setQuickDraftStatus(t("quick_draft_export_srt_done"));
+  return true;
+}
+
+async function exportQuickDraftShotList() {
+  const state = ensureQuickDraftListenState();
+  if (!state.beats.length) {
+    setQuickDraftStatus(t("quick_draft_listen_empty"));
+    return false;
+  }
+  const body = quickDraftListenBody();
+  // Re-locate every visual-cue note by its quote. A note whose sentence has
+  // left the body is dropped, never guessed onto another beat.
+  const cuesByBeat = new Map();
+  for (const cue of state.visualCues || []) {
+    const range = window.AISystem6ListenBeats.findListenQuoteRange(body, cue.quote);
+    if (!range) continue;
+    const beat = window.AISystem6ListenBeats.listenBeatForOffset(state.beats, range.start);
+    if (!beat) continue;
+    const slot = cuesByBeat.get(beat.index) || { narration: false, visual: false };
+    slot.narration = slot.narration || cue.narration === true;
+    slot.visual = slot.visual || cue.visual === true;
+    cuesByBeat.set(beat.index, slot);
+  }
+  const cell = (value) => String(value || "").replace(/\|/g, "\\|").replace(/\s*\n\s*/g, " ").trim();
+  const rows = state.beats.map((beat) => {
+    const cue = cuesByBeat.get(beat.index);
+    const notes = [];
+    if (cue?.narration) notes.push(t("quick_draft_finding_visual_narration"));
+    if (cue?.visual) notes.push(t("quick_draft_finding_visual_cue"));
+    // The one shootable-visual classifier (可拍画面) from the intake strategy
+    // signals, reused as a hint — never a claim that footage exists.
+    if (!notes.length && QUICK_DRAFT_SHOOTABLE_PATTERN.test(beat.text)) {
+      notes.push(t("quick_draft_shootable_hint"));
+    }
+    return `| ${beat.index + 1} | ${cell(beat.text)} | ${cell(notes.join(" + ")) || "—"} |`;
+  });
+  const markdown = [
+    `# ${quickDraftListenExportName()} · ${t("quick_draft_export_shot_list")}`,
+    "",
+    `| ${t("quick_draft_shot_list_col_beat")} | ${t("quick_draft_shot_list_col_text")} | ${t("quick_draft_shot_list_col_cue")} |`,
+    "| --- | --- | --- |",
+    ...rows,
+    "",
+  ].join("\n");
+  window.AISystem6WebPlatform.saveArtifact({
+    text: markdown,
+    fileName: `${quickDraftListenExportName()}-shot-list.md`,
+    mimeType: "text/markdown;charset=utf-8",
+  });
+  setQuickDraftStatus(t("quick_draft_export_shot_list_done"));
+  return true;
+}
+
 window.AISystem6QuickDraftListen = Object.freeze({
   toggle: toggleQuickDraftListen,
+  stopPlayback: stopQuickDraftListenPlayback,
   stepBack: stepQuickDraftListenBack,
+  stepForward: stepQuickDraftListenForward,
   markLost: markQuickDraftListenLost,
+  togglePartner: togglePartnerListen,
+  isPartnerListening: () => Boolean(quickDraftPartnerListen),
+  exportSrt: exportQuickDraftListenSrt,
+  exportShotList: exportQuickDraftShotList,
   isPlaying: () => Boolean(quickDraftListenState?.playing),
   isRehearsing: () => Boolean(quickDraftRehearse),
   voiceRows: () => {

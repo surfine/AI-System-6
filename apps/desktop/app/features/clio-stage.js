@@ -67,8 +67,10 @@ function parseClioStageMarpDocument(markdown) {
     slides: normalizedSlides,
     slideMeta: normalizedSlides.map(extractClioStageSlideMeta),
     size: meta.size === "4:3" ? "4:3" : "16:9",
-    theme: ["gaia", "uncover"].includes(String(meta.theme || "").toLowerCase()) ? String(meta.theme).toLowerCase() : "default",
+    theme: ["gaia", "uncover", "ink"].includes(String(meta.theme || "").toLowerCase()) ? String(meta.theme).toLowerCase() : "default",
     paginate: /^true$/i.test(meta.paginate || ""),
+    header: meta.header || "",
+    footer: meta.footer || "",
   };
 }
 
@@ -133,6 +135,7 @@ function extractClioStageSlideMeta(slideMarkdown = "") {
   return {
     notes: directives.notes || "",
     header: directives.header || "",
+    footer: directives.footer || "",
     class: directives.class || "",
     paginate: directives.paginate ? /^true$/i.test(directives.paginate) : null,
   };
@@ -267,19 +270,58 @@ function renderClioStageSlide() {
   if (!els.viewport || !clioStageState.parsed) return renderClioStageEmpty();
   els.viewport.className = "clio-stage-viewport clio-stage-slide-mode";
   els.viewport.replaceChildren();
+  const parsed = clioStageState.parsed;
+  const slideMeta = parsed.slideMeta?.[clioStageState.index] || {};
   const frame = document.createElement("section");
-  frame.className = `clio-stage-slide-frame clio-stage-slide-${clioStageState.parsed.size.replace(":", "-")}`;
+  frame.className = `clio-stage-slide-frame clio-stage-slide-${parsed.size.replace(":", "-")} clio-stage-theme-${parsed.theme}`;
   frame.classList.add(...clioStageSlideClasses(clioStageState.index));
+  // A directive that parses but never paints is a promise the deck cannot
+  // keep: header, footer and paginate all reach the frame or none should
+  // parse. Per-slide values override the frontmatter; `_paginate: false`
+  // hides the number on that slide the way Marp does.
+  const headerText = slideMeta.header || parsed.header;
+  const footerText = slideMeta.footer || parsed.footer;
+  const paginate = slideMeta.paginate === null || slideMeta.paginate === undefined
+    ? parsed.paginate
+    : slideMeta.paginate;
+  if (headerText) {
+    const header = document.createElement("header");
+    header.className = "clio-stage-slide-header";
+    header.textContent = headerText;
+    frame.append(header);
+  }
+  const stage = document.createElement("div");
+  stage.className = "clio-stage-slide-stage";
   const body = document.createElement("div");
   body.className = "clio-stage-slide-body";
   if (clioStageState.source?.sourceKind === "clioChart" && clioStageState.source.chartSnapshot?.cloneNode) {
     body.classList.add("clio-stage-chart-slide");
     body.replaceChildren(clioStageState.source.chartSnapshot.cloneNode(true));
   } else {
-    body.innerHTML = markdownToSystemHtml(clioStageRenderableSlideMarkdown(clioStageState.parsed.slides[clioStageState.index] || ""));
+    body.innerHTML = markdownToSystemHtml(clioStageRenderableSlideMarkdown(parsed.slides[clioStageState.index] || ""));
   }
-  frame.append(body);
+  stage.append(body);
+  frame.append(stage);
+  if (footerText || paginate) {
+    const footer = document.createElement("footer");
+    footer.className = "clio-stage-slide-footer";
+    if (footerText) {
+      const label = document.createElement("span");
+      label.className = "clio-stage-slide-footer-text";
+      label.textContent = footerText;
+      footer.append(label);
+    }
+    if (paginate) {
+      const page = document.createElement("span");
+      page.className = "clio-stage-slide-page";
+      page.textContent = `${clioStageState.index + 1} / ${parsed.slides.length}`;
+      footer.append(page);
+    }
+    frame.append(footer);
+  }
   els.viewport.append(frame);
+  fitClioStageBody(stage, body);
+  observeClioStageFit();
   syncClioStageControls();
 }
 
@@ -295,7 +337,9 @@ function renderClioStageCue() {
   els.viewport.replaceChildren();
   const current = document.createElement("section");
   current.className = "clio-stage-cue-current";
-  current.innerHTML = markdownToSystemHtml(clioStageRenderableSlideMarkdown(clioStageState.parsed.slides[clioStageState.index] || ""));
+  const currentBody = document.createElement("div");
+  currentBody.innerHTML = markdownToSystemHtml(clioStageRenderableSlideMarkdown(clioStageState.parsed.slides[clioStageState.index] || ""));
+  current.append(currentBody);
   const next = document.createElement("aside");
   next.className = "clio-stage-cue-next";
   const nextSlide = clioStageState.parsed.slides[clioStageState.index + 1] || "";
@@ -304,13 +348,69 @@ function renderClioStageCue() {
   if (notesText) {
     const notes = document.createElement("aside");
     notes.className = "clio-stage-cue-next clio-stage-cue-notes";
-    notes.innerHTML = `<span>${escapeHtml(t("clio_stage_notes"))}</span><p>${escapeHtml(notesText)}</p>`;
+    // Speaker notes are markdown too -- rendering them as escaped source
+    // put literal ** marks on the prompter.
+    notes.innerHTML = `<span>${escapeHtml(t("clio_stage_notes"))}</span>`;
+    const notesBody = document.createElement("div");
+    notesBody.className = "clio-stage-cue-notes-body";
+    notesBody.innerHTML = markdownToSystemHtml(notesText);
+    notes.append(notesBody);
     els.viewport.append(current, notes, next);
   } else {
     els.viewport.append(current, next);
   }
+  fitClioStageBody(current, currentBody);
+  observeClioStageFit();
   syncClioStageControls();
   updateClioStageTimer();
+}
+
+// A deck fits its window the way a stage does: the rendered block keeps its
+// own composition and shrinks as one piece when the window cannot hold it,
+// down to a floor below which the surface scrolls -- type smaller than that
+// serves nobody standing in front of a room.
+const CLIO_STAGE_FIT_FLOOR = 0.55;
+let clioStageFitObserver = null;
+
+function fitClioStageBody(surface, body) {
+  if (!surface || !body) return;
+  body.classList.add("clio-stage-fit-body");
+  surface.classList.remove("clio-stage-fit-scroll", "clio-stage-fit-active");
+  body.style.removeProperty("transform");
+  body.style.removeProperty("width");
+  let scale = 1;
+  for (let pass = 0; pass < 3; pass += 1) {
+    const available = surface.clientHeight;
+    if (!available || body.scrollHeight * scale <= available + 1) break;
+    scale = Math.max(available / body.scrollHeight, CLIO_STAGE_FIT_FLOOR);
+    body.style.transform = `scale(${scale})`;
+    body.style.width = `${100 / scale}%`;
+    if (scale <= CLIO_STAGE_FIT_FLOOR) break;
+  }
+  if (scale < 1) surface.classList.add("clio-stage-fit-active");
+  if (body.scrollHeight * scale > surface.clientHeight + 1) surface.classList.add("clio-stage-fit-scroll");
+}
+
+function refitClioStage() {
+  const els = clioStageElements();
+  if (!els.viewport) return;
+  if (clioStageState.mode === "slide") {
+    fitClioStageBody(
+      els.viewport.querySelector(".clio-stage-slide-stage"),
+      els.viewport.querySelector(".clio-stage-slide-body")
+    );
+  } else if (clioStageState.mode === "cue") {
+    const current = els.viewport.querySelector(".clio-stage-cue-current");
+    fitClioStageBody(current, current?.querySelector(".clio-stage-fit-body"));
+  }
+}
+
+function observeClioStageFit() {
+  const els = clioStageElements();
+  if (!els.viewport || typeof ResizeObserver !== "function") return;
+  if (!clioStageFitObserver) clioStageFitObserver = new ResizeObserver(() => refitClioStage());
+  clioStageFitObserver.disconnect();
+  clioStageFitObserver.observe(els.viewport);
 }
 
 function renderClioStage() {

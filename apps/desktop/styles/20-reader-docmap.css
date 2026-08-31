@@ -1240,7 +1240,7 @@ body:has(.shutdown-screen:not(.is-hidden)) .dictation-field-button {
   max-height: 100%;
   aspect-ratio: 16 / 9;
   display: grid;
-  align-items: center;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   background: #f7f6ef;
   border: var(--clio-stage-slide-frame-border);
   border-radius: var(--clio-stage-slide-frame-radius);
@@ -1248,7 +1248,48 @@ body:has(.shutdown-screen:not(.is-hidden)) .dictation-field-button {
   padding: clamp(20px, 4.5%, 42px);
   overflow: hidden;
   color: var(--ink);
+}
+
+.clio-stage-slide-stage {
+  min-height: 0;
+  display: grid;
+  align-items: center;
+  overflow: hidden;
   container-type: inline-size;
+}
+
+/* Keynote-style fit: the body shrinks as one piece when the stage cannot
+   hold it; at the floor the stage scrolls instead. */
+.clio-stage-fit-body { transform-origin: top left; }
+.clio-stage-fit-active { align-items: start; }
+.clio-stage-fit-scroll { overflow-y: auto; }
+
+.clio-stage-slide-header,
+.clio-stage-slide-footer {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  font-family: var(--mono-font);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  opacity: 0.55;
+}
+
+.clio-stage-slide-header {
+  border-bottom: 1px solid currentColor;
+  padding-bottom: 6px;
+  margin-bottom: 10px;
+}
+
+.clio-stage-slide-footer {
+  border-top: 1px solid currentColor;
+  padding-top: 6px;
+  margin-top: 10px;
+}
+
+.clio-stage-slide-page {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
 }
 
 .clio-stage-slide-4-3 {
@@ -1299,14 +1340,14 @@ body:has(.shutdown-screen:not(.is-hidden)) .dictation-field-button {
 }
 
 .clio-stage-slide-body p {
-  max-width: 32ch;
+  max-width: 40ch;
 }
 
 .clio-stage-slide-body ul,
 .clio-stage-slide-body ol {
   display: grid;
   gap: .38em;
-  max-width: 34ch;
+  max-width: 42ch;
   margin: .4em 0 0;
   padding-left: 1.1em;
 }
@@ -1426,6 +1467,97 @@ body:has(.shutdown-screen:not(.is-hidden)) .dictation-field-button {
   line-height: 1.45;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+/* Stage themes. Original recipes wearing Marp's theme names: the frontmatter
+   says `theme: gaia` and gets this house's reading of warm ground and deep
+   headings, never a copied stylesheet. `ink` is the black stage the prompter
+   already wears. */
+.clio-stage-theme-ink {
+  background: #16161a;
+  color: #f4f2ea;
+}
+
+.clio-stage-theme-ink .clio-stage-slide-body h2 {
+  border-left-color: #f4f2ea;
+}
+
+.clio-stage-theme-ink .clio-stage-slide-body strong {
+  background: #f4f2ea;
+  color: #16161a;
+}
+
+.clio-stage-theme-ink .clio-stage-slide-body blockquote {
+  border-left-color: #8b8b93;
+  color: #d8d6cc;
+}
+
+.clio-stage-theme-ink .clio-stage-slide-body pre {
+  background: #26262c;
+  color: #ececec;
+}
+
+.clio-stage-theme-gaia {
+  background: #f3e9d7;
+  color: #2c2a24;
+}
+
+.clio-stage-theme-gaia .clio-stage-slide-body h1,
+.clio-stage-theme-gaia .clio-stage-slide-body h2,
+.clio-stage-theme-gaia .clio-stage-slide-body h3 {
+  color: #1f4d43;
+}
+
+.clio-stage-theme-gaia .clio-stage-slide-body h2 {
+  border-left-color: #1f4d43;
+}
+
+.clio-stage-theme-gaia .clio-stage-slide-body strong {
+  background: #1f4d43;
+  color: #f3e9d7;
+}
+
+.clio-stage-theme-gaia .clio-stage-slide-body blockquote {
+  border-left-color: #b08b4f;
+}
+
+.clio-stage-theme-uncover {
+  background: #fbfbf8;
+}
+
+.clio-stage-theme-uncover .clio-stage-slide-stage {
+  text-align: center;
+}
+
+.clio-stage-theme-uncover .clio-stage-slide-body h1,
+.clio-stage-theme-uncover .clio-stage-slide-body h2 {
+  border-left: 0;
+  padding-left: 0;
+}
+
+.clio-stage-theme-uncover .clio-stage-slide-body h1 {
+  max-width: none;
+  text-align: center;
+}
+
+.clio-stage-theme-uncover .clio-stage-slide-body h2 {
+  display: inline-block;
+  border-bottom: 2px solid var(--ink);
+  padding-bottom: .18em;
+  text-align: center;
+}
+
+.clio-stage-theme-uncover .clio-stage-slide-body p,
+.clio-stage-theme-uncover .clio-stage-slide-body ul,
+.clio-stage-theme-uncover .clio-stage-slide-body ol,
+.clio-stage-theme-uncover .clio-stage-slide-body blockquote {
+  margin-left: auto;
+  margin-right: auto;
+  text-align: left;
+}
+
+.clio-stage-cue-notes-body p {
+  margin: .2em 0 0;
 }
 
 .clio-stage-cue-mode {

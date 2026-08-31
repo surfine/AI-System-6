@@ -5,18 +5,38 @@
 
 
 function setTeachTextStatus(key) {
-  teachTextStatusEl.dataset.statusKey = key;
+  // While a refused save stands, "saved" would contradict the status bar's
+  // own conflict message: the disk holds another window's version. The
+  // intended key is kept so the capsule can return to it when a later
+  // commit succeeds and clears the conflict.
+  teachTextStatusEl.dataset.intendedStatusKey = key;
+  const conflicted = typeof isDeskRecordConflictStanding === "function"
+    && isDeskRecordConflictStanding();
+  const shown = conflicted && key === "saved" ? "unsaved" : key;
+  teachTextStatusEl.dataset.statusKey = shown;
   // Saving is the moment the writer commits work, so it is where the status
   // line can afford to say what the work amounts to. It reports one stored
   // fact — how many drafts this document has behind it — and never an opinion
   // of it. With no count in hand it says nothing extra rather than guess.
-  const drafts = key === "saved" && typeof cachedRevisions === "function"
+  const drafts = shown === "saved" && typeof cachedRevisions === "function"
     ? cachedRevisions(activeProjectId, activeTextFileId).length
     : 0;
-  teachTextStatusEl.textContent = drafts > 1 ? t("saved_drafts", drafts) : t(key);
+  teachTextStatusEl.textContent = drafts > 1 ? t("saved_drafts", drafts) : t(shown);
   syncTeachTextLabelControl();
   syncTeachTextPreview();
   updateMenuState();
+}
+
+// Both edges of a desk-record conflict land here: the refusal repaints every
+// surface that could claim saved-ness, and the later successful commit walks
+// them all back to normal. The paper itself is repainted too — the refusal's
+// whole promise is that the local copy stays visible.
+function refreshTeachTextConflictSurfaces() {
+  if (!teachTextStatusEl) return;
+  setTeachTextStatus(teachTextStatusEl.dataset.intendedStatusKey || teachTextStatusEl.dataset.statusKey || "unsaved");
+  updateTeachTextBoundaries();
+  updateTeachTextDeskState();
+  if (typeof mdeRepaintHighlight === "function") mdeRepaintHighlight(teachTextBodyInput);
 }
 
 function syncTeachTextWindowTitle() {
@@ -368,6 +388,27 @@ function imageAttachmentVisionMarkdown(attachment, mode, text) {
   return `### ${title}\n\n${String(text || "").trim()}`;
 }
 
+// Whether a Picture Album read would leave this Mac. The album is local by
+// default: only an active cloud provider with a real credential routes the
+// picture off the machine, and then only through the consent gate below.
+function teachTextImageReadGoesToCloud() {
+  return typeof cloudConfig !== "undefined"
+    && cloudConfig?.active === true
+    && typeof cloudCredentialReady === "function"
+    && cloudCredentialReady();
+}
+
+// Per-image consent. Every cloud read asks about THAT image, by name, and
+// says plainly that it will leave the machine. Declining costs nothing: the
+// image stays local and unread.
+async function confirmTeachTextImageCloudRead(name) {
+  const answer = await showSystemModal(t("image_vision_cloud_confirm", name), "confirm", {
+    confirmKey: "send",
+    defaultAction: "cancel",
+  });
+  return answer === "yes";
+}
+
 async function analyzeTeachTextImageAttachment(attachment, mode = "writing-context") {
   const project = getActiveProject();
   if (!project) {
@@ -383,7 +424,15 @@ async function analyzeTeachTextImageAttachment(attachment, mode = "writing-conte
     return;
   }
 
-  setStatus(t(mode === "ocr" ? "image_vision_ocr_reading" : "image_vision_reading", name));
+  const goesToCloud = teachTextImageReadGoesToCloud();
+  if (goesToCloud && !(await confirmTeachTextImageCloudRead(name))) {
+    setStatus(t("image_vision_cloud_declined"));
+    return;
+  }
+
+  setStatus(goesToCloud
+    ? t("image_vision_cloud_reading", name)
+    : t(mode === "ocr" ? "image_vision_ocr_reading" : "image_vision_reading", name));
   try {
     const result = await analyzeImageAttachment(attachment, {
       mode,
@@ -606,7 +655,13 @@ function teachTextSourceStateLabel(body) {
   if (statusKey === "viewing_help") return t("teachtext_source_help");
   if (teachTextPipelineLabel() && getActiveProject()?.manuscriptLinkedToOutline && text) return t("teachtext_source_project_manuscript");
   if (teachTextReviewLabel() && text) return t("label_final");
-  if (activeTextFileId) return t("teachtext_source_saved_document");
+  // "Saved document" is a saved-ness claim; while a refused save stands the
+  // disk holds another window's version, so the cell says so instead.
+  if (activeTextFileId) {
+    const conflicted = typeof isDeskRecordConflictStanding === "function"
+      && isDeskRecordConflictStanding();
+    return t(conflicted ? "unsaved" : "teachtext_source_saved_document");
+  }
   if (sourceCount) return t("teachtext_source_blocks", sourceCount);
   return text ? t("teachtext_source_scratch") : t("teachtext_source_empty");
 }
@@ -816,6 +871,28 @@ function currentNotePadSlip() {
   notePadPages = normalizeNotePadPages(notePadPages);
   notePadPageIndex = Math.min(Math.max(0, notePadPageIndex), notePadPages.length - 1);
   return notePadPages[notePadPageIndex];
+}
+
+// ---- To Do 待办 (eager half) -------------------------------------------------
+//
+// The To Do accessory's window is lazy (app/features/todo-da.js); its items
+// are not. They follow Note Pad's storage pattern — riding in the desk
+// settings — and this normalizer stays eager so both the snapshot and the
+// restore run on every boot whether or not the window is ever summoned. No
+// cap, and nothing is auto-dropped: a finished action stays until the writer
+// removes it, and an unfinished one stays, full stop.
+function normalizeTodoDaItems(items) {
+  return (Array.isArray(items) ? items : [])
+    .map((item, index) => ({
+      id: String(item?.id || `todo-${Date.now().toString(36)}-${index}`),
+      text: String(item?.text ?? "").trim(),
+      done: item?.done === true,
+      doneAt: String(item?.doneAt || ""),
+      createdAt: String(item?.createdAt || ""),
+      projectId: String(item?.projectId || ""),
+      projectName: String(item?.projectName || ""),
+    }))
+    .filter((item) => item.text);
 }
 
 // Every part except the four long-standing handles is found from the window

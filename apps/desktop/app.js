@@ -786,6 +786,7 @@ function getApplicationsItems() {
     return withStaticFinderMetadata([
       { name: t("clio_stage_label"), iconId: "clioStage", icon: "tools-icon", action: "open-clio-stage", type: "application", kind: t("application") },
       { name: t("clio_chart_label"), iconId: "clioChart", icon: "tools-icon", action: "open-clio-chart", type: "application", kind: t("application") },
+      { name: t("clio_project_label"), iconId: "clioProject", icon: "tools-icon", action: "open-clio-project", type: "application", kind: t("application") },
       { name: t("liquid_cover_label"), iconId: "liquidCover", icon: "tools-icon", action: "open-liquid-cover", type: "application", kind: t("application") },
       { name: t("cmf_studio_label"), iconId: "cmfStudio", icon: "tools-icon", action: "open-cmf-studio", type: "application", kind: t("application") },
       { name: t("image_prompt_studio_label"), iconId: "imagePromptStudio", action: "open-image-prompt-studio", type: "application", kind: t("application") },
@@ -1563,6 +1564,9 @@ const activeLongTasks = new Set();
 let notePadPages = [{ text: "", from: null }];
 let notePadPageIndex = 0;
 let notePadDestination = "teachtext";
+// Cross-project next actions for the To Do 待办 accessory:
+// { id, text, done, doneAt, createdAt, projectId, projectName }.
+let todoDaItems = [];
 let clipboardText = "";
 let clipboardSource = "";
 let clipboardUpdatedAt = "";

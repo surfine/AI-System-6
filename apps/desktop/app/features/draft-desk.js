@@ -288,10 +288,22 @@ function darkroomDocumentId(record) {
   return String(normalizeQuickDraftRecord(record).workspace.projectDocId || "");
 }
 
+// Which document the darkroom's reads and writes belong to. Usually the draft
+// the desk is writing — but while 文字亮室 holds another application's
+// document, every darkroom read and write is that document's, not the
+// draft's. Without this split a developed subject showed the draft's stack
+// and chain, and 试看 filed its composite under the draft's record: the
+// instruments read one text and reported on another. A cross-project commit
+// keeps the plain answer — a subject belongs to the active project only.
+function darkroomTargetDocumentId(record, projectId = activeProjectId) {
+  if (projectId === activeProjectId && lightroomSubject) return lightroomSubject.documentId;
+  return darkroomDocumentId(record);
+}
+
 function darkroomOf(record = activeProjectQuickDraft({ create: false })?.record, projectId = activeProjectId) {
   const blank = window.AISystem6DarkroomRecord?.blankDarkroomRecord?.()
     || { negative: "", negativeUpdatedAt: "", modelDelivered: "", modelDeliveredAt: "", composite: "", currentKey: "", generatedAt: "", adjustmentLayers: [], protectedRanges: [], versions: [] };
-  const documentId = darkroomDocumentId(record);
+  const documentId = darkroomTargetDocumentId(record, projectId);
   if (documentId) return window.AISystem6DarkroomStore?.darkroomRecord?.(projectId, documentId) || blank;
   // No document yet, so the state is waiting in the pending bucket. Reading it
   // here is not a convenience: without it a draft that has never been saved as
@@ -324,7 +336,7 @@ function splitDarkroomPatch(projectId, record, patchWorkspace = {}) {
     delete workspacePatch[field];
   }
   if (touched) {
-    const documentId = darkroomDocumentId(record);
+    const documentId = darkroomTargetDocumentId(record, projectId);
     if (documentId) {
       window.AISystem6DarkroomStore?.setDarkroomRecord?.(projectId, documentId, {
         ...darkroomOf(record, projectId),
@@ -390,7 +402,7 @@ async function commitQuickDraftForProject(projectId, patch = {}, options = {}) {
   const previous = slot.project.quickDraft;
   const record = updateQuickDraftForProject(projectId, patch, options);
   if (slot.project.id === activeProjectId) setSaveState("saving");
-  const documentId = String(slot.project.quickDraft?.workspace?.projectDocId || "");
+  const documentId = darkroomTargetDocumentId(slot.project.quickDraft, projectId);
   if (documentId && window.AISystem6DarkroomStore) {
     try {
       await window.AISystem6DarkroomStore.persistDarkroomRecord(projectId, documentId);
@@ -650,6 +662,15 @@ function lightroomIsReadOnly() {
   return Boolean(lightroomSubject);
 }
 
+// The read-only subject greys the window's own write controls through the one
+// owner of that property (write-lease's [data-requires-write] sweep), so the
+// menu rows and the buttons they shortcut can never give two answers again.
+// 试看 deliberately carries no data-requires-write: it writes only the
+// darkroom record, which is this application's own state.
+window.AISystem6WriteLease?.registerReadOnlyRule?.((element) => (
+  lightroomIsReadOnly() && Boolean(element?.closest?.('[data-window="lightroom"]'))
+));
+
 // Open the darkroom on a document that Quick Draft is not writing.
 async function developDocument(documentId = "") {
   const id = String(documentId || "");
@@ -667,11 +688,12 @@ async function developDocument(documentId = "") {
     }
   }
   await openWindow("lightroom", { skipQuickDraftEntrypoint: true });
-  const subject = document.getElementById("lightroom-subject");
-  if (subject) subject.textContent = String(file.name || "");
+  renderLightroomSubject({ force: true });
   const status = document.getElementById("lightroom-status");
   if (status) status.textContent = t("lightroom_read_only");
+  window.AISystem6WriteLease?.syncReadOnlySurface?.();
   setQuickDraftDisplayMode("grain");
+  if (typeof updateMenuState === "function") updateMenuState();
   return true;
 }
 
@@ -811,6 +833,12 @@ function syncLightroomMenuState() {
     rehearseRow.dataset.i18n = labelKey;
     rehearseRow.textContent = t(labelKey);
   }
+  const partnerRow = /** @type {HTMLElement | null} */ (bar.querySelector('[data-action="lightroom-listen-partner"]'));
+  if (partnerRow) {
+    const labelKey = listen?.isPartnerListening?.() ? "quick_draft_listen_partner_stop" : "quick_draft_listen_partner";
+    partnerRow.dataset.i18n = labelKey;
+    partnerRow.textContent = t(labelKey);
+  }
   // Rows that name an object are rebuilt, not restyled: the version chain, the
   // project's documents and this browser's voices all change while the window
   // is open, and a menu drawn once at boot would name yesterday's list.
@@ -841,8 +869,30 @@ function syncLightroomMenuState() {
   });
 }
 
+// Closing the darkroom hands the desk back to the writer's own draft. The
+// subject, its read-only badge and its receipt all expire together — leaving
+// any of them standing would describe a state the screen no longer shows.
 function clearLightroomSubject() {
+  if (!lightroomSubject) return;
   lightroomSubject = null;
+  const status = document.getElementById("lightroom-status");
+  if (status) status.textContent = "";
+  renderLightroomSubject({ force: true });
+  window.AISystem6WriteLease?.syncReadOnlySurface?.();
+  if (typeof updateMenuState === "function") updateMenuState();
+}
+
+// The status line's right half is a receipt: it names only an operation that
+// actually completed, with the clock time and, when a model was involved, its
+// name — a checkable fact, never a promise. (不写没有发生的事。)
+function noteLightroomReceipt(labelKey, { model = "" } = {}) {
+  const status = document.getElementById("lightroom-status");
+  if (!status) return;
+  const stamp = new Date().toLocaleTimeString(currentLanguage === "zh" ? "zh-CN" : "en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  status.textContent = [t(labelKey), stamp, String(model || "").trim()].filter(Boolean).join(" · ");
 }
 
 // 文字亮室 opens beside the draft it develops, never instead of it, and it opens
@@ -955,7 +1005,7 @@ function installLightroomWindow() {
                     <button type="button" class="btn mini-btn" data-requires-write data-quick-draft-protect-selection data-i18n="quick_draft_protect_selection" data-balloon-help="balloon_qd_protect">Protect Selection</button>
                   </div>
                   <div class="draft-desk-mobile-inspector-actions">
-                    <button type="button" class="btn mini-btn" data-requires-write data-quick-draft-adjustment-apply data-i18n="quick_draft_preview_adjustments">Preview</button>
+                    <button type="button" class="btn mini-btn" data-quick-draft-adjustment-apply data-i18n="quick_draft_preview_adjustments">Preview</button>
                     <button type="button" class="btn mini-btn default" data-requires-write data-quick-draft-adjustment-develop data-i18n="quick_draft_develop" data-balloon-help="balloon_qd_develop">Develop</button>
                   </div>
                 </section>
@@ -1022,6 +1072,14 @@ function isDerivedQuickDraftTitle(title) {
 function renderLightroomSubject({ force = false } = {}) {
   const subject = document.getElementById("lightroom-subject");
   if (!subject) return;
+  // A developed subject names itself, with the read-only badge beside the
+  // name. The draft's title must never overwrite it — that is how the status
+  // bar came to claim one document while the views showed another.
+  if (lightroomSubject) {
+    subject.textContent = [String(lightroomSubject.name || ""), t("lightroom_read_only_badge")]
+      .filter(Boolean).join(" · ");
+    return;
+  }
   const record = activeProjectQuickDraft({ create: false })?.record;
   const workspace = normalizeQuickDraftRecord(record).workspace;
   // A derived title is RECOMPUTED, never re-read. The stored copy is the
@@ -1706,6 +1764,8 @@ function bind() {
       if (action === "copy-markdown") await copyQuickDraftMarkdown();
       if (action === "export-markdown") await exportQuickDraftMarkdown();
       if (action === "share-markdown") await shareQuickDraftMarkdown();
+      if (action === "export-srt") await window.AISystem6QuickDraftListen?.exportSrt?.();
+      if (action === "export-shot-list") await window.AISystem6QuickDraftListen?.exportShotList?.();
       return;
     }
     const grainZoom = event.target.closest("[data-quick-draft-grain-zoom]");

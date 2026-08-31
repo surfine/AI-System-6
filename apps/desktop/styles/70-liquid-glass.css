@@ -289,6 +289,7 @@ body.use-liquid-glass {
   --window-frame-thumb-bg:
     linear-gradient(180deg, rgba(255, 255, 255, 0.56), rgba(16, 17, 20, 0.24)),
     rgba(16, 17, 20, 0.22);
+  --window-frame-thumb-bg-horizontal: var(--window-frame-thumb-bg);
   --window-frame-thumb-border: 2px solid rgba(255, 255, 255, 0.28);
   --window-frame-thumb-radius: 999px;
   --ink: #101114;

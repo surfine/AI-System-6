@@ -115,9 +115,47 @@
     return null;
   }
 
+  // --- subtitle timing (estimates, and they say so) -------------------------
+  // A beat's duration is estimated from reading speed — the same rates the
+  // draft statistics use (≈5 CJK characters or 2.4 Latin words per second),
+  // divided by the playback rate. An SRT built here is a draft timeline for an
+  // editor to slide, never a claim of measured audio.
+
+  function estimateListenBeatSeconds(text = "", rate = 1) {
+    const value = String(text || "");
+    const cjk = value.match(/[㐀-鿿]/g)?.length || 0;
+    const words = value.replace(/[㐀-鿿]/g, " ").match(/[A-Za-z0-9]+(?:['-][A-Za-z0-9]+)*/g)?.length || 0;
+    const seconds = cjk / 5 + words / 2.4;
+    const speed = Number(rate) > 0 ? Number(rate) : 1;
+    return Math.max(1.2, seconds / speed);
+  }
+
+  function formatSrtTimestamp(totalSeconds = 0) {
+    const clamped = Math.max(0, Number(totalSeconds) || 0);
+    const milliseconds = Math.round((clamped % 1) * 1000);
+    const whole = Math.floor(clamped);
+    const hours = String(Math.floor(whole / 3600)).padStart(2, "0");
+    const minutes = String(Math.floor((whole % 3600) / 60)).padStart(2, "0");
+    const seconds = String(whole % 60).padStart(2, "0");
+    return `${hours}:${minutes}:${seconds},${String(milliseconds).padStart(3, "0")}`;
+  }
+
+  function buildListenSrt(beats = [], { rate = 1 } = {}) {
+    let clock = 0;
+    return beats.map((beat, index) => {
+      const start = clock;
+      clock += estimateListenBeatSeconds(beat.text, rate);
+      const text = String(beat.text || "").replace(/\s*\n\s*/g, " ").trim();
+      return `${index + 1}\n${formatSrtTimestamp(start)} --> ${formatSrtTimestamp(clock)}\n${text}\n`;
+    }).join("\n");
+  }
+
   window.AISystem6ListenBeats = Object.freeze({
     segmentListenBeats,
     listenBeatForOffset,
     findListenQuoteRange,
+    estimateListenBeatSeconds,
+    formatSrtTimestamp,
+    buildListenSrt,
   });
 })();

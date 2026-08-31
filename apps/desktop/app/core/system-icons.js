@@ -198,6 +198,13 @@ const systemIconPaths = {
     <path d="M9 14h12v5H9z" />
     <path d="M3 14l5 2.5L3 19z" />
   `,
+  clioProject: `
+    <path d="M3 5h10v6H3z" />
+    <path d="M3 21h10v6H3z" />
+    <path d="M19 13h10v6H19z" />
+    <path d="M13 8h3v8M13 24h3v-8M16 16h3" />
+    <path d="M16 14l3 2-3 2z" />
+  `,
   liquidCover: `
     <path d="M4 6h24v20H4z" />
     <path d="M9 21a5 5 0 0 1 10 0" />
@@ -490,6 +497,13 @@ const classicPlusSystemIconPaths = {
     <path class="classic-ink" d="M9 14h12v5H9z" />
     <path class="classic-ink" d="M3 14l5 2.5L3 19z" />
   `,
+  clioProject: `
+    <path d="M3 5h10v6H3z" />
+    <path d="M3 21h10v6H3z" />
+    <path class="classic-ink" d="M19 13h10v6H19z" />
+    <path d="M13 8h3v8M13 24h3v-8M16 16h3" />
+    <path class="classic-ink" d="M16 14l3 2-3 2z" />
+  `,
   liquidCover: `
     <path d="M4 6h24v20H4z" />
     <path d="M9 21a5 5 0 0 1 10 0" />
@@ -591,6 +605,10 @@ const classicPlusSystemIconPaths = {
 };
 
 const classicOnlyModernFallbackIconId = {
+  // ClioProject is new object art with no reviewed era family yet. It shows
+  // its Classic line art in every appearance rather than joining the 56-object
+  // era vocabulary unreviewed; promoting it later means real per-era assets.
+  clioProject: true,
 };
 
 // Opt-in "line-art everywhere": when enabled, every non-Classic appearance

@@ -210,7 +210,12 @@ function quickDraftMarkdownHtml(text = "", record = activeProjectQuickDraft({ cr
   const source = normalizeQuickDraftRecord(record);
   let markdown = value;
   if (!/^#\s+/m.test(value)) {
-    const title = String(source.workspace.title || titleFromBody(value)).trim().replace(/\s+/g, " ").slice(0, 64) || t("quick_draft_title");
+    // A developed subject reads under its own name, never the draft's title.
+    const title = String(
+      (lightroomIsReadOnly() && lightroomSubject?.name)
+      || source.workspace.title
+      || titleFromBody(value)
+    ).trim().replace(/\s+/g, " ").slice(0, 64) || t("quick_draft_title");
     markdown = [`# ${title}`, "", value].join("\n");
   }
   return markdownToSystemHtml(markdown);
@@ -324,6 +329,10 @@ function toggleQuickDraftComposite() {
 // darkroom from the menu left the product believing it was still showing the
 // grain -- with nothing on screen showing it. Every door reports here.
 function noteLightroomClosed() {
+  // Closing the darkroom by any door hands back the writer's own draft: the
+  // read-only subject must not survive the window it was opened in, or the
+  // next open shows a foreign document nothing on screen accounts for.
+  if (typeof clearLightroomSubject === "function") clearLightroomSubject();
   if (quickDraftDisplayMode === "body") return;
   if (quickDraftDisplayMode === "listen") window.AISystem6QuickDraftListen?.stop?.();
   const container = refs.preview?.closest(".lightroom-view") || refs.preview?.parentElement;
@@ -484,6 +493,11 @@ function renderQuickDraftVersions(record = activeProjectQuickDraft({ create: fal
 // list could only ever hold states the writer had already accepted. This keeps
 // the body as it stands right now, under the writer's own reason.
 async function saveLightroomVersion() {
+  // The draft's body must never be filed into a read-only subject's chain.
+  if (lightroomIsReadOnly()) {
+    setQuickDraftStatus(t("lightroom_read_only"));
+    return false;
+  }
   const slot = activeProjectQuickDraft();
   if (!slot) {
     setQuickDraftStatus(t("quick_draft_no_project"));
@@ -516,12 +530,89 @@ async function saveLightroomVersion() {
   }
   renderQuickDraft(committed.record);
   setQuickDraftStatus(t("lightroom_version_saved"));
+  noteLightroomReceipt("lightroom_save_version");
+  return true;
+}
+
+// ---- 撤销冲洗 -------------------------------------------------------------
+// Undo answers for exactly one thing here: the last develop. Develop keeps the
+// body it replaced as a version tagged "before-develop"; undo is available
+// only while that version is still the newest link — one step back, through
+// the same restore path every version row uses, so the undone body is itself
+// kept and the move stays reversible.
+function lastLightroomDevelopVersion(record = activeProjectQuickDraft({ create: false })?.record) {
+  const versions = darkroomOf(record).versions || [];
+  const latest = versions[versions.length - 1];
+  return latest && latest.reason === "before-develop" ? latest : null;
+}
+
+async function undoLightroomDevelop() {
+  if (lightroomIsReadOnly()) {
+    setQuickDraftStatus(t("lightroom_read_only"));
+    return false;
+  }
+  const version = lastLightroomDevelopVersion();
+  if (!version) {
+    setQuickDraftStatus(t("lightroom_undo_develop_none"));
+    return false;
+  }
+  const restored = await restoreQuickDraftVersion(version.id, "version");
+  if (restored) noteLightroomReceipt("lightroom_undo_develop");
+  return restored;
+}
+
+// ---- 页面设置 / 打印 -------------------------------------------------------
+// The reading view is the composite on paper, so printing belongs to it and
+// prints exactly what it shows. The print machinery lives in the lazy
+// project-cd-print module; it is summoned here the way its own stubs summon
+// it, and a page that cannot be built refuses instead of opening a blank
+// window.
+async function printLightroomComposite() {
+  const state = currentCompositeState();
+  const text = String(state.text || "");
+  if (!state.ready || !text.trim()) {
+    setQuickDraftStatus(t("lightroom_print_none"));
+    return false;
+  }
+  if (typeof ensureProjectCdPrintModule === "function") await ensureProjectCdPrintModule();
+  const build = window["buildProjectCdPrintHtml"];
+  if (typeof build !== "function") {
+    setQuickDraftStatus(t("lightroom_print_none"));
+    return false;
+  }
+  const slot = activeProjectQuickDraft({ create: false });
+  const title = lightroomIsReadOnly()
+    ? String(lightroomSubject?.name || titleFromBody(text) || "").trim()
+    : String(refs.titleInput?.value || slot?.record.workspace.title || titleFromBody(text) || "").trim();
+  const printWindow = window.open("", "_blank", "width=960,height=720");
+  if (!printWindow) {
+    setQuickDraftStatus(t("project_cd_pdf_blocked"));
+    return false;
+  }
+  printWindow.document.open();
+  printWindow.document.write(build({ title: title || t("lightroom_title"), body: text }));
+  printWindow.document.close();
+  setQuickDraftStatus(t("project_cd_pdf_printing", title || t("lightroom_title")));
+  setTimeout(() => {
+    try {
+      printWindow.focus();
+      printWindow.print();
+    } catch {
+      setQuickDraftStatus(t("project_cd_pdf_blocked"));
+    }
+  }, 120);
   return true;
 }
 
 // Going back to a version is not a delete: the body being replaced is kept as
 // a version first, so the move is reversible in the same list.
 async function restoreQuickDraftVersion(id = "", kind = "version") {
+  // A read-only subject's chain is on display, but restoring from it would
+  // write that document's old text into the writer's draft. Refuse.
+  if (lightroomIsReadOnly()) {
+    setQuickDraftStatus(t("lightroom_read_only"));
+    return false;
+  }
   const slot = activeProjectQuickDraft();
   if (!slot) {
     setQuickDraftStatus(t("quick_draft_no_project"));

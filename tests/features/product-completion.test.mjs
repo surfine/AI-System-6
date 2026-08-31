@@ -87,6 +87,8 @@ answeredActions.add("open-sideask-pad");
 answeredActions.add("open-clio-chart");
 answeredActions.add("see-as-chart");
 answeredActions.add("clio-chart-hand-back");
+answeredActions.add("open-clio-project");
+answeredActions.add("open-todo-da");
 answeredActions.add("open-dictation");
 answeredActions.add("clio-stage-docmap");
 answeredActions.add("open-docmap");

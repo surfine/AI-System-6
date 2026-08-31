@@ -533,6 +533,15 @@ body[data-theme="aqua"] {
     #529aec 50% 57%, #65acfb 57% 64%, #76bcff 64% 71%,
     #83cdff 71% 79%, #90dbff 79% 86%, #87d0ff 86% 92%,
     #5c5c5c 92% 100%);
+  /* The same cross-lane ramp rotated for the horizontal bar: the stripes run
+     across the bar's 15px height, with the dark rail at the bottom. Without
+     this twin the 90deg recipe tiles its columns along the thumb's length. */
+  --window-frame-thumb-bg-horizontal: linear-gradient(180deg,
+    #0039b3 0 14%, #769ddc 14% 21%, #8cb8e6 21% 29%,
+    #89b6e6 29% 36%, #7fb1e7 36% 43%, #408ae0 43% 50%,
+    #529aec 50% 57%, #65acfb 57% 64%, #76bcff 64% 71%,
+    #83cdff 71% 79%, #90dbff 79% 86%, #87d0ff 86% 92%,
+    #5c5c5c 92% 100%);
   --window-frame-thumb-border: 1px solid #617d91;
   --window-frame-thumb-radius: 7px;
   --window-frame-arrow-bg: linear-gradient(#ffffff, #d3d3d3 52%, #f5f5f5);
@@ -1517,6 +1526,14 @@ body[data-theme="snow-leopard"] {
     linear-gradient(180deg, rgba(18, 72, 141, 0.82) 0, rgba(44, 119, 206, 0.5) 2px, rgba(90, 158, 236, 0.18) 5px, rgba(90, 158, 236, 0) 7px) top / 100% 7px no-repeat,
     linear-gradient(0deg, rgba(13, 69, 139, 0.82) 0, rgba(38, 113, 205, 0.5) 2px, rgba(76, 146, 227, 0.18) 5px, rgba(76, 146, 227, 0) 7px) bottom / 100% 7px no-repeat,
     linear-gradient(90deg, #4a7fc0 0%, #759fdc 8%, #90bae6 17%, #8bb8e7 26%, #83b4e9 34%, #438de3 46%, #579eee 56%, #6aaefd 65%, #7cc0ff 73%, #88cfff 81%, #92daff 90%, #8bd0ff 100%);
+  /* The same recipe rotated for the horizontal bar: the caps anchor to the
+     left/right ends and the two-lobe body ramp runs across the lane's height.
+     Without this twin the vertical recipe paints its caps along the thumb's
+     length and the body ramp tiles as stripes. */
+  --window-frame-thumb-bg-horizontal:
+    linear-gradient(90deg, rgba(18, 72, 141, 0.82) 0, rgba(44, 119, 206, 0.5) 2px, rgba(90, 158, 236, 0.18) 5px, rgba(90, 158, 236, 0) 7px) left / 7px 100% no-repeat,
+    linear-gradient(270deg, rgba(13, 69, 139, 0.82) 0, rgba(38, 113, 205, 0.5) 2px, rgba(76, 146, 227, 0.18) 5px, rgba(76, 146, 227, 0) 7px) right / 7px 100% no-repeat,
+    linear-gradient(180deg, #4a7fc0 0%, #759fdc 8%, #90bae6 17%, #8bb8e7 26%, #83b4e9 34%, #438de3 46%, #579eee 56%, #6aaefd 65%, #7cc0ff 73%, #88cfff 81%, #92daff 90%, #8bd0ff 100%);
   --window-frame-thumb-border: 1px solid #1c4f96;
   --window-frame-thumb-radius: 999px;
   /* Quaqua ScrollBar.thumb.v frame 3 seats the thumb flush against the track's
@@ -2146,6 +2163,12 @@ body[data-theme="aqua"] :is(.control-panel, .chooser-panel) .settings::-webkit-s
   border-radius: var(--window-frame-thumb-radius);
   background: var(--window-frame-thumb-bg);
   box-shadow: none;
+}
+
+/* The blue ramp is directional; a horizontal native thumb takes the rotated
+   twin so the stripes stay across the lane, not along it. */
+body[data-theme="aqua"] :is(.control-panel, .chooser-panel) .settings::-webkit-scrollbar-thumb:horizontal {
+  background: var(--window-frame-thumb-bg-horizontal, var(--window-frame-thumb-bg));
 }
 
 body[data-theme="aqua"] :is(.control-panel, .chooser-panel) .settings::-webkit-scrollbar-corner {

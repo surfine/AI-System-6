@@ -38,6 +38,34 @@ test.assertIncludes(persistence, "conflicts.push({ key: plan.key, id: String(id)
 test.assertIncludes(saveSource, "if (conflicts.length) throw deskRecordConflictError(conflicts)", "one refused record refuses the whole save");
 test.assertIncludes(persistence, 'error.code = "DESK_RECORD_CONFLICT"', "a refusal is distinguishable from a broken write");
 test.assertIncludes(saveSource, 'setStatus(t("desk_record_conflict_status"))', "the refusal reaches the writer in words");
+
+// A refusal has two edges, and every saved-ness surface follows both. While
+// the conflict stands, the TeachText capsule and the desk cells may not claim
+// "saved" against the bar's own conflict message; when a later commit
+// succeeds, one refresh walks them all back — and repaints the paper, because
+// the refusal's promise is that the preserved local copy stays visible.
+const accessories = read("app/features/teachtext-accessories.js");
+const markdownEditor = read("app/core/markdown-editor.js");
+test.assertIncludes(persistence, "function isDeskRecordConflictStanding()", "surfaces can ask whether a refused save is standing");
+test.assertIncludes(saveSource, "setDeskRecordConflictStanding(true)", "a refusal raises the standing-conflict state");
+test.assertIncludes(saveSource, "setDeskRecordConflictStanding(false)", "a later successful commit lowers it again");
+test.assertIncludes(persistence, "refreshTeachTextConflictSurfaces", "both edges refresh the saved-ness surfaces through one function");
+test.assertMatches(
+  accessories,
+  /function setTeachTextStatus[\s\S]*?isDeskRecordConflictStanding[\s\S]*?key === "saved" \? "unsaved" : key/,
+  "while the conflict stands the capsule never claims saved",
+);
+test.assertMatches(
+  accessories,
+  /isDeskRecordConflictStanding\(\);\s*\n\s*return t\(conflicted \? "unsaved" : "teachtext_source_saved_document"\)/,
+  "while the conflict stands the desk cell never claims a saved document",
+);
+test.assertMatches(
+  accessories,
+  /function refreshTeachTextConflictSurfaces[\s\S]*?mdeRepaintHighlight\(teachTextBodyInput\)/,
+  "the conflict refresh repaints the preserved text onto the paper",
+);
+test.assertIncludes(markdownEditor, "function mdeRepaintHighlight(", "the overlay exposes a real repaint for state changes outside the editor");
 test.assertMatches(
   persistence,
   /putDeskRecordAtBase[\s\S]*?store\.get\(id\)[\s\S]*?addEventListener\("success"/,

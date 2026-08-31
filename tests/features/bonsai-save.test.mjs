@@ -232,8 +232,12 @@ test.assertIncludes(workerSource, "importScripts(\"bonsai-city-sim.js\")", "the 
     // proof no emergent disaster fires inside the pinned recipes.
     // M6-2 added the newspaper; M8-1 adds the scenario record slot to the
     // serialized state. Funds and metrics remain unchanged throughout.
-    "starter-town": "27c6f495b3f841b37b8f53bcbe1e00fd1eb7227ec66015ffb24f2da46e486d1e",
-    "troubled-mid-size": "d95ed4415ae8b9ffb3151a6786563ff170287df231617ce3a2362b3c6ad74e39",
+    // The city data windows persist the demand gauge and economy index as
+    // additive fields, so a loaded city no longer resets them until the next
+    // month boundary. Serialized bytes change; no tick consumes a new random
+    // draw, and funds and metrics remain unchanged.
+    "starter-town": "80f8f7a94b0ded841fc54c68b017a6bb5c2eaeb61fbdc969628cea3d9719ffb5",
+    "troubled-mid-size": "808f373bf8d819d060721961a46529d316de9ffb85988b9d6c340db5f8135618",
   };
   test.assert(Object.isFrozen(sim.EXAMPLES) && Object.values(sim.EXAMPLES).every((recipe) => Object.isFrozen(recipe)
     && Object.isFrozen(recipe.commandLog) && recipe.commandLog.every((item) => item.schemaVersion === 2)), "example metadata and v2 command logs are read-only");

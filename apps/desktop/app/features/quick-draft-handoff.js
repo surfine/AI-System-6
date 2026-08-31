@@ -386,10 +386,16 @@ window.AISystem6QuickDraft = Object.freeze({
   applyAdjustments: applyAdjustmentLayers,
   develop: developAdjustmentLayers,
   hasBody: () => Boolean(String(refs.draft?.value || activeProjectQuickDraft({ create: false })?.record?.workspace?.body || "").trim()),
+  // The subject-aware body: the developed document's text when one is open,
+  // the draft's otherwise. Menu conditions for 文字亮室 read this one.
+  hasSubjectBody: () => Boolean(String(lightroomBodyText() || "").trim()),
   modelAvailable: quickDraftModelAvailable,
+  // 试看 answers for the darkroom's subject: a developed document previews
+  // from its own text and its own layer stack, and needs no write access —
+  // the composite lands in the darkroom record, which is this application's.
   canPreviewAdjustments: () => Boolean(
     quickDraftModelAvailable()
-    && String(refs.draft?.value || activeProjectQuickDraft({ create: false })?.record?.workspace?.body || "").trim()
+    && String(lightroomBodyText() || "").trim()
     && enabledAdjustmentLayers(activeProjectQuickDraft({ create: false })?.record).length
   ),
   canDevelop: () => currentCompositeState(activeProjectQuickDraft({ create: false })?.record).ready,
@@ -450,9 +456,10 @@ function quickDraftCommandAvailable(action) {
   if (!quickDraft) return false;
   if (inDarkroom) {
     // In the darkroom only the shared commands exist; everything else on this
-    // list belongs to the desk that writes.
+    // list belongs to the desk that writes. The views read the darkroom's
+    // subject, so a developed document's text counts as a body here.
     if (["quick-draft-view-grain", "quick-draft-view-read", "quick-draft-view-listen"].includes(action)) {
-      return !!quickDraft.hasBody?.();
+      return Boolean(String(lightroomBodyText() || "").trim());
     }
     if (action === "quick-draft-view-body") return true;
     if (action === "quick-draft-apply") return !!quickDraft.canPreviewAdjustments?.();
@@ -551,9 +558,15 @@ const LIGHTROOM_COMMAND_NAMES = [
   "lightroom-eli5-review",
   "lightroom-eli5-rewrite",
   "lightroom-discard-composite",
+  "lightroom-page-setup",
+  "lightroom-print",
+  "lightroom-undo-develop",
   "lightroom-listen-toggle",
+  "lightroom-listen-stop",
   "lightroom-listen-back",
+  "lightroom-listen-forward",
   "lightroom-listen-lost",
+  "lightroom-listen-partner",
   "lightroom-listen-rehearse",
   "lightroom-listen-voice",
 ];
@@ -565,7 +578,9 @@ function lightroomCommandAvailable(action) {
   if (!quickDraft) return false;
   // Opening a document is opening an application's document: always allowed.
   if (action === "lightroom-develop-document") return true;
-  const hasBody = !!quickDraft.hasBody?.();
+  // The window's commands read the darkroom's subject — the draft usually,
+  // the developed document when one is open.
+  const hasBody = Boolean(String(lightroomBodyText() || "").trim());
   const readOnly = !!quickDraft.isReadOnlySubject?.();
   const view = String(quickDraft.displayMode?.() || "");
   const writable = hasBody && !readOnly;
@@ -574,6 +589,15 @@ function lightroomCommandAvailable(action) {
   if (action === "lightroom-restore-version") return !readOnly && !!quickDraft.hasVersions?.();
   if (action === "lightroom-save-version") return writable;
   if (action === "lightroom-discard-composite") return writable && !!quickDraft.hasComposite?.();
+  // Page Setup and Print belong to the reading view: the composite is the one
+  // paper this application can put on a page. Reading needs no write access,
+  // so a read-only subject prints too.
+  if (["lightroom-page-setup", "lightroom-print"].includes(action)) {
+    return hasBody && view === "read";
+  }
+  if (action === "lightroom-undo-develop") {
+    return writable && Boolean(lastLightroomDevelopVersion());
+  }
   if (["lightroom-layer-scope", "lightroom-protect-selection"].includes(action)) {
     return writable && !!quickDraft.hasDraftSelection?.();
   }
@@ -617,9 +641,15 @@ function runLightroomRuntimeCommand(action, context = {}) {
   if (action === "lightroom-eli5-review") return window.AISystem6QuickDraftAI?.requestEli5Review?.();
   if (action === "lightroom-eli5-rewrite") return window.AISystem6QuickDraftAI?.requestEli5Rewrite?.();
   if (action === "lightroom-discard-composite") return discardLightroomComposite();
+  if (action === "lightroom-page-setup") return window.openPageSetup?.();
+  if (action === "lightroom-print") return printLightroomComposite();
+  if (action === "lightroom-undo-develop") return undoLightroomDevelop();
   if (action === "lightroom-listen-toggle") return window.AISystem6QuickDraftListen?.toggle?.();
+  if (action === "lightroom-listen-stop") return window.AISystem6QuickDraftListen?.stopPlayback?.();
   if (action === "lightroom-listen-back") return window.AISystem6QuickDraftListen?.stepBack?.();
+  if (action === "lightroom-listen-forward") return window.AISystem6QuickDraftListen?.stepForward?.();
   if (action === "lightroom-listen-lost") return window.AISystem6QuickDraftListen?.markLost?.();
+  if (action === "lightroom-listen-partner") return window.AISystem6QuickDraftListen?.togglePartner?.();
   if (action === "lightroom-listen-rehearse") return window.AISystem6QuickDraftListen?.startQuickDraftRehearse?.();
   if (action === "lightroom-listen-voice") return window.AISystem6QuickDraftListen?.setQuickDraftListenVoice?.(args[0] || "");
   return false;

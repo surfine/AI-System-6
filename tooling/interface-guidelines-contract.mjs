@@ -250,6 +250,22 @@ const dynamicWindowSources = Object.freeze({
     cssPrefixes: Object.freeze(["project-peek-"]),
     iconId: "projectDisk",
   }),
+  clioProject: Object.freeze({
+    sourceKind: "lazy",
+    openCommand: "open-clio-project",
+    ensure: "loadLazyWindowModule",
+    mountPath: "app/features/clio-project-window.js#installClioProjectWindow",
+    cssPrefixes: Object.freeze(["clio-project-"]),
+    iconId: "clioProject",
+  }),
+  todo: Object.freeze({
+    sourceKind: "lazy",
+    openCommand: "open-todo-da",
+    ensure: "loadLazyWindowModule",
+    mountPath: "app/features/todo-da.js#buildTodoDaWindow",
+    cssPrefixes: Object.freeze(["todo-da-"]),
+    iconId: "notePad",
+  }),
   finishingReceipt: Object.freeze({
     sourceKind: "lazy",
     openCommand: "open-finishing-receipt",
@@ -526,6 +542,13 @@ const windowInterfaceContracts = Object.freeze({
   docMap: standardDocument("utility", "summoned", { documentModel: "tdi", tdiHost: "docmap-tabs" }),
   clioStage: creativeLab(),
   clioChart: creativeLab(),
+  // The plan for one project: a summoned utility over the route, not a lab.
+  clioProject: specializedUtility("utility", {
+    route: "summoned",
+    statusLayout: "compact",
+    referenceSurface: "teachText",
+    rationale: "ClioProject reports the chain blocking the handoff in its status bar over a derived node-and-arrow plan.",
+  }),
   liquidCover: creativeLab(),
   dictionary: deskAccessory(),
   systemHelp: specializedUtility("utility", {
@@ -540,6 +563,7 @@ const windowInterfaceContracts = Object.freeze({
   // The writing accessories share one status shell: state on the left, and on
   // the right where the content goes or what the window holds.
   notePad: deskAccessory("system", { documentModel: "sdi" }),
+  todo: deskAccessory("system", { documentModel: "sdi" }),
   holdThought: deskAccessory("system", { documentModel: "sdi", statusLayout: "none" }),
   projectPeek: deskAccessory("system", { documentModel: "sdi" }),
   clipboard: deskAccessory("system", { documentModel: "sdi" }),

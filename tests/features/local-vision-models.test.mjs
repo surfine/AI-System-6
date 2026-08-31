@@ -45,7 +45,35 @@ test.assertNotIncludes(persistence, "|| \"qwen/qwen3-vl-4b\"", "client setup dis
 test.assertIncludes(imageAttachments, "AISystem6ModelTaskRuntime.buildVisionMessages", "the shared image module builds the browser vision request");
 test.assertIncludes(imageAttachments, "sendLocalModelTask", "the shared image module calls the selected model directly");
 test.assertIncludes(teachText, "analyzeImageAttachment(attachment", "TeachText Picture Album reads images through the shared module");
-test.assertNotIncludes(teachText, "fetch(\"/api/vision/analyze\"", "TeachText Picture Album never sends local vision content through the VPS");
+// The Picture Album is local by DEFAULT, and an image leaves this Mac only
+// with per-image consent. The old contract said "never sends images to the
+// VPS"; the honest contract after the per-image cloud opt-in is: the cloud
+// branch exists only behind an active cloud route, every cloud read asks
+// about that one image first, and the reading UI says out loud that the
+// image is going to the cloud. Weakening any leg of this reopens the silent
+// upload the old assertion existed to prevent.
+test.assertIncludes(
+  teachText,
+  "cloudConfig?.active === true",
+  "a Picture Album read leaves the machine only when the writer's own cloud switch is on"
+);
+test.assertIncludes(
+  teachText,
+  "if (goesToCloud && !(await confirmTeachTextImageCloudRead(name)))",
+  "each cloud read requires an explicit confirmation for that image, and declining keeps it local"
+);
+test.assert(
+  teachText.indexOf("await confirmTeachTextImageCloudRead(name)") < teachText.indexOf("analyzeImageAttachment(attachment"),
+  "consent is asked before the shared module is handed the image, never after"
+);
+test.assertIncludes(
+  teachText,
+  'defaultAction: "cancel"',
+  "keeping the image local is the consent dialog's default button"
+);
+test.assertIncludes(teachText, 't("image_vision_cloud_reading", name)', "the reading UI says the image is going to the cloud");
+test.assertIncludes(en, "image_vision_cloud_confirm", "English copy carries the per-image cloud consent question");
+test.assertIncludes(zh, "image_vision_cloud_confirm", "Chinese copy carries the per-image cloud consent question");
 test.assertIncludes(teachText, "analyzeTeachTextImageAttachment(attachment, \"writing-context\")", "TeachText exposes grounded image-note reading");
 test.assertIncludes(teachText, "analyzeTeachTextImageAttachment(attachment, \"ocr\")", "TeachText exposes image OCR");
 test.assertIncludes(teachText, "getTeachTextVisionModelRequestName", "TeachText uses the current local model selection when reading images");

@@ -1785,6 +1785,119 @@ window.AISystem6BonsaiSimLoaded = true;
       services: state.services.map((item) => ({ ...item })), facilities: state.facilities.map((item) => ({ ...item })), funding: { ...state.funding },
       problems: state.problems.map((item) => ({ ...item })), history: state.history.map((item) => ({ ...item, demand: { ...item.demand } })) };
   }
+  // --- City data windows: pure read models ------------------------------------
+  // The Population, Industry, and Neighbors windows read these derivations.
+  // All three are pure functions of saved state: no RNG state draws, no
+  // mutation, nothing new enters a save. latticeInt is a stateless hash.
+  const POPULATION_COHORTS = 10;
+  function populationBreakdown(state) {
+    const total = state.population + state.arcoPopulation;
+    // Growth over the last budget year widens the young end of the pyramid;
+    // life expectancy stretches the old end.
+    const reference = state.history.length ? state.history[Math.max(0, state.history.length - 13)].population : state.population;
+    const growthBias = reference > 0
+      ? Math.max(-20, Math.min(20, Math.round((state.population - reference) * 100 / reference)))
+      : (state.population > 0 ? 20 : 0);
+    const weights = []; let weightSum = 0;
+    for (let cohort = 0; cohort < POPULATION_COHORTS; cohort += 1) {
+      const midAge = cohort * 10 + 5;
+      const survival = Math.max(0, state.le + 8 - midAge);
+      const youth = (POPULATION_COHORTS - 1 - cohort) * growthBias;
+      const weight = Math.max(cohort === POPULATION_COHORTS - 1 ? 0 : 1, survival * 10 + youth);
+      weights.push(weight); weightSum += weight;
+    }
+    let assigned = 0;
+    const cohorts = weights.map((weight, cohort) => {
+      const share = weightSum ? Math.floor(total * weight / weightSum) : 0;
+      assigned += share;
+      return { cohort, fromAge: cohort * 10, toAge: cohort === POPULATION_COHORTS - 1 ? null : cohort * 10 + 9, population: share };
+    });
+    cohorts[0].population += total - assigned;
+    const workforce = Math.floor(state.population * state.workforcePercent / 100);
+    return { total, cityPopulation: state.population, arcoPopulation: state.arcoPopulation,
+      eq: state.eq, le: state.le, workforcePercent: state.workforcePercent, workforce,
+      unemployed: state.unemployed, employed: Math.max(0, workforce - state.unemployed), growthBias, cohorts };
+  }
+  // Ten original industry sectors ride era curves over the city's current
+  // year: each rises, peaks, and hands over to later technology. The ids are
+  // ours; the shell owns the words for them.
+  const INDUSTRY_SECTORS = Object.freeze([
+    { id: "farming", rise: 1800, peak: 1900, fall: 2150, pollution: 2, cyclical: 1 },
+    { id: "textiles", rise: 1840, peak: 1920, fall: 2080, pollution: 4, cyclical: 2 },
+    { id: "steelworks", rise: 1870, peak: 1950, fall: 2090, pollution: 9, cyclical: 4 },
+    { id: "chemicals", rise: 1890, peak: 1970, fall: 2150, pollution: 8, cyclical: 3 },
+    { id: "machinery", rise: 1900, peak: 1980, fall: 2200, pollution: 6, cyclical: 4 },
+    { id: "shipping", rise: 1850, peak: 1990, fall: 2400, pollution: 3, cyclical: 3 },
+    { id: "media", rise: 1920, peak: 2020, fall: 2500, pollution: 1, cyclical: 2 },
+    { id: "electronics", rise: 1950, peak: 2040, fall: 2500, pollution: 2, cyclical: 5 },
+    { id: "aerospace", rise: 1960, peak: 2070, fall: 2600, pollution: 5, cyclical: 5 },
+    { id: "biotech", rise: 1990, peak: 2100, fall: 2700, pollution: 1, cyclical: 3 },
+  ]);
+  function sectorEraWeight(year, sector) {
+    if (year <= sector.rise || year >= sector.fall) return 0;
+    return year <= sector.peak
+      ? Math.round(100 * (year - sector.rise) / (sector.peak - sector.rise))
+      : Math.round(100 * (sector.fall - year) / (sector.fall - sector.peak));
+  }
+  function industryBreakdown(state) {
+    const year = dateOf(state).year;
+    const clean = ordinanceOn(state, "pollutionControls");
+    const raw = INDUSTRY_SECTORS.map((sector, index) => {
+      let weight = sectorEraWeight(year, sector) + (latticeInt(index + 1, 11, state.seed) % 15);
+      // The pollution-controls ordinance moves work from dirty stacks to
+      // clean floors without inventing or destroying the total.
+      if (clean) weight = Math.max(0, weight + (sector.pollution >= 6 ? -Math.floor(weight / 4) : Math.floor(weight / 6)));
+      return weight;
+    });
+    const weightSum = raw.reduce((sum, weight) => sum + weight, 0) || 1;
+    let assigned = 0;
+    const sectors = INDUSTRY_SECTORS.map((sector, index) => {
+      const jobs = Math.floor(state.iJobs * raw[index] / weightSum);
+      assigned += jobs;
+      const demand = Math.max(-100, Math.min(100, state.demand.i + Math.round(state.economyIndex * sector.cyclical / 5) - (clean && sector.pollution >= 6 ? 10 : 0)));
+      return { id: sector.id, ratio: Math.round(raw[index] * 100 / weightSum), jobs, demand, pollution: sector.pollution };
+    });
+    sectors[0].jobs += Math.max(0, state.iJobs - assigned);
+    return { year, iJobs: state.iJobs, cJobs: state.cJobs, economyIndex: state.economyIndex, demand: { ...state.demand }, cleanIndustry: clean, sectors };
+  }
+  // The four neighbouring cities ride the national clock (M4b-1). Each holds
+  // its own steady share of the national population plus the pull of our own
+  // growth; trade follows the road, rail, and highway tiles the player
+  // actually built to that map edge, and every working port serves all four.
+  const NEIGHBOR_DIRECTIONS = Object.freeze(["north", "east", "south", "west"]);
+  const NEIGHBOR_NAME_COUNT = 12;
+  function edgeConnections(state) {
+    const last = state.size - 1;
+    const out = { north: 0, east: 0, south: 0, west: 0 };
+    const carries = (i) => (state.road[i] || state.rail[i] || state.highway[i] ? 1 : 0);
+    for (let x = 0; x < state.size; x += 1) { out.north += carries(indexOf(state, x, 0)); out.south += carries(indexOf(state, x, last)); }
+    for (let y = 0; y < state.size; y += 1) { out.west += carries(indexOf(state, 0, y)); out.east += carries(indexOf(state, last, y)); }
+    return out;
+  }
+  function neighborsReport(state) {
+    ensureDerived(state);
+    const connections = edgeConnections(state);
+    let seaportTiles = 0; let airportTiles = 0;
+    for (let i = 0; i < tileCount(state); i += 1) {
+      if (!state.powered[i] || !state.roadOk[i]) continue;
+      if (state.zone[i] === ZONE_SEAPORT) seaportTiles += 1; else if (state.zone[i] === ZONE_AIRPORT) airportTiles += 1;
+    }
+    const portTrade = Math.floor(seaportTiles / 2) * 5 + Math.floor(airportTiles / 3) * 4;
+    const takenNames = new Set();
+    const neighbors = NEIGHBOR_DIRECTIONS.map((direction, index) => {
+      const salt = latticeInt(index + 1, 23, state.seed);
+      let nameIndex = salt % NEIGHBOR_NAME_COUNT;
+      while (takenNames.has(nameIndex)) nameIndex = (nameIndex + 1) % NEIGHBOR_NAME_COUNT;
+      takenNames.add(nameIndex);
+      const population = Math.floor(state.nationalPopulation * (30 + (salt % 45)) / 1000)
+        + Math.floor(state.population * (10 + ((salt >> 8) % 12)) / 64);
+      const linked = connections[direction] > 0;
+      const trade = (linked ? connections[direction] * 6 + Math.floor(Math.min(state.railService.freightCapacity, 400) / 8) : 0) + portTrade;
+      return { direction, nameIndex, population, connections: connections[direction], linked, trade };
+    });
+    return { nationalPopulation: state.nationalPopulation, months: Math.floor(state.tick / TICKS_PER_MONTH),
+      seaportTiles, airportTiles, neighborTotal: neighbors.reduce((sum, item) => sum + item.population, 0), neighbors };
+  }
   function tileInfo(state, x, y) {
     if (!inBounds(state, x, y)) return null; ensureDerived(state); const i = indexOf(state, x, y); const facility = state.facilityAt[i] >= 0 ? state.facilities[state.facilityAt[i]] : null; const code = state.problemCode[i];
     return { x, y, terrain: state.terrain[i], alt: state.alt[i], water: !!state.water[i], shore: !!state.shore[i], slope: state.slope[i], tree: !!state.tree[i],
@@ -1803,6 +1916,7 @@ window.AISystem6BonsaiSimLoaded = true;
     return { format: FORMAT, version: 3, rulesetVersion: 3, name: state.name, seed: state.seed, rngState: state.rngState | 0, size: state.size, terrainPreset: state.terrainPreset, yearFounded: state.yearFounded,
       tick: state.tick, funds: state.funds, taxRate: state.taxRate, taxRates: { ...state.taxRates }, bonds: state.bonds.map((item) => ({ ...item })), ordinances: { ...state.ordinances },
       eq: state.eq, le: state.le, workforcePercent: state.workforcePercent, unemployed: state.unemployed, nationalPopulation: state.nationalPopulation,
+      demand: { ...state.demand }, economyIndex: state.economyIndex,
       graphs: cloneJson(state.graphs),
       rewardTier: state.rewardTier, rewardsOffered: state.rewardsOffered.slice(), microsims: state.microsims.map((item) => ({ ...item })),
       milestone: state.milestone, wasBroke: state.wasBroke, brownout: state.brownout, waterShortage: state.waterShortage,
@@ -1983,6 +2097,13 @@ window.AISystem6BonsaiSimLoaded = true;
     state.workforcePercent = scalar(data.workforcePercent, 30, 70, 41);
     state.unemployed = Number.isInteger(data.unemployed) && data.unemployed >= 0 ? data.unemployed : 0;
     state.nationalPopulation = Number.isInteger(data.nationalPopulation) && data.nationalPopulation > 0 ? data.nationalPopulation : 120000;
+    // Additive v3 fields (city data windows): the demand gauge and the
+    // economy index used to reset to defaults until the next month boundary.
+    // Older saves without them keep exactly that behavior.
+    state.economyIndex = scalar(data.economyIndex, -100, 100, 0);
+    if (data.demand && typeof data.demand === "object") {
+      state.demand = { r: scalar(data.demand.r, -100, 100, 55), c: scalar(data.demand.c, -100, 100, 30), i: scalar(data.demand.i, -100, 100, 35) };
+    }
     state.graphs = makeEmptyGraphs();
     if (data.graphs && typeof data.graphs === "object") for (const tier of Object.keys(GRAPH_TIERS)) {
       const source = data.graphs[tier];
@@ -2105,6 +2226,7 @@ window.AISystem6BonsaiSimLoaded = true;
     OVER: Object.freeze({ NONE: 0, ROAD: 1, WIRE: 2, PARK: 3, ROADWIRE: 4 }), ZONE: Object.freeze({ NONE: 0, R: 1, C: 2, I: 3, MILITARY: 4, AIRPORT: 5, SEAPORT: 6 }), DENSITY: Object.freeze({ NONE: 0, LOW: 1, HIGH: 2 }),
     BUILDING_STATE: Object.freeze({ EMPTY: 0, FOUNDATION: 1, CONSTRUCTION: 2, ACTIVE: 3, DECLINING: 4, ABANDONED: 5, RECOVERING: 6 }), PROBLEM,
     EXAMPLES, SCENARIOS, createScenarioCity, createCity, replayExampleCity, createExampleCity, advanceTicks, applyTool, previewCommand, submitCommand, undo, redo, drainEvents, canonicalStringify, checkpoint, encodeSave, decodeSave, validateSaveEnvelope, migrateSave,
-    cityReport, tileInfo, ensureDerived, dateOf, drainNotices, derivedAgentFacts, buildRenderSnapshot, serialize, deserialize,
+    cityReport, populationBreakdown, industryBreakdown, neighborsReport, INDUSTRY_SECTORS, NEIGHBOR_DIRECTIONS, NEIGHBOR_NAME_COUNT,
+    tileInfo, ensureDerived, dateOf, drainNotices, derivedAgentFacts, buildRenderSnapshot, serialize, deserialize,
   });
 })();

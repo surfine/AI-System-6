@@ -268,6 +268,7 @@ body[data-theme="platinum"] {
   --window-frame-track-border: 1px solid #000000;
   --window-frame-track-shadow: inset 1px 1px #777777, inset -1px -1px #cccccc;
   --window-frame-thumb-bg: #9999ff;
+  --window-frame-thumb-bg-horizontal: var(--window-frame-thumb-bg);
   --window-frame-thumb-border: 1px solid #000000;
   --window-frame-thumb-shadow: inset 1px 1px #ccccff, inset -1px -1px #6666cc;
   --window-frame-arrow-bg: #dddddd;
@@ -1600,6 +1601,7 @@ body[data-theme="yosemite"] {
   /* B00merang scrollbar.slider: 6px radius, 3px transparent border,
      ~21% ink mix on the theme background. */
   --window-frame-thumb-bg: rgba(78, 78, 78, 0.34);
+  --window-frame-thumb-bg-horizontal: var(--window-frame-thumb-bg);
   --window-frame-thumb-border: 3px solid transparent;
   --window-frame-thumb-radius: 6px;
   --window-frame-arrow-bg: transparent;

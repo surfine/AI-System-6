@@ -1476,6 +1476,47 @@ function updateProjectLabels() {
   renderAboutMacintosh();
 }
 
+// A disk at risk of stalling, defined ONLY from facts the desk already has:
+// nothing written to the project for two weeks (its `updatedAt`, which every
+// record write stamps) AND nothing burned to its Project CD. No delivery-date
+// field exists and none is invented; a missing timestamp is unknown, and an
+// unknown is never claimed as a risk. Pure, so the contract can execute it.
+const PROJECT_DISK_STALL_DAYS = 14;
+
+function projectDiskAtRisk(project, cdItems, now = Date.now()) {
+  const updated = Date.parse(project?.updatedAt || "");
+  if (!Number.isFinite(updated)) return false;
+  const stalled = now - updated >= PROJECT_DISK_STALL_DAYS * 24 * 60 * 60 * 1000;
+  const burned = (Array.isArray(cdItems) ? cdItems : [])
+    .some((item) => item && item.projectId === project?.id);
+  return stalled && !burned;
+}
+
+// The mark itself: the diamond — the classic "this one has something in it"
+// figure the Writing Flow palette already uses — put on when the fact holds
+// and taken off when it stops holding. It goes at the front of the icon so
+// `lastChild` stays the disk's name label. Balloon Help says it in words.
+function applyProjectDiskRiskMark(icon, project) {
+  if (!icon) return;
+  const atRisk = !!project
+    && projectDiskAtRisk(project, typeof projectCdItems !== "undefined" ? projectCdItems : []);
+  icon.classList.toggle("has-disk-risk", atRisk);
+  let mark = icon.querySelector(".disk-risk-mark");
+  if (atRisk && !mark) {
+    mark = document.createElement("span");
+    mark.className = "disk-risk-mark";
+    mark.setAttribute("aria-hidden", "true");
+    icon.prepend(mark);
+  } else if (!atRisk && mark) {
+    mark.remove();
+  }
+  if (atRisk) {
+    icon.dataset.balloonHelp = "balloon_project_disk_risk";
+  } else if (icon.dataset.balloonHelp === "balloon_project_disk_risk") {
+    delete icon.dataset.balloonHelp;
+  }
+}
+
 // Every project is a disk, and the desktop is where disks live.
 //
 // One project could mount at a time and the rest lived in a menu-bar popover —
@@ -1528,10 +1569,12 @@ function renderProjectDiskDesktopIcons() {
     }
     icon.lastChild.textContent = projectDisplayName(project);
     icon.setAttribute("title", t("ejected_project_disk", projectDisplayName(project)));
+    applyProjectDiskRiskMark(icon, project);
     previous.after(icon);
     previous = icon;
   });
 
+  applyProjectDiskRiskMark(mountedIcon, mountedId ? projects.find((project) => project.id === mountedId) : null);
   drawn.forEach((icon) => icon.remove());
   if (typeof hydrateSystemIcons === "function") hydrateSystemIcons(column);
 }

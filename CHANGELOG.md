@@ -1100,3 +1100,78 @@ resetting the reader's place; sentence focus works; and Find/Change, Balloon
 Help and popovers remain attached to the window they serve. ClioTalk's welcome
 copy follows the selected era's type, and Image Prompt Studio got back the
 stylesheet whose absence had collapsed the whole window to zero width.
+
+**Build 20260830.1 — 2026-08-30.** A follow-up build that closed the gaps the
+convergence left and shipped the version to every target.
+
+Concurrent windows no longer step on each other's desk records. A record that
+changed in another window refuses the stale write instead of silently
+replacing it, delete is fenced the same way put is, and a read-only window
+keeps the editable window it belongs to instead of vanishing.
+
+Theme Lab's menu rows now reproduce the native captures they measure: Snow
+Leopard's selected row is the measured 20px, Aqua's is 21px, and the 16px text
+line is a period token every era answers rather than a fallback few inherit.
+Yosemite's search field picks up the same discipline and meets the geometry
+floor it had been short of.
+
+First launch has ClioTalk as the front door, and the appearance, visual and
+Theme Lab board baselines were re-captured around that contract instead of an
+older welcome-floppy desktop. Six new icon families — Bonsai City, DOOM,
+Micropolis, OpenTTD, Lightroom and Image Prompt Studio — ship their era art
+with reproducible builders, and the public source snapshot now self-tests from
+a fresh clone: the atlas builder keeps its maintainer evidence private, and
+the tree budgets follow the shipped assets.
+
+The build went out as 1.0.50 (build 20260830.1) to GitHub's public snapshot and
+Mac Beta v1.0.50-beta.4, the VPS web host, and Cloudflare Pages, with Pages
+deployment staging copies so the sealed release artifacts stay immutable.
+
+**Build 20260831.3 — 2026-08-31.** The remaining lanes landed, and the desk
+shows more of the route than it did.
+
+First Minute retires the prompt-prose introduction. The stranger's card — now
+"See it in 30 seconds" — plays the 30-second offline teaser in every model
+state, and completing it offers Look Around or Draft One in 3 Minutes, which
+opens Quick Draft. Abandoning the tour leaves onboarding unfinished.
+
+ClioProject becomes a real window: the plan board derives its nodes and arrows
+fresh from the route and the Outline, names the blocking chain in bold, keeps
+dates verbatim, and folds done tasks away. To Do 待办 arrives as a desk
+accessory for cross-project next actions that are never dropped. Picture Album
+gains a per-image cloud opt-in that keeps local the default and says so while
+reading, and a project disk at risk wears the palette's diamond, defined only
+from facts the product already has.
+
+文字亮室 keeps its subject. A foreign subject is released when its door closes,
+names itself with a read-only badge, and every composite source reads the
+subject's own text; 试看 works under a read-only subject while develop refuses.
+File gains page setup and print in the reading view, and Adjust's undo-develop
+is a single-shot ⌘Z. The listen desk gains partner sessions (marks and one
+note, no names, no model), visual-cue exits on visual-dependence findings, and
+SRT/shot-list export through the Deliver menu with timings that say they are
+estimates.
+
+Bonsai City's three inspector modes become full presentations: an age pyramid
+with health, education and unemployment trends, a ten-sector industry mix
+riding the era curves, and a compass card of four neighbor cities whose trade
+follows the links you actually built. ClioStage's deck fits its window —
+presenting views shrink as one piece down to a floor, then scroll — and the
+parsed-but-never-painted directives reach the frame: header, footer and page
+numbers render with per-slide overrides, and speaker notes render as markdown.
+
+Two bugfix lanes closed under the same build. A refused desk-record save never
+claims saved on any surface: while the conflict stands the TeachText capsule
+and the desk cells say unsaved, a later successful commit walks every surface
+back through one refresh, and the paper repaints the text that was kept. And
+Aqua and Snow Leopard horizontal scroll thumbs follow their directional
+recipe — the blue ramp's stripes and the capsule's caps run across the lane,
+not along its length.
+
+The appearance checker now holds the four middle eras by token tables instead
+of pixels: 2,075 probe points compare computed values against Classic in the
+same run, and a geometry or token drift injected into an era sheet fails the
+fast path by name.
+
+The build went out as 1.0.50 (build 20260831.3) to GitHub's public snapshot and
+Mac Beta v1.0.50-beta.5, the VPS web host, and Cloudflare Pages.
