@@ -238,6 +238,17 @@
   box-shadow: var(--control-strip-active-shadow);
 }
 
+/* The module tile becomes a full ink block on hover / focus / open, and the
+   classic art is black on transparency: without a reversal the icon goes
+   black-on-black. Same 1-bit treatment as the reversed menu title — invert
+   the art, keep the ground transparent, never show the mask (the tile itself
+   already paints the black field). */
+.control-strip-module:hover .sys-icon-svg.has-classic-mask .sys-icon-classic-art,
+.control-strip-module:focus-visible .sys-icon-svg.has-classic-mask .sys-icon-classic-art,
+.control-strip-module.is-open .sys-icon-svg.has-classic-mask .sys-icon-classic-art {
+  filter: invert(1);
+}
+
 .control-strip-module:focus-visible {
   outline: var(--control-focus-outline);
   outline-offset: -1px;
@@ -434,13 +445,18 @@
 
 .control-strip-hotkey-row {
   display: flex;
+  /* The shortcut field keeps its 16px input face (the phone-input rule), the
+     mini buttons keep theirs; only a shared baseline makes the three read as
+     one row. Wrapping keeps the field legible in a narrow panel instead of
+     squeezing it to a sliver beside the buttons. */
+  flex-wrap: wrap;
   gap: 6px;
-  align-items: center;
+  align-items: baseline;
   min-width: 0;
 }
 
 .control-strip-hotkey-row input {
-  flex: 1 1 auto;
+  flex: 1 1 72px;
   min-width: 0;
 }
 

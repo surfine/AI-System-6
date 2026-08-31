@@ -2123,7 +2123,9 @@ body.use-modern-fonts .mde-surface * {
 
 .spine-title-row {
   display: grid;
-  grid-template-columns: minmax(10px, 1fr) max-content minmax(10px, 1fr);
+  /* Shrinkable middle column: a bare max-content title overflowed the rail
+     rightward and read as a left-shifted title. Matches the base rule. */
+  grid-template-columns: minmax(10px, 1fr) minmax(0, max-content) minmax(10px, 1fr);
   gap: 4px;
   margin: 0;
   padding-left: 4px;

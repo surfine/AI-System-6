@@ -289,6 +289,8 @@ body.use-liquid-glass {
   --window-frame-thumb-bg:
     linear-gradient(180deg, rgba(255, 255, 255, 0.56), rgba(16, 17, 20, 0.24)),
     rgba(16, 17, 20, 0.22);
+  /* The glass sheen already runs top-to-bottom — the horizontal capsule
+     wants exactly that, so the horizontal lane shares it unchanged. */
   --window-frame-thumb-bg-horizontal: var(--window-frame-thumb-bg);
   --window-frame-thumb-border: 2px solid rgba(255, 255, 255, 0.28);
   --window-frame-thumb-radius: 999px;
@@ -824,6 +826,9 @@ body.use-liquid-glass {
   --menu-item-fg: #101114;
   --menu-item-active-bg: var(--liquid-menu-active);
   --menu-item-active-fg: #ffffff;
+  /* The stock 12px check offset fits the glass menu's wide gutter; stated so
+     the era answers the token. */
+  --menu-check-left: 12px;
   --menu-item-active-shadow: var(--liquid-menu-active-shadow);
   --menu-panel-shadow: var(--liquid-menu-panel-shadow);
   --liquid-disabled-control-border: rgba(16, 17, 20, 0.22);

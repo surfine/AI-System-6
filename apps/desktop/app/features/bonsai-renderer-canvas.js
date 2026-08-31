@@ -529,6 +529,18 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
     if (highway) {
       const mask = connectorMask(snapshot, x, y, isHighway);
       const family = isWater(snapshot, index) ? "bridge-highway" : "highway";
+      if (family === "highway") {
+        // The deck is elevated: a soft ground shadow slides out from under
+        // the slab toward the lower-right, the SC2000 raised-object read.
+        context.fillStyle = "rgba(22, 28, 24, 0.18)";
+        context.beginPath();
+        context.moveTo(point.sx + 4 * zoom, point.sy - 7 * zoom);
+        context.lineTo(point.sx + 28 * zoom, point.sy + 5 * zoom);
+        context.lineTo(point.sx + 4 * zoom, point.sy + 17 * zoom);
+        context.lineTo(point.sx - 20 * zoom, point.sy + 5 * zoom);
+        context.closePath();
+        context.fill();
+      }
       if (!drawSprite(context, `${family}.mask-${mask}`, point.sx, point.sy)) {
         context.fillStyle = "#4a4a52";
         context.fillRect(point.sx - 11 * zoom, point.sy - 7 * zoom, 22 * zoom, 8 * zoom);
@@ -1032,13 +1044,16 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
         if (!gridValue(snapshot, ["tree", "trees"], index, false)) continue;
         scenery.push({
           x: index % size, y: Math.floor(index / size), visualKind: "tree",
+          // Seasons accent the forest, they do not repaint it: one tree in
+          // eight blossoms in spring, one in three turns in autumn, and the
+          // rest stay green so the woods still read as woods.
           variant: season === 0
-            ? ((index % 3) === 0 ? 5 : 1 + (index % 3))
+            ? ((index % 8) === 0 ? 5 : 1 + (index % 3))
             : season === 3
               ? ((index % 3) === 0 ? 6 : 1 + (index % 3))
               : season === 2
-                ? ((index % 2) === 0 ? 4 : 1 + (index % 3))
-                : ((index % 5) === 4 ? 4 : 1 + (index % 3)),
+                ? ((index % 3) === 0 ? 4 : 1 + (index % 3))
+                : 1 + (index % 3),
           footprint: { w: 1, h: 1 },
         });
       }

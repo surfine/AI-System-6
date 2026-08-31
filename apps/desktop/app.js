@@ -1852,6 +1852,9 @@ function translateWithin(root) {
     const value = t(el.dataset.i18n);
     if (el.dataset.shortcut && typeof writeShortcutRowLabel === "function") writeShortcutRowLabel(el, value);
     else if (value.includes("<")) el.innerHTML = value;
+    // A busy control's label must stay wrapped, or it prints under the
+    // busy overlay.
+    else if (el.dataset.loading === "true") setControlIdleLabel(el, value);
     else el.textContent = value;
   });
   root.querySelectorAll("[data-i18n-count]").forEach((el) => {
@@ -1888,6 +1891,10 @@ function applyLanguage() {
       writeShortcutRowLabel(el, value);
     } else if (value.includes("<")) {
       el.innerHTML = value;
+    } else if (el.dataset.loading === "true") {
+      // A busy control's label must stay wrapped, or it prints under the
+      // busy overlay.
+      setControlIdleLabel(el, value);
     } else {
       el.textContent = value;
     }
@@ -2290,6 +2297,33 @@ function setControlLoading(control, loading, loadingLabel = "") {
   delete control.dataset.wasDisabled;
   control.removeAttribute("aria-busy");
   control.disabled = wasDisabled;
+}
+
+/* Render passes run while a control is busy. One that writes textContent
+   replaces the wrapped idle label with a bare text node the busy rule cannot
+   hide, so both labels print (the 2026-08-14 defect through a new door); one
+   that writes .disabled re-arms a button mid-run and breaks the restore.
+   Relabel and re-enable through these instead — they park the change where
+   setControlLoading() will honour it. */
+function setControlIdleLabel(control, text) {
+  if (!control) return;
+  if (control.dataset.loading === "true") {
+    const wrapper = document.createElement("span");
+    wrapper.className = CONTROL_IDLE_LABEL_CLASS;
+    wrapper.textContent = text;
+    control.replaceChildren(wrapper);
+    return;
+  }
+  control.textContent = text;
+}
+
+function setControlIdleDisabled(control, disabled) {
+  if (!control) return;
+  if (control.dataset.loading === "true") {
+    control.dataset.wasDisabled = String(disabled === true);
+    return;
+  }
+  control.disabled = disabled === true;
 }
 
 function syncRovingTabStops(tablist) {

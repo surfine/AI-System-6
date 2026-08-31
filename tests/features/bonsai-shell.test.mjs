@@ -146,6 +146,20 @@ test.assertIncludes(styles, "id: \"bonsai\"", "the lazy style bundle is declared
 test.assertIncludes(styles, "output: \"styles.bonsai.css\"", "the lazy style bundle output is named");
 test.assertIncludes(styles, "styles/94-bonsai.css", "the lazy style bundle owns its scoped sheet");
 
+// A pointer drag over the window chrome must never paint a text selection
+// (second sighting of this defect class ships with a gate), and a
+// module-built window must wire its own title-bar drag: the boot loop only
+// binds the title bars that exist in index.html.
+const bonsaiSheet = read("styles/94-bonsai.css");
+const windowRootRule = bonsaiSheet.split(".bonsai-window {")[1]?.split("}")[0] || "";
+test.assertIncludes(windowRootRule, "user-select: none", "the window root carries the no-select rule");
+test.assertIncludes(bonsaiSheet, ".bonsai-window [contenteditable=\"true\"]", "real text-edit surfaces opt back into selection");
+// The drag lives in the core so every module-built window moves by one
+// contract: wireWindowChrome hands each window's title bar to the shared
+// title-bar wiring, and a window that can close can also move.
+test.assertIncludes(read("app/core/wireup.js"), "function wireTitleBarChrome(", "one shared title-bar wiring exists");
+test.assertIncludes(read("app/core/wireup.js"), 'win.querySelectorAll(".title-bar").forEach((bar) => wireTitleBarChrome(bar))', "wireWindowChrome hands module-built title bars to it");
+
 const actions = read("app/core/actions.js");
 test.assertIncludes(actions, "\"open-bonsai-city\"", "the open action is registered");
 test.assertIncludes(actions, "ensureBonsaiCityModule", "the open action routes through the lazy loader");

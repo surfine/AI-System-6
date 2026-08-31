@@ -62,7 +62,7 @@ body.quick-draft-focus .writing-spine-panel {
 
 .spine-title-row {
   flex: 0 0 auto;
-  grid-template-columns: minmax(10px, 1fr) max-content minmax(10px, 1fr);
+  grid-template-columns: minmax(10px, 1fr) minmax(0, max-content) minmax(10px, 1fr);
   gap: 4px;
   padding-left: 4px;
   padding-right: 4px;
@@ -1030,9 +1030,12 @@ body.quick-draft-focus .writing-spine-panel {
   white-space: nowrap;
 }
 
+/* The middle column may shrink below its text (the h2 already ellipsizes):
+   a bare max-content column let a wide title overflow past the clipped right
+   flank, which read as a left-shifted title with stripes on one side only. */
 .spine-title-row {
   display: grid;
-  grid-template-columns: minmax(10px, 1fr) max-content minmax(10px, 1fr);
+  grid-template-columns: minmax(10px, 1fr) minmax(0, max-content) minmax(10px, 1fr);
   gap: 4px;
   padding-left: 4px;
   padding-right: 4px;
@@ -3689,6 +3692,10 @@ select:focus {
   padding: inherit;
   color: var(--btn-fg);
   white-space: nowrap;
+  /* The capsule keeps the idle label's width, so a busy label that is wider
+     must give way inside the border instead of painting past it. */
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .settings {

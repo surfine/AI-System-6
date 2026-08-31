@@ -10,11 +10,13 @@
 //               These are the six images on the site and in the README.
 //   Working   — where a writer spends hours: the five route windows, at every
 //               width, in the two appearances the beta promises.
+//   Controls  — the Control Panel chooser and the Theme Lab specimens, the
+//               real controls the route windows never show.
 //   Unlisted  — everything else (Aqua x Import Utility x portrait phone, ...).
 //               Best effort, explicitly unverified. Not a defect.
 //
-// Keep the two listed tiers small. A cell that nobody looks at costs review
-// noise on every accepted change, which is how the previous net died.
+// Keep the listed tiers small. A cell that nobody looks at costs review noise
+// on every accepted change, which is how the previous net died.
 
 export const SHOWCASE_THEMES = [
   "classic",
@@ -70,18 +72,26 @@ const EXCLUDED_WORKING_CELLS = new Set([
 // their layout equivalence is proven by tooling/appearance-token-check.mjs —
 // a computed token/geometry-delta comparison against Classic, seconds instead
 // of eight more screenshot cells. Pixels stay where pixels are the promise:
-// Classic (the proof appearance), Liquid Glass (blur cannot be token-compared),
-// and one showcase desktop frame per era so the era art stays guarded.
-export const CONTROL_THEMES = WORKING_THEMES;
+// Classic (the proof appearance), and one showcase desktop frame per era so
+// the era art stays guarded. Liquid Glass's controls also left pixels: the
+// desktop-width glass material rasterizes into two stable machine-dependent
+// renderings, so a pixel cell cannot be held reproducibly. Its controls'
+// structure is held by the token table instead (computed deltas, not blur —
+// the material itself stays unverified by design), while the working tier's
+// phone/tablet route cells and the showcase keep pixel coverage of the glass.
+export const CONTROL_THEMES = ["classic"];
 export const CONTROL_WINDOWS = ["control", "themeLab"];
 
 // The appearances the pixel net no longer renders in the controls tier; the
-// token-table check owns their per-appearance layout and token material.
-export const TOKEN_COMPARED_THEMES = SHOWCASE_THEMES.filter(
-  (theme) => !WORKING_THEMES.includes(theme)
-);
+// token-table check owns their per-appearance layout and token material. The
+// four middle eras are fully token-held; Liquid Glass is token-held for the
+// controls tier only (its working tier and showcase remain pixels).
+export const TOKEN_COMPARED_THEMES = [
+  ...SHOWCASE_THEMES.filter((theme) => !WORKING_THEMES.includes(theme)),
+  "liquid-glass",
+];
 
-/** Every cell in the promised matrix: 6 showcase + 25 working + 4 controls = 35. */
+/** Every cell in the promised matrix: 6 showcase + 25 working + 2 controls = 33. */
 export function snapshotCells() {
   const cells = [];
   for (const theme of SHOWCASE_THEMES) {

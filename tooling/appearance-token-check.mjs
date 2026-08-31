@@ -13,11 +13,15 @@
 // table is the era's whole layout identity; if it moves, the era moved.
 //
 // What stays pixels, on purpose: Classic (the proof appearance), Liquid Glass
-// (blur and material cannot be token-compared), and one showcase desktop frame
-// per era so the era art stays guarded. This check runs in seconds against the
-// ~90 s pixel matrix, and anchoring on Classic-in-the-same-run means a base
-// layout change moves both sides of every delta equally — the pixel net owns
-// that change, and this gate stays quiet.
+// working/showcase cells (blur and material cannot be token-compared), and one
+// showcase desktop frame per era so the era art stays guarded. Liquid Glass's
+// controls tier left pixels for the same reason the middle eras did: the
+// desktop-width glass material rasterizes into two stable machine-dependent
+// renderings, so a screenshot cell cannot be held reproducibly. Its controls'
+// structure is token-held here instead — computed deltas, never blur. This
+// check runs in seconds against the ~90 s pixel matrix, and anchoring on
+// Classic-in-the-same-run means a base layout change moves both sides of every
+// delta equally — the pixel net owns that change, and this gate stays quiet.
 //
 // Determinism, following tooling/computed-style-probe.mjs: values are sorted
 // multisets (DOM order is not stable), pseudo-elements are read through
@@ -51,12 +55,10 @@ const require = createRequire(import.meta.url);
 const { chromium } = require("playwright");
 
 const BASELINE_PATH = join(root, "internal/evidence/drafts/appearance-baseline/token-deltas.json");
-// Liquid Glass is deliberately absent: its sheet is the third ratcheted file,
-// but blur is held by pixels. These two sheets are where the four collapsed
-// eras keep every declaration they own.
 const SHEET_PATHS = [
   "apps/desktop/styles/65-appearance-themes.css",
   "apps/desktop/styles/67-aqua-appearance.css",
+  "apps/desktop/styles/70-liquid-glass.css",
 ];
 // A multiset over many elements can be long; past this it is stored hashed.
 // Applied identically at capture and verify, so the comparison never notices.
@@ -114,6 +116,14 @@ function collectLeafRules(css) {
  * deeper, and a guess would probe the wrong element).
  */
 function stripThemePrefix(selector, themeId) {
+  if (themeId === "liquid-glass" && selector.startsWith("body.use-liquid-glass")) {
+    // 70-liquid-glass.css scopes through a class, not a data attribute. The
+    // attribute form (body.use-liquid-glass[data-theme="liquid-glass"]) falls
+    // through to the branch below; this one handles the plain class prefix.
+    let end = "body.use-liquid-glass".length;
+    const rest = selector.slice(end).replace(/^[\s>+~]+/, "").trim();
+    return rest || "body";
+  }
   const attr = `[data-theme="${themeId}"]`;
   const at = selector.indexOf(attr);
   if (at === -1) return null;
@@ -190,6 +200,29 @@ async function preparePage(browser, serverUrl) {
   await context.addInitScript(() => {
     localStorage.setItem("ai-system-6-theme", "classic");
     localStorage.removeItem("ai-system-6-liquid-glass");
+  });
+  // Pin randomness and time the same way the pixel net does: the Puzzle
+  // shuffles its tiles from Math.random at mount, and the disabled-tile
+  // multiset rides the `button:disabled` probes — an unpinned shuffle made
+  // one token's element count settle 124/125/126 by run. A baseline cannot
+  // hold a shuffle.
+  await context.addInitScript(() => {
+    const base = Date.UTC(2026, 7, 21, 9, 0, 0);
+    const origin = performance.now();
+    const now = () => base + Math.round(performance.now() - origin);
+    class FrozenDate extends Date {
+      constructor(...args) { super(...(args.length ? args : [now()])); }
+      static now() { return now(); }
+    }
+    globalThis.Date = FrozenDate;
+    Math.random = () => 0.4242424242424242;
+    if (globalThis.crypto) {
+      globalThis.crypto.getRandomValues = (array) => {
+        for (let index = 0; index < array.length; index += 1) array[index] = (index * 37 + 11) & 0xff;
+        return array;
+      };
+      globalThis.crypto.randomUUID = () => "a7f3c1d2-4b5e-4f60-a891-0c2d3e4f5a6b";
+    }
   });
   const page = await context.newPage();
   await page.goto(serverUrl, { waitUntil: "domcontentloaded" });
@@ -335,18 +368,33 @@ try {
   } else if (mode === "capture") {
     mkdirSync(dirname(BASELINE_PATH), { recursive: true });
     const entryCount = TOKEN_COMPARED_THEMES.reduce((sum, theme) => sum + Object.keys(result.deltas[theme]).length, 0);
+    // A key can be stable inside one run and still disagree across runs when
+    // the matched element set depends on window state (a disabled-button
+    // count that settles 124/125/126 by mount timing). Capture runs a second
+    // sweep and records cross-sweep disagreements as unstable, so verify
+    // skips them instead of testifying about a count that cannot be held.
+    const second = await sweep(page, probes);
+    const crossRunUnstable = new Set(result.unstable);
+    for (const theme of TOKEN_COMPARED_THEMES) {
+      const keys = new Set([...Object.keys(result.deltas[theme]), ...Object.keys(second.deltas[theme])]);
+      for (const key of keys) {
+        if (JSON.stringify(result.deltas[theme][key]) !== JSON.stringify(second.deltas[theme][key])) {
+          crossRunUnstable.add(key);
+        }
+      }
+    }
     writeFileSync(BASELINE_PATH, `${JSON.stringify({
       generatedBy: "tooling/appearance-token-check.mjs --capture",
       probeCount: probes.length,
       geometryProbes: geometryCount,
       tokenProbes: tokenCount,
-      unstable: result.unstable,
+      unstable: [...crossRunUnstable].sort(),
       themes: result.deltas,
     }, null, 1)}\n`);
     console.log(
       `Captured token/geometry deltas for ${TOKEN_COMPARED_THEMES.join(", ")}: `
         + `${entryCount} classic-anchored entries from ${probes.length} probes `
-        + `(${geometryCount} geometry, ${tokenCount} tokens; ${result.unstable.length} dropped as self-unstable) `
+        + `(${geometryCount} geometry, ${tokenCount} tokens; ${crossRunUnstable.size} dropped as self/cross-run unstable) `
         + `in ${((Date.now() - startedAt) / 1000).toFixed(1)}s`
     );
   } else {

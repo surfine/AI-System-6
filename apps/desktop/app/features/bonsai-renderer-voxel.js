@@ -292,12 +292,21 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     const palette = raw.palette && typeof raw.palette === "object" ? raw.palette : FALLBACK_RECIPE_SOURCE.palette;
     const color = (name, fallback) => paletteColor(palette, name, fallback);
 
+    // Soil and rock scatter tile-by-tile through the generated map, so at
+    // full palette strength the ground read as a pastel checkerboard. Their
+    // tops lean toward grass and the ground reads as one surface with
+    // earthy and stony variation, the SC2000 continuous-ground look.
+    const lean = (a, b, t) => ({
+      r: a.r + (b.r - a.r) * t, g: a.g + (b.g - a.g) * t,
+      b: a.b + (b.b - a.b) * t, a: a.a,
+    });
+    const grassTop = color("grass");
     const terrain = {
-      grass: { top: color("grass"), side: color("soil") },
-      soil: { top: color("soilLight"), side: color("soil") },
-      rock: { top: color("rockLight"), side: color("rock") },
+      grass: { top: grassTop, side: color("soil") },
+      soil: { top: lean(grassTop, color("soilLight"), 0.42), side: color("soil") },
+      rock: { top: lean(grassTop, color("rockLight"), 0.45), side: color("rock") },
       coast: { top: color("sand"), side: color("soil") },
-      slope: { top: color("grassLight"), side: color("soil") },
+      slope: { top: lean(grassTop, color("grassLight"), 0.55), side: color("soil") },
       water: { surface: color("water"), lit: color("waterLight"), bed: color("grassDark") },
     };
 
@@ -996,7 +1005,9 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
         const alt = altitudeAt(snapshot, index);
         const kind = terrainKindAt(snapshot, index);
         const topY = alt * ALT_STEP;
-        const jitter = 0.94 + (hashTile(index) % 7) * 0.02;
+        // Kept gentle: instance colors now convert through sRGB, which
+        // widens multiplicative steps, so ±6% here read as a checkerboard.
+        const jitter = 0.97 + (hashTile(index) % 4) * 0.02;
 
         if (kind === "water") {
           // Bed column below, translucent surface on top. A future v3
@@ -1098,9 +1109,35 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
           else if (!tunnel) pushRoadCurbs(opaque, cx, topY, cz, masks.road);
         }
         if (masks.highway) {
-          pushBlock(opaque, cx, topY + 0.14, cz, 1, 0.1, 1, recipes.catalogCategories.highway, "road");
-          pushPathStrip(opaque, cx, topY + 0.205, cz, masks.highway, recipes.connectors.roadAccent, 0.08, 0.02, "metal");
-          if (isWater(snapshot, index)) pushBridgeGuards(opaque, cx, topY, cz, masks.highway);
+          // An elevated deck on piers, not a painted slab: the deck rides
+          // clear of the ground, every edge that does not continue onto
+          // another highway tile carries a concrete parapet, and a support
+          // pier drops to the ground so the elevation reads from the side.
+          // Worn concrete-grey, clearly lighter than a street, matching the
+          // 2D deck (shade +22 over the highway base colour).
+          const deckColor = shade(recipes.catalogCategories.highway, 1.3);
+          const deckTop = topY + 0.3;
+          const parapet = shade(recipes.catalogCategories.infrastructure, 1.16);
+          pushBlock(opaque, cx, deckTop, cz, 1, 0.1, 1, deckColor, "road");
+          // Lane strips follow the run axis only. An interior tile of a
+          // two-wide run has a third connection toward its sibling
+          // carriageway, and striping that arm too covered the deck in
+          // bracket shapes instead of lanes (the 2D deck applies the same
+          // full-pair rule).
+          const fullNS = (masks.highway & 5) === 5;
+          const fullEW = (masks.highway & 10) === 10;
+          const runMask = fullNS && !fullEW ? masks.highway & 5
+            : fullEW && !fullNS ? masks.highway & 10
+              : masks.highway;
+          pushPathStrip(opaque, cx, deckTop + 0.065, cz, runMask, recipes.connectors.roadAccent, 0.08, 0.02, "metal");
+          if (!(masks.highway & 1)) pushBlock(opaque, cx, deckTop + 0.09, cz - 0.46, 1, 0.08, 0.08, parapet, "metal");
+          if (!(masks.highway & 4)) pushBlock(opaque, cx, deckTop + 0.09, cz + 0.46, 1, 0.08, 0.08, parapet, "metal");
+          if (!(masks.highway & 2)) pushBlock(opaque, cx + 0.46, deckTop + 0.09, cz, 0.08, 0.08, 1, parapet, "metal");
+          if (!(masks.highway & 8)) pushBlock(opaque, cx - 0.46, deckTop + 0.09, cz, 0.08, 0.08, 1, parapet, "metal");
+          if (!isWater(snapshot, index)) {
+            pushBlock(opaque, cx, topY + 0.125, cz, 0.16, 0.25, 0.16, shade(deckColor, 0.86), "metal");
+          }
+          if (isWater(snapshot, index)) pushBridgeGuards(opaque, cx, deckTop, cz, masks.highway);
         }
         if (gridValue(snapshot, ["onramp"], index, false)) {
           pushBlock(opaque, cx, topY + 0.07, cz, 0.9, 0.14, 0.9, recipes.catalogCategories.onramp, "road");
@@ -1116,8 +1153,10 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
             const wide = 0.82;
             const narrow = 0.4;
             const [h, r] = [hDirs[0], rDirs[0]];
-            if (h === "n" || h === "s") pushBlock(opaque, cx, topY + 0.075, h === "n" ? cz - 0.25 : cz + 0.25, wide, 0.13, 0.5, rampColor, "road");
-            else pushBlock(opaque, h === "e" ? cx + 0.25 : cx - 0.25, topY + 0.075, cz, 0.5, 0.13, wide, rampColor, "road");
+            // The highway half of the ramp steps up toward the raised deck
+            // so the climb reads even without a sloped block.
+            if (h === "n" || h === "s") pushBlock(opaque, cx, topY + 0.21, h === "n" ? cz - 0.25 : cz + 0.25, wide, 0.13, 0.5, rampColor, "road");
+            else pushBlock(opaque, h === "e" ? cx + 0.25 : cx - 0.25, topY + 0.21, cz, 0.5, 0.13, wide, rampColor, "road");
             if (r === "n" || r === "s") pushBlock(opaque, cx, topY + 0.075, r === "n" ? cz - 0.25 : cz + 0.25, narrow, 0.13, 0.5, rampColor, "road");
             else pushBlock(opaque, r === "e" ? cx + 0.25 : cx - 0.25, topY + 0.075, cz, 0.5, 0.13, narrow, rampColor, "road");
           }
@@ -1136,7 +1175,9 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
           // maples in autumn, snow-dusted crowns in winter — deterministic
           // per tile and snapshot clock.
           const season = Math.floor(((Number(snapshot.tick) || 0) % 1500) / 375);
-          const blossom = season === 0 && hashTile(index * 29) % 3 === 0;
+          // One tree in eight blossoms; at one in three the spring forest
+          // read as pink confetti instead of woods with sakura in them.
+          const blossom = season === 0 && hashTile(index * 29) % 8 === 0;
           const maple = season === 2 && hashTile(index * 13) % 2 === 0;
           const winter = season === 3;
           let canopy;
@@ -1352,7 +1393,12 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     const topAt = (agent) => {
       const tileX = Math.max(0, Math.min(size - 1, Math.floor(agent.x)));
       const tileY = Math.max(0, Math.min(size - 1, Math.floor(agent.y)));
-      return terrainTopY(snapshot, tileY * size + tileX);
+      const index = tileY * size + tileX;
+      const ground = terrainTopY(snapshot, index);
+      // Traffic on the elevated highway rides the deck, not the ground
+      // under it.
+      if (gridValue(snapshot, ["highway"], index, false)) return ground + 0.35;
+      return ground;
     };
     const place = (list, palette, sizeX, sizeY, sizeZ, lift = 0) => {
       (Array.isArray(list) ? list : []).forEach((agent, index) => {
@@ -1782,7 +1828,10 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
       matrix.makeScale(block.sx, block.sy, block.sz);
       matrix.setPosition(block.x, block.y, block.z);
       mesh.setMatrixAt(index, matrix);
-      color.setRGB(block.r, block.g, block.b);
+      // Palette values are sRGB measurements. three r152+ reads bare setRGB
+      // components in the linear working space, so feeding them unconverted
+      // re-encoded every block brighter and the whole city washed to pastel.
+      color.setRGB(block.r, block.g, block.b, THREE.SRGBColorSpace);
       mesh.setColorAt(index, color);
     });
     mesh.instanceMatrix.needsUpdate = true;
@@ -1948,7 +1997,7 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     state.sun.position.set(light.sunX, light.sunY, light.sunZ).normalize();
     state.sun.intensity = light.sunIntensity;
     state.ambient.intensity = light.ambientIntensity;
-    state.scene.background.setRGB(light.skyR, light.skyG, light.skyB);
+    state.scene.background.setRGB(light.skyR, light.skyG, light.skyB, state.THREE.SRGBColorSpace);
     const bob = waterBob(snapshot.timeOfDay);
     state.chunks.forEach((record) => {
       if (record.waterMesh) record.waterMesh.position.y = bob;

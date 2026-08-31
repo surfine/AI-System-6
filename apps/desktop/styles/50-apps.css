@@ -2543,16 +2543,23 @@ body:not(.use-liquid-glass) .scrap-list button.is-multi-selected:not(.is-selecte
   white-space: nowrap;
 }
 
+/* The state mark is a mark, not the first character of the sentence: it
+   carries its own gap so "!" and "✓" stop reading as glued-on text,
+   especially before full-width CJK glyphs. */
+.notification-item[data-state] b::before {
+  margin-right: 0.4em;
+}
+
 .notification-item[data-state="running"] b::before {
-  content: "... ";
+  content: "...";
 }
 
 .notification-item[data-state="done"] b::before {
-  content: "\2713 ";
+  content: "\2713";
 }
 
 .notification-item[data-state="failed"] b::before {
-  content: "! ";
+  content: "!";
 }
 
 .notification-open-button {

@@ -13,6 +13,8 @@ declare function initSystemSelectControls(): void;
 declare function refreshSystemSelectControls(): void;
 declare function syncRovingTabStops(group: any): void;
 declare function setControlLoading(control: any, loading: boolean, label?: string): void;
+declare function setControlIdleDisabled(control: any, disabled: boolean): void;
+declare function setControlIdleLabel(control: any, text: string): void;
 declare function runEditCommand(command: string): Promise<void>;
 declare function captureTextControlWorkingSession(target: any): any;
 declare function restoreTextControlWorkingSession(target: any, state: any, options?: any): void;

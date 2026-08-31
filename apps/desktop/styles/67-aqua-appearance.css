@@ -414,7 +414,11 @@ body[data-theme="aqua"] {
     0 1px 0 rgba(0, 0, 0, 0.42),
     0 2px 1px rgba(0, 0, 0, 0.18),
     0 3px 2px rgba(0, 0, 0, 0.06);
-  --btn-hover-bg: var(--btn-bg);
+  /* Jaguar itself never answered the pointer, but the desk does: a thin
+     white veil over the resting gel is the restrained hover the owner asked
+     for — the material stays the same, it just catches a little more light. */
+  --aqua-btn-hover-veil: rgba(255, 255, 255, 0.3);
+  --btn-hover-bg: linear-gradient(var(--aqua-btn-hover-veil), var(--aqua-btn-hover-veil)), var(--btn-bg);
   --btn-hover-fg: #111111;
   --btn-hover-shadow: var(--btn-shadow);
   --btn-active-bg: linear-gradient(to bottom,
@@ -712,6 +716,10 @@ body[data-theme="aqua"] {
   --menu-panel-padding: 3px 0;
   --menu-item-min-height: 21px;
   --menu-item-padding: 2px 9px 2px 21px;
+  /* The 21px text inset leaves no room for the default 12px-at-12px check
+     box — its glyph touched the label. Seat the check against the left
+     edge, as the real menus draw it, so a clear gap stands before the text. */
+  --menu-check-left: 4px;
   --menu-item-line-height: 16px;
   --menu-item-disabled-bg: #f9f9f9;
   --menu-item-disabled-fg: #a4a4a4;
@@ -1600,6 +1608,9 @@ body[data-theme="snow-leopard"] {
      instead of the generic 22px default row. */
   --menu-item-min-height: 16px;
   --menu-item-padding: 2px 9px 2px 21px;
+  /* Same trap as Aqua above: the 21px gutter cannot hold the default check
+     box at left 12px without touching the label. */
+  --menu-check-left: 4px;
   --menu-item-line-height: 16px;
 
   /* Control Panel section chooser — the Aqua icon toolbar matured into the
@@ -2459,12 +2470,15 @@ body[data-theme="aqua"] .btn {
       var(--aqua-btn-arc-spread) var(--aqua-btn-arc-ink),
     0 1px 0 #565656,
     0 2px 0 #b9b9b9;
-  /* Aqua push buttons do not answer the pointer. Without these the shared
-     hover rule outranks this one and repaints the button in the
-     resolution-free --btn-bg, so the material changed under the cursor. */
-  --btn-hover-bg: var(--aqua-btn-face);
+  /* The shared hover rule repaints in --btn-hover-bg; without these pins it
+     would swap the sprite face for the resolution-free --btn-bg and the
+     material would change under the cursor. The hover keeps the same face
+     under a thin white veil — the restrained brightening the owner asked
+     for — and the veil composes over whichever face the element carries, so
+     the default button's blue gel brightens the same way. */
+  --btn-hover-bg: linear-gradient(var(--aqua-btn-hover-veil), var(--aqua-btn-hover-veil)), var(--aqua-btn-face);
   --btn-hover-shadow: var(--aqua-btn-frame);
-  --btn-default-hover-bg: var(--aqua-btn-face);
+  --btn-default-hover-bg: linear-gradient(var(--aqua-btn-hover-veil), var(--aqua-btn-hover-veil)), var(--aqua-btn-face);
   position: relative;
   min-width: 69px;
   border: 0;

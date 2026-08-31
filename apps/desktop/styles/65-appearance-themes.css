@@ -268,6 +268,7 @@ body[data-theme="platinum"] {
   --window-frame-track-border: 1px solid #000000;
   --window-frame-track-shadow: inset 1px 1px #777777, inset -1px -1px #cccccc;
   --window-frame-thumb-bg: #9999ff;
+  /* Flat fill — the horizontal lane shares the era's vertical thumb unchanged. */
   --window-frame-thumb-bg-horizontal: var(--window-frame-thumb-bg);
   --window-frame-thumb-border: 1px solid #000000;
   --window-frame-thumb-shadow: inset 1px 1px #ccccff, inset -1px -1px #6666cc;
@@ -1498,7 +1499,9 @@ body[data-theme="yosemite"] {
   --btn-radius: 5px;
   --btn-bg: #ffffff;
   --btn-shadow: 0 1px 1px rgba(16, 16, 16, 0.04), 0 1px 2px rgba(16, 16, 16, 0.01), inset 0 1px 0 rgba(255, 255, 255, 0.86);
-  --btn-hover-bg: #fafafa;
+  /* #fafafa on a white button read as no hover at all; one more step keeps
+     it restrained but actually visible. */
+  --btn-hover-bg: #f5f5f5;
   --btn-hover-fg: #242424;
   --btn-hover-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
   --btn-active-bg: #afafaf;
@@ -1583,6 +1586,9 @@ body[data-theme="yosemite"] {
   --menu-button-active-fg: #ffffff;
   --menu-item-active-bg: linear-gradient(#1680f5, #1077f2 50%, #0e6bf0);
   --menu-item-active-fg: #ffffff;
+  /* The shared default: Yosemite keeps the roomy 28px gutter, so the check
+     sits at the stock 12px offset. Stated so the era answers the token. */
+  --menu-check-left: 12px;
   /* Real 10.10 Force Quit capture (512 Pixels, 2x): a focused list selection
      is solid #116cd6 with white labels. The previous #97ddfd came from the
      Finder capture's folder-icon tab, not from a selected row -- that capture
@@ -1601,6 +1607,7 @@ body[data-theme="yosemite"] {
   /* B00merang scrollbar.slider: 6px radius, 3px transparent border,
      ~21% ink mix on the theme background. */
   --window-frame-thumb-bg: rgba(78, 78, 78, 0.34);
+  /* Flat fill — the horizontal lane shares the era's vertical thumb unchanged. */
   --window-frame-thumb-bg-horizontal: var(--window-frame-thumb-bg);
   --window-frame-thumb-border: 3px solid transparent;
   --window-frame-thumb-radius: 6px;
@@ -1800,9 +1807,15 @@ body[data-theme="platinum"] .title-bar {
   margin: 0 0 1px;
   padding: 1px;
   border-bottom: 1px solid #000000;
-  /* Reclaim the fourth lane after the late responsive layer collapses the
-     shared title bar to three columns. This keeps Zoom and WindowShade at
-     the measured five-pixel visual gap without adding another owner. */
+}
+
+/* Reclaim the fourth lane after the late responsive layer collapses the
+   shared title bar to three columns. This keeps Zoom and WindowShade at
+   the measured five-pixel visual gap without adding another owner. The
+   Writing Flow rail's title row has no lamps, so the four-track template
+   stays off it — this era layer outranks the row's own symmetric template,
+   and the leak parked its three children in the wrong lanes. */
+body[data-theme="platinum"] .title-bar:not(.spine-title-row) {
   grid-template-columns: var(--titlebar-gutter) minmax(0, 1fr) var(--titlebar-slot-zoom) calc(var(--titlebar-gutter) - var(--titlebar-slot-zoom));
 }
 

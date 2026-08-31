@@ -544,7 +544,10 @@ function quickDraftInteractionState(record = activeProjectQuickDraft({ create: f
 
 function setQuickDraftCommandAvailability(button, enabled, reasonKey = "") {
   if (!button) return;
-  button.disabled = !enabled;
+  // A busy control stays disabled; the availability parks in wasDisabled so
+  // setControlLoading() restores the right state when the run ends.
+  if (typeof setControlIdleDisabled === "function") setControlIdleDisabled(button, !enabled);
+  else button.disabled = !enabled;
   if (!enabled && reasonKey) {
     button.dataset.quickDraftDisabledReason = reasonKey;
     button.dataset.balloonHelpDisabled = reasonKey;
@@ -1211,7 +1214,10 @@ function syncQuickDraftPrimaryAction(record = activeProjectQuickDraft({ create: 
   const key = hasBody ? "quick_draft_continue_writing" : "quick_draft_start_writing";
   refs.saveButton.dataset.quickDraftPrimaryAction = action;
   refs.saveButton.dataset.i18n = key;
-  refs.saveButton.textContent = t(key);
+  // Through the idle-label helper: a render can land while the button is
+  // busy, and a bare textContent write prints under the busy overlay.
+  if (typeof setControlIdleLabel === "function") setControlIdleLabel(refs.saveButton, t(key));
+  else refs.saveButton.textContent = t(key);
   return action;
 }
 

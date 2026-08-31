@@ -2162,6 +2162,56 @@ window.AISystem6BonsaiCityLoaded = true;
     }
   }
 
+  // Micropolis saves live in their own `cities` store in the same browser
+  // database. Bonsai only reads them, only when the browser panel is open,
+  // and only imports one after the user picks it and confirms — the classic
+  // SC1→SC2K path: upgrade-only, never back, 召唤而非推送.
+  async function listMicropolisSaves() {
+    try {
+      const db = await openAppDb();
+      try {
+        const records = await window.AISystem6StorageTransactions.runTransaction(
+          db,
+          citiesStoreName,
+          "readonly",
+          (tx) => idbRequest(tx.objectStore(citiesStoreName).getAll())
+        );
+        return (Array.isArray(records) ? records : [])
+          .filter((record) => record && window.AISystem6BonsaiMicropolisCodec?.looksLikeMicropolisSave(record.saveData))
+          .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
+      } finally {
+        db.close();
+      }
+    } catch {
+      return [];
+    }
+  }
+
+  async function importMicropolisRecord(record) {
+    const codec = window.AISystem6BonsaiMicropolisCodec;
+    if (!codec || !record) return;
+    const answer = await showSystemModal(
+      t("bonsai_micropolis_import_confirm", record.name || t("bonsai_city_unnamed")),
+      "confirm",
+    );
+    if (answer !== "yes" && answer !== "ok") return;
+    setMessage("bonsai_status_importing");
+    try {
+      const imported = codec.importMicropolis(record.saveData, { name: record.name });
+      const decodedState = sim().deserialize(imported.payload);
+      const id = makeId(decodedState?.seed);
+      const createdAt = new Date().toISOString();
+      const name = imported.name || t("bonsai_city_unnamed");
+      const saveData = await saveCodec().encode(decodedState, { cityId: id, name, createdAt, updatedAt: createdAt });
+      await writeCityRecord({ id, name, createdAt, updatedAt: createdAt, saveData });
+      clearHistory("bonsai_history_cleared_import");
+      setMessage("bonsai_status_imported_micropolis");
+      await openCityBrowser();
+    } catch {
+      setMessage("bonsai_status_import_failed");
+    }
+  }
+
   async function writeCityRecord(record) {
     const db = await openAppDb();
     try {
@@ -2429,6 +2479,41 @@ window.AISystem6BonsaiCityLoaded = true;
         scenarios.append(heading, actions);
         list.append(scenarios);
       }
+      // Detected Micropolis saves: shown as a summonable source, imported
+      // one-way only after an explicit pick and confirmation.
+      const micropolisSaves = window.AISystem6BonsaiMicropolisCodec ? await listMicropolisSaves() : [];
+      if (micropolisSaves.length) {
+        const section = document.createElement("section");
+        section.className = "bonsai-examples";
+        const heading = document.createElement("h4");
+        heading.textContent = t("bonsai_micropolis_section");
+        const note = document.createElement("p");
+        note.className = "bonsai-empty-message";
+        note.textContent = t("bonsai_micropolis_note");
+        section.append(heading, note);
+        micropolisSaves.forEach((record) => {
+          const row = document.createElement("article");
+          row.className = "bonsai-city-row";
+          const summary = document.createElement("div");
+          summary.className = "bonsai-city-summary";
+          const name = document.createElement("strong");
+          name.textContent = record.name || t("bonsai_city_unnamed");
+          const date = document.createElement("small");
+          date.textContent = record.updatedAt ? new Date(record.updatedAt).toLocaleString() : "";
+          summary.append(name, date);
+          const actions = document.createElement("div");
+          actions.className = "bonsai-city-row-actions";
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "btn mini-btn";
+          button.dataset.bonsaiMicropolisImport = record.id;
+          button.textContent = t("bonsai_micropolis_import");
+          actions.append(button);
+          row.append(summary, actions);
+          section.append(row);
+        });
+        list.append(section);
+      }
       if (!records.length) {
         const empty = document.createElement("p");
         empty.className = "bonsai-empty-message";
@@ -2655,15 +2740,29 @@ window.AISystem6BonsaiCityLoaded = true;
       // else goes through the JSON envelope path. The file itself is source
       // data: it is parsed locally and never uploaded anywhere.
       const isSc2 = bytes.length >= 12 && bytes[0] === 0x46 && bytes[1] === 0x4f && bytes[2] === 0x52 && bytes[3] === 0x4d;
-      let decodedState; let importedName;
+      let decodedState; let importedName; let isMicropolis = false;
       if (isSc2) {
         const imported = await saveCodec().importSc2(bytes);
         decodedState = sim().deserialize(imported.payload);
         importedName = imported.name;
       } else {
-        const decoded = await saveCodec().parseAndDecode(new TextDecoder().decode(bytes));
-        decodedState = decoded.state;
-        importedName = decoded.metadata?.name;
+        // A Micropolis save (a `cities` record or its bare saveData) is JSON
+        // too, so sniff it before the Bonsai envelope path claims the file.
+        const text = new TextDecoder().decode(bytes);
+        const micropolisCodec = window.AISystem6BonsaiMicropolisCodec;
+        let parsed = null;
+        try { parsed = JSON.parse(text); } catch { parsed = null; }
+        if (micropolisCodec && parsed && (micropolisCodec.looksLikeMicropolisSave(parsed)
+          || micropolisCodec.looksLikeMicropolisSave(parsed.saveData))) {
+          isMicropolis = true;
+          const imported = micropolisCodec.importMicropolis(parsed);
+          decodedState = sim().deserialize(imported.payload);
+          importedName = imported.name;
+        } else {
+          const decoded = await saveCodec().parseAndDecode(text);
+          decodedState = decoded.state;
+          importedName = decoded.metadata?.name;
+        }
       }
       const id = makeId(decodedState?.seed);
       const createdAt = new Date().toISOString();
@@ -2671,12 +2770,17 @@ window.AISystem6BonsaiCityLoaded = true;
       const saveData = await saveCodec().encode(decodedState, { cityId: id, name, createdAt, updatedAt: createdAt });
       await writeCityRecord({ id, name, createdAt, updatedAt: createdAt, saveData });
       clearHistory("bonsai_history_cleared_import");
-      setMessage(isSc2 ? "bonsai_status_imported_sc2" : "bonsai_status_imported");
+      setMessage(isSc2 ? "bonsai_status_imported_sc2" : isMicropolis ? "bonsai_status_imported_micropolis" : "bonsai_status_imported");
       await openCityBrowser();
     } catch {
       setMessage("bonsai_status_import_failed");
     }
   }
+
+  // Title-bar drag and WindowShade come from the core: wireup.js wires every
+  // title bar it is handed, and AISystem6WireWindowChrome hands it the bars
+  // of module-built windows too — this window moves by the same contract as
+  // every sibling, with nothing local to drift.
 
   function bindUi() {
     const win = bonsaiWindow();
@@ -2775,6 +2879,13 @@ window.AISystem6BonsaiCityLoaded = true;
       if (exampleButton) return openExampleCity(exampleButton.dataset.bonsaiExample, exampleButton.dataset.bonsaiExampleLabel);
       const scenarioButton = event.target.closest("[data-bonsai-scenario]");
       if (scenarioButton) return openScenarioCity(scenarioButton.dataset.bonsaiScenario);
+      const micropolisButton = event.target.closest("[data-bonsai-micropolis-import]");
+      if (micropolisButton) {
+        listMicropolisSaves().then((saves) => importMicropolisRecord(
+          saves.find((record) => record.id === micropolisButton.dataset.bonsaiMicropolisImport),
+        ));
+        return;
+      }
       const cityAction = event.target.closest("[data-bonsai-city-action]");
       if (cityAction) return handleCityBrowserAction(cityAction);
       if (event.target.closest("[data-bonsai-setup-regenerate]")) {

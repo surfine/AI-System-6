@@ -1204,6 +1204,10 @@ function wireAppEvents() {
   // this loop only ever sees the windows that exist in index.html, and a
   // window whose close box does nothing is not a window.
   const chromeWiredWindows = new WeakSet();
+  // wireTitleBarChrome reads this set. Declared here, before the boot loop
+  // calls wireWindowChrome: a `const` after that call sits in its temporal
+  // dead zone and the ReferenceError kills boot.
+  const titleBarsWired = new WeakSet();
   function wireWindowChrome(win) {
     // The guard is runtime state, not document state: a data attribute here
     // would land in every window's markup and move the Theme Lab DOM
@@ -1212,6 +1216,7 @@ function wireAppEvents() {
     chromeWiredWindows.add(win);
     win.dataset.app = getWindowAppId(win);
     win.addEventListener("pointerdown", () => focusWindow(win));
+    win.querySelectorAll(".title-bar").forEach((bar) => wireTitleBarChrome(bar));
 
     win.querySelector(".close-box")?.addEventListener("click", () => closeWindow(win.dataset.window));
 
@@ -1262,7 +1267,13 @@ function wireAppEvents() {
   installWindowFrameBars();
   syncMobileWorkAreaFrames?.();
   wireControlTabs();
-  document.querySelectorAll(".title-bar").forEach((bar) => {
+  // One wiring for every title bar, whenever the bar is born. The boot loop
+  // below covers index.html; a module-built window reaches this through
+  // wireWindowChrome, so a window that can close can also move — the drag
+  // used to bind only at boot, which left every lazy window nailed down.
+  function wireTitleBarChrome(bar) {
+    if (!bar || titleBarsWired.has(bar)) return;
+    titleBarsWired.add(bar);
     bar.addEventListener("dblclick", (event) => {
       if (event.target.closest("button")) return;
       if (bar.closest(".writing-spine-panel")) {
@@ -1388,7 +1399,9 @@ function wireAppEvents() {
       window.addEventListener("pointerup", stopMove);
       window.addEventListener("pointercancel", stopMove);
     });
-  });
+  }
+
+  document.querySelectorAll(".title-bar").forEach(wireTitleBarChrome);
 
   indexFilesButton.addEventListener("click", async () => {
     await insertFilesIntoFileFloppy(Array.from(filesInput.files || []), { source: "fileFloppy", openAfter: "rag" });

@@ -229,6 +229,16 @@
   display: none;
 }
 
+/* Warm the filter pipeline from boot. Chromium keeps a stale raster the first
+   time a CSS filter lands on an SVG <image>: the first invert(1) after boot
+   painted the art as an opaque white plate on a reversed menu title, and as
+   nothing at all on the active Control Panel tab — leaving only the bare black
+   mask silhouette. A no-op invert keeps the art on the filter path so the
+   later invert(1) states repaint from live vectors. */
+.sys-icon-svg.has-classic-mask .sys-icon-classic-art {
+  filter: invert(0);
+}
+
 /* The Control Panel chooser selects the same way: the current tab shows its
    icon silhouette with the art reversed on top, and the name — not the cell —
    carries the highlight box. */

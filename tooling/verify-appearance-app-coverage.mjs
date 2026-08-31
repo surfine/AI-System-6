@@ -496,32 +496,54 @@ try {
           sampleClassName: sampleElement?.className || "",
           sampleModernDisplaySize: Number(sampleElement?.querySelector(".sys-icon-svg")?.dataset.modernDisplaySize || 0),
           sampleModernSourceSize: Number(sampleElement?.querySelector(".sys-icon-svg")?.dataset.modernSourceSize || 0),
+          // The invert feature's live proof: the active chooser tab's classic
+          // art must actually be inverted, and the warm filter path must have
+          // a target — otherwise the first invert(1) after boot painted a
+          // white plate instead of the art.
+          activeChooserArtFilter: [...document.querySelectorAll(
+            `.window[data-window="${id}"] .control-chooser .system-tab.is-active .sys-icon-svg.has-classic-mask .sys-icon-classic-art`
+          )].map((element) => getComputedStyle(element).filter),
         };
       }, contract);
       await page.evaluate(() => new Promise((resolvePaint) => requestAnimationFrame(() => requestAnimationFrame(resolvePaint))));
       assert(!snapshot.missing, `${theme.id}: missing real window ${contract.id}`);
-      assert(snapshot.devicePixelRatio === 2, `${theme.id}/${contract.id}: browser device pixel ratio is ${snapshot.devicePixelRatio}, expected 2`);
-      for (const [surface, value] of [["window", snapshot.window], ["title bar", snapshot.titleBar], ["sample", snapshot.sample]]) {
-        assert(value, `${theme.id}/${contract.id}: missing ${surface}`);
-        assert(value.rect.width > 0 && value.rect.height > 0, `${theme.id}/${contract.id}: ${surface} has no rendered geometry`);
-        assert(value.style.display !== "none" && value.style.visibility !== "hidden", `${theme.id}/${contract.id}: ${surface} is not visible`);
-      }
-      if (["aqua", "snow-leopard", "yosemite", "liquid-glass"].includes(theme.id)
-        && snapshot.sampleModernSourceSize) {
-        // The floor is the ICON's declared display size, not the sample
-        // container's box. Most samples are a whole window pane, and measuring
-        // the pane asked a 128px icon to cover 90% of a 416px pane at 2x --
-        // impossible, and the reason every modern era failed on every window
-        // with a pane sample. The message always printed the right number
-        // ("declared 34px"); only the arithmetic used the wrong one.
-        const requiredPixels = snapshot.sampleModernDisplaySize * 2 * 0.9;
-        assert(
-          snapshot.sampleModernSourceSize >= requiredPixels,
-          `${theme.id}/${contract.id}: ${snapshot.sampleModernSourceSize}px raster (${snapshot.sampleClassName}, declared ${snapshot.sampleModernDisplaySize}px) is below the Retina rendering floor ${requiredPixels.toFixed(1)}px`,
-        );
+      // In --all mode the mount assert records the finding and continues, so
+      // a missing window must not be measured: its surfaces are undefined and
+      // the geometry loop would crash instead of naming the rest of the field.
+      if (!snapshot.missing) {
+        assert(snapshot.devicePixelRatio === 2, `${theme.id}/${contract.id}: browser device pixel ratio is ${snapshot.devicePixelRatio}, expected 2`);
+        for (const [surface, value] of [["window", snapshot.window], ["title bar", snapshot.titleBar], ["sample", snapshot.sample]]) {
+          assert(value, `${theme.id}/${contract.id}: missing ${surface}`);
+          assert(value.rect.width > 0 && value.rect.height > 0, `${theme.id}/${contract.id}: ${surface} has no rendered geometry`);
+          assert(value.style.display !== "none" && value.style.visibility !== "hidden", `${theme.id}/${contract.id}: ${surface} is not visible`);
+        }
+        if (["aqua", "snow-leopard", "yosemite", "liquid-glass"].includes(theme.id)
+          && snapshot.sampleModernSourceSize) {
+          // The floor is the ICON's declared display size, not the sample
+          // container's box. Most samples are a whole window pane, and measuring
+          // the pane asked a 128px icon to cover 90% of a 416px pane at 2x --
+          // impossible, and the reason every modern era failed on every window
+          // with a pane sample. The message always printed the right number
+          // ("declared 34px"); only the arithmetic used the wrong one.
+          const requiredPixels = snapshot.sampleModernDisplaySize * 2 * 0.9;
+          assert(
+            snapshot.sampleModernSourceSize >= requiredPixels,
+            `${theme.id}/${contract.id}: ${snapshot.sampleModernSourceSize}px raster (${snapshot.sampleClassName}, declared ${snapshot.sampleModernDisplaySize}px) is below the Retina rendering floor ${requiredPixels.toFixed(1)}px`,
+          );
+        }
+        if (contract.id === "control" && theme.id === "classic") {
+          assert(
+            Array.isArray(snapshot.activeChooserArtFilter) && snapshot.activeChooserArtFilter.length > 0,
+            `${theme.id}/control: the active chooser tab has no classic-mask art to invert`,
+          );
+          assert(
+            snapshot.activeChooserArtFilter.every((filter) => filter === "invert(1)"),
+            `${theme.id}/control: the active chooser tab's classic art is not inverted: ${snapshot.activeChooserArtFilter.join(", ")}`,
+          );
+        }
       }
       let screenshot = "";
-      if (REPRESENTATIVE_WINDOW_IDS.has(contract.id)) {
+      if (!snapshot.missing && REPRESENTATIVE_WINDOW_IDS.has(contract.id)) {
         screenshot = `${theme.id}-${contract.id}.png`;
         await page.locator(`.window[data-window="${contract.id}"]`).screenshot({
           path: join(outputDir, screenshot),
@@ -540,11 +562,16 @@ try {
 
     const systemTitleBar = windows.find(({ id }) => id === "finder").titleBar;
     for (const windowResult of windows) {
+      // A window that never mounted already has its finding; measuring it
+      // again would crash on undefined surfaces instead of naming the rest.
+      if (windowResult.missing) continue;
       // Both sides drop the same keys, so an exception narrows what is compared
       // rather than comparing two different things.
       assert(
-        titleSignature(windowResult.titleBar, windowResult.id)
-          === titleSignature(systemTitleBar, windowResult.id),
+        systemTitleBar
+          && windowResult.titleBar
+          && titleSignature(windowResult.titleBar, windowResult.id)
+            === titleSignature(systemTitleBar, windowResult.id),
         `${theme.id}/${windowResult.id}: app stylesheet overrode the shared system title-bar painter`,
       );
       // What the Alarm Clock gives up above, it owes here: its strip stays the
@@ -567,7 +594,7 @@ try {
 
   const titleSignatures = new Map(results.map((result) => [
     result.theme.id,
-    titleSignature(result.windows.find(({ id }) => id === "finder").titleBar, "finder"),
+    titleSignature(result.windows.find(({ id }) => id === "finder")?.titleBar || { rect: {}, style: {} }, "finder"),
   ]));
   assert(titleSignatures.get("yosemite") !== titleSignatures.get("liquid-glass"), "Yosemite and Liquid Glass collapsed to the same real-window painter");
   assert(diagnostics.length === 0, `Real-app coverage emitted runtime errors:\n${diagnostics.join("\n")}`);

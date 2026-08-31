@@ -18,22 +18,22 @@
     "north": {
       "url": "/assets/bonsai/atlas-north.png",
       "file": "assets/bonsai/atlas-north.png",
-      "sha256": "b3b17927cb2c5e9229c461ab8291d15db82e3e7c410be031f01b9a53e9efe1ba"
+      "sha256": "cd81ea3d2513481f5b9ee277237b7b39f0ae376dd4ae368c70b90a86e943f83b"
     },
     "east": {
       "url": "/assets/bonsai/atlas-east.png",
       "file": "assets/bonsai/atlas-east.png",
-      "sha256": "c80e9a5a509a14afd78d3020e4eb5612e14a00953812f471caf10403fce76e02"
+      "sha256": "847443ead50d6304a6feae23557d3aec106adcbc1ceaec5c979d07ca7f5f5501"
     },
     "south": {
       "url": "/assets/bonsai/atlas-south.png",
       "file": "assets/bonsai/atlas-south.png",
-      "sha256": "991adefe20e48a18105019ed9cbf763be50c487d6aabfb621caf8d6b8a10936b"
+      "sha256": "485698f260a95e84140e9f7528cb003c99e20aeb4af3396b4e08c175b21eaecc"
     },
     "west": {
       "url": "/assets/bonsai/atlas-west.png",
       "file": "assets/bonsai/atlas-west.png",
-      "sha256": "bb4aa38eefbe78571b816a654e56ee3c4b7c56db26036179daa9843643bf3f8f"
+      "sha256": "77bc2667c5d564f020f36af4dcda1ce1dcfdafa989964126303b36d1bb8d1fd6"
     }
   },
   "frames": {

@@ -6,6 +6,19 @@
   min-width: 320px;
   min-height: 360px;
   position: relative;
+  /* Mac rule: chrome never selects. A pointer drag across the window --
+     panning the map, sweeping past overlay chips or dialog labels -- must
+     not paint a text selection over the UI; only real text-edit fields
+     opt back in below. */
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.bonsai-window input,
+.bonsai-window textarea,
+.bonsai-window [contenteditable="true"] {
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 .bonsai-window .bonsai-details-bar {

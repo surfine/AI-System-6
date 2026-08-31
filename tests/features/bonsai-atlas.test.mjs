@@ -104,7 +104,9 @@ for (const id of [
   test.assert(Boolean(atlas.frames[id]), `atlas includes the 2D continuous-path frame ${id}`);
 }
 test.assertIncludes(read("tooling/build-bonsai-atlas.mjs"), "A real ramp: the wide end meets the highway", "onramp frames draw a wide-to-narrow ramp");
-test.assertIncludes(read("tooling/build-bonsai-atlas.mjs"), "A divided highway", "highway frames draw a divided carriageway");
+test.assertIncludes(read("tooling/build-bonsai-atlas.mjs"), "drawHighwayDeck", "highway frames draw the elevated deck family");
+test.assertIncludes(read("tooling/build-bonsai-atlas.mjs"), "one row per carriageway", "the deck carries divided-carriageway lane markings");
+test.assertIncludes(read("tooling/build-bonsai-atlas.mjs"), "Concrete parapet along every edge that does not continue", "unconnected deck edges close with a parapet");
 const nightFrameIds = [
   "building.r.1.1.night", "building.c.3.4.night", "building.i.2.2.night",
   "facility.coal.night", "facility.wind.night", "facility.subway-station.night",

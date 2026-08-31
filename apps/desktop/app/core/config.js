@@ -569,6 +569,7 @@ const ensureBonsaiCityModule = createLazyModuleLoader("AISystem6BonsaiCityLoaded
   "app/features/bonsai-translations.js",
   "app/features/bonsai-city-sim.js",
   "app/features/bonsai-sc2-codec.js",
+  "app/features/bonsai-micropolis-codec.js",
   "app/features/bonsai-catalog.js",
   "app/features/bonsai-audio.js",
   "app/features/bonsai-save-worker-manager.js",

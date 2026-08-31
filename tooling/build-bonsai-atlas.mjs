@@ -40,6 +40,15 @@ function shade(color, amount) {
   ];
 }
 
+function mixToward(color, target, t) {
+  return [
+    Math.round(color[0] + (target[0] - color[0]) * t),
+    Math.round(color[1] + (target[1] - color[1]) * t),
+    Math.round(color[2] + (target[2] - color[2]) * t),
+    color[3],
+  ];
+}
+
 function hashString(value) {
   let hash = 2166136261;
   for (let index = 0; index < value.length; index += 1) {
@@ -285,6 +294,18 @@ function drawSlope(buffer, frame, cx, cy, directionIndex) {
 
 function drawTerrain(buffer, frame, cx, cy, directionIndex) {
   const colors = frame.colors.map(rgba);
+  // Soil and rock scatter tile-by-tile through the generated map, so at full
+  // palette strength the ground read as a pastel checkerboard. Natural soil
+  // and rock tops lean toward grass and become subtle ground variation; the
+  // dozed lot (terrain.lot) keeps the honest dirt read, and the cliff cut
+  // faces keep the full earth tones (they draw from colors[] untouched).
+  let topA = colors[1];
+  let topB = colors[0];
+  if (frame.id === "terrain.soil" || frame.id === "terrain.rock") {
+    const toward = frame.id === "terrain.soil" ? 0.58 : 0.55;
+    topA = mixToward(colors[1], rgba("grass"), toward);
+    topB = mixToward(colors[0], rgba("grassLight"), toward);
+  }
   const top = diamond(cx, cy, 1, 1);
   const depth = frame.height || 0;
   const lower = top.map(([x, y]) => [x, y + depth]);
@@ -316,7 +337,7 @@ function drawTerrain(buffer, frame, cx, cy, directionIndex) {
     return;
   }
 
-  ditherPolygon(buffer, top, colors[1], colors[0], frame.kind === "snow" ? 0.62 : 0.5);
+  ditherPolygon(buffer, top, topA, topB, frame.kind === "snow" ? 0.62 : 0.5);
 
   if (frame.kind === "coast") {
     // Sand grades into water, and the foam line sits where they meet.
@@ -419,6 +440,11 @@ function drawConnector(buffer, frame, cx, cy, directionIndex) {
     return;
   }
 
+  if (kind === "highway" || kind === "bridge-highway") {
+    drawHighwayDeck(buffer, frame, cx, cy, ports, color, accent);
+    return;
+  }
+
   ports.forEach((port) => {
     drawLine(buffer, atlasWidth, atlasHeight, cx, cy, points[port][0], points[port][1], color, thickness);
   });
@@ -469,34 +495,7 @@ function drawConnector(buffer, frame, cx, cy, directionIndex) {
     const [px, py] = points[port];
     const startX = cx + (px - cx) * markFrom;
     const startY = cy + (py - cy) * markFrom;
-    if (kind === "highway" || kind === "bridge-highway") {
-      // A divided highway: two edge stripes, a dark median pair, and dashed
-      // lane lines between — the SC2000 raised-deck read.
-      const ox = (cy - py) / 2;
-      const oy = (px - cx) / 2;
-      for (const side of [-1, 1]) {
-        drawLine(buffer, atlasWidth, atlasHeight,
-          startX + ox * side * 0.72, startY + oy * side * 0.72,
-          px + ox * side * 0.72, py + oy * side * 0.72,
-          shade(accent, -16), 1);
-      }
-      for (const side of [-1, 1]) {
-        drawLine(buffer, atlasWidth, atlasHeight,
-          startX + ox * side * 0.14, startY + oy * side * 0.14,
-          px + ox * side * 0.14, py + oy * side * 0.14,
-          accent, 1);
-      }
-      const laneLen = px - startX;
-      const laneDy = py - startY;
-      for (const side of [-1, 1]) {
-        for (const [a, b] of [[0, 0.3], [0.4, 0.7], [0.8, 1]]) {
-          drawLine(buffer, atlasWidth, atlasHeight,
-            startX + laneLen * a + ox * side * 0.44, startY + laneDy * a + oy * side * 0.44,
-            startX + laneLen * b + ox * side * 0.44, startY + laneDy * b + oy * side * 0.44,
-            shade(accent, -10), 1);
-        }
-      }
-    } else if (kind === "road") {
+    if (kind === "road") {
       // Centre marking plus quiet curb edges, matching the 3D backend's
       // road curbs so streets read as paved corridors in both views.
       drawLine(buffer, atlasWidth, atlasHeight, startX, startY, px, py, accent, 1);
@@ -524,6 +523,96 @@ function drawConnector(buffer, frame, cx, cy, directionIndex) {
       drawLine(buffer, atlasWidth, atlasHeight, startX, startY, px, py,
         accent, kind === "road" ? 1 : 2);
     }
+  });
+}
+
+// The highway is an elevated deck, not a thicker road ribbon. The old arm
+// renderer treated a two-tile-wide run as a field of junctions: every interior
+// tile had three or four ports, so it drew a giant junction pad and suppressed
+// its lane markings, and the whole run collapsed into a charcoal slab covered
+// in elliptical blobs. The deck fills the tile, shows a cut face toward the
+// viewer so it reads raised, carries dual-carriageway markings along the run
+// axis, and closes every unconnected edge with a concrete parapet — the
+// SC2000 raised-highway read (proportions from observation, art original).
+function drawHighwayDeck(buffer, frame, cx, cy, ports, color, accent) {
+  const corners = diamond(cx, cy, 1, 1);
+  const has = (port) => ports.includes(port);
+  const depth = 6;
+
+  // Cut faces toward the viewer (the e and s edges) so the slab reads raised.
+  const faceE = [corners[1], corners[2],
+    [corners[2][0], corners[2][1] + depth], [corners[1][0], corners[1][1] + depth]];
+  const faceS = [corners[2], corners[3],
+    [corners[3][0], corners[3][1] + depth], [corners[2][0], corners[2][1] + depth]];
+  fillPolygon(buffer, atlasWidth, atlasHeight, faceE, shade(color, -14));
+  fillPolygon(buffer, atlasWidth, atlasHeight, faceS, shade(color, -26));
+
+  // Deck surface: worn concrete-grey asphalt, clearly lighter than a street,
+  // so the markings and the parapets have somewhere to sit.
+  ditherPolygon(buffer, corners, shade(color, 22), shade(color, 34), 0.5);
+
+  const mids = {
+    n: [cx + 12, cy - 6], e: [cx + 12, cy + 6],
+    s: [cx - 12, cy + 6], w: [cx - 12, cy - 6],
+  };
+  // The run axis: a full pair wins. An interior tile of a two-wide run has
+  // three ports (its own axis plus the sibling carriageway), so "any port on
+  // the cross axis" must NOT count as a second run — only a full cross pair
+  // makes an interchange.
+  const fullNS = has("n") && has("s");
+  const fullEW = has("e") && has("w");
+  const axes = [];
+  if (fullNS || (!fullEW && (has("n") || has("s")))) axes.push(["n", "s"]);
+  if (fullEW || (!fullNS && (has("e") || has("w")))) axes.push(["e", "w"]);
+  const interchange = fullNS && fullEW;
+
+  axes.forEach(([a, b]) => {
+    const from = has(a) ? mids[a] : [cx, cy];
+    const to = has(b) ? mids[b] : [cx, cy];
+    // Perpendicular basis for lane offsets, as in the road arms.
+    const ox = (from[1] - to[1]) / 4;
+    const oy = (to[0] - from[0]) / 4;
+    if (interchange) {
+      // Inside an interchange the lanes give way; a faint seam pair keeps
+      // the direction legible without painting a junction blob.
+      drawLine(buffer, atlasWidth, atlasHeight, from[0], from[1], to[0], to[1], shade(color, -12), 1);
+      return;
+    }
+    // Dark median pair down the spine of the divided carriageways.
+    for (const side of [-1, 1]) {
+      drawLine(buffer, atlasWidth, atlasHeight,
+        from[0] + ox * side * 0.12, from[1] + oy * side * 0.12,
+        to[0] + ox * side * 0.12, to[1] + oy * side * 0.12,
+        shade(color, -30), 1);
+    }
+    // Dashed lane lines, one row per carriageway, broken like real paint.
+    const dx = to[0] - from[0];
+    const dy = to[1] - from[1];
+    for (const side of [-1, 1]) {
+      for (const [t0, t1] of [[0.04, 0.26], [0.4, 0.62], [0.76, 0.98]]) {
+        drawLine(buffer, atlasWidth, atlasHeight,
+          from[0] + dx * t0 + ox * side * 0.5, from[1] + dy * t0 + oy * side * 0.5,
+          from[0] + dx * t1 + ox * side * 0.5, from[1] + dy * t1 + oy * side * 0.5,
+          accent, 1);
+      }
+    }
+  });
+
+  // Concrete parapet along every edge that does not continue onto another
+  // highway tile: the guard rail that separates deck from air.
+  const edgeCorners = {
+    n: [corners[0], corners[1]], e: [corners[1], corners[2]],
+    s: [corners[2], corners[3]], w: [corners[3], corners[0]],
+  };
+  const rail = rgba("concrete");
+  ["n", "e", "s", "w"].forEach((port) => {
+    if (has(port)) return;
+    const [p0, p1] = edgeCorners[port];
+    const inset = (point, t) => [point[0] + (cx - point[0]) * t, point[1] + (cy - point[1]) * t];
+    const [a0, a1] = [inset(p0, 0.08), inset(p1, 0.08)];
+    const [b0, b1] = [inset(p0, 0.2), inset(p1, 0.2)];
+    drawLine(buffer, atlasWidth, atlasHeight, b0[0], b0[1], b1[0], b1[1], shade(color, -34), 1);
+    drawLine(buffer, atlasWidth, atlasHeight, a0[0], a0[1], a1[0], a1[1], rail, 2);
   });
 }
 
