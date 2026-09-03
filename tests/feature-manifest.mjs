@@ -113,6 +113,10 @@ export const publicProductContracts = [
     feature: "Time Machine",
     tests: ["time-machine.test.mjs"],
   },
+  {
+    feature: "Writing Surface Ink",
+    tests: ["editor-ink-visible.test.mjs"],
+  },
 ];
 
 export function publicContractFiles() {

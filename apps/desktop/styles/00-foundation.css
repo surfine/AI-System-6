@@ -527,6 +527,15 @@
   --tdi-tabs-after-content: none;
   --tdi-tabs-after-flex: 0 0 auto;
   --tdi-tabs-after-min-width: 0;
+  /* Tier 2: an optional section heading between groups of rows in a vertical
+     rail (TeachText groups Manuscript above Section Drafts). Every era
+     answers this explicitly -- lane-rail primitive promotion. */
+  --tdi-tabs-heading-padding: 4px 8px 2px;
+  --tdi-tabs-heading-fg: var(--ink);
+  --tdi-tabs-heading-font-size: 11px;
+  --tdi-tabs-heading-letter-spacing: normal;
+  --tdi-tabs-heading-text-transform: none;
+  --tdi-tabs-heading-border-bottom: 1px solid var(--ink);
   /* Vertical TDI rails are a system role shared by Reader, TeachText, and
      DocMap. Defaults preserve the plain System 6 list; later eras may turn
      the same rail into a grooved list, drawer, or source list by tokens. */
@@ -580,6 +589,21 @@
   --tdi-tab-active-shadow: inset 0 5px 0 var(--ink), inset 1px 1px 0 var(--shade);
   --tdi-tab-small-color: currentColor;
   --tdi-tab-active-small-color: currentColor;
+  /* Tier 2 selection states, added to the existing focused .is-active look
+     above. Every era answers both groups explicitly -- lane-rail primitive
+     promotion; the row itself never becomes a second implementation. */
+  --tdi-tab-active-unfocused-border: var(--tdi-tab-active-border);
+  --tdi-tab-active-unfocused-border-bottom: var(--tdi-tab-active-border-bottom);
+  --tdi-tab-active-unfocused-bg: var(--paper);
+  --tdi-tab-active-unfocused-fg: var(--ink);
+  --tdi-tab-active-unfocused-shadow: inset 0 5px 0 var(--shade-dark), inset 1px 1px 0 var(--shade);
+  --tdi-tab-active-unfocused-small-color: currentColor;
+  --tdi-tab-hover-bg: var(--shade);
+  --tdi-tab-hover-fg: var(--ink);
+  --tdi-tab-hover-shadow: none;
+  --tdi-tab-pressed-bg: var(--ink);
+  --tdi-tab-pressed-fg: var(--paper);
+  --tdi-tab-pressed-shadow: none;
   --tdi-tab-dragging-border: var(--tdi-tab-active-border);
   --tdi-tab-dragging-border-bottom: var(--tdi-tab-active-border-bottom);
   --tdi-tab-dragging-bg: var(--tdi-tab-active-bg);
@@ -737,6 +761,30 @@
   --control-strip-grip: repeating-linear-gradient(to bottom, currentColor 0 2px, transparent 2px 4px) 50% 50% / 4px 100% no-repeat;
   --control-strip-grip-radius: 0;
   --control-strip-gauge-bg: var(--paper);
+  /* Shared progress-meter recipe (rebuild flow, model/import/OCR runs). The
+     track, the fill, and the working (indeterminate) stripe are all tokens so
+     an era answers this once and every run indicator picks it up. Aqua/Snow
+     Leopard already carried --progress-height/-border-color/-radius/-bg and
+     --progress-fill-bg/-radius/-shadow (67-aqua-appearance.css) for the
+     rebuild meter alone; these are their :root defaults for Classic. */
+  --progress-height: 18px;
+  --progress-padding: 0px;
+  --progress-border-color: var(--ink);
+  --progress-radius: 0;
+  --progress-bg: repeating-linear-gradient(90deg, var(--paper) 0, var(--paper) 8px, #ededed 8px, #ededed 16px);
+  --progress-shadow: inset 1px 1px 0 var(--shade-dark);
+  --progress-fill-bg: var(--ink);
+  --progress-fill-radius: 0;
+  --progress-fill-shadow: none;
+  --progress-fill-border-right: 0;
+  --progress-fill-active-bg: repeating-linear-gradient(90deg, var(--ink) 0, var(--ink) 12px, #5f5f5f 12px, #5f5f5f 20px);
+  --progress-fill-active-size: 40px 100%;
+  --progress-fill-active-duration: 800ms;
+  /* .progress-track/.progress-bar's own indeterminate cadence (ClioTalk's
+     "model opening" wait) -- a plain ink/paper scroll, kept distinct from the
+     rebuild meter's working stripe above. */
+  --progress-scroll-bg: repeating-linear-gradient(90deg, var(--ink) 0, var(--ink) 6px, var(--paper) 6px, var(--paper) 12px);
+  --progress-scroll-duration: 0.65s;
   /* Control Panel section chooser: one tablist, era-specific clothes.
      Classic is the default appearance, so the defaults ARE the System 4-6
      cdev icon rail (vertical scrolling icon list at the window's left, the
@@ -745,7 +793,15 @@
      Platinum pins the OS 8 tab sheet, the Aqua family its icon toolbar,
      Liquid Glass a segmented capsule. */
   --control-settings-columns: 92px minmax(0, 1fr);
-  --control-settings-rows: minmax(0, 1fr) auto;
+  /* An explicit 0 minimum on the content row (instead of the grid default of
+     "auto") tells the track it may size below its content's min-content —
+     the active tab section then rendered its overflow past the track edge
+     instead of growing it, so the fixed control-footer note in the row
+     below sat on top of the tail of a tall form (unreachable API Key field
+     in the Cloud Model tab). minmax(auto, 1fr) keeps the row's normal
+     content-based floor, so the row (and the shared scrollable pane) grows
+     to the content's real height instead of overlapping the row after it. */
+  --control-settings-rows: minmax(auto, 1fr) auto;
   --control-chooser-area: 1 / 1 / span 2 / auto;
   --control-chooser-bg: transparent;
   --control-chooser-radius: 0;
@@ -890,6 +946,14 @@
   /* Writing editor */
   --writing-editor-font-size: 14px;
   --writing-editor-line-height: 1.5;
+  /* MacWrite ruler (line spacing only): the two values a writer actually sees
+     while working, since the highlighted .mde-input/.mde-highlight pair and
+     .teachtext-preview override --writing-editor-line-height above once a
+     surface is live. "Standard" repeats today's values on purpose, so no
+     stored preference means no visual change. body[data-line-spacing]
+     overrides in 50-apps.css. */
+  --paper-line-height-editor: 1.7;
+  --paper-line-height-preview: 1.8;
   --writing-editor-padding-y: 16px;
   --writing-editor-padding-x: 18px;
   --writing-editor-focus-bg: var(--paper);
@@ -1002,6 +1066,11 @@
   --separator: var(--rule);
   --selection-bg: var(--ink);
   --selection-fg: var(--paper);
+  /* The writing surfaces mix a translucent selection out of --selection-bg (see
+     .mde-surface > .mde-input::selection in 50-apps.css). An era whose selection
+     is a ramp cannot be mixed, so it — and only it — declares a flat
+     --editor-selection-tint beside its ramp; this token has no default on
+     purpose, because the era colour above is the answer everywhere else. */
   /* Document-window frame: the two scroll bar lanes and the grow box are one
      16px chrome band, so the corner where they meet is exactly one cell wide
      and the grow box can never drift onto content. */
@@ -2957,7 +3026,7 @@ body[data-menu-bar-model="system-owned"] {
 
 .boot-progress span {
   display: block;
-  width: 0;
+  width: var(--boot-progress-fill, 0);
   height: 100%;
   background: var(--ink);
   transition: width 0.18s steps(4, end);

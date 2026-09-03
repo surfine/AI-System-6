@@ -5,7 +5,7 @@
 
 "use strict";
 
-const { readJsonBody, requestSignal, send } = require("../lib/http.js");
+const { httpError, readJsonBody, requestSignal, send } = require("../lib/http.js");
 const { postJsonWithFallback } = require("../lib/fetch.js");
 const { DEEPSEEK_BASE_URL_DEFAULT, resolveCloudTarget } = require("../cloud.js");
 const { resolveCloudCredential } = require("../credential-vault.js");
@@ -16,6 +16,7 @@ const {
 const {
   importedTextQualityScore,
   importExtension,
+  importSignatureMismatch,
   decodePlainTextBuffer,
 } = require("../importers/shared.js");
 const { tryExtractWithMarkitdown } = require("../importers/markitdown.js");
@@ -295,6 +296,13 @@ function cloudVisionRouteFromOptions(options) {
  * @returns {Promise<string>}
  */
 async function extractImportedText(name, mimeType, buffer, options = {}) {
+  // Checked before any importer runs, because the general-purpose importer
+  // will read the bytes of a broken file as plain text and the route would
+  // then return that scrape as the document. The user must be told the file
+  // could not be read, not handed its raw bytes as if the import had worked.
+  const signatureMismatch = importSignatureMismatch(name, mimeType, buffer);
+  if (signatureMismatch) throw httpError(signatureMismatch, 422, "import_signature_mismatch");
+
   const importerMode = options.importerMode || "auto";
   // Forwarded, not captured here: the handler owns the variable, so two
   // imports in flight at once cannot report each other's engine.

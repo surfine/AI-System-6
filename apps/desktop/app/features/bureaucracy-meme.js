@@ -793,7 +793,15 @@ installBureaucracyMemeWindow();
     const activeWindow = document.querySelector(".window.is-active");
     if (activeWindow?.dataset.window !== "bureaucracyMeme") return false;
     if (action === "meme-download") {
-      return document.querySelector("#bureaucracy-download-link")?.getAttribute("aria-disabled") !== "true";
+      // syncButtons() toggles the native .disabled property (enabled only once
+      // state.generatedUrl exists); this checked "aria-disabled" instead, an
+      // attribute nothing in this module ever sets, so it always read as
+      // available even with no picture to save. The in-window button's own
+      // native disabled state blocked a mouse click, but the File-menu twin
+      // has no such backstop — it dispatched and saveGeneratedMeme() silently
+      // did nothing.
+      const link = document.querySelector("#bureaucracy-download-link");
+      return !!link && !link.disabled;
     }
     if (action === "meme-generate") {
       return !!document.querySelector("#bureaucracy-topic-input")?.value.trim();

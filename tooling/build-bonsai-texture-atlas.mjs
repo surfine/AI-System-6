@@ -1,9 +1,15 @@
 // Build the Bonsai City micro-voxel texture atlas from the checked-in
 // atlas-source.json recipes: one deterministic 512x512 power-of-two PNG of
 // 64px tiles (grass, soil, rock, sand, road, rail, wire, pipe, park, roof,
-// per-zone walls with day/night windows, tree, construction, concrete,
-// metal, and facility surfaces), plus a JSON manifest that maps block
-// materials to per-face tile rects for the three.js voxel renderer.
+// tint-neutral walls with a glass mask in alpha, a roof deck, tree,
+// construction, concrete, metal, and facility surfaces), plus a JSON manifest
+// that maps block materials to per-face tile rects for the three.js voxel
+// renderer.
+//
+// Wall tiles carry no hue: the renderer multiplies a per-building instance
+// colour into them. Glass cells have alpha 0 (the shader reads alpha < 1 as
+// glass and lights it with a uniform), so `.night` wall tiles are
+// pixel-identical to their `.day` twins.
 //
 // No external art, network input, canvas package, or non-deterministic input
 // participates. Minecraft-style chunky detail is painted from palette colors
@@ -69,8 +75,15 @@ function seedFor(id) {
   return seed >>> 0;
 }
 
+// The tile the active painter owns. Blob painters (canopy, maple, blossom)
+// place rects at `bx - r`, which reaches up to 7 px outside the tile; without
+// this clip those pixels landed in the neighbouring slot and put hue into
+// the tint-neutral walls.
+let paintClip = null;
+
 function putPixel(buffer, x, y, color, alphaOverride = null) {
   if (x < 0 || y < 0 || x >= SIZE || y >= SIZE) return;
+  if (paintClip && (x < paintClip.x || y < paintClip.y || x >= paintClip.x + TILE || y >= paintClip.y + TILE)) return;
   const offset = (y * SIZE + x) * 4;
   buffer[offset] = color[0];
   buffer[offset + 1] = color[1];
@@ -84,14 +97,48 @@ function fillRect(buffer, x0, y0, w, h, color) {
   }
 }
 
-function speckle(buffer, ox, oy, seed, color, dark, light, density) {
+// `hx`/`hy` is the origin the noise is hashed from. It defaults to the slot
+// origin (the historical behaviour, kept so existing tiles do not change);
+// a painter whose twins must be pixel-identical across slots passes 0, 0.
+function speckle(buffer, ox, oy, seed, color, dark, light, density, hx = ox, hy = oy) {
   for (let y = 0; y < TILE; y += 1) {
     for (let x = 0; x < TILE; x += 1) {
-      const r = hashValue(seed, ox + x, oy + y);
+      const r = hashValue(seed, hx + x, hy + y);
       if (r < density) putPixel(buffer, ox + x, oy + y, dark);
       else if (r > 1 - density * 0.7) putPixel(buffer, ox + x, oy + y, light);
     }
   }
+}
+
+// Fixed inks for the `wall` painter. Every opaque ink is a near-grey
+// (max channel - min channel <= 14) so an instance colour multiplied in by
+// the renderer keeps its hue. Glass inks carry alpha 0: that alpha is the
+// mask the shader reads, and their RGB is a luminance pattern only.
+const WALL_INK = Object.freeze({
+  base: [208, 204, 198, 255],
+  speckleDark: [188, 184, 178, 255],
+  speckleLight: [216, 212, 206, 255],
+  mortar: [156, 152, 146, 255],
+  frame: [96, 94, 90, 255],
+  sill: [232, 230, 226, 255],
+  glass: [224, 224, 224, 0],
+  glassHighlight: [255, 255, 255, 0],
+});
+
+// The renderer crops a block's side face to the top k/rows of a wall tile,
+// so each band must be one complete floor. With 3 rows a band is 21.33 px:
+// the pixel rows that straddle a fractional band edge (21 and 42) belong to
+// no band and stay plain wall. A band's safe rows are the integer rows that
+// lie fully inside it; `end` is exclusive.
+function wallBands(rows) {
+  const bands = [];
+  for (let band = 0; band < rows; band += 1) {
+    bands.push({
+      start: Math.ceil((band * TILE) / rows),
+      end: Math.floor(((band + 1) * TILE) / rows),
+    });
+  }
+  return bands;
 }
 
 const painters = {
@@ -249,43 +296,67 @@ const painters = {
     fillRect(buffer, ox + 42, oy + 38, 5, 3, rgba("grassDark"));
   },
   wall(buffer, ox, oy, recipe) {
-    const base = rgba(recipe.base);
-    const dark = rgba(recipe.dark);
-    const light = rgba(recipe.light);
-    const windowColor = rgba(recipe.window);
-    const seed = seedFor(recipe.id);
-    fillRect(buffer, ox, oy, TILE, TILE, base);
-    speckle(buffer, ox, oy, seed, base, shade(base, -18), dark, 0.2);
+    // The recipe's hue keys (base, dark, light, window) are not read: the
+    // wall is painted from the fixed neutral WALL_INK so the renderer's
+    // instance colour multiplies in without going muddy. A `.night` twin
+    // shares its `.day` seed, so the two tiles are pixel-identical.
+    const ink = WALL_INK;
+    const seed = seedFor(recipe.id.replace(/\.night$/, ".day"));
+    fillRect(buffer, ox, oy, TILE, TILE, ink.base);
+    speckle(buffer, ox, oy, seed, ink.base, ink.speckleDark, ink.speckleLight, 0.2, 0, 0);
+    const cols = Number(recipe.cols) || 4;
+    const rows = Number(recipe.rows) || 3;
+    const bands = wallBands(rows);
     if (recipe.brick) {
+      // Brick courses are 16 px tall, so a course must never straddle a
+      // band edge: fail the build instead of painting a crossing course.
+      invariant((TILE / rows) % 16 === 0, `${recipe.id}: 16px brick courses must fit the ${rows}-row bands`);
       for (let y = 0; y < TILE; y += 16) {
         const offset = Math.floor(y / 16) % 2 === 0 ? 0 : 8;
-        fillRect(buffer, ox, oy + y, TILE, 1, light);
+        fillRect(buffer, ox, oy + y, TILE, 1, ink.mortar);
         for (let x = offset; x < TILE; x += 16) {
-          fillRect(buffer, ox + x, oy + y, 1, 16, light);
+          fillRect(buffer, ox + x, oy + y, 1, 16, ink.mortar);
         }
       }
     } else {
-      for (let y = 10; y < TILE; y += 22) {
-        fillRect(buffer, ox, oy + y, TILE, 1, shade(base, -28));
-      }
+      // One floor slab line at the top row of every band.
+      for (const band of bands) fillRect(buffer, ox, oy + band.start, TILE, 1, ink.mortar);
     }
-    const cols = Number(recipe.cols) || 4;
-    const rows = Number(recipe.rows) || 3;
     const cellW = TILE / cols;
-    const cellH = TILE / rows;
     const large = Boolean(recipe.largeWindows);
     const winW = large ? 12 : 8;
     const winH = large ? 10 : 9;
-    for (let row = 0; row < rows; row += 1) {
+    // One pane element is: 1 px frame, glass, 1 px frame, 1 px sill. It is
+    // centred in the band's safe rows with at least one wall row above and
+    // below, so no glass pixel touches a band edge.
+    const elementH = winH + 3;
+    for (const band of bands) {
+      const safeRows = band.end - band.start;
+      invariant(safeRows >= elementH + 2, `${recipe.id}: a ${rows}-row band cannot hold a ${elementH}px pane`);
+      const wy = oy + band.start + Math.floor((safeRows - elementH) / 2) + 1;
       for (let col = 0; col < cols; col += 1) {
         const wx = ox + Math.floor(col * cellW + (cellW - winW) / 2);
-        const wy = oy + Math.floor(row * cellH + (cellH - winH) / 2);
-        fillRect(buffer, wx - 1, wy - 1, winW + 2, winH + 2, shade(base, -42));
-        fillRect(buffer, wx, wy, winW, winH, windowColor);
-        if (hashValue(seed, row * 7 + col, 11) > 0.62) {
-          fillRect(buffer, wx + 1, wy + 1, winW - 2, 2, shade(windowColor, 28));
-        }
+        fillRect(buffer, wx - 1, wy - 1, winW + 2, winH + 2, ink.frame);
+        fillRect(buffer, wx, wy, winW, winH, ink.glass);
+        fillRect(buffer, wx, wy, winW, 2, ink.glassHighlight);
+        fillRect(buffer, wx - 1, wy + winH + 1, winW + 2, 1, ink.sill);
       }
+    }
+  },
+  deck(buffer, ox, oy) {
+    // Roof deck: neutral grey with a faint 2x2 ordered dither (one cell in
+    // four) and 1 px tar seams every 16 px on both axes. The greys are fixed,
+    // not recipe keys, so the deck stays as tint-neutral as the walls.
+    const base = [210, 208, 204, 255];
+    const dither = [196, 194, 190, 255];
+    const seam = [180, 178, 174, 255];
+    fillRect(buffer, ox, oy, TILE, TILE, base);
+    for (let y = 0; y < TILE; y += 2) {
+      for (let x = 0; x < TILE; x += 2) putPixel(buffer, ox + x, oy + y, dither);
+    }
+    for (const line of [0, 16, 32, 48]) {
+      fillRect(buffer, ox + line, oy, 1, TILE, seam);
+      fillRect(buffer, ox, oy + line, TILE, 1, seam);
     }
   },
   roof(buffer, ox, oy, recipe) {
@@ -597,7 +668,9 @@ tiles.forEach((tile, index) => {
   invariant(typeof painter === "function", `texture pattern ${tile.pattern}`);
   const ox = (index % GRID) * TILE;
   const oy = Math.floor(index / GRID) * TILE;
+  paintClip = { x: ox, y: oy };
   painter(pixels, ox, oy, tile);
+  paintClip = null;
   rects[tile.id] = { x: ox, y: oy, w: TILE, h: TILE };
 });
 
@@ -667,6 +740,7 @@ const manifest = {
     "Original micro-voxel texture art painted from project-owned recipes with deterministic hash noise; no pixels copied, traced, sampled, or converted from any external game or artwork.",
     "The generator has no network path and reads only the checked-in source recipe.",
     "The atlas is a 512x512 power of two of 64px tiles so the three.js renderer can mipmap it for Retina and mobile GPUs.",
+    "Wall tiles are tint-neutral greys the renderer multiplies an instance colour into; alpha 0 marks glass, which a shader uniform lights, so .night wall tiles equal their .day twins.",
   ],
 };
 await writeFile(path.join(assetsDir, "textures.json"), `${JSON.stringify(manifest, null, 2)}\n`);

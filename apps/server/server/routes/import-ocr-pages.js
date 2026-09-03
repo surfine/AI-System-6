@@ -5,8 +5,14 @@
 
 "use strict";
 
-const { readJsonBody, requestSignal, sendJson } = require("../lib/http.js");
-const { importExtension } = require("../importers/shared.js");
+const {
+  httpError,
+  readJsonBody,
+  requestSignal,
+  respondIfClientError,
+  sendJson,
+} = require("../lib/http.js");
+const { importExtension, importSignatureMismatch } = require("../importers/shared.js");
 const { renderPdfOcrImages } = require("../importers/pdf.js");
 const { renderIworkOcrImages } = require("../importers/iwork.js");
 
@@ -24,6 +30,12 @@ function encodePage(page) {
 }
 
 async function prepareOcrPages(name, mimeType, buffer) {
+  // The same guard as the text import: a file that is not the format it
+  // declares gets a message about the file, at a client status, instead of an
+  // internal parser message at status 500.
+  const signatureMismatch = importSignatureMismatch(name, mimeType, buffer);
+  if (signatureMismatch) throw httpError(signatureMismatch, 422, "import_signature_mismatch");
+
   const ext = importExtension(name);
   if (ext === ".pdf" || mimeType === "application/pdf") {
     return renderPdfOcrImages(buffer);
@@ -37,7 +49,14 @@ async function prepareOcrPages(name, mimeType, buffer) {
   if (ext === ".key" || mimeType === "application/vnd.apple.keynote") {
     return renderIworkOcrImages(buffer, "keynote");
   }
-  throw new Error("PaddleOCR page rendering supports PDF, Pages, Numbers, and Keynote files.");
+  // The caller chose the file, so an unsupported type is a fault in the
+  // request. It was reported at status 500, which told the user that the
+  // server had broken down when the server had understood the request exactly.
+  throw httpError(
+    "PaddleOCR page rendering supports PDF, Pages, Numbers, and Keynote files. Choose a file of one of these types.",
+    415,
+    "unsupported_ocr_file_type"
+  );
 }
 
 /**
@@ -63,6 +82,7 @@ async function handleImportOcrPages(req, res) {
       truncated: !!result.truncated,
     });
   } catch (error) {
+    if (respondIfClientError(res, error)) return;
     sendJson(res, 500, {
       error: "OCR page rendering failed",
       detail: error?.message || String(error),

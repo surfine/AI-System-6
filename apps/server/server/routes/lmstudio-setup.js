@@ -44,7 +44,7 @@
 
 "use strict";
 
-const { send, readJsonBody, requestSignal } = require("../lib/http.js");
+const { send, readJsonBody, requestSignal, respondIfClientError } = require("../lib/http.js");
 const {
   requestedContextConfig,
   pickSetupModel,
@@ -169,6 +169,9 @@ async function handleLmStudioSetup(req, res) {
     }), { "Content-Type": "application/json" });
   } catch (error) {
     if (/** @type {any} */ (error)?.name === "AbortError") return;
+    // Setup never started when the body was rejected. The empty step trail is
+    // kept so the client reads the same shape on every failure.
+    if (respondIfClientError(res, error, { steps })) return;
     send(res, 502, JSON.stringify({
       error: "Local model setup failed",
       detail: /** @type {Error} */ (error).message,

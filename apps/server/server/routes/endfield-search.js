@@ -13,7 +13,7 @@
 
 "use strict";
 
-const { send, readJsonBody } = require("../lib/http.js");
+const { send, readJsonBody, respondIfClientError } = require("../lib/http.js");
 const {
   findEndfieldStoryMatches,
   buildEndfieldEmptyMeta,
@@ -48,6 +48,9 @@ async function handleEndfieldSearch(req, res) {
       ...matches,
     }), { "Content-Type": "application/json" });
   } catch (error) {
+    // A bad request body is the caller's fault, not a fault in the archive
+    // search, so it must not be reported at server-error status.
+    if (respondIfClientError(res, error)) return;
     send(res, 500, JSON.stringify({
       error: "Endfield search failed",
       detail: /** @type {Error} */ (error).message,

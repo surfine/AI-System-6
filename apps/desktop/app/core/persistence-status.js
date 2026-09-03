@@ -1150,13 +1150,17 @@ async function openSafariHttpLocalEntry() {
     blankTab?.close();
     throw error;
   }
+  // [lane-honesty] Clipboard writes can be denied by the browser; the modal
+  // must not claim "copied" unless the write actually landed.
+  let clipboardCopied = true;
   try {
     await copyTextToClipboard(url);
   } catch {
-    // Clipboard can be denied; the modal still shows the address to copy by hand.
+    clipboardCopied = false;
   }
+  const copyStatusKey = clipboardCopied ? "safari_http_local_copied" : "safari_http_local_not_copied";
   await showSystemModal(
-    `${t("safari_http_local_copied", url)}\n\n${t("safari_http_local_paste_hint")}`,
+    `${t(copyStatusKey, url)}\n\n${t("safari_http_local_paste_hint")}`,
     "alert",
     { confirmKey: "ok" }
   );
@@ -1733,12 +1737,28 @@ function putDeskRecordAtBase(store, plan, id, item, base, conflicts) {
       const expected = base === undefined ? deskRecordFingerprint(item) : base;
       if (stored && deskRecordFingerprint(stored) !== expected) {
         conflicts.push({ key: plan.key, id: String(id) });
-        resolve();
+        resolve(null);
         return;
       }
+      // Fingerprint the record at the instant it is actually written, not
+      // when the plan was built. deskCollectionPlan runs synchronously before
+      // this transaction opens (an await away), and this window's own code
+      // can advance the same live object in that gap - a receipt write or a
+      // second field edit landing before the IDB transaction starts. The put
+      // below serializes whatever `item` looks like right now, so the cache
+      // entry must be taken from right here too, or the cache remembers a
+      // byte pattern that was never the one written and every later save is
+      // refused against a base that exists nowhere - not in this window, not
+      // on disk. A single-tab session has no other window to broadcast the
+      // correction, so a mismatch made here never self-clears without this.
+      const fingerprint = deskRecordFingerprint(item);
       const write = plan.key === "trash" ? store.put(item, id) : store.put(item);
       write.addEventListener("error", () => reject(write.error), { once: true });
-      write.addEventListener("success", () => resolve(), { once: true });
+      write.addEventListener(
+        "success",
+        () => resolve({ key: plan.key, cacheKey: String(id), id, fingerprint }),
+        { once: true }
+      );
     }, { once: true });
   });
 }
@@ -1841,12 +1861,15 @@ function deskCollectionPlan(definition) {
 async function runDeskCommit({ changedPlans, settingsPayload, settingsBase, shouldWriteSettings }) {
   const storeNames = changedPlans.map((plan) => plan.storeName);
   if (shouldWriteSettings) storeNames.push(keyvalStoreName);
-  if (!storeNames.length) return;
+  if (!storeNames.length) return [];
   const conflicts = [];
   let db;
   try {
     db = await openAppDb();
-    await window.AISystem6StorageTransactions.runTransaction(
+    // The transaction's own return value carries the fingerprint actually
+    // written for each put - see putDeskRecordAtBase's comment on why the
+    // caller cannot trust the plan's pre-transaction fingerprint instead.
+    return await window.AISystem6StorageTransactions.runTransaction(
       db,
       storeNames,
       "readwrite",
@@ -1870,11 +1893,12 @@ async function runDeskCommit({ changedPlans, settingsPayload, settingsBase, shou
           writes.push(putSettingsAtBase(settingsStore, settingsPayload, settingsBase, conflicts));
           writes.push(idbRequest(settingsStore.put(storageVersion, "storageVersion")));
         }
-        await Promise.all(writes);
+        const results = await Promise.all(writes);
         // One refused record refuses the whole save. Aborting is the honest
         // outcome: the caller rolls its in-memory state back, so the window
         // never keeps an edit the disk does not have.
         if (conflicts.length) throw deskRecordConflictError(conflicts);
+        return results.filter((entry) => entry && entry.key && entry.cacheKey);
       }
     );
   } finally {
@@ -2001,11 +2025,17 @@ async function commitDeskPlansWhereverTheConnectionIs(payload) {
     await window.AISystem6WriteLease?.reconcile?.().catch?.(() => null);
   }
   if (!deskWriteMustBeProxied()) {
-    await runDeskCommit(payload);
-    return;
+    return await runDeskCommit(payload);
   }
   try {
     await requestProxiedDeskCommit(payload);
+    // A proxied write's cache correction rides the existing multi-window
+    // path instead: the holder already re-syncs its own cache from the
+    // records it just wrote (handleProxiedDeskWriteRequest), broadcasts
+    // them, and this window's applyDeskRecordChanges listener re-reads and
+    // adopts the real disk value from that broadcast. Nothing local here
+    // could be trusted anyway - a different window did the actual write.
+    return null;
   } catch (error) {
     // A refusal is an answer and stands. Silence is not. A holder that does
     // not answer is a holder in name only - it may have closed between the
@@ -2016,7 +2046,7 @@ async function commitDeskPlansWhereverTheConnectionIs(payload) {
     if (error?.code === "DESK_RECORD_CONFLICT") throw error;
     const takeover = await window.AISystem6WriteLease?.requestTakeover?.().catch?.(() => null);
     if (!takeover?.ok || deskWriteMustBeProxied()) throw error;
-    await runDeskCommit(payload);
+    return await runDeskCommit(payload);
   }
 }
 
@@ -2065,13 +2095,34 @@ async function persistDeskState() {
       return true;
     }
 
-    await commitDeskPlansWhereverTheConnectionIs({
+    const writtenFingerprints = await commitDeskPlansWhereverTheConnectionIs({
       changedPlans,
       settingsPayload,
       settingsBase,
       shouldWriteSettings,
     });
     setDeskRecordConflictStanding(false);
+    // plan.current was fingerprinted when the plan was built, before the
+    // transaction above ever opened. This window's own code can advance a
+    // record in that gap (a run receipt commit landing between two edits is
+    // the case that surfaced this), so the disk can end up holding bytes
+    // this plan never fingerprinted. writtenFingerprints carries the
+    // fingerprint each record actually had at the moment it was written
+    // (see putDeskRecordAtBase); prefer that over the plan's guess wherever
+    // both exist, or the cache remembers a base that matches neither this
+    // window's memory nor disk, and every later save is refused forever with
+    // no other window to send the correction.
+    if (Array.isArray(writtenFingerprints) && writtenFingerprints.length) {
+      const byKey = new Map();
+      writtenFingerprints.forEach((entry) => {
+        if (!byKey.has(entry.key)) byKey.set(entry.key, new Map());
+        byKey.get(entry.key).set(entry.cacheKey, { id: entry.id, fingerprint: entry.fingerprint });
+      });
+      byKey.forEach((corrections, key) => {
+        const plan = plans.find((candidate) => candidate.key === key);
+        corrections.forEach((value, cacheKey) => plan?.current.set(cacheKey, value));
+      });
+    }
     plans.forEach((plan) => storageRecordFingerprintCache.set(plan.key, plan.current));
     broadcastDeskRecordChanges(changedPlans, shouldWriteSettings);
     if (shouldWriteSettings) storageSnapshotCache.set("settings", settingsSnapshot);
@@ -2813,7 +2864,7 @@ function renderNotificationCenter() {
     const body = document.createElement("div");
     body.className = "notification-item-body";
     const message = document.createElement("b");
-    message.textContent = item.message;
+    message.textContent = renderSystemNotificationText(item);
     const meta = document.createElement("small");
     const state = notificationStateLabel(item.state);
     meta.textContent = state
@@ -2849,6 +2900,8 @@ function serializeSystemNotifications() {
   return systemNotifications.slice(0, 16).map((item) => ({
     id: item.id,
     message: item.message,
+    messageKey: item.messageKey || "",
+    messageArgs: item.messageKey ? (item.messageArgs || []) : [],
     createdAt: new Date(item.createdAt).toISOString(),
     state: item.state || "",
     windowName: item.windowName || "",
@@ -2864,6 +2917,12 @@ function restoreSystemNotifications(saved) {
     .map((item) => ({
       id: String(item?.id || crypto.randomUUID()),
       message: String(item?.message || ""),
+      // Tolerant of a pre-existing record with no key: it keeps rendering
+      // from its stored (rendered-at-push-time) `message` forever, exactly as
+      // it did before this field existed — only a newly pushed notification
+      // gets the redraws-in-the-current-language behavior.
+      messageKey: String(item?.messageKey || ""),
+      messageArgs: Array.isArray(item?.messageArgs) ? item.messageArgs : [],
       createdAt: new Date(item?.createdAt || 0),
       state: String(item?.state || ""),
       windowName: String(item?.windowName || ""),
@@ -2882,9 +2941,27 @@ function restoreSystemNotifications(saved) {
   renderNotificationCenter();
 }
 
+// A notification pushed with a `messageKey` (+ optional `messageArgs`) is
+// rendered from that key every time it is drawn, in whatever language is
+// current at DRAW time — not the language that happened to be active the
+// instant the push fired. Without this, a message queued before the writer's
+// language preference settles (or read again after a mid-session switch)
+// stays frozen in whatever language it was born in: keyed and unkeyed
+// notifications can sit side by side, so `message` still carries a rendered
+// snapshot for callers with no clean key (a raw task failure string) and for
+// tolerantly reading an older persisted record that predates this field.
+function renderSystemNotificationText(item) {
+  if (item?.messageKey && typeof t === "function") {
+    return t(item.messageKey, ...(item.messageArgs || []));
+  }
+  return item?.message || "";
+}
+
 function pushSystemNotification(message, options = {}) {
   const text = String(message || "").trim();
   if (!text) return "";
+  const messageKey = options.messageKey || "";
+  const messageArgs = messageKey ? (options.messageArgs || []) : [];
 
   const now = new Date();
   let item = options.replaceId
@@ -2895,6 +2972,8 @@ function pushSystemNotification(message, options = {}) {
 
   if (item) {
     item.message = text;
+    item.messageKey = messageKey;
+    item.messageArgs = messageArgs;
     item.createdAt = now;
     item.state = options.state || item.state || "";
     item.windowName = options.windowName ?? item.windowName;
@@ -2905,7 +2984,13 @@ function pushSystemNotification(message, options = {}) {
   }
 
   const last = systemNotifications[0];
-  if (!item && last && last.message === text && now - last.createdAt < 2000) {
+  // A repeat within the window is "the same message again" when it renders
+  // the same key+args, or (for an unkeyed push) the same literal text — never
+  // a coincidental cross-language match of unrelated rendered strings.
+  const sameAsLast = last && (messageKey
+    ? last.messageKey === messageKey && JSON.stringify(last.messageArgs || []) === JSON.stringify(messageArgs)
+    : !last.messageKey && last.message === text);
+  if (!item && sameAsLast && now - last.createdAt < 2000) {
     last.createdAt = now;
     last.state = options.state || last.state || "";
     last.windowName = options.windowName ?? last.windowName;
@@ -2916,6 +3001,8 @@ function pushSystemNotification(message, options = {}) {
     item = item || {
       id: crypto.randomUUID(),
       message: text,
+      messageKey,
+      messageArgs,
       createdAt: now,
       state: options.state || "",
       windowName: options.windowName || "",
@@ -3164,6 +3251,8 @@ function beginLongTask(key, statusText = "") {
   const shouldCreateReceipt = key !== "dictionary";
   const notificationId = shouldCreateReceipt
     ? pushSystemNotification(t("notification_task_started", receipt.label), {
+        messageKey: "notification_task_started",
+        messageArgs: [receipt.label],
         state: "running",
         windowName: receipt.windowName,
         actionLabel: t("open"),
@@ -3193,6 +3282,8 @@ function endLongTask(key) {
   if (cancelled) {
     if (task?.notificationId) {
       pushSystemNotification(t("notification_task_stopped", task.label), {
+        messageKey: "notification_task_stopped",
+        messageArgs: [task.label],
         replaceId: task.notificationId,
         state: "stopped",
         windowName: task.windowName,
@@ -3212,6 +3303,8 @@ function endLongTask(key) {
   } else {
     if (task?.notificationId) {
       pushSystemNotification(t("notification_task_done", task.label), {
+        messageKey: "notification_task_done",
+        messageArgs: [task.label],
         replaceId: task.notificationId,
         state: "done",
         windowName: task.windowName,
@@ -3303,6 +3396,61 @@ function explainStatusError(message) {
   const rule = rules.find((item) => item.match.test(normalized));
   if (!rule) return "";
   return currentLanguage === "zh" ? rule.zh : rule.en;
+}
+
+// Failure-path lane: never let the transport's own words become product
+// copy. error.message can be a raw error code ("lmstudio_server_offline:
+// ..."), an HTTP status line, or a JS runtime message — none of it is
+// something a writer can act on, and an English transport string can land
+// under a Chinese UI untranslated. classifyLmStudioError first checks for a
+// cloud_* code that already has its own direct translation (cloud_invalid_key,
+// cloud_insufficient_balance, etc.); a local lmstudio_* shape is replaced by
+// the matching localized note (explainStatusError); anything else that still
+// looks like a raw diagnostic (a code-style prefix, or plain ASCII text
+// surfacing under the zh UI) falls back to the generic connection_error copy
+// instead of leaking through untranslated. A message that is neither of
+// those is assumed to already be human copy in the current language and
+// passes through unchanged.
+function friendlyErrorDetail(error) {
+  const raw = String(error?.message || error || "").trim();
+  if (!raw) return t("connection_error");
+  const code = typeof classifyLmStudioError === "function" ? classifyLmStudioError(raw) : "";
+  if (code && code.startsWith("cloud_")) return t(code);
+  const explanation = explainStatusError(raw);
+  if (explanation) return explanation;
+  const looksLikeRawDiagnostic = /^[a-z][a-z0-9]*(?:_[a-z0-9]+){1,4}\s*:/i.test(raw)
+    || (currentLanguage === "zh" && !/[一-鿿]/.test(raw));
+  return looksLikeRawDiagnostic ? t("connection_error") : raw;
+}
+
+// Consumer-facing failure copy for a route command that asked a model: what
+// happened, then the action that fixes it. Diagnostics stay in the console.
+// Lives in this core module (not a lazy feature file) so every lazy route
+// surface — Outline, Section Drafts, and any future one — can call it
+// without needing another lazy module loaded first.
+async function reportWritingRouteModelFailure(error, taskLabel) {
+  const detail = friendlyErrorDetail(error);
+  const headline = currentLanguage === "zh"
+    ? `「${taskLabel}」没有完成。`
+    : `${taskLabel} could not finish.`;
+  const message = [headline, detail].filter(Boolean).join(" ");
+  setStatus(message);
+  const offline = typeof modelReadyForRequests === "function" && !modelReadyForRequests();
+  try {
+    if (offline) {
+      const openControl = await showSystemModal(
+        currentLanguage === "zh"
+          ? `${message}\n\n要现在打开控制面板接一个模型吗？`
+          : `${message}\n\nOpen Control Panel to connect a model?`,
+        "confirm",
+      );
+      if (openControl === "yes") handleAction("open-control");
+      return;
+    }
+    await showSystemModal(message, "alert");
+  } catch {
+    // Keep the status text if the modal cannot open.
+  }
 }
 
 function classifyLmStudioError(error, response = null) {

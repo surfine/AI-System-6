@@ -687,13 +687,13 @@ async function exportQuickDraftMarkdown() {
   }
   const title = String(refs.titleInput?.value || slot.record.workspace.title || titleFromBody(markdown) || "quick-draft").trim();
   const safeName = title.replace(/[\\/:*?"<>|]/g, "-").slice(0, 80) || "quick-draft";
-  window.AISystem6WebPlatform.saveArtifact({
+  const saved = window.AISystem6WebPlatform.saveArtifact({
     text: markdown,
     fileName: `${safeName}.md`,
     mimeType: "text/markdown;charset=utf-8",
   });
-  setQuickDraftStatus(t("quick_draft_export_done"));
-  return true;
+  setQuickDraftStatus(saved ? t("quick_draft_export_done") : t("markdown_download_failed"));
+  return saved;
 }
 
 async function shareQuickDraftMarkdown() {

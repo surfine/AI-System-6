@@ -267,7 +267,15 @@ test.assertIncludes(feature, "throw new Error(serviceErrorDetail(response.status
 test.assertNotIncludes(feature, "payload?.error || text", "a gateway's HTML body is never used as the message shown to the writer");
 test.assertIncludes(strings, "function serviceErrorDetail(status, body)", "one shared helper decides what a failed response is allowed to say");
 test.assertIncludes(strings, "looksLikeMarkup", "the helper recognizes an HTML error page and refuses to quote it");
-for (const key of ["service_http_error", "time_machine_reader_partial", "time_machine_reader_partial_status", "time_machine_reader_partial_source"]) {
+// Closing the only tab lands back on the home panel, which is what the window
+// was already showing when that tab held nothing: the command removed a real
+// tab and looked like it had done nothing at all.
+test.assertIncludes(
+  feature,
+  'timeMachineSetStatus(t("time_machine_tab_closed"));',
+  "closing a tab says what closed, through Time Machine's own receipt"
+);
+for (const key of ["service_http_error", "time_machine_tab_closed", "time_machine_reader_partial", "time_machine_reader_partial_status", "time_machine_reader_partial_source"]) {
   test.assertIncludes(en, `${key}:`, `English includes ${key}`);
   test.assertIncludes(zh, `${key}:`, `Chinese includes ${key}`);
 }

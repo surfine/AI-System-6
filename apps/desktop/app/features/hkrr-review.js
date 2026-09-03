@@ -1,3 +1,5 @@
+let lastHkrrReviewReceiptId = "";
+
 async function runHkrrReview(options = {}) {
   if (!ensureTeachTextReviewState({ promoteSavedFinal: true })) return;
   const fullBody = teachTextBodyInput.value.trim();
@@ -19,10 +21,33 @@ ${fullBody}`;
   try {
     const response = await fetchModelPayload({ model: getLocalModelRequestName(), messages: attachImagesToModelMessages(withMarkdownModelMessages([{ role: "user", content: prompt }]), teachTextFiguresReferencedIn(fullBody)), temperature: 0.2, max_tokens: 2600, ai_system6_task_kind: "hkrr" }, getLongTaskSignal());
     const data = await readChatJson(response);
-    renderClaimCheckDraft(stripRebuildMarkdownFence(data?.choices?.[0]?.message?.content || ""));
+    const reportText = stripRebuildMarkdownFence(data?.choices?.[0]?.message?.content || "");
+    renderClaimCheckDraft(reportText);
     setStatus(t("hkrr_review_ready"));
+    // The report is on screen the moment it renders, but nowhere durable
+    // unless the writer separately clicks Save Review (saveHkrrReview); a
+    // receipt makes it recoverable even if that click never happens.
+    if (reportText) {
+      const recorded = await window.AISystem6RunReceipts?.recordModelAnswer?.({
+        projectId: activeProjectId,
+        sourceAppId: "reviewDesk",
+        intent: "hkrr-review",
+        provider: (typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudConfig.provider && typeof cloudCredentialReady === "function" && cloudCredentialReady()) ? "cloud" : "local",
+        model: typeof getLocalModelRequestName === "function" ? getLocalModelRequestName() : "",
+        answerText: reportText,
+      });
+      if (recorded?.receiptId) {
+        lastHkrrReviewReceiptId = recorded.receiptId;
+        window.AISystem6RunReceipts?.recordUserAction?.(recorded.receiptId, { action: "accept" });
+      }
+    }
   } catch (error) {
-    if (!isAbortError(error)) claimResultsEl.innerHTML = `<div class="empty-folder-note">${escapeHtml(error.message)}</div>`;
+    if (!isAbortError(error)) {
+      console.error("HKRR review failed", error);
+      const message = friendlyErrorDetail(error);
+      claimResultsEl.innerHTML = `<div class="empty-folder-note">${escapeHtml(message)}</div>`;
+      setStatus(message);
+    }
   } finally {
     endLongTask(taskKey);
   }
@@ -31,13 +56,22 @@ ${fullBody}`;
 async function saveHkrrReview() {
   const markdown = claimResultsEl?.innerText.trim() || "";
   if (!markdown) return setStatus(t("hkrr_review_none_to_save"));
-  const result = await showSystemModal(`Save Review report?\n\n${clipContextContent(markdown, 1000)}`, "confirm");
+  const result = await showSystemModal(t("hkrr_review_save_confirm", clipContextContent(markdown, 1000)), "confirm");
   if (result !== "yes") return;
   const item = await addProjectCdItem(markdown, `HKRR Review - ${teachTextNameInput.value || t("review_desk")}`, {
     sourceDocumentId: activeTextFileId || "",
     sourceKind: "markdown",
   });
-  if (item) openWindow("projectCd");
+  if (item) {
+    openWindow("projectCd");
+    if (lastHkrrReviewReceiptId) {
+      window.AISystem6RunReceipts?.finishReceipt?.(lastHkrrReviewReceiptId, {
+        status: "completed",
+        outputObjectIds: [item.id],
+        destination: "projectCd",
+      });
+    }
+  }
 }
 
 // Finder Label suggestions: the Review Desk / Claim Check is the one producer

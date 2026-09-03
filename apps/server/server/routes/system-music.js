@@ -8,7 +8,7 @@
 
 const { execFile } = require("node:child_process");
 const { promisify } = require("node:util");
-const { readJsonBody, sendJson } = require("../lib/http.js");
+const { readJsonBody, sendJson, respondIfClientError } = require("../lib/http.js");
 
 const execFileAsync = promisify(execFile);
 const ALLOWED_ACTIONS = new Set([
@@ -195,6 +195,10 @@ async function handleSystemMusic(req, res) {
     const result = await runMusicAction(action, body);
     sendJson(res, 200, result, { "Cache-Control": "no-store" });
   } catch (error) {
+    // The Music app is only asked after the body is accepted. A rejected body
+    // must not be reported as a command that the Music app refused, because no
+    // command was sent.
+    if (respondIfClientError(res, error, { available: true })) return;
     const failure = musicError(error);
     sendJson(res, failure.status, {
       available: true,

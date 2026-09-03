@@ -16,8 +16,64 @@
 const maxDocumentRevisions = 200;
 const documentRevisionCache = new Map();
 
+// The route manuscript is a document long before it is a file. Every entry
+// point here keyed history on activeTextFileId, which stays empty until the
+// writer saves — so createDocumentRevision returned null and Versions… listed
+// nothing for exactly the person this history exists for: someone who has
+// never saved and has just watched a command replace their words. The
+// manuscript's durable identity is its project, so it gets one.
+const routeManuscriptDocumentPrefix = "manuscript:";
+
+function routeManuscriptDocumentId(projectId = activeProjectId) {
+  return projectId ? `${routeManuscriptDocumentPrefix}${projectId}` : "";
+}
+
+function isRouteManuscriptDocumentId(documentId) {
+  return String(documentId || "").startsWith(routeManuscriptDocumentPrefix);
+}
+
+// Which document the writer is looking at, for history purposes. A saved file
+// answers with its own id; an unsaved route manuscript answers with its
+// project's. Anything else has no history to keep.
+function currentRevisionDocumentId() {
+  if (activeTextFileId) return activeTextFileId;
+  const isManuscript = typeof isTeachTextManuscriptRole === "function" && isTeachTextManuscriptRole();
+  return isManuscript ? routeManuscriptDocumentId() : "";
+}
+
 function documentRevisionStorageKey(projectId, documentId) {
   return `documentRevisions:${String(projectId || "")}:${String(documentId || "")}`;
+}
+
+// A route manuscript keeps its history when it becomes a file. Finalizing
+// saves the manuscript to disk for the first time, which gives it a file id --
+// and the pre-command revision, recorded moments earlier under the project's
+// manuscript id, would then be listed under a document the writer can no
+// longer reach. Versions… would be empty at the exact moment it is needed.
+// Seen live: the 98 words were protected and the list showed nothing.
+async function adoptRouteManuscriptHistory(projectId, documentId) {
+  if (!projectId || !documentId || isRouteManuscriptDocumentId(documentId)) return;
+  // Only the manuscript the writer is looking at may adopt: another document's
+  // file id must never inherit this project's manuscript history.
+  if (documentId !== activeTextFileId) return;
+  if (typeof isTeachTextManuscriptRole === "function" && !isTeachTextManuscriptRole()) return;
+  const target = cachedRevisions(projectId, documentId);
+  if (target.length) return;
+  const manuscriptId = routeManuscriptDocumentId(projectId);
+  if (!manuscriptId) return;
+  await readStoredRevisions(projectId, manuscriptId);
+  const source = cachedRevisions(projectId, manuscriptId);
+  if (!source.length) return;
+  target.push(...source.map((entry) => ({ ...entry, documentId })));
+  documentRevisionCache.set(documentRevisionStorageKey(projectId, manuscriptId), []);
+  try {
+    await persistRevisions(projectId, documentId);
+    await persistRevisions(projectId, manuscriptId);
+  } catch (error) {
+    // The move did not reach disk. The in-memory list still shows the whole
+    // history, and the next write will try again.
+    console.warn("Could not carry the manuscript's history onto its new file.", error);
+  }
 }
 
 function revisionContentHash(body = "") {
@@ -84,7 +140,7 @@ async function persistRevisions(projectId, documentId) {
 
 async function createDocumentRevision({
   projectId = activeProjectId,
-  documentId = activeTextFileId || "",
+  documentId = currentRevisionDocumentId(),
   phase = typeof teachTextWorkflowState === "string" ? teachTextWorkflowState : "",
   body = typeof teachTextBodyInput !== "undefined" ? teachTextBodyInput?.value || "" : "",
   origin = "system",
@@ -93,6 +149,7 @@ async function createDocumentRevision({
   parentRevisionId = "",
 } = {}) {
   if (!projectId || !documentId) return null;
+  await adoptRouteManuscriptHistory(projectId, documentId);
   const revisions = cachedRevisions(projectId, documentId);
   const contentHash = revisionContentHash(body);
   const latest = revisions[0];
@@ -126,9 +183,10 @@ async function createDocumentRevision({
   }
 }
 
-async function listDocumentRevisions(documentId = activeTextFileId || "", projectId = activeProjectId) {
+async function listDocumentRevisions(documentId = currentRevisionDocumentId(), projectId = activeProjectId) {
   if (!documentId || !projectId) return [];
   await readStoredRevisions(projectId, documentId);
+  await adoptRouteManuscriptHistory(projectId, documentId);
   return cachedRevisions(projectId, documentId);
 }
 
@@ -221,8 +279,76 @@ function compareDocumentRevisions(olderRevision, newerRevision) {
   };
 }
 
+// The route manuscript has no chatFiles record to write back into: it lives in
+// the project's own document (project.outline), which the manuscript field
+// shows as prose. Same promise as the file path — protect what is on the paper
+// now BEFORE replacing it, and roll everything back if the write is refused.
+async function restoreRouteManuscriptRevision(revision) {
+  const project = projects.find((item) => item.id === revision.projectId);
+  if (!project) return false;
+  const paper = typeof teachTextBodyInput !== "undefined" ? teachTextBodyInput : null;
+  const previous = {
+    outline: project.outline,
+    updatedAt: project.updatedAt,
+    body: paper ? paper.value : undefined,
+    statusKey: typeof teachTextStatusEl !== "undefined" ? teachTextStatusEl?.dataset?.statusKey || "" : "",
+  };
+  try {
+    await createDocumentRevision({
+      projectId: revision.projectId,
+      documentId: revision.documentId,
+      phase: revision.phase,
+      body: paper ? paper.value : String(project.outline || ""),
+      origin: "system",
+      operation: "restore-before",
+      parentRevisionId: revision.id,
+    });
+  } catch (error) {
+    setStatus?.(t?.("versions_restore_failed") || "Could not save the pre-restore revision; the document was not changed.");
+    return false;
+  }
+  const restored = String(revision.body || "");
+  // setProjectOutlineMarkdown is the one road into the record and it stamps
+  // record ids on the way in; it lives in the lazy route module, so fall back
+  // to a plain write when the route has not been loaded.
+  if (typeof setProjectOutlineMarkdown === "function") setProjectOutlineMarkdown(project, restored);
+  else project.outline = restored;
+  project.updatedAt = new Date().toISOString();
+  if (paper) {
+    paper.value = restored;
+    if (typeof markTeachTextModified === "function") markTeachTextModified();
+  }
+  const saved = await saveDeskState();
+  if (!saved) {
+    project.outline = previous.outline;
+    project.updatedAt = previous.updatedAt;
+    if (paper && previous.body !== undefined) paper.value = previous.body;
+    if (previous.statusKey && typeof setTeachTextStatus === "function") setTeachTextStatus(previous.statusKey);
+    setStatus?.(t?.("versions_restore_persist_failed") || "Could not save the restored document; nothing was changed.");
+    return false;
+  }
+  if (typeof renderPipeline === "function") renderPipeline();
+  try {
+    await createDocumentRevision({
+      projectId: revision.projectId,
+      documentId: revision.documentId,
+      phase: revision.phase,
+      body: restored,
+      origin: "system",
+      operation: "restore",
+      parentRevisionId: revision.id,
+    });
+  } catch (error) {
+    setStatus?.(t?.("versions_restore_revision_failed") || "The document was restored, but the restore revision could not be saved.");
+  }
+  return true;
+}
+
 async function restoreDocumentRevision(revision) {
   if (!revision?.id || !revision.projectId || !revision.documentId) return false;
+  if (isRouteManuscriptDocumentId(revision.documentId)) {
+    return restoreRouteManuscriptRevision(revision);
+  }
   const target = chatFiles.find((file) => file.id === revision.documentId && file.projectId === revision.projectId && file.type === "text");
   if (!target) return false;
   try {
@@ -292,7 +418,7 @@ async function restoreDocumentRevision(revision) {
 function renderDocumentVersionsList() {
   const listEl = document.querySelector("#document-versions-list");
   if (!listEl) return;
-  const documentId = activeTextFileId || "";
+  const documentId = currentRevisionDocumentId();
   listDocumentRevisions(documentId).then((revisions) => {
     listEl.replaceChildren();
     if (!revisions.length) {

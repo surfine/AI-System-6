@@ -10,6 +10,7 @@ export {
   CanvasTexture,
   Color,
   DirectionalLight,
+  PCFShadowMap,
   Group,
   InstancedMesh,
   LinearMipmapLinearFilter,

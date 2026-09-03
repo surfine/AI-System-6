@@ -2730,21 +2730,27 @@ body.alarm-clock-ringing .alarm-clock-menu-icon {
   -webkit-appearance: none;
 }
 
-.view-switch-option[aria-pressed="true"] {
+/* A toggle-button group reads its state from aria-pressed; a tab strip (the
+   lightroom's 痕迹/阅读/听稿 row: real panels, roving tabindex) reads it from
+   aria-selected. Same part, two ARIA patterns the product already uses. */
+.view-switch-option[aria-pressed="true"],
+.view-switch-option[aria-selected="true"] {
   color: var(--view-switch-active-fg);
   background: var(--view-switch-thumb-bg);
   box-shadow: var(--view-switch-thumb-shadow);
 }
 
-.view-switch-option:not([aria-pressed="true"]):hover,
-.view-switch-option:not([aria-pressed="true"]):focus-visible {
+.view-switch-option:not([aria-pressed="true"]):not([aria-selected="true"]):hover,
+.view-switch-option:not([aria-pressed="true"]):not([aria-selected="true"]):focus-visible {
   color: var(--view-switch-fg);
   background: transparent;
   box-shadow: none;
 }
 
 .view-switch-option[aria-pressed="true"]:hover,
-.view-switch-option[aria-pressed="true"]:focus-visible {
+.view-switch-option[aria-pressed="true"]:focus-visible,
+.view-switch-option[aria-selected="true"]:hover,
+.view-switch-option[aria-selected="true"]:focus-visible {
   color: var(--view-switch-active-fg);
   background: var(--view-switch-thumb-bg);
   box-shadow: var(--view-switch-thumb-shadow);

@@ -353,11 +353,13 @@ body.use-liquid-glass .menu-bar {
 }
 
 .menu-item-with-sub > .menu-sub-popover {
+  /* No z-index here: the base .menu-sub-popover rule in 00-foundation.css
+     already sets the identical token; this rule only repositions it for the
+     nested-item case, so it inherits the value, not restates it. */
   top: -2px;
   left: calc(100% - 2px);
   max-height: min(420px, calc(100vh - 40px));
   overflow: auto;
-  z-index: var(--z-system-menu-subpopover);
 }
 
 .menu-item-with-sub:hover > .menu-sub-popover,
@@ -796,6 +798,21 @@ select:focus {
   }
 }
 
+/* iOS/iPadOS Safari zooms the whole page when a focused field's text is under
+   16px, which throws the desk out of alignment the moment you start typing.
+   16px is that platform threshold, not a chosen type size. This is a touch
+   property, not a width one — an iPad in landscape is wider than the 860px
+   phone breakpoint below but still zooms, so fields never go under 16px on
+   any coarse-pointer/no-hover surface while the rest of the System 6 type
+   scale is untouched. */
+@media (hover: none) and (pointer: coarse) {
+  body input:not([type="checkbox"]):not([type="radio"]),
+  body textarea,
+  body select {
+    font-size: max(16px, var(--system-text-size));
+  }
+}
+
 @media (max-width: 860px) {
   /* A phone scrolls with a finger and cannot size a window at all, so the
      System 6 bars would be decoration with 16px tap targets. Values only —
@@ -804,16 +821,6 @@ select:focus {
     --window-frame-bar-display: none;
     --window-frame-reserve: 0px;
     --window-frame-scrollbar-width: auto;
-  }
-
-  /* iOS Safari zooms the whole page when a focused field's text is under 16px,
-     which throws the desk out of alignment the moment you start typing. 16px is
-     that platform threshold, not a chosen type size, so fields never go below
-     it on a phone while the rest of the System 6 type scale is untouched. */
-  body input:not([type="checkbox"]):not([type="radio"]),
-  body textarea,
-  body select {
-    font-size: max(16px, var(--system-text-size));
   }
 
   .writing-demo-caption {
@@ -1423,13 +1430,14 @@ body.is-writer-mode .system-help-window .system-help-pane {
   }
 
   /* Standalone on iOS the menu bar is the topmost thing on screen, so it grows
-     into the status-bar area instead of hiding under it. */
+     into the status-bar area instead of hiding under it. No stacking token
+     needed here: the 00-foundation.css base .menu-bar rule already sets the
+     identical token, and nothing between the two files touches it. */
   body:not(.is-writer-mode) .menu-bar {
     position: fixed;
     inset: 0 0 auto 0;
     height: calc(var(--menu-bar-height) + var(--safe-area-top));
     padding-top: var(--safe-area-top);
-    z-index: var(--z-system-menu);
   }
 
   body:not(.is-writer-mode) .desktop {

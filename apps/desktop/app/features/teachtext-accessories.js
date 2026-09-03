@@ -94,8 +94,14 @@ function captureActiveTeachTextTabState() {
 function renderTeachTextTabs() {
   if (!teachTextTabsEl || typeof getDocumentTabs !== "function") return;
   syncTeachTextWindowTitle();
+  // The Manuscript and its Section Drafts share one project-backed tab order,
+  // but the rail reads better with the Manuscript's own heading above the
+  // drafts' heading rather than interleaved by creation order (a stable sort
+  // clusters by role only; it never reorders drafts among themselves).
   const tabs = getDocumentTabs("teachText")
-    .filter((tab) => workspaceProfile !== workspaceProfileDesktop || tab.role === "scratch_file");
+    .filter((tab) => workspaceProfile !== workspaceProfileDesktop || tab.role === "scratch_file")
+    .slice()
+    .sort((a, b) => (a.role === "manuscript" ? 0 : 1) - (b.role === "manuscript" ? 0 : 1));
   const activeId = getActiveTeachTextDocumentTab()?.id;
   renderTdiTabStrip(teachTextTabsEl, tabs, {
     activeId,
@@ -105,6 +111,12 @@ function renderTeachTextTabs() {
     iconFor: () => "teachText",
     dirtyFor: (tab) => ["modified", "unsaved"].includes(tab.state?.statusKey || ""),
     closableFor: () => tabs.length > 1,
+    // Tier 2: the rail's own heading capability, applied where the app
+    // already models two distinct kinds of document (Manuscript vs. Section
+    // Drafts) -- Reader/DocMap/Time Machine have no such grouping and pass
+    // no groupFor, so they render exactly as before.
+    groupFor: (tab) => (tab.role === "manuscript" ? "manuscript" : "scratch"),
+    groupLabelFor: (group) => (group === "manuscript" ? t("document_role_manuscript") : t("section_drafts")),
     onOpen: (tab) => openTeachTextDocumentTab(tab.id, { ensureWindow: false }),
     onClose: (tab) => closeTeachTextDocumentTab(tab.id),
     onMove: (tabId, targetTabId) => {
@@ -253,7 +265,16 @@ function openTeachTextDocumentTab(tabId, { focus = true, ensureWindow = true } =
   loadTeachTextTabState(tab);
   saveDeskState();
   const win = getWindow("teachText");
-  if (ensureWindow || win?.classList.contains("is-hidden")) openWindow("teachText");
+  // A caller that passes focus:false is preparing the manuscript, not sending
+  // the writer to it. Opening the window with focus broke that promise where it
+  // matters most: a phone shows one app at a time, so opening the Question
+  // Sheet prepared the manuscript tab, raised the manuscript over it, and the
+  // writer who asked for the Question Sheet arrived in TeachText instead —
+  // which is also why the phone and tablet route cells could not be
+  // photographed at all.
+  if (ensureWindow || win?.classList.contains("is-hidden")) {
+    openWindow("teachText", { skipFocus: !focus });
+  }
   if (focus) teachTextBodyInput.focus();
   return true;
 }
@@ -301,6 +322,15 @@ function openTeachTextManuscriptWindow(options = {}) {
   }
   const opened = activateTeachTextManuscriptTab({ focus: options.focus !== false });
   if (!opened) return false;
+  // The other half of the rule: a surface the user DID ask for must be allowed
+  // to take the phone's single foreground. This is the command behind Writing >
+  // Go To > Manuscript and the Review Desk's View Manuscript, so the manuscript
+  // is the destination here, not a companion — but it declared that nowhere,
+  // and the foreground pass (which lets the manuscript through only when the
+  // writer asked for it, or the work is in review) sent the writer back to
+  // Section Drafts. The declaration sits immediately before the open that must
+  // honour it, the same order advanceDraftsToManuscript uses.
+  if (options.focus !== false) mobileManuscriptForegroundRequested = true;
   openWindow("teachText");
   focusWindow(getWindow("teachText"));
   if (typeof previewLinkedTeachTextManuscript === "function") {
@@ -458,7 +488,7 @@ async function analyzeTeachTextImageAttachment(attachment, mode = "writing-conte
     setStatus(t(mode === "ocr" ? "image_vision_ocr_inserted" : "image_vision_inserted", name));
   } catch (error) {
     if (typeof isAbortError === "function" && isAbortError(error)) return;
-    setStatus(t("image_vision_failed", error?.message || t("connection_error")));
+    setStatus(t("image_vision_failed", friendlyErrorDetail(error)));
   }
 }
 

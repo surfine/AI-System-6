@@ -818,6 +818,19 @@ async function requestEli5FixOne(index) {
       setQuickDraftStatus(t("quick_draft_finding_fix_same"));
       return false;
     }
+    // Durable the moment it arrives. The fix only lands via an explicit Adopt
+    // (applyQuickDraftEli5Fix); Edit and Keep are an explicit walk-away, not a
+    // discard, so both mark the receipt rejected instead of leaving it silent.
+    let quickDraftFixReceiptId = "";
+    const fixRecorded = await window.AISystem6RunReceipts?.recordModelAnswer?.({
+      projectId: activeProjectId,
+      sourceAppId: "quickDraft",
+      intent: "listen-fix-one",
+      provider: (typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudCredentialReady()) ? "cloud" : "local",
+      model: typeof quickDraftConnectedModelName === "function" ? quickDraftConnectedModelName() : "",
+      answerText: candidate,
+    });
+    quickDraftFixReceiptId = fixRecorded?.receiptId || "";
     state.pendingFix = {
       findingIndex: index,
       projectId: activeProjectId,
@@ -826,6 +839,7 @@ async function requestEli5FixOne(index) {
       original: located.beat.text,
       candidate,
       reason: "before-eli5-fix",
+      receiptId: quickDraftFixReceiptId,
     };
     renderQuickDraftFixDiff(index);
     setQuickDraftStatus(t("quick_draft_finding_fix_ready"));
@@ -914,6 +928,12 @@ async function applyQuickDraftEli5Fix(index) {
   setQuickDraftStatus(t(fix.reason === "before-spoken-adopt"
     ? "quick_draft_finding_spoken_applied"
     : "quick_draft_finding_fix_applied"));
+  if (fix.receiptId) {
+    window.AISystem6RunReceipts?.recordUserAction?.(fix.receiptId, {
+      action: "accept",
+      finalBodyHash: typeof contentHash === "function" ? contentHash(fix.candidate) : "",
+    });
+  }
   return true;
 }
 
@@ -969,6 +989,9 @@ function onQuickDraftFindingClick(event) {
   const edit = event.target.closest("[data-quick-draft-fix-edit]");
   if (edit) {
     const state = quickDraftListenState;
+    if (state?.pendingFix?.receiptId) {
+      window.AISystem6RunReceipts?.recordUserAction?.(state.pendingFix.receiptId, { action: "reject" });
+    }
     if (state) state.pendingFix = null;
     jumpToQuickDraftFinding(Number(edit.dataset.quickDraftFixEdit));
     renderQuickDraftFindings();
@@ -977,6 +1000,9 @@ function onQuickDraftFindingClick(event) {
   const keepOriginal = event.target.closest("[data-quick-draft-fix-keep]");
   if (keepOriginal) {
     const state = quickDraftListenState;
+    if (state?.pendingFix?.receiptId) {
+      window.AISystem6RunReceipts?.recordUserAction?.(state.pendingFix.receiptId, { action: "reject" });
+    }
     if (state) state.pendingFix = null;
     renderQuickDraftFindings();
   }
@@ -1068,13 +1094,13 @@ async function exportQuickDraftListenSrt() {
     return false;
   }
   const srt = window.AISystem6ListenBeats.buildListenSrt(state.beats, { rate: Number(state.rate) || 1 });
-  window.AISystem6WebPlatform.saveArtifact({
+  const saved = window.AISystem6WebPlatform.saveArtifact({
     text: srt,
     fileName: `${quickDraftListenExportName()}.srt`,
     mimeType: "text/plain;charset=utf-8",
   });
-  setQuickDraftStatus(t("quick_draft_export_srt_done"));
-  return true;
+  setQuickDraftStatus(saved ? t("quick_draft_export_srt_done") : t("markdown_download_failed"));
+  return saved;
 }
 
 async function exportQuickDraftShotList() {
@@ -1118,13 +1144,13 @@ async function exportQuickDraftShotList() {
     ...rows,
     "",
   ].join("\n");
-  window.AISystem6WebPlatform.saveArtifact({
+  const saved = window.AISystem6WebPlatform.saveArtifact({
     text: markdown,
     fileName: `${quickDraftListenExportName()}-shot-list.md`,
     mimeType: "text/markdown;charset=utf-8",
   });
-  setQuickDraftStatus(t("quick_draft_export_shot_list_done"));
-  return true;
+  setQuickDraftStatus(saved ? t("quick_draft_export_shot_list_done") : t("markdown_download_failed"));
+  return saved;
 }
 
 window.AISystem6QuickDraftListen = Object.freeze({

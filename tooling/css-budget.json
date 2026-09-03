@@ -1,12 +1,13 @@
 {
   "_note": "Ratcheting budgets to stop CSS churn. Numbers are the count at baseline (2026-05-28). Verify fails if any current count exceeds its budget. To raise a budget, edit this file in a commit that justifies the bump in the PR description. To lower a budget, just shrink the number after refactoring.",
+  "_importantFloorNote": "Two remain in the whole app, and both paint. Neither can fall. 00-foundation.css keeps one on `.is-hidden { display: none }`. It is the app's only universal hide, and 426 places in the app source and index.html put that class on arbitrary elements. Its specificity is (0,1,0), and 10-windows.css sets `.window { display: flex }` at the same (0,1,0) one file later, so without the override the class would lose on every element whose own display rule ties and loads after it. The codebase already writes `.window.is-hidden`, `.shutdown-screen.is-hidden`, `.modal-scrim.is-hidden`, `.compose-tools-menu.is-hidden`, `.tdi-stack-host.is-hidden` and `.micropolis-panel.is-hidden` by hand -- that per-component repetition is what the utility exists to stop. The path down is to make every hidden surface carry the `hidden` attribute instead of the class and hide on `[hidden]`, which is one behaviour change across 426 call sites, not a CSS edit. 60-responsive.css keeps one on the busy `cursor`; that file belongs to the responsive layer's owner. NOTE FOR EDITORS: the counter matches the raw substring in the whole file, comments included, so writing the word in a CSS comment raises the count. Reasons for these overrides belong here, not beside the declaration.",
   "important": {
     "styles/00-foundation.css": 1,
     "styles/10-windows.css": 0,
     "styles/20-reader-docmap.css": 0,
     "styles/22-time-machine.css": 0,
     "styles/30-surfaces.css": 0,
-    "styles/40-icons.css": 1,
+    "styles/40-icons.css": 0,
     "styles/50-apps.css": 0,
     "styles/60-responsive.css": 1,
     "styles/65-appearance-themes.css": 0,
@@ -24,48 +25,54 @@
     "styles/92-micropolis.css": 0,
     "styles/93-openttd.css": 0,
     "styles/94-bonsai.css": 0,
-    "styles/95-image-prompt-studio.css": 0
+    "styles/95-image-prompt-studio.css": 0,
+    "styles/96-clio-paint.css": 0
   },
+  "_zIndexNote": "Ratchet over raw `z-index:` declarations per file (tooling/verify-css.mjs counts the literal property, not distinct token values — a component that shares an existing --z-* token still costs one count). It cannot reach 0: a menu must cover a window, a modal must cover the desk. Measured 2026-09-01 after two kinds of reduction: (1) budget catch-up — several files already carried fewer real declarations than their ratchet allowed from earlier cleanups that never lowered the number (00-foundation 9->8, 10-windows 13->12, 50-apps 8->6, 90-endfield-terminal 1->0 were pure bookkeeping, zero CSS changed); (2) seven real removals, each proven safe by CSS stacking mechanics, not by shaving: two redundant cascade restatements (60-responsive.css re-set .menu-bar and .menu-item-with-sub > .menu-sub-popover to the exact token 00-foundation.css already gives them — removing the restatement changes nothing, the base rule's value still applies), one redundant liquid-glass twin (70-liquid-glass.css .grow-box repeated the base 10-windows.css token verbatim), and four cases where an element already wins its stacking order for free (.spine-step-number and .spine-actions button in 10-windows.css, .tdi-tab-close in 20-reader-docmap.css, .image-manager-list-header in 50-apps.css — each is a positioned/sticky element whose only relevant sibling is non-positioned, and CSS2.1 painting order already puts positioned content above non-positioned in-flow content regardless of z-index value). Full layer map and the complete declaration-by-declaration disposition table live in the lane handoff for lane-css-zindex. Every number here may only fall.",
+  "_zIndexFloorNote": "2026-09-02, after the lane above. 50-apps.css falls 5 -> 4: the typewriter band `.mde-surface.is-typewriter-mode::after` asked for --z-local-base, which is 0. For a positioned element, 0 and auto sort into the same painting step; the value only adds a stacking context, and a pseudo-element has no descendants to put in one. The band is also the last child in tree order, so it paints over the ink either way. That is a fifth case of the same kind the lane above removed four of. Every declaration that remains names a distinct layer through a --z-* token, and 30 of the 36 are the layer ladder itself: window-local control, chrome, overlay and popover; then toolbox, pinned, control strip, marquee, system menu, modal, balloon, boot and shutdown. The ratchet cannot reach 0, for the reason the note above gives: a menu must cover a window and a modal must cover the desk, and CSS has no way to say that without a number. The path down is not more deletions -- it is fewer layers. Two pairs are close enough to merge if a reader ever proves they never coexist: --z-system-modal-scrim with --z-system-modal, and --z-control-strip with --z-control-strip-menu. Each merge saves one token, not one declaration, so it does not move this counter at all; only removing a whole layered surface would.",
   "zIndex": {
-    "styles/00-foundation.css": 9,
-    "styles/10-windows.css": 13,
-    "styles/20-reader-docmap.css": 3,
+    "styles/00-foundation.css": 8,
+    "styles/10-windows.css": 10,
+    "styles/20-reader-docmap.css": 2,
     "styles/22-time-machine.css": 1,
     "styles/30-surfaces.css": 1,
     "styles/40-icons.css": 0,
-    "styles/50-apps.css": 8,
-    "styles/60-responsive.css": 7,
+    "styles/50-apps.css": 4,
+    "styles/60-responsive.css": 5,
     "styles/65-appearance-themes.css": 0,
     "styles/66-theme-lab.css": 0,
     "styles/67-aqua-appearance.css": 0,
-    "styles/70-liquid-glass.css": 2,
+    "styles/70-liquid-glass.css": 1,
     "styles/80-bureaucracy-meme.css": 1,
     "styles/85-liquid-cover.css": 0,
     "styles/86-cmf-studio.css": 0,
     "styles/87-clio-chart.css": 0,
     "styles/88-soundscape.css": 0,
     "styles/89-control-strip.css": 2,
-    "styles/90-endfield-terminal.css": 1,
+    "styles/90-endfield-terminal.css": 0,
     "styles/91-draft-desk.css": 0,
     "styles/92-micropolis.css": 1,
     "styles/93-openttd.css": 0,
     "styles/94-bonsai.css": 0,
-    "styles/95-image-prompt-studio.css": 0
+    "styles/95-image-prompt-studio.css": 0,
+    "styles/96-clio-paint.css": 0
   },
   "inlineLayoutStyles": {
     "_pattern": "element.style.{top,left,right,bottom,width,height,padding,margin,maxWidth,maxHeight,minWidth,minHeight} = ...",
-    "total": 172
+    "total": 166,
+    "_floorNote": "166 is an honest floor for the architecture as it stands, examined 2026-09-02. 150 of them are in one file, core/window-manager.js, and they are the window system: where a window sits and how large it is are per-instance runtime values, so no class can carry them. Of the other 16, none is the thing this ratchet was written to catch -- a layout decision that should have been a class. Four in features/writing-demo.js only READ win.style.left/top/width/height to save and restore a window; the pattern matches the substring, not the assignment, so a read is charged like a write. Four in features/clio-paint.js position the selection marquee while the pointer is down, which the css-no-pingpong rule allows as transient state. The last eight, in core/wireup.js, core/actions.js and core/persistence-status.js, set or clear win.style on the same window geometry the window manager owns; an inline value cannot be cleared by adding a class. THE PATH DOWN is one specific conversion, and only one: window-manager.js writes --win-x, --win-y, --win-w and --win-h with setProperty, and the base .window rule reads them, which this pattern does not charge for. That is a rewrite of the most churn-prone subsystem in the repo, not a CSS edit, so it needs its own task and the pixel net. Until then, do not shave this number -- there is nothing here to shave."
   },
+  "_liquidGlassFloorNote": "Examined 2026-09-02. liquidGlassOrphanCount is at its floor at 4, and the four are NOT dead code. .is-glass-pressed is put on by core/wireup.js, #importer-status and #import-project-backup are real elements in index.html, and .video-docmap-time is rendered by features/docmap.js. They are called orphans because the audit asks whether a base stylesheet also styles the class, and for these four nothing does -- which is what liquid-only styling looks like, not drift. Deleting any of them removes real paint from a live element. liquidGlassTwinCount stayed at 476: 70-liquid-glass.css belongs to the Liquid Glass lane, and this lane did not edit it. One warning for whoever does. `.grow-box { border: 0 }` reads as a verbatim repeat of the base rule and the audit will offer it as an easy twin. It is not. Base .grow-box sets `border: 0` and THEN sets border-left and border-top to --window-frame-track-border in the same block, so the twin is what removes that track hairline in glass. Delete it and two hairlines appear.",
   "_liquidGlassNote": "Total twin selectors (body.use-liquid-glass <X>) in 70-liquid-glass.css; ratchet pushes the architecture toward token-based theming. Orphan count tracks twins whose base class/id no longer appears in any non-theme CSS file — a strong drift signal. Both numbers may only shrink; raising either requires explicit justification in the PR.",
-  "liquidGlassTwinCount": 490,
-  "liquidGlassOrphanCount": 32,
+  "liquidGlassTwinCount": 461,
+  "liquidGlassOrphanCount": 4,
   "_appearanceSelectorLimitNote": "Per-theme ratchet over styles/65-appearance-themes.css + styles/67-aqua-appearance.css. Values are the honest 2026-08-10 counts: Yosemite's 122 body.use-liquid-glass[data-theme=yosemite] counter-rules became countable after de-inheritance rewrote them to body[data-theme=yosemite]; Aqua/Snow Leopard live in 67 and were previously invisible to the ratchet. These are corrections, not new churn; each may only shrink. Icon painter mappings (semantic id -> per-theme asset) are exempt from the duplicated-recipe check by design, and a base shared with the recipeBase parent (classic->platinum, aqua->snow-leopard, liquid-glass->yosemite) is the documented derivation delta.",
   "appearanceThemeSelectorLimits": {
     "classic": 0,
     "platinum": 90,
-    "aqua": 105,
-    "snow-leopard": 68,
-    "yosemite": 128,
+    "aqua": 101,
+    "snow-leopard": 62,
+    "yosemite": 112,
     "liquid-glass": 0
   },
   "_bootThemeSurfaceNote": "2026-08-10 bump: per-era boot/shutdown surfaces added for Platinum (+5 appearance selectors) and Aqua/Snow Leopard (+16 theme selectors in 67). These re-skin the shared Happy Mac boot/shutdown harness per theme (same DOM/JS as Classic and Liquid Glass), not per-app churn; both files remain under the raised limits.",
@@ -86,33 +93,34 @@
     "styles/60-responsive.css": 1,
     "styles/67-aqua-appearance.css": 190
   },
-  "_eraTokenCoverageNote": "What a seventh appearance owes. A token two eras set is a period decision; a token one era sets is that era's quirk. Coverage counts the first kind an era answers, following its recipeBase chain, and Theme Lab's Tokens tab shows the same list on screen so the number is a worklist rather than a score. The rule is asymmetric on purpose: an era with no entry here -- a NEW appearance -- must answer all of them, because arriving complete is the point of the gate; the six that predate it carry real debt and are ratcheted instead, each count may only fall. baselineEra is exempt because its values ARE the defaults the others override. Measured 2026-08-30 against 406 period tokens. Lower a number when you answer tokens; never raise one.",
+  "_eraTokenCoverageNote": "What a seventh appearance owes. A token two eras set is a period decision; a token one era sets is that era's quirk. Coverage counts the first kind an era answers, following its recipeBase chain, and Theme Lab's Tokens tab shows the same list on screen so the number is a worklist rather than a score. The rule is asymmetric on purpose: an era with no entry here -- a NEW appearance -- must answer all of them, because arriving complete is the point of the gate; the six that predate it carry real debt and are ratcheted instead, each count may only fall. baselineEra is exempt because its values ARE the defaults the others override. Measured 2026-09-01 (sidebar tier 2: tdi-rail heading/hover/pressed/unfocused tokens, answered by all five eras) against period tokens. Lower a number when you answer tokens; never raise one.",
   "eraTokenCoverage": {
     "baselineEra": "classic",
     "missing": {
-      "platinum": 127,
+      "platinum": 119,
       "aqua": 18,
       "snow-leopard": 8,
-      "yosemite": 132,
+      "yosemite": 125,
       "liquid-glass": 162
     }
   },
-  "_themeLabReplicaNote": "Ratchet over what Theme Lab costs the appearance sheets. The Lab exists to cut the per-theme workload -- one place to change, six themes served -- and a specimen built from theme-lab-* classes inverts that: every era dresses the real control once and the Lab's copy a second time, and the copy drifts. It drew a three-lamp title bar with a Minimize this product has never had. Measured 2026-08-29 after the chrome, scrollbar, tab, menu, dialog, balloon and window fixtures became real parts: 723 mentions, down from 1,039. The count may only fall. To lower it, convert a specimen to the shipping component and move any era metrics onto that component's own token family -- not by deleting the era knowledge, which is the evidence. What legitimately remains: the historical reproductions (a Mac OS 9 Apple menu, the 10.2 column browser), the board's own furniture, and specimens whose component the product does not have yet -- a list, a segmented control, a progress bar. Build the product part first; the Lab never invents one.",
+  "_themeLabReplicaNote": "Ratchet over what Theme Lab costs the appearance sheets. The Lab exists to cut the per-theme workload -- one place to change, six themes served -- and a specimen built from theme-lab-* classes inverts that: every era dresses the real control once and the Lab's copy a second time, and the copy drifts. It drew a three-lamp title bar with a Minimize this product has never had. Measured 2026-08-29 after the chrome, scrollbar, tab, menu, dialog, balloon and window fixtures became real parts: 723 mentions, down from 1,039; a later round (rail, Finder list) landed the count at 695 before this note caught up. Measured 2026-09-01: 591 mentions, down from 695, by removing two orphans -- a pre-conversion segmented-control wardrobe and a pre-conversion scrollbar wardrobe, both fully superseded (the scroll bar already adopts the shipping window-frame bar via AISystem6WindowFrameBar; no segmented specimen has existed in the markup since some earlier round) but left standing in the three era files with zero consuming selector. The count may only fall. To lower it further, convert a specimen to the shipping component and move any era metrics onto that component's own token family -- not by deleting the era knowledge of a specimen that still renders, which is the evidence (a genuinely dead wardrobe carries no such evidence; git history keeps the calibrated values if a live segmented specimen is ever built against .view-switch). What legitimately remains: the historical reproductions (a Mac OS 9 Apple menu, the 10.2 column browser and its Finder toolbar, the 10.2 attached-sheet shape, the Mac OS 9 Open dialog and About box), the board's own furniture, and the generic Lists & sidebar fixture, whose sidebar/browser component the product does not have yet. The product does now ship a real segmented control (.view-switch) and a real progress meter (.progress-meter, already used directly in the Chrome tab) -- neither needs a Lab specimen rebuilt for it unless a new comparison is wanted.",
   "themeLabReplicaMentions": {
-    "styles/65-appearance-themes.css": 351,
-    "styles/67-aqua-appearance.css": 365,
+    "styles/65-appearance-themes.css": 269,
+    "styles/67-aqua-appearance.css": 291,
     "styles/70-liquid-glass.css": 7
   },
   "_appearanceGeometryNote": "Ratchet over the layout carried by the three appearance stylesheets. A declaration that recolors or re-materials cannot move anything, so its correctness is a token diff; a declaration that sets geometry makes that appearance a separate layout at that spot, and only an eye or a pixel snapshot can check it. Measured 2026-08-21: 848 geometry declarations out of 5,969 across the three files — that count, not the six appearances, is what multiplies the verification matrix. Both numbers may only shrink. DRAINING IS NOT A SWEEP. The obvious candidate — rewriting `border: 1px solid <color>` as border-color — was checked and rejected, though not for the reason first written here: base .btn draws `var(--system-control-line) solid`, and that token is 1.5px only under body.use-modern-fonts, which theme-registry.js applies when fontStrategy is \"modern\" (liquid-glass, always) or \"preference\" with the preference on (classic). Platinum is fontStrategy \"theme\" and can never carry that class, so Platinum's literal 1px is NOT the deliberate override the earlier note claimed. The conclusion stands and the rule generalises: the token resolves per appearance, so converting border to border-color blindly would silently change liquid-glass, and classic under modern fonts — the exact historical failure this budget exists to stop. Check the token for the appearance you are editing, never for appearances in general. Drain a site only when you are touching it anyway and can show the base rule it inherits; the honest form is usually a per-appearance token override, which this counter does not charge for. An era typeface or an era title-bar height is real geometry and stays. 'unprefixed' counts top-level rules in an appearance sheet that declare a real property with no appearance prefix: such a rule ships to all six appearances from inside a theme file, where neither this ratchet nor the twin audit can see that it does not belong. Rules that declare nothing but custom properties are exempt — the sprite-cell mappings are theme-independent data and a token lays nothing out.",
+  "_appearanceGeometryFloorNote": "Why these numbers stop here. Measured 2026-09-02. The drop (65: 134 -> 126; 67: 171 -> 150 geometry and 10 -> 6 hairline) is catch-up, not new work: earlier lanes removed declarations and did not lower the number. No CSS changed for the catch-up itself. A search for exact restatements -- an appearance declaration that repeats a base rule verbatim -- found 16 in these two sheets, and every one of them is load-bearing. DO NOT DELETE THEM. (1) Twelve title-bar declarations: grid-column and justify-self on .close-box and .resize-box for aqua, snow-leopard and yosemite. They look like duplicates of .title-bar > .close-box in 10-windows.css, and they are duplicates on purpose. They say that Close stays at the leading edge and Zoom at the trailing edge, in the three eras whose own tradition puts three lamps together at the left. window-frame.test.mjs asserts each one by name; the duplicate IS the guard. The close-box pair also outranks .window.alarm-clock-window > .alarm-clock-title-bar .close-box in 30-surfaces.css, which asks for justify-self: center -- so in these three eras the Alarm Clock's close box sits at the leading edge, not centred. That is a live defect, not a reason to delete the guard; fix it in the Alarm Clock's own rule. (2) Two `.grow-box { border: 0 }` declarations (aqua, snow-leopard). The base .grow-box sets `border: 0` and THEN sets border-left and border-top to --window-frame-track-border in the same block, so the appearance shorthand is what removes that track hairline for these two eras. Delete it and two hairlines come back. The same twin in 70-liquid-glass.css is load-bearing for the same reason; an audit that calls it an easy twin is wrong. (3) Two `.btn { font-size: var(--system-control-size) }` declarations (platinum, aqua). At (0,2,0) they tie with .message-actions .btn, .reader-tabs .btn, .context-item .button-row .btn, .lc-align-grid .btn, .soundscape-style-strip .btn and the Bonsai gauge buttons, and they load later, so they currently replace those 10px and 11px context sizes. Delete them and button text shrinks on six surfaces in those two eras. THE PATH DOWN. What is left is one repeated recipe, not many separate decisions: `padding: var(--field-control-padding); border: var(--field-border); font-family: var(--theme-ui-font); font-size: var(--system-control-size)` is written again for each appearance, on fields, selects and select buttons. Move that recipe to the base sheet on the shared selector and let each appearance set only the token VALUES, which this counter does not charge for. That rewrites the cascade for all six appearances at once, including Classic, whose base padding is a literal 6px today -- so it needs the pixel net (npm run verify:appearance), not a static gate, and it belongs in its own task. MEASUREMENT ARTIFACT, left uncorrected on purpose: two of 65's 126 are the font-family and font-weight descriptors inside its @font-face block. The counter reads every brace block, so a descriptor is charged like a declaration, and an @font-face descriptor lays nothing out. The instrument was not changed, because lowering a number by changing what it counts is not a drain.",
   "appearanceGeometry": {
     "styles/65-appearance-themes.css": {
-      "geometry": 134,
+      "geometry": 126,
       "hairline": 9,
       "unprefixed": 0
     },
     "styles/67-aqua-appearance.css": {
-      "geometry": 171,
-      "hairline": 10,
+      "geometry": 150,
+      "hairline": 6,
       "unprefixed": 0
     },
     "styles/70-liquid-glass.css": {

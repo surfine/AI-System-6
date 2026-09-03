@@ -76,6 +76,44 @@ class TtlLruWindows {
 
 const generalWindows = new TtlLruWindows(5000, 15 * 60 * 1000);
 const turnstileWindows = new TtlLruWindows(5000, 15 * 60 * 1000);
+// Both windows above are keyed on the session nonce, and a session cookie is a
+// bearer token: whoever holds it can present it from any client, in parallel,
+// until it expires. So the session is not an identity, and a limit keyed on it
+// counts cookies rather than callers. These two count the caller.
+const addressWindows = new TtlLruWindows(5000, 15 * 60 * 1000);
+const addressCloudDayWindows = new TtlLruWindows(5000, 25 * 60 * 60 * 1000);
+const ADDRESS_REQUESTS_PER_MINUTE = boundedLimit(
+  process.env.AI_SYSTEM6_PUBLIC_ADDRESS_REQUESTS_PER_MINUTE,
+  300
+);
+// One address may take part of the site's daily shared allowance, never all of
+// it. The default is half the pool: a household or an office behind one
+// address is well inside it, while a farm running many harvested cookies from
+// one machine stops being paid for its extra cookies.
+const ADDRESS_DAILY_CLOUD_REQUESTS = boundedLimit(
+  process.env.AI_SYSTEM6_PUBLIC_ADDRESS_DAILY_CLOUD_REQUESTS,
+  0
+);
+
+function boundedLimit(value, fallback) {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? Math.floor(number) : fallback;
+}
+
+// The shared allowance resets at UTC midnight, so the address share names the
+// same moment. A Retry-After that names a later time than the pool's own reset
+// would tell the caller to wait for nothing.
+function secondsUntilUtcReset(now = new Date()) {
+  const reset = new Date(now);
+  reset.setUTCHours(24, 0, 0, 0);
+  return Math.max(1, Math.ceil((reset.getTime() - now.getTime()) / 1000));
+}
+
+function addressDailyCloudRequests() {
+  if (ADDRESS_DAILY_CLOUD_REQUESTS > 0) return ADDRESS_DAILY_CLOUD_REQUESTS;
+  const { sharedCloudBudgetConfig } = require("../shared-cloud-budget.js");
+  return Math.max(1, Math.ceil(sharedCloudBudgetConfig().dailyRequestLimit / 2));
+}
 /** @type {Map<string, number>} */
 const activeBySession = new Map();
 const activeByGroup = new Map([
@@ -268,18 +306,37 @@ function requestPath(req) {
   }
 }
 
+// Routes that call the model from the server rather than proxying the
+// browser's own call. They spend the same shared allowance as /api/cloud/chat,
+// so they belong to the same concurrency group. A path that is absent here
+// carries no group, and a group is what the concurrency limits are keyed on:
+// before these three were listed, one verified session could hold an unbounded
+// number of them open at once and empty the day's whole token pool in a burst,
+// instead of drawing it down two calls at a time.
+const serverSideModelPaths = new Set([
+  "/api/draft/thesis",
+  "/api/subtitles/translate",
+  "/api/bureaucracy/captions",
+  "/api/vision/analyze",
+]);
+
+// Routes that read a corpus or the network on the caller's behalf. They cost
+// the host bandwidth, CPU and its standing with the sites it reads, not the
+// model account, so they share the reader pool.
+const corpusReadPrefixes = [
+  "/api/reader",
+  "/api/search",
+  "/api/endfield/search",
+  "/api/endfield/ask",
+  "/api/time-machine",
+];
+
 function requestGroup(pathname) {
   if (pathname.startsWith("/api/cmf/")) return "cmf";
   if (pathname === "/api/cloud/files") return "cloud-files";
   if (pathname.startsWith("/api/cloud/")) return "cloud";
-  if (pathname === "/api/vision/analyze") return "cloud";
-  if (
-    pathname.startsWith("/api/reader")
-    || pathname.startsWith("/api/search")
-    || pathname.startsWith("/api/endfield/search")
-  ) {
-    return "reader";
-  }
+  if (serverSideModelPaths.has(pathname)) return "cloud";
+  if (corpusReadPrefixes.some((prefix) => pathname.startsWith(prefix))) return "reader";
   return "";
 }
 
@@ -430,7 +487,33 @@ async function runWithPublicGuard(req, res, handler) {
     return;
   }
 
+  const address = clientIp(req);
+  if (!consumeFixedWindow(addressWindows, address, ADDRESS_REQUESTS_PER_MINUTE, 60 * 1000)) {
+    sendJson(res, 429, {
+      error: "Too many requests from this address",
+      code: "address_rate_limited",
+      detail: "This address has sent more requests in the last minute than the site accepts. Wait a minute and continue.",
+    }, { "Retry-After": "60" });
+    return;
+  }
+
   const group = requestGroup(pathname);
+
+  // The shared model allowance is the one pool that costs real money, and it
+  // is small enough that one caller can take all of it. This keeps a share for
+  // everyone else; the persisted budget still holds the absolute ceiling.
+  if (group === "cloud") {
+    const dailyLimit = addressDailyCloudRequests();
+    if (!consumeFixedWindow(addressCloudDayWindows, address, dailyLimit, 24 * 60 * 60 * 1000)) {
+      sendJson(res, 429, {
+        error: "This address has used its share of the site's daily model allowance",
+        code: "address_daily_cloud_limit",
+        detail: `The site shares one daily model allowance between everyone, and one address may take at most ${dailyLimit} requests of it. Try again tomorrow, or set your own API key in Control Panel.`,
+      }, { "Retry-After": String(secondsUntilUtcReset()) });
+      return;
+    }
+  }
+
   const globalLimit = group === "cmf" ? 1
     : group === "cloud-files" ? 4
       : group === "cloud" ? 8
@@ -498,8 +581,11 @@ module.exports = {
   clientIp,
   normalizeClientIp,
   TtlLruWindows,
+  addressDailyCloudRequests,
   rateLimitStateForTests: () => ({
     general: generalWindows.size,
     turnstile: turnstileWindows.size,
+    address: addressWindows.size,
+    addressCloudDay: addressCloudDayWindows.size,
   }),
 };

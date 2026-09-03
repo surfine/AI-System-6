@@ -2356,7 +2356,7 @@ async function sendDocMapNodeToQuestionSheet() {
   } catch (error) {
     if (!isAbortError(error)) {
       console.error("DocMap question sheet rewrite failed", error);
-      setStatus(t("docmap_model_failed", String(error?.message || error || "unknown error")));
+      setStatus(t("docmap_model_failed", friendlyErrorDetail(error)));
     }
   } finally {
     if (!endLongTask("docmap-question-sheet") && !sent) setStatus(t("docmap_model_failed", t("rewrite_did_not_complete_please_retry")));
@@ -2389,12 +2389,15 @@ async function insertDocMapNodeAsOutline() {
     outlineContentEl.value = outlineMarkdown || serializeOutlineSections(sections);
   }
   renderPipeline();
-  saveDeskState();
+  // [lane-honesty] Don't claim the outline replacement landed unless the
+  // save actually did — saveDeskState can refuse (write lease held
+  // elsewhere, desk not writable).
+  const saved = await saveDeskState();
   openWindow("outline");
-  setStatus(t("docmap_inserted_outline"));
+  setStatus(saved ? t("docmap_inserted_outline") : t("docmap_inserted_outline_unsaved"));
 }
 
-function saveCurrentDocMap() {
+async function saveCurrentDocMap() {
   if (!currentDocMap) return;
   captureActiveDocMapTabState();
   if (!getActiveProject()) {
@@ -2454,8 +2457,10 @@ function saveCurrentDocMap() {
   selectedFolderId = folder.id;
   renderDocuments();
   renderDocMap();
-  saveDeskState();
-  setStatus(t("docmap_saved_file", name));
+  // [lane-honesty] The DocMap file above is only in memory until the desk
+  // save actually lands - don't claim "saved" over a refused write.
+  const saved = await saveDeskState();
+  setStatus(saved ? t("docmap_saved_file", name) : t("docmap_saved_file_unsaved", name));
 }
 
 function docMapPrintTitle(map = currentDocMap) {
@@ -2983,7 +2988,7 @@ async function makeDocMapFromPicture() {
         reading = result.text;
       } catch (error) {
         if (typeof isAbortError === "function" && isAbortError(error)) return;
-        setStatus(t("docmap_picture_failed", error?.message || t("connection_error")));
+        setStatus(t("docmap_picture_failed", friendlyErrorDetail(error)));
         return;
       }
 

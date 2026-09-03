@@ -482,6 +482,71 @@ function addQuestionSheetPhotos() {
   });
 }
 
+// --- The sheet as a card deck ----------------------------------------------
+//
+// The deck is a VIEW of the same Markdown the page edits, never a second
+// store: reading it takes the eleven sections apart, and writing it puts them
+// back together the same way buildQuestionSheetMarkdown does. A twelfth card
+// carries no section of its own -- CLAUDE.md's "Question Sheet must welcome
+// messy human input before prose" needs a place for a raw dump before the
+// writer knows which of the eleven boxes it belongs in, and the text before
+// the first section heading (the title line aside) already is that place.
+
+const QUESTION_SHEET_UNNAMED_CARD = "unnamed";
+
+// The lines before the first recognized section heading -- skipping a leading
+// `# Title` line, which is the pack's title, not the writer's mess.
+function questionSheetPreamble(markdown) {
+  const headings = questionSheetHeadingKeyMap();
+  const lines = [];
+
+  normalizeMarkdownText(markdown).split("\n").some((line) => {
+    const heading = line.match(/^\s{0,3}(#{1,6})\s+(.+?)\s*$/);
+    if (heading) {
+      if (heading[1].length === 1) return false; // the title line: skip, keep scanning
+      if (headings.has(heading[2].replace(/\s+/g, "").toLowerCase())) return true; // first known section: stop
+      lines.push(line); // an unrecognized heading is still part of the mess
+      return false;
+    }
+    lines.push(line);
+    return false;
+  });
+
+  return lines.join("\n").trim();
+}
+
+// Twelve cards: the unnamed dump first, then the eleven sections in the
+// sheet's own order.
+function questionSheetCardsFromMarkdown(markdown, language = currentLanguage) {
+  const cards = [{
+    key: QUESTION_SHEET_UNNAMED_CARD,
+    label: "",
+    body: questionSheetPreamble(markdown),
+  }];
+  QUESTION_SHEET_SECTION_KEYS.forEach((key) => {
+    cards.push({ key, label: questionSheetSectionLabel(key, language), body: questionSheetSectionBody(markdown, key) });
+  });
+  return cards;
+}
+
+// The inverse: card bodies back into one Markdown document. Empty cards drop
+// out, exactly as buildQuestionSheetMarkdown already does for empty sections
+// -- the deck does not invent placeholder text the page would not have shown.
+function questionSheetMarkdownFromCards(cards, language = currentLanguage) {
+  const byKey = new Map((cards || []).map((card) => [card.key, card.body]));
+  const lines = [];
+  const preamble = String(byKey.get(QUESTION_SHEET_UNNAMED_CARD) || "").trim();
+  if (preamble) lines.push(preamble, "");
+
+  QUESTION_SHEET_SECTION_KEYS.forEach((key) => {
+    const body = String(byKey.get(key) || "").trim();
+    if (!body) return;
+    lines.push(questionSheetSectionHeading(key, language), "", body, "");
+  });
+
+  return lines.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+}
+
 /**
  * @param {string} id
  */

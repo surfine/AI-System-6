@@ -72,6 +72,10 @@ function createRegistryContext(overrides = {}) {
     isExportedDocMapMarkdown: (text) => /DOCMAP-FIXTURE/.test(String(text || "")),
     t: (key) => key,
     setStatus: (message) => statusCalls.push(String(message)),
+    // The registry reports dispatch failures through the shared
+    // friendlyErrorDetail helper from persistence-status.js; this isolated
+    // context only tests routing, so a pass-through stub is enough.
+    friendlyErrorDetail: (error) => String(error?.message || error),
     getActiveProject: () => ({ id: "project-1" }),
     activeProjectId: "project-1",
     chatFiles: overrides.chatFiles || [],

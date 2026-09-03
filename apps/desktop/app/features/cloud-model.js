@@ -181,6 +181,52 @@
     }
   }
 
+  // boot() restores the desk's saved Notification Center list from IndexedDB
+  // (persistence-status.js applySettings -> restoreSystemNotifications) and
+  // replaces the in-memory list wholesale when it does. That restore and this
+  // file's own boot-time credential restore are two independent async chains
+  // with no ordering between them, so a notification pushed too early is not
+  // shown late — it is overwritten and gone. document.body's data-app-ready
+  // attribute already exists as boot's own "fully restored" signal (app.js
+  // reads it the same way at the end of boot()); this just waits for it
+  // instead of adding a second one.
+  function waitForBootReady() {
+    const state = document.body.dataset.appReady;
+    if (state === "ready" || state === "error") return Promise.resolve();
+    return new Promise(function (resolve) {
+      const observer = new MutationObserver(function () {
+        const current = document.body.dataset.appReady;
+        if (current === "ready" || current === "error") {
+          observer.disconnect();
+          resolve();
+        }
+      });
+      observer.observe(document.body, { attributes: true, attributeFilter: ["data-app-ready"] });
+    });
+  }
+
+  // Fires at most once per boot, and only when a key an older build left in
+  // browser storage was just migrated out of it. The Control Panel's own
+  // hint text already says a connected key is session-only going forward;
+  // this is the one-time notice for the change itself, so a working key
+  // never just disappears with nothing said about it.
+  function notifyCloudKeyLeftBrowserStorage() {
+    if (typeof pushSystemNotification !== "function" || typeof t !== "function") return;
+    waitForBootReady().then(function () {
+      // This can still land before the language table has loaded (t() falls
+      // back to the raw key then, same as the Reset Usage button label
+      // above). messageKey makes the Notification Center redraw this in the
+      // right language once translations are ready, instead of freezing the
+      // id string into the record.
+      pushSystemNotification(t("cloud_key_left_browser_storage"), {
+        messageKey: "cloud_key_left_browser_storage",
+        actionId: "open-cloud-ai-settings",
+        actionLabel: t("ai_action_reconnect"),
+        state: "error",
+      });
+    });
+  }
+
   async function fetchBalanceOnly() {
     if (!cloudConfig || !cloudConfig.provider || !cloudCredentialReady()) return null;
     if (cloudCredentialMode() === "shared") return null;
@@ -265,12 +311,21 @@
         }
       } else {
         cloudStatusDot.classList.add("is-error");
-        const errorMsg = data.model_error || (typeof t === "function" ? t("cloud_disconnected") : "Disconnected");
+        // lane-errors: data.model_error is the provider's own raw string
+        // (an HTTP status word, an upstream error code) and used to be shown
+        // as-is; friendlyErrorDetail replaces a known technical shape with
+        // the matching localized note (or the direct cloud_* translation)
+        // instead of leaking a diagnostic into Control Panel's status line.
+        const errorMsg = data.model_error
+          ? (typeof friendlyErrorDetail === "function" ? friendlyErrorDetail(data.model_error) : data.model_error)
+          : (typeof t === "function" ? t("cloud_disconnected") : "Disconnected");
         cloudStatusText.textContent = errorMsg;
       }
     } catch (err) {
       cloudStatusDot.classList.add("is-error");
-      cloudStatusText.textContent = err.message || (typeof t === "function" ? t("cloud_error") : "Error");
+      cloudStatusText.textContent = typeof friendlyErrorDetail === "function"
+        ? friendlyErrorDetail(err)
+        : (err.message || (typeof t === "function" ? t("cloud_error") : "Error"));
     }
   }
 
@@ -824,8 +879,48 @@
     ownKeyDetails?.querySelector("summary")?.focus();
   });
 
+  // isPublicCloudCredentialMode() reads a dataset attribute that /api/capabilities
+  // sets asynchronously — on first paint it always reads "not public" before
+  // that response lands. An ordinary boot never notices: cloudRuntimeApiKey
+  // stays empty until the user acts, long after capabilities have resolved.
+  // A key just migrated out of browser storage is the one case where
+  // cloudRuntimeApiKey is already set this early, so it is the one case that
+  // must wait for the real profile — routing it on the pre-response guess
+  // would send a public deployment's migrated key down the local Keychain
+  // path (which does not exist there), and it would be lost outright.
+  function restoreCloudCredentialAfterBoot(legacyCloudKeyMigrated) {
+    const profileKnown = legacyCloudKeyMigrated && cloudRuntimeApiKey && window.AISystem6PublicAccess?.getCapabilities
+      ? window.AISystem6PublicAccess.getCapabilities().catch(function () {})
+      : Promise.resolve();
+    profileKnown.then(function () {
+      if (cloudRuntimeApiKey && !isPublicCloudCredentialMode()) {
+        stageCloudCredentialIfNeeded()
+          .then(updateCheckButtonState)
+          .catch(function () {
+            cloudApiKeyEl.value = "";
+            setCloudRuntimeApiKey("");
+            updateCheckButtonState();
+            // The local service that keeps the key in the Keychain could not
+            // take it just now, so the migrated key is gone rather than staged
+            // — the one case this boot where a working key really is discarded.
+            if (legacyCloudKeyMigrated) notifyCloudKeyLeftBrowserStorage();
+          });
+      } else {
+        verifyRestoredCloudCredential();
+        // Public BYOK: the key still works for this tab (it lives in
+        // cloudRuntimeApiKey now), but it will not survive the next reload —
+        // say so once, the same boot it left storage.
+        if (legacyCloudKeyMigrated && isPublicCloudCredentialMode()) {
+          notifyCloudKeyLeftBrowserStorage();
+        }
+      }
+    });
+  }
+
   // Restore saved config
   loadCloudConfig();
+  const legacyCloudKeyMigrated = typeof consumeCloudLegacyKeyMigration === "function"
+    && consumeCloudLegacyKeyMigration();
   if (cloudConfig && cloudConfig.provider) {
     cloudProviderEl.value = cloudConfig.provider;
     cloudApiKeyEl.value = "";
@@ -836,17 +931,7 @@
       window.syncCloudModelControls();
     });
     applyCloudActiveState();
-    if (cloudRuntimeApiKey && !isPublicCloudCredentialMode()) {
-      stageCloudCredentialIfNeeded()
-        .then(updateCheckButtonState)
-        .catch(function () {
-          cloudApiKeyEl.value = "";
-          setCloudRuntimeApiKey("");
-          updateCheckButtonState();
-        });
-    } else {
-      verifyRestoredCloudCredential();
-    }
+    restoreCloudCredentialAfterBoot(legacyCloudKeyMigrated);
   } else {
     window.syncCloudModelControls();
   }

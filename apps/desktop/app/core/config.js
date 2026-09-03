@@ -230,6 +230,7 @@ window.AISystem6Config = (() => {
       "bureaucracyMeme",
       "clioStage",
       "liquidCover",
+      "clioPaint",
       "quickDraft",
       "cmfStudio",
       "soundscape",
@@ -270,6 +271,7 @@ window.AISystem6Config = (() => {
       "clioStage",
       "clioChart",
       "liquidCover",
+      "clioPaint",
       "quickDraft",
       "cmfStudio",
       "soundscape",
@@ -498,6 +500,9 @@ const ensureAlarmClockModule = createLazyModuleLoader("", ["app/features/alarm-c
 const ensureBureaucracyMemeModule = createLazyModuleLoader("AISystem6BureaucracyMeme", ["app/core/application-shell.js", "app/features/bureaucracy-meme.js"], false, ["styles.bureaucracy-meme.css"]);
 const ensurePrintDirectoryModule = createLazyModuleLoader("", ["app/features/print-directory.js"]);
 const ensureProjectCdPrintModule = createLazyModuleLoader("", ["app/core/application-shell.js", "app/features/project-cd-print.js"]);
+// The .docx writer is a whole ZIP container and an OOXML generator, and only
+// the Word export calls it. It travels with that command, not with every boot.
+const ensureWordExportModule = createLazyModuleLoader("AISystem6WordExport", ["app/features/word-export.js"]);
 const ensureTranslationPadModule = createLazyModuleLoader("", ["app/features/translation-pad.js"]);
 const ensureDictionaryHelpModule = createLazyModuleLoader("AISystem6DictionaryHelpLoaded", ["app/features/dictionary-help.js"]);
 // The shaper is pure text and only the pad calls it, so it travels with the
@@ -521,6 +526,7 @@ const ensureClioChartModule = createLazyModuleLoader("AISystem6ClioChartLoaded",
 // The plan window carries its pure model with it: the model is also what the
 // contract executes, so it stays a separate file rather than folding in.
 const ensureClioProjectModule = createLazyModuleLoader("AISystem6ClioProjectWindowLoaded", ["app/core/application-shell.js", "app/core/clio-project.js", "app/features/clio-project-window.js"]);
+const ensureClioPaintModule = createLazyModuleLoader("AISystem6ClioPaintLoaded", ["app/core/application-shell.js", "app/features/clio-paint.js"], false, ["styles.clio-paint.css"]);
 const ensureTodoDaModule = createLazyModuleLoader("AISystem6TodoDaLoaded", ["app/core/application-shell.js", "app/features/todo-da.js"]);
 const ensureLiquidCoverModule = createLazyModuleLoader("AISystem6LiquidCoverLoaded", ["app/core/application-shell.js", "app/features/image-prompt-runtime.js", "app/features/liquid-cover.js"], false, ["styles.liquid-cover.css"]);
 const ensureImagePromptStudioModule = createLazyModuleLoader("AISystem6ImagePromptStudioLoaded", ["app/core/application-shell.js", "app/features/image-prompt-runtime.js", "app/features/image-prompt-studio.js"], false, ["styles.image-prompt-studio.css"]);
@@ -590,6 +596,16 @@ const ensureWritingDemoModule = createLazyModuleLoader("AISystem6WritingDemoLoad
   "app/data/evergreen-demo-corpus.js",
   "app/features/writing-demo.js",
 ]);
+
+// A lazy window/command whose module failed to load this session: keyed by
+// action id, valued with the already-rendered failure message (so the menu
+// and Balloon Help can show the same honest text without a new translation
+// key — an unrecognized "key" falls back to itself in t(), see app.js).
+// Read by updateMenuState() (greys the command) and
+// disabledMenuBalloonHelpKey() (names the reason); written by the lazy
+// command dispatch in actions.js. A module that later loads successfully is
+// never re-added, so a retried command clears its own entry.
+const failedLazyCommandActions = new Map();
 
 const lazySystemModulePromises = new Map();
 function ensureLazySystemModule(path, loadedFlag) {
@@ -819,6 +835,9 @@ function installLazyFunctionStub(name, ensureModule) {
   "updatePageSetupFromControls",
   "printSelectedProjectCdPdf",
   "printCurrentTeachTextDocument",
+  "openWordExportPreview",
+  "exportActiveDocumentAsWord",
+  "exportSelectedProjectCdItemAsWord",
   "openFinishingReceipt",
   "openFinishingReceiptForSelection",
   "showFinishingReceiptForBurn",

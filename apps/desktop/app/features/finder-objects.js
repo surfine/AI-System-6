@@ -233,7 +233,7 @@ function openAliasFile(file) {
 
 // "Replace Original…" materializes the target into the alias record in place,
 // so the alias's own id stays stable for anything pointing at it.
-function replaceAliasWithOriginal(file) {
+async function replaceAliasWithOriginal(file) {
   const target = resolveAliasTarget(file);
   if (!target) {
     setStatus(t("alias_broken", file.name));
@@ -252,13 +252,15 @@ function replaceAliasWithOriginal(file) {
   delete copy.aliasTarget;
   chatFiles[index] = copy;
   selectedChatFileId = copy.id;
-  saveDeskState();
+  // The alias record above is only in memory until the desk save actually
+  // lands - don't claim it was replaced over a refused write.
+  const saved = await saveDeskState();
   renderDocuments();
   renderProjectDisks();
-  setStatus(t("alias_replaced", copy.name));
+  setStatus(saved ? t("alias_replaced", copy.name) : t("alias_replaced_unsaved", copy.name));
 }
 
-function makeAliasForFinderSelection() {
+async function makeAliasForFinderSelection() {
   const item = (typeof getCurrentFinderSelection === "function" ? getCurrentFinderSelection() : null)
     || (typeof getActiveItem === "function" ? getActiveItem() : null);
   if (!item || (item.type !== "text" && item.type !== "chat")) {
@@ -273,10 +275,12 @@ function makeAliasForFinderSelection() {
   selectedChatFileId = alias.id;
   selectedDocumentFolderId = null;
   selectedProjectRootItemId = null;
-  saveDeskState();
+  // The alias above is only in memory until the desk save actually lands -
+  // don't claim it was created over a refused write.
+  const saved = await saveDeskState();
   renderDocuments();
   renderProjectDisks();
-  setStatus(t("alias_created", alias.name));
+  setStatus(saved ? t("alias_created", alias.name) : t("alias_created_unsaved", alias.name));
 }
 
 function renderClippingFileInfo(item) {
@@ -580,7 +584,7 @@ function insertClippingIntoQuestionSheet(dropTarget, body, title) {
   setStatus(t("clipping_inserted", title));
 }
 
-function insertClippingIntoClioStage(body, title) {
+async function insertClippingIntoClioStage(body, title) {
   if (typeof clioStageState === "undefined" || !clioStageState?.source?.markdown) {
     setStatus(t("clipping_drop_deck_readonly"));
     return;
@@ -603,9 +607,11 @@ function insertClippingIntoClioStage(body, title) {
     markTeachTextModified();
     refreshTeachTextDocumentState();
   }
-  saveDeskState();
+  // The deck file above is already mutated in memory; only claim it landed
+  // once the desk save actually confirms it.
+  const saved = await saveDeskState();
   renderDocuments();
-  setStatus(t("clipping_inserted", title));
+  setStatus(saved ? t("clipping_inserted", title) : t("clipping_inserted_unsaved", title));
 }
 
 function insertTextAtDropPoint(textarea, offset, text) {

@@ -25,6 +25,7 @@ const multiFinderAppLabels = {
   clioStage: "ClioStage",
   clioChart: "ClioChart",
   clioProject: "ClioProject",
+  clioPaint: "ClioPaint",
   liquidCover: "Cover Glass",
   cmfStudio: "CMF Studio",
   imagePromptStudio: "Image Prompt Studio",
@@ -472,10 +473,19 @@ function installApplicationLifecycleWatch() {
 
 function bringAppToFront(appId = activeAppId) {
   const windows = visibleWindowsForApp(appId);
-  windows
-    .sort((a, b) => Number(a.style.zIndex || 0) - Number(b.style.zIndex || 0))
-    .forEach((win) => {
-      setWindowLayerZ(win, nextWindowLayerZ());
-    });
-  if (windows.length) focusWindow(windows[windows.length - 1], 1);
+  const ordered = windows
+    .slice()
+    .sort((a, b) => Number(a.style.zIndex || 0) - Number(b.style.zIndex || 0));
+  // With one window already in front there is nothing to re-stack, so the
+  // command did its job and yet the screen did not change — which reads as a
+  // dead menu row. Report the fact instead of leaving the writer to wonder,
+  // the same correction Select All carries for an empty field.
+  const before = ordered.map((win) => win.style.zIndex || "");
+  ordered.forEach((win) => {
+    setWindowLayerZ(win, nextWindowLayerZ());
+  });
+  if (ordered.length) focusWindow(ordered[ordered.length - 1], 1);
+  const moved = ordered.some((win, index) => (win.style.zIndex || "") !== before[index]);
+  if (!moved && typeof setStatus === "function") setStatus(t("bring_all_to_front_already"));
+  return moved;
 }

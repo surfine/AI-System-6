@@ -566,7 +566,7 @@ async function readReaderFigure(plate, row) {
     readerStatusEl.textContent = t("reader_figure_ready");
   } catch (error) {
     if (typeof isAbortError === "function" && isAbortError(error)) return;
-    setStatus(t("image_vision_failed", error?.message || t("connection_error")));
+    setStatus(t("image_vision_failed", friendlyErrorDetail(error)));
   } finally {
     setControlLoading(button, false, t("reader_figure_read"));
   }
@@ -663,17 +663,21 @@ function clipReaderFigureReading(panel) {
     }
   );
 
+  // [lane-honesty] createScrap's only failure mode is "no project mounted",
+  // and it already shows that status itself. The "clipped" claim below used
+  // to fire unconditionally, clobbering that real message with a false one
+  // whenever scrap creation failed.
   if (scrap) {
     scrap.tags = [...new Set(["reader-clip", "figure", ...(scrap.tags || [])])];
     currentReaderClipCount += 1;
     saveDeskState();
     renderScraps();
+    readerStatusEl.textContent = t("reader_clips_count", currentReaderClipCount);
+    setStatus(t("reader_clipped"));
   }
 
   readerFigureReading = null;
   panel.remove();
-  readerStatusEl.textContent = t("reader_clips_count", currentReaderClipCount);
-  setStatus(t("reader_clipped"));
 }
 
 async function fetchReaderPage(urlArg = null) {
@@ -721,7 +725,7 @@ async function fetchReaderPage(urlArg = null) {
     readerContentEl.replaceChildren();
     const err = document.createElement("div");
     err.className = "empty-folder-note";
-    err.textContent = t("reader_error", error.message);
+    err.textContent = t("reader_error", friendlyErrorDetail(error));
     readerContentEl.append(err);
     readerStatusEl.textContent = t("ready");
   } finally {
@@ -952,7 +956,7 @@ async function importFilesIntoReader(files) {
     await openMountedFilesInReader(mountedFileNames);
     readerStatusEl.textContent = statusMessage;
   } catch (error) {
-    const message = isAbortError(error) ? t("file_disk_canceled") : error.message;
+    const message = isAbortError(error) ? t("file_disk_canceled") : friendlyErrorDetail(error);
     readerStatusEl.textContent = message;
     setStatus(message);
     resetReaderDocumentState();
@@ -1143,6 +1147,10 @@ function clipReaderSelection() {
   );
 
   // Tag it as a clip
+  // [lane-honesty] createScrap's only failure mode is "no project mounted",
+  // and it already shows that status itself. The "clipped" claim used to
+  // fire unconditionally below, clobbering that real message with a false
+  // one whenever scrap creation failed.
   if (scrap) {
     const sourceTags = isVideoTranscriptClip
       ? ["reader-clip", "file-disk", "video-transcript"]
@@ -1152,10 +1160,9 @@ function clipReaderSelection() {
     saveDeskState();
     renderScraps();
     updateFlowGuideChecklist({ render: false });
+    readerStatusEl.textContent = t("reader_clips_count", currentReaderClipCount);
+    setStatus(t("reader_clipped"));
   }
-
-  readerStatusEl.textContent = t("reader_clips_count", currentReaderClipCount);
-  setStatus(t("reader_clipped"));
   updateReaderTranslationClipButton();
 }
 
@@ -1270,6 +1277,9 @@ async function clipReaderSelectionWithTranslation() {
       }
     );
 
+    // [lane-honesty] Same clobbering bug as clipReaderSelection: the
+    // "clipped" claim used to fire unconditionally and overwrite
+    // createScrap's own "no project mounted" status on failure.
     if (scrap) {
       const sourceTags = isVideoTranscriptClip
         ? ["reader-clip", "file-disk", "video-transcript"]
@@ -1279,12 +1289,11 @@ async function clipReaderSelectionWithTranslation() {
       saveDeskState();
       renderScraps();
       updateFlowGuideChecklist({ render: false });
+      readerStatusEl.textContent = t("reader_clips_count", currentReaderClipCount);
+      setStatus(t("reader_bilingual_clipped"));
     }
-
-    readerStatusEl.textContent = t("reader_clips_count", currentReaderClipCount);
-    setStatus(t("reader_bilingual_clipped"));
   } catch (error) {
-    setStatus(t("translation_failed", error.message));
+    setStatus(t("translation_failed", friendlyErrorDetail(error)));
   } finally {
     document.body.classList.remove("is-busy");
     updateReaderTranslationClipButton();
@@ -1517,7 +1526,7 @@ async function translateCurrentReaderSubtitleFromQuestion(question) {
     const file = createReaderTranslationTeachTextDocument(documentBody, readerSubtitleTranslationName(title, mode));
     if (file) setStatus(t("subtitle_translation_document_created", file.name));
   } catch (error) {
-    if (!isAbortError(error)) setStatus(t("translation_failed", error.message));
+    if (!isAbortError(error)) setStatus(t("translation_failed", friendlyErrorDetail(error)));
   } finally {
     endLongTask("reader-subtitle-translation");
   }
@@ -1564,8 +1573,9 @@ async function translateCurrentReaderSourceFromQuestion(question) {
   } catch (error) {
     if (!isAbortError(error)) {
       pendingMessage.remove();
-      setStatus(t("translation_failed", error.message));
-      addMessage("assistant", `${t("translation_failed", error.message)}`);
+      const failureMessage = t("translation_failed", friendlyErrorDetail(error));
+      setStatus(failureMessage);
+      addMessage("assistant", failureMessage);
     }
   } finally {
     endLongTask("reader-full-translation");
@@ -1645,7 +1655,7 @@ ${text}`;
   } catch (error) {
     if (!isAbortError(error)) {
       console.error("Reader transcript polish failed", error);
-      setStatus(t("reader_error", error.message));
+      setStatus(t("reader_error", friendlyErrorDetail(error)));
     }
   } finally {
     endLongTask("reader-manuscript-polish");

@@ -2259,6 +2259,9 @@ function openChatFileWindow(fileId) {
   transcript.innerHTML = renderChatTranscript(file.messages);
   chatFileBodyEl.append(...transcript.childNodes);
   openWindow("chatFile");
+  // The Open Recent row for the transcript now on screen carries the mark
+  // that says so; without this the mark stays where it was.
+  if (typeof updateMenuState === "function") updateMenuState();
 }
 
 function revealChatFileInFinder(fileId) {
@@ -2470,7 +2473,11 @@ function linkTeachTextToPipeline({ ai = false } = {}) {
   renderPipeline();
 }
 
-async function setTeachTextFileLabel(label, { announce = false, persist = false } = {}) {
+// `confirmed` says the caller already asked this exact question, in these
+// words, and got a yes. The route's To Review has to ask BEFORE it writes
+// anything, so a cancel can leave the document byte-identical; without this
+// flag one command would put the same question to the writer twice.
+async function setTeachTextFileLabel(label, { announce = false, persist = false, confirmed = false } = {}) {
   if (typeof isTeachTextManuscriptRole === "function" && !isTeachTextManuscriptRole()) {
     syncTeachTextLabelControl();
     setStatus(t("teachtext_manuscript_required"));
@@ -2478,7 +2485,7 @@ async function setTeachTextFileLabel(label, { announce = false, persist = false 
   }
   const next = normalizeFileLabel(label);
   const previous = normalizeTeachTextWorkflowState(teachTextWorkflowState);
-  if (next === "final" && previous !== "final") {
+  if (next === "final" && previous !== "final" && !confirmed) {
     const result = await showSystemModal(t("final_label_confirm"), "confirm");
     if (result !== "yes") {
       syncTeachTextLabelControl();
@@ -3051,7 +3058,7 @@ async function downloadTeachTextBilingualMarkdown() {
     markTeachTextExported("bilingual");
     setStatus(t("bilingual_export_saved", `${sanitizeFilename(exportName)}.md`));
   } catch (error) {
-    if (!isAbortError(error)) setStatus(t("translation_failed", error.message));
+    if (!isAbortError(error)) setStatus(t("translation_failed", friendlyErrorDetail(error)));
   } finally {
     endLongTask("bilingual-export");
     updateTeachTextBilingualExportButton();
@@ -3160,6 +3167,11 @@ async function shareActiveMarkdown() {
       fileName: `${sanitizeFilename(name)}.md`,
     });
     if (shared) setStatus(t("share_markdown_done"), { notify: false });
+    // Chromium desktops (this repo's own test browser included) have no
+    // navigator.share at all, so shareArtifact's "none" path returned false
+    // with nothing thrown -- indistinguishable, until now, from a click that
+    // did nothing.
+    else setStatus(t("share_markdown_cancelled"));
     return !!shared;
   } catch (error) {
     console.warn("Markdown share failed.", error);
@@ -3187,7 +3199,15 @@ function getActiveEditableElement() {
   }
   if (active?.isContentEditable) return active;
 
-  const activeWin = document.querySelector(".window.is-active:not(.is-hidden)");
+  // Same window the menu's own isAvailable() means by "TeachText"/"ClioTalk"
+  // (window-manager.js's isTeachText/isAssistant) — not just the literal
+  // .is-active window, which can be an accessory/system window sitting in
+  // front of the document window that still owns the menu bar. Falling back
+  // to the stricter literal check here made Cut/Copy/Clear look available
+  // (the menu agreed) yet find nothing to act on.
+  const activeWin = typeof resolveMenuContextWindow === "function"
+    ? resolveMenuContextWindow()
+    : document.querySelector(".window.is-active:not(.is-hidden)");
   if (activeWin?.dataset.window === "teachText") return teachTextBodyInput;
   if (activeWin?.dataset.window === "assistant") return promptInput;
   return null;
@@ -3224,24 +3244,89 @@ function insertTextAtEditableSelection(target, text) {
 async function runEditCommand(command) {
   const target = getActiveEditableElement();
   if (command === "select-all") {
+    if (!target) {
+      setStatus(t("edit_command_no_target"));
+      return;
+    }
     selectEditableText(target);
     return;
   }
   if (command === "paste") {
-    target?.focus();
+    // Three different silences used to leave this one command: no field to
+    // paste into, an empty clipboard, and a browser that refuses to hand the
+    // clipboard to a script. All three looked exactly like a broken Paste.
+    if (!target) {
+      setStatus(t("edit_command_no_target"));
+      return;
+    }
+    target.focus();
+    let text = null;
+    let clipboardRefused = false;
     try {
-      const text = await navigator.clipboard.readText();
-      if (text && insertTextAtEditableSelection(target, text)) return;
-    } catch {}
-    document.execCommand("paste");
+      text = await navigator.clipboard.readText();
+    } catch {
+      clipboardRefused = true;
+    }
+    if (text && insertTextAtEditableSelection(target, text)) {
+      setStatus(t("pasted_selection"));
+      return;
+    }
+    if (!clipboardRefused) {
+      setStatus(t("clipboard_empty_nothing_to_paste"));
+      return;
+    }
+    if (document.execCommand("paste")) {
+      setStatus(t("pasted_selection"));
+      return;
+    }
+    setStatus(t("paste_not_allowed"));
+    return;
+  }
+  // Cut/Copy/Clear stay enabled whenever TeachText or ClioTalk owns the menu
+  // bar (window-manager.js's isTeachText/isAssistant) — a broader condition
+  // than "something is actually focused right now". A control the menu shows
+  // as enabled must not silently do nothing when that gap is hit; say so
+  // instead of calling execCommand against nothing.
+  if (!target && (command === "copy" || command === "cut" || command === "delete")) {
+    setStatus(t("edit_command_no_target"));
     return;
   }
   if (command === "copy") {
-    document.execCommand("copy");
-    captureSelectionClipboard();
+    const copied = document.execCommand("copy");
+    if (copied) {
+      captureSelectionClipboard();
+      setStatus(t("copied_selection"));
+    }
+    return;
+  }
+  if (command === "cut") {
+    target?.focus();
+    const cut = document.execCommand("cut");
+    if (cut) setStatus(t("cut_selection"));
+    return;
+  }
+  if (!target && (command === "undo" || command === "redo")) {
+    setStatus(t("edit_command_no_target"));
     return;
   }
   target?.focus();
+  if (command === "undo" || command === "redo") {
+    // execCommand returns false at the end of a field's own undo stack. The
+    // command stays enabled there, so without this the last Undo and a dead
+    // Undo are the same event to the writer.
+    if (!document.execCommand(command)) {
+      setStatus(t(command === "undo" ? "nothing_to_undo" : "nothing_to_redo"));
+    }
+    return;
+  }
+  if (command === "delete") {
+    // Cut and Copy both receipt through setStatus; Clear silently ran
+    // execCommand and said nothing, so a selection that vanished looked
+    // identical to a Clear that never fired at all.
+    const cleared = document.execCommand("delete");
+    if (cleared) setStatus(t("cleared_selection"));
+    return;
+  }
   document.execCommand(command);
 }
 
@@ -3259,6 +3344,19 @@ function saveCurrentWork() {
   }
   const teachTextVisible = !getWindow("teachText").classList.contains("is-hidden");
   if (activeWin?.dataset.window === "teachText") {
+    // The route's own Manuscript is not a free-standing document — it has no
+    // name or folder to choose, because it persists as part of the project
+    // record on every edit (saveDeskState(), the same path Section Drafts and
+    // the Outline already use). saveTextDocument()'s "give this a name"
+    // dialog is for a scratch TeachText file with nothing backing it yet;
+    // routing the Manuscript through it opens that dialog over a document
+    // that was already being saved, and Cmd+S never reaches the paper again
+    // until it is dismissed.
+    if (typeof isTeachTextManuscriptRole === "function" && isTeachTextManuscriptRole()) {
+      saveDeskState();
+      if (typeof setTeachTextStatus === "function") setTeachTextStatus("saved");
+      return;
+    }
     saveTextDocument();
     return;
   }

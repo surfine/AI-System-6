@@ -123,6 +123,60 @@ window.AISystem6PromptFilesRuntime = (() => {
     return { status: "ready", source: "system", path, body, hash: system.hash, language: lang };
   }
 
+  // Skill routing. Only these six surfaces offer a skill; every other caller of
+  // resolvePromptFile() keeps the behavior it has, because routing adds no
+  // second resolution path — each step below calls resolvePromptFile().
+  const routableStops = Object.freeze(["questionSheet", "outline", "sectionDrafts", "teachText", "reviewDesk", "cliotalk"]);
+
+  function promptDescription(record, language = "") {
+    return String(record?.descriptions?.[promptLanguage(language)] || "").trim();
+  }
+
+  function skillParts(skillId, language = "") {
+    return (window.AISystem6PromptFiles || [])
+      .filter((record) => record.partOf === skillId)
+      .map((record) => Object.freeze({ id: record.id, name: promptDisplayName(record, language) }));
+  }
+
+  // Progressive disclosure, in three steps. The choices carry the descriptions
+  // and no body, so an unchosen skill costs one line. The body arrives on the
+  // choice. A reference part arrives only when that part is used. A project that
+  // disabled or replaced a skill gets its own answer at every step, because the
+  // precedence lives in resolvePromptFile() and nowhere else.
+  function routeSkillsForTask(stop = "", projectId = null, language = "zh") {
+    const lang = promptLanguage(language);
+    const surface = routableStops.includes(String(stop)) ? String(stop) : "";
+    const choices = (surface ? (window.AISystem6PromptFiles || []) : [])
+      .filter((record) => !record.partOf && promptDescription(record, lang))
+      .map((record) => ({ record, resolved: resolvePromptFile(record.id, projectId, lang) }))
+      .filter((entry) => entry.resolved.status === "ready")
+      .map(({ record, resolved }) => Object.freeze({
+        id: record.id,
+        name: promptDisplayName(record, lang),
+        description: promptDescription(record, lang),
+        source: resolved.source,
+      }));
+    return Object.freeze({
+      surface,
+      language: lang,
+      choices: Object.freeze(choices),
+      // What the descriptions cost the context, so the saving is measurable.
+      contextChars: choices.reduce((total, choice) => total + choice.name.length + choice.description.length, 0),
+      openSkill(id) {
+        if (!choices.some((choice) => choice.id === id)) return null;
+        const resolved = resolvePromptFile(id, projectId, lang);
+        if (resolved.status !== "ready") return null;
+        return Object.freeze({ ...resolved, id, parts: Object.freeze(skillParts(id, lang)) });
+      },
+      openPart(skillId, partId) {
+        if (!choices.some((choice) => choice.id === skillId)) return null;
+        if (!skillParts(skillId, lang).some((part) => part.id === partId)) return null;
+        const resolved = resolvePromptFile(partId, projectId, lang);
+        return resolved.status === "ready" ? Object.freeze({ ...resolved, id: partId }) : null;
+      },
+    });
+  }
+
   function upsertProjectPromptOverride(projectId, id = defaultPromptId, body = "") {
     if (!projectId || typeof chatFiles === "undefined") return null;
     if (arguments.length === 2 && !String(id).startsWith("writing-tools.")) {
@@ -228,5 +282,5 @@ window.AISystem6PromptFilesRuntime = (() => {
     return record;
   }
 
-  return Object.freeze({ resolvePromptFile, upsertProjectPromptOverride, ensureProjectPromptOverrideForEditing, setProjectPromptDisabled, recordPromptRun, ensureProjectPromptFolder, hashPromptBody, promptDisplayName, promptDocument });
+  return Object.freeze({ resolvePromptFile, routeSkillsForTask, upsertProjectPromptOverride, ensureProjectPromptOverrideForEditing, setProjectPromptDisabled, recordPromptRun, ensureProjectPromptFolder, hashPromptBody, promptDisplayName, promptDocument });
 })();

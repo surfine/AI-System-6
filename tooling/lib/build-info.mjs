@@ -48,6 +48,7 @@ export const stampedIndexAssets = [
   "app/generated/build-info.js",
   "app/core/theme-registry.js",
   "app/core/theme-body-init.js",
+  "app/core/boot-safety-net.js",
   "assets/app-icon/manifest.json",
   "assets/app-icon/app-icon-180.png",
   "assets/app-icon/app-icon-192.png",

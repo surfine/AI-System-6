@@ -205,6 +205,13 @@ const systemIconPaths = {
     <path d="M13 8h3v8M13 24h3v-8M16 16h3" />
     <path d="M16 14l3 2-3 2z" />
   `,
+  clioPaint: `
+    <path d="M4 6h24v20H4z" />
+    <path d="M8 22l16-16" />
+    <circle cx="10" cy="12" r="2" />
+    <circle cx="16" cy="10" r="2" />
+    <circle cx="22" cy="14" r="2" />
+  `,
   liquidCover: `
     <path d="M4 6h24v20H4z" />
     <path d="M9 21a5 5 0 0 1 10 0" />
@@ -504,6 +511,13 @@ const classicPlusSystemIconPaths = {
     <path d="M13 8h3v8M13 24h3v-8M16 16h3" />
     <path class="classic-ink" d="M16 14l3 2-3 2z" />
   `,
+  clioPaint: `
+    <path d="M4 6h24v20H4z" />
+    <path class="classic-ink" d="M8 22l16-16" />
+    <circle cx="10" cy="12" r="2" />
+    <circle cx="16" cy="10" r="2" />
+    <circle class="classic-ink" cx="22" cy="14" r="2" />
+  `,
   liquidCover: `
     <path d="M4 6h24v20H4z" />
     <path d="M9 21a5 5 0 0 1 10 0" />
@@ -609,6 +623,10 @@ const classicOnlyModernFallbackIconId = {
   // its Classic line art in every appearance rather than joining the 56-object
   // era vocabulary unreviewed; promoting it later means real per-era assets.
   clioProject: true,
+  // Same reasoning for ClioPaint: fresh product-invented glyph (a board, a
+  // brush stroke, three paint dabs), not a reproduction of any native
+  // resource, and not yet reviewed per era.
+  clioPaint: true,
 };
 
 // Opt-in "line-art everywhere": when enabled, every non-Classic appearance

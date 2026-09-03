@@ -137,6 +137,14 @@ export const lazyStyleBundles = [
     loader: "app/core/config.js",
     sources: ["styles/85-liquid-cover.css"],
   },
+  // ClioPaint's module is already lazy (builtByModule, like ClioProject), and
+  // every selector in its sheet is scoped to .clio-paint-*.
+  {
+    id: "clio-paint",
+    output: "styles.clio-paint.css",
+    loader: "app/core/config.js",
+    sources: ["styles/96-clio-paint.css"],
+  },
 ];
 
 // Every stylesheet the product ships, eager or lazy. Checks that reason about
@@ -184,6 +192,7 @@ export const styleLayerByPath = Object.freeze({
   "styles/92-micropolis.css": "micropolis",
   "styles/93-openttd.css": "openttd",
   "styles/94-bonsai.css": "bonsai",
+  "styles/96-clio-paint.css": "clio-paint",
 });
 
 // Layer order = eager files in bundle order, then lazy sheets in declaration

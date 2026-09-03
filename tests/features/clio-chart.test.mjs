@@ -401,6 +401,27 @@ test.assertIncludes(
   'teachTextSeeAsChartButton.classList.toggle("is-hidden", !visible)',
   "TeachText synchronizes the chart button whenever its document state refreshes"
 );
+
+// Reverse Sort turns an order round. On a blank template there is no order,
+// and the row used to stay black: it flipped a flag, repainted the same
+// unmeasured rows in the same places and said nothing.
+test.assert(
+  typeof chart.canReverseSort === "function" && chart.canReverseSort() === false,
+  "Reverse Sort reports itself unavailable while no table is loaded"
+);
+test.assertMatches(
+  chartSource,
+  /if \(action === "clio-chart-reverse-sort"\) \{\s*\n\s*return !!window\.AISystem6ClioChart\?\.canReverseSort\?\.\(\);/,
+  "the menu row asks that same question instead of staying enabled"
+);
+test.assertIncludes(
+  read("app/core/balloon-help.js"),
+  'if (action === "clio-chart-reverse-sort") return "balloon_disabled_chart_no_order";',
+  "the greyed row names the measurement it wants, not the generic window reason"
+);
+["balloon_disabled_chart_no_order"].forEach((key) => {
+  test.assert(en.includes(`${key}:`) && zh.includes(`${key}:`), `${key} exists in both languages`);
+});
 test.assertIncludes(
   bootstrap,
   "teachTextSeeAsChartButton,",
@@ -492,5 +513,22 @@ test.assertIncludes(chartSource, "renderClioChartGrid();", "applying a source ed
 });
 test.assertIncludes(dictionary, 'id: "clio-chart"', "System Help exposes ClioChart as a file-grounded comparison bench");
 test.assertIncludes(dictionary, "A visible projection can be frozen and sent directly to ClioStage", "System Help documents the real Chart-to-Stage handoff");
+
+// ClioChart owns one table block at a time by re-finding it in TeachText's own
+// text — the same invariant Quick Draft's 听稿 fix-adopt and the desk-record
+// commit fence both hold: locate by the content you last wrote, and refuse
+// the write-back rather than splice into whatever the writer typed while you
+// were away. The refusal has to land somewhere the writer can actually see
+// it, not just the console.
+test.assertMatches(
+  chartSource,
+  /const index = document_\.indexOf\(owner\.text\);\s*\n\s*if \(index < 0\) \{\s*\n\s*setClioChartStatus\(t\("clio_chart_write_back_failed"\)\);\s*\n\s*return false;/,
+  "write-back re-locates the owned block by its exact last-written text and refuses instead of guessing when it is gone"
+);
+test.assertIncludes(
+  chartSource,
+  'status: document.querySelector("#clio-chart-status")',
+  "the refusal renders through the window's own on-screen status element, not only the console"
+);
 
 test.finish();

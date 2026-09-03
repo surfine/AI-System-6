@@ -803,32 +803,36 @@
       "side": "park.side"
     },
     "wall.r.day": {
-      "top": "roof",
+      "top": "concrete",
       "side": "wall.r.day"
     },
     "wall.r.night": {
-      "top": "roof.dark",
+      "top": "concrete",
       "side": "wall.r.night"
     },
     "wall.c.day": {
-      "top": "roof",
+      "top": "concrete",
       "side": "wall.c.day"
     },
     "wall.c.night": {
-      "top": "roof.dark",
+      "top": "concrete",
       "side": "wall.c.night"
     },
     "wall.i.day": {
-      "top": "roof",
+      "top": "concrete",
       "side": "wall.i.day"
     },
     "wall.i.night": {
-      "top": "roof.dark",
+      "top": "concrete",
       "side": "wall.i.night"
     },
     "roof": {
       "top": "roof",
       "side": "roof"
+    },
+    "roof.deck": {
+      "top": "roof.deck",
+      "side": "concrete"
     },
     "tree.trunk": {
       "top": "trunk",
@@ -1286,6 +1290,10 @@
       "base": "winterCanopy",
       "dark": "snowDark",
       "light": "white"
+    },
+    {
+      "id": "roof.deck",
+      "pattern": "deck"
     }
   ],
   "facilities": [

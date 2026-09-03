@@ -29,7 +29,7 @@
 
 "use strict";
 
-const { send, readJsonBody, requestSignal } = require("../lib/http.js");
+const { send, readJsonBody, requestSignal, respondIfClientError } = require("../lib/http.js");
 const { postJsonWithFallback } = require("../lib/fetch.js");
 const { LM_STUDIO_BASE_URL_DEFAULT } = require("../lib/local-urls.js");
 const {
@@ -183,6 +183,9 @@ async function handleModelsLoad(req, res) {
     });
   } catch (error) {
     if (/** @type {any} */ (error)?.name === "AbortError") return;
+    // No model load was tried when the body was rejected, so the caller must
+    // not read a load failure that did not occur.
+    if (respondIfClientError(res, error)) return;
     send(res, 502, JSON.stringify({
       error: "Model load failed",
       detail: /** @type {Error} */ (error).message,

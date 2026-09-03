@@ -439,6 +439,16 @@ try {
         }
       }
     }
+    if (!compared) {
+      // Every probe was dropped as state-sensitive, or the baseline holds no
+      // entries for these eras. Either way the four middle eras were held
+      // against nothing, and the line below would still have said they hold.
+      console.error(
+        `Appearance token check: 0 entries compared (${skipped} skipped as state-sensitive), so nothing was verified.\n`
+          + "  Re-capture the baseline for this tree: npm run snapshot:appearance",
+      );
+      failed = true;
+    }
     const elapsed = ((Date.now() - startedAt) / 1000).toFixed(1);
     console.log(failed
       ? `Appearance token check: DRIFT (an era moved relative to Classic; if intended, npm run snapshot:appearance)`

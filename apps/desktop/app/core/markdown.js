@@ -216,6 +216,9 @@ function parseMarkdownDocument(markdown) {
   if (!markedApi) {
     const fallback = {
       source,
+      // No lexer, so no tokens. A consumer that builds from tokens -- the Word
+      // export does -- must find an empty stream here rather than a wrong one.
+      tokens: [],
       html: `<p>${escapeHtml(source)}</p>`,
       headings: [],
       listItems: [],
@@ -245,6 +248,10 @@ function parseMarkdownDocument(markdown) {
 
   const parsed = {
     source,
+    // The lexer result itself. The preview HTML below is made from it, and so
+    // is the Word export, so the two are views of one document rather than two
+    // parses that can disagree.
+    tokens,
     blockLines: markdownTopLevelBlockLines(tokens),
     html: allowSafeMarkdownBreaks(markedApi.parse(source, { gfm: true, breaks: false, renderer }).trim()),
     headings: model.headings,

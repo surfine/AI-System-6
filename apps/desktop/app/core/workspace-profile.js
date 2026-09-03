@@ -23,7 +23,6 @@ const studioWindowNames = new Set([
   "claimCheck",
   "projectCd",
   "rebuildFlow",
-  "rag",
 ]);
 
 const writingStudioOwnedWindowNames = new Set([
@@ -46,7 +45,6 @@ const studioActionNames = new Set([
   "open-claim-check",
   "open-project-cd",
   "open-rebuild-flow",
-  "open-rag",
   "open-image-manager",
   "export-teachtext-project-cd",
   "generate-marp-open-clio-stage",
@@ -232,8 +230,14 @@ async function openWritingStudioDefaultSurface() {
     return;
   }
   if (entry === "reviewDesk") {
-    openReviewDesk("style");
-    openWindow("teachText");
+    // Review Desk is the surface the writer is entering; the manuscript comes
+    // up beside it as a companion, not on top of it. Awaiting the first open
+    // before starting the second stops the two from racing for focus (whoever
+    // finished its lazy module load last used to win, so the manuscript could
+    // resurrect itself over Review Desk), and skipFocus keeps the companion
+    // from taking the focus its opener never asked it to have.
+    await openReviewDesk("style");
+    await openWindow("teachText", { skipFocus: true });
     return;
   }
   if (entry === "teachText") {

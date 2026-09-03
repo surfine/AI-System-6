@@ -99,8 +99,10 @@ body.quick-draft-focus .writing-spine-panel {
 }
 
 .spine-actions button {
+  /* position: relative only — this makes the button a containing block for
+     .spine-step-number/.spine-step-mark below, it does not need to compete
+     for stacking order with anything: it is a non-overlapping grid cell. */
   position: relative;
-  z-index: var(--z-local-control);
   width: 100%;
   display: grid;
   justify-items: center;
@@ -117,10 +119,12 @@ body.quick-draft-focus .writing-spine-panel {
 }
 
 .spine-step-number {
+  /* No stacking token needed here: an absolutely positioned descendant
+     already paints over the button's in-flow icon/label content by default,
+     and it never overlaps .spine-step-mark (opposite corners of the button). */
   position: absolute;
   top: -1px;
   left: calc(50% - 31px);
-  z-index: var(--z-local-control);
   width: 17px;
   height: 17px;
   border: 1px solid var(--ink);
@@ -493,6 +497,8 @@ body.quick-draft-focus .writing-spine-panel {
 .clio-project-canvas {
   position: relative;
   flex: none;
+  min-width: var(--clio-project-canvas-min-w, 0);
+  min-height: var(--clio-project-canvas-min-h, 0);
 }
 
 .clio-project-edges {
@@ -1610,7 +1616,10 @@ html:lang(zh-Hans) .title-bar h2 {
 
 .status-bar-leading {
   grid-column: 1;
-  justify-self: start;
+  /* Stretch (the grid default) so overflow:hidden + ellipsis on
+     `.details-bar > span` can actually clip long leading status text at the
+     track edge. `justify-self: start` let the box size to its own content
+     and bleed across the gap into the centered document-title column. */
 }
 
 /* A placard is a material treatment for a confirmed leading receipt, not a
@@ -1860,7 +1869,7 @@ html:lang(zh-Hans) .title-bar h2 {
 
 .finder-list-header {
   display: grid;
-  grid-template-columns: minmax(180px, 2fr) minmax(130px, 1fr) minmax(90px, 0.7fr) minmax(120px, 0.8fr);
+  grid-template-columns: minmax(130px, 2fr) minmax(80px, 1fr) minmax(58px, 0.7fr) minmax(78px, 0.8fr);
   padding: 4px 8px;
   background: var(--paper);
   border-bottom: 1px solid var(--ink);
@@ -1870,7 +1879,7 @@ html:lang(zh-Hans) .title-bar h2 {
 
 .finder-list-row {
   display: grid;
-  grid-template-columns: minmax(180px, 2fr) minmax(130px, 1fr) minmax(90px, 0.7fr) minmax(120px, 0.8fr);
+  grid-template-columns: minmax(130px, 2fr) minmax(80px, 1fr) minmax(58px, 0.7fr) minmax(78px, 0.8fr);
   width: 100%;
   padding: 4px 8px;
   align-items: center;
@@ -2839,25 +2848,27 @@ html:lang(zh-Hans) .title-bar h2 {
   font-family: var(--clio-copy-font);
 }
 
+/* Indeterminate sibling of .progress-meter (20-reader-docmap.css): same
+   --progress-* token family, so an era answers the shared recipe once for
+   both a determinate run (rebuild flow) and an indeterminate wait (a model
+   opening). The bar reuses the fill's --progress-fill-active-* tokens, since
+   this bar IS the "working" state -- there is no resting state to show. */
 .progress-track {
-  height: 18px;
-  border: var(--system-control-line) solid var(--ink);
+  height: var(--progress-height);
+  border: var(--system-control-line) solid var(--progress-border-color);
+  border-radius: var(--progress-radius);
   overflow: hidden;
-  background: var(--paper);
+  background: var(--progress-bg);
 }
 
 .progress-bar {
   width: 180%;
   height: 100%;
-  background:
-    repeating-linear-gradient(
-      90deg,
-      var(--ink) 0,
-      var(--ink) 6px,
-      var(--paper) 6px,
-      var(--paper) 12px
-    );
-  animation: progress-stripes 0.65s steps(8) infinite;
+  /* This bar's own cadence -- a plain scroll, not the rebuild meter's working
+     stripe (different colours, different pitch) -- so it keeps its own token
+     rather than borrowing --progress-fill-active-*. */
+  background: var(--progress-scroll-bg);
+  animation: progress-stripes var(--progress-scroll-duration) steps(8) infinite;
 }
 
 .wait-steps {
@@ -4396,13 +4407,37 @@ body.is-cloud-configured .cloud-state-panel {
   gap: 9px;
 }
 
-.control-advanced summary {
+/* Open-only breathing room: closed, the disclosure is one summary row, but
+   open it holds a full checkbox grid that used to sit flush against the
+   scrolling pane's own bottom edge — nothing separated "this is the last
+   control" from "the pane just ran out of room". */
+.control-advanced[open] {
+  padding-bottom: 18px;
+}
+
+/* A native <details> marker's glyph and its open/closed rotation differ by
+   browser and don't share the app's own 1-bit triangle. Drawn explicitly
+   (matching .lc-shape-library and its siblings in 85-liquid-cover.css) so it
+   reads as the same control everywhere and reliably flips with [open]. */
+.control-advanced > summary {
   cursor: pointer;
   font-family: var(--title-font);
   font-size: 13px;
   color: var(--control-summary-fg);
   font-weight: 700;
-  list-style-position: inside;
+  list-style: none;
+}
+
+.control-advanced > summary::-webkit-details-marker {
+  display: none;
+}
+
+.control-advanced > summary::before {
+  content: "\25B8  ";
+}
+
+.control-advanced[open] > summary::before {
+  content: "\25BE  ";
 }
 
 @container (max-width: 430px) {

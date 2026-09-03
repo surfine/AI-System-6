@@ -37,6 +37,22 @@ function fail(message) {
   console.error(`NO  ${message}`);
 }
 
+/**
+ * Does the app source DECLARE this name, rather than merely mention it?
+ *
+ * A mention is what a call site leaves behind. Asking for one lets a release
+ * pass with the declaration deleted and every caller still calling it.
+ */
+function declaresName(source, name) {
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(
+    `(?:^|[^\\w$.])(?:(?:async\\s+)?function\\s*\\*?\\s*${escaped}\\s*\\(`
+    + `|(?:const|let|var)\\s+${escaped}\\s*[=;]`
+    + `|class\\s+${escaped}\\b)`,
+    "m",
+  ).test(source);
+}
+
 function readJson(path) {
   return JSON.parse(readFileSync(join(root, path), "utf8"));
 }
@@ -97,6 +113,22 @@ if (releaseAssets.status === 0) {
   ok("release assets present");
 } else {
   fail(`release asset check failed\n${releaseAssets.stderr || releaseAssets.stdout}`);
+}
+
+// The dependency tree you build with must be the one the repository declares.
+// This gate sat in the tree for months with no npm script and no runner, so
+// the drift it was written for -- pdfjs-dist 4 installed against a declared 6,
+// green everywhere until the web release build failed on a wasm decoder that
+// version never shipped -- could have happened again with the gate present. It
+// reads two JSON files and costs about 40 ms, so it runs before the minutes.
+const dependencyFreshness = runReceiptCheck("dependency-freshness", process.execPath, ["tooling/verify-dependency-freshness.mjs"], {
+  cwd: root,
+  encoding: "utf8",
+});
+if (dependencyFreshness.status === 0) {
+  ok("dependency freshness");
+} else {
+  fail(`dependency freshness failed\n${dependencyFreshness.stderr || dependencyFreshness.stdout}`);
 }
 
 const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
@@ -431,13 +463,13 @@ const indexSource = readFileSync(join(root, "apps/desktop/index.html"), "utf8");
   "splitTranslationChunks",
   "translateTextChunkWithRetry",
 ].forEach((name) => {
-  if (appSource.includes(`function ${name}`) || appSource.includes(`async function ${name}`)) {
-    ok(`translation hook ${name}`);
-  } else if (appSource.includes(name)) {
-    ok(`translation hook ${name}`);
-  } else {
-    fail(`translation hook missing: ${name}`);
-  }
+  // The check used to accept a bare mention of the name as proof the hook
+  // exists. A call site mentions the name, so deleting the declaration and
+  // leaving the callers -- a guaranteed ReferenceError at run time -- kept the
+  // gate green. Ask for the declaration itself. One of the eight is state, not
+  // a function, so the pattern accepts either form.
+  if (declaresName(appSource, name)) ok(`translation hook ${name}`);
+  else fail(`translation hook missing: ${name}`);
 });
 
 [
@@ -450,11 +482,10 @@ const indexSource = readFileSync(join(root, "apps/desktop/index.html"), "utf8");
   "downloadSelectedProjectCdItem",
   "printSelectedProjectCdPdf",
 ].forEach((name) => {
-  if (appSource.includes(`function ${name}`) || appSource.includes(`async function ${name}`)) {
-    ok(`export hook ${name}`);
-  } else {
-    fail(`export hook missing: ${name}`);
-  }
+  // `includes("function downloadTeachTextMarkdown")` is also true of
+  // `function downloadTeachTextMarkdownLater`. Match the whole name.
+  if (declaresName(appSource, name)) ok(`export hook ${name}`);
+  else fail(`export hook missing: ${name}`);
 });
 
 [
@@ -494,6 +525,20 @@ if (frontendCheckJs.status === 0) {
   ok("frontend checkJs");
 } else {
   fail(`frontend checkJs failed\n${frontendCheckJs.stderr || frontendCheckJs.stdout}`);
+}
+
+// The theme icon painter CSS is generated and committed. Its --check mode had
+// an npm script (verify:theme-icons) that no runner called, so a stale painter
+// could ship while every gate stayed green. It re-derives two stylesheets and
+// costs about 30 ms.
+const themeIcons = runReceiptCheck("theme-icons", process.execPath, ["tooling/build-theme-icon-css.mjs", "--check"], {
+  cwd: root,
+  encoding: "utf8",
+});
+if (themeIcons.status === 0) {
+  ok("theme icon dispatch");
+} else {
+  fail(`theme icon dispatch failed\n${themeIcons.stderr || themeIcons.stdout}`);
 }
 
 if (pkg.scripts?.["smoke:release"]) ok("smoke release script present");

@@ -53,21 +53,35 @@ async function handleEndfieldAsk(req, res) {
 
   try {
     const body = await readJsonBody(req);
+    // String() on an object yields the literal "[object Object]", which then
+    // searched the corpus as a term and came back as an ordinary "nothing
+    // found" answer at status 200. The caller could not tell a query that was
+    // not text from a query that had no match, so a wrong type is refused by
+    // its type.
+    if (body.query !== undefined && typeof body.query !== "string") {
+      send(res, 400, JSON.stringify({
+        error: "Query must be text",
+        code: "invalid_query",
+      }), { "Content-Type": "application/json" });
+      return;
+    }
     const query = String(body.query || "").trim();
+
+    // The corpus scan used to run before this check, and an empty query
+    // searched the whole story library for a stand-in term only to throw the
+    // result away with a 400.
+    if (!query) {
+      send(res, 400, JSON.stringify({ error: "Missing query" }), { "Content-Type": "application/json" });
+      return;
+    }
+
     const limit = Math.min(Math.max(Number(body.limit || 14), 4), 28);
     const routeModel = String(
       body._cloud_active
         ? (body._cloud_model || "deepseek-v4-flash")
         : (body.model || getLoadedLmStudioModelInfo()?.model || "local-model")
     ).trim();
-    const matches = query
-      ? await findEndfieldStoryMatches(query, limit)
-      : await findEndfieldStoryMatches("主线剧情", limit);
-
-    if (!query) {
-      send(res, 400, JSON.stringify({ error: "Missing query" }), { "Content-Type": "application/json" });
-      return;
-    }
+    const matches = await findEndfieldStoryMatches(query, limit);
 
     if (!matches.results.length) {
       send(res, 200, JSON.stringify({

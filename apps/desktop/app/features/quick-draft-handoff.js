@@ -64,6 +64,7 @@ async function commitQuickDraftProjectDocument({ projectId = "", title = "", bod
     if (typeof renderProjectDisks === "function") renderProjectDisks();
     if (shouldRemindBackup && typeof pushSystemNotification === "function") {
       pushSystemNotification(t("first_work_backup_reminder"), {
+        messageKey: "first_work_backup_reminder",
         state: "saved",
         actionId: "export-project-backup",
         actionLabel: t("export_project_backup"),
@@ -97,7 +98,11 @@ async function commitQuickDraftProjectDocument({ projectId = "", title = "", bod
     rollbackSaved = false;
   }
   if (!rollbackSaved && typeof pushSystemNotification === "function") {
-    pushSystemNotification(t("quick_draft_repair_needed"), { state: "failed", windowName: "quickDraft" });
+    pushSystemNotification(t("quick_draft_repair_needed"), {
+      messageKey: "quick_draft_repair_needed",
+      state: "failed",
+      windowName: "quickDraft",
+    });
   }
   return { ok: false, documentId: "", repairNeeded: !rollbackSaved };
 }
@@ -585,7 +590,9 @@ function lightroomCommandAvailable(action) {
   const view = String(quickDraft.displayMode?.() || "");
   const writable = hasBody && !readOnly;
   if (action.startsWith("lightroom-zoom-")) return hasBody && view === "grain";
-  if (action === "lightroom-toggle-inspector") return hasBody;
+  // Shares the toggle's own predicate (draft-desk.js) rather than hasBody, so
+  // the row cannot say "available" while the toggle it fires says otherwise.
+  if (action === "lightroom-toggle-inspector") return quickDraftPanelActionable("inspector");
   if (action === "lightroom-restore-version") return !readOnly && !!quickDraft.hasVersions?.();
   if (action === "lightroom-save-version") return writable;
   if (action === "lightroom-discard-composite") return writable && !!quickDraft.hasComposite?.();

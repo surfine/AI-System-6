@@ -28,7 +28,7 @@
     "playwrightVersion": "1.62.1",
     "browserRevision": "1234",
     "browserVersion": "151.0.7922.34",
-    "contentSha256": "f97f29171bdbf1b20a067c669c8d1107d3e3638249981b4a6af876e1e63ea3ff",
+    "contentSha256": "12a37fc8fa991180928350c001e81548ce200f742837f5a0e9be341255678460",
     "historicalFontTarget": "Charcoal 12 pt",
     "legalFallback": "OFL-licensed Asap variable font",
     "fontProbeSelectors": [
@@ -293,7 +293,8 @@
         "materialError": 9.8
       },
       "floor": {
-        "status": "met"
+        "status": "met",
+        "note": "Measured 2026-09-02: the pinned Mac OS 9 capture shows the title bar occupying rows 0-21 of guidebook-appearance-macos90-1-1.png — a black outline row, a white highlight, the body, and a closing black row, 22px in all. The product renders --system-titlebar-height 19px sitting 2px below the window edge, so the same 22px crop takes a different silhouette. The Mac OS 8 HIG says 19px and the capture says 20px of bar between two outline rows; DESIGN.md ranks the capture above the HIG. Deciding that moves every Platinum window, so it is not a Theme Lab change."
       }
     },
     {

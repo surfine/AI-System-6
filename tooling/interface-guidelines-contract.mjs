@@ -258,6 +258,14 @@ const dynamicWindowSources = Object.freeze({
     cssPrefixes: Object.freeze(["clio-project-"]),
     iconId: "clioProject",
   }),
+  clioPaint: Object.freeze({
+    sourceKind: "lazy",
+    openCommand: "open-clio-paint",
+    ensure: "loadLazyWindowModule",
+    mountPath: "app/features/clio-paint.js#installClioPaintWindow",
+    cssPrefixes: Object.freeze(["clio-paint-"]),
+    iconId: "clioPaint",
+  }),
   todo: Object.freeze({
     sourceKind: "lazy",
     openCommand: "open-todo-da",
@@ -542,6 +550,7 @@ const windowInterfaceContracts = Object.freeze({
   docMap: standardDocument("utility", "summoned", { documentModel: "tdi", tdiHost: "docmap-tabs" }),
   clioStage: creativeLab(),
   clioChart: creativeLab(),
+  clioPaint: creativeLab(),
   // The plan for one project: a summoned utility over the route, not a lab.
   clioProject: specializedUtility("utility", {
     route: "summoned",

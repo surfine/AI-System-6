@@ -107,6 +107,7 @@ window.AISystem6BonsaiMicropolisCodecLoaded = true;
 
     const warnings = [];
     let droppedTiles = 0;
+    let ruinTiles = 0;
 
     // Salt apron: the smaller classic map embeds centered in the 128-square
     // grid; every tile outside it is open sea, the same technique the .sc2
@@ -151,8 +152,11 @@ window.AISystem6BonsaiMicropolisCodecLoaded = true;
       if (inRange(id, T.TREE_LOW, T.TREE_HIGH)) { layers.tree[bi] = 1; continue; }
       if (id === T.FOUNTAIN) { layers.park[bi] = 1; continue; }
       if (id === T.RADIOACTIVE) { layers.catalogId[bi] = CATALOG_RADIOACTIVE; continue; }
+      // Rubble, flood and fire are a moment in the classic simulation, not
+      // map content. Bonsai has no twin for that moment, so the rule is to
+      // land the tile as bare ground and count it for the import report.
       if (inRange(id, T.RUBBLE_LOW, T.RUBBLE_HIGH) || inRange(id, T.FLOOD_LOW, T.FLOOD_HIGH)
-        || inRange(id, T.FIRE_LOW, T.FIRE_HIGH)) { droppedTiles += 1; continue; }
+        || inRange(id, T.FIRE_LOW, T.FIRE_HIGH)) { ruinTiles += 1; continue; }
 
       // Networks. Crossings carry both layers; drawbridge animation frames
       // are still road.
@@ -258,7 +262,22 @@ window.AISystem6BonsaiMicropolisCodecLoaded = true;
       facility.y += offsetY;
     }
 
+    // The import report. The product must never claim a fact arrived when it
+    // did not, so each thing the classic model holds and Bonsai cannot take
+    // gets its own code here, and the caller shows every one of them to the
+    // player. A code with a `:count` suffix carries how many tiles it counts.
+    // These codes are the contract: `tests/features/city-save-import.test.mjs`
+    // holds the mapping table against them.
+    if (ruinTiles > 0) warnings.push(`ruins-cleared:${ruinTiles}`);
     if (droppedTiles > 0) warnings.push(`tiles-without-equivalent:${droppedTiles}`);
+    // The classic map has no altitude, so imported land is flat. Bonsai
+    // reads population and jobs off the map, so the classic census numbers
+    // are recomputed and will not match. Ratings, the history graphs and the
+    // RCI valves have no equivalent and start at the engine default.
+    warnings.push("terrain-flat");
+    warnings.push("population-recomputed");
+    warnings.push("ratings-not-carried");
+    warnings.push("demand-reset");
     warnings.push("sc2k-only-systems-absent");
 
     const cityTime = Math.max(0, save._cityTime | 0);

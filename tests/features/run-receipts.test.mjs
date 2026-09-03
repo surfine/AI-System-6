@@ -259,4 +259,91 @@ repeatCtx.chatFiles.splice(repeatCtx.chatFiles.findIndex((file) => file.id === "
 const missingInputs = await repeatApi.repeatReceipt(repeatReceipt.receiptId);
 test.assert(missingInputs.ok === false, "a repeat with missing inputs fails explicitly");
 
+// 2026-09-01 charter rule: "temporary, but never lost." A model answer is
+// written to the receipt store the instant it arrives, before any decision
+// about whether it lands in the writer's prose — and an answer that never
+// lands stays honestly marked unadopted, not silently dropped. This is what
+// every model-call site in quick-draft-ai.js, quick-draft-composition.js,
+// quick-draft-listen.js, outline-claim.js, translation.js, hkrr-review.js and
+// chat-messages.js (ClioTalk replies) now calls through, via
+// recordModelAnswer.
+test.assertIncludes(receiptsSource, "async function recordModelAnswer", "a single shared helper records a model answer the moment it arrives");
+test.assertIncludes(receiptsSource, "recordModelAnswer,", "recordModelAnswer is exported on the shared receipts API");
+
+const answerCtx = createReceiptsContext();
+const answerApi = answerCtx.context.window.AISystem6RunReceipts;
+
+const empty = await answerApi.recordModelAnswer({ projectId: "project-1", sourceAppId: "quickDraft", intent: "draft", answerText: "   " });
+test.assert(empty.ok === false, "an empty answer is not worth a receipt");
+
+const arrived = await answerApi.recordModelAnswer({
+  projectId: "project-1",
+  sourceAppId: "quickDraft",
+  intent: "draft",
+  provider: "cloud",
+  model: "deepseek-v4",
+  answerText: "This is the model's full draft body, paid for and delivered.",
+});
+test.assert(arrived.ok === true && !!arrived.receiptId, "the answer is durable the instant it arrives");
+let arrivedRecord = answerCtx.chatFiles.find((file) => file.id === arrived.receiptId).runReceipt;
+test.assert(arrivedRecord.status === "completed", "the run is complete: an answer came back");
+test.assert(arrivedRecord.proposal.includes("paid for and delivered"), "the full answer text is recoverable from the receipt, not just a summary");
+test.assert(arrivedRecord.userAction === "", "before any landing decision, the receipt does not yet claim adoption");
+
+let arrivedFile = answerCtx.chatFiles.find((file) => file.id === arrived.receiptId);
+let arrivedBody = arrivedFile.body;
+test.assertIncludes(arrivedBody, "Adopted: no", "an unadopted-but-delivered answer says so honestly in its own body");
+test.assertIncludes(arrivedBody, "reuse it here instead of running the command again", "the receipt makes cost already paid obvious, so the command is not re-run for nothing");
+
+// The writer discards this one (a placeholder draft, a sentinel violation, a
+// declined confirm dialog) — the answer is still sitting in the Versions /
+// Run Records surfaces, never claimed as saved or inserted.
+const declined = await answerApi.recordModelAnswer({
+  projectId: "project-1",
+  sourceAppId: "outline",
+  intent: "polish-draft",
+  answerText: "A polished section the writer declined to keep.",
+});
+const declinedRecord = answerCtx.chatFiles.find((file) => file.id === declined.receiptId).runReceipt;
+test.assert(declinedRecord.userAction === "", "a declined answer is never marked adopted");
+test.assert(declinedRecord.status === "completed", "a declined answer is not reported as a failed run — it answered fine, the writer just did not use it");
+
+// The writer adopts a different one — recordUserAction is the same
+// checkpoint machinery the ClioTalk suggestion flow already used, now reused
+// for every writing-route command's landing decision.
+const adopted = await answerApi.recordModelAnswer({
+  projectId: "project-1",
+  sourceAppId: "quickDraft",
+  intent: "listen-fix-one",
+  answerText: "The rewritten sentence that actually replaced the original.",
+});
+await answerApi.recordUserAction(adopted.receiptId, { action: "accept", finalBodyHash: "fnv1a-9" });
+const adoptedRecord = answerCtx.chatFiles.find((file) => file.id === adopted.receiptId).runReceipt;
+test.assert(adoptedRecord.userAction === "accept", "an adopted answer is marked accepted through the existing checkpoint action");
+const adoptedBody = answerCtx.chatFiles.find((file) => file.id === adopted.receiptId).body;
+test.assertIncludes(adoptedBody, "Adopted: yes", "an adopted answer says so honestly, with no reuse nudge");
+test.assert(!adoptedBody.includes("reuse it here"), "an adopted answer carries no leftover cost-reuse nudge");
+
+// Every call site this rule reaches — grepped so the contract fails loudly if
+// a future edit routes a call site around the shared helper instead of
+// through it.
+const quickDraftAi = read("app/features/quick-draft-ai.js");
+const quickDraftComposition = read("app/features/quick-draft-composition.js");
+const quickDraftListen = read("app/features/quick-draft-listen.js");
+const outlineClaim = read("app/features/outline-claim.js");
+const translation = read("app/features/translation.js");
+const hkrrReview = read("app/features/hkrr-review.js");
+const chatMessages = read("app/core/chat-messages.js");
+[
+  ["quick-draft-ai.js (Quick Draft's four request sites)", quickDraftAi],
+  ["quick-draft-composition.js (adjustment-layer composite)", quickDraftComposition],
+  ["quick-draft-listen.js (fix-one)", quickDraftListen],
+  ["outline-claim.js (generate/expand/organize/polish/suggest/claim-check)", outlineClaim],
+  ["translation.js (Review Desk style check)", translation],
+  ["hkrr-review.js (Review Desk HKRR)", hkrrReview],
+  ["chat-messages.js (ClioTalk replies)", chatMessages],
+].forEach(([label, source]) => {
+  test.assertIncludes(source, "recordModelAnswer", `${label} routes its model answer through the shared receipt helper`);
+});
+
 test.finish();

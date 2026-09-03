@@ -512,6 +512,11 @@ const quickDraftCompositeCache = new Map();
 const QUICK_DRAFT_COMPOSITION_PROMPT_VERSION = 2;
 let quickDraftLastComposite = "";
 let quickDraftLastCompositeKey = "";
+// The composite text is already durable in workspace.composition.composite
+// the moment Apply commits below; this id only carries the receipt across to
+// whichever explicit action the writer takes next — Develop (adopted) or
+// Discard (rejected) — so that decision is on the honest record too.
+let quickDraftLastCompositeReceiptId = "";
 
 function quickDraftCompositeSource(record = activeProjectQuickDraft({ create: false })?.record) {
   const workspace = normalizeQuickDraftWorkspace(record?.workspace, record);
@@ -734,6 +739,15 @@ async function applyAdjustmentLayers() {
     if (!showingComposite) setQuickDraftDisplayMode("read");
     setQuickDraftStatus(t("quick_draft_apply_done"));
     noteLightroomReceipt("quick_draft_preview_adjustments", { model: quickDraftConnectedModelName() });
+    const composedRecorded = await window.AISystem6RunReceipts?.recordModelAnswer?.({
+      projectId: task.projectId,
+      sourceAppId: "quickDraft",
+      intent: "apply-adjustment-layers",
+      provider: (typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudCredentialReady()) ? "cloud" : "local",
+      model: quickDraftConnectedModelName(),
+      answerText: composed.text,
+    });
+    quickDraftLastCompositeReceiptId = composedRecorded?.receiptId || "";
     window.AISystem6ModelUserErrors?.clearRetryable?.("quickDraft-adjustment");
     return true;
   } catch (error) {
@@ -853,6 +867,13 @@ async function developAdjustmentLayers() {
   renderQuickDraft(committed.record);
   setQuickDraftStatus(t("quick_draft_develop_done"));
   noteLightroomReceipt("quick_draft_develop", { model: quickDraftConnectedModelName() });
+  if (quickDraftLastCompositeReceiptId) {
+    window.AISystem6RunReceipts?.recordUserAction?.(quickDraftLastCompositeReceiptId, {
+      action: "accept",
+      finalBodyHash: typeof contentHash === "function" ? contentHash(composite) : "",
+    });
+    quickDraftLastCompositeReceiptId = "";
+  }
   return true;
 }
 
@@ -886,6 +907,10 @@ async function discardLightroomComposite() {
   }
   renderQuickDraft(committed.record);
   setQuickDraftStatus(t("lightroom_composite_discarded"));
+  if (quickDraftLastCompositeReceiptId) {
+    window.AISystem6RunReceipts?.recordUserAction?.(quickDraftLastCompositeReceiptId, { action: "reject" });
+    quickDraftLastCompositeReceiptId = "";
+  }
   return true;
 }
 

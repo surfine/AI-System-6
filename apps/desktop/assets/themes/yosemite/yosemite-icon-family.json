@@ -118,7 +118,8 @@
           "lumStd": 54.12,
           "edgeEnergy": 177
         }
-      }
+      },
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "hardDisk": {
       "genre": "hardware",
@@ -166,7 +167,8 @@
       "generationStatus": "technically-clean",
       "provenanceClass": "A",
       "historicalReviewStatus": "pending",
-      "runtimeAsset": true
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "folder": {
       "genre": "file",
@@ -214,7 +216,8 @@
       "generationStatus": "technically-clean",
       "provenanceClass": "A",
       "historicalReviewStatus": "pending",
-      "runtimeAsset": true
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "document": {
       "genre": "document",
@@ -262,7 +265,8 @@
       "generationStatus": "technically-clean",
       "provenanceClass": "A",
       "historicalReviewStatus": "pending",
-      "runtimeAsset": true
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "applications": {
       "genre": "file",
@@ -310,7 +314,8 @@
           "lumStd": 41.33,
           "edgeEnergy": 241
         }
-      }
+      },
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "trash": {
       "genre": "hardware",
@@ -358,7 +363,8 @@
       "generationStatus": "technically-clean",
       "provenanceClass": "A",
       "historicalReviewStatus": "pending",
-      "runtimeAsset": true
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "finderApp": {
       "genre": "application",
@@ -408,7 +414,8 @@
       "provenanceClass": "A",
       "historicalReviewStatus": "reference-validated",
       "runtimeAsset": true,
-      "blindMixStatus": "not-run"
+      "blindMixStatus": "not-run",
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "fileFloppy": {
       "genre": "hardware",
@@ -456,7 +463,8 @@
           "lumStd": 60.76,
           "edgeEnergy": 273
         }
-      }
+      },
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "assistant": {
       "genre": "application",
@@ -505,7 +513,8 @@
       "generationStatus": "technically-clean",
       "provenanceClass": "B",
       "historicalReviewStatus": "historically-reviewed",
-      "runtimeAsset": true
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "quickDraft": {
       "genre": "document",
@@ -553,7 +562,8 @@
           "lumStd": 30.25,
           "edgeEnergy": 275
         }
-      }
+      },
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "writingStudio": {
       "genre": "application",
@@ -601,7 +611,8 @@
           "lumStd": 68.24,
           "edgeEnergy": 888
         }
-      }
+      },
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "projectDisk": {
       "genre": "hardware",
@@ -650,7 +661,8 @@
       "generationStatus": "technically-clean",
       "provenanceClass": "B",
       "historicalReviewStatus": "historically-reviewed",
-      "runtimeAsset": true
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "projectDisc": {
       "genre": "hardware",
@@ -698,7 +710,8 @@
           "lumStd": 37.38,
           "edgeEnergy": 233
         }
-      }
+      },
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "cloudModel": {
       "genre": "utility",
@@ -746,7 +759,8 @@
           "lumStd": 33.27,
           "edgeEnergy": 257
         }
-      }
+      },
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "cloudModelOff": {
       "genre": "utility",
@@ -794,7 +808,8 @@
           "lumStd": 44.05,
           "edgeEnergy": 393
         }
-      }
+      },
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "questionSheet": {
       "genre": "document",
@@ -842,7 +857,8 @@
           "lumStd": 36.38,
           "edgeEnergy": 298
         }
-      }
+      },
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "outline": {
       "genre": "document",
@@ -890,7 +906,8 @@
           "lumStd": 47.16,
           "edgeEnergy": 546
         }
-      }
+      },
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "sectionDrafts": {
       "genre": "document",
@@ -938,7 +955,8 @@
           "lumStd": 37.78,
           "edgeEnergy": 519
         }
-      }
+      },
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "manuscript": {
       "genre": "document",
@@ -986,7 +1004,8 @@
           "lumStd": 59.06,
           "edgeEnergy": 169
         }
-      }
+      },
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "reviewDesk": {
       "genre": "application",
@@ -1035,7 +1054,8 @@
       "generationStatus": "technically-clean",
       "provenanceClass": "B",
       "historicalReviewStatus": "historically-reviewed",
-      "runtimeAsset": true
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "searcher": {
       "genre": "application",
@@ -1084,7 +1104,8 @@
       "generationStatus": "technically-clean",
       "provenanceClass": "B",
       "historicalReviewStatus": "historically-reviewed",
-      "runtimeAsset": true
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "reader": {
       "genre": "application",
@@ -1132,7 +1153,8 @@
           "lumStd": 43.57,
           "edgeEnergy": 133
         }
-      }
+      },
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "timeMachine": {
       "genre": "utility",
@@ -1180,7 +1202,8 @@
           "lumStd": 48.54,
           "edgeEnergy": 634
         }
-      }
+      },
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "docMap": {
       "genre": "application",
@@ -1271,7 +1294,8 @@
       "generationStatus": "technically-clean",
       "provenanceClass": "C",
       "historicalReviewStatus": "historically-reviewed",
-      "runtimeAsset": true
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "clioStage": {
       "genre": "application",
@@ -1319,7 +1343,8 @@
           "lumStd": 71.28,
           "edgeEnergy": 350
         }
-      }
+      },
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "clioChart": {
       "genre": "application",
@@ -1367,7 +1392,8 @@
           "lumStd": 62.21,
           "edgeEnergy": 489
         }
-      }
+      },
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "liquidCover": {
       "genre": "application",
@@ -1415,7 +1441,8 @@
           "lumStd": 35.35,
           "edgeEnergy": 561
         }
-      }
+      },
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "cmfStudio": {
       "genre": "application",
@@ -1463,7 +1490,8 @@
           "lumStd": 26.05,
           "edgeEnergy": 73
         }
-      }
+      },
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "soundscape": {
       "genre": "application",
@@ -1511,7 +1539,8 @@
           "lumStd": 55.43,
           "edgeEnergy": 463
         }
-      }
+      },
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "scrapbook": {
       "genre": "application",
@@ -1560,7 +1589,8 @@
       "generationStatus": "technically-clean",
       "provenanceClass": "B",
       "historicalReviewStatus": "pending",
-      "runtimeAsset": true
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "systemFolder": {
       "genre": "file",
@@ -1608,7 +1638,8 @@
           "lumStd": 20.3,
           "edgeEnergy": 74
         }
-      }
+      },
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "helpFolder": {
       "genre": "file",
@@ -1656,7 +1687,8 @@
           "lumStd": 34.56,
           "edgeEnergy": 193
         }
-      }
+      },
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "importUtility": {
       "genre": "utility",
@@ -1704,7 +1736,8 @@
           "lumStd": 58.39,
           "edgeEnergy": 295
         }
-      }
+      },
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "controlPanel": {
       "genre": "utility",
@@ -1752,7 +1785,8 @@
       "generationStatus": "technically-clean",
       "provenanceClass": "B",
       "historicalReviewStatus": "historically-reviewed",
-      "runtimeAsset": true
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "chooser": {
       "genre": "utility",
@@ -1800,7 +1834,8 @@
           "lumStd": 43.76,
           "edgeEnergy": 296
         }
-      }
+      },
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "systemHelp": {
       "genre": "application",
@@ -1848,7 +1883,8 @@
           "lumStd": 42.36,
           "edgeEnergy": 361
         }
-      }
+      },
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "dictionary": {
       "genre": "application",
@@ -1896,7 +1932,8 @@
           "lumStd": 27.03,
           "edgeEnergy": 196
         }
-      }
+      },
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "teachText": {
       "genre": "application",
@@ -1945,7 +1982,8 @@
       "generationStatus": "technically-clean",
       "provenanceClass": "B",
       "historicalReviewStatus": "historically-reviewed",
-      "runtimeAsset": true
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "writingDemo": {
       "genre": "document",
@@ -1993,7 +2031,8 @@
           "lumStd": 32.56,
           "edgeEnergy": 3
         }
-      }
+      },
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "chatFile": {
       "genre": "document",
@@ -2041,7 +2080,8 @@
           "lumStd": 34.61,
           "edgeEnergy": 179
         }
-      }
+      },
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "chatImport": {
       "genre": "utility",
@@ -2089,7 +2129,8 @@
           "lumStd": 54.09,
           "edgeEnergy": 250
         }
-      }
+      },
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "systemStatus": {
       "genre": "utility",
@@ -2137,7 +2178,8 @@
           "lumStd": 68.88,
           "edgeEnergy": 491
         }
-      }
+      },
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "contextPanel": {
       "genre": "utility",
@@ -2185,7 +2227,8 @@
           "lumStd": 45.76,
           "edgeEnergy": 282
         }
-      }
+      },
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "rebuildArticle": {
       "genre": "utility",
@@ -2233,7 +2276,8 @@
           "lumStd": 62.98,
           "edgeEnergy": 496
         }
-      }
+      },
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "bureaucracyMeme": {
       "genre": "application",
@@ -2281,7 +2325,8 @@
           "lumStd": 68.04,
           "edgeEnergy": 147
         }
-      }
+      },
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "endfieldTerminal": {
       "genre": "utility",
@@ -2329,7 +2374,8 @@
           "lumStd": 55.15,
           "edgeEnergy": 421
         }
-      }
+      },
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "documents": {
       "genre": "file",
@@ -2377,7 +2423,8 @@
           "lumStd": 44.05,
           "edgeEnergy": 67
         }
-      }
+      },
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "alias": {
       "genre": "document",
@@ -2425,7 +2472,8 @@
           "lumStd": 35.58,
           "edgeEnergy": 60
         }
-      }
+      },
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "systemFile": {
       "genre": "document",
@@ -2473,7 +2521,8 @@
           "lumStd": 49.66,
           "edgeEnergy": 430
         }
-      }
+      },
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "multiFinderApp": {
       "genre": "application",
@@ -2523,7 +2572,8 @@
         }
       },
       "metaphorKey": "current-finder-identity-plus-multiplicity",
-      "blindMixStatus": "not-run"
+      "blindMixStatus": "not-run",
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "daHandler": {
       "genre": "utility",
@@ -2571,7 +2621,8 @@
       "generationStatus": "technically-clean",
       "provenanceClass": "A",
       "historicalReviewStatus": "pending",
-      "runtimeAsset": true
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "writingBell": {
       "genre": "accessory",
@@ -2619,7 +2670,8 @@
           "lumStd": 47.78,
           "edgeEnergy": 396
         }
-      }
+      },
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "trashFull": {
       "genre": "hardware",
@@ -2667,7 +2719,8 @@
           "lumStd": 18.59,
           "edgeEnergy": 128
         }
-      }
+      },
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "control": {
       "genre": "utility",
@@ -2715,7 +2768,8 @@
           "lumStd": 51.03,
           "edgeEnergy": 410
         }
-      }
+      },
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "localModel": {
       "genre": "utility",
@@ -2763,7 +2817,8 @@
           "lumStd": 48.54,
           "edgeEnergy": 619
         }
-      }
+      },
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     },
     "controlStrip": {
       "genre": "utility",
@@ -2811,7 +2866,8 @@
           "lumStd": 52.54,
           "edgeEnergy": 233
         }
-      }
+      },
+      "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
     }
   },
   "reviewedCore": [

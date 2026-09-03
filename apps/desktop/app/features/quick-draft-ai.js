@@ -113,11 +113,10 @@ async function requestQuickDraft(stage = "brief", options = {}) {
     callback: () => requestQuickDraft(stage, options),
   });
 
-  if (requestController) requestController.abort();
-  requestController = new AbortController();
+  const requestGuard = beginQuickDraftRequest();
   const initialCommit = await commitQuickDraftForProject(requestProjectId, {}, { captureForm: true });
   if (!initialCommit.ok) {
-    requestController = null;
+    settleQuickDraftRequest(requestGuard);
     setQuickDraftStatus(t("quick_draft_save_failed"));
     return false;
   }
@@ -187,7 +186,7 @@ async function requestQuickDraft(stage = "brief", options = {}) {
       const response = await window.AISystem6Capabilities.requestService("quickDraft.thesis", {
         init: {
           method: "POST",
-          signal: requestController.signal,
+          signal: requestGuard.signal,
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         },
@@ -209,7 +208,7 @@ async function requestQuickDraft(stage = "brief", options = {}) {
           stream: false,
           ai_system6_task_kind: taskKind || "quick-draft",
         },
-        signal: requestController.signal,
+        signal: requestGuard.signal,
         taskKind: taskKind || "quick-draft",
         streamPreference: "json",
       });
@@ -243,6 +242,26 @@ async function requestQuickDraft(stage = "brief", options = {}) {
       })
       : intake;
     const normalizedDraft = String(data.draft ?? data.raw ?? "").trim();
+    // Charter rule: every model answer is durable the moment it arrives, before
+    // any decision about whether it lands in the prose or the report is even
+    // reached. A discard a few lines below (placeholder, sentinel violation, no
+    // meaningful change, a failed commit) must not be the only trace this
+    // answer ever existed. recordUserAction below marks it adopted only where
+    // this same answer actually lands; every other exit leaves it recoverable
+    // and honestly marked unadopted.
+    const quickDraftAnswerText = stage === "draft" ? normalizedDraft : commandResultMarkdown(data, taskKind);
+    let quickDraftReceiptId = "";
+    if (quickDraftAnswerText) {
+      const recorded = await window.AISystem6RunReceipts?.recordModelAnswer?.({
+        projectId: requestProjectId,
+        sourceAppId: "quickDraft",
+        intent: taskKind || stage,
+        provider: (typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudCredentialReady()) ? "cloud" : "local",
+        model: typeof quickDraftConnectedModelName === "function" ? quickDraftConnectedModelName() : "",
+        answerText: quickDraftAnswerText,
+      });
+      quickDraftReceiptId = recorded?.receiptId || "";
+    }
     /** @type {any} */
     const patch = {
       stage: data.stage || stage,
@@ -338,14 +357,21 @@ async function requestQuickDraft(stage = "brief", options = {}) {
     renderQuickDraft(committed.record);
     setQuickDraftStatus(t("quick_draft_done"));
     window.AISystem6ModelUserErrors?.clearRetryable?.("quickDraft");
+    if (quickDraftReceiptId) {
+      window.AISystem6RunReceipts?.recordUserAction?.(quickDraftReceiptId, {
+        action: "accept",
+        finalBodyHash: typeof contentHash === "function" ? contentHash(quickDraftAnswerText) : "",
+      });
+    }
     return true;
   } catch (error) {
-    if (error?.name !== "AbortError") {
-      presentQuickDraftModelFailure(error);
+    const timedOut = quickDraftRequestTimedOut(error, requestGuard);
+    if (error?.name !== "AbortError" || timedOut) {
+      presentQuickDraftModelFailure(error, timedOut ? { timeout: true } : {});
     }
     return false;
   } finally {
-    requestController = null;
+    settleQuickDraftRequest(requestGuard);
     setBusy(false);
   }
 }
@@ -466,11 +492,10 @@ async function requestMingmingQuickDraft() {
     return false;
   }
 
-  if (requestController) requestController.abort();
-  requestController = new AbortController();
+  const requestGuard = beginQuickDraftRequest();
   const initialCommit = await task.commit({}, { captureForm: true });
   if (!initialCommit.ok) {
-    requestController = null;
+    settleQuickDraftRequest(requestGuard);
     setQuickDraftStatus(t("quick_draft_save_failed"));
     return false;
   }
@@ -503,13 +528,28 @@ async function requestMingmingQuickDraft() {
       max_tokens: 5200,
       ai_system6_task_kind: "mingming_rewrite",
       stream: false,
-    }, requestController.signal);
+    }, requestGuard.signal);
     if (!response.ok) {
       throw new Error(serviceErrorDetail(response.status, await response.text()));
     }
     const result = await response.json().catch(() => ({}));
     const raw = String(result?.choices?.[0]?.message?.content || "").trim();
     const cleaned = cleanMingmingQuickDraftBody(raw);
+    // Durable the moment it arrives: a sentinel violation, a placeholder
+    // draft, or "no real change" below all discard the answer from the
+    // writer's body, but not from the version/receipt store.
+    let quickDraftReceiptId = "";
+    if (raw) {
+      const recorded = await window.AISystem6RunReceipts?.recordModelAnswer?.({
+        projectId: task.projectId,
+        sourceAppId: "quickDraft",
+        intent: "draft",
+        provider: (typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudCredentialReady()) ? "cloud" : "local",
+        model: typeof quickDraftConnectedModelName === "function" ? quickDraftConnectedModelName() : "",
+        answerText: raw,
+      });
+      quickDraftReceiptId = recorded?.receiptId || "";
+    }
     const verification = protectedTools.verifyProtectedSentinels(cleaned, sentinelized.sentinels);
     if (!verification.valid) {
       setQuickDraftStatus(t("quick_draft_protect_failed", verification.errors[0] || ""));
@@ -574,12 +614,21 @@ async function requestMingmingQuickDraft() {
     renderQuickDraft(committed.record);
     setQuickDraftStatus(t("quick_draft_done"));
     window.AISystem6ModelUserErrors?.clearRetryable?.("quickDraft");
+    if (quickDraftReceiptId) {
+      window.AISystem6RunReceipts?.recordUserAction?.(quickDraftReceiptId, {
+        action: "accept",
+        finalBodyHash: typeof contentHash === "function" ? contentHash(finalBody) : "",
+      });
+    }
     return true;
   } catch (error) {
-    if (error?.name !== "AbortError") presentQuickDraftModelFailure(error);
+    const timedOut = quickDraftRequestTimedOut(error, requestGuard);
+    if (error?.name !== "AbortError" || timedOut) {
+      presentQuickDraftModelFailure(error, timedOut ? { timeout: true } : {});
+    }
     return false;
   } finally {
-    requestController = null;
+    settleQuickDraftRequest(requestGuard);
     setBusy(false);
   }
 }
@@ -768,16 +817,38 @@ function hideQuickDraftEli5Candidate() {
   pendingEli5Rewrite = null;
 }
 
+/**
+ * The two eli5 commands are offered from Section Drafts and nowhere else, and
+ * Quick Draft's status bar is not on screen there. Every answer they gave --
+ * no project, no body, no model, and the running and finished receipts as
+ * well -- was written into a window the person was not looking at, so from
+ * Section Drafts the commands were silent. Say it in Quick Draft's own bar,
+ * as before, and say it again through the system status line whenever Quick
+ * Draft is not the window in front; setStatus() renders into the active
+ * window's status host, which is where the person actually is. The test is
+ * which window is in front, not whether Quick Draft is open at all: an open
+ * window behind three others is not somewhere anybody is reading.
+ *
+ * @param {string} message
+ * @returns {void}
+ */
+function announceEli5Status(message) {
+  setQuickDraftStatus(message);
+  const front = /** @type {HTMLElement|null} */ (document.querySelector(".window.is-active:not(.is-hidden)"));
+  const inFront = front?.dataset.window === "quickDraft";
+  if (message && !inFront && typeof setStatus === "function") setStatus(message);
+}
+
 async function requestEli5Rewrite() {
   collectRefs();
   const slot = activeProjectQuickDraft();
   if (!slot) {
-    setQuickDraftStatus(t("quick_draft_no_project"));
+    announceEli5Status(t("quick_draft_no_project"));
     return false;
   }
   const task = createQuickDraftAsyncTask({ create: false });
   if (!task) {
-    setQuickDraftStatus(t("quick_draft_no_project"));
+    announceEli5Status(t("quick_draft_no_project"));
     return false;
   }
   const projectId = task.projectId;
@@ -788,25 +859,24 @@ async function requestEli5Rewrite() {
   });
   const currentBody = String(refs.draft?.value || "").trim();
   if (!currentBody) {
-    setQuickDraftStatus(t("quick_draft_needs_body"));
+    announceEli5Status(t("quick_draft_needs_body"));
     refs.draft?.focus();
     return false;
   }
   if (!quickDraftModelAvailable()) {
-    setQuickDraftStatus(t("quick_draft_connect_ai"));
+    announceEli5Status(t("quick_draft_connect_ai"));
     return false;
   }
 
   const explanationLens = quickDraftSetupSnapshot(slot.record).explanationLens;
   const eli5Body = quickDraftEli5PromptBody("lenses.eli5-explainer");
   if (!eli5Body) {
-    setQuickDraftStatus(t("quick_draft_eli5_unavailable"));
+    announceEli5Status(t("quick_draft_eli5_unavailable"));
     return false;
   }
-  if (requestController) requestController.abort();
-  requestController = new AbortController();
+  const requestGuard = beginQuickDraftRequest();
   setBusy(true);
-  setQuickDraftStatus(t("quick_draft_eli5_rewriting"));
+  announceEli5Status(t("quick_draft_eli5_rewriting"));
   try {
     const protectedRanges = modelProtectedRanges(slot.record);
     const protectedTools = window.AISystem6ProtectedRanges;
@@ -830,36 +900,56 @@ async function requestEli5Rewrite() {
       max_tokens: 5200,
       ai_system6_task_kind: "writing.eli5-rewrite",
       stream: false,
-    }, requestController.signal);
+    }, requestGuard.signal);
     if (!response.ok) throw new Error(serviceErrorDetail(response.status, await response.text()));
     const result = await response.json().catch(() => ({}));
     const raw = String(result?.choices?.[0]?.message?.content || "").trim();
     const cleaned = cleanMingmingQuickDraftBody(raw);
+    // Durable the moment it arrives. This candidate only ever lands via an
+    // explicit Apply (applyQuickDraftEli5Rewrite) or is walked away from
+    // (cancelQuickDraftEli5Rewrite, or the writer just closing the candidate);
+    // the receipt id rides along on pendingEli5Rewrite so either outcome can
+    // mark it honestly instead of leaving it silently "running" forever.
+    let quickDraftReceiptId = "";
+    if (raw) {
+      const recorded = await window.AISystem6RunReceipts?.recordModelAnswer?.({
+        projectId,
+        sourceAppId: "quickDraft",
+        intent: "eli5-rewrite",
+        provider: (typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudCredentialReady()) ? "cloud" : "local",
+        model: typeof quickDraftConnectedModelName === "function" ? quickDraftConnectedModelName() : "",
+        answerText: raw,
+      });
+      quickDraftReceiptId = recorded?.receiptId || "";
+    }
     const verification = protectedTools.verifyProtectedSentinels(cleaned, sentinelized.sentinels);
     if (!verification.valid) {
-      setQuickDraftStatus(t("quick_draft_protect_failed", verification.errors[0] || ""));
+      announceEli5Status(t("quick_draft_protect_failed", verification.errors[0] || ""));
       return false;
     }
     const finalBody = protectedTools.restoreProtectedSentinels(cleaned, sentinelized.sentinels);
     if (!finalBody) {
-      setQuickDraftStatus(t("quick_draft_parse_failed"));
+      announceEli5Status(t("quick_draft_parse_failed"));
       return false;
     }
     if (looksLikePlaceholderDraft(finalBody)) {
-      setQuickDraftStatus(t("quick_draft_placeholder_draft_rejected"));
+      announceEli5Status(t("quick_draft_placeholder_draft_rejected"));
       return false;
     }
     if (!task.stillOwnsActiveProject()) return false;
-    pendingEli5Rewrite = { projectId, body: finalBody };
+    pendingEli5Rewrite = { projectId, body: finalBody, receiptId: quickDraftReceiptId };
     showQuickDraftEli5Candidate(finalBody);
-    setQuickDraftStatus(t("quick_draft_eli5_candidate_ready"));
+    announceEli5Status(t("quick_draft_eli5_candidate_ready"));
     window.AISystem6ModelUserErrors?.clearRetryable?.("quickDraft-eli5-rewrite");
     return true;
   } catch (error) {
-    if (error?.name !== "AbortError") presentQuickDraftModelFailure(error);
+    const timedOut = quickDraftRequestTimedOut(error, requestGuard);
+    if (error?.name !== "AbortError" || timedOut) {
+      presentQuickDraftModelFailure(error, timedOut ? { timeout: true } : {});
+    }
     return false;
   } finally {
-    requestController = null;
+    settleQuickDraftRequest(requestGuard);
     setBusy(false);
   }
 }
@@ -920,10 +1010,19 @@ async function applyQuickDraftEli5Rewrite() {
   hideQuickDraftEli5Candidate();
   renderQuickDraft(committed.record);
   setQuickDraftStatus(t("quick_draft_eli5_applied"));
+  if (candidate.receiptId) {
+    window.AISystem6RunReceipts?.recordUserAction?.(candidate.receiptId, {
+      action: "accept",
+      finalBodyHash: typeof contentHash === "function" ? contentHash(candidate.body) : "",
+    });
+  }
   return true;
 }
 
 async function cancelQuickDraftEli5Rewrite() {
+  if (pendingEli5Rewrite?.receiptId) {
+    window.AISystem6RunReceipts?.recordUserAction?.(pendingEli5Rewrite.receiptId, { action: "reject" });
+  }
   pendingEli5Rewrite = null;
   hideQuickDraftEli5Candidate();
   setQuickDraftStatus(t("quick_draft_eli5_cancelled"));
@@ -934,7 +1033,7 @@ async function requestEli5Review() {
   collectRefs();
   const slot = activeProjectQuickDraft();
   if (!slot) {
-    setQuickDraftStatus(t("quick_draft_no_project"));
+    announceEli5Status(t("quick_draft_no_project"));
     return false;
   }
   const projectId = slot.project.id;
@@ -945,23 +1044,22 @@ async function requestEli5Review() {
   });
   const currentBody = String(refs.draft?.value || "").trim();
   if (!currentBody) {
-    setQuickDraftStatus(t("quick_draft_needs_body"));
+    announceEli5Status(t("quick_draft_needs_body"));
     refs.draft?.focus();
     return false;
   }
   if (!quickDraftModelAvailable()) {
-    setQuickDraftStatus(t("quick_draft_connect_ai"));
+    announceEli5Status(t("quick_draft_connect_ai"));
     return false;
   }
   const reviewBody = quickDraftEli5PromptBody("lenses.eli5-review");
   if (!reviewBody) {
-    setQuickDraftStatus(t("quick_draft_eli5_unavailable"));
+    announceEli5Status(t("quick_draft_eli5_unavailable"));
     return false;
   }
-  if (requestController) requestController.abort();
-  requestController = new AbortController();
+  const requestGuard = beginQuickDraftRequest();
   setBusy(true);
-  setQuickDraftStatus(t("quick_draft_eli5_reviewing"));
+  announceEli5Status(t("quick_draft_eli5_reviewing"));
   try {
     const response = await fetchModelPayload({
       model: typeof getLocalModelRequestName === "function" ? getLocalModelRequestName() : (modelInput?.value?.trim() || ""),
@@ -973,7 +1071,7 @@ async function requestEli5Review() {
       max_tokens: 2600,
       ai_system6_task_kind: "writing.eli5-review",
       stream: false,
-    }, requestController.signal);
+    }, requestGuard.signal);
     if (!response.ok) throw new Error(serviceErrorDetail(response.status, await response.text()));
     const result = await response.json().catch(() => ({}));
     const raw = String(result?.choices?.[0]?.message?.content || "").trim();
@@ -988,17 +1086,39 @@ async function requestEli5Review() {
       : [];
     const shown = window.AISystem6QuickDraftListen?.setQuickDraftFindings?.(findings, data.keep);
     if (typeof shown !== "number") {
-      setQuickDraftStatus(t("quick_draft_command_empty"));
+      announceEli5Status(t("quick_draft_command_empty"));
       return false;
     }
-    setQuickDraftStatus(findings.length ? t("quick_draft_done") : t("quick_draft_eli5_review_none"));
+    // The findings list itself is only visible while this session's memory
+    // holds it (each fix-one below gets its own receipt when adopted, but the
+    // review that found them is otherwise lost on reload). Record it as
+    // delivered-and-shown: the list is durable and recoverable, not a draft
+    // waiting for a landing decision.
+    if (raw) {
+      window.AISystem6RunReceipts?.recordModelAnswer?.({
+        projectId,
+        sourceAppId: "quickDraft",
+        intent: "eli5-review",
+        provider: (typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudCredentialReady()) ? "cloud" : "local",
+        model: typeof quickDraftConnectedModelName === "function" ? quickDraftConnectedModelName() : "",
+        answerText: raw,
+      }).then((recorded) => {
+        if (recorded?.receiptId) {
+          window.AISystem6RunReceipts?.recordUserAction?.(recorded.receiptId, { action: "accept" });
+        }
+      });
+    }
+    announceEli5Status(findings.length ? t("quick_draft_done") : t("quick_draft_eli5_review_none"));
     window.AISystem6ModelUserErrors?.clearRetryable?.("quickDraft-eli5-review");
     return true;
   } catch (error) {
-    if (error?.name !== "AbortError") presentQuickDraftModelFailure(error);
+    const timedOut = quickDraftRequestTimedOut(error, requestGuard);
+    if (error?.name !== "AbortError" || timedOut) {
+      presentQuickDraftModelFailure(error, timedOut ? { timeout: true } : {});
+    }
     return false;
   } finally {
-    requestController = null;
+    settleQuickDraftRequest(requestGuard);
     setBusy(false);
   }
 }

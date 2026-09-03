@@ -395,6 +395,6 @@ async function addMountedTextDiskToProject() {
     openWindow("projects");
     setStatus(t("project_reference_saved", savedCount));
   } catch (error) {
-    setStatus(t("project_reference_error", error.message));
+    setStatus(t("project_reference_error", friendlyErrorDetail(error)));
   }
 }

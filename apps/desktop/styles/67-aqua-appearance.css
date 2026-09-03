@@ -167,6 +167,10 @@ body[data-theme="aqua"] {
   --progress-fill-radius: 999px;
   --progress-fill-bg: linear-gradient(#cdf3ff 0%, #64c9ff 42%, #138adb 50%, #086cc1 56%, #74d0ff 100%);
   --progress-fill-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.88);
+  --progress-shadow: none;
+  /* Jaguar's pill never stripes while busy -- the gel stays smooth. */
+  --progress-fill-active-bg: var(--progress-fill-bg);
+  --progress-fill-active-size: 100% 100%;
   --ink: #171717;
   --paper: #ffffff;
   --panel: #e9e9e9;
@@ -322,6 +326,28 @@ body[data-theme="aqua"] {
   --tdi-tab-active-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
   --tdi-tab-small-color: #5f5f5f;
   --tdi-tab-active-small-color: rgba(255, 255, 255, 0.86);
+  /* Tier 2 selection states. Unfocused desaturates the pinstripe drawer's
+     blue selection to the same grey every Mac OS X source list turns to when
+     its window is not key. Hover/pressed stay inside the drawer's existing
+     white-to-grey pinstripe ramp -- one step lighter, one step darker. */
+  --tdi-tabs-heading-padding: 6px 9px 3px;
+  --tdi-tabs-heading-fg: #5f5f5f;
+  --tdi-tabs-heading-font-size: 10px;
+  --tdi-tabs-heading-letter-spacing: 0.03em;
+  --tdi-tabs-heading-text-transform: uppercase;
+  --tdi-tabs-heading-border-bottom: 0;
+  --tdi-tab-active-unfocused-border: 1px solid #9a9a9a;
+  --tdi-tab-active-unfocused-border-bottom: 1px solid #9a9a9a;
+  --tdi-tab-active-unfocused-bg: linear-gradient(#d9d9d9, #b0b0b0);
+  --tdi-tab-active-unfocused-fg: #3f3f3f;
+  --tdi-tab-active-unfocused-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  --tdi-tab-active-unfocused-small-color: rgba(0, 0, 0, 0.55);
+  --tdi-tab-hover-bg: linear-gradient(#ffffff, #ececec);
+  --tdi-tab-hover-fg: #000000;
+  --tdi-tab-hover-shadow: inset 0 1px 0 #ffffff;
+  --tdi-tab-pressed-bg: linear-gradient(#5599e0, #1a5bb8);
+  --tdi-tab-pressed-fg: #ffffff;
+  --tdi-tab-pressed-shadow: inset 0 2px 3px rgba(0, 63, 114, 0.35);
   --tdi-tab-close-size: 16px;
   --tdi-tab-close-gutter: 5px;
   --tdi-tab-close-border: 1px solid #767676;
@@ -471,6 +497,12 @@ body[data-theme="aqua"] {
   --clio-slip-mark-border: 1px solid #8c8c8c;
   --clio-slip-mark-kept: #333333;
   --clio-said-rule: 3px solid #8c8c8c;
+  /* --shade-dark (#8b8b8b) reads 2.8:1 on the details bar's near-white face --
+     under this theme's own accepted disabled-state floor. Liquid Glass already
+     carries its own --clio-muted-copy for the same reason; Aqua needs one too
+     rather than a component-scoped color, since every "pending/disabled copy"
+     surface in ClioTalk reads this one token. */
+  --clio-muted-copy: #707070;
   --field-control-padding: 2px 6px;
   --select-radius: 10px;
   --field-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25), 0 1px 0 #ffffff;
@@ -621,10 +653,6 @@ body[data-theme="aqua"] {
   --theme-lab-form-label-align: right;
   --theme-lab-form-label-column-gap: 7px;
   --theme-lab-form-label-align-items: center;
-  --theme-lab-control-margin-top: 9px;
-  --theme-lab-segmented-button-min-height: 23px;
-  --theme-lab-segmented-button-height: 23px;
-  --theme-lab-segmented-button-padding: 2px 10px;
   --tab-strip-gap: 3px;
   --tab-strip-padding: 0 12px 7px;
   --tab-strip-border-bottom: 0;
@@ -704,7 +732,6 @@ body[data-theme="aqua"] {
   --theme-lab-browser-scrollbar-thumb-border: 1px solid #00478f;
   --theme-lab-browser-scrollbar-thumb-bg: linear-gradient(#a4e6ff, #2b96dd 50%, #79d2ff);
   --theme-lab-browser-scrollbar-thumb-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
-  --theme-lab-list-scrollbar-display: grid;
   --theme-lab-list-scrollbar-width: 15px;
   --theme-lab-layer-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
   --theme-lab-layer-gap: 9px;
@@ -742,10 +769,6 @@ body[data-theme="aqua"] {
   --theme-lab-sheet-owner-window-shadow: 0 3px 7px rgba(0, 0, 0, 0.3);
   --theme-lab-sheet-owner-window-overflow: hidden;
   --theme-lab-sheet-owner-display: flex;
-  --theme-lab-sheet-owner-titlebar-height: 22px;
-  --theme-lab-sheet-owner-titlebar-border: 1px solid #7f7f7f;
-  --theme-lab-sheet-owner-titlebar-bg: var(--system-titlebar-active-bg);
-  --theme-lab-sheet-owner-titlebar-shadow: inset 0 1px 0 #ffffff;
   --theme-lab-sheet-owner-body-height: 92px;
   --theme-lab-sheet-owner-body-bg: #ffffff;
   /* Alarm Clock DA: Aqua window chrome, white face, candy controls. */
@@ -808,41 +831,6 @@ body[data-theme="aqua"] {
   --theme-lab-sheet-actions-margin-top: 2px;
   --theme-lab-sheet-action-gap: 12px;
   --theme-lab-sheet-button-min-width: 69px;
-  --theme-lab-progress-height: 15px;
-  --theme-lab-progress-padding: 1px;
-  --theme-lab-progress-border: 1px solid #777777;
-  --theme-lab-progress-radius: 999px;
-  --theme-lab-progress-bg: linear-gradient(#d1d1d1, #ffffff 48%, #c5c5c5);
-  --theme-lab-progress-value-radius: 999px;
-  --theme-lab-progress-value-bg: var(--progress-fill-bg);
-  --theme-lab-progress-value-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.88);
-  --theme-lab-scrollbar-border-left: 0;
-  --theme-lab-scrollbar-bg: var(--window-frame-track-bg);
-  --theme-lab-scrollbar-track-bg: var(--window-frame-track-bg);
-  --theme-lab-scrollbar-track-shadow: none;
-  --theme-lab-scrollbar-thumb-top: 8px;
-  --theme-lab-scrollbar-thumb-right: 1px;
-  --theme-lab-scrollbar-thumb-left: 1px;
-  --theme-lab-scrollbar-thumb-min-height: 24px;
-  --theme-lab-scrollbar-thumb-height: 72%;
-  --theme-lab-scrollbar-thumb-border: 0;
-  --theme-lab-scrollbar-thumb-radius: 7px;
-  --theme-lab-scrollbar-thumb-bg: var(--window-frame-thumb-bg);
-  --theme-lab-scrollbar-thumb-shadow: none;
-  --theme-lab-scrollbar-thumb-active-bg: linear-gradient(90deg,
-    #0023a0 0 7%, #5b8bd0 7% 14%, #75a7d9 14% 21%,
-    #69a0d9 21% 29%, #609cd9 29% 36%, #2474cd 36% 43%,
-    #3783da 43% 50%, #4d96ec 50% 57%, #61a9f5 57% 64%,
-    #6fb5fa 64% 71%, #7bc3ff 71% 79%, #70b6f9 79% 100%);
-  --theme-lab-scrollbar-button-border: 0;
-  --theme-lab-scrollbar-button-shadow: none;
-  --theme-lab-scrollbar-button-active-bg: var(--btn-active-bg);
-  --theme-lab-scrollbar-button-active-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
-  --theme-lab-scrollbar-arrow-width: 0;
-  --theme-lab-scrollbar-arrow-height: 0;
-  --theme-lab-scrollbar-arrow-side-border: 3px solid transparent;
-  --theme-lab-scrollbar-decrement-border: 0;
-  --theme-lab-scrollbar-increment-border: 0;
   /* 10.2 puts all three lamps at the left in close / minimize / zoom order,
      on the same ladder as this era's title-bar specimens above. */
   --theme-lab-finder-window-display: block;
@@ -851,11 +839,6 @@ body[data-theme="aqua"] {
   --theme-lab-finder-window-bg: #ffffff;
   --theme-lab-finder-window-shadow: 0 4px 9px rgba(0, 0, 0, 0.34);
   --theme-lab-finder-window-overflow: hidden;
-  --theme-lab-finder-window-titlebar-display: flex;
-  --theme-lab-finder-window-titlebar-height: 22px;
-  --theme-lab-finder-window-titlebar-border: 1px solid #7f7f7f;
-  --theme-lab-finder-window-titlebar-bg: var(--system-titlebar-active-bg);
-  --theme-lab-finder-window-titlebar-shadow: inset 0 1px 0 #ffffff;
   --theme-lab-finder-status-display: flex;
   --theme-lab-finder-status-height: 19px;
   --theme-lab-finder-status-border-top: 1px solid #a3a3a3;
@@ -1130,18 +1113,13 @@ body[data-theme="snow-leopard"] {
   --theme-lab-nav-row-min-height: 24px;
   --theme-lab-nav-row-padding-block: 2px;
   --theme-lab-finder-row-min-height: 27px;
-  /* Theme Lab Finder surface renders the full 10.6 window: light titlebar,
-     unified toolbar, status strip, content. */
+  /* Theme Lab Finder surface renders the full 10.6 window: the product's own
+     title bar, unified toolbar, status strip, content. */
   --theme-lab-finder-window-display: block;
   --theme-lab-finder-window-border: 1px solid #8e8e8e;
   --theme-lab-finder-window-radius: 5px 5px 2px 2px;
   --theme-lab-finder-window-bg: #ffffff;
   --theme-lab-finder-window-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-  --theme-lab-finder-window-titlebar-display: flex;
-  --theme-lab-finder-window-titlebar-height: 22px;
-  --theme-lab-finder-window-titlebar-border: 1px solid #8a8a8a;
-  --theme-lab-finder-window-titlebar-bg: var(--system-titlebar-active-bg);
-  --theme-lab-finder-window-titlebar-shadow: inset 0 1px 0 #ffffff;
   --theme-lab-finder-status-display: flex;
   --theme-lab-finder-status-height: 19px;
   --theme-lab-finder-status-border-top: 1px solid #515151;
@@ -1175,10 +1153,6 @@ body[data-theme="snow-leopard"] {
   --find-path-query-row-bg: var(--toolbar-bg);
   --find-path-query-row-border-bottom: var(--toolbar-border);
   --progress-height: 13px;
-  /* The base sheet owns the progress recipe; these hand it the era's numbers. */
-  --theme-lab-progress-height: var(--progress-height);
-  --theme-lab-progress-radius: var(--progress-radius);
-  --theme-lab-progress-value-radius: var(--progress-fill-radius);
   --progress-padding: 1px;
   --progress-border-color: #9d9d9d;
   --progress-radius: 6px;
@@ -1186,6 +1160,9 @@ body[data-theme="snow-leopard"] {
   --progress-fill-radius: 5px;
   --progress-fill-bg: linear-gradient(#9fd4fb, #3c91d3 52%, #72b7e9);
   --progress-fill-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.66);
+  --progress-shadow: none;
+  --progress-fill-active-bg: var(--progress-fill-bg);
+  --progress-fill-active-size: 100% 100%;
   --ink: #1f1f1f;
   --paper: #ededed;
   --panel: #d6d6d6;
@@ -1274,6 +1251,10 @@ body[data-theme="snow-leopard"] {
      #3766f2 (mid) -> #1d5bf2 (bottom) with white labels. */
   --selection-bg: linear-gradient(#577dea, #3766f2 50%, #1d5bf2);
   --selection-fg: #ffffff;
+  /* A ::selection takes a colour, not a ramp, and a writing surface must mix a
+     flat colour to stay translucent. The editor selection takes the mid stop of
+     the ramp above. */
+  --editor-selection-tint: #3766f2;
   /* 10.6 keeps the Aqua desktop-label recipe: shadowed white text on the
      wallpaper, rounded selection pill from the era's own selection ramp. */
   --desktop-label-bg: transparent;
@@ -1360,6 +1341,31 @@ body[data-theme="snow-leopard"] {
   --tdi-tab-active-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
   --tdi-tab-small-color: #66717d;
   --tdi-tab-active-small-color: rgba(255, 255, 255, 0.9);
+  /* Tier 2 selection states. The heading reuses the source-list label's own
+     tokens above -- one quiet-caption recipe, not two. Unfocused and hover
+     finally give --sidebar-selection-bg-unfocused/-inactive (declared with
+     the rest of the source-list ramp above, never consumed until now) a real
+     reader: inactive is the window-backgrounded grey, unfocused is the
+     softer "selected but not the responder" ramp real 10.6 source lists use
+     for hover-preview. Pressed goes one step past the full selection blue. */
+  --tdi-tabs-heading-padding: var(--tdi-source-label-padding);
+  --tdi-tabs-heading-fg: var(--tdi-source-label-fg);
+  --tdi-tabs-heading-font-size: var(--tdi-source-label-font-size);
+  --tdi-tabs-heading-letter-spacing: var(--tdi-source-label-letter-spacing);
+  --tdi-tabs-heading-text-transform: var(--tdi-source-label-text-transform);
+  --tdi-tabs-heading-border-bottom: 0;
+  --tdi-tab-active-unfocused-border: 0;
+  --tdi-tab-active-unfocused-border-bottom: 0;
+  --tdi-tab-active-unfocused-bg: var(--sidebar-selection-bg-inactive);
+  --tdi-tab-active-unfocused-fg: var(--sidebar-selection-fg);
+  --tdi-tab-active-unfocused-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  --tdi-tab-active-unfocused-small-color: rgba(255, 255, 255, 0.75);
+  --tdi-tab-hover-bg: var(--sidebar-selection-bg-unfocused);
+  --tdi-tab-hover-fg: #ffffff;
+  --tdi-tab-hover-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  --tdi-tab-pressed-bg: var(--sidebar-selection-bg);
+  --tdi-tab-pressed-fg: var(--sidebar-selection-fg);
+  --tdi-tab-pressed-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
   --tdi-tab-close-size: 16px;
   --tdi-tab-close-gutter: 5px;
   --tdi-tab-close-border: 0;
@@ -1544,13 +1550,6 @@ body[data-theme="snow-leopard"] {
     linear-gradient(180deg, #4a7fc0 0%, #759fdc 8%, #90bae6 17%, #8bb8e7 26%, #83b4e9 34%, #438de3 46%, #579eee 56%, #6aaefd 65%, #7cc0ff 73%, #88cfff 81%, #92daff 90%, #8bd0ff 100%);
   --window-frame-thumb-border: 1px solid #1c4f96;
   --window-frame-thumb-radius: 999px;
-  /* Quaqua ScrollBar.thumb.v frame 3 seats the thumb flush against the track's
-     leading edge and leaves the trailing three pixels to the track's own
-     border. The inherited Aqua inset put a 14px thumb one pixel to the right,
-     which stretched the (already correct) body ramp across the wrong width and
-     misaligned every column. */
-  --theme-lab-scrollbar-thumb-left: 0px;
-  --theme-lab-scrollbar-thumb-right: 2px;
   --window-frame-arrow-bg: linear-gradient(#ffffff, #d4d4d4 52%, #f5f5f5);
   --scrollbar-track: var(--window-frame-track-bg);
   --scrollbar-thumb: var(--window-frame-thumb-bg);
@@ -1749,30 +1748,6 @@ body[data-theme="aqua"] .theme-lab-toolbar-search {
   margin-inline-end: 12px;
 }
 
-/* The Jaguar scrollbar cap is 16px + 15px (top button taller); keep the
-   track at 186px so the button pattern lands on the reference rows. The
-   address-book capture stacks the arrow buttons after the track. */
-body[data-theme="aqua"] .theme-lab-scrollbar {
-
-  grid-template-rows: minmax(0, 1fr) 16px 15px;
-  border-left: 1px solid #8e8e8e;
-
-}
-
-/* The cap buttons are pixel-reconstructed from the 10.2 address-book
-   capture, arrow included; the generic CSS triangles are disabled. */
-body[data-theme="aqua"] .theme-lab-scrollbar-button.is-decrement {
-
-  background: url("./assets/themes/aqua/scrollbar-cap-decrement.svg") no-repeat;
-
-}
-
-body[data-theme="aqua"] .theme-lab-scrollbar-button.is-increment {
-
-  background: url("./assets/themes/aqua/scrollbar-cap-increment.svg") no-repeat;
-
-}
-
 body[data-theme="aqua"] :where(
   input[type="url"],
   input[type="text"],
@@ -1813,7 +1788,7 @@ body[data-theme="aqua"] :where(
   input[type="password"],
   input[type="search"],
   input[type="number"]
-):is(:focus, .theme-lab-focus-demo) {
+):not(.mde-input):is(:focus, .theme-lab-focus-demo) {
 
   border: var(--field-focus-border);
   outline: 0;
@@ -2145,22 +2120,6 @@ body[data-theme="aqua"] .info-comments textarea {
   box-shadow: var(--field-shadow);
 }
 
-/* The Reader rebuild meter consumes the shared Aqua progress recipe. */
-body[data-theme="aqua"] .rebuild-progress-meter {
-  height: var(--progress-height);
-  border: 1px solid var(--progress-border-color);
-  border-radius: var(--progress-radius);
-  background: var(--progress-bg);
-  box-shadow: none;
-}
-
-body[data-theme="aqua"] .rebuild-progress-meter span,
-body[data-theme="aqua"] .rebuild-progress-meter.is-working span {
-  background: var(--progress-fill-bg);
-  border-radius: var(--progress-fill-radius);
-  box-shadow: var(--progress-fill-shadow);
-}
-
 /* Control Panel / Chooser settings use native webkit scrollbars styled as
    System 6 by default. Aqua gives them the 15px blue-thumb scrollbar. */
 body[data-theme="aqua"] :is(.control-panel, .chooser-panel) .settings::-webkit-scrollbar,
@@ -2367,6 +2326,13 @@ body[data-theme="aqua"] .system-select-button:not(:disabled), body[data-theme="s
   border: var(--system-select-control-border);
   border-radius: var(--system-select-control-radius);
   background: var(--system-select-control-bg);
+  /* Same trap as the native <select> well above (see its "measure it against
+     the border box" note): the default padding-box origin measures the
+     layered well gradients 1px inside the 1px border on every side, so on
+     Snow Leopard's bordered button the arrow-well capsule read as a separate
+     pill detached from the control's own frame. Aqua's own popup button
+     below sets border:0, so this is a no-op there. */
+  background-origin: border-box;
   box-shadow: var(--system-select-control-shadow);
   font-family: var(--theme-ui-font);
   font-size: var(--system-control-size);
@@ -2385,20 +2351,6 @@ body[data-theme="aqua"] .system-select-button::after, body[data-theme="snow-leop
   border: 0;
   transform: var(--system-select-arrow-transform, translateY(-50%));
   background: var(--system-select-arrow-bg) center / var(--system-select-arrow-width, 8px) var(--system-select-arrow-height, 13px) no-repeat;
-
-}
-
-body[data-theme="snow-leopard"] .theme-lab-progress {
-
-  border-color: var(--progress-border-color);
-  background: var(--progress-bg);
-
-}
-
-body[data-theme="snow-leopard"] .theme-lab-progress span {
-
-  background: var(--progress-fill-bg);
-  box-shadow: var(--progress-fill-shadow);
 
 }
 
@@ -2550,6 +2502,83 @@ body[data-theme="aqua"] .btn.default {
 
 }
 
+/* ClioTalk's round Send is a circle, not a capsule -- --aqua-btn-face above is
+   the pill's two side caps plus a horizontal top/bottom ladder, and mapped
+   onto a 36px circle its caps overlap and its waist vanishes, which is why it
+   read as a flat ring rather than a gel button. A round control needs its own
+   anatomy: a top-third specular highlight, a radial ambient shade toward the
+   rim, a closed rim stroke, and the drop shadow below the control that a pill
+   button gets from --aqua-btn-frame's arc but a circle needs as a plain
+   offset shadow. Colour stops are the same capture-sampled blues as the pill
+   above (--aqua-btn-cap-core/-mid, the #5a9de0..#95dbff bottom ladder, the
+   #050c9d/#00006e rim) -- recomposed radially, not resampled. */
+body[data-theme="aqua"] .assistant-window .composer .composer-submit-button {
+
+  border-color: #00006e;
+  background:
+    radial-gradient(circle at 50% 20%,
+      rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0.5) 20%,
+      rgba(255, 255, 255, 0) 46%) center / 100% 100% no-repeat,
+    radial-gradient(circle at 50% 130%,
+      rgba(0, 20, 90, 0.55) 0%, rgba(0, 20, 90, 0) 58%) center / 100% 100% no-repeat,
+    linear-gradient(to bottom,
+      #8dceff 0%, #5a9de0 26%, #297cd3 52%, #0142b9 76%, #00046e 100%);
+  box-shadow:
+    0 2px 3px rgba(0, 10, 40, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -1px 1px rgba(0, 6, 40, 0.4);
+  color: #ffffff;
+
+}
+
+body[data-theme="aqua"] .assistant-window .composer .composer-submit-button:disabled {
+
+  border-color: #9d9d9d;
+  background: linear-gradient(to bottom, #f2f2f2 0%, #dcdcdc 55%, #cfcfcf 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  /* #a8a8a8 read 1.7-2.1:1 across this gradient -- the arrow glyph was nearly
+     the same grey as its own disabled face. #707070 (already this file's
+     --clio-muted-copy for the same reason) clears 3.2:1 even against the
+     gradient's darkest stop. */
+  color: #707070;
+
+}
+
+/* The "+" attach button is a neutral (not default/primary) round control --
+   same circular anatomy, grey-on-white instead of blue, matching the pill
+   grey button's --aqua-btn-rim/-cap tokens near the top of this file. */
+body[data-theme="aqua"] .assistant-window .composer .composer-file-button {
+
+  border-color: #9b9b9b;
+  background:
+    radial-gradient(circle at 50% 20%,
+      rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.6) 20%,
+      rgba(255, 255, 255, 0) 46%) center / 100% 100% no-repeat,
+    radial-gradient(circle at 50% 130%,
+      rgba(0, 0, 0, 0.16) 0%, rgba(0, 0, 0, 0) 58%) center / 100% 100% no-repeat,
+    linear-gradient(to bottom, #ffffff 0%, #f2f2f2 45%, #e2e2e2 100%);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  color: #333333;
+
+}
+
+body[data-theme="aqua"] .assistant-window .composer .composer-file-button:hover,
+body[data-theme="aqua"] .assistant-window .composer .composer-file-button:focus-visible {
+
+  background:
+    radial-gradient(circle at 50% 20%,
+      rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.6) 20%,
+      rgba(255, 255, 255, 0) 46%) center / 100% 100% no-repeat,
+    radial-gradient(circle at 50% 130%,
+      rgba(0, 0, 0, 0.16) 0%, rgba(0, 0, 0, 0) 58%) center / 100% 100% no-repeat,
+    linear-gradient(to bottom, #ffffff 0%, #e8f0fc 45%, #cfe1f7 100%);
+  border-color: #7ba7dd;
+  color: #1a1a1a;
+
+}
+
 body[data-theme="aqua"] .btn:is(.is-active, :active):not(:disabled):not(.is-disabled) {
 
   /* Same bridge as .default above: the shared pressed rule is later and equal,
@@ -2666,95 +2695,6 @@ body[data-theme="aqua"] .theme-lab-toolbar-round-icon.is-forward {
 
 }
 
-body[data-theme="aqua"] .theme-lab-segmented {
-
-  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.24));
-
-}
-
-body[data-theme="aqua"] .theme-lab-group .theme-lab-segmented button {
-
-  border: 1px solid #777777;
-  background: var(--tab-bg);
-  box-shadow: inset 0 1px 0 #ffffff;
-  font: inherit;
-  border-right: 0;
-}
-
-body[data-theme="aqua"] .theme-lab-group .theme-lab-segmented button.is-selected {
-
-  background: var(--tab-active-bg);
-  color: #071722;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 -1px 1px rgba(0, 65, 112, 0.34);
-
-}
-
-body[data-theme="aqua"] .theme-lab-group .theme-lab-tabs {
-
-  background: linear-gradient(to bottom,
-    #0a51ae 0 14.285%, #a4c3e5 14.285% 28.57%,
-    #b8d2ef 28.57% 42.855%, #79aeec 42.855% 57.14%,
-    #9ccfff 57.14% 71.425%, #bbefff 71.425% 85.71%,
-    #6c6c6c 85.71% 100%) bottom / 100% 7px no-repeat;
-
-}
-
-body[data-theme="aqua"] .theme-lab-group .theme-lab-tabs button:not(:active) {
-
-  margin-bottom: -7px;
-  border: 1px solid #777777;
-  border-bottom: 0;
-  border-radius: 7px 7px 0 0;
-  background: var(--tab-bg);
-  box-shadow: 0 -1px 1px rgba(0, 0, 0, 0.08), inset 0 1px 0 #ffffff;
-
-}
-
-body[data-theme="aqua"] .theme-lab-group .theme-lab-tabs button.is-selected {
-
-  border-color: #0024b2;
-  border-bottom: 0;
-  background:
-    linear-gradient(to bottom,
-      #eeeeee 0 1px, #f7f7f7 1px 2px, #d1d1d1 2px 3px,
-      #a0a0a0 3px 4px, #838383 4px 5px, #787878 5px 6px,
-      #6a6a6a 6px 7px, #636363 7px 8px, #666666 8px 9px,
-      #6e6e6e 9px 10px, #666666 10px 11px, #636363 11px 12px,
-      #666666 12px 13px, #6e6e6e 13px 14px, #666666 14px 15px,
-      #636363 15px 16px, #666666 16px 17px, #6e6e6e 17px 18px,
-      #666666 18px 19px, #636363 19px 20px, #666666 20px 21px,
-      #6c6c6c 21px 22px, #616161 22px 23px) right top / 1px 23px no-repeat,
-    linear-gradient(to bottom,
-      #e2ecf9 0 1px, #cbdff4 1px 2px, #b8d3f0 2px 3px,
-      #accded 3px 4px, #a2c6ec 4px 5px, #9dc4eb 5px 6px,
-      #9ac1eb 6px 7px, #96c0eb 7px 8px, #92beea 8px 9px,
-      #90bdea 9px 10px, #69a8e8 10px 11px, #71adeb 11px 12px,
-      #77b2ef 12px 13px, #7fb8f4 13px 14px, #85bef9 14px 15px,
-      #8cc6ff 15px 16px, #93cbff 16px 17px, #99d1ff 17px 18px,
-      #a0d7ff 18px 19px, #a6deff 19px 20px, #abe3ff 20px 21px,
-      #b1e9ff 21px 22px, #b6edff 22px 23px);
-  color: #06131d;
-  box-shadow: none;
-
-}
-
-body[data-theme="aqua"] .theme-lab-group .theme-lab-tabs button.is-selected::after {
-
-  content: "";
-  position: absolute;
-  top: 23px;
-  right: 0;
-  left: 0;
-  width: 100%;
-  height: 6px;
-  background:
-    linear-gradient(to right, #97bee7, #afdcf3 46%, #a4c3e5) 0 0 / 100% 1px no-repeat,
-    linear-gradient(to bottom,
-      #b8d2ef 0 1px, #79aeec 1px 2px, #9ccfff 2px 3px,
-      #bbefff 3px 4px, #6c6c6c 4px 5px, #6c6c6c 5px 6px) 0 1px / 100% 5px no-repeat;
-
-}
-
 /* Aqua-family shared recipe set. Aqua and Snow Leopard consume the same
    control skeleton; every value comes from each theme's own token table, so
    the Jaguar candy and the 10.6 silver chrome stay separate. These selectors
@@ -2836,7 +2776,12 @@ body[data-theme="aqua"] :where(
 
 }
 
-body[data-theme="aqua"] :is(input, textarea, select):focus, body[data-theme="snow-leopard"] :is(input, textarea, select):focus {
+/* :not(.mde-input) — a writing surface is not a field. Its ink is painted by an
+   overlay BEHIND the textarea (50-apps.css), so this opaque focus fill sat on
+   top of the words: in Aqua and Snow Leopard the writer clicked into TeachText,
+   the Question Sheet, the Outline, Section Drafts or the Review Desk and the
+   text went white. The same guard is on the base rules in 60-responsive.css. */
+body[data-theme="aqua"] :is(input, textarea, select):not(.mde-input):focus, body[data-theme="snow-leopard"] :is(input, textarea, select):not(.mde-input):focus {
 
   border: var(--field-focus-border);
   outline: 0;
@@ -2879,12 +2824,6 @@ body[data-theme="aqua"] :is(.theme-lab-sidebar button:disabled, .theme-lab-sideb
   color: #7f7f7f;
   filter: grayscale(1);
   opacity: 0.65;
-}
-
-body[data-theme="snow-leopard"] .theme-lab-tabs button.is-selected {
-
-  border-color: #353b95;
-
 }
 
 body[data-theme="aqua"] .theme-lab-finder-rows > div, body[data-theme="snow-leopard"] .theme-lab-finder-rows > div {

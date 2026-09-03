@@ -730,6 +730,10 @@ window.AISystem6BonsaiCityLoaded = true;
       setArmed(button, Number(button.dataset.bonsaiSpeed) === speed);
     });
     renderStatus();
+    // The four Speed rows in the menu bar are alternatives, and the gauge
+    // buttons above are the only place that said which one is in force. A
+    // player who chose the speed from the menu saw nothing there.
+    if (typeof updateMenuState === "function") updateMenuState();
   }
 
   function currentDate() {
@@ -1945,11 +1949,23 @@ window.AISystem6BonsaiCityLoaded = true;
     }
   }
 
+  // Sound: music/effects/off never had a receipt at all — the choice moved
+  // state.audioMode and the audio engine's own gain, but nothing on screen
+  // said so. setMessage reuses the same labels the menu items already show
+  // (bonsai-translations.js), so this is the product's own status line, not
+  // new copy.
+  const BONSAI_AUDIO_MODE_LABEL_KEYS = Object.freeze({
+    music: "bonsai_audio_music",
+    sfx: "bonsai_audio_sfx",
+    off: "bonsai_audio_off",
+  });
+
   function setAudioMode(mode) {
     if (!["music", "sfx", "off"].includes(mode)) return;
     state.audioMode = mode;
     if (mode !== "off") audioEngine();
     syncAudioMode();
+    setMessage(BONSAI_AUDIO_MODE_LABEL_KEYS[mode]);
   }
 
   function submitDisaster(kind) {
@@ -2187,6 +2203,23 @@ window.AISystem6BonsaiCityLoaded = true;
     }
   }
 
+  // The import report is the honesty gate of the one-way path. The codec
+  // knows what the classic model holds and Bonsai cannot take; without this
+  // the player sees only "imported" and must find the missing facts by
+  // playing. Every warning code the codec emits gets a line, and an unknown
+  // code shows itself rather than disappearing, so a new code can never go
+  // silently unreported.
+  async function reportMicropolisImport(warnings) {
+    const codes = Array.isArray(warnings) ? warnings : [];
+    if (!codes.length) return;
+    const lines = codes.map((code) => {
+      const [name, count] = String(code).split(":");
+      const text = t(`bonsai_micropolis_note_${name.replace(/-/g, "_")}`, Number(count) || 0);
+      return `• ${text}`;
+    });
+    await showSystemModal(`${t("bonsai_micropolis_report_intro")}\n${lines.join("\n")}`, "alert");
+  }
+
   async function importMicropolisRecord(record) {
     const codec = window.AISystem6BonsaiMicropolisCodec;
     if (!codec || !record) return;
@@ -2206,6 +2239,7 @@ window.AISystem6BonsaiCityLoaded = true;
       await writeCityRecord({ id, name, createdAt, updatedAt: createdAt, saveData });
       clearHistory("bonsai_history_cleared_import");
       setMessage("bonsai_status_imported_micropolis");
+      await reportMicropolisImport(imported.warnings);
       await openCityBrowser();
     } catch {
       setMessage("bonsai_status_import_failed");
@@ -2740,7 +2774,7 @@ window.AISystem6BonsaiCityLoaded = true;
       // else goes through the JSON envelope path. The file itself is source
       // data: it is parsed locally and never uploaded anywhere.
       const isSc2 = bytes.length >= 12 && bytes[0] === 0x46 && bytes[1] === 0x4f && bytes[2] === 0x52 && bytes[3] === 0x4d;
-      let decodedState; let importedName; let isMicropolis = false;
+      let decodedState; let importedName; let isMicropolis = false; let micropolisWarnings = null;
       if (isSc2) {
         const imported = await saveCodec().importSc2(bytes);
         decodedState = sim().deserialize(imported.payload);
@@ -2758,6 +2792,7 @@ window.AISystem6BonsaiCityLoaded = true;
           const imported = micropolisCodec.importMicropolis(parsed);
           decodedState = sim().deserialize(imported.payload);
           importedName = imported.name;
+          micropolisWarnings = imported.warnings;
         } else {
           const decoded = await saveCodec().parseAndDecode(text);
           decodedState = decoded.state;
@@ -2771,6 +2806,7 @@ window.AISystem6BonsaiCityLoaded = true;
       await writeCityRecord({ id, name, createdAt, updatedAt: createdAt, saveData });
       clearHistory("bonsai_history_cleared_import");
       setMessage(isSc2 ? "bonsai_status_imported_sc2" : isMicropolis ? "bonsai_status_imported_micropolis" : "bonsai_status_imported");
+      if (isMicropolis) await reportMicropolisImport(micropolisWarnings);
       await openCityBrowser();
     } catch {
       setMessage("bonsai_status_import_failed");
@@ -3254,6 +3290,9 @@ window.AISystem6BonsaiCityLoaded = true;
     openCities: openCityBrowser,
     refreshLanguage,
     isRunning: () => !!state.timer,
+    // Empty while no city is loaded, so the Speed menu marks nothing rather
+    // than claiming a speed that no simulation is running at.
+    currentSpeed: () => (state.current ? String(state.speed) : ""),
     checkpoint,
     debugState,
   });
@@ -3302,7 +3341,14 @@ window.AISystem6BonsaiCityLoaded = true;
   SPEEDS.forEach((speed) => { bonsaiMenuCommands[`speed-${speed.value}`] = () => setSpeed(speed.value); });
 
   const commandsNeedingCity = new Set([
-    "save", "save-as", "export-sc2", "undo", "redo", "report", "budget", "news", "ordinances", "minimap", "disasters-off",
+    // subscribe/extra both call openNews(), which silently returns without a
+    // city (the same guard "news" itself declares below) — without this they
+    // stayed enabled with no city loaded and did nothing when chosen.
+    // Speed with no city loaded set a field on an absent simulation: no loop
+    // to start, no gauge to arm, no date to advance. The four rows stayed
+    // black and did nothing when chosen.
+    ...SPEEDS.map((speed) => `speed-${speed.value}`),
+    "save", "save-as", "export-sc2", "undo", "redo", "report", "budget", "news", "subscribe", "extra", "ordinances", "minimap", "disasters-off",
     "open-graphs", "open-population", "open-industry", "open-neighbors", "open-goals",
     "display-buildings", "display-infrastructure", "display-zones", "display-underground",
     ...OVERLAYS.map((overlay) => `overlay-${overlay}`),
@@ -3335,7 +3381,13 @@ window.AISystem6BonsaiCityLoaded = true;
     // labels; the keys themselves are handled by the shell's window listener
     // (bare digits 1-4 belong to terrain tools through handleMapKey).
     const speedShortcutIds = { 0: "route-question-sheet", 0.25: "route-outline", 1: "route-section-drafts", 4: "route-manuscript" };
-    const speedItems = SPEEDS.map((speed) => item(`speed-${speed.value}`, `bonsai_speed_${speed.id}`, speedShortcutIds[speed.value]));
+    const speedItems = SPEEDS.map((speed) => ({
+      ...item(`speed-${speed.value}`, `bonsai_speed_${speed.id}`, speedShortcutIds[speed.value]),
+      // A distinct key from the gauge's own data-bonsai-speed buttons: the
+      // menu row and the gauge button state the same choice, but only the
+      // gauge is inside .bonsai-speed-controls.
+      dataset: { bonsaiSpeedChoice: String(speed.value) },
+    }));
     window.AISystem6RegisterApplicationMenuSet?.("bonsaiCity", [
       {
         id: "file",

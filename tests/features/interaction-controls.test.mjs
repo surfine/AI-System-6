@@ -98,8 +98,9 @@ test.assertNotIncludes(
 );
 
 test.assertIncludes(windows, ".btn[hidden] {\n  display: none;\n}", "a button hidden through the attribute is actually hidden");
-test.assertIncludes(surfaces, '.view-switch-option:not([aria-pressed="true"]):hover', "view-switch hover only affects the unselected option");
+test.assertIncludes(surfaces, '.view-switch-option:not([aria-pressed="true"]):not([aria-selected="true"]):hover', "view-switch hover only affects the unselected option, in either the toggle-group (aria-pressed) or tab-strip (aria-selected) pattern");
 test.assertIncludes(surfaces, '.view-switch-option[aria-pressed="true"]:hover', "the selected view-switch option stays readable on hover");
+test.assertIncludes(surfaces, '.view-switch-option[aria-selected="true"]:hover', "the selected view-switch tab stays readable on hover");
 
 test.assertIncludes(
   liquid,

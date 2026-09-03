@@ -117,14 +117,44 @@ export function windowApp(name) {
   return windowRegistryRecords()[name]?.app || null;
 }
 
+// A contract that cannot fail is worse than no contract: it prints a pass
+// certificate for work nobody looked at.
+//
+// Two ways to build one were live in this tree. A file can run its assertions
+// and never call finish(), because finish() is the only place the failures are
+// read -- three contracts printed `NO ...` lines and still exited 0, so the
+// suite counted them as passed. A file can also assert nothing at all, because
+// the runner counts files, not checks.
+//
+// The harness closes both. It counts the checks it performs, and an exit hook
+// holds the file to its own contract: finish() must run, and it must have
+// something to report.
 export function createFeatureTest(feature) {
   const failures = [];
+  let assertions = 0;
+  let finished = false;
+
+  process.on("exit", (code) => {
+    // Do not mask a failure the file already declared.
+    if (code !== 0) return;
+    if (!finished) {
+      console.error(`\nNO  ${feature}: the contract never called test.finish(), so ${failures.length} failure(s) went unread.`);
+      process.exitCode = 1;
+      return;
+    }
+    if (!assertions) {
+      console.error(`\nNO  ${feature}: the contract ran zero checks; a pass here proves nothing.`);
+      process.exitCode = 1;
+    }
+  });
 
   function ok(message) {
+    assertions += 1;
     console.log(`OK  ${feature}: ${message}`);
   }
 
   function fail(message) {
+    assertions += 1;
     failures.push(message);
     console.error(`NO  ${feature}: ${message}`);
   }
@@ -155,6 +185,7 @@ export function createFeatureTest(feature) {
   }
 
   function finish() {
+    finished = true;
     if (failures.length) {
       console.error(`\n${feature} feature test failed: ${failures.length} issue(s).`);
       process.exit(1);
@@ -192,8 +223,21 @@ export function readAppSurface(paths = []) {
     "app/features/writing-flow.js",
     "tooling/runtime-manifest.mjs",
   ];
-  return [...new Set([...defaultPaths, ...paths])]
-    .filter((path) => exists(path))
+  // A missing path used to drop out of the surface silently. Twelve contracts
+  // assert what this surface must NOT contain, and every one of those
+  // assertions becomes vacuously true for whatever a rename removed: the
+  // contract still passes, over a surface that no longer holds the file it
+  // was written about. Say it instead.
+  const requested = [...new Set([...defaultPaths, ...paths])];
+  const missing = requested.filter((path) => !exists(path));
+  if (missing.length) {
+    throw new Error(
+      `readAppSurface cannot read ${missing.join(", ")}. `
+      + "A surface with a hole passes every assertNotIncludes written about it. "
+      + "Update the path list in tests/helpers/feature-test-harness.mjs, or pass the file's new name.",
+    );
+  }
+  return requested
     .map((path) => `\n// ===== ${path} =====\n${read(path)}`)
     .join("\n");
 }

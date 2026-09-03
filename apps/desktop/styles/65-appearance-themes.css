@@ -145,6 +145,29 @@ body[data-theme="platinum"] {
   --tdi-tab-active-bg: var(--selection-bg);
   --tdi-tab-active-fg: var(--selection-fg);
   --tdi-tab-active-shadow: inset 1px 1px 0 #ffffff;
+  /* Tier 2 selection states. Unfocused reuses the same #dddddd/#555555 the
+     window itself dims to (body[data-theme="platinum"] .window:not(.is-active)
+     above). Hover is a deliberate no-op: "Platinum carries no hover state"
+     (see --btn-hover-bg above) -- the pair below equals the idle tab exactly.
+     Pressed gets real feedback, matching --btn-active-*. */
+  --tdi-tabs-heading-padding: 4px 8px 2px;
+  --tdi-tabs-heading-fg: #000000;
+  --tdi-tabs-heading-font-size: 11px;
+  --tdi-tabs-heading-letter-spacing: normal;
+  --tdi-tabs-heading-text-transform: none;
+  --tdi-tabs-heading-border-bottom: 1px dotted var(--shade-dark);
+  --tdi-tab-active-unfocused-border: 0;
+  --tdi-tab-active-unfocused-border-bottom: 1px solid #aaaaaa;
+  --tdi-tab-active-unfocused-bg: #dddddd;
+  --tdi-tab-active-unfocused-fg: #555555;
+  --tdi-tab-active-unfocused-shadow: none;
+  --tdi-tab-active-unfocused-small-color: #777777;
+  --tdi-tab-hover-bg: #eeeeee;
+  --tdi-tab-hover-fg: #000000;
+  --tdi-tab-hover-shadow: none;
+  --tdi-tab-pressed-bg: #666666;
+  --tdi-tab-pressed-fg: #ffffff;
+  --tdi-tab-pressed-shadow: inset 1px 1px 0 #333333, inset -1px -1px 0 #999999;
   /* Searcher result table, Sherlock 2 idiom (Mac OS 9 gallery evidence):
      column headers over dense rows in a white list interior, plus the
      rank-mapped relevance bar. The bar paints with currentColor so the
@@ -200,6 +223,10 @@ body[data-theme="platinum"] {
     inset 2px 2px 0 #ffffff,
     inset -1px -1px 0 #777777,
     inset -2px -2px 0 #aaaaaa;
+  /* Owner ruling: Platinum carries no hover state (System 7/8/9 had none on a
+     mouse-only Mac) -- this token is inherited plumbing from the shared .btn
+     rule, not a deliberate Platinum hover; do not add new hover material
+     here or to any Platinum control. */
   --btn-hover-bg: #dddddd;
   --btn-hover-fg: #000000;
   --btn-hover-shadow:
@@ -212,6 +239,16 @@ body[data-theme="platinum"] {
   --btn-active-shadow: inset 1px 1px 0 #333333, inset -1px -1px 0 #999999;
   --btn-default-bg: var(--btn-bg);
   --btn-default-shadow: var(--btn-shadow);
+  /* Platinum's default button is the ordinary button (no Aqua/Snow Leopard
+     blue-highlight recipe) -- these answer the same shared tokens other eras
+     use for their own default/toolbar material, aliased to what Platinum
+     already carries above rather than inventing new colour. */
+  --btn-default-fg: var(--btn-hover-fg);
+  --btn-default-active-bg: var(--btn-active-bg);
+  --btn-default-active-fg: var(--btn-active-fg);
+  --btn-active-border-color: var(--btn-border-color);
+  --app-toolbar-bg: var(--toolbar-bg);
+  --app-toolbar-border-bottom: 1px solid var(--btn-border-color);
   --field-bg: #ffffff;
   --field-focus-bg: #ffffff;
   --field-border: 1px solid #000000;
@@ -368,25 +405,6 @@ body[data-theme="platinum"] {
   --theme-lab-disabled-popup-fg: #777777;
   --theme-lab-disabled-popup-border-color: #888888;
   --theme-lab-disabled-popup-shadow: none;
-  --theme-lab-control-margin-top: 8px;
-  --theme-lab-control-font-family: var(--theme-ui-font);
-  --theme-lab-control-font-size: var(--system-control-size);
-  --theme-lab-control-font-weight: 700;
-  --theme-lab-segmented-gap: 4px;
-  --theme-lab-segmented-button-min-height: 20px;
-  --theme-lab-segmented-button-height: 20px;
-  --theme-lab-segmented-button-padding: 1px 5px;
-  --theme-lab-segmented-button-border: 1px solid #000000;
-  --theme-lab-segmented-button-border-right: 1px solid #000000;
-  --theme-lab-segmented-last-border-right: 1px solid #000000;
-  --theme-lab-segmented-button-radius: 0;
-  --theme-lab-segmented-button-bg: #dddddd;
-  --theme-lab-segmented-button-shadow: var(--btn-shadow);
-  --theme-lab-segmented-hover-bg: #dddddd;
-  --theme-lab-segmented-line-height: 14px;
-  --theme-lab-segmented-selected-bg: #666666;
-  --theme-lab-segmented-selected-fg: #ffffff;
-  --theme-lab-segmented-selected-shadow: var(--btn-active-shadow);
   --tab-strip-gap: 0;
   --tab-strip-padding: 0 10px;
   --tab-strip-border-bottom: 0;
@@ -472,7 +490,6 @@ body[data-theme="platinum"] {
   --theme-lab-list-icon-display: block;
   --theme-lab-list-icon-size: 16px;
   --theme-lab-list-icon-image: url("./assets/themes/platinum/folder-32.svg");
-  --theme-lab-list-scrollbar-display: grid;
   --theme-lab-list-scrollbar-width: 16px;
   --theme-lab-layer-columns: minmax(0, 1fr) minmax(0, 1fr);
   --theme-lab-layer-gap: 10px;
@@ -508,53 +525,21 @@ body[data-theme="platinum"] {
   --theme-lab-sheet-display: none;
   --theme-lab-progress-row-gap: 8px;
   --theme-lab-progress-row-margin-top: 10px;
-  --theme-lab-progress-height: 12px;
-  --theme-lab-progress-padding: 0;
-  --theme-lab-progress-border: 1px solid #000000;
-  --theme-lab-progress-radius: 0;
-  --theme-lab-progress-bg: #bbbbbb;
-  --theme-lab-progress-shadow: 1px 1px #ffffff, -1px -1px #aaaaaa, inset 1px 1px #888888, inset -1px -1px #dddddd;
-  --theme-lab-progress-value-border-right: 1px solid #000000;
-  --theme-lab-progress-value-radius: 0;
-  --theme-lab-progress-value-bg: linear-gradient(to bottom, #333399, #6666cc, #9999ff, #ccccff, #eeeeee, #ccccff, #9999ff, #6666cc, #333399, #000088);
-  --theme-lab-progress-value-shadow: inset 1px 0 #6666cc, inset 2px 0 rgba(255, 255, 255, 0.2), inset -1px 0 #000055, inset -2px 0 #333399, 1px 0 #555555, 2px 0 #888888;
-  --theme-lab-scrollbar-border-left: 1px solid #000000;
-  --theme-lab-scrollbar-bg: #aaaaaa;
-  --theme-lab-scrollbar-track-border: 1px solid #000000;
-  --theme-lab-scrollbar-track-border-width: 0 0 1px;
-  --theme-lab-scrollbar-track-bg: #aaaaaa;
-  --theme-lab-scrollbar-track-shadow: inset 1px 1px #777777, inset 2px 2px #888888, inset -1px -1px #cccccc, inset -2px -2px #bbbbbb;
-  --theme-lab-scrollbar-thumb-top: 3px;
-  --theme-lab-scrollbar-thumb-right: 0;
-  --theme-lab-scrollbar-thumb-left: 0;
-  --theme-lab-scrollbar-thumb-min-height: 36px;
-  --theme-lab-scrollbar-thumb-height: 36px;
-  --theme-lab-scrollbar-thumb-border: 1px solid #000000;
-  --theme-lab-scrollbar-thumb-border-width: 1px 0;
-  --theme-lab-scrollbar-thumb-radius: 0;
-  --theme-lab-scrollbar-thumb-bg: #9999ff;
-  --theme-lab-scrollbar-thumb-shadow: inset 1px 1px #ccccff, inset -1px -1px #6666cc, 0 1px #777777, 0 2px #888888;
-  --theme-lab-scrollbar-thumb-active-bg: #6666cc;
-  --theme-lab-scrollbar-thumb-active-shadow: inset 1px 1px #9999ff, inset -1px -1px #333399, 0 1px #777777, 0 2px #888888;
-  --theme-lab-scrollbar-thumb-grip-content: "";
-  --theme-lab-scrollbar-thumb-grip-width: 8px;
-  --theme-lab-scrollbar-thumb-grip-height: 8px;
-  --theme-lab-scrollbar-thumb-grip-bg: repeating-linear-gradient(180deg, #eeeeee 0 1px, transparent 1px 2px), repeating-linear-gradient(180deg, #ccccff 0 1px, transparent 1px 2px), repeating-linear-gradient(180deg, transparent 0 1px, #333399 1px 2px);
-  --theme-lab-scrollbar-thumb-active-grip-bg: repeating-linear-gradient(180deg, #ccccff 0 1px, transparent 1px 2px), repeating-linear-gradient(180deg, #9999ff 0 1px, transparent 1px 2px), repeating-linear-gradient(180deg, transparent 0 1px, #000055 1px 2px);
-  --theme-lab-scrollbar-button-border: 1px solid #000000;
-  --theme-lab-scrollbar-button-border-width: 0 0 1px;
-  --theme-lab-scrollbar-button-bg: #dddddd;
-  --theme-lab-scrollbar-button-shadow: inset 1px 1px #ffffff, inset -1px -1px #bbbbbb;
-  --theme-lab-scrollbar-button-active-bg: #777777;
-  --theme-lab-scrollbar-button-active-shadow: none;
-  --theme-lab-scrollbar-arrow-width: 8px;
-  --theme-lab-scrollbar-arrow-height: 4px;
-  --theme-lab-scrollbar-arrow-side-border: 0;
-  --theme-lab-scrollbar-decrement-border: 0;
-  --theme-lab-scrollbar-increment-border: 0;
-  --theme-lab-scrollbar-decrement-image: url("./assets/vendor/classic-stylesheets/macos9/arrow-up.svg");
-  --theme-lab-scrollbar-increment-image: url("./assets/vendor/classic-stylesheets/macos9/arrow-down.svg");
-  --theme-lab-scrollbar-arrow-transform: translate(calc(-50% - 1px), calc(-50% - 1px));
+  /* Mac OS 9 barber-pole progress: the base sheet owns the recipe, this hands
+     it the period numbers -- a black-outlined bevel well and a blue-violet
+     fill with its own inset chord. */
+  --progress-height: 12px;
+  --progress-padding: 0;
+  --progress-border-color: #000000;
+  --progress-radius: 0;
+  --progress-bg: #bbbbbb;
+  --progress-shadow: 1px 1px #ffffff, -1px -1px #aaaaaa, inset 1px 1px #888888, inset -1px -1px #dddddd;
+  --progress-fill-border-right: 1px solid #000000;
+  --progress-fill-radius: 0;
+  --progress-fill-bg: linear-gradient(to bottom, #333399, #6666cc, #9999ff, #ccccff, #eeeeee, #ccccff, #9999ff, #6666cc, #333399, #000088);
+  --progress-fill-shadow: inset 1px 0 #6666cc, inset 2px 0 rgba(255, 255, 255, 0.2), inset -1px 0 #000055, inset -2px 0 #333399, 1px 0 #555555, 2px 0 #888888;
+  --progress-fill-active-bg: var(--progress-fill-bg);
+  --progress-fill-active-size: 100% 100%;
   --theme-lab-toolbar-min-height: 20px;
   --theme-lab-toolbar-gap: 0;
   --theme-lab-toolbar-padding: 1px 6px;
@@ -1201,9 +1186,15 @@ body[data-theme="yosemite"] {
      Flattening the sprite is how the era does it. */
   --titlebar-inactive-control-filter: contrast(0) brightness(1.66);
   /* The base sheet owns the progress recipe; the era supplies its numbers. */
-  --theme-lab-progress-height: 12px;
-  --theme-lab-progress-radius: 6px;
-  --theme-lab-progress-value-radius: 5px;
+  --progress-height: 12px;
+  --progress-radius: 6px;
+  --progress-border-color: rgba(0, 0, 0, 0.18);
+  --progress-bg: #e5e5e5;
+  --progress-fill-radius: 5px;
+  --progress-fill-bg: linear-gradient(#4c97fe, #0564e3);
+  --progress-fill-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26);
+  --progress-fill-active-bg: var(--progress-fill-bg);
+  --progress-fill-active-size: 100% 100%;
   /* Evidence boundary: vinceliuice/Yosemite-gtk-theme 03b6f721 provides the
      surface hierarchy, 36/26/22px control relationships, #0e6bff selection,
      6/5px radii and active/backdrop states. Period pure-CSS window studies
@@ -1284,18 +1275,13 @@ body[data-theme="yosemite"] {
   --theme-lab-list-icon-size: 16px;
   --theme-lab-list-icon-image: url("./assets/themes/yosemite/folder-16.svg");
   --theme-lab-list-document-image: url("./assets/themes/yosemite/document-16.svg");
-  /* Theme Lab Finder surface renders the full 10.10 window: 22px title bar
-     with 12px traffic lights, the 36px unified toolbar, status, content. */
+  /* Theme Lab Finder surface renders the full 10.10 window: the product's own
+     title bar, the 36px unified toolbar, status, content. */
   --theme-lab-finder-window-display: block;
   --theme-lab-finder-window-border: 1px solid #afafaf;
   --theme-lab-finder-window-radius: 5px 5px 0 0;
   --theme-lab-finder-window-bg: #ffffff;
   --theme-lab-finder-window-shadow: 0 4px 10px rgba(0, 0, 0, 0.26);
-  --theme-lab-finder-window-titlebar-display: flex;
-  --theme-lab-finder-window-titlebar-height: 22px;
-  --theme-lab-finder-window-titlebar-border: 0;
-  --theme-lab-finder-window-titlebar-bg: var(--system-titlebar-active-bg);
-  --theme-lab-finder-window-titlebar-shadow: none;
   --theme-lab-finder-status-display: flex;
   --theme-lab-finder-status-height: 20px;
   --theme-lab-finder-status-border-top: 1px solid #d5d5d5;
@@ -1455,6 +1441,29 @@ body[data-theme="yosemite"] {
   --selection-fg: #ffffff;
   --sidebar-selection-bg: var(--selection-bg);
   --sidebar-selection-fg: #ffffff;
+  /* Tier 2 selection states. Yosemite has no --tdi-tab-* recipe of its own
+     yet (the rail still paints with the System 6 baseline), so these read
+     against that plain tab rather than a flat 10.10 one; a flat --tdi-tab-*
+     recipe for Yosemite is separate, pre-existing scope this lane did not
+     open. Values stay in the era's own quiet, low-saturation register. */
+  --tdi-tabs-heading-padding: 10px 12px 4px;
+  --tdi-tabs-heading-fg: #8a8a8f;
+  --tdi-tabs-heading-font-size: 11px;
+  --tdi-tabs-heading-letter-spacing: 0.02em;
+  --tdi-tabs-heading-text-transform: uppercase;
+  --tdi-tabs-heading-border-bottom: 0;
+  --tdi-tab-active-unfocused-border: 0;
+  --tdi-tab-active-unfocused-border-bottom: 0;
+  --tdi-tab-active-unfocused-bg: rgba(0, 0, 0, 0.06);
+  --tdi-tab-active-unfocused-fg: var(--ink);
+  --tdi-tab-active-unfocused-shadow: none;
+  --tdi-tab-active-unfocused-small-color: rgba(0, 0, 0, 0.5);
+  --tdi-tab-hover-bg: rgba(0, 0, 0, 0.04);
+  --tdi-tab-hover-fg: var(--ink);
+  --tdi-tab-hover-shadow: none;
+  --tdi-tab-pressed-bg: rgba(0, 0, 0, 0.09);
+  --tdi-tab-pressed-fg: var(--ink);
+  --tdi-tab-pressed-shadow: none;
   /* Yosemite keeps the browser visible as a flat, lightly separated source
      sidebar; only the material changes, not Scrapbook selection behavior. */
   --scrapbook-list-display: block;
@@ -1627,14 +1636,6 @@ body[data-theme="yosemite"] {
   --tab-bg: #f6f6f6;
   --tab-hover-bg: #ffffff;
   --tab-active-bg: #ffffff;
-  /* 10.10 segmented control: white segments with hairline borders; the
-     selected segment is the blue-gray fill measured from the System
-     Preferences General capture (#7fa7d1), not a pressed inset. */
-  --theme-lab-segmented-button-bg: #f7f7f7;
-  --theme-lab-segmented-hover-bg: #ffffff;
-  --theme-lab-segmented-selected-bg: linear-gradient(#8bb0da, #79a3ce);
-  --theme-lab-segmented-selected-fg: #ffffff;
-  --theme-lab-segmented-selected-shadow: none;
   --system-check-size: 15px;
   --system-radio-size: 15px;
   --theme-lab-button-min-width: 70px;
@@ -2162,7 +2163,9 @@ body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) :where(
 
 }
 
-body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) :is(input, textarea, select):focus  {
+/* :not(.mde-input) — a writing surface is not a field; its ink is painted by an
+   overlay BEHIND the textarea (50-apps.css), so a focus fill here covers it. */
+body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) :is(input, textarea, select):not(.mde-input):focus  {
 
   border: var(--field-focus-border);
   outline: 0;
@@ -2445,16 +2448,6 @@ body[data-theme="yosemite"] .menu-popover {
 body[data-theme="yosemite"] .theme-lab-split-view {
   background: var(--desktop-surface);
   background-size: cover;
-}
-
-body[data-theme="yosemite"] .theme-lab-progress {
-  border-color: rgba(0, 0, 0, 0.18);
-  background: #e5e5e5;
-}
-
-body[data-theme="yosemite"] .theme-lab-progress span {
-  background: linear-gradient(#4c97fe, #0564e3);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26);
 }
 
 @media (prefers-reduced-transparency: reduce) {

@@ -812,7 +812,12 @@ window.AISystem6MicropolisLoaded = true;
   }
 
   async function deleteMicropolisCity(id) {
-    const confirmed = await showSystemModal(t("micropolis_delete_city_confirm"), "confirm", { danger: true });
+    // danger without defaultAction was the one place this pairing was
+    // dropped (bonsai-city.js, documents-chat.js, chat-messages.js all keep
+    // Cancel as the default next to danger:true) — now that the confirm's
+    // Enter reaches its real default button, an unpaired danger dialog would
+    // delete the city on a bare Enter.
+    const confirmed = await showSystemModal(t("micropolis_delete_city_confirm"), "confirm", { defaultAction: "cancel", danger: true });
     if (confirmed !== "yes" && confirmed !== "ok") return;
     try {
       await withMicropolisCityStore("readwrite", (store) => idbRequest(store.delete(id)));
@@ -990,21 +995,37 @@ window.AISystem6MicropolisLoaded = true;
 
   // --- commands / public API -------------------------------------------------
 
-  function setMicropolisSpeed(speedName) {
+  function micropolisSpeedValues() {
     const engine = micropolisEngine();
-    const sim = micropolisState.sim;
-    if (!engine || !sim) return;
-    const speeds = {
+    if (!engine) return null;
+    return {
       slow: engine.Simulation.SPEED_SLOW,
       med: engine.Simulation.SPEED_MED,
       fast: engine.Simulation.SPEED_FAST,
     };
-    const speed = speeds[speedName];
+  }
+
+  // The Speed menu is a set of three alternatives, and only one of them is in
+  // force. Without this the menu named the three speeds and marked none of
+  // them, so choosing Medium after Fast changed the simulation and told the
+  // player nothing: the status line reads "Ready" for all three.
+  function currentMicropolisSpeedName() {
+    const speeds = micropolisSpeedValues();
+    if (!speeds || !micropolisState.sim) return "";
+    return Object.keys(speeds).find((name) => speeds[name] === micropolisState.speed) || "";
+  }
+
+  function setMicropolisSpeed(speedName) {
+    const engine = micropolisEngine();
+    const sim = micropolisState.sim;
+    if (!engine || !sim) return;
+    const speed = micropolisSpeedValues()?.[speedName];
     if (typeof speed !== "number") return;
     micropolisState.speed = speed;
     sim.setSpeed(speed);
     setMicropolisStatus("micropolis_status_ready");
     startMicropolisLoop();
+    if (typeof updateMenuState === "function") updateMenuState();
   }
 
   function toggleMicropolisPause() {
@@ -1021,11 +1042,57 @@ window.AISystem6MicropolisLoaded = true;
     startMicropolisLoop();
   }
 
+  // Upstream engine bug, confirmed against graememcc/micropolisJS itself (not
+  // just this vendored bundle): DisasterManager.prototype.makeEarthquake
+  // calls this.doEarthquake(strength) as its first line, but doEarthquake is
+  // never defined anywhere in that project — a `git grep doEarthquake` on the
+  // upstream repo turns up only this one call site. The actual earthquake
+  // effect (the rubble/fire tile loop) lives entirely in makeEarthquake
+  // itself, after this dead call, so the shim below only needs to absorb the
+  // missing hook, not reimplement the disaster. Patched here, once per sim
+  // instance, rather than in app/vendor/micropolis/micropolis-engine.js —
+  // that file is vendored GPL source and is not ours to edit.
+  function ensureMicropolisEarthquakeShim(sim) {
+    const disasterManager = sim && sim.disasterManager;
+    if (disasterManager && typeof disasterManager.doEarthquake !== "function") {
+      disasterManager.doEarthquake = () => {};
+    }
+  }
+
+  // Mirrors the same scan DisasterManager.prototype.makeMeltdown runs
+  // upstream (see engine.js: a plain width/height loop for a NUCLEAR tile).
+  // Reading it here first lets a city with no power plant get an honest
+  // status line instead of the menu command silently doing nothing — a
+  // meltdown control is always enabled, so without this check it looks able
+  // and produces no observable effect (CLAUDE.md "System Integrity
+  // guardrails": a control must never do that).
+  function micropolisHasNuclearPlant(sim) {
+    const engine = micropolisEngine();
+    const map = sim && sim._map;
+    const nuclearTile = engine && engine.TileValues && engine.TileValues.NUCLEAR;
+    if (!map || typeof nuclearTile !== "number") return false;
+    for (let x = 0; x < map.width - 1; x += 1) {
+      for (let y = 0; y < map.height - 1; y += 1) {
+        if (map.getTileValue(x, y) === nuclearTile) return true;
+      }
+    }
+    return false;
+  }
+
   const MICROPOLIS_DISASTERS = Object.freeze({
     fire: (sim) => sim.disasterManager.makeFire(),
     flood: (sim) => sim.disasterManager.makeFlood(),
-    earthquake: (sim) => sim.disasterManager.makeEarthquake(),
-    meltdown: (sim) => sim.disasterManager.makeMeltdown(),
+    earthquake: (sim) => {
+      ensureMicropolisEarthquakeShim(sim);
+      sim.disasterManager.makeEarthquake();
+    },
+    meltdown: (sim) => {
+      if (!micropolisHasNuclearPlant(sim)) {
+        setMicropolisStatus("micropolis_status_no_nuclear_plant");
+        return;
+      }
+      sim.disasterManager.makeMeltdown();
+    },
     crash: (sim) => sim.disasterManager.makeCrash(),
     tornado: (sim) => sim.spriteManager.makeTornado(),
     monster: (sim) => sim.spriteManager.makeMonster(),
@@ -1106,6 +1173,12 @@ window.AISystem6MicropolisLoaded = true;
       labelKey,
       conditionId: `micropolis-${command}`,
     });
+    // The check mark is what tells the player which of the three speeds is
+    // running; window-manager.js reads this dataset key in updateMenuState().
+    const speedItem = (name, labelKey) => ({
+      ...item(`speed-${name}`, labelKey),
+      dataset: { micropolisSpeed: name },
+    });
     const separator = { type: "separator" };
     const disasters = ["fire", "flood", "tornado", "earthquake", "monster", "crash", "meltdown"];
     window.AISystem6RegisterApplicationMenuSet?.("micropolis", [
@@ -1139,9 +1212,9 @@ window.AISystem6MicropolisLoaded = true;
         items: [
           item("pause", "micropolis_pause"),
           separator,
-          item("speed-slow", "micropolis_speed_slow"),
-          item("speed-med", "micropolis_speed_med"),
-          item("speed-fast", "micropolis_speed_fast"),
+          speedItem("slow", "micropolis_speed_slow"),
+          speedItem("med", "micropolis_speed_med"),
+          speedItem("fast", "micropolis_speed_fast"),
         ],
       },
     ]);
@@ -1203,6 +1276,7 @@ window.AISystem6MicropolisLoaded = true;
     runMenuCommand: runMicropolisMenuCommand,
     hasCity: () => !!micropolisState.sim,
     isPaused: () => !!micropolisState.sim && micropolisState.sim.isPaused(),
+    currentSpeedName: currentMicropolisSpeedName,
     isDirty: () => micropolisState.dirty,
     serializeCity: serializeMicropolisCity,
     deserializeSaveData: deserializeMicropolisSaveData,

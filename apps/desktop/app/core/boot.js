@@ -158,8 +158,12 @@ function openBootRecovery() {
         return;
       }
       const project = recoveryProjectsCache.find((entry) => entry.id === selectedRecoveryProjectId);
-      setNote(t("boot_recovery_exported"));
-      downloadJsonFile(bundle, `${project?.name || "Project"} Project Hard Disk Backup`);
+      // "Backup verified." is true as soon as the bundle passes above - but
+      // downloadJsonFile's own dispatch is a separate step that can still
+      // refuse (e.g. no File constructor), so check it before staying silent
+      // about a download that never started.
+      const dispatched = downloadJsonFile(bundle, `${project?.name || "Project"} Project Hard Disk Backup`);
+      setNote(dispatched ? t("boot_recovery_exported") : t("boot_recovery_export_failed"));
     } catch {
       setNote(t("boot_recovery_export_failed"));
     }
@@ -178,13 +182,18 @@ function openBootRecovery() {
       handleAction("reset-ai-connection");
     } catch {}
   };
-  document.getElementById("boot-recovery-retry").onclick = () => {
+  const retryButton = document.getElementById("boot-recovery-retry");
+  retryButton.onclick = () => {
     dialog.close();
     window.location.reload();
   };
   renderStatus();
   if (typeof playSystemSound === "function") playSystemSound("alert");
   dialog.showModal();
+  // Native initial focus lands on the first button in the row (Export),
+  // not the one marked default (Retry) — see the same fix in
+  // write-lease.js and modal.js's showSystemModal.
+  retryButton.focus();
 }
 
 function startupTaskWithTimeout(promise, label, ms = 1600) {
@@ -204,6 +213,34 @@ function startupTaskWithTimeout(promise, label, ms = 1600) {
   ]).finally(() => clearTimeout(timeoutId));
 }
 
+// Non-essential boot step: a per-feature initializer (one window's render,
+// one Desk Accessory, one UI wiring call) must not blank the rest of the
+// desk if it throws. This runs the step, and on failure records the failure
+// where a person can read it (Notification Center) and where a developer can
+// grep it (console.error) instead of letting the throw escape to boot()'s
+// outer catch, which would abort every step after it. Essential steps
+// (write-lease acquisition, desk-state load, the boot sequence itself) are
+// deliberately left outside this wrapper: their failure is supposed to stop
+// boot and show the existing Sad Mac recovery screen.
+// `notify` defaults to the real Notification Center push, but loadDeskState()
+// restores the persisted notification list wholesale (a splice-replace, not a
+// merge) — a notification pushed before that point is silently overwritten a
+// moment later. Steps that run earlier than loadDeskState() pass a queuing
+// notify instead (see earlyBootFailures below) so their trace survives.
+async function runBootStep(label, fn, notify = defaultBootStepNotify) {
+  try {
+    return await fn();
+  } catch (error) {
+    console.error(`AI System 6 boot: "${label}" failed and was skipped.`, error);
+    notify(t("lazy_load_failed", label, error?.message || String(error)));
+    return undefined;
+  }
+}
+
+function defaultBootStepNotify(message) {
+  if (typeof pushSystemNotification === "function") pushSystemNotification(message, { state: "failed" });
+}
+
 async function boot() {
   if (bootInProgress) return false;
   bootInProgress = true;
@@ -221,20 +258,31 @@ async function boot() {
       document.getElementById("boot-without-session")?.addEventListener("click", () => startBootWithoutSession());
       document.getElementById("boot-recovery")?.addEventListener("click", () => openBootRecovery());
     }
-    updateClock();
+    // Every step until loadDeskState() runs before that call restores the
+    // persisted Notification Center list wholesale, which would otherwise
+    // erase a notification pushed here a moment after it lands — so these
+    // steps queue their failure and it is pushed for real right after.
+    const earlyBootFailures = [];
+    const queueEarlyBootFailure = (message) => earlyBootFailures.push(message);
+    await runBootStep("Clock", () => updateClock(), queueEarlyBootFailure);
+    // Each of these is one feature's own preload; one failing (a bad script,
+    // an offline fetch) must not stall the others or abort boot, so every
+    // entry carries its own catch that still leaves a trace.
     await Promise.all([
-      ensureAlarmClockModule(),
-      ensureProjectCdPrintModule(),
-      [ensureContextGistModule, ensureDocMapSourcePolicyModule, ensureUserRecoveryMessagesModule, ensureDocumentRolePolicyModule].forEach((load) => load().catch(() => {})),
-      ensurePromptFilesData().catch(() => {}),
-      ensureLanguageFor(currentLanguage).catch(() => {}),
+      runBootStep(t("alarm_clock"), () => ensureAlarmClockModule(), queueEarlyBootFailure),
+      runBootStep(t("project_cd"), () => ensureProjectCdPrintModule(), queueEarlyBootFailure),
+      ...[ensureContextGistModule, ensureDocMapSourcePolicyModule, ensureUserRecoveryMessagesModule, ensureDocumentRolePolicyModule]
+        .map((load) => load().catch((error) => console.warn("AI System 6 boot: a context/policy module failed to load.", error))),
+      ensurePromptFilesData().catch((error) => console.warn("AI System 6 boot: prompt files data failed to load.", error)),
+      ensureLanguageFor(currentLanguage).catch((error) => console.warn("AI System 6 boot: language table failed to load.", error)),
     ]);
     // Clio's static first paint is plain HTML; load Markdown in the background
     // and rely on the escaped-text fallback until it arrives.
     ensureMarkdownParser().catch(() => {});
-    initializeAlarmClock();
-    loadAppVersion();
+    await runBootStep(t("alarm_clock"), () => initializeAlarmClock(), queueEarlyBootFailure);
+    await runBootStep("Version", () => loadAppVersion(), queueEarlyBootFailure);
     await loadDeskState();
+    earlyBootFailures.forEach(defaultBootStepNotify);
     // A saved setting may have switched the active language away from the
     // system default; make sure its table is present before the first paint.
     // A failed fetch degrades to key fallbacks rather than stalling boot.
@@ -244,33 +292,36 @@ async function boot() {
     if (window.AISystem6DerivedIndexQueue) {
       await startupTaskWithTimeout(window.AISystem6DerivedIndexQueue.restore(), "derivedIndexQueue", 3500);
     }
-    configurePublicLmStudioControls();
-    if (window.AISystem6DocMapLoaded) syncDocMapLayoutControls();
+    await runBootStep(t("local_model"), () => configurePublicLmStudioControls());
+    if (window.AISystem6DocMapLoaded) await runBootStep(t("docmap"), () => syncDocMapLayoutControls());
     applyLanguage();
-    initSystemSelectControls();
-    initSharedControlBehaviors();
-    hydrateSystemIcons();
-    renderProjectDisks();
-    renderProjectReferences();
-    renderScraps();
-    renderTrash();
-    renderDocuments();
-    renderMountedTextDisk();
-    renderProjectCd();
+    await runBootStep("System controls", () => initSystemSelectControls());
+    await runBootStep("System controls", () => initSharedControlBehaviors());
+    await runBootStep("System icons", () => hydrateSystemIcons());
+    // Each Finder-style window paints on its own: a corrupt record in one
+    // (say, Trash) must not blank the others, so every render call is its own
+    // step rather than one shared try/catch around the whole list.
+    await runBootStep(t("projects"), () => renderProjectDisks());
+    await runBootStep(t("references"), () => renderProjectReferences());
+    await runBootStep(t("scrapbook"), () => renderScraps());
+    await runBootStep(t("trash"), () => renderTrash());
+    await runBootStep(t("documents"), () => renderDocuments());
+    await runBootStep(t("mounted_text_disk"), () => renderMountedTextDisk());
+    await runBootStep(t("project_cd"), () => renderProjectCd());
     // Searcher paints itself when its window opens (openWindow loads the lazy
     // module first); startup must not reach into it, or the module is no longer
     // lazy.
-    loadActiveProjectReferences();
-    renderPipeline();
-    applyWritingToolsViewMode();
-    updateLocalModelState({ selected: !!modelInput.value.trim() });
+    await runBootStep(t("references"), () => loadActiveProjectReferences());
+    await runBootStep("Writing Flow pipeline", () => renderPipeline());
+    await runBootStep(t("writing_tools"), () => applyWritingToolsViewMode());
+    await runBootStep(t("local_model"), () => updateLocalModelState({ selected: !!modelInput.value.trim() }));
     if (localLmStudioConnectionEnabled) {
       startupTaskWithTimeout(connectLocalLmStudio({ toggle: false, silent: true }), "connectLocalLmStudio");
     } else {
       renderLocalConnectionStatus("local_connection_waiting");
     }
-    refreshImporterStatus();
-    initDragAndDrop();
+    await runBootStep("File Floppy import status", () => refreshImporterStatus());
+    await runBootStep("Drag and drop", () => initDragAndDrop());
 
     // A true first launch opens ClioTalk, but recoverable work still wins.
     // Restored chat history re-renders Markdown messages, so the parser must
@@ -286,15 +337,17 @@ async function boot() {
     // Someone who wrote a paragraph is not on first launch, whatever the flag
     // says. Replay remains available later without replacing the saved scene.
     if (!clioOnboardingCompleted && !resumedWorkingSession) {
-      openStartupItems();
+      await runBootStep("Startup items", () => openStartupItems());
     } else if (writerMode) {
-      await enterWriterMode();
+      await runBootStep("Writer Mode", () => enterWriterMode());
     } else if (!resumedWorkingSession) {
-      openStartupItems();
+      await runBootStep("Startup items", () => openStartupItems());
     }
     if (window.AISystem6LocalLMStudio?.isSafariHttpLocalMode?.()) {
-      openWindow("control");
-      setControlTab("local");
+      await runBootStep(t("local_model"), () => {
+        openWindow("control");
+        setControlTab("local");
+      });
     }
 
     updateMenuState();
@@ -303,19 +356,21 @@ async function boot() {
     installApplicationLifecycleWatch();
     await runBootSequence();
     document.body.dataset.appReady = "ready";
+    // This timer fires after boot() has already returned, so nothing here is
+    // inside boot()'s own try/catch any more — an uncaught throw in this
+    // callback would be genuinely invisible. Each step gets its own
+    // runBootStep for the same reason the steps above do.
     setTimeout(() => {
-      scheduleDesktopMaintenance("boot");
-      applyControlStripState({ silent: true });
-      ensureScriptingModule()
-        .then(() => {
-          if (!getWindow("applications")?.classList.contains("is-hidden")) renderStaticFinderWindow("applications");
-        })
-        .catch(() => {});
+      runBootStep("Desktop maintenance", () => scheduleDesktopMaintenance("boot"));
+      runBootStep(t("control_strip"), () => applyControlStripState({ silent: true }));
+      runBootStep("Applications window", () => ensureScriptingModule().then(() => {
+        if (!getWindow("applications")?.classList.contains("is-hidden")) renderStaticFinderWindow("applications");
+      }));
     }, 8000);
     if (typeof revealMultiFinderSwitcherHint === "function") revealMultiFinderSwitcherHint();
     // Once the desktop is actually on screen: this one measures whether the
     // icon column wrapped, so it needs the column placed, not merely present.
-    syncIconColumnDensity?.();
+    await runBootStep("Desktop icon layout", () => syncIconColumnDensity?.());
     setInterval(updateClock, 1000);
     startLocalModelMonitor();
   } catch (error) {

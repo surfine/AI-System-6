@@ -741,6 +741,12 @@ function showWriteLeaseDialog({ lost = false, denied = false } = {}) {
   }
   if (typeof playSystemSound === "function") playSystemSound("alert");
   dialog.showModal();
+  // showModal()'s own initial-focus algorithm lands on the first focusable
+  // descendant in tree order (readOnlyButton) regardless of which button
+  // carries the "default" class in the HTML — the same mismatch fixed in
+  // modal.js's showSystemModal. Focus the button the dialog actually marks
+  // default so Enter fires it, not whichever button happens to come first.
+  takeoverButton.focus();
   return true;
 }
 

@@ -14,6 +14,7 @@ internal/archive/runtime-legacy/
 /apps/desktop/styles.soundscape.css
 /apps/desktop/styles.liquid-cover.css
 /apps/desktop/styles.image-prompt-studio.css
+/apps/desktop/styles.clio-paint.css
 apps/desktop/app/vendor/markmap/*.js
 .venv-markitdown/
 .venv-markitdown-trim/
@@ -115,3 +116,7 @@ platform/macos/native/nohup.out
 .wrangler/
 # j-space controller ledger (per-task state, never committed)
 .jspace/
+# execution-based control-census reports (tooling/control-census.mjs); the
+# committed ratchet ceiling lives in tooling/control-census-baseline.json
+internal/evidence/drafts/control-census/
+HANDOFF.md

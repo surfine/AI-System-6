@@ -591,7 +591,9 @@ body.is-resizing-tdi {
   color: var(--tdi-tab-close-fg);
   padding: 0;
   transform: var(--tdi-tab-close-transform);
-  z-index: var(--z-local-control);
+  /* No stacking token needed: .tdi-tab (its only sibling in .tdi-tab-wrap)
+     is static, so this absolutely positioned close button already paints
+     above it by default. */
   font-family: var(--title-font);
   font-size: var(--tdi-tab-close-font-size);
   line-height: var(--tdi-tab-close-line-height);
@@ -705,7 +707,62 @@ body.is-resizing-tdi {
 
 .tdi-tab.is-active small {
   color: var(--tdi-tab-active-small-color);
-}.reader-content {
+}
+
+/* Tier 2: selected-but-window-unfocused. The tab stays marked as the open
+   document, but the containing window is not the frontmost one -- same
+   convention as the title bar and grow box dimming elsewhere (.window). */
+.window:not(.is-active) .tdi-tab.is-active {
+  border: var(--tdi-tab-active-unfocused-border);
+  border-bottom: var(--tdi-tab-active-unfocused-border-bottom);
+  background: var(--tdi-tab-active-unfocused-bg);
+  color: var(--tdi-tab-active-unfocused-fg);
+  box-shadow: var(--tdi-tab-active-unfocused-shadow);
+}
+
+.window:not(.is-active) .tdi-tab.is-active small {
+  color: var(--tdi-tab-active-unfocused-small-color);
+}
+
+/* Tier 2: hover / pressed feedback on a row that is not the open document.
+   Hover and press use separate token pairs so an era with no hover concept
+   (Platinum) can null the hover pair while keeping real press feedback. */
+.tdi-tab:not(.is-active):hover {
+  background: var(--tdi-tab-hover-bg);
+  color: var(--tdi-tab-hover-fg);
+  box-shadow: var(--tdi-tab-hover-shadow);
+}
+
+.tdi-tab:not(.is-active):active {
+  background: var(--tdi-tab-pressed-bg);
+  color: var(--tdi-tab-pressed-fg);
+  box-shadow: var(--tdi-tab-pressed-shadow);
+}
+
+.tdi-tab:focus-visible {
+  outline: var(--system-focus-outline);
+  outline-offset: -2px;
+}
+
+/* Tier 2: an optional section heading between groups of rows in the vertical
+   rail (TeachText groups Manuscript above Section Drafts). Only present when
+   a consumer passes groupFor/groupLabelFor to renderTdiTabStrip. */
+.tdi-tabs-heading {
+  flex: 0 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+  padding: var(--tdi-tabs-heading-padding);
+  border-bottom: var(--tdi-tabs-heading-border-bottom);
+  color: var(--tdi-tabs-heading-fg);
+  font-family: var(--ui-font);
+  font-size: var(--tdi-tabs-heading-font-size);
+  font-weight: var(--system-strong-weight);
+  letter-spacing: var(--tdi-tabs-heading-letter-spacing);
+  text-transform: var(--tdi-tabs-heading-text-transform);
+  line-height: 1.3;
+}
+
+.reader-content {
   flex: 1;
   min-width: 0;
   border: var(--reader-content-border);
@@ -915,22 +972,38 @@ body.is-resizing-tdi {
    ink: square corners, an ink hairline and a hard offset shadow, over an Aqua
    desk. It is a push button; it reads the push button's roles. Classic is
    unchanged except that it now casts the same shadow as every other Classic
-   button instead of its own. */
+   button instead of its own.
+
+   The height is the era's push-button height, not a literal. It was 28px here
+   and 30px under Liquid Glass, so the button kept one size while every
+   appearance moved its own controls: landing in a window's toolbar row, it
+   stood 4-11px taller than that row's pop-up menu. When it lands in such a row,
+   dictation.js measures the row and writes --dictation-field-button-height,
+   because every era measures its pop-up from its own evidence -- Aqua's is a
+   21px pixel-art rail -- and no token holds that number. */
 .dictation-field-button {
   position: fixed;
+  left: var(--dictation-field-button-x, 0px);
+  top: var(--dictation-field-button-y, 0px);
   z-index: var(--z-floating-field-control);
+  /* Centred the way every other push button centres its label, so the label
+     stays on the middle of whatever height the row hands down. Liquid Glass
+     leads at 20.3px, which overflowed a 19px row box on its own. */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-width: 48px;
-  height: 28px;
-  padding: 2px 10px;
+  height: var(--dictation-field-button-height, var(--system-button-min-height));
+  padding: 0 10px;
   border: var(--system-control-line) solid var(--btn-border-color);
   border-radius: var(--btn-radius);
   background: var(--btn-bg);
   color: var(--btn-fg);
   box-shadow: var(--btn-shadow);
   font-family: var(--ui-font);
-  font-size: 13px;
+  font-size: var(--system-control-size);
   font-weight: bold;
-  line-height: 18px;
+  line-height: 1;
   text-align: center;
   white-space: nowrap;
 }
@@ -1260,7 +1333,7 @@ body:has(.shutdown-screen:not(.is-hidden)) .dictation-field-button {
 
 /* Keynote-style fit: the body shrinks as one piece when the stage cannot
    hold it; at the floor the stage scrolls instead. */
-.clio-stage-fit-body { transform-origin: top left; }
+.clio-stage-fit-body { transform-origin: top left; width: var(--clio-stage-fit-width, auto); }
 .clio-stage-fit-active { align-items: start; }
 .clio-stage-fit-scroll { overflow-y: auto; }
 
@@ -1686,40 +1759,38 @@ body:has(.shutdown-screen:not(.is-hidden)) .dictation-field-button {
   background: var(--paper);
 }
 
+/* .progress-meter is the shared part: one recipe, era dressing entirely
+   through the --progress-* tokens (see 00-foundation.css :root). The rebuild
+   flow's meter is that part -- .rebuild-progress-meter is kept as a second
+   selector only so the existing JS hook and aria wiring need no changes. */
+.progress-meter,
 .rebuild-progress-meter {
-  height: 16px;
-  border: var(--system-control-line) solid var(--ink);
-  background:
-    repeating-linear-gradient(
-      90deg,
-      var(--paper) 0,
-      var(--paper) 8px,
-      #ededed 8px,
-      #ededed 16px
-    );
-  box-shadow: inset 1px 1px 0 var(--shade-dark);
+  height: var(--progress-height);
+  padding: var(--progress-padding);
+  border: var(--system-control-line) solid var(--progress-border-color);
+  border-radius: var(--progress-radius);
+  background: var(--progress-bg);
+  box-shadow: var(--progress-shadow);
   overflow: hidden;
 }
 
+.progress-meter span,
 .rebuild-progress-meter span {
   display: block;
-  width: 0;
+  width: var(--progress-fill-width, 0);
   height: 100%;
-  background: var(--ink);
+  background: var(--progress-fill-bg);
+  border-radius: var(--progress-fill-radius);
+  box-shadow: var(--progress-fill-shadow);
+  border-right: var(--progress-fill-border-right);
   transition: width 160ms ease;
 }
 
+.progress-meter.is-working span,
 .rebuild-progress-meter.is-working span {
-  background:
-    repeating-linear-gradient(
-      90deg,
-      var(--ink) 0,
-      var(--ink) 12px,
-      #5f5f5f 12px,
-      #5f5f5f 20px
-    );
-  background-size: 40px 100%;
-  animation: rebuild-progress-working 800ms linear infinite;
+  background: var(--progress-fill-active-bg);
+  background-size: var(--progress-fill-active-size);
+  animation: rebuild-progress-working var(--progress-fill-active-duration) linear infinite;
 }
 
 @keyframes rebuild-progress-working {

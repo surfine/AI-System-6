@@ -75,7 +75,7 @@ async function runBootSequence() {
     setBootMacState(macState);
     updateBootLedger(stage);
     if (bootMessageEl) bootMessageEl.textContent = message;
-    if (bootProgressFillEl) bootProgressFillEl.style.width = progress;
+    if (bootProgressFillEl) bootProgressFillEl.style.setProperty("--boot-progress-fill", progress);
   });
   // Warm resume cancels the visual holds (only a short Happy Mac flash and
   // fade remain); it never skips loadDeskState, migration, storage restore or
@@ -107,7 +107,7 @@ function showBootFailure(error) {
     bootScreenEl.classList.remove("is-done");
   }
   if (bootMessageEl) bootMessageEl.textContent = t("boot_failed_recovery");
-  if (bootProgressFillEl) bootProgressFillEl.style.width = "100%";
+  if (bootProgressFillEl) bootProgressFillEl.style.setProperty("--boot-progress-fill", "100%");
   document.getElementById("boot-failure-actions")?.classList.remove("is-hidden");
 }
 
@@ -525,7 +525,7 @@ async function duplicateSelectedProjectDisk() {
       })
     ));
   } catch (error) {
-    setStatus(t("project_reference_error", error.message));
+    setStatus(t("project_reference_error", friendlyErrorDetail(error)));
   }
 
   isProjectMounted = true;
@@ -616,6 +616,12 @@ function showStartupSettingsDialog() {
   syncStartupOpenOptions(startupEnvironment);
   modalScrim.classList.remove("is-hidden");
   startupSettingsModal.showModal();
+  // The startup/open radios sit before the button row, so a bare Enter
+  // while one of them holds focus (the normal case right after opening)
+  // submits the form through the browser's own default-button algorithm —
+  // always the first submit button in DOM order (Cancel), not the one
+  // index.html marks "default" (OK). See modal.js's wireDialogEnterDefault.
+  wireDialogEnterDefault(startupSettingsModal, () => document.getElementById("startup-settings-ok"));
 }
 
 function normalizeStartupOpenMode(mode, environment = startupEnvironment) {
@@ -1256,7 +1262,7 @@ async function cleanupDeletedTrashItem(item) {
     const refs = await getStoredProjectReferences(projectId);
     await Promise.all(refs.map((reference) => deleteStoredProjectReference(reference.id)));
   } catch (error) {
-    setStatus(t("project_reference_error", error.message));
+    setStatus(t("project_reference_error", friendlyErrorDetail(error)));
   }
 }
 
@@ -1412,6 +1418,13 @@ function showEraseDiskPreviewModal(project) {
     modalScrim.classList.remove("is-hidden");
     if (dialog.open) dialog.close("cancel");
     dialog.showModal();
+    // Erasing a disk has no undo, so Cancel — not Erase — is the button a
+    // bare Enter should fire; index.html marks Cancel "default" for the same
+    // reason. showModal() would already focus Cancel by accident (it is
+    // first in the button row), but that accident is the whole safety
+    // property here, so make it explicit rather than leaving it to depend on
+    // DOM order never moving.
+    cancelButton.focus();
   });
 }
 
@@ -1461,7 +1474,7 @@ async function eraseSelectedProjectDisk() {
     const refs = await getStoredProjectReferences(projectId);
     await Promise.all(refs.map((reference) => deleteStoredProjectReference(reference.id)));
   } catch (error) {
-    setStatus(t("project_reference_error", error.message));
+    setStatus(t("project_reference_error", friendlyErrorDetail(error)));
   }
 
   if (wasActiveProject) {
@@ -1493,7 +1506,13 @@ function deleteAppDatabase() {
 }
 
 async function resetSystemStorage() {
-  const result = await showSystemModal(t("reset_system_confirm"), "confirm");
+  // Wipes every project and setting with no undo. Now that the confirm's
+  // Enter reaches its real default button (see modal.js), that default must
+  // not be the button that does this — same pairing the codebase's other
+  // irreversible confirms already use (bonsai-city.js, documents-chat.js,
+  // chat-messages.js): danger marks the button, defaultAction keeps Cancel
+  // as what a bare Enter fires.
+  const result = await showSystemModal(t("reset_system_confirm"), "confirm", { defaultAction: "cancel", danger: true });
   if (result !== "yes") return;
 
   setStatus(t("reset_system_progress"));

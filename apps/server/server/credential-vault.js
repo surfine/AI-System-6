@@ -148,10 +148,34 @@ async function deleteKeychainCredential(credentialId) {
   }
 }
 
+// Faults the caller can correct. Without a status these reached the top-level
+// handler as unclassified errors, which answered 500 "Unhandled server error"
+// and hid the one thing the user had to know: which field was wrong.
+function credentialRequestError(message, statusCode, code) {
+  const error = /** @type {Error & { code?: string, statusCode?: number }} */ (
+    new Error(message)
+  );
+  error.statusCode = statusCode;
+  error.code = code;
+  return error;
+}
+
 function stageCloudCredential({ provider, baseUrl, apiKey, now = Date.now() }) {
   const secret = String(apiKey || "").trim();
-  if (!secret) throw new Error("Missing API key.");
-  if (Buffer.byteLength(secret, "utf8") > 8192) throw new Error("API key is too large.");
+  if (!secret) {
+    throw credentialRequestError(
+      "Missing API key. Enter the provider API key in Control Panel, then try again.",
+      400,
+      "missing_api_key"
+    );
+  }
+  if (Buffer.byteLength(secret, "utf8") > 8192) {
+    throw credentialRequestError(
+      "API key is too large. An API key must be 8192 bytes or less.",
+      413,
+      "api_key_too_large"
+    );
+  }
   const credentialId = createCredentialId(provider, baseUrl);
   stageSecret(credentialId, secret, now);
   return credentialId;
@@ -160,7 +184,13 @@ function stageCloudCredential({ provider, baseUrl, apiKey, now = Date.now() }) {
 async function persistCloudCredential(credentialId) {
   const id = normalizedCredentialId(credentialId);
   const secret = id ? stagedSecret(id) : "";
-  if (!id || !secret) throw new Error("Credential is not staged in this local service.");
+  if (!id || !secret) {
+    throw credentialRequestError(
+      "Credential is not staged in this local service. Enter the API key again, then save it.",
+      409,
+      "credential_not_staged"
+    );
+  }
   const stored = await writeKeychainCredential(id, secret);
   return {
     credentialId: id,

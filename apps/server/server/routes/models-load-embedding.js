@@ -18,7 +18,7 @@
 
 "use strict";
 
-const { send, readJsonBody, requestSignal } = require("../lib/http.js");
+const { send, readJsonBody, requestSignal, respondIfClientError } = require("../lib/http.js");
 const { loadLmStudioAuxModel } = require("../lmstudio.js");
 
 /**
@@ -57,6 +57,9 @@ async function handleModelsLoadEmbedding(req, res) {
     });
   } catch (error) {
     if (/** @type {any} */ (error)?.name === "AbortError") return;
+    // No model load was tried when the body was rejected, so the caller must
+    // not read a load failure that did not occur.
+    if (respondIfClientError(res, error)) return;
     send(res, 502, JSON.stringify({
       error: "Embedding model load failed",
       detail: /** @type {Error} */ (error).message,

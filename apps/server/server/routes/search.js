@@ -26,6 +26,12 @@ const {
   searchProviderDisplayName,
 } = require("../search.js");
 
+// Search engines carry the query in the request line. A query longer than this
+// is refused by each engine in turn, and the route then reported "Search
+// failed" with four engine names — which hid the one correctable fact, that
+// the query is too long. The bound is checked before any request is spent.
+const SEARCH_QUERY_MAX_CHARS = 512;
+
 /**
  * @param {import("node:http").IncomingMessage} req
  * @param {import("node:http").ServerResponse} res
@@ -40,6 +46,17 @@ async function handleSearch(req, res) {
 
   if (!query) {
     send(res, 400, JSON.stringify({ error: "Missing query" }), {
+      "Content-Type": "application/json",
+    });
+    return;
+  }
+
+  if (query.length > SEARCH_QUERY_MAX_CHARS) {
+    send(res, 400, JSON.stringify({
+      error: "Search query is too long",
+      code: "search_query_too_long",
+      detail: `A search query must be ${SEARCH_QUERY_MAX_CHARS} characters or less. This one is ${query.length}. Shorten it to the key words.`,
+    }), {
       "Content-Type": "application/json",
     });
     return;

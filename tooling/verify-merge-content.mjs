@@ -106,6 +106,8 @@ const REGENERATED_MEASUREMENTS = new Set([
 const REGENERATED_PREFIXES = ["internal/evidence/drafts/appearance-baseline/"];
 
 let findings = 0;
+let checkedMerges = 0;
+let checkedSurvivals = 0;
 function report(kind, path, detail) {
   if (REGENERATED_MEASUREMENTS.has(path) || REGENERATED_PREFIXES.some((prefix) => path.startsWith(prefix))) {
     if (!quiet) console.log(`OK  ${path} — regenerated measurement, not discarded content`);
@@ -131,9 +133,15 @@ function checkMerge(merge) {
     return;
   }
   if (parents.length < 2) {
-    if (!quiet) console.log(`OK  ${merge} is not a merge commit; nothing to check.`);
+    // Not a finding: a caller may legitimately point this at an ordinary
+    // commit (the release does, because a release is usually cut from one).
+    // But it must not be counted as a verification either — this tool once
+    // ended such a run with "merge content verified", which is a pass
+    // certificate for a run that checked nothing.
+    if (!quiet) console.log(`--  ${merge} is not a merge commit; there was nothing to check.`);
     return;
   }
+  checkedMerges += 1;
   if (parents.length > 2) {
     console.log(`NO  ${merge} is an octopus merge (${parents.length} parents); check it by hand.`);
     findings += 1;
@@ -190,6 +198,7 @@ function checkSurvived(ref, into) {
     // the work is in the history but not in the tree.
     report("REGRESSED to pre-branch content", path, `tree matches base ${base.slice(0, 8)}, not ${ref.slice(0, 8)}`);
   }
+  checkedSurvivals += 1;
   if (!quiet) console.log(`  ${survived} path(s) survived exactly, ${evolved} evolved further.`);
 }
 
@@ -214,5 +223,14 @@ if (findings > 0) {
   console.log(`NO  ${findings} discarded-content finding(s). A merge kept one side's bytes while the other side changed the path.`);
   process.exitCode = 1;
 } else if (!process.exitCode && !quiet) {
-  console.log("OK  merge content verified.");
+  // Say what was actually checked. "Verified" with a count of zero is the
+  // shape of a green log over an unchecked tree, which is the exact failure
+  // this tool exists to catch.
+  const checked = [
+    checkedMerges > 0 ? `${checkedMerges} merge(s)` : "",
+    checkedSurvivals > 0 ? `${checkedSurvivals} branch survival(s)` : "",
+  ].filter(Boolean).join(" and ");
+  console.log(checked
+    ? `OK  merge content verified (${checked} checked).`
+    : "--  nothing was checked, so nothing was verified.");
 }

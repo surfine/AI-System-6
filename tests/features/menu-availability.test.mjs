@@ -138,6 +138,11 @@ const ALWAYS_AVAILABLE = new Map([
   ["set-theme-snow-leopard", "Appearance choice is valid from every application"],
   ["set-theme-yosemite", "Appearance choice is valid from every application"],
   ["set-theme-liquid-glass", "Appearance choice is valid from every application"],
+  // Line spacing is a reading/writing preference, not a document action: it is
+  // valid whenever the Writing menu is open, project or no project.
+  ["set-line-spacing-compact", "Line spacing choice is valid from every writing surface"],
+  ["set-line-spacing-standard", "Line spacing choice is valid from every writing surface"],
+  ["set-line-spacing-relaxed", "Line spacing choice is valid from every writing surface"],
 ]);
 
 // Time Machine used to be exempt: its verbs live in a lazy module whose state

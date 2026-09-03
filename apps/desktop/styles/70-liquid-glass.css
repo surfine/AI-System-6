@@ -23,7 +23,13 @@ body.use-liquid-glass {
   --window-radius: var(--liquid-window-radius);
   --container-radius: var(--liquid-window-radius);
   --window-shadow: var(--system-shadow);
-  --window-backdrop-filter: blur(4px) saturate(160%) brightness(1.04);
+  /* The whole appearance read flat because of this one number. 4px is a
+     frosting, not a refraction: at that radius the desktop behind a window
+     stays legible as itself, so the pane looked like tinted paper rather
+     than like glass with something behind it. Golden Gate blurs far past
+     the point where the backdrop is still readable, and lifts its chroma
+     back up so the glass stays coloured by what it covers. */
+  --window-backdrop-filter: blur(18px) saturate(185%) brightness(1.06);
   --surface-primary: var(--liquid-fill-tint);
   --surface-secondary: rgba(230, 237, 242, 0.34);
   --surface-inset: rgba(255, 255, 255, 0.18);
@@ -58,13 +64,30 @@ body.use-liquid-glass {
   --field-border: 1px solid rgba(255, 255, 255, 0.62);
   --field-radius: 12px;
   --select-radius: 12px;
-  --field-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 6px 18px rgba(18, 28, 38, 0.06);
+  /* One white line and a 6% drop is a printed edge, not a thickness. The
+     field now carries what the slider's well carries: a lit top lip, a dark
+     bottom lip under it, the paired side hairlines the window chrome draws,
+     and a drop deep enough to say the control sits above the panel. */
+  --field-shadow:
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.94),
+    inset 0 -1px 0 rgba(16, 17, 20, 0.1),
+    inset 1.25px 0 0 -0.75px rgba(230, 230, 230, 0.8),
+    inset -1.25px 0 0 -0.75px rgba(229, 229, 229, 0.8),
+    0 1px 2px rgba(18, 28, 38, 0.1),
+    0 8px 20px rgba(18, 28, 38, 0.1);
   --field-focus-border: 1px solid var(--glass-field-focus-rim);
   --field-focus-ring: 0 0 0 3px var(--glass-field-focus-ring);
   --choice-bg: rgba(255, 255, 255, 0.28);
   --choice-border: 1px solid rgba(16, 17, 20, 0.32);
   --choice-radius: 6px;
-  --choice-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78), 0 6px 14px rgba(18, 28, 38, 0.08);
+  /* The same thickness on the checkbox and the radio, so the row of them
+     under the slider reads as the same material and not as a different set
+     of parts that happens to share a panel. */
+  --choice-shadow:
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.94),
+    inset 0 -1px 0 rgba(16, 17, 20, 0.12),
+    0 1px 2px rgba(18, 28, 38, 0.14),
+    0 6px 14px rgba(18, 28, 38, 0.12);
   --scrollbar-track: var(--liquid-content-surface);
   --scrollbar-thumb: rgba(16, 17, 20, 0.32);
   --scrollbar-button: transparent;
@@ -507,6 +530,29 @@ body.use-liquid-glass {
   --tdi-tab-active-shadow: var(--tdi-tab-shadow);
   --tdi-tab-small-color: rgba(16, 17, 20, 0.58);
   --tdi-tab-active-small-color: rgba(255, 255, 255, 0.72);
+  /* Tier 2 selection states. Unfocused fades the dark glass pill toward the
+     translucent rail tint behind it instead of full ink -- a window losing
+     focus should look like it is receding into the glass, not just greying
+     out. Hover/pressed reuse --help-row-hover-*'s light-tint-on-glass recipe,
+     one and two steps darker. */
+  --tdi-tabs-heading-padding: 8px 10px 4px;
+  --tdi-tabs-heading-fg: rgba(16, 17, 20, 0.55);
+  --tdi-tabs-heading-font-size: 11px;
+  --tdi-tabs-heading-letter-spacing: 0.02em;
+  --tdi-tabs-heading-text-transform: uppercase;
+  --tdi-tabs-heading-border-bottom: 0;
+  --tdi-tab-active-unfocused-border: 1px solid rgba(16, 17, 20, 0.32);
+  --tdi-tab-active-unfocused-border-bottom: var(--tdi-tab-active-unfocused-border);
+  --tdi-tab-active-unfocused-bg: rgba(120, 120, 128, 0.24);
+  --tdi-tab-active-unfocused-fg: rgba(16, 17, 20, 0.72);
+  --tdi-tab-active-unfocused-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  --tdi-tab-active-unfocused-small-color: rgba(16, 17, 20, 0.5);
+  --tdi-tab-hover-bg: var(--help-row-hover-bg);
+  --tdi-tab-hover-fg: var(--help-row-hover-fg);
+  --tdi-tab-hover-shadow: none;
+  --tdi-tab-pressed-bg: rgba(16, 17, 20, 0.16);
+  --tdi-tab-pressed-fg: rgba(16, 17, 20, 0.94);
+  --tdi-tab-pressed-shadow: none;
   --tdi-tab-dragging-border: 1px solid rgba(0, 122, 255, 0.48);
   --tdi-tab-dragging-border-bottom: var(--tdi-tab-dragging-border);
   --tdi-tab-dragging-bg:
@@ -695,11 +741,114 @@ body.use-liquid-glass {
   --glass-field-focus-rim: rgba(255, 255, 255, 0.94);
   --glass-field-focus-fill: rgba(255, 255, 255, 0.42);
   --glass-field-focus-ring: rgba(0, 122, 255, 0.3);
+  /* ---- Slider material -------------------------------------------------
+     The tint slider is the one control that carries this appearance's own
+     name, and it shipped with no material: the browser drew its default
+     track and knob, so the control that says "Liquid Glass" was the only
+     object in the window with no glass on it.
+
+     The recipe is the window chrome's own stack cut down to control size —
+     the paired 1.25px side hairlines and the soft drop of --glass-edge-glow,
+     the top-left radial specular of --glass-surface — plus the two things a
+     control has that a window pane does not: a well that reads as cut into
+     the panel, and a lens that refracts what it travels over.
+
+     All of it is value. Two lengths (the well's thickness and the lens's
+     diameter) are the only geometry, and each is read by one rule. */
+  --glass-slider-row-height: 34px;
+  --glass-slider-thickness: 12px;
+  --glass-slider-lens-size: 22px;
+  /* Where the value has reached, measured to the lens centre rather than to
+     the raw percentage: the lens travels inside the track, so a plain
+     percentage puts the bright rim ahead of the lens at one end and behind
+     it at the other.
+
+     It reads --liquid-tint-level, which the slider already writes on the root
+     element for the window chrome — so the fill, its rim and the lens all
+     follow the drag with no script of their own. The reference must be to
+     that property and not to one re-published on the control: a var() inside
+     a custom property is substituted where the custom property is DECLARED,
+     so a value handed up from the input would never reach this line, and the
+     fill would sit at the default however far the lens travelled. */
+  --glass-slider-fill:
+    calc(
+      var(--liquid-tint-level, 0.5) * (100% - var(--glass-slider-lens-size))
+      + var(--glass-slider-lens-size) / 2
+    );
+  --glass-slider-lit: #0a84ff;
+  --glass-slider-well: rgba(16, 17, 20, 0.13);
+  /* Three layers, painted top to bottom.
+
+     The first is sized to the fill rather than to the track and is drawn
+     from its right edge inward, so the 2px rim it ends on travels with the
+     value at a fixed distance rather than at a fraction of the fill. It is
+     the brightest thing on the control, and it meets the leading edge of
+     the lens wherever the lens has been dragged to.
+
+     The second is the well's own glass, and it covers the fill and the empty
+     run alike: dark where the groove is cut in at the top, lit along the
+     bottom lip. That pair is what makes a groove read as depth rather than
+     as a coloured stripe, and running it over the fill too is why the fill
+     reads as light inside glass instead of as paint on a bar. */
+  --glass-slider-track-bg:
+    linear-gradient(
+      270deg,
+      rgba(255, 255, 255, 0.95) 0 2px,
+      rgba(255, 255, 255, 0.34) 3px,
+      rgba(255, 255, 255, 0) 22px
+    ) left center / var(--glass-slider-fill) 100% no-repeat,
+    linear-gradient(
+      180deg,
+      rgba(16, 17, 20, 0.3),
+      rgba(16, 17, 20, 0.03) 44%,
+      rgba(255, 255, 255, 0.16) 72%,
+      rgba(255, 255, 255, 0.62)
+    ),
+    linear-gradient(
+      90deg,
+      var(--glass-slider-lit) 0 var(--glass-slider-fill),
+      var(--glass-slider-well) var(--glass-slider-fill) 100%
+    );
+  /* The well is cut in at the top and lit at the bottom lip — that pair is
+     what makes a groove read as depth instead of as a coloured stripe. */
+  --glass-slider-track-shadow:
+    inset 0 1.5px 2.5px rgba(16, 17, 20, 0.34),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.8),
+    inset 1.25px 0 0 -0.75px rgba(230, 230, 230, 0.8),
+    inset -1.25px 0 0 -0.75px rgba(229, 229, 229, 0.8),
+    0 1px 0 rgba(255, 255, 255, 0.62);
+  /* The lens. One object, one primary glass surface: the blur lives here and
+     not on the track, so the control never stacks blur on blur. */
+  --glass-slider-lens-bg:
+    radial-gradient(124% 124% at 30% 8%, rgba(255, 255, 255, 0.99), rgba(255, 255, 255, 0.52) 38%, rgba(255, 255, 255, 0.04) 70%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0.06) 56%, rgba(255, 255, 255, 0.42)),
+    rgba(255, 255, 255, 0.14);
+  --glass-slider-lens-shadow:
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.99),
+    inset 0 -2.5px 3px rgba(16, 17, 20, 0.26),
+    inset 1.5px 0 0 -0.75px rgba(255, 255, 255, 0.92),
+    inset -1.5px 0 0 -0.75px rgba(255, 255, 255, 0.7),
+    0 0 0 0.5px rgba(16, 17, 20, 0.18),
+    0 2px 5px rgba(18, 28, 38, 0.28),
+    0 10px 20px rgba(18, 28, 38, 0.16);
+  --glass-slider-lens-filter: blur(7px) saturate(190%) brightness(1.1);
+  --glass-slider-lens-scale: 1;
+  /* Travel and duration are tokens so reduced motion can take them to
+     nothing without a second copy of the state rules. */
+  --glass-slider-hover-scale: 1.06;
+  --glass-slider-press-scale: 1.16;
+  --glass-slider-motion: var(--control-motion-fast-in);
   --glass-blue: #64d2ff;
   --glass-progress-blue: #0a84ff;
   --glass-progress-accent: #5ac8fa;
   --glass-progress-blue-soft: #64d2ff;
   --glass-progress-accent-soft: #a6e3ff;
+  /* Shared progress-meter recipe tokens (see 00-foundation.css :root); the
+     rebuild meter's own twin below still owns the glass blur/backdrop, which
+     is not a plain value swap, but these three period tokens are. */
+  --progress-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78);
+  --progress-fill-active-bg: linear-gradient(90deg, var(--glass-progress-blue-soft), var(--glass-progress-accent-soft), var(--glass-progress-blue-soft));
+  --progress-fill-active-size: 50% 100%;
   /* ClioChart's second visual language: cool translucent plotting paper and a
      luminous blue signal. Geometry and mark identity remain shared with the
      Classic 1-bit theme. */
@@ -1120,7 +1269,8 @@ body.use-liquid-glass {
     inset 0 -40px 10px -40px rgba(17, 17, 17, 0.18),
     inset -20px 0 20px -30px rgba(217, 217, 217, 0.5),
     inset 20px 0 20px -30px rgba(217, 217, 217, 0.45),
-    0 8px 15px rgba(0, 0, 0, 0.05);
+    0 1px 2px rgba(0, 0, 0, 0.1),
+    0 10px 22px rgba(0, 0, 0, 0.13);
   --writing-bell-preset-pressed-border-color: rgba(16, 17, 20, 0.24);
   --writing-bell-preset-pressed-bg: var(--writing-bell-preset-hover-bg);
   --writing-bell-preset-pressed-fg: var(--writing-bell-preset-hover-fg);
@@ -1571,7 +1721,8 @@ body.use-liquid-glass {
     inset 0 -1px 0 0 rgba(38, 38, 38, 0.12),
     inset -20px 0 20px -30px rgba(217, 217, 217, 0.42),
     inset 20px 0 20px -30px rgba(217, 217, 217, 0.38),
-    0 8px 15px rgba(0, 0, 0, 0.04);
+    0 1px 2px rgba(0, 0, 0, 0.08),
+    0 8px 18px rgba(0, 0, 0, 0.1);
   --btn-hover-bg: rgba(255, 255, 255, 0.42);
   --btn-hover-fg: rgba(16, 17, 20, 0.94);
   --btn-hover-shadow:
@@ -1928,8 +2079,12 @@ body.use-liquid-glass .finder-operation-modal {
   border-radius: var(--liquid-window-radius);
   background: var(--glass-surface);
   box-shadow: var(--system-shadow);
-  backdrop-filter: blur(4px) saturate(160%) brightness(1.04);
-  -webkit-backdrop-filter: blur(4px) saturate(160%) brightness(1.04);
+  /* The literal used to live here twice while --window-backdrop-filter held
+     the same value in the token block, so the two could drift apart with no
+     gate able to see it. The twin stays for its four extra selectors; the
+     value is single-sourced. */
+  backdrop-filter: var(--window-backdrop-filter);
+  -webkit-backdrop-filter: var(--window-backdrop-filter);
 }
 
 body.use-liquid-glass .spine-toolbox-panel {
@@ -2260,6 +2415,9 @@ body.use-liquid-glass .window.alarm-clock-window {
 }
 
 body.use-liquid-glass .grow-box {
+  /* No stacking token needed: identical to the base 10-windows.css .grow-box
+     token; the base rule's value already applies here, this twin only
+     overrides paint. */
   width: 28px;
   height: 28px;
   border-radius: 0;
@@ -2267,7 +2425,6 @@ body.use-liquid-glass .grow-box {
   box-shadow: none;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
-  z-index: var(--z-local-chrome);
   border: 0;
 }
 
@@ -2339,7 +2496,12 @@ body.use-liquid-glass select {
   -webkit-backdrop-filter: blur(5px) saturate(135%);
 }
 
-body.use-liquid-glass textarea:focus,
+/* :not(.mde-input) — a writing surface is not a field. Its ink is painted by an
+   overlay BEHIND the textarea (50-apps.css), so this fill washed out every word
+   in the Question Sheet, the Outline, Section Drafts and the Review Desk the
+   moment the writer clicked in. TeachText was carved out one rule at a time
+   below; the guard belongs on the field rule, where it holds for all of them. */
+body.use-liquid-glass textarea:not(.mde-input):focus,
 body.use-liquid-glass input:focus,
 body.use-liquid-glass select:focus,
 body.use-liquid-glass .system-select-button:focus-visible {
@@ -2418,6 +2580,109 @@ body.use-liquid-glass input[type="checkbox"]:checked::before,
 body.use-liquid-glass input[type="radio"]:checked::before {
   background: rgba(255, 255, 255, 0.96);
   transform: scale(1);
+}
+
+/* ---- The appearance slider ------------------------------------------------
+   Scope is the named row, not every range control in the product: Cover Glass
+   already draws its own glass sliders at its own proportions, and Theme Lab's
+   era slider belongs to the sheet that owns the lab. A rule for every slider
+   would silently reshape both.
+
+   Eight selectors carry it, and none of them holds a value. The two states
+   that the user drives — pointer approach and drag — only swap tokens on the
+   input, and the track and lens read those tokens through inheritance, so the
+   material is described once and the states say how much of it. */
+body.use-liquid-glass .liquid-tint-row input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  /* Taller than the lens so the lens's drop is not clipped by the input box.
+     The row centres its children, so the extra height moves nothing. */
+  height: var(--glass-slider-row-height);
+  background: transparent;
+  cursor: pointer;
+}
+
+body.use-liquid-glass .liquid-tint-row input[type="range"]:focus {
+  outline: none;
+}
+
+/* Approach lights the lens before the press, the way every other glass
+   control here previews itself. */
+body.use-liquid-glass .liquid-tint-row input[type="range"]:hover {
+  --glass-slider-lens-scale: var(--glass-slider-hover-scale);
+  --glass-slider-lens-filter: blur(8px) saturate(210%) brightness(1.14);
+}
+
+/* Keyboard focus must be at least as findable as hover, so it keeps the
+   hover lift and adds the accent halo the fields use. */
+body.use-liquid-glass .liquid-tint-row input[type="range"]:focus-visible {
+  --glass-slider-lens-scale: var(--glass-slider-hover-scale);
+  --glass-slider-lens-shadow:
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.99),
+    inset 0 -2.5px 3px rgba(16, 17, 20, 0.26),
+    0 0 0 0.5px rgba(16, 17, 20, 0.2),
+    0 0 0 4px var(--glass-field-focus-ring),
+    0 3px 7px rgba(18, 28, 38, 0.3);
+}
+
+/* The drag. A held lens presses into the well, thickens, and refracts harder
+   — the value is being changed, so the glass answers rather than a colour. */
+body.use-liquid-glass .liquid-tint-row input[type="range"]:active {
+  --glass-slider-lens-scale: var(--glass-slider-press-scale);
+  --glass-slider-lens-filter: blur(10px) saturate(230%) brightness(1.18);
+  --glass-slider-lens-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.99),
+    inset 0 -3px 5px rgba(16, 17, 20, 0.34),
+    0 0 0 0.5px rgba(16, 17, 20, 0.22),
+    0 0 0 5px rgba(10, 132, 255, 0.22),
+    0 4px 10px rgba(18, 28, 38, 0.34),
+    0 14px 26px rgba(18, 28, 38, 0.2);
+}
+
+body.use-liquid-glass .liquid-tint-row input[type="range"]::-webkit-slider-runnable-track {
+  height: var(--glass-slider-thickness);
+  border-radius: var(--liquid-pill-radius);
+  background: var(--glass-slider-track-bg);
+  box-shadow: var(--glass-slider-track-shadow);
+}
+
+body.use-liquid-glass .liquid-tint-row input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: var(--glass-slider-lens-size);
+  height: var(--glass-slider-lens-size);
+  /* Centres the lens on the well. Both terms are the tokens above, so the
+     two never drift out of register when either one is retuned. */
+  margin-top: calc((var(--glass-slider-thickness) - var(--glass-slider-lens-size)) / 2);
+  border-radius: var(--liquid-pill-radius);
+  background: var(--glass-slider-lens-bg);
+  box-shadow: var(--glass-slider-lens-shadow);
+  backdrop-filter: var(--glass-slider-lens-filter);
+  -webkit-backdrop-filter: var(--glass-slider-lens-filter);
+  transform: scale(var(--glass-slider-lens-scale));
+  transition:
+    transform var(--glass-slider-motion) var(--control-motion-ease),
+    box-shadow var(--glass-slider-motion) var(--control-motion-ease);
+}
+
+body.use-liquid-glass .liquid-tint-row input[type="range"]::-moz-range-track {
+  height: var(--glass-slider-thickness);
+  border-radius: var(--liquid-pill-radius);
+  background: var(--glass-slider-track-bg);
+  box-shadow: var(--glass-slider-track-shadow);
+}
+
+body.use-liquid-glass .liquid-tint-row input[type="range"]::-moz-range-thumb {
+  width: var(--glass-slider-lens-size);
+  height: var(--glass-slider-lens-size);
+  border: 0;
+  border-radius: var(--liquid-pill-radius);
+  background: var(--glass-slider-lens-bg);
+  box-shadow: var(--glass-slider-lens-shadow);
+  transform: scale(var(--glass-slider-lens-scale));
+  transition:
+    transform var(--glass-slider-motion) var(--control-motion-ease),
+    box-shadow var(--glass-slider-motion) var(--control-motion-ease);
 }
 
 body.use-liquid-glass .btn {
@@ -2606,9 +2871,16 @@ body.use-liquid-glass .teachtext-pane textarea:focus {
   box-shadow: none;
 }
 
-body.use-liquid-glass .question-sheet-pane textarea,
-body.use-liquid-glass .outline-content,
-body.use-liquid-glass .draft-editor textarea {
+/* The editor tint stops at the writing surfaces, for the same reason TeachText
+   above is transparent: their ink is painted by an overlay BEHIND the textarea,
+   so a fill in the textarea's own layer washes out every glyph it covers. These
+   three kept the tint because they are more specific than the base
+   `.mde-surface > .mde-input` rule, and the writer read Question Sheet, Outline
+   and Section Drafts through a 16% white veil. The glass they were reaching for
+   is already on .mde-surface::before, which sits behind the ink. */
+body.use-liquid-glass .question-sheet-pane textarea:not(.mde-input),
+body.use-liquid-glass .outline-content:not(.mde-input),
+body.use-liquid-glass .draft-editor textarea:not(.mde-input) {
   background: rgba(255, 255, 255, 0.16);
   box-shadow: none;
   outline: 0;
@@ -2631,7 +2903,6 @@ body.use-liquid-glass .review-desk-preview {
 
 body.use-liquid-glass .dictation-field-button {
   min-width: 52px;
-  height: 30px;
   border: 1px solid rgba(255, 255, 255, 0.56);
   border-radius: var(--liquid-pill-radius);
   background:
@@ -4038,24 +4309,18 @@ body.use-liquid-glass .btn:disabled,
 body.use-liquid-glass .btn.is-disabled,
 body.use-liquid-glass .btn.default:disabled,
 body.use-liquid-glass .btn.default.is-disabled,
-body.use-liquid-glass button:disabled:not(.memory-card):hover,
-body.use-liquid-glass button.is-disabled:not(.memory-card):hover,
-body.use-liquid-glass .btn:disabled:hover,
-body.use-liquid-glass .btn.is-disabled:hover,
-body.use-liquid-glass .btn.default:disabled:hover,
-body.use-liquid-glass .btn.default.is-disabled:hover,
-body.use-liquid-glass button:disabled:not(.memory-card):focus-visible,
-body.use-liquid-glass button.is-disabled:not(.memory-card):focus-visible,
-body.use-liquid-glass .btn:disabled:focus-visible,
-body.use-liquid-glass .btn.is-disabled:focus-visible,
-body.use-liquid-glass .btn.default:disabled:focus-visible,
-body.use-liquid-glass .btn.default.is-disabled:focus-visible,
-body.use-liquid-glass button:disabled:not(.memory-card):active,
-body.use-liquid-glass button.is-disabled:not(.memory-card):active,
-body.use-liquid-glass .btn:disabled:active,
-body.use-liquid-glass .btn.is-disabled:active,
-body.use-liquid-glass .btn.default:disabled:active,
-body.use-liquid-glass .btn.default.is-disabled:active {
+/* The three state suffixes were spelled out once per disabled shape —
+   eighteen selectors that all said the same thing. :is() folds them to six
+   and moves no weight: every argument is a single pseudo-class, so each
+   compound keeps exactly the specificity its spelled-out form had. The
+   restatements themselves stay, because out-weighing the enabled hover and
+   active rules is the job they were written for. */
+body.use-liquid-glass button:disabled:not(.memory-card):is(:hover, :focus-visible, :active),
+body.use-liquid-glass button.is-disabled:not(.memory-card):is(:hover, :focus-visible, :active),
+body.use-liquid-glass .btn:disabled:is(:hover, :focus-visible, :active),
+body.use-liquid-glass .btn.is-disabled:is(:hover, :focus-visible, :active),
+body.use-liquid-glass .btn.default:disabled:is(:hover, :focus-visible, :active),
+body.use-liquid-glass .btn.default.is-disabled:is(:hover, :focus-visible, :active) {
   --menu-shortcut-color: var(--liquid-disabled-control-fg);
   border-color: var(--liquid-disabled-control-border);
   background: var(--liquid-disabled-control-bg);
@@ -4158,24 +4423,13 @@ body.use-liquid-glass .btn:disabled,
 body.use-liquid-glass .btn.is-disabled,
 body.use-liquid-glass .btn.default:disabled,
 body.use-liquid-glass .btn.default.is-disabled,
-body.use-liquid-glass button:disabled:not(.memory-card):hover,
-body.use-liquid-glass button.is-disabled:not(.memory-card):hover,
-body.use-liquid-glass .btn:disabled:hover,
-body.use-liquid-glass .btn.is-disabled:hover,
-body.use-liquid-glass .btn.default:disabled:hover,
-body.use-liquid-glass .btn.default.is-disabled:hover,
-body.use-liquid-glass button:disabled:not(.memory-card):focus-visible,
-body.use-liquid-glass button.is-disabled:not(.memory-card):focus-visible,
-body.use-liquid-glass .btn:disabled:focus-visible,
-body.use-liquid-glass .btn.is-disabled:focus-visible,
-body.use-liquid-glass .btn.default:disabled:focus-visible,
-body.use-liquid-glass .btn.default.is-disabled:focus-visible,
-body.use-liquid-glass button:disabled:not(.memory-card):active,
-body.use-liquid-glass button.is-disabled:not(.memory-card):active,
-body.use-liquid-glass .btn:disabled:active,
-body.use-liquid-glass .btn.is-disabled:active,
-body.use-liquid-glass .btn.default:disabled:active,
-body.use-liquid-glass .btn.default.is-disabled:active {
+/* Same fold as the disabled-material rule above, for the same reason. */
+body.use-liquid-glass button:disabled:not(.memory-card):is(:hover, :focus-visible, :active),
+body.use-liquid-glass button.is-disabled:not(.memory-card):is(:hover, :focus-visible, :active),
+body.use-liquid-glass .btn:disabled:is(:hover, :focus-visible, :active),
+body.use-liquid-glass .btn.is-disabled:is(:hover, :focus-visible, :active),
+body.use-liquid-glass .btn.default:disabled:is(:hover, :focus-visible, :active),
+body.use-liquid-glass .btn.default.is-disabled:is(:hover, :focus-visible, :active) {
   color: var(--liquid-disabled-control-fg);
   -webkit-text-fill-color: var(--liquid-disabled-control-fg);
   text-shadow: none;
@@ -4199,10 +4453,24 @@ body.use-liquid-glass .btn.default.is-disabled:active {
 @media (prefers-reduced-motion: reduce) {
   body.use-liquid-glass {
     --liquid-press-transform: none;
+    /* The lens keeps its material and its states; it only stops travelling.
+       Hover and drag still read, through the rim and the halo. */
+    --glass-slider-hover-scale: 1;
+    --glass-slider-press-scale: 1;
+    --glass-slider-motion: 0s;
   }
 }
 
 @media (prefers-reduced-transparency: reduce) {
+  /* The hierarchy has to survive without the refraction: the well and the
+     lens go opaque, and the value stays as readable as it was. */
+  body.use-liquid-glass {
+    --glass-slider-lens-filter: none;
+    --glass-slider-well: rgba(120, 122, 128, 0.42);
+    --glass-slider-lens-bg:
+      linear-gradient(180deg, #ffffff, #f2f4f7);
+  }
+
   body.use-liquid-glass .assistant-window .messages {
     background: var(--paper);
     backdrop-filter: none;

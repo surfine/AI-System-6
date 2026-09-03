@@ -1029,6 +1029,7 @@ const mobileFullScreenAppIds = new Set([
   "clioStage",
   "clioChart",
   "clioProject",
+  "clioPaint",
   "liquidCover",
   "cmfStudio",
   "soundscape",
@@ -1051,8 +1052,15 @@ function isMobileImmersiveWindow(win) {
   return !!win && mobileImmersiveAppIds.has(getWindowAppId(win));
 }
 
+// A Finder page is a place you browse: DESIGN.md's Object Vocabulary gives a
+// Finder surface an icon grid or a list of objects, and object-first verbs.
+// Insert File Floppy ("rag") has neither -- it is a file picker and one
+// default button -- so it is declared a dialog below, beside the task dialog
+// it is a twin of. The File Floppy VOLUME is "textDisk", and that window is a
+// real Finder page. Keeping the dialog here made it a bystander of the
+// browse-in-place rule: opening any other Finder page hid the writer's
+// material intake, which the writing route needs in hand while writing.
 const mobileFinderPageWindowNames = new Set([
-  "rag",
   "textDisk",
   "finder",
   "helpFolder",
@@ -1251,16 +1259,39 @@ function syncFinderVolumeSemantics(winOrName) {
 
 function replaceVisibleFinderLocation(targetWindowName) {
   if (!mobileFinderPageWindowNames.has(targetWindowName)) return null;
-  const source = Array.from(document.querySelectorAll(".window[data-window].is-active:not(.is-hidden):not(.is-app-hidden)"))
-    .find((win) => mobileFinderPageWindowNames.has(win.dataset.window) && win.dataset.window !== targetWindowName)
-    || Array.from(document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden)"))
-      .find((win) => mobileFinderPageWindowNames.has(win.dataset.window) && win.dataset.window !== targetWindowName);
-  const frame = source && !isPortraitDocumentFlow()
+  // A WindowShade-collapsed source is a title bar, not a place to continue
+  // Finder browsing from: its frame's height is the shade height, not room
+  // for the target's content. Reusing it left a freshly opened Finder page
+  // (e.g. Project Hard Disk right after "Insert File Floppy", which opens
+  // collapsed by default) sized to ~20px with real content hidden below the
+  // title bar. Skipping collapsed candidates here falls through to the
+  // normal fit-to-content placement instead.
+  const candidates = [
+    ...Array.from(document.querySelectorAll(".window[data-window].is-active:not(.is-hidden):not(.is-app-hidden):not(.is-collapsed)")),
+    ...Array.from(document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden):not(.is-collapsed)")),
+  ].filter((win) => mobileFinderPageWindowNames.has(win.dataset.window) && win.dataset.window !== targetWindowName);
+
+  // The narrow work area holds exactly one page, so there a new location
+  // retires every other one -- there is nowhere else for them to be. A
+  // desktop has a desktop. System 6's Finder keeps every window you opened,
+  // and browse-in-place means one window follows the path you walked: it
+  // applies to a step up or down the location tree, which is the only move
+  // the path bar, Back, and the parent map can make. Two unrelated volumes
+  // never displace each other -- opening a second disk opens a second
+  // window. Replacing whatever happened to be in front instead retired
+  // Finder windows the writer opened on purpose, the File Floppy among them,
+  // and the writing route needs its material in hand while writing.
+  const narrowPageFlow = isPortraitDocumentFlow();
+  const source = narrowPageFlow
+    ? candidates[0] || null
+    : candidates.find((win) => isFinderLocationStep(win.dataset.window, targetWindowName)) || null;
+  const frame = source && !narrowPageFlow
     ? windowFrame(source)
     : null;
 
   document.querySelectorAll(".window").forEach((win) => {
     if (!mobileFinderPageWindowNames.has(win.dataset.window) || win.dataset.window === targetWindowName) return;
+    if (!narrowPageFlow && win !== source) return;
     win.classList.add("is-hidden");
     win.classList.remove("is-active");
   });
@@ -1283,6 +1314,15 @@ const finderParentWindowNames = new Map([
     .map(([windowName, volume]) => [windowName, volume.parentWindowName]),
 ]);
 
+// One step up or down the Finder location tree. This is the only move the
+// path bar, the Back button and navigateFinderUp() can make, so it is the
+// only move browse-in-place may answer by replacing a window.
+function isFinderLocationStep(sourceWindowName, targetWindowName) {
+  if (!sourceWindowName || !targetWindowName) return false;
+  return finderParentWindowNames.get(targetWindowName) === sourceWindowName
+    || finderParentWindowNames.get(sourceWindowName) === targetWindowName;
+}
+
 const finderLocationLabelKeys = new Map([
   ["finder", "system_folder"],
   ["helpFolder", "help_folder"],
@@ -1303,6 +1343,10 @@ const mobileDialogWindowNames = new Set([
   // write, done -- not a Finder page to browse. As a finder-page it took the
   // full-bleed work-area frame and filled a portrait screen.
   "importUtility",
+  // Insert File Floppy is the same shape of task -- choose files, insert,
+  // done. Its frame has a close box only, no zoom and no shade box, and its
+  // pane is a file picker, not a place to browse.
+  "rag",
   "saveChat",
   "fileInfo",
   "projectInfo",
@@ -1986,6 +2030,17 @@ function fitFinderWindowToContents(win, options = {}) {
   const desktopRect = desktop?.getBoundingClientRect();
   if (!scroller || !desktopRect) return false;
 
+  // openWindow calls this synchronously, one frame before the scheduled
+  // "projectDisks"/"documents"/etc. render task paints real Finder items into
+  // the scroller (scheduleRenderTask batches to the next requestAnimationFrame).
+  // Fitting against an empty scroller here computes a title-bar-only height
+  // with real content still to come and nothing else ever re-measures it, so
+  // mark the window pending and let the render that finally paints content
+  // call settlePendingFinderFit() once more. A scroller that already holds
+  // something (a real item or the empty-state placeholder button) is real
+  // content, not the race, so the mark clears itself out.
+  win.dataset.finderFitPending = scroller.children.length === 0 ? "true" : "false";
+
   const openingRect = win.getBoundingClientRect();
   const margin = 18;
   const avoidance = getDesktopAvoidanceInsets({ margin, spineGap: 18, iconGap: 48 });
@@ -2033,6 +2088,18 @@ function fitFinderWindowToContents(win, options = {}) {
   return true;
 }
 
+// Call after a Finder-content render task actually paints items into a
+// window's scroller. Only refits a window whose most recent fit ran against
+// an empty scroller (see fitFinderWindowToContents); an ordinary content
+// update on an already-settled window is left alone, matching the "fit once
+// at open, then respect the user's own resize" contract.
+function settlePendingFinderFit(win) {
+  if (!win || win.dataset.finderFitPending !== "true") return false;
+  delete win.dataset.finderFitPending;
+  if (win.dataset.userPositioned === "true") return false;
+  return fitFinderWindowToContents(win);
+}
+
 function placeFinderCascadeWindow(win, options = {}) {
   if (!win) return false;
   const desktop = document.querySelector(".desktop");
@@ -2069,13 +2136,28 @@ function placeFinderCascadeWindow(win, options = {}) {
   return true;
 }
 
-function getActionAvailability() {
+// An accessory/system window (Control Panel, the Clock, …) can hold the
+// literal .is-active class while a document window still owns the menu bar
+// behind it — the menu bar follows menuOwnerAppId/activeAppId, not raw
+// z-order. getActionAvailability() below resolves that gap for its own
+// isAvailable() checks; a handler that instead reads only the literal
+// .is-active window disagrees with that same menu in exactly this state —
+// the control looks enabled and finds nothing to act on. Exposed so
+// getActiveEditableElement() (documents-chat.js) can agree with the menu
+// it is wired to.
+function resolveMenuContextWindow() {
   const activeWin = document.querySelector(".window.is-active");
   const focusedAppId = activeWin ? getWindowAppId(activeWin) : "finder";
-  const menuContextWin = ["accessories", "system"].includes(focusedAppId)
-    ? visibleWindowsForApp(menuOwnerAppId || activeAppId)
-      .sort((a, b) => Number(b.style.zIndex || 0) - Number(a.style.zIndex || 0))[0] || activeWin
-    : activeWin;
+  if (["accessories", "system"].includes(focusedAppId)) {
+    return visibleWindowsForApp(menuOwnerAppId || activeAppId)
+      .sort((a, b) => Number(b.style.zIndex || 0) - Number(a.style.zIndex || 0))[0] || activeWin;
+  }
+  return activeWin;
+}
+
+function getActionAvailability() {
+  const activeWin = document.querySelector(".window.is-active");
+  const menuContextWin = resolveMenuContextWindow();
   const showResetSystemMenu = showResetSystemMenuInput ? showResetSystemMenuInput.checked : true;
   const winName = menuContextWin?.dataset.window;
   // Route commands follow the writer, not the z-order. The route raises the
@@ -2176,6 +2258,22 @@ function getActionAvailability() {
   const hasProjectCdSelection = winName === "projectCd" && !!getSelectedProjectCdItems().length;
   const hasMountedFileSelection = winName === "textDisk" && (!!selectedMountedFile || selectedMountedFileNames.size > 0);
   const hasEditableFocus = !!activeEditable;
+  // Cut/Copy/Clear act on a selection, not on a caret. hasEditableFocus alone
+  // (a field merely being focused, selection empty or not) used to make all
+  // three "available" even with nothing selected: the menu item looked usable
+  // and dispatching it did nothing — copy left the clipboard untouched, cut
+  // and clear left the document untouched (except execCommand("delete") with
+  // no selection, which instead deleted one unselected character next to the
+  // caret: a silent, unrequested edit, worse than a no-op). Requiring an
+  // actual non-collapsed selection matches the Mac convention these three
+  // commands have always followed elsewhere and lets Balloon Help give the
+  // real reason (balloon_disabled_menu_selection) instead of a control that
+  // is enabled and does nothing.
+  const hasEditableSelectionRange = !!activeEditable && (
+    typeof activeEditable.selectionStart === "number"
+      ? activeEditable.selectionStart !== activeEditable.selectionEnd
+      : (activeEditable.isContentEditable ? !window.getSelection()?.isCollapsed : false)
+  );
   const selectedProject = getSelectedProject();
   const activeItem = getActiveItem();
   const canDuplicateFinderSelection = hasOpenFile
@@ -2311,6 +2409,9 @@ function getActionAvailability() {
     "save-copy": isTeachText,
     "copy-active-markdown": isTeachText || isChatFile,
     "download-active-markdown": isTeachText || isChatFile,
+    // Word takes the manuscript on screen or the conversation in front of
+    // the writer, so the row is black wherever one of those exists.
+    "export-document-word": isTeachText || isChatFile || (isAssistant && hasConversation),
     "download-active-bilingual-markdown": hasTeachTextTranslation,
     "export-teachtext-project-cd": teachTextCanBurnProjectCd,
     // Sending a draft to the darkroom needs a draft. The row is grey until one
@@ -2340,20 +2441,29 @@ function getActionAvailability() {
     "advance-question-to-outline": routeWinName === "questionSheet",
     "add-outline-section": routeWinName === "outline",
     "toggle-outline-tree": routeWinName === "outline",
-    // The four moves are available exactly when the list is open: they act on
-    // what is selected there, and there is no selection anywhere else.
-    "outline-tree-up": routeWinName === "outline" && outlineTreeIsOpen(),
-    "outline-tree-down": routeWinName === "outline" && outlineTreeIsOpen(),
-    "outline-tree-promote": routeWinName === "outline" && outlineTreeIsOpen(),
-    "outline-tree-demote": routeWinName === "outline" && outlineTreeIsOpen(),
-    "outline-tree-write": routeWinName === "outline" && outlineTreeIsOpen(),
+    "toggle-outline-cards": routeWinName === "outline",
+    "question-sheet-view-page": routeWinName === "questionSheet",
+    "question-sheet-view-cards": routeWinName === "questionSheet",
+    // The four moves are available exactly when the list is open AND
+    // something is selected there: they act on the selection, and clicking
+    // one with nothing selected used to just repeat the same "select a
+    // section first" status line, in place, with no other visible sign the
+    // row was ever live.
+    "outline-tree-up": routeWinName === "outline" && outlineTreeIsOpen() && !!outlineTreeSelectedId,
+    "outline-tree-down": routeWinName === "outline" && outlineTreeIsOpen() && !!outlineTreeSelectedId,
+    "outline-tree-promote": routeWinName === "outline" && outlineTreeIsOpen() && !!outlineTreeSelectedId,
+    "outline-tree-demote": routeWinName === "outline" && outlineTreeIsOpen() && !!outlineTreeSelectedId,
+    "outline-tree-write": routeWinName === "outline" && outlineTreeIsOpen() && !!outlineTreeSelectedId,
     "mingming-outline": routeWinName === "outline",
     "structure-outline": routeWinName === "outline",
     "expand-outline": routeWinName === "outline",
     "reduce-outline": routeWinName === "outline",
     "advance-outline-to-drafts": routeWinName === "outline",
-    "previous-section-draft": routeWinName === "sectionDrafts",
-    "next-section-draft": routeWinName === "sectionDrafts",
+    // Cycling needs something to cycle between: with zero or one draft block
+    // the handler's own modulo lands back on the block already shown, so the
+    // row looked enabled and did nothing at all.
+    "previous-section-draft": routeWinName === "sectionDrafts" && getProjectOutlineDraftBlocks(getActiveProject()).length > 1,
+    "next-section-draft": routeWinName === "sectionDrafts" && getProjectOutlineDraftBlocks(getActiveProject()).length > 1,
     "draft-current-section": routeWinName === "sectionDrafts",
     "polish-draft": routeWinName === "sectionDrafts",
     "suggest-draft": routeWinName === "sectionDrafts",
@@ -2400,11 +2510,17 @@ function getActionAvailability() {
     "print-directory": canPrintDirectory,
     "close-active-window": !!activeWin && !activeWin.classList.contains("is-hidden"),
     "undo": hasEditableFocus || isTeachText || isAssistant,
-    "cut": hasEditableFocus || isTeachText || isAssistant,
-    "copy": !!window.getSelection().toString() || hasEditableFocus || isTeachText || isAssistant,
+    "cut": hasEditableSelectionRange,
+    "copy": !!window.getSelection().toString() || hasEditableSelectionRange,
     "paste": hasEditableFocus || isTeachText || isAssistant,
-    "clear-edit": hasEditableFocus || isTeachText || isAssistant,
-    "select-all": hasEditableFocus || isTeachText || isAssistant,
+    "clear-edit": hasEditableSelectionRange,
+    // Select All takes the whole field, and an empty field has nothing to
+    // take: select() moved the caret from 0-0 to 0-0, so the command was
+    // enabled in sixteen menus and did nothing in every one of them. This is
+    // the same correction Cut, Copy and Clear already carry above -- ask what
+    // the command would act on, not whether a field happens to be there --
+    // and hasEditableText reads the very target the handler resolves.
+    "select-all": hasEditableText,
     "selection-look-up": hasSelectionServiceText && selectedTextLength <= dictionaryMaxSelectionChars,
     "selection-find-sources": hasSelectionServiceText && selectedTextLength <= 420,
     "selection-clip": hasSelectionServiceText,
@@ -2413,6 +2529,13 @@ function getActionAvailability() {
     "make-docmap": canMakeDocMap,
     "make-docmap-selection": canMakeDocMapSelection,
     "make-docmap-source": canMakeDocMapSource,
+    // "Map This" belongs to the picture-reading panel, which only shows once a
+    // reading has come back -- the button used to stay enabled with nothing to
+    // map, and silently did nothing when clicked before then.
+    "docmap-map-picture-reading": typeof docMapPictureProposal !== "undefined" && !!docMapPictureProposal,
+    // Same shape for "Read Aloud": enabled with no picture on the selected
+    // scrap, it silently returned instead of doing anything a user could see.
+    "scrapbook-read-picture": !!scrapPictures(getProjectScraps().find((scrap) => scrap.id === selectedScrapId))[0],
     "insert-last-reply": !!lastAssistantText,
     "clip-last-reply": !!lastAssistantText,
     "start-new-clio-chat": isAssistant,
@@ -2451,6 +2574,10 @@ function getActionAvailability() {
     "open-section-drafts": routeHasProject,
     "open-review-desk": routeHasProject,
     "open-image-manager": routeHasProject,
+    // Its own details-bar button (Question Sheet) was retired for the Writing
+    // menu's Go To item during the paper-lane chrome reduction; same project
+    // precondition as the single-window navigation rows above.
+    "open-writing-flow-windows": routeHasProject,
     "toggle-review-preview": reviewDeskReady,
     "review-view-manuscript": canViewReviewManuscript,
     "review-style-section": reviewDeskReady && teachTextCanReview && hasStyleSections,
@@ -2508,9 +2635,14 @@ function getActionAvailability() {
     "restart-system": true,
     "shut-down-system": true,
     "hide-active-app": !nonQuittableAppIds.has(activeAppId) && !hiddenAppIds.has(activeAppId),
-    "hide-other-apps": getRunningApps().some((app) => app.id !== activeAppId && !nonQuittableAppIds.has(app.id) && !app.hidden),
+    // getRunningApps() tracks every app launched this session, not just ones
+    // still holding an on-screen window (an app stays "running" the way real
+    // macOS apps do once their last window closes). Hiding one with nothing
+    // visible is a real no-op: require the window this command would actually
+    // collapse, matching what hideApp()/bringAppToFront() themselves check.
+    "hide-other-apps": getRunningApps().some((app) => app.id !== activeAppId && !nonQuittableAppIds.has(app.id) && !app.hidden && visibleWindowsForApp(app.id).length > 0),
     "show-all-apps": hiddenAppIds.size > 0,
-    "bring-app-front": true,
+    "bring-app-front": visibleWindowsForApp(activeAppId).length > 0,
     "quit-active-app": !nonQuittableAppIds.has(activeAppId),
     "view-small-icons": true,
     "view-icons": true,
@@ -2622,10 +2754,28 @@ function updateMenuState() {
       btn.classList.toggle("is-disabled", !state[action]);
       if (isMenuButton) btn.disabled = !state[action];
     }
+    // A lazy module that failed to load this session stays disabled no
+    // matter what the state above decided — its window/command is the one
+    // thing unavailable, not a reason to trust it again until a retry works.
+    if (typeof failedLazyCommandActions !== "undefined" && failedLazyCommandActions.has(action)) {
+      btn.classList.add("is-disabled");
+      if (isMenuButton) btn.disabled = true;
+    }
     if (action === "toggle-outline-tree") {
       const open = typeof outlineTreeIsOpen === "function" && outlineTreeIsOpen();
       btn.classList.toggle("is-checked", open);
       if (btn.hasAttribute("aria-pressed")) btn.setAttribute("aria-pressed", String(open));
+    }
+    if (action === "toggle-outline-cards") {
+      const open = typeof outlineCardsIsOpen === "function" && outlineCardsIsOpen();
+      btn.classList.toggle("is-checked", open);
+      if (btn.hasAttribute("aria-pressed")) btn.setAttribute("aria-pressed", String(open));
+    }
+    if (action === "question-sheet-view-page" || action === "question-sheet-view-cards") {
+      const cardsOn = typeof questionSheetCardsIsOpen === "function" && questionSheetCardsIsOpen();
+      const checked = action === "question-sheet-view-cards" ? cardsOn : !cardsOn;
+      btn.classList.toggle("is-checked", checked);
+      if (btn.hasAttribute("aria-pressed")) btn.setAttribute("aria-pressed", String(checked));
     }
     if (action === "toggle-writing-eli5") {
       const lensOn = getActiveProject()?.explanationLens?.enabled !== false;
@@ -2659,8 +2809,22 @@ function updateMenuState() {
     if (action === "tile-windows") {
       btn.classList.toggle("is-hidden", matchMedia("(max-width:860px) and (orientation:portrait)").matches);
     }
+    // Preview/Edit toggles for the three writing surfaces: same shape as
+    // toggle-outline-tree above, so the menu shows which mode is on instead
+    // of only the row's own label flipping between "Preview" and "Edit".
+    if (["toggle-question-preview", "toggle-outline-preview", "toggle-draft-preview"].includes(action)) {
+      const surface = action === "toggle-question-preview" ? "questionSheet"
+        : action === "toggle-outline-preview" ? "outline" : "sectionDrafts";
+      const config = typeof getTeachTextSurface === "function" ? getTeachTextSurface(surface) : null;
+      const previewing = !!config?.preview && !config.preview.classList.contains("is-hidden");
+      btn.classList.toggle("is-checked", previewing);
+      if (btn.hasAttribute("aria-pressed")) btn.setAttribute("aria-pressed", String(previewing));
+    }
     if (btn.dataset.themeChoice) {
       btn.classList.toggle("is-checked", btn.dataset.themeChoice === getCurrentTheme());
+    }
+    if (btn.dataset.lineSpacingChoice) {
+      btn.classList.toggle("is-checked", btn.dataset.lineSpacingChoice === mdeCurrentLineSpacing());
     }
     if (btn.dataset.layoutChoice) {
       // Only an open map has a layout; with no map the rows are grey anyway and
@@ -2693,6 +2857,45 @@ function updateMenuState() {
     if (btn.dataset.shuffleKind) {
       const kind = window.AISystem6Soundscape?.currentShuffleKind?.();
       btn.classList.toggle("is-checked", Boolean(kind) && btn.dataset.shuffleKind === kind);
+    }
+    // Radio-style rows in the labs and the games. Each one names a choice its
+    // own module holds; the module answers with the choice in force, and an
+    // unloaded module answers with nothing, so the rows stay unmarked rather
+    // than claiming a default the module never set. Same shape as the
+    // Soundscape rows below.
+    if (btn.dataset.micropolisSpeed) {
+      const speed = window.AISystem6Micropolis?.currentSpeedName?.() || "";
+      btn.classList.toggle("is-checked", !!speed && btn.dataset.micropolisSpeed === speed);
+    }
+    // Open Recent is the same kind of set: the conversations are alternatives
+    // and at most one of them is the transcript on screen. With the viewer
+    // closed no row is marked, because then none of them is showing.
+    if (btn.dataset.chatFileChoice) {
+      const viewer = document.querySelector('.window[data-window="chatFile"]');
+      const viewerOpen = !!viewer && !viewer.classList.contains("is-hidden");
+      const showing = viewerOpen && typeof selectedChatFileId !== "undefined"
+        ? selectedChatFileId || ""
+        : "";
+      btn.classList.toggle("is-checked", !!showing && btn.dataset.chatFileChoice === showing);
+    }
+    if (btn.dataset.bonsaiSpeedChoice) {
+      const speed = window.AISystem6BonsaiCity?.currentSpeed?.() || "";
+      btn.classList.toggle("is-checked", !!speed && btn.dataset.bonsaiSpeedChoice === speed);
+    }
+    if (btn.dataset.clioPaintToolChoice) {
+      const tool = window.AISystem6ClioPaint?.currentTool?.() || "";
+      btn.classList.toggle("is-checked", !!tool && btn.dataset.clioPaintToolChoice === tool);
+    }
+    if (btn.dataset.clioPaintFilled) {
+      btn.classList.toggle("is-checked", window.AISystem6ClioPaint?.shapeFilled?.() === true);
+    }
+    if (btn.dataset.cmfViewChoice) {
+      const view = window.AISystem6CMFStudio?.currentView?.() || "";
+      btn.classList.toggle("is-checked", !!view && btn.dataset.cmfViewChoice === view);
+    }
+    if (btn.dataset.clioChartProjection) {
+      const projection = window.AISystem6ClioChart?.currentProjection?.() || "";
+      btn.classList.toggle("is-checked", !!projection && btn.dataset.clioChartProjection === projection);
     }
     if (btn.dataset.repeatMode) {
       // Only the loaded feature knows the real mode; an unloaded Soundscape
@@ -2788,7 +2991,7 @@ async function openWindow(name, options = {}) {
   } = options;
 
   if (name === "styleSheet" || name === "claimCheck") {
-    openReviewDesk(name === "claimCheck" ? "facts" : "style");
+    await openReviewDesk(name === "claimCheck" ? "facts" : "style");
     return;
   }
   if (name === "liquidCover" && !skipLiquidCoverEntrypoint && typeof ensureLiquidCoverModule === "function") {
@@ -2976,8 +3179,25 @@ async function openWindow(name, options = {}) {
   // Arrange the writing workspace AFTER focus raises the window: the mobile
   // foreground pass picks the surface with the highest z-index, so it must
   // run once the just-opened window actually has the top z.
-  if (shouldPlaceWindow && ["questionSheet", "outline", "sectionDrafts", "reviewDesk", "teachText"].includes(name)) {
-    arrangeActiveWritingWorkspace();
+  //
+  // On a phone the pass is NOT a placement decision, so it must not inherit
+  // placement's conditions. shouldPlaceWindow is false for a window that was
+  // already open, and a route command that opens the manuscript as a read-only
+  // companion opens a window that is usually already open: the companion took
+  // the focus, nothing ran to correct it, and the single foreground went to the
+  // manuscript. Advancing from the Outline put the writer in the manuscript
+  // instead of Section Drafts, on both phone orientations and on a tablet.
+  // The desktop splits keep their own condition -- they write inline geometry,
+  // and re-placing a window the writer already positioned is churn.
+  if (writingLayoutWindowNames.has(name)) {
+    // Travelling to another route stop cancels a pending request for the
+    // manuscript. This is what bounds that request: it is held until the
+    // manuscript answers it, so something has to say when the writer changed
+    // their mind. Only a focused open counts — a companion opens with
+    // skipFocus, and a companion is not a change of mind.
+    if (name !== "teachText" && !skipFocus) mobileManuscriptForegroundRequested = false;
+    if (mobileWritingForegroundOwnsRoute()) arrangeMobileWritingForeground();
+    else if (shouldPlaceWindow) arrangeActiveWritingWorkspace();
   }
 
   if (name === "about") {
@@ -3110,6 +3330,14 @@ function arrangeReviewWorkspaceSplit() {
   arrangeWritingPairSplit("reviewDesk", "teachText");
 }
 
+// Does the phone/tablet single-foreground model own the writing route right
+// now? One answer, in one place, because openWindow's tail asks it too: the
+// foreground pass is a presentation decision and must run on every route open,
+// while the desktop splits below stay a placement decision.
+function mobileWritingForegroundOwnsRoute() {
+  return (isPortraitDocumentFlow() && mobileFullScreenAppIds.has("teachText")) || isNarrowViewport();
+}
+
 // Arrange whichever phase workspace is currently open as a manuscript pair. Called
 // from openWindow's placement tail (so it runs after default cascade placement and
 // sticks). Priority follows the route: review > drafting > legacy outline split.
@@ -3119,7 +3347,7 @@ function arrangeActiveWritingWorkspace() {
   // that would override the full-screen shell. Phones use an explicit
   // single-foreground model instead: the current phase owns the screen and the
   // previous phases stay reachable (as backable surfaces) without stacking.
-  if ((isPortraitDocumentFlow() && mobileFullScreenAppIds.has("teachText")) || isNarrowViewport()) {
+  if (mobileWritingForegroundOwnsRoute()) {
     arrangeMobileWritingForeground();
     return;
   }
@@ -3305,9 +3533,12 @@ function arrangeSoloWritingWindow() {
   placeWindowForExplicitLayout(win, { left: startLeft, top, width, height, maxHeight: height });
 }
 
-// Set by openTeachTextManuscriptWindow: the user explicitly asked for the
-// manuscript (Review Desk -> View Manuscript), so it must own the phone
-// screen even before the workflow is marked Final.
+// Set by the two commands whose destination IS the manuscript:
+// openTeachTextManuscriptWindow (Review Desk -> View Manuscript, and
+// Writing > Go To > Manuscript) and advanceDraftsToManuscript. The user
+// explicitly asked for the manuscript, so it must own the phone screen even
+// before the workflow is marked Final. Every other opener of the manuscript is
+// preparing it, not travelling to it, and leaves this flag alone.
 let mobileManuscriptForegroundRequested = false;
 
 /**
@@ -3336,7 +3567,6 @@ function arrangeMobileWritingForeground() {
 
   const reviewPhase = typeof teachTextReviewLabel === "function" && teachTextReviewLabel();
   const manuscriptWanted = mobileManuscriptForegroundRequested;
-  mobileManuscriptForegroundRequested = false;
   const teachTextEligible = teachTextOpen && (manuscriptWanted || reviewPhase);
   const candidates = [...openSurfaces, ...(teachTextEligible ? ["teachText"] : [])];
   if (!candidates.length) return;
@@ -3344,6 +3574,17 @@ function arrangeMobileWritingForeground() {
   const foreground = candidates
     .map((name) => ({ name, z: Number(getComputedStyle(getWindow(name)).zIndex || 0) }))
     .sort((a, b) => b.z - a.z)[0].name;
+
+  // A request for the manuscript is cleared when it is HONOURED, not when it is
+  // first read. A route command sets the request and then opens the manuscript,
+  // but the companion opens the same command fires are not awaited: one of them
+  // ran its own foreground pass in between, ate the request, and hid the very
+  // window the next statement was about to raise. So the writer who advanced
+  // the drafts into the manuscript stayed in Section Drafts. Holding the
+  // request until the manuscript actually has the screen makes the order of
+  // those two opens stop mattering. Opening any other route stop with focus
+  // cancels it (see openWindow), so it cannot outlive the move that asked.
+  if (foreground === "teachText") mobileManuscriptForegroundRequested = false;
 
   candidates.forEach((name) => {
     const win = getWindow(name);
@@ -4160,11 +4401,25 @@ function showAboutMultiFinder() {
 }
 
 async function restartSystem() {
+  let saveFailed = false;
   try {
     await saveDeskState();
     await clearWorkingSession();
   } catch (error) {
+    // lane-errors: this used to log to the console only, then reload the
+    // page 220ms later regardless - discarding whatever the failed save
+    // could not write, with nothing the user could see. Restart is
+    // destructive (a reload), so a failed save gets a real choice instead
+    // of a silent one.
     console.warn("Restart save failed", error);
+    saveFailed = true;
+  }
+  if (saveFailed) {
+    const proceed = await showSystemModal(t("restart_save_failed_confirm"), "confirm", { defaultAction: "cancel" });
+    if (proceed !== "yes") {
+      setStatus(t("restart_save_failed_cancelled"));
+      return;
+    }
   }
   // An explicit Restart is a cold boot: the full Happy Mac ceremony plays
   // again instead of the warm-resume flash.
@@ -4181,11 +4436,18 @@ async function shutDownSystem() {
     const result = await showSystemModal(t("shutdown_confirm"), "confirm", { defaultAction: "cancel" });
     if (result !== "yes") return;
   }
+  let saveFailed = false;
   try {
     await saveDeskState();
     await clearWorkingSession();
   } catch (error) {
+    // lane-errors: this used to log to the console only, then still show
+    // "It is now safe to shut down AI System 6." - a claim the save that
+    // just failed could not back up. The confirm dialog above also promises
+    // "The desktop state will be saved", so the shutdown screen now says
+    // which one of those actually happened.
     console.warn("Shutdown save failed", error);
+    saveFailed = true;
   }
   closeMenus();
   document.body.classList.add("is-shutting-down");
@@ -4195,7 +4457,7 @@ async function shutDownSystem() {
   document.querySelectorAll(".window[data-window]").forEach((win) => win.classList.add("is-hidden"));
   document.querySelector("#shutdown-screen")?.classList.remove("is-hidden");
   modalScrim.classList.add("is-hidden");
-  setStatus(t("shutdown_message"));
+  setStatus(saveFailed ? t("shutdown_save_failed") : t("shutdown_message"));
   playSystemSound("shutdown");
   renderMultiFinderMenu();
 }
@@ -5001,6 +5263,11 @@ function tileWindows(candidateWindows = null) {
     });
   }
   scheduleWorkingSessionSave?.();
+  // The move is a pure layout change (inline style on each window), so it has
+  // no other observable trace — the same class of gap CLAUDE.md calls out for
+  // "show visible feedback." A text receipt is also what a screen reader gets
+  // for a rearrangement it cannot otherwise perceive.
+  setStatus(t("windows_tiled"));
 }
 
 function arrangeFixedWindows(windows, bounds) {

@@ -1626,6 +1626,7 @@ function setClioChartProjection(projection) {
     else writeClioChartBackToOwner();
   }
   renderClioChartView();
+  if (typeof updateMenuState === "function") updateMenuState();
 }
 
 function chartClioChartColumn(index) {
@@ -1741,12 +1742,25 @@ window.AISystem6ClioChart = {
   handBack: handBackClioChart,
   hasOwnedBlock: () => !!clioChartState.owner,
   hasChartableTable: () => clioChartTeachTextTables().length > 0,
+  currentProjection: () => clioChartState.projection || "",
   setProjection: setClioChartProjection,
   togglePresentation: toggleClioChartPresentation,
   revealNext: revealNextClioChartItem,
   sendToStage: sendClioChartToStage,
   canSendToStage: () => !!clioChartState.table && clioChartState.projection !== "source",
   toggleColumnLower: toggleClioChartColumnLower,
+  // Reverse Sort turns an order round, and fewer than two measured objects
+  // are not an order. On a blank template the row stayed black: it flipped a
+  // flag, repainted the same unmeasured rows in the same places and said
+  // nothing, so a person could not tell it from a broken command.
+  canReverseSort: () => {
+    const table = clioChartState.table;
+    if (!table?.columns?.[clioChartState.column]) return false;
+    const measured = table.rows.filter((row) => (
+      !row.aggregate && String(row.cells?.[clioChartState.column]?.text || "").trim()
+    ));
+    return measured.length >= 2;
+  },
   reverseSort: () => chartClioChartColumn(clioChartState.column),
   saveTemplate: saveClioChartTemplate,
   openTemplate: openClioChartTemplate,
@@ -1816,6 +1830,9 @@ function clioChartCommandAvailable(action) {
   if (action === "clio-chart-send-stage") {
     return !!window.AISystem6ClioChart?.canSendToStage?.();
   }
+  if (action === "clio-chart-reverse-sort") {
+    return !!window.AISystem6ClioChart?.canReverseSort?.();
+  }
   return true;
 }
 
@@ -1836,7 +1853,12 @@ function runClioChartRuntimeCommand(action) {
     return;
   }
   if (command === "hand-back") return chart.handBack?.();
-  if (command.startsWith("new:")) return chart.newFromTemplate?.(command.slice(4));
+  // Registered action ids are hyphenated ("clio-chart-new-cpu-gpu"), so after
+  // the "clio-chart-" prefix strip above, command is "new-cpu-gpu" — never
+  // "new:cpu-gpu". A "new:" check here never matched any of the seven
+  // template menu items; they silently fell through to chart.ask?.(command)
+  // with a garbage prompt key instead of opening the template.
+  if (command.startsWith("new-")) return chart.newFromTemplate?.(command.slice(4));
   if (command === "save-template") return chart.saveTemplate?.();
   if (command === "presentation") return chart.togglePresentation?.();
   if (command === "send-stage") return chart.sendToStage?.();

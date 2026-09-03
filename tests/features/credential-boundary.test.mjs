@@ -58,6 +58,7 @@ vm.runInContext(
     cloudCredentialReady,
     cloudCredentialMode,
     cloudCredentialTransportFields,
+    consumeLegacyKeyMigration: consumeCloudLegacyKeyMigration,
     getRuntimeKey: () => cloudRuntimeApiKey,
     setRuntimeKey: setCloudRuntimeApiKey,
     setSharedAvailable: setPublicSharedCloudAvailable,
@@ -80,6 +81,19 @@ test.assert(
 test.assert(
   !sessionStorage.value("ai-system6-cloud-api-key"),
   "legacy cloud keys are removed from sessionStorage"
+);
+test.assert(
+  context.window.cloudCredentialTest.consumeLegacyKeyMigration() === true,
+  "the boot that finds a legacy key reports the migration once"
+);
+test.assert(
+  context.window.cloudCredentialTest.consumeLegacyKeyMigration() === false,
+  "a second read in the same boot has nothing left to report"
+);
+context.window.cloudCredentialTest.loadCloudConfig();
+test.assert(
+  context.window.cloudCredentialTest.consumeLegacyKeyMigration() === false,
+  "a later boot from an already-clean record has no migration to report"
 );
 
 context.window.cloudCredentialTest.setConfig({
@@ -273,5 +287,36 @@ test.assertIncludes(cloudStatus, "credentialId: body.credential_id", "status che
 test.assertIncludes(router, '["POST /api/cloud/credentials", handleCloudCredentials]', "credential registration is a guarded local API route");
 const publicRoutes = router.match(/const publicExactRouteKeys = new Set\(\[[\s\S]*?\]\);/)?.[0] || "";
 test.assertNotIncludes(publicRoutes, "/api/cloud/credentials", "the public deployment cannot mutate the local credential vault");
+
+// cloudConfig never carries a live key (loadCloudConfig/saveCloudConfig both
+// delete it before it can reach cloudConfig), so any runtime check gating on
+// `cloudConfig.apiKey` is always false — a silent regression, not a crash.
+// This app-wide sweep is stricter than the cloudModel-only check above.
+test.assertNotIncludes(app, "cloudConfig.apiKey", "no runtime check anywhere in app.js gates on a key cloudConfig can never hold");
+test.assertIncludes(app, "cloudCredentialReady()", "cloud-active checks use the credential-ready helper instead");
+
+// A key an older build left in browser storage must never just vanish: the
+// Control Panel says so, through the one notification surface, the same
+// boot it leaves storage (owner ruling: never silently discard a working key).
+test.assertIncludes(cloudModel, "function notifyCloudKeyLeftBrowserStorage", "a dedicated notice exists for a key leaving browser storage");
+test.assertIncludes(cloudModel, "consumeCloudLegacyKeyMigration()", "the Control Panel asks whether this boot just migrated a key");
+test.assertIncludes(cloudModel, "if (legacyCloudKeyMigrated) notifyCloudKeyLeftBrowserStorage();", "a failed local-service handoff notifies instead of discarding quietly");
+test.assertIncludes(cloudModel, "if (legacyCloudKeyMigrated && isPublicCloudCredentialMode())", "public BYOK is told its migrated key will not survive the next reload");
+test.assertIncludes(cloudModel, 'actionId: "open-cloud-ai-settings"', "the notice's reconnect action is the same one-click Control Panel route as other AI errors");
+
+// isPublicCloudCredentialMode() reads a dataset attribute /api/capabilities
+// sets asynchronously; a migrated key restored before that response lands
+// would misroute a public deployment's key into the local-only Keychain
+// path. The restore waits for the real profile only in that one case.
+test.assertIncludes(cloudModel, "function restoreCloudCredentialAfterBoot", "the boot restore waits for the real deployment profile before routing a migrated key");
+test.assertIncludes(cloudModel, "window.AISystem6PublicAccess.getCapabilities()", "the wait reuses the same capabilities request the public-access gate already started");
+
+// This notice fires from the boot-time restore path, which can run before
+// the language table has loaded — t() falls back to the raw key then. A
+// live check caught pushSystemNotification storing that raw key as a frozen
+// English fallback; messageKey makes the Notification Center redraw the
+// real translation once it is ready, the same fix the drawing layer already
+// relies on for every other notification.
+test.assertIncludes(cloudModel, 'messageKey: "cloud_key_left_browser_storage"', "the notice redraws from the language table instead of freezing a possibly-untranslated key");
 
 test.finish();

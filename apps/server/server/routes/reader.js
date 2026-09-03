@@ -143,9 +143,18 @@ async function handleReader(req, res) {
     if (/** @type {any} */ (error)?.code === "ERR_RESPONSE_TOO_LARGE") {
       error = new Error("Reader page is too large.");
     }
-    send(res, 502, JSON.stringify({
+    // A refused address is the caller's fault; only a real attempt at a remote
+    // page can fail upstream.
+    const declaredStatus = Number(/** @type {any} */ (error)?.statusCode);
+    const status = Number.isInteger(declaredStatus) && declaredStatus >= 400 && declaredStatus <= 499
+      ? declaredStatus
+      : 502;
+    send(res, status, JSON.stringify({
       error: "Reader failed",
       detail: friendlyReaderError(error),
+      ...(/** @type {any} */ (error)?.code && status !== 502
+        ? { code: String(/** @type {any} */ (error).code) }
+        : {}),
     }), {
       "Content-Type": "application/json",
     });

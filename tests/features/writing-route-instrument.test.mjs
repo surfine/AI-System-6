@@ -147,9 +147,14 @@ test.assertIncludes(windowsCss, ".spine-actions button.holds-pen .spine-step-num
 // --- E. A phase gets the screen -------------------------------------------
 
 test.assertIncludes(windowManager, "function arrangeSoloWritingWindow", "a phase with one surface is arranged too");
-test.assertIncludes(
-  windowManager,
-  '["questionSheet", "outline", "sectionDrafts", "reviewDesk", "teachText"].includes(name)',
+// The five stops were once an inline array repeated at the arrange site. They
+// are one named set now, so ask the set: a contract that searched for the old
+// literal went red on a change that moved no behaviour at all.
+test.assert(
+  ["questionSheet", "outline", "sectionDrafts", "reviewDesk", "teachText"].every((stop) => {
+    const declaration = windowManager.match(/const writingLayoutWindowNames = new Set\(\[(.*?)\]\)/s)?.[1] || "";
+    return declaration.includes(`"${stop}"`);
+  }),
   "the Question Sheet is arranged like every other stop",
 );
 test.assertNotIncludes(windowManager, 'if (!isOpen("teachText")) return;', "arrangement no longer gives up when there is no manuscript yet");

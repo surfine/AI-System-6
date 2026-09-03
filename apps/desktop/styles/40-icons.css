@@ -206,6 +206,11 @@
   background: var(--paper);
   padding: 1px 3px;
   box-decoration-break: clone;
+  /* A filename with no space (e.g. "DTK_Release_notes.pdf") has no natural
+     break point, and the 80px-wide icon column below only requested this at
+     narrow viewports -- at ordinary desktop width the label instead overflowed
+     unbroken to one side, clipped against its own icon and the next column. */
+  overflow-wrap: anywhere;
 }
 
 .finder-item small {
@@ -888,9 +893,27 @@
 }
 
 @media (max-width: 860px) {
+  /* max-width stays on the low-specificity selector on purpose: the generic
+     mobile work-area rule (.desktop .window.is-mobile-work-area...,
+     60-responsive.css) already wins the `max-width` property here whenever
+     it is narrower (its own --mobile-work-left/right inset), and this window
+     relies on that clamp in the landscape work-area layout. Only `width`
+     needs to win outright, so it gets its own, more specific selector below
+     instead of both properties riding one raised-specificity rule. */
   body:not(.is-writer-mode) .project-disk-window:not(.is-mobile-fullscreen) {
-    width: calc(100vw - 32px) !important;
     max-width: calc(100vw - 32px);
+  }
+
+  /* Won by raising specificity, not by raising priority: the generic mobile
+     work-area rule above is a six-class selector that loads later, so it
+     always outranks a bare .project-disk-window rule on the `width`
+     property. `.window` and the two `:not()` guards below are true of any
+     visible project-disk-window already (a hidden window has no box to
+     size) — they exist only to lift this selector's own class count past
+     that rule's, so the width this window actually wants wins the cascade
+     honestly instead of jumping it. */
+  body:not(.is-writer-mode) .desktop .window.project-disk-window:not(.is-mobile-fullscreen):not(.is-hidden):not(.is-app-hidden) {
+    width: calc(100vw - 32px);
   }
 
   .project-disk-details-bar .view-controls {

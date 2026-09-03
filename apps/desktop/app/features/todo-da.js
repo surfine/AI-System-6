@@ -117,7 +117,7 @@ function addTodoDaItem() {
   const parts = todoDaFields();
   if (!parts) return;
   const text = parts.input.value.trim();
-  if (!text) return;
+  if (!text) return setStatus(t("todo_da_add_empty"));
   const project = typeof getActiveProject === "function" ? getActiveProject() : null;
   todoDaItems.push(...normalizeTodoDaItems([{
     text,

@@ -129,6 +129,24 @@ function isPrivateAddress(address) {
 }
 
 /**
+ * The address came from the caller, so Reader refusing it is a fault in the
+ * request. These were thrown as plain errors and the route answered 502, which
+ * told the user that a remote page had failed when Reader had not opened one.
+ *
+ * @param {string} message
+ * @param {string} code
+ * @returns {Error & { code?: string, statusCode?: number }}
+ */
+function readerTargetError(message, code) {
+  const error = /** @type {Error & { code?: string, statusCode?: number }} */ (
+    new Error(message)
+  );
+  error.statusCode = 400;
+  error.code = code;
+  return error;
+}
+
+/**
  * Validate that `value` is an http(s) URL targeting a public host.
  * Rejects localhost / private IPs / private DNS results. Returns the
  * canonical URL plus the public address that must be pinned for the request.
@@ -142,21 +160,30 @@ async function resolveReaderTarget(value) {
   try {
     parsed = new URL(value);
   } catch {
-    throw new Error("Reader accepts only valid URLs.");
+    throw readerTargetError("Reader accepts only valid URLs.", "reader_invalid_url");
   }
 
   if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-    throw new Error("Reader accepts only http or https URLs.");
+    throw readerTargetError(
+      "Reader accepts only http or https URLs. Give the page address that starts with http:// or https://.",
+      "reader_unsupported_scheme"
+    );
   }
 
   const hostname = parsed.hostname.toLowerCase();
   if (["localhost", "localhost.localdomain"].includes(hostname) || hostname.endsWith(".localhost")) {
-    throw new Error("Reader cannot open local machine addresses.");
+    throw readerTargetError(
+      "Reader cannot open local machine addresses. Give a public web address.",
+      "reader_local_address"
+    );
   }
 
   if (net.isIP(hostname)) {
     if (isPrivateAddress(hostname)) {
-      throw new Error("Reader cannot open private network addresses.");
+      throw readerTargetError(
+        "Reader cannot open private network addresses. Give a public web address.",
+        "reader_private_address"
+      );
     }
     return {
       url: parsed.href,
@@ -167,7 +194,10 @@ async function resolveReaderTarget(value) {
 
   const addresses = await dns.lookup(hostname, { all: true, verbatim: true });
   if (!addresses.length || addresses.some((entry) => isPrivateAddress(entry.address))) {
-    throw new Error("Reader cannot open private network addresses.");
+    throw readerTargetError(
+      "Reader cannot open private network addresses. Give a public web address.",
+      "reader_private_address"
+    );
   }
 
   return {

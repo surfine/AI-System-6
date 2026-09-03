@@ -173,6 +173,7 @@ const teachTextMenus = [
       menuItem("copy-active-markdown", "copy_markdown"),
       menuItem("download-active-markdown", "download_markdown"),
       menuItem("download-active-bilingual-markdown", "download_bilingual_md"),
+      menuItem("export-document-word", "export_word_document"),
       menuItem("export-teachtext-project-cd", "export_project_cd"),
     ]),
     menuSeparator,
@@ -193,6 +194,18 @@ const teachTextMenus = [
     menuItem("advance-writing-route", "advance_writing_route", "route-advance"),
     menuItem("toggle-writing-preview", "preview", "writing-preview"),
     menuItem("cycle-writing-focus", "focus_mode_cycle", "writing-focus"),
+    // MacWrite's ruler, narrowed to the one setting Aaron kept: line spacing.
+    // Applies to the editing paper and the preview alike, on every writing
+    // surface, and persists the way focus mode already does (localStorage).
+    submenu("line_spacing", [
+      menuItem("set-line-spacing-compact", "line_spacing_compact", "", { dataset: { lineSpacingChoice: "compact" } }),
+      menuItem("set-line-spacing-standard", "line_spacing_standard", "", { dataset: { lineSpacingChoice: "standard" } }),
+      menuItem("set-line-spacing-relaxed", "line_spacing_relaxed", "", { dataset: { lineSpacingChoice: "relaxed" } }),
+    ]),
+    // Raises every route window at once. Its own details-bar button was
+    // retired in the chrome-reduction pass (「把纸还给写作者」) because this is
+    // now its only permanent home.
+    menuItem("open-writing-flow-windows", "open_writing_flow"),
     menuItem("see-as-chart", "clio_chart_see_as_chart"),
     menuItem("develop-in-lightroom", "develop_in_lightroom"),
     menuSeparator,
@@ -235,6 +248,10 @@ const teachTextMenus = [
     submenu("review_desk", [
       menuItem("previous-style-section", "previous_section"),
       menuItem("next-style-section", "next_section"),
+      // View Manuscript syncs and scrolls the Manuscript to the section under
+      // review; it is more than a plain Go To, so it moved here rather than
+      // being dropped when its details-bar button was retired.
+      menuItem("review-view-manuscript", "view_manuscript"),
       menuItem("review-style-section", "review_style_section"),
       menuItem("review-facts-section", "review_facts_section"),
       menuItem("review-facts-section-online", "review_facts_section_online"),
@@ -449,6 +466,7 @@ const clioTalkMenus = [
     submenu("menu_export", [
       menuItem("copy-current-chat-markdown", "copy_markdown"),
       menuItem("download-current-chat-markdown", "download_markdown"),
+      menuItem("export-document-word", "export_word_document"),
     ]),
   ]),
   menu("edit", "menu_edit", [
@@ -633,12 +651,15 @@ const clioChartMenus = [
   ]),
   menu("edit", "menu_edit", editWithSelection),
   menu("chart", "menu_chart", [
-    menuItem("clio-chart-bars", "clio_chart_bars", "clio-chart-view-1"),
-    menuItem("clio-chart-matrix", "clio_chart_matrix", "clio-chart-view-2"),
-    menuItem("clio-chart-trace", "clio_chart_trace", "clio-chart-view-3"),
-    menuItem("clio-chart-grid", "clio_chart_grid", "clio-chart-view-4"),
-    menuItem("clio-chart-score", "clio_chart_score", "clio-chart-view-5"),
-    menuItem("clio-chart-source", "source_view"),
+    // One matrix, six projections, one of them showing. The row for the
+    // projection already on screen was black and did nothing when chosen,
+    // and no row said which one that was.
+    menuItem("clio-chart-bars", "clio_chart_bars", "clio-chart-view-1", { dataset: { clioChartProjection: "bars" } }),
+    menuItem("clio-chart-matrix", "clio_chart_matrix", "clio-chart-view-2", { dataset: { clioChartProjection: "matrix" } }),
+    menuItem("clio-chart-trace", "clio_chart_trace", "clio-chart-view-3", { dataset: { clioChartProjection: "trace" } }),
+    menuItem("clio-chart-grid", "clio_chart_grid", "clio-chart-view-4", { dataset: { clioChartProjection: "grid" } }),
+    menuItem("clio-chart-score", "clio_chart_score", "clio-chart-view-5", { dataset: { clioChartProjection: "score" } }),
+    menuItem("clio-chart-source", "source_view", "", { dataset: { clioChartProjection: "source" } }),
     menuSeparator,
     menuItem("clio-chart-presentation", "clio_chart_presentation"),
     menuItem("clio-chart-send-stage", "clio_chart_send_stage"),
@@ -704,10 +725,13 @@ const cmfStudioMenus = [
     menuItem("cmf-reset", "reset"),
     menuItem("cmf-reset-view", "cmf_reset_view"),
   ]),
+  // Three alternatives, one camera. Only the thumbnail strip inside the
+  // window said which view the model is at; the rows carried no mark, so a
+  // view chosen from the menu moved the camera and marked nothing.
   menu("view", "menu_view", [
-    menuItem("cmf-view-front", "cmf_view_front"),
-    menuItem("cmf-view-back", "cmf_view_back"),
-    menuItem("cmf-view-side", "cmf_view_side"),
+    menuItem("cmf-view-front", "cmf_view_front", "", { dataset: { cmfViewChoice: "01-front" } }),
+    menuItem("cmf-view-back", "cmf_view_back", "", { dataset: { cmfViewChoice: "02-back" } }),
+    menuItem("cmf-view-side", "cmf_view_side", "", { dataset: { cmfViewChoice: "05-buttons-side" } }),
   ]),
   specialMenu(),
 ];
@@ -828,6 +852,10 @@ function renderApplicationMenuItem(item) {
       const button = document.createElement("button");
       button.type = "button";
       button.dataset.action = `open-chat-file:${file.id}`;
+      // The list names conversations and marked none of them, so the row for
+      // the conversation already on screen read like every other row, and
+      // choosing it opened what was already open and said nothing.
+      button.dataset.chatFileChoice = file.id;
       button.textContent = file.name;
       fragment.append(button);
     });

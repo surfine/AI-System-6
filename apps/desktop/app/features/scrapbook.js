@@ -534,10 +534,31 @@ function renderScrapbookPager(visibleScraps, selectedScrap = null) {
   scrapbookPageTrackEl.replaceChildren(fragment);
 }
 
-function moveScrapbookPage(direction) {
-  const visibleScraps = selectedScrapStack === "all"
+function scrapbookPageScraps() {
+  return selectedScrapStack === "all"
     ? getProjectScraps()
     : getProjectScraps().filter((scrap) => getScrapStack(scrap) === selectedScrapStack);
+}
+
+/**
+ * Both page arrows stayed enabled on an empty Scrapbook and on the last page,
+ * where moveScrapbookPage() returns without doing anything: the arrow looked
+ * live and turned nothing. The arrow now greys out at the end of the stack,
+ * the way a one-page document's window frame arrows do.
+ *
+ * @param {number} direction
+ * @returns {boolean}
+ */
+function canMoveScrapbookPage(direction) {
+  const visibleScraps = scrapbookPageScraps();
+  if (!visibleScraps.length) return false;
+  const currentIndex = Math.max(0, visibleScraps.findIndex((scrap) => scrap.id === selectedScrapId));
+  const nextIndex = Math.max(0, Math.min(visibleScraps.length - 1, currentIndex + direction));
+  return nextIndex !== currentIndex;
+}
+
+function moveScrapbookPage(direction) {
+  const visibleScraps = scrapbookPageScraps();
   if (!visibleScraps.length) return;
 
   const currentIndex = Math.max(0, visibleScraps.findIndex((scrap) => scrap.id === selectedScrapId));
@@ -1398,7 +1419,7 @@ ${sourceText}
     }
     clearStatus();
   } catch (error) {
-    setStatus(t("project_reference_error", error.message));
+    setStatus(t("project_reference_error", friendlyErrorDetail(error)));
   }
 }
 
@@ -1438,8 +1459,8 @@ function deleteSelectedScrap() {
 
 let smounted=!1;function mountScrapbookRuntime(){if(smounted)return!0;smounted=!0;scrapbookAskForm?.addEventListener("submit",askScrapbookQuestion);registerAskBarSource("scrapbook",describeScrapbookAskScope);toggleScrapTranslationButton?.addEventListener("click",toggleScrapTranslationView);return!0}
 function swin(){return document.querySelector(".window.is-active")?.dataset.window==="scrapbook"}function sctrl(s){const c=document.querySelector(s);return!!c&&!c.disabled&&!c.hidden}
-const sav={"open-scrapbook":()=>!0,"scrapbook-open-source":()=>sctrl("#open-scrap-source"),"scrapbook-page-previous":()=>!0,"scrapbook-page-next":()=>!0,"scrapbook-toggle-translation":()=>sctrl("#toggle-scrap-translation"),"scrapbook-insert":()=>sctrl("#insert-scrap"),"scrapbook-attach":()=>sctrl("#attach-scrap-to-assistant"),"scrapbook-send-question":()=>sctrl("#send-scraps-to-question"),"scrapbook-outline":()=>sctrl("#outline-scraps"),"scrapbook-export-bilingual":()=>sctrl("#download-scraps-bilingual"),"scrapbook-delete":()=>sctrl("#delete-scrap"),"focus-scrapbook-question":()=>getSelectedScraps().length>0};
-const slist=[["open-scrapbook",()=>openWindow("scrapbook")],["scrapbook-open-source",openSelectedScrapSourceInReader],["scrapbook-page-previous",showPreviousScrapbookPage],["scrapbook-page-next",showNextScrapbookPage],["scrapbook-toggle-translation",toggleScrapTranslationView],["scrapbook-insert",insertScrapIntoPrompt],["scrapbook-attach",toggleClipAttachment],["scrapbook-send-question",sendSelectedScrapsToQuestionSheet],["scrapbook-outline",outlineSelectedScraps],["scrapbook-export-bilingual",downloadSelectedScrapsBilingualMarkdown],["scrapbook-delete",deleteSelectedScrap],["focus-scrapbook-question",()=>scrapbookQuestionInput?.focus()]];
+const sav={"open-scrapbook":()=>!0,"scrapbook-open-source":()=>sctrl("#open-scrap-source"),"scrapbook-page-previous":()=>canMoveScrapbookPage(-1),"scrapbook-page-next":()=>canMoveScrapbookPage(1),"scrapbook-keep-reading":()=>!!scrapReadingProposal,"scrapbook-discard-reading":()=>!!scrapReadingProposal,"scrapbook-toggle-translation":()=>sctrl("#toggle-scrap-translation"),"scrapbook-insert":()=>sctrl("#insert-scrap"),"scrapbook-attach":()=>sctrl("#attach-scrap-to-assistant"),"scrapbook-send-question":()=>sctrl("#send-scraps-to-question"),"scrapbook-outline":()=>sctrl("#outline-scraps"),"scrapbook-export-bilingual":()=>sctrl("#download-scraps-bilingual"),"scrapbook-delete":()=>sctrl("#delete-scrap"),"focus-scrapbook-question":()=>getSelectedScraps().length>0};
+const slist=[["open-scrapbook",()=>openWindow("scrapbook")],["scrapbook-open-source",openSelectedScrapSourceInReader],["scrapbook-page-previous",showPreviousScrapbookPage],["scrapbook-page-next",showNextScrapbookPage],["scrapbook-keep-reading",()=>keepScrapReadingProposal()],["scrapbook-discard-reading",()=>discardScrapReadingProposal()],["scrapbook-toggle-translation",toggleScrapTranslationView],["scrapbook-insert",insertScrapIntoPrompt],["scrapbook-attach",toggleClipAttachment],["scrapbook-send-question",sendSelectedScrapsToQuestionSheet],["scrapbook-outline",outlineSelectedScraps],["scrapbook-export-bilingual",downloadSelectedScrapsBilingualMarkdown],["scrapbook-delete",deleteSelectedScrap],["focus-scrapbook-question",()=>scrapbookQuestionInput?.focus()]];
 window.AISystem6Runtime?.registerApplication({id:"scrapbook",windowName:"scrapbook",mount:mountScrapbookRuntime,restore:()=>mountScrapbookRuntime(),commands:Object.fromEntries(slist.map(([a,h])=>[a,{handler:h,isAvailable:()=>a==="open-scrapbook"?!0:swin()&&(sav[a]||(()=>!0))()}]))});
 
 // --- Clipped pictures -------------------------------------------------------
@@ -1566,7 +1587,7 @@ async function readSelectedScrapPicture() {
     setStatus(t("scrap_reading_ready"));
   } catch (error) {
     if (typeof isAbortError === "function" && isAbortError(error)) return;
-    setStatus(t("image_vision_failed", error?.message || t("connection_error")));
+    setStatus(t("image_vision_failed", friendlyErrorDetail(error)));
   }
 }
 

@@ -13,19 +13,25 @@
     <meta name="apple-mobile-web-app-title" content="AI System 6" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="theme-color" content="#000000" />
-    <link rel="apple-touch-icon" href="assets/app-icon/app-icon-180.png?v=20260831.5" />
-    <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png?v=20260831.5" />
-    <link rel="manifest" href="assets/app-icon/manifest.json?v=20260831.5" />
-    <script src="app/core/theme-registry.js?v=20260831.5"></script>
-    <link rel="stylesheet" href="styles.bundle.css?v=20260831.5" />
+    <link rel="apple-touch-icon" href="assets/app-icon/app-icon-180.png?v=20260903.1" />
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png?v=20260903.1" />
+    <link rel="manifest" href="assets/app-icon/manifest.json?v=20260903.1" />
+    <script src="app/core/theme-registry.js?v=20260903.1"></script>
+    <link rel="stylesheet" href="styles.bundle.css?v=20260903.1" />
     <!-- The app bundle is referenced at the end of a ~340 KB body, so the
          preload scanner reaches it late. This starts the download beside the
          stylesheet instead. Both URLs carry the same build stamp, so the
          browser serves the script tag from this one request. -->
-    <link rel="preload" as="script" href="app.bundle.js?v=20260831.5" />
+    <link rel="preload" as="script" href="app.bundle.js?v=20260903.1" />
   </head>
   <body class="is-booting">
-    <script src="app/core/theme-body-init.js?v=20260831.5"></script>
+    <script src="app/core/theme-body-init.js?v=20260903.1"></script>
+    <!-- Registers a window-level error/unhandledrejection net before
+         app.bundle.js loads, so a top-level crash in the bundle (a
+         temporal-dead-zone ReferenceError, for example) still shows the Sad
+         Mac recovery screen instead of leaving a blank page. See
+         app/core/boot-safety-net.js. -->
+    <script src="app/core/boot-safety-net.js?v=20260903.1"></script>
     <header class="menu-bar" aria-label="System menu" data-i18n-aria-label="system_menu">
       <div class="menu">
         <button class="apple" aria-label="Apple menu" data-i18n-aria-label="apple_menu" data-balloon-help="balloon_apple_menu">
@@ -333,8 +339,8 @@
             </section>
           </div>
           <div class="button-row finder-operation-actions">
-            <button class="btn" value="cancel" id="erase-disk-cancel">Cancel</button>
-            <button class="btn default danger" value="yes" id="erase-disk-confirm">Erase</button>
+            <button class="btn default" value="cancel" id="erase-disk-cancel">Cancel</button>
+            <button class="btn danger" value="yes" id="erase-disk-confirm">Erase</button>
           </div>
         </form>
       </dialog>
@@ -1076,7 +1082,7 @@
           <button class="shade-box" aria-label="Collapse" data-i18n-aria-label="collapse"></button>
         </div>
         <div class="details-bar">
-          <span data-i18n="eighteen_items">18 items</span>
+          <span data-i18n="nineteen_items">19 items</span>
           <div class="view-controls" data-view-window="applications" aria-label="View" data-i18n-aria-label="view_controls">
             <button class="view-btn is-active" type="button" data-view="icon" aria-label="Icon view" data-i18n-aria-label="view_icon"></button>
             <button class="view-btn" type="button" data-view="list" aria-label="List view" data-i18n-aria-label="view_list"></button>
@@ -1144,6 +1150,10 @@
           <button class="finder-item" data-action="open-clio-project">
             <span class="sys-icon" data-system-icon="clioProject" aria-hidden="true"></span>
             <span data-i18n="clio_project_label">ClioProject</span>
+          </button>
+          <button class="finder-item" data-action="open-clio-paint">
+            <span class="sys-icon" data-system-icon="clioPaint" aria-hidden="true"></span>
+            <span data-i18n="clio_paint_label">ClioPaint</span>
           </button>
           <button class="finder-item" data-action="open-liquid-cover">
             <span class="sys-icon" data-system-icon="liquidCover" aria-hidden="true"></span>
@@ -1631,6 +1641,7 @@
             <button class="btn" type="button" data-action="copy-project-cd-markdown" data-i18n="copy_markdown">Copy Markdown</button>
             <button class="btn" type="button" id="download-project-cd" data-i18n="download">Download</button>
             <button class="btn" type="button" data-action="share-project-cd-markdown" data-web-share-action data-i18n="share_ellipsis" hidden>Share…</button>
+            <button class="btn" type="button" data-action="export-project-cd-word" data-i18n="save_as_word">Save as Word</button>
             <button class="btn default" type="button" id="print-project-cd-pdf" data-i18n="print_to_pdf">Print to PDF</button>
             <button class="btn danger" type="button" id="clear-project-cd" data-i18n="clear">Clear</button>
           </div>
@@ -1911,7 +1922,10 @@
         <div class="details-bar app-status-bar teachtext-details-bar">
           <span class="status-bar-leading" id="style-sheet-count" data-i18n="draft_voice_stats_empty">0 words · ~0 sec</span>
           <span class="status-bar-context linked-manuscript-title" id="review-status-title" data-i18n="untitled">Untitled</span>
-          <button class="btn details-bar-button status-bar-trailing" type="button" data-action="review-view-manuscript" data-i18n="view_manuscript">View Manuscript</button>
+          <!-- View Manuscript moved to Writing > Review Desk in the menu bar
+               (paper-lane chrome reduction); this slot now carries the route
+               status message. -->
+          <div class="status-bar-trailing window-status-strip" aria-live="polite"><span class="window-status-slot" data-status-host></span></div>
         </div>
         <div class="window-pane review-desk-pane">
           <select id="review-section-source" hidden aria-label="Review Section" data-i18n-aria-label="review_section"></select>
@@ -1936,7 +1950,6 @@
             </section>
           </div>
           <div id="review-desk-empty-note" class="empty-folder-note review-desk-empty-note is-hidden"><p data-i18n="review_desk_requires_final">The Review Desk reviews a finished manuscript. Mark the Manuscript as Final to start.</p><button class="btn default" type="button" data-action="advance-manuscript-to-review" data-i18n="to_review">To Review</button></div>
-          <div class="window-status-strip" aria-live="polite"><span class="window-status-slot" data-status-host></span></div>
           <div class="teachtext-actions teachtext-surface-actions review-desk-actions">
             <div class="teachtext-command-group" aria-label="Review commands" data-i18n-aria-label="review_commands">
               <button class="btn" type="button" data-action="toggle-review-preview" data-i18n="preview">Preview</button>
@@ -1949,7 +1962,7 @@
                   <button class="btn" type="button" data-action="review-facts-section-online" data-i18n="review_facts_section_online">Fact Check This Section Online</button>
                   <button class="btn" type="button" data-action="review-facts-online" data-i18n="review_facts_online">Fact Check Manuscript Online</button>
                   <button class="btn" type="button" data-action="review-hkrr-section" data-i18n="review_hkrr_section">Review This Section with HKRR</button>
-                  <button class="btn" type="button" data-action="review-mingming-section" data-i18n="review_mingming_section">Review as Mingming</button>
+                  <button class="btn" type="button" data-action="review-mingming-section" data-i18n="review_mingming_section">Review as the Reader</button>
                   <button class="btn" type="button" data-action="review-mingming-handoff" data-i18n="review_mingming_handoff">How Luoluo Would Receive It</button>
                   <button class="btn" type="button" data-action="review-mingming-handoff-backstage" data-i18n="review_mingming_handoff_backstage">Backstage Handoff Review</button>
                   <button class="btn" type="button" data-action="ai-praise" data-i18n="praise">Praise Me</button>
@@ -2079,9 +2092,9 @@
           </form>
           <div class="scrapbook-pager" role="group" aria-label="Scrapbook pages" data-i18n-aria-label="scrapbook_pages">
             <div class="scrapbook-page-rail is-horizontal">
-              <button class="window-frame-arrow is-left" type="button" id="scrapbook-page-previous" data-action="scrapbook-page-previous" aria-label="Previous" data-i18n-aria-label="previous_page"></button>
+              <button class="window-frame-arrow is-left" type="button" id="scrapbook-page-previous" data-action="scrapbook-page-previous" aria-label="Previous" data-i18n-aria-label="previous_page" data-balloon-help-disabled="balloon_scrapbook_page_end"></button>
               <div id="scrapbook-page-track" class="scrapbook-page-track"></div>
-              <button class="window-frame-arrow is-right" type="button" id="scrapbook-page-next" data-action="scrapbook-page-next" aria-label="Next" data-i18n-aria-label="next_page"></button>
+              <button class="window-frame-arrow is-right" type="button" id="scrapbook-page-next" data-action="scrapbook-page-next" aria-label="Next" data-i18n-aria-label="next_page" data-balloon-help-disabled="balloon_scrapbook_page_end"></button>
             </div>
             <div class="scrapbook-page-meta" aria-live="polite">
               <output id="scrapbook-page-position">0 / 0</output>
@@ -2319,17 +2332,19 @@
         <div class="details-bar app-status-bar teachtext-details-bar">
           <span class="status-bar-leading" id="question-count">0 questions</span>
           <span class="status-bar-context linked-manuscript-title" id="question-manuscript-title">Untitled</span>
-          <div class="status-bar-trailing writing-eli5-trailing">
-            <button class="btn details-bar-button" type="button" data-action="open-writing-flow-windows" data-i18n="open_writing_flow">Open Flow</button>
-          </div>
+          <!-- Open Flow moved to Writing > Go To in the menu bar (paper-lane
+               chrome reduction): a permanent row for one jump button was
+               chrome the menu already carried. This trailing slot now hosts
+               the route status message instead of duplicating a menu item. -->
+          <div class="status-bar-trailing window-status-strip" aria-live="polite"><span class="window-status-slot" data-status-host></span></div>
         </div>
         <div class="window-pane teachtext-surface-pane question-sheet-pane">
           <div class="teachtext-editor-container specialized-teachtext-editor window-frame-scroller">
             <textarea id="question-sheet-body" data-requires-write rows="12" placeholder="What are we trying to solve? List key terms and must-remember points." data-i18n-placeholder="question_sheet_hint" data-drop-target="editor-insert" data-editor-surface="questionSheet"></textarea>
+            <div id="question-sheet-cards" class="question-sheet-cards is-hidden" role="list" aria-label="Question Sheet cards" data-i18n-aria-label="question_sheet_cards"></div>
             <div id="question-sheet-preview" class="specialized-teachtext-preview teachtext-preview is-hidden"></div>
           </div>
           <div id="question-sheet-photos" class="question-sheet-photos is-hidden" aria-label="Photographed notes" data-i18n-aria-label="question_sheet_photos"></div>
-          <div class="window-status-strip" aria-live="polite"><span class="window-status-slot" data-status-host></span></div>
           <div class="teachtext-actions teachtext-surface-actions">
             <div class="teachtext-command-group" aria-label="Question Sheet commands" data-i18n-aria-label="question_sheet_commands">
               <button class="btn" type="button" data-action="toggle-question-preview" data-i18n="preview">Preview</button>
@@ -2337,6 +2352,9 @@
               <details class="teachtext-command-menu specialized-command-menu">
                 <summary class="btn"><span class="mobile-control-long" data-i18n="teachtext_commands">Commands</span><span class="mobile-control-short" data-i18n="commands_short">Cmds</span></summary>
                 <div class="teachtext-command-popover">
+                  <button class="btn" type="button" data-action="question-sheet-view-page" aria-pressed="true" data-i18n="question_sheet_view_page">As Page</button>
+                  <button class="btn" type="button" data-action="question-sheet-view-cards" aria-pressed="false" data-i18n="question_sheet_view_cards">As Cards</button>
+                  <hr />
                   <button class="btn" type="button" data-action="add-question-sheet-photo" data-i18n="question_sheet_add_photo">Add Photo</button>
                   <button class="btn" type="button" data-action="organize-question-sheet" data-i18n="organize_question_sheet">Sort Into Sections</button>
                   <button class="btn" type="button" data-action="generate-outline" data-i18n="make_outline">Make Outline</button>
@@ -2365,16 +2383,18 @@
             <option value="draft" data-i18n="label_draft">Draft</option>
             <option value="ai" data-i18n="label_ai">AI Assisted</option>
           </select></div>
-          <button class="btn details-bar-button status-bar-trailing" type="button" data-action="open-question-sheet" data-i18n="view_question_sheet">View Question Sheet</button>
+          <!-- View Question Sheet moved to Writing > Go To (paper-lane chrome
+               reduction); this slot now carries the route status message. -->
+          <div class="status-bar-trailing window-status-strip" aria-live="polite"><span class="window-status-slot" data-status-host></span></div>
         </div>
         <div class="window-pane teachtext-surface-pane outline-pane">
           <div id="outline-notes" class="outline-notes is-hidden"></div>
           <div class="teachtext-editor-container specialized-teachtext-editor window-frame-scroller">
             <textarea id="outline-content" class="outline-content" rows="12" spellcheck="true" data-requires-write data-i18n-placeholder="outline_markdown_hint" placeholder="Write Markdown freely. Use ## for draftable sections.">## New Section</textarea>
             <div id="outline-tree" class="outline-tree is-hidden" role="tree" tabindex="0" aria-label="Outline tree" data-i18n-aria-label="outline_tree"></div>
+            <div id="outline-cards" class="outline-cards is-hidden" role="list" aria-label="Outline cards" data-i18n-aria-label="outline_cards"></div>
             <div id="outline-preview" class="specialized-teachtext-preview teachtext-preview is-hidden"></div>
           </div>
-          <div class="window-status-strip" aria-live="polite"><span class="window-status-slot" data-status-host></span></div>
           <div class="teachtext-actions teachtext-surface-actions">
             <div class="teachtext-command-group" aria-label="Outline commands" data-i18n-aria-label="outline_commands">
               <button class="btn" type="button" data-action="toggle-outline-preview" data-i18n="preview">Preview</button>
@@ -2388,12 +2408,13 @@
                   <button class="btn" type="button" data-action="outline-tree-promote" data-i18n="outline_tree_promote">Raise a Level</button>
                   <button class="btn" type="button" data-action="outline-tree-demote" data-i18n="outline_tree_demote">Lower a Level</button>
                   <button class="btn" type="button" data-action="outline-tree-write" data-i18n="outline_tree_write">Write This Section</button>
-                  <button class="btn" type="button" data-action="mingming-outline" data-i18n="mingming_outline">What Would Mingming Write?</button>
+                  <button class="btn" type="button" data-action="mingming-outline" data-i18n="mingming_outline">Rewrite through the Reader's Eye</button>
                   <button class="btn" type="button" data-action="structure-outline" data-i18n="structure_outline">Structure</button>
                   <button class="btn" type="button" data-action="expand-outline" data-i18n="expand_weak_topic">Expand Weak Topic</button>
                 <hr />
                   <button class="btn" type="button" data-action="toggle-outline-tree" aria-pressed="false" data-i18n="outline_tree_view">Outline Tree</button>
-                  
+                  <button class="btn" type="button" data-action="toggle-outline-cards" aria-pressed="false" data-i18n="outline_cards_view">As Cards</button>
+
                     <button class="btn" type="button" data-action="toggle-sideask" aria-pressed="false" data-i18n="sideask">SideAsk</button>
                   </div>
               </details>
@@ -2416,7 +2437,9 @@
             <option value="draft" data-i18n="label_draft">Draft</option>
             <option value="ai" data-i18n="label_ai">AI Assisted</option>
           </select></div>
-          <button class="btn details-bar-button status-bar-trailing" type="button" data-action="open-question-sheet" data-i18n="view_question_sheet">View Question Sheet</button>
+          <!-- View Question Sheet moved to Writing > Go To (paper-lane chrome
+               reduction); this slot now carries the route status message. -->
+          <div class="status-bar-trailing window-status-strip" aria-live="polite"><span class="window-status-slot" data-status-host></span></div>
         </div>
         <div class="window-pane teachtext-surface-pane section-drafts-pane">
           <select id="draft-section-source" hidden aria-label="Outline Section" data-i18n-aria-label="outline_section"></select>
@@ -2432,7 +2455,6 @@
               <textarea id="draft-body" data-requires-write class="section-draft-markdown" rows="12" spellcheck="true" data-i18n-placeholder="section_draft_markdown_hint" placeholder="Write this section in Markdown..."></textarea>
               <div id="draft-preview" class="specialized-teachtext-preview teachtext-preview is-hidden"></div>
             </div>
-            <div class="window-status-strip" aria-live="polite"><span class="window-status-slot" data-status-host></span></div>
             <div class="teachtext-actions teachtext-surface-actions">
               <div class="teachtext-command-group" aria-label="Section Draft commands" data-i18n-aria-label="section_draft_commands">
                 <button class="btn" type="button" data-action="toggle-draft-preview" data-i18n="preview">Preview</button>
@@ -3383,7 +3405,7 @@
       </section>
     </main>
 
-    <script src="app/generated/build-info.js?v=20260831.5"></script>
-    <script src="app.bundle.js?v=20260831.5"></script>
+    <script src="app/generated/build-info.js?v=20260903.1"></script>
+    <script src="app.bundle.js?v=20260903.1"></script>
   </body>
 </html>

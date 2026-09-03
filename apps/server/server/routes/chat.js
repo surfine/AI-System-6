@@ -33,7 +33,7 @@
 
 "use strict";
 
-const { send, readJsonBody, requestSignal } = require("../lib/http.js");
+const { send, readJsonBody, requestSignal, respondIfClientError } = require("../lib/http.js");
 const { proxyJsonStream } = require("../lib/fetch.js");
 const { getLocalUrls } = require("../lib/local-urls.js");
 const {
@@ -255,6 +255,11 @@ async function handleChat(req, res) {
     });
   } catch (error) {
     if (/** @type {any} */ (error)?.name === "AbortError") return;
+    // The classifier reads an upstream message and names a cause such as
+    // "lmstudio_server_offline". A rejected body never reached the model
+    // server, so the classifier would state a cause that is false: the user
+    // read that the local model server was down when the JSON was bad.
+    if (respondIfClientError(res, error)) return;
     const message = /** @type {Error} */ (error).message;
     send(res, 502, JSON.stringify({
       error: "Proxy failed",

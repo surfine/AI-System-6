@@ -197,7 +197,12 @@ function initDragAndDrop() {
           }
         }
       } catch (e) {
+        // lane-errors: a failed drop used to log to the console only, so the
+        // dragged item visually snapped back with no explanation - the drop
+        // target just did nothing. friendlyErrorDetail keeps this honest
+        // instead of showing whatever internal message the handler threw.
         console.error("Drop failed", e);
+        setStatus(t("drop_failed", friendlyErrorDetail(e)));
       }
     }
   });

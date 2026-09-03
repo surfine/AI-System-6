@@ -25,6 +25,74 @@ let pendingQuickDraftCommit = null;
 let requestController = null;
 let quickDraftDrawerTrigger = null;
 
+// A cloud request rides only requestController.signal, with no deadline of
+// its own (unlike the local path, which carries REQUEST_TIMEOUT_MS /
+// INFERENCE_TIMEOUT_MS in local-lmstudio-client.js). Without a watchdog here,
+// an unsettled await never reaches the `finally` that calls setBusy(false),
+// and every Draft Desk control setBusy disables stays wedged forever. Four
+// minutes covers a slow cloud completion; a hang past that is worth
+// surfacing, not waiting out.
+const QUICK_DRAFT_REQUEST_TIMEOUT_MS = 4 * 60 * 1000;
+
+function quickDraftTimeoutError(message) {
+  // The VM feature test constructs this file's scope without DOMException on
+  // it (only the globals the harness lists survive vm.createContext), so a
+  // bare `new DOMException(...)` would throw ReferenceError there.
+  if (typeof DOMException === "function") return new DOMException(message, "TimeoutError");
+  const error = new Error(message);
+  error.name = "TimeoutError";
+  return error;
+}
+
+// The watchdog timer lives ON the controller it guards, not in one shared
+// module variable. A single shared timer id was tried first and had a real
+// bug: request A's `finally` clears "the" timer on its way out, but by then
+// request B (started while A was still in flight) has already replaced it
+// with its own — so A's settle silently defused B's watchdog too, and B hung
+// forever the moment its own request stalled.
+function beginQuickDraftRequest() {
+  if (requestController) {
+    requestController.abort();
+    settleQuickDraftRequest(requestController);
+  }
+  // The watchdog lives on its own controller so a stale settle can never
+  // defuse a newer request's timer. checkJs needs the widened shape named.
+  const controller = /** @type {AbortController & { quickDraftTimer?: ReturnType<typeof setTimeout> | null }} */ (new AbortController());
+  requestController = controller;
+  controller.quickDraftTimer = setTimeout(() => {
+    controller.quickDraftTimer = null;
+    if (requestController === controller) {
+      controller.abort(quickDraftTimeoutError("Quick Draft model did not respond in time."));
+    }
+  }, QUICK_DRAFT_REQUEST_TIMEOUT_MS);
+  return controller;
+}
+
+// Clear this controller's own watchdog and release the shared controller slot
+// — but only if it still belongs to this request. A stale settle (e.g. an
+// early-return commit failure racing a newer request the user already
+// started) must not null out the controller a later call is using, and must
+// never touch a later controller's own timer.
+function settleQuickDraftRequest(controller) {
+  if (controller?.quickDraftTimer) {
+    clearTimeout(controller.quickDraftTimer);
+    controller.quickDraftTimer = null;
+  }
+  if (!controller || requestController === controller) {
+    requestController = null;
+  }
+}
+
+// An AbortError's .name survives cross-browser, but the *reason* on the
+// signal does not: WebKit reports every aborted fetch as a plain AbortError
+// regardless of the reason passed to abort(), so the timeout must be told
+// apart by inspecting the controller's signal.reason, not just error.name.
+function quickDraftRequestTimedOut(error, controller) {
+  if (error?.name === "TimeoutError") return true;
+  const reason = controller?.signal?.reason;
+  return reason?.name === "TimeoutError";
+}
+
 // One window, three regions: the material shelf, the paper, the inspector.
 // The paper never leaves the screen, so there is no phase to switch — only
 // which surface the paper carries. With no draft it carries the intake well;
@@ -1019,10 +1087,14 @@ function installLightroomWindow() {
               </aside>
           </div>
           <footer class="lightroom-actions">
-              <span class="draft-desk-display-switch" role="tablist" data-i18n-aria-label="quick_draft_view_label">
-                <button class="btn mini-btn" type="button" role="tab" id="quick-draft-toggle-grain" data-quick-draft-display="grain" aria-controls="lightroom-paper-view" aria-selected="false" data-i18n="quick_draft_grain" data-balloon-help="quick_draft_grain_balloon">Grain</button>
-                <button class="btn mini-btn is-active" type="button" role="tab" id="quick-draft-toggle-composite" data-quick-draft-display="read" aria-controls="lightroom-paper-view" aria-selected="true" data-i18n="quick_draft_composite" data-balloon-help="quick_draft_composite_balloon">Read</button>
-                <button class="btn mini-btn" type="button" role="tab" id="quick-draft-toggle-listen" data-quick-draft-display="listen" aria-controls="lightroom-paper-view" aria-selected="false" data-i18n="quick_draft_listen" data-balloon-help="quick_draft_listen_balloon">Listen</button>
+              <!-- Real segmented control (.view-switch / .view-switch-option --
+                   the same part ClioStage's and Time Machine's view rows use),
+                   here in its tab-strip ARIA pattern: three real panels, one
+                   selected. The row used to be three loose .btn.mini-btn. -->
+              <span class="view-switch draft-desk-display-switch" role="tablist" data-i18n-aria-label="quick_draft_view_label">
+                <button class="view-switch-option" type="button" role="tab" id="quick-draft-toggle-grain" data-quick-draft-display="grain" aria-controls="lightroom-paper-view" aria-selected="false" data-i18n="quick_draft_grain" data-balloon-help="quick_draft_grain_balloon">Grain</button>
+                <button class="view-switch-option is-active" type="button" role="tab" id="quick-draft-toggle-composite" data-quick-draft-display="read" aria-controls="lightroom-paper-view" aria-selected="true" data-i18n="quick_draft_composite" data-balloon-help="quick_draft_composite_balloon">Read</button>
+                <button class="view-switch-option" type="button" role="tab" id="quick-draft-toggle-listen" data-quick-draft-display="listen" aria-controls="lightroom-paper-view" aria-selected="false" data-i18n="quick_draft_listen" data-balloon-help="quick_draft_listen_balloon">Listen</button>
               </span>
               <span class="draft-desk-action-gap"></span>
               <button class="btn default" id="quick-draft-display-body" type="button" data-quick-draft-display="body" data-i18n="lightroom_back_to_draft" data-balloon-help="balloon_lightroom_back">Back to the Draft</button>
@@ -1373,9 +1445,25 @@ function quickDraftUsesDrawerLayout() {
   return Boolean(compactOnlyControl && getComputedStyle(compactOnlyControl).display !== "none");
 }
 
+// Whether "panel" has anything to show. The materials shelf answers about
+// the live draft alone — there is nothing to shelve before a draft exists.
+// The inspector also answers for a document 文字亮室 is developing that is
+// not the live draft: that subject's own text decides, not the live paper's
+// empty state (is-empty-draft tracks the live form only, and never learns
+// about a subject). lightroomCommandAvailable's isAvailable check and the
+// toggle below both read this SAME function, so "Show Adjustments" cannot
+// light up on one condition and refuse on another again.
+function quickDraftPanelActionable(panel = "shelf") {
+  if (!refs.form) return false;
+  if (panel === "inspector" && lightroomSubject) {
+    return Boolean(String(lightroomBodyText() || "").trim());
+  }
+  return !refs.form.classList.contains("is-empty-draft");
+}
+
 function quickDraftPanelVisible(panel = "shelf") {
-  if (!refs.form || refs.form.classList.contains("is-empty-draft")) return false;
   const target = panel === "inspector" ? "inspector" : "shelf";
+  if (!quickDraftPanelActionable(target)) return false;
   if (quickDraftUsesDrawerLayout()) {
     return refs.form.classList.contains(target === "inspector" ? "is-inspector-open" : "is-shelf-open");
   }
@@ -1383,8 +1471,8 @@ function quickDraftPanelVisible(panel = "shelf") {
 }
 
 function toggleQuickDraftPanel(panel = "shelf") {
-  if (!refs.form || refs.form.classList.contains("is-empty-draft")) return false;
   const target = panel === "inspector" ? "inspector" : "shelf";
+  if (!quickDraftPanelActionable(target)) return false;
   const hiddenClass = target === "inspector" ? "is-inspector-hidden" : "is-shelf-hidden";
   if (quickDraftUsesDrawerLayout()) {
     refs.form.classList.remove(hiddenClass);

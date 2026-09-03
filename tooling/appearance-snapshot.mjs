@@ -345,10 +345,48 @@ async function captureCell(page, cell, outDir) {
     // being slow.
     const selector = `.window[data-window="${cell.target}"]`;
     await settleSurface(page, selector);
+    // A phone or tablet route window is position:fixed and fills the screen.
+    // An element screenshot scrolls its target into view first, and that
+    // ceremony never finishes on a fixed element: Playwright reported "element
+    // is not visible" against a window measuring a real 375x788, thirteen cells
+    // burned the full 30s deadline, and the pixel net spent more time waiting
+    // for windows it never photographed than photographing the other twenty.
+    //
+    // A clip screenshot of the same rectangle is the same pixels — an element
+    // screenshot IS a page screenshot cut to the element's box — and it returns
+    // in about 30ms. The clip path is taken only when the box lies inside the
+    // viewport, because a taller element needs the scrolling that the locator
+    // does. Losing the locator's own stability wait costs nothing: settleSurface
+    // above already held the surface still, and motion is off.
+    const frame = await page.evaluate((sel) => {
+      const element = document.querySelector(sel);
+      if (!element) return null;
+      const box = element.getBoundingClientRect();
+      return {
+        x: box.x, y: box.y, width: box.width, height: box.height,
+        insideViewport: box.x >= 0 && box.y >= 0
+          && box.right <= window.innerWidth && box.bottom <= window.innerHeight,
+      };
+    }, selector);
     try {
-      await page.locator(selector).screenshot({ path: file, animations: "disabled", timeout: 30000 });
+      if (frame?.insideViewport) {
+        await page.screenshot({
+          path: file,
+          animations: "disabled",
+          timeout: 30000,
+          clip: {
+            x: Math.round(frame.x), y: Math.round(frame.y),
+            width: Math.round(frame.width), height: Math.round(frame.height),
+          },
+        });
+      } else {
+        await page.locator(selector).screenshot({ path: file, animations: "disabled", timeout: 30000 });
+      }
     } catch (error) {
-      return { id: cell.id, tier: cell.tier, missing: true, why: `screenshot: ${error.name}` };
+      // The name alone ("TimeoutError") sent a reader to write a probe script to
+      // learn what timed out. The first line of the message says it.
+      const detail = String(error.message || "").split("\n")[0].trim();
+      return { id: cell.id, tier: cell.tier, missing: true, why: `screenshot: ${error.name}${detail ? ` — ${detail}` : ""}` };
     }
   }
   const buffer = readFileSync(file);
@@ -538,9 +576,16 @@ try {
     const results = await captureMatrix(browser, server.url, cells, current);
     const page = await browser.newPage();
     let softDrift = 0;
+    // A cell with no baseline entry is not a cell that matched. Count what was
+    // actually compared, so the closing line cannot report cells it skipped as
+    // cells it held. A cell id changes whenever a window, a width or an era is
+    // renamed, and every renamed cell lands here at once.
+    let compared = 0;
+    const newCells = [];
     for (const record of results) {
       const known = baseline[record.id];
-      if (!known) { console.log(`  + ${record.id} (new cell)`); continue; }
+      if (!known) { console.log(`  + ${record.id} (new cell)`); newCells.push(record.id); continue; }
+      compared += 1;
       if (record.missing) {
         console.log(`  ! ${record.id} did not mount (${record.why})`);
         failed = true;
@@ -570,9 +615,20 @@ try {
       failed = true;
     }
     await page.close();
+    if (!compared) {
+      // Every cell was new, so the net photographed the app and held it
+      // against nothing. That is the shape of a pass certificate over an
+      // unchecked tree.
+      console.error(
+        `Appearance snapshot: 0 of ${results.length} cells had a baseline entry, so nothing was verified.\n`
+          + "  Re-capture the baseline for this tree: npm run snapshot:appearance",
+      );
+      failed = true;
+    }
     console.log(failed
       ? "Appearance snapshot: DRIFT"
-      : `Appearance snapshot: ${results.length} cells match (${softDrift} within tolerance ${PIXEL_TOLERANCE})`);
+      : `Appearance snapshot: ${compared} cells match (${softDrift} within tolerance ${PIXEL_TOLERANCE}`
+        + `${newCells.length ? `, ${newCells.length} new and unverified: ${newCells.join(", ")}` : ""})`);
   }
 } finally {
   if (browser) await browser.close();

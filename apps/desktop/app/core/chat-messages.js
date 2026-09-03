@@ -36,7 +36,7 @@ function appendMessageTranslation(actions, item, role, content) {
       scrollMessagesToLatest();
       clearStatus();
     } catch (error) {
-      setStatus(t("translation_failed", error.message));
+      setStatus(t("translation_failed", friendlyErrorDetail(error)));
     } finally {
       translateBtn.disabled = false;
       translateBtn.textContent = originalLabel;
@@ -221,6 +221,18 @@ function renderClioTalkWelcome() {
   const modelReady = clioTalkModelReady();
   const providerState = window.AISystem6ClioProvider?.snapshot?.() || { status: "idle" };
   const providerResolving = !modelReady && ["idle", "resolving"].includes(providerState.status);
+  // The welcome copy promises an active check ("AI System 6 checks the model
+  // routes already available on this device"). Nothing started that check on
+  // its own — the resolver module only loaded on message submit — so a
+  // writer with no model connected saw this text sit unchanged forever.
+  // ensureClioProviderResolver() no-ops once loaded and resolve() returns
+  // the same in-flight promise on a second call, so triggering both here
+  // just makes the promised check actually happen.
+  if (providerResolving && typeof ensureClioProviderResolver === "function") {
+    ensureClioProviderResolver()
+      .then(() => window.AISystem6ClioProvider?.resolve?.({ reason: "welcome" }))
+      .catch(() => {});
+  }
   const introducing = typeof isClioIntroductionActive === "function" && isClioIntroductionActive();
   // A true first visit greets before any model gate: the greeting is scripted
   // and needs no model, and desktop-profile first copy must not be a gate.
@@ -2300,6 +2312,11 @@ async function chooseClioTalkUseResult(content, messageRecord) {
     };
     if (dialog.open) dialog.close("cancel");
     dialog.showModal();
+    // The target/mode radios sit before the button row, so a bare Enter
+    // while one holds focus hits the browser's own default-button algorithm
+    // (first submit button in DOM order = Cancel), not the one marked
+    // "default" in index.html (Write). See modal.js's wireDialogEnterDefault.
+    wireDialogEnterDefault(dialog, () => confirmButton);
   });
 }
 
@@ -2337,6 +2354,17 @@ function finishClioTalkUseResult(messageRecord, state, destination, delivery) {
     },
   });
   if (updated) persistClioTalkUseResultRunReceipt(updated, delivery);
+  // The independent receipt written when this reply arrived (see
+  // createClioTalkAssistantRecord) is the one durable regardless of whether
+  // the conversation itself was ever saved. Landing here (inserted/clipped/
+  // saved) is exactly the adoption this rule tracks.
+  const receiptId = updated?.aiSystem6ReceiptId || messageRecord?.aiSystem6ReceiptId;
+  if (receiptId && ["inserted", "clipped", "saved"].includes(String(state))) {
+    window.AISystem6RunReceipts?.recordUserAction?.(receiptId, {
+      action: "accept",
+      finalBodyHash: typeof contentHash === "function" ? contentHash(String(messageRecord?.content || "")) : "",
+    });
+  }
   refreshClioTalkMessageActions(messageRecord.id);
 }
 
@@ -2425,8 +2453,11 @@ async function applyClioTalkUseResult(content, messageRecord, choice) {
   };
   clioTalkUseResultUndoByMessageId.set(messageRecord.id, { ...undo, delivery });
   finishClioTalkUseResult(messageRecord, state, destination, delivery);
-  saveDeskState();
-  setStatus(t("clio_result_written", destination.name));
+  // [lane-honesty] The apply above already landed in memory; don't claim the
+  // desk record itself was written unless saveDeskState's own result says
+  // so (it can be refused - write lease held elsewhere, desk not writable).
+  const saved = await saveDeskState();
+  setStatus(saved ? t("clio_result_written", destination.name) : t("clio_result_written_unsaved", destination.name));
   return true;
 }
 
@@ -4535,13 +4566,42 @@ async function readChatCompletionStream(response, onToken, signal) {
   }
 }
 
+// One place decides what counts as the assistant's words, because every
+// caller was reading message.content directly and each would have to learn
+// every shape on its own.
+function modelMessageText(message) {
+  if (!message) return "";
+  if (typeof message.content === "string" && message.content.trim()) return message.content;
+  if (Array.isArray(message.content)) {
+    const joined = message.content
+      .map((part) => (typeof part === "string" ? part : String(part?.text || part?.content || "")))
+      .filter(Boolean)
+      .join("");
+    if (joined.trim()) return joined;
+  }
+  if (typeof message.reasoning_content === "string" && message.reasoning_content.trim()) {
+    return message.reasoning_content;
+  }
+  return typeof message.content === "string" ? message.content : "";
+}
+
 async function readJsonModelResult(response, startedAt, endPerf, streamFallback = false) {
   const data = await response.json();
   const message = data?.choices?.[0]?.message;
   const toolCalls = Array.isArray(message?.tool_calls) ? message.tool_calls : [];
-  const content = typeof message?.content === "string" ? message.content : "";
+  // A reasoning model answers in more than one shape. DeepSeek's V4 line can
+  // put the prose in reasoning_content, and an OpenAI-compatible server may
+  // send content as the parts array rather than a string -- both used to read
+  // as "no content at all" and stopped the command with a transport string on
+  // screen, while the model had in fact answered.
+  const content = modelMessageText(message);
   if (!content && !toolCalls.length) {
-    throw new Error("LM Studio response did not include assistant content or tool calls.");
+    const stop = String(data?.choices?.[0]?.finish_reason || "");
+    // "length" here means the answer was cut before any prose survived, which
+    // is a budget problem and not a malformed reply; say which it was.
+    throw new Error(stop === "length"
+      ? "The model stopped before it wrote an answer — its reply budget ran out. Try a shorter selection."
+      : "The model's reply carried no answer and no tool call.");
   }
   const trimmed = scrubVisibleModelOutput(content);
   const metrics = modelMetricsFromResponse(data, trimmed, performance.now() - startedAt);
@@ -4592,7 +4652,7 @@ async function maybeRepairBrowserLocalResult(result, requestPayload, taskKind, s
   }, signal);
   if (!repairResponse.ok) return result;
   const data = await repairResponse.json().catch(() => null);
-  const repaired = scrubVisibleModelOutput(data?.choices?.[0]?.message?.content || "");
+  const repaired = scrubVisibleModelOutput(modelMessageText(data?.choices?.[0]?.message));
   if (!repaired) return result;
   return runtime.findHumanizerOutputHits(repaired).length < originalHits.length
     // The repair is a separate model request. Its visible answer is not part
@@ -4960,7 +5020,7 @@ function createClioTalkAssistantRecord({
   const nativeResponseId = String(providerResponseId || "");
   const nativeResponseApi = String(providerResponseApi || "");
   const nativeScope = currentClioTalkNativeResponseScope();
-  return {
+  const record = {
     id: crypto.randomUUID(),
     role: "assistant",
     content: String(content || ""),
@@ -4998,6 +5058,30 @@ function createClioTalkAssistantRecord({
       window.lastTaskRunManifest || createClioTalkPreflightRunManifest(taskKind)
     ),
   };
+  // Charter rule: a model answer is durable the moment it arrives, not only
+  // once the writer explicitly saves the conversation. A temporary ClioTalk
+  // chat's own messages skip persistence entirely (persistClioTalkConversationMutation
+  // returns early when clioTalkTemporaryMode), so without this, a reply
+  // could be shown, never used, and lost with the tab. This writes straight
+  // to the receipt store — independent of clioTalkTemporaryMode and of
+  // whether the conversation itself is ever saved as a file — and records
+  // the id on the record so a later Use Result can mark it adopted.
+  const receiptAnswerText = String(content || "").trim();
+  if (receiptAnswerText) {
+    window.AISystem6RunReceipts?.recordModelAnswer?.({
+      projectId: activeProjectId,
+      sourceAppId: "clioTalk",
+      intent: String(taskKind || "chat"),
+      provider: (typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudConfig.provider && typeof cloudCredentialReady === "function" && cloudCredentialReady()) ? "cloud" : "local",
+      model: currentTranslationModel(),
+      answerText: receiptAnswerText,
+    }).then((recorded) => {
+      if (recorded?.receiptId) record.aiSystem6ReceiptId = recorded.receiptId;
+    }).catch((error) => {
+      console.warn("ClioTalk answer receipt failed.", error);
+    });
+  }
+  return record;
 }
 
 function resolveClioTalkReplySafely(pendingMessage, content, options = {}) {

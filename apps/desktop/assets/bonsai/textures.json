@@ -11,7 +11,7 @@
   "png": {
     "url": "/assets/bonsai/textures.png",
     "file": "assets/bonsai/textures.png",
-    "sha256": "ab9d9785aff632cc77a09c23a8d9698209a67db41b4858ab6e575ebc9e71558f"
+    "sha256": "6701d19cce36b674becbda9b86c59f9882176eb28a83238336cfa5bfe9a0c59e"
   },
   "tiles": {
     "tunnel": {
@@ -295,6 +295,12 @@
       "y": 320,
       "w": 64,
       "h": 64
+    },
+    "roof.deck": {
+      "x": 448,
+      "y": 320,
+      "w": 64,
+      "h": 64
     }
   },
   "materials": {
@@ -339,32 +345,36 @@
       "side": "park.side"
     },
     "wall.r.day": {
-      "top": "roof",
+      "top": "concrete",
       "side": "wall.r.day"
     },
     "wall.r.night": {
-      "top": "roof.dark",
+      "top": "concrete",
       "side": "wall.r.night"
     },
     "wall.c.day": {
-      "top": "roof",
+      "top": "concrete",
       "side": "wall.c.day"
     },
     "wall.c.night": {
-      "top": "roof.dark",
+      "top": "concrete",
       "side": "wall.c.night"
     },
     "wall.i.day": {
-      "top": "roof",
+      "top": "concrete",
       "side": "wall.i.day"
     },
     "wall.i.night": {
-      "top": "roof.dark",
+      "top": "concrete",
       "side": "wall.i.night"
     },
     "roof": {
       "top": "roof",
       "side": "roof"
+    },
+    "roof.deck": {
+      "top": "roof.deck",
+      "side": "concrete"
     },
     "tree.trunk": {
       "top": "trunk",
@@ -470,6 +480,7 @@
   "notes": [
     "Original micro-voxel texture art painted from project-owned recipes with deterministic hash noise; no pixels copied, traced, sampled, or converted from any external game or artwork.",
     "The generator has no network path and reads only the checked-in source recipe.",
-    "The atlas is a 512x512 power of two of 64px tiles so the three.js renderer can mipmap it for Retina and mobile GPUs."
+    "The atlas is a 512x512 power of two of 64px tiles so the three.js renderer can mipmap it for Retina and mobile GPUs.",
+    "Wall tiles are tint-neutral greys the renderer multiplies an instance colour into; alpha 0 marks glass, which a shader uniform lights, so .night wall tiles equal their .day twins."
   ]
 }

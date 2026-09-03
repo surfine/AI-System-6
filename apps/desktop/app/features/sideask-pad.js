@@ -203,7 +203,7 @@ async function askSideAskPad() {
     return;
   }
   const question = sideAskPad()?.question.value.trim();
-  if (!question) return;
+  if (!question) return sideAskPadStatus("sideask_pad_empty_question");
   if (typeof runWritingTask !== "function") return sideAskPadStatus("model_not_connected");
 
   // The paired window's own text is the context, capped so that a long
@@ -390,4 +390,11 @@ async function promoteSideAskPad() {
   setStatus(t("sideask_pad_promoted"));
 }
 
-window.AISystem6Runtime?.registerApplication({id:"sideAskPad",windowName:"sideAskPad",mount:async()=>{if(typeof ensureApplicationShell==="function")await ensureApplicationShell().catch(()=>{});return sideAskPad();},restore:async()=>{if(typeof ensureApplicationShell==="function")await ensureApplicationShell().catch(()=>{});return sideAskPad();},commands:{"open-sideask-pad":{handler:()=>openSideAskPad(),isAvailable:()=>!0},"sideask-pad-ask":{handler:()=>askSideAskPad(),isAvailable:()=>!0},"sideask-pad-clear":{handler:()=>clearSideAskPad(),isAvailable:()=>!0},"sideask-pad-promote":{handler:()=>promoteSideAskPad(),isAvailable:()=>!0},"sideask-pad-interview":{handler:()=>interviewQuestionSheet(),isAvailable:()=>!0}}});
+// Each isAvailable below mirrors the .disabled logic syncSideAskPad() already
+// applies to the same button, straight from the DOM (see line ~140). Before
+// this, the registry said every one of these was always available while the
+// real button sat disabled -- a mouse click could never reach the handler's
+// own silent early return, but a keyboard shortcut or this repo's own control
+// census, which dispatches by action id rather than by clicking the pixel,
+// could and did.
+window.AISystem6Runtime?.registerApplication({id:"sideAskPad",windowName:"sideAskPad",mount:async()=>{if(typeof ensureApplicationShell==="function")await ensureApplicationShell().catch(()=>{});return sideAskPad();},restore:async()=>{if(typeof ensureApplicationShell==="function")await ensureApplicationShell().catch(()=>{});return sideAskPad();},commands:{"open-sideask-pad":{handler:()=>openSideAskPad(),isAvailable:()=>!0},"sideask-pad-ask":{handler:()=>askSideAskPad(),isAvailable:()=>sideAskBusy?!!sideAskAbort:!!sideAskPad()?.question.value.trim()},"sideask-pad-clear":{handler:()=>clearSideAskPad(),isAvailable:()=>!(sideAskBusy||!(sideAskPad()?.question.value.trim()||sideAskExchange))},"sideask-pad-promote":{handler:()=>promoteSideAskPad(),isAvailable:()=>!sideAskBusy&&!!sideAskExchange},"sideask-pad-interview":{handler:()=>interviewQuestionSheet(),isAvailable:()=>!sideAskBusy&&sideAskFrontSubject()?.name==="questionSheet"}}});

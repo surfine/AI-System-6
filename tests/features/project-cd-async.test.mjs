@@ -2,6 +2,11 @@
 // once from explicit options, and fails closed when the pre-burn revision
 // cannot be persisted. Downloading Markdown is a separate operation and never
 // implies a CD write.
+//
+// [lane-honesty] A success status is only reachable on a path where the
+// operation's own result was checked. saveArtifact can return false (e.g.
+// the browser refused to build the File); the "downloaded" claim must be
+// gated on that return value, not fired unconditionally after the call.
 
 import vm from "node:vm";
 import { webcrypto } from "node:crypto";
@@ -10,7 +15,7 @@ import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 const test = createFeatureTest("project-cd-async");
 const source = read("app/features/export-import.js");
 
-function makeHarness({ revisionFails = false, commitFails = false } = {}) {
+function makeHarness({ revisionFails = false, commitFails = false, saveArtifactFails = false } = {}) {
   const state = {
     status: "",
     revisionCalls: [],
@@ -35,6 +40,7 @@ function makeHarness({ revisionFails = false, commitFails = false } = {}) {
       // Every artifact leaves through one exit; the harness watches it.
       AISystem6WebPlatform: {
         saveArtifact: (artifact) => {
+          if (saveArtifactFails) return false;
           state.linkClicked = true;
           state.savedArtifacts.push(artifact);
           return true;
@@ -143,6 +149,31 @@ function makeHarness({ revisionFails = false, commitFails = false } = {}) {
   test.assert(succeeded === true, "a successful combined path returns true");
   test.assert(okHarness.state.linkClicked === true, "a successful combined path downloads the file");
   test.assert(okHarness.state.status.startsWith("downloaded_markdown_exported"), "a successful combined path claims both");
+}
+
+{
+  // [lane-honesty] downloadMarkdown must not claim "downloaded" when the
+  // artifact save itself failed.
+  const { context, state } = makeHarness({ saveArtifactFails: true });
+  context.downloadMarkdown("# H", "Doc");
+  test.assert(state.linkClicked === false, "a failed save never fires the download link");
+  test.assert(!state.status.startsWith("downloaded_markdown_only"), "a failed save is not reported as a download");
+  test.assert(state.status.startsWith("markdown_download_failed"), "a failed save reports the real failure");
+}
+
+{
+  // [lane-honesty] The combined download+burn path: the burn can succeed
+  // while the download step fails. The status must distinguish that from a
+  // full success, and the return value must reflect the download outcome.
+  const { context, state } = makeHarness({ saveArtifactFails: true });
+  const result = await context.downloadMarkdownAndBurnToProjectCd("# H", "Doc");
+  test.assert(context.projectCdItems.length === 1, "the burn itself still lands even when the download fails");
+  test.assert(result === false, "a failed download in the combined path returns false");
+  test.assert(
+    !state.status.startsWith("downloaded_markdown_exported"),
+    "a failed download is never reported as a full combined success"
+  );
+  test.assert(state.status.startsWith("burned_markdown_download_failed"), "the burn-only outcome is reported distinctly");
 }
 
 test.finish();

@@ -92,4 +92,21 @@ test.assert(
   "installLazyFunctionStub is itself eager, so a stub is available before any module loads",
 );
 
+// A stub is not enough on its own: config.js installs the stubs, and the
+// registry object is BUILT before that runs, so a bare name captures
+// undefined and handleAction dispatches nothing at all -- silently. Twenty
+// route commands (generate-outline, expand-outline, polish-draft, every
+// advance-*) died this way while this gate stayed green, because it treated
+// "the name has an eager stub" as proof of safety. The name must be called
+// through, not captured: `() => fn()`.
+const stubbedBare = bareHandlers.filter((entry) => stubbedNames.has(entry.fn));
+test.assert(
+  stubbedBare.length === 0,
+  stubbedBare.length
+    ? `${stubbedBare.length} handler(s) capture a lazy-stubbed name at registry-build time, before config.js installs the stub — the entry holds undefined and the command dies without a word: ${
+      stubbedBare.map((o) => `"${o.action}": ${o.fn} → "${o.action}": () => ${o.fn}()`).join("; ")
+    }`
+    : `no handler captures a lazy-stubbed name (${stubbedNames.size} stubbed names checked)`,
+);
+
 test.finish();

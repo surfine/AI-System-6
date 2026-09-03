@@ -161,8 +161,8 @@ async function translateTranslationPadSource() {
     setStatus(t("translation_pad_translated"));
   } catch (error) {
     if (!isAbortError(error)) {
-      translationPadSetStatus("translation_failed", error.message);
-      setStatus(t("translation_failed", error.message));
+      translationPadSetStatus("translation_failed", friendlyErrorDetail(error));
+      setStatus(t("translation_failed", friendlyErrorDetail(error)));
     }
   } finally {
     endLongTask("translate-selection");

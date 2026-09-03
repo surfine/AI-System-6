@@ -18,7 +18,7 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
 (function initBonsaiVoxelRenderer() {
   "use strict";
 
-  const VENDOR_URL = "/app/vendor/bonsai-renderer.js?v=three-0.185.1-voxel-r2";
+  const VENDOR_URL = "/app/vendor/bonsai-renderer.js?v=three-0.185.1-voxel-r3";
   const RECIPE_URL = "/assets/bonsai/atlas-source.json";
   const TEXTURES_URL = "/assets/bonsai/textures.json";
   const TEXTURES_IMAGE_URL = "/assets/bonsai/textures.png";
@@ -44,6 +44,11 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
   // World height of one altitude level. Chunky on purpose: terraces must read
   // as stacked blocks, not as the flat 8px lift of the 2D sprites.
   const ALT_STEP = 0.4;
+  // Shadow map texels and the sun's stand-off from the camera target. The
+  // map follows the visible ground, so 2048 texels cover the widest zoom
+  // at about 14 texels per tile and the default zoom at about 28.
+  const SHADOW_MAP_SIZE = 2048;
+  const SUN_DISTANCE = 220;
 
   // --- pure helpers: no THREE, no DOM ----------------------------------------
 
@@ -1818,10 +1823,14 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     return { opaque, water, tint, smoke, preview };
   }
 
-  function buildInstancedMesh(blocks, material, renderOrder = 0, geometry = state.sharedGeometry) {
+  // shadows: "both" for solid blocks (cast and receive), "receive" for the
+  // water surface, "none" for tints, overlays, previews, and smoke.
+  function buildInstancedMesh(blocks, material, renderOrder = 0, geometry = state.sharedGeometry, shadows = "none") {
     if (!blocks.length) return null;
     const THREE = state.THREE;
     const mesh = new THREE.InstancedMesh(geometry, material, blocks.length);
+    mesh.castShadow = shadows === "both";
+    mesh.receiveShadow = shadows === "both" || shadows === "receive";
     const matrix = new THREE.Matrix4();
     const color = new THREE.Color();
     blocks.forEach((block, index) => {
@@ -1901,10 +1910,10 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
       }
       group.push(block);
     });
-    const flatMesh = buildInstancedMesh(flat, state.materials.opaque, 0);
+    const flatMesh = buildInstancedMesh(flat, state.materials.opaque, 0, state.sharedGeometry, "both");
     if (flatMesh) meshes.push(flatMesh);
     byTile.forEach((group, tile) => {
-      const mesh = buildInstancedMesh(group, state.materials.textured, 0, tileGeometry(state.THREE, tile));
+      const mesh = buildInstancedMesh(group, state.materials.textured, 0, tileGeometry(state.THREE, tile), "both");
       if (mesh) meshes.push(mesh);
     });
     return meshes;
@@ -1929,7 +1938,7 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     const blocks = collectChunkBlocks(snapshot, state.recipes, chunkX, chunkY, sceneObjects);
     const meshes = [];
     const opaqueMeshes = buildChunkMeshes(blocks.opaque);
-    const water = buildInstancedMesh(blocks.water, state.materials.waterTextured || state.materials.water, 1);
+    const water = buildInstancedMesh(blocks.water, state.materials.waterTextured || state.materials.water, 1, state.sharedGeometry, "receive");
     const tint = buildInstancedMesh(blocks.tint, state.materials.tint, 2);
     [...opaqueMeshes, water, tint].forEach((mesh) => {
       if (!mesh) return;
@@ -1968,7 +1977,7 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
       disposeMesh(state.dynamicMeshes.agents);
       disposeMesh(state.dynamicMeshes.smoke);
       const blocks = collectAgentBlocks(snapshot, state.recipes);
-      state.dynamicMeshes.agents = buildInstancedMesh(blocks.opaque, state.materials.opaque, 0);
+      state.dynamicMeshes.agents = buildInstancedMesh(blocks.opaque, state.materials.opaque, 0, state.sharedGeometry, "both");
       state.dynamicMeshes.smoke = buildInstancedMesh(blocks.smoke, state.materials.smoke, 3);
       [state.dynamicMeshes.agents, state.dynamicMeshes.smoke].forEach((mesh) => {
         if (mesh) state.dynamicGroup.add(mesh);
@@ -1992,9 +2001,37 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     }
   }
 
+  // The visible ground as a radius around the camera target: half the view
+  // width along the screen x axis, the full view height along the ground
+  // (the 30-degree camera foreshortens ground depth by one half).
+  function visibleGroundRadius(view, cssWidth, cssHeight) {
+    const scale = pixelsPerWorldUnit(view.zoom);
+    const halfW = Math.max(1, cssWidth) / (2 * scale);
+    const halfU = Math.max(1, cssHeight) / scale;
+    return Math.sqrt(halfW * halfW + halfU * halfU) + 4;
+  }
+
   function syncLighting(snapshot) {
     const light = lightingFor(snapshot.timeOfDay);
-    state.sun.position.set(light.sunX, light.sunY, light.sunZ).normalize();
+    const size = mapSize(snapshot);
+    const target = cameraTarget(state.view, size);
+    const length = Math.hypot(light.sunX, light.sunY, light.sunZ) || 1;
+    state.sun.position.set(
+      target.x + (light.sunX / length) * SUN_DISTANCE,
+      (light.sunY / length) * SUN_DISTANCE,
+      target.z + (light.sunZ / length) * SUN_DISTANCE
+    );
+    state.sun.target.position.set(target.x, 0, target.z);
+    state.sun.target.updateMatrixWorld();
+    const radius = Math.min(size + 8, visibleGroundRadius(state.view, state.cssWidth, state.cssHeight));
+    const shadowCamera = state.sun.shadow.camera;
+    if (shadowCamera.right !== radius) {
+      shadowCamera.left = -radius;
+      shadowCamera.right = radius;
+      shadowCamera.top = radius;
+      shadowCamera.bottom = -radius;
+      shadowCamera.updateProjectionMatrix();
+    }
     state.sun.intensity = light.sunIntensity;
     state.ambient.intensity = light.ambientIntensity;
     state.scene.background.setRGB(light.skyR, light.skyG, light.skyB, state.THREE.SRGBColorSpace);
@@ -2121,6 +2158,10 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
       throw webglUnavailableError(String(error && error.message || error));
     }
     state.renderer.outputColorSpace = THREE.SRGBColorSpace;
+    // One sun, one shadow map. Hard-edged PCF keeps the blocks crisp; the
+    // map is fitted to the visible ground every frame in syncLighting.
+    state.renderer.shadowMap.enabled = true;
+    state.renderer.shadowMap.type = THREE.PCFShadowMap;
 
     state.contextLostHandler = (event) => {
       if (event && typeof event.preventDefault === "function") event.preventDefault();
@@ -2133,9 +2174,15 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     state.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 2000);
     state.ambient = new THREE.AmbientLight(0xffffff, 0.62);
     state.sun = new THREE.DirectionalLight(0xffffff, 0.85);
+    state.sun.castShadow = true;
+    state.sun.shadow.mapSize.set(SHADOW_MAP_SIZE, SHADOW_MAP_SIZE);
+    state.sun.shadow.bias = -0.0006;
+    state.sun.shadow.normalBias = 0.03;
+    state.sun.shadow.camera.near = 1;
+    state.sun.shadow.camera.far = SUN_DISTANCE * 2;
     state.staticGroup = new THREE.Group();
     state.dynamicGroup = new THREE.Group();
-    state.scene.add(state.ambient, state.sun, state.staticGroup, state.dynamicGroup);
+    state.scene.add(state.ambient, state.sun, state.sun.target, state.staticGroup, state.dynamicGroup);
     state.sharedGeometry = state.ledger.track(new THREE.BoxGeometry(1, 1, 1));
     state.materials = createMaterials(THREE);
     if (state.waterTexture) {

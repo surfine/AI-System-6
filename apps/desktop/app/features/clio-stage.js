@@ -377,14 +377,14 @@ function fitClioStageBody(surface, body) {
   body.classList.add("clio-stage-fit-body");
   surface.classList.remove("clio-stage-fit-scroll", "clio-stage-fit-active");
   body.style.removeProperty("transform");
-  body.style.removeProperty("width");
+  body.style.removeProperty("--clio-stage-fit-width");
   let scale = 1;
   for (let pass = 0; pass < 3; pass += 1) {
     const available = surface.clientHeight;
     if (!available || body.scrollHeight * scale <= available + 1) break;
     scale = Math.max(available / body.scrollHeight, CLIO_STAGE_FIT_FLOOR);
     body.style.transform = `scale(${scale})`;
-    body.style.width = `${100 / scale}%`;
+    body.style.setProperty("--clio-stage-fit-width", `${100 / scale}%`);
     if (scale <= CLIO_STAGE_FIT_FLOOR) break;
   }
   if (scale < 1) surface.classList.add("clio-stage-fit-active");
@@ -652,9 +652,19 @@ function clioStageCommandAvailable(action) {
   if (action === "open-clio-stage") return true;
   const activeWindow = document.querySelector(".window.is-active");
   if (activeWindow?.dataset.window !== "clioStage") return false;
+  // "#clio-stage-docmap" is the one button here that also carries its own
+  // data-action, so the generic menu-availability sweep in window-manager.js
+  // toggles its "is-disabled" class from THIS function's own return value
+  // every updateMenuState() cycle. Reading that class back here would close
+  // a loop on itself: once a session starts with no deck loaded, the class
+  // starts true, this function forever sees it as true, and the sweep keeps
+  // reapplying it — the button never recovers even after syncDocMapEntryButton
+  // correctly clears the .disabled property once a real deck is loaded. Only
+  // the DOM-native .disabled/.hidden are load-bearing; the class is an output
+  // of this computation, not an input to it.
   const controlEnabled = (selector) => {
     const control = document.querySelector(selector);
-    return !!control && !control.disabled && !control.hidden && !control.classList.contains("is-disabled");
+    return !!control && !control.disabled && !control.hidden;
   };
   switch (action) {
     case "clio-stage-docmap":

@@ -105,4 +105,50 @@ test.assertIncludes(queueSource, "content: picture.visionNotes",
 test.assertIncludes(queueSource, 'String(picture?.visionNotes || "").trim()',
   "a picture with no reading stays out of the index, because there is nothing to match on");
 
+// --- Notification language survives a push before the language settles ----
+//
+// The queue runs on a background timer and can push a notification before the
+// writer's language preference has settled, or the notification can sit in
+// Notification Center across a later language switch. Rendering the message
+// once, at push time, froze it in whatever language happened to be current at
+// that instant. The fix: hand pushSystemNotification a translation key + args
+// and let it re-render at DRAW time, in the persistence-status.js patch this
+// file's adapter depends on.
+const persistenceSource = read("app/core/persistence-status.js");
+test.assertMatches(
+  queueSource,
+  /function updateDerivedIndexNotification\(messageKey, messageArgs, state\) \{/,
+  "the notification helper takes a translation key + args, not a pre-rendered string"
+);
+test.assertIncludes(
+  queueSource,
+  "derivedIndexNotificationId = pushSystemNotification(t(messageKey, ...messageArgs), {\n    messageKey,\n    messageArgs,",
+  "the push carries its own key + args alongside the current-language render"
+);
+test.assertNotMatches(
+  queueSource,
+  /updateDerivedIndexNotification\(\s*t\(/,
+  "no call site pre-renders the message before handing it to the notification helper"
+);
+test.assertIncludes(
+  persistenceSource,
+  "function renderSystemNotificationText(item)",
+  "the Notification Center owns one function that decides how a notification's text is drawn"
+);
+test.assertMatches(
+  persistenceSource,
+  /message\.textContent = renderSystemNotificationText\(item\);/,
+  "the rendered list draws through that function rather than reading the stored snapshot directly"
+);
+test.assertMatches(
+  persistenceSource,
+  /messageKey: item\.messageKey \|\| "",\s*\n\s*messageArgs: item\.messageKey \? \(item\.messageArgs \|\| \[\]\) : \[\],/,
+  "the durable record carries the key + args, not only the rendered snapshot"
+);
+test.assertMatches(
+  persistenceSource,
+  /messageKey: String\(item\?\.messageKey \|\| ""\),\s*\n\s*messageArgs: Array\.isArray\(item\?\.messageArgs\) \? item\.messageArgs : \[\],/,
+  "restoring a notification is tolerant of an older record with no key (it keeps its frozen rendered text)"
+);
+
 test.finish();

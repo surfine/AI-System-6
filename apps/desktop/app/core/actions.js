@@ -331,7 +331,14 @@ function advanceWritingRouteFromCurrentStop() {
   }
   const action = writingRouteAdvanceActionForCurrentStop();
   if (!action) {
-    setStatus(t("writing_route_no_stop"));
+    // "Open a writing-route window" was the wrong sentence for the person who
+    // needed it most: they WERE in TeachText, holding a scratch file, so the
+    // stop resolver did not recognise the document and the product told them
+    // to open a window they already had open. Name the real reason instead.
+    const frontmost = typeof getWindow === "function"
+      && ["teachText", "questionSheet", "outline", "sectionDrafts", "reviewDesk"]
+        .find((name) => getWindow(name)?.classList.contains("is-active"));
+    setStatus(t(frontmost ? "writing_route_not_route_document" : "writing_route_no_stop"));
     return;
   }
   return handleAction(action);
@@ -644,8 +651,13 @@ function toggleReviewDeskPreview() {
   }
 }
 
-function openReviewDesk(mode = "style") {
-  openWindow("reviewDesk");
+async function openReviewDesk(mode = "style") {
+  // Awaited so a caller that opens a companion window right after (the
+  // manuscript beside Review Desk) does not race this window's own open+focus
+  // sequence — two un-awaited openWindow calls settle their internal lazy
+  // loads in whichever order finishes first, so the "companion" can win focus
+  // instead of the surface the writer actually asked for.
+  await openWindow("reviewDesk");
   if (ensureTeachTextReviewState({ promoteSavedFinal: true, openTeachText: false })) {
     syncReviewDeskFromTeachText({ force: true });
   } else {
@@ -710,7 +722,13 @@ function runReviewDeskHkrrSectionCheck() {
   if (!syncReviewDeskToTeachText()) return;
   setReviewDeskMode("hkrr");
   clearReviewFeedbackSlot("hkrr", currentLanguage === "zh" ? "正在用 HKRR 审视..." : "Reviewing with HKRR...");
-  ensureHkrrReviewModule().then(() => runHkrrReview({ sectionOnly: true }));
+  // A load failure must not leave the panel stuck on "Reviewing..." forever
+  // with no trace — ensureLazyModuleForUserAction already offers the
+  // retry/cancel modal used for every other lazy command, and a cancel still
+  // needs the slot put back into an honest, readable state.
+  ensureLazyModuleForUserAction(t("quick_draft_chip_hkrr"), ensureHkrrReviewModule)
+    .then(() => runHkrrReview({ sectionOnly: true }))
+    .catch((error) => clearReviewFeedbackSlot("hkrr", t("lazy_load_failed", t("quick_draft_chip_hkrr"), error?.message || String(error))));
 }
 
 function runReviewDeskMingmingHandoffReview() {
@@ -718,7 +736,9 @@ function runReviewDeskMingmingHandoffReview() {
   if (!syncReviewDeskToTeachText()) return;
   setReviewDeskMode("facts");
   clearReviewFeedbackSlot("facts", currentLanguage === "zh" ? "正在生成若是落落会怎么接..." : "Generating How Luoluo Would Receive It...");
-  ensureMingmingHandoffReviewModule().then(() => runMingmingHandoffReview({ mode: "card", sectionOnly: true }));
+  ensureLazyModuleForUserAction(t("review_mingming_handoff"), ensureMingmingHandoffReviewModule)
+    .then(() => runMingmingHandoffReview({ mode: "card", sectionOnly: true }))
+    .catch((error) => clearReviewFeedbackSlot("facts", t("lazy_load_failed", t("review_mingming_handoff"), error?.message || String(error))));
 }
 
 function runReviewDeskMingmingHandoffBackstageReview() {
@@ -726,7 +746,9 @@ function runReviewDeskMingmingHandoffBackstageReview() {
   if (!syncReviewDeskToTeachText()) return;
   setReviewDeskMode("facts");
   clearReviewFeedbackSlot("facts", currentLanguage === "zh" ? "正在生成交付后台审校..." : "Generating backstage handoff review...");
-  ensureMingmingHandoffReviewModule().then(() => runMingmingHandoffReview({ mode: "backstage", sectionOnly: true }));
+  ensureLazyModuleForUserAction(t("review_mingming_handoff_backstage"), ensureMingmingHandoffReviewModule)
+    .then(() => runMingmingHandoffReview({ mode: "backstage", sectionOnly: true }))
+    .catch((error) => clearReviewFeedbackSlot("facts", t("lazy_load_failed", t("review_mingming_handoff_backstage"), error?.message || String(error))));
 }
 
 async function viewReviewDeskManuscript() {
@@ -1046,8 +1068,13 @@ function getApplicationActionHandlers() {
     "close-about": () => closeWindow("about"),
     "close-print-directory": () => closeWindow("printDirectory", true),
     "close-page-setup": () => closeWindow("pageSetup", true),
-    "page-setup": openPageSetup,
-    "print-current": printCurrentTeachTextDocument,
+    "page-setup": () => openPageSetup(),
+    "print-current": () => printCurrentTeachTextDocument(),
+    // Arrow-wrapped on purpose. Both names are lazy stubs that config.js
+    // installs, and a bare reference here would capture the value the name
+    // held when this table was built, which is undefined.
+    "export-document-word": () => exportActiveDocumentAsWord(),
+    "export-project-cd-word": () => exportSelectedProjectCdItemAsWord(),
     "install-web-app": () => window.AISystem6WebPlatform?.installWebApp?.(),
     "export-project-backup": exportActiveProjectDisk,
     "reveal-active-chat-file": () => {
@@ -1148,11 +1175,11 @@ function getApplicationActionHandlers() {
     // restore, so the module is ensured rather than referenced bare.
     "resume-my-place": async () => { await ensureHoldThatThoughtModule(); await resumeMyPlace(); },
     "clear-notifications": clearSystemNotifications,
-    "rebuild-use-reader": useReaderForRebuildFlow,
-    "rebuild-use-teachtext": useTeachTextForRebuildFlow,
-    "rebuild-use-clipboard": useClipboardForRebuildFlow,
-    "rebuild-use-sample": useSampleArticleForRebuildFlow,
-    "run-rebuild-flow": runRebuildFlow,
+    "rebuild-use-reader": () => useReaderForRebuildFlow(),
+    "rebuild-use-teachtext": () => useTeachTextForRebuildFlow(),
+    "rebuild-use-clipboard": () => useClipboardForRebuildFlow(),
+    "rebuild-use-sample": () => useSampleArticleForRebuildFlow(),
+    "run-rebuild-flow": () => runRebuildFlow(),
     "close-rebuild-flow": () => closeWindow("rebuildFlow", true),
     "toggle-compose-tools": toggleComposeToolsMenu,
     "versions-compare": () => compareSelectedDocumentVersions(),
@@ -1171,8 +1198,11 @@ function getApplicationActionHandlers() {
       await openWindow("holdThought");
       setHeldThoughtMode("pile");
     },
-    "generate-outline": generateOutline,
-    "organize-question-sheet": organizeQuestionSheet,
+    // Bare references to lazy-stubbed functions freeze whatever the name held
+    // when this table was built, so the stub that loads the module never runs
+    // and the command dies without a word. Call through the name instead.
+    "generate-outline": () => generateOutline(),
+    "organize-question-sheet": () => organizeQuestionSheet(),
     "toggle-writing-eli5": () => { void toggleWritingExplanationLens(); },
     "add-question-sheet-photo": () => addQuestionSheetPhotos(),
     "scrapbook-clip-picture": () => clipPictureToScrapbookFromPicker(),
@@ -1182,30 +1212,50 @@ function getApplicationActionHandlers() {
     "toggle-question-preview": () => toggleTeachTextSurfacePreview("questionSheet"),
     "toggle-writing-preview": toggleWritingPreviewForActiveWindow,
     "cycle-writing-focus": cycleWritingFocusMode,
-    "insert-question-template": insertQuestionTemplate,
-    "advance-question-to-outline": advanceQuestionSheetToOutline,
-    "add-outline-section": addOutlineSection,
+    // MacWrite's ruler, narrowed to the one thing Aaron kept: line spacing.
+    // Applies to every writing surface's paper and preview alike; see
+    // mdeSetLineSpacing in markdown-editor.js.
+    "set-line-spacing-compact": () => mdeSetLineSpacing("compact"),
+    "set-line-spacing-standard": () => mdeSetLineSpacing("standard"),
+    "set-line-spacing-relaxed": () => mdeSetLineSpacing("relaxed"),
+    "insert-question-template": () => insertQuestionTemplate(),
+    "advance-question-to-outline": () => advanceQuestionSheetToOutline(),
+    "add-outline-section": () => addOutlineSection(),
     "toggle-outline-tree": () => toggleOutlineTreeView(),
+    "toggle-outline-cards": () => toggleOutlineCardsView(),
+    "question-sheet-view-page": () => setQuestionSheetView("page"),
+    "question-sheet-view-cards": () => setQuestionSheetView("cards"),
     "outline-tree-up": () => outlineTreeCommand((tree, id) => outlineTreeMove(tree, id, -1)),
     "outline-tree-down": () => outlineTreeCommand((tree, id) => outlineTreeMove(tree, id, 1)),
     "outline-tree-promote": () => outlineTreeCommand(outlineTreePromote),
     "outline-tree-demote": () => outlineTreeCommand(outlineTreeDemote),
     "outline-tree-write": () => writeSelectedOutlineSection(),
-    "expand-outline": expandOutline,
+    "expand-outline": () => expandOutline(),
     "mingming-outline": () => runOutlineOperation("mingming"),
     "reduce-outline": () => runOutlineOperation("reduce"),
     "structure-outline": () => runOutlineOperation("structure"),
-    "advance-outline-to-drafts": advanceOutlineToSectionDrafts,
+    "advance-outline-to-drafts": () => advanceOutlineToSectionDrafts(),
     "toggle-outline-preview": () => toggleTeachTextSurfacePreview("outline"),
-    "draft-selected-section": draftSelectedOutlineSection,
-    "draft-current-section": draftSelectedOutlineSection,
+    "draft-selected-section": () => draftSelectedOutlineSection(),
+    "draft-current-section": () => draftSelectedOutlineSection(),
     "toggle-draft-preview": () => toggleTeachTextSurfacePreview("sectionDrafts"),
     "previous-section-draft": () => showAdjacentSectionDraft(-1),
     "next-section-draft": () => showAdjacentSectionDraft(1),
-    "polish-draft": polishDraft,
-    "suggest-draft": suggestDraft,
-    "eli5-rewrite-section": () => window.AISystem6QuickDraftAI?.requestEli5Rewrite?.(),
-    "eli5-review-section": () => window.AISystem6QuickDraftAI?.requestEli5Review?.(),
+    "polish-draft": () => polishDraft(),
+    "suggest-draft": () => suggestDraft(),
+    // Every other cross-module action awaits its lazy module before touching
+    // the global it registers (find-change, docmap, …). These two skipped
+    // that guard: if Section Drafts' window-registry lazy.ensure has not
+    // resolved yet for any reason, window.AISystem6QuickDraftAI is
+    // undefined and the optional-chain calls below silently do nothing.
+    "eli5-rewrite-section": async () => {
+      if (typeof ensureWritingFlowModule === "function") await ensureWritingFlowModule();
+      return window.AISystem6QuickDraftAI?.requestEli5Rewrite?.();
+    },
+    "eli5-review-section": async () => {
+      if (typeof ensureWritingFlowModule === "function") await ensureWritingFlowModule();
+      return window.AISystem6QuickDraftAI?.requestEli5Review?.();
+    },
     // Find/Change loads with its first use. Availability stays true so ⌘F can
     // summon it from any writing surface; the panel itself reports what it can
     // act on rather than being greyed for a reason the writer cannot see.
@@ -1226,9 +1276,9 @@ function getApplicationActionHandlers() {
       return window.AISystem6FindChange?.changeAll?.();
     },
     "advance-writing-route": advanceWritingRouteFromCurrentStop,
-    "advance-drafts-to-manuscript": advanceDraftsToManuscript,
-    "advance-manuscript-to-review": advanceManuscriptToReview,
-    "return-document-to-section-drafts": returnDocumentToSectionDrafts,
+    "advance-drafts-to-manuscript": () => advanceDraftsToManuscript(),
+    "advance-manuscript-to-review": () => advanceManuscriptToReview(),
+    "return-document-to-section-drafts": () => returnDocumentToSectionDrafts(),
     "run-claim-check-section": () => runClaimCheck({ sectionOnly: true }),
     "review-style-section": runReviewDeskStyleSectionCheck,
     "review-facts-section": runReviewDeskFactSectionCheck,
@@ -1370,7 +1420,7 @@ function getApplicationActionHandlers() {
     },
     "empty-trash": emptyActiveProjectTrash,
     "put-away": putAwaySelectedTrashItem,
-    "print-directory": openPrintDirectoryPreview,
+    "print-directory": () => openPrintDirectoryPreview(),
     "erase-disk": eraseSelectedProjectDisk,
     "reset-system": resetSystemStorage,
     "close-active-window": async () => {
@@ -1499,8 +1549,20 @@ async function handleAction(action, commandContext = {}) {
         await lazy.ensure();
         applicationCommandRegistryCache = null;
         command = getApplicationCommandRegistry().get(action);
+        // A retry that finally works must not leave the command greyed with
+        // a stale "failed" balloon.
+        failedLazyCommandActions.delete(action);
       } catch (error) {
-        console.warn(`Lazy command ${action} failed to load.`, error);
+        // This module's window/command is the only thing that goes dark —
+        // the rest of the desk keeps working. A console.warn alone left no
+        // trace a user could ever see; the label reuses whatever the menu
+        // button already renders, so it is honest in whichever language is
+        // active.
+        console.error(`AI System 6: lazy command "${action}" failed to load.`, error);
+        const label = document.querySelector(`[data-action="${CSS.escape(action)}"]`)?.textContent?.trim() || action;
+        const message = t("lazy_load_failed", label, error?.message || String(error));
+        failedLazyCommandActions.set(action, message);
+        if (typeof pushSystemNotification === "function") pushSystemNotification(message, { state: "failed" });
         updateMenuState();
         return;
       }
@@ -1594,6 +1656,7 @@ window.AISystem6Runtime?.registerLazyCommand?.("open-clio-chart",{ensure:ensureC
 window.AISystem6Runtime?.registerLazyCommand?.("see-as-chart",{ensure:ensureClioChartModule});
 window.AISystem6Runtime?.registerLazyCommand?.("open-clio-project",{ensure:ensureClioProjectModule});
 window.AISystem6Runtime?.registerLazyCommand?.("clio-project-reset-layout",{ensure:ensureClioProjectModule});
+window.AISystem6Runtime?.registerLazyCommand?.("open-clio-paint",{ensure:ensureClioPaintModule});
 window.AISystem6Runtime?.registerLazyCommand?.("open-todo-da",{ensure:ensureTodoDaModule});
 window.AISystem6Runtime?.registerLazyCommand?.("open-theme-lab",{ensure:ensureThemeLabModule});
 window.AISystem6Runtime?.registerLazyCommand?.("open-quick-draft",{ensure:ensureQuickDraftModule});
@@ -1646,6 +1709,12 @@ window.AISystem6Runtime?.registerCommand?.("open-finishing-receipt",{handler:()=
 window.AISystem6Runtime?.registerCommand?.("open-clio-attachment-picker",{handler:beginClioTalkAttachmentPicker,isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-clio-image-picker",{handler:openClioImagePicker,isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-local-ai-settings",{handler:()=>{openWindow("control");if(typeof setControlTab==="function")setControlTab("local");return true;},isAvailable:()=>!0});
+// The model popover offers a "Control Panel" row in every application's own
+// menu, and it was wired only to the popover's private click listener -- so
+// the row worked under the pointer and dispatched nothing through any other
+// path, in 26 application contexts at once. It answers by name now, like
+// every other command.
+window.AISystem6Runtime?.registerCommand?.("open-model-settings",{handler:()=>{openWindow("control");return true;},isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-cloud-ai-settings",{handler:()=>{openWindow("control");if(typeof setControlTab==="function")setControlTab("cloud");return true;},isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-menu-selection",{handler:openFinderMenuSelection,isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-project-disk",{handler:openSelectedProject,isAvailable:()=>!0});

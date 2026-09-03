@@ -118,7 +118,8 @@
           "lumStd": 54.44,
           "edgeEnergy": 230
         }
-      }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "hardDisk": {
       "genre": "hardware",
@@ -166,7 +167,8 @@
       "generationStatus": "technically-clean",
       "provenanceClass": "A",
       "historicalReviewStatus": "pending",
-      "runtimeAsset": true
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "folder": {
       "genre": "file",
@@ -214,7 +216,8 @@
       "generationStatus": "technically-clean",
       "provenanceClass": "A",
       "historicalReviewStatus": "pending",
-      "runtimeAsset": true
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "document": {
       "genre": "document",
@@ -262,7 +265,8 @@
       "generationStatus": "technically-clean",
       "provenanceClass": "A",
       "historicalReviewStatus": "pending",
-      "runtimeAsset": true
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "applications": {
       "genre": "file",
@@ -310,7 +314,8 @@
           "lumStd": 42.33,
           "edgeEnergy": 314
         }
-      }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "trash": {
       "genre": "hardware",
@@ -358,7 +363,8 @@
       "generationStatus": "technically-clean",
       "provenanceClass": "A",
       "historicalReviewStatus": "pending",
-      "runtimeAsset": true
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "finderApp": {
       "genre": "application",
@@ -408,7 +414,8 @@
       "provenanceClass": "A",
       "historicalReviewStatus": "reference-validated",
       "runtimeAsset": true,
-      "blindMixStatus": "not-run"
+      "blindMixStatus": "not-run",
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "fileFloppy": {
       "genre": "hardware",
@@ -456,7 +463,8 @@
           "lumStd": 79.05,
           "edgeEnergy": 364
         }
-      }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "assistant": {
       "genre": "application",
@@ -505,7 +513,8 @@
       "generationStatus": "technically-clean",
       "provenanceClass": "B",
       "historicalReviewStatus": "pending",
-      "runtimeAsset": true
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "quickDraft": {
       "genre": "document",
@@ -553,7 +562,8 @@
           "lumStd": 43.23,
           "edgeEnergy": 332
         }
-      }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "writingStudio": {
       "genre": "application",
@@ -601,7 +611,8 @@
           "lumStd": 76.57,
           "edgeEnergy": 683
         }
-      }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "projectDisk": {
       "genre": "hardware",
@@ -650,7 +661,8 @@
       "generationStatus": "technically-clean",
       "provenanceClass": "B",
       "historicalReviewStatus": "historically-reviewed",
-      "runtimeAsset": true
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "projectDisc": {
       "genre": "hardware",
@@ -698,7 +710,8 @@
           "lumStd": 37.73,
           "edgeEnergy": 258
         }
-      }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "cloudModel": {
       "genre": "utility",
@@ -746,7 +759,8 @@
           "lumStd": 52.97,
           "edgeEnergy": 287
         }
-      }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "cloudModelOff": {
       "genre": "utility",
@@ -794,7 +808,8 @@
           "lumStd": 64.68,
           "edgeEnergy": 295
         }
-      }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "questionSheet": {
       "genre": "document",
@@ -842,7 +857,8 @@
           "lumStd": 40.51,
           "edgeEnergy": 217
         }
-      }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "outline": {
       "genre": "document",
@@ -890,7 +906,8 @@
           "lumStd": 47.95,
           "edgeEnergy": 550
         }
-      }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "sectionDrafts": {
       "genre": "document",
@@ -938,7 +955,8 @@
           "lumStd": 29.55,
           "edgeEnergy": 276
         }
-      }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "manuscript": {
       "genre": "document",
@@ -986,7 +1004,8 @@
           "lumStd": 60.58,
           "edgeEnergy": 331
         }
-      }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "reviewDesk": {
       "genre": "application",
@@ -1035,7 +1054,8 @@
       "generationStatus": "technically-clean",
       "provenanceClass": "B",
       "historicalReviewStatus": "historically-reviewed",
-      "runtimeAsset": true
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "searcher": {
       "genre": "application",
@@ -1084,7 +1104,8 @@
       "generationStatus": "technically-clean",
       "provenanceClass": "B",
       "historicalReviewStatus": "historically-reviewed",
-      "runtimeAsset": true
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "reader": {
       "genre": "application",
@@ -1132,7 +1153,8 @@
           "lumStd": 53.74,
           "edgeEnergy": 203
         }
-      }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "timeMachine": {
       "genre": "utility",
@@ -1180,7 +1202,8 @@
           "lumStd": 55.35,
           "edgeEnergy": 715
         }
-      }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "docMap": {
       "genre": "application",
@@ -1271,7 +1294,8 @@
       "generationStatus": "technically-clean",
       "provenanceClass": "C",
       "historicalReviewStatus": "historically-reviewed",
-      "runtimeAsset": true
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "clioStage": {
       "genre": "application",
@@ -1319,7 +1343,8 @@
           "lumStd": 79.2,
           "edgeEnergy": 487
         }
-      }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "clioChart": {
       "genre": "application",
@@ -1367,7 +1392,8 @@
           "lumStd": 72.4,
           "edgeEnergy": 447
         }
-      }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "liquidCover": {
       "genre": "application",
@@ -1415,7 +1441,8 @@
           "lumStd": 32.85,
           "edgeEnergy": 430
         }
-      }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "cmfStudio": {
       "genre": "application",
@@ -1463,7 +1490,8 @@
           "lumStd": 58.2,
           "edgeEnergy": 378
         }
-      }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "soundscape": {
       "genre": "application",
@@ -1511,7 +1539,8 @@
           "lumStd": 53.07,
           "edgeEnergy": 494
         }
-      }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "scrapbook": {
       "genre": "application",
@@ -1560,7 +1589,8 @@
       "generationStatus": "technically-clean",
       "provenanceClass": "B",
       "historicalReviewStatus": "pending",
-      "runtimeAsset": true
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "systemFolder": {
       "genre": "file",
@@ -1608,7 +1638,8 @@
           "lumStd": 29.09,
           "edgeEnergy": 181
         }
-      }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "helpFolder": {
       "genre": "file",
@@ -1656,7 +1687,8 @@
           "lumStd": 35.85,
           "edgeEnergy": 288
         }
-      }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "importUtility": {
       "genre": "utility",
@@ -1704,7 +1736,8 @@
           "lumStd": 65.01,
           "edgeEnergy": 402
         }
-      }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "controlPanel": {
       "genre": "utility",
@@ -1752,7 +1785,8 @@
       "generationStatus": "technically-clean",
       "provenanceClass": "B",
       "historicalReviewStatus": "historically-reviewed",
-      "runtimeAsset": true
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "chooser": {
       "genre": "utility",
@@ -1800,7 +1834,8 @@
           "lumStd": 44.37,
           "edgeEnergy": 227
         }
-      }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "systemHelp": {
       "genre": "application",
@@ -1848,7 +1883,8 @@
           "lumStd": 45.68,
           "edgeEnergy": 321
         }
-      }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "dictionary": {
       "genre": "application",
@@ -1896,7 +1932,8 @@
           "lumStd": 52.74,
           "edgeEnergy": 374
         }
-      }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "teachText": {
       "genre": "application",
@@ -1945,7 +1982,8 @@
       "generationStatus": "technically-clean",
       "provenanceClass": "B",
       "historicalReviewStatus": "historically-reviewed",
-      "runtimeAsset": true
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "writingDemo": {
       "genre": "document",
@@ -1993,7 +2031,8 @@
           "lumStd": 51.16,
           "edgeEnergy": 308
         }
-      }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "chatFile": {
       "genre": "document",
@@ -2041,7 +2080,8 @@
           "lumStd": 44.49,
           "edgeEnergy": 224
         }
-      }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "chatImport": {
       "genre": "utility",
@@ -2089,7 +2129,8 @@
           "lumStd": 60.16,
           "edgeEnergy": 419
         }
-      }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "systemStatus": {
       "genre": "utility",
@@ -2137,7 +2178,8 @@
           "lumStd": 61.4,
           "edgeEnergy": 625
         }
-      }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "contextPanel": {
       "genre": "utility",
@@ -2185,7 +2227,8 @@
           "lumStd": 61.19,
           "edgeEnergy": 349
         }
-      }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "rebuildArticle": {
       "genre": "utility",
@@ -2233,7 +2276,8 @@
           "lumStd": 65.67,
           "edgeEnergy": 480
         }
-      }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "bureaucracyMeme": {
       "genre": "application",
@@ -2281,7 +2325,8 @@
           "lumStd": 55.69,
           "edgeEnergy": 231
         }
-      }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "endfieldTerminal": {
       "genre": "utility",
@@ -2329,7 +2374,8 @@
           "lumStd": 57.3,
           "edgeEnergy": 509
         }
-      }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "documents": {
       "genre": "file",
@@ -2377,7 +2423,8 @@
           "lumStd": 56.78,
           "edgeEnergy": 161
         }
-      }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "alias": {
       "genre": "document",
@@ -2425,7 +2472,8 @@
           "lumStd": 40.43,
           "edgeEnergy": 127
         }
-      }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "systemFile": {
       "genre": "document",
@@ -2473,7 +2521,8 @@
           "lumStd": 51.35,
           "edgeEnergy": 230
         }
-      }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "multiFinderApp": {
       "genre": "application",
@@ -2523,7 +2572,8 @@
         }
       },
       "metaphorKey": "current-finder-identity-plus-multiplicity",
-      "blindMixStatus": "not-run"
+      "blindMixStatus": "not-run",
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "daHandler": {
       "genre": "utility",
@@ -2571,7 +2621,8 @@
       "generationStatus": "technically-clean",
       "provenanceClass": "A",
       "historicalReviewStatus": "pending",
-      "runtimeAsset": true
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "writingBell": {
       "genre": "accessory",
@@ -2619,7 +2670,8 @@
           "lumStd": 51.95,
           "edgeEnergy": 563
         }
-      }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "trashFull": {
       "genre": "hardware",
@@ -2667,7 +2719,8 @@
           "lumStd": 62.42,
           "edgeEnergy": 546
         }
-      }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "control": {
       "genre": "utility",
@@ -2715,7 +2768,8 @@
           "lumStd": 65.99,
           "edgeEnergy": 623
         }
-      }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "localModel": {
       "genre": "utility",
@@ -2763,7 +2817,8 @@
           "lumStd": 51.44,
           "edgeEnergy": 595
         }
-      }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     },
     "controlStrip": {
       "genre": "utility",
@@ -2811,7 +2866,8 @@
           "lumStd": 43.42,
           "edgeEnergy": 217
         }
-      }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
     }
   },
   "reviewedCore": [

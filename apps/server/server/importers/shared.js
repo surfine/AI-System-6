@@ -148,6 +148,75 @@ function decodePlainTextBuffer(buffer) {
   }
 }
 
+// File formats that carry a signature at the start of the file. Each importer
+// parses one of these formats, so bytes that do not carry the signature are not
+// that format and cannot be read as it.
+//
+// Why this guard exists: an import of a broken PDF answered 200 and returned
+// the raw bytes as the document text. The PDF parser did reject the file, but
+// the MarkItDown importer ran first, read the bytes as plain text, and the
+// native rejection only made the route keep the MarkItDown result. The product
+// then said a PDF was imported when no PDF was ever read. A format that states
+// its own identity in its first bytes must be checked before any importer
+// claims to have read it.
+const IMPORT_SIGNATURES = [
+  {
+    label: "PDF",
+    extensions: [".pdf"],
+    mimeTypes: ["application/pdf"],
+    // The PDF specification permits leading bytes before the header, so the
+    // marker is searched for in the first kilobyte rather than at offset zero.
+    matches: (buffer) => buffer.subarray(0, 1024).includes("%PDF-"),
+  },
+  {
+    label: "Zip-based document",
+    extensions: [".docx", ".pptx", ".xlsx", ".epub", ".pages", ".numbers", ".key"],
+    mimeTypes: [
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "application/epub+zip",
+      "application/vnd.apple.pages",
+      "application/vnd.apple.numbers",
+      "application/vnd.apple.keynote",
+    ],
+    matches: (buffer) => buffer.length >= 4
+      && buffer[0] === 0x50 && buffer[1] === 0x4b
+      && (buffer[2] === 0x03 || buffer[2] === 0x05 || buffer[2] === 0x07),
+  },
+];
+
+/**
+ * Find the signature rule that applies to a declared file type.
+ *
+ * @param {string} name
+ * @param {string} mimeType
+ * @returns {(typeof IMPORT_SIGNATURES)[number] | null}
+ */
+function importSignatureRule(name, mimeType) {
+  const ext = importExtension(name);
+  const type = String(mimeType || "").trim().toLowerCase();
+  return IMPORT_SIGNATURES.find((rule) =>
+    rule.extensions.includes(ext) || rule.mimeTypes.includes(type)) || null;
+}
+
+/**
+ * Refuse a file whose bytes do not match the format its name or type declares.
+ * Returns an empty string when the file may continue to its importer.
+ *
+ * @param {string} name
+ * @param {string} mimeType
+ * @param {Buffer} buffer
+ * @returns {string} A message for the user, or "" when the file is acceptable.
+ */
+function importSignatureMismatch(name, mimeType, buffer) {
+  if (!Buffer.isBuffer(buffer) || !buffer.length) return "";
+  const rule = importSignatureRule(name, mimeType);
+  if (!rule || rule.matches(buffer)) return "";
+  return `This file is named as a ${rule.label} but its contents are not a ${rule.label}. `
+    + "Open the file to confirm it is complete, or import it under its true file type.";
+}
+
 /**
  * @param {unknown} value
  * @returns {number}
@@ -194,4 +263,6 @@ module.exports = {
   decodePlainTextBuffer,
   readableTextRatio,
   importedTextQualityScore,
+  importSignatureRule,
+  importSignatureMismatch,
 };

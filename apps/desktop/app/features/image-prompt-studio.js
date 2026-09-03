@@ -156,16 +156,25 @@
         streamPreference: "json",
       });
       const content = String(modelResult?.text || "").trim();
-      if (!content) throw new Error("empty");
+      // "lmstudio_bad_response: ..." is the codebase's shared shape for "the
+      // model answered but not usefully" - explainStatusError/friendlyErrorDetail
+      // already turn that code into a localized, actionable note in the catch
+      // below, in whichever language the UI is running.
+      if (!content) throw new Error("lmstudio_bad_response: model returned an empty response");
       const parsedResult = window.AISystem6ImagePromptRuntime.parseImagePromptResult(content);
-      if (!parsedResult.gptImage && !parsedResult.universal) throw new Error("parse");
+      if (!parsedResult.gptImage && !parsedResult.universal) {
+        throw new Error("lmstudio_bad_response: could not parse the generated prompt");
+      }
       setOutput("ips-gpt-out", parsedResult.gptImage);
       setOutput("ips-universal-out", parsedResult.universal);
       saveHistory({ idea, aspect: $("ips-aspect").value || "16:9", at: Date.now() });
       renderHistory();
       setStatus("ips_done", "Prompt ready — copy it.");
     } catch (error) {
-      setStatus("ips_error", "Prompt writing failed.");
+      console.error("Image Prompt Studio: prompt writing failed", error);
+      const detail = typeof friendlyErrorDetail === "function" ? friendlyErrorDetail(error) : "";
+      const el = $("ips-status");
+      if (el) el.textContent = [tr("ips_error", "Prompt writing failed."), detail].filter(Boolean).join(" ");
     } finally {
       if (button) button.disabled = false;
     }
@@ -291,10 +300,15 @@
     try {
       const paired = await arrangeWindowAssistantSplit("imagePromptStudio");
       if (!paired) {
-        setStatus("ips_unavailable", "SideAsk could not open.");
+        // lane-errors: this used to say "No model available." (ips_unavailable)
+        // regardless of the real reason arrangeWindowAssistantSplit declined -
+        // a claim that was often false. ips_sideask_failed names what actually
+        // happened (SideAsk did not open) instead of guessing why.
+        setStatus("ips_sideask_failed", "SideAsk could not open. Try again, or open ClioTalk from Applications instead.");
       }
     } catch (error) {
-      setStatus("ips_error", "SideAsk could not open.");
+      console.error("Image Prompt Studio: SideAsk open failed", error);
+      setStatus("ips_sideask_failed", "SideAsk could not open. Try again, or open ClioTalk from Applications instead.");
     }
   }
 

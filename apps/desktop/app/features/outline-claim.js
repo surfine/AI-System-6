@@ -11,6 +11,41 @@ window.AISystem6OutlineClaimLoaded = true;
 let currentClaimCheckScope = { type: "manuscript", label: "" };
 let currentClaimCheckFileId = "";
 
+// fetchModelPayload picks cloud vs local transparently; this mirrors that
+// same decision so a receipt's "Provider / model" line says which one
+// actually answered, without touching fetchModelPayload itself.
+function writingRouteReceiptProvider() {
+  return (typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudConfig.provider && typeof cloudCredentialReady === "function" && cloudCredentialReady())
+    ? "cloud"
+    : "local";
+}
+
+// Charter rule: every model answer this file produces is written to the
+// receipt store the instant it arrives, before the confirm dialog that
+// decides whether it lands in the Outline / Section Drafts. Declining that
+// dialog, or any later failure, discards the text from the writer's document
+// but never from this record. Callers pass the same content string back once
+// the landing decision is known so the receipt says the honest outcome.
+async function recordWritingRouteAnswer({ projectId, intent, model, answerText }) {
+  if (!answerText) return "";
+  const recorded = await window.AISystem6RunReceipts?.recordModelAnswer?.({
+    projectId,
+    sourceAppId: "outline",
+    intent,
+    provider: writingRouteReceiptProvider(),
+    model: model || (typeof getLocalModelRequestName === "function" ? getLocalModelRequestName() : ""),
+    answerText,
+  });
+  return recorded?.receiptId || "";
+}
+
+function settleWritingRouteAnswer(receiptId, landed, answerText) {
+  if (!receiptId) return;
+  window.AISystem6RunReceipts?.recordUserAction?.(receiptId, landed
+    ? { action: "accept", finalBodyHash: typeof contentHash === "function" ? contentHash(answerText) : "" }
+    : { action: "reject" });
+}
+
 function validateGeneratedWritingOutline(markdown) {
   const content = String(markdown || "").trim();
   if (!content) throw new Error("empty outline response");
@@ -188,12 +223,19 @@ async function generateOutlineFromQuestionSheetCore(options = {}) {
         if (attempt >= maxAttempts - 1) throw error;
       }
     }
+    const outlineReceiptId = await recordWritingRouteAnswer({
+      projectId: project.id,
+      intent: taskId,
+      model: modelName,
+      answerText: content,
+    });
     setProjectOutlineMarkdown(project, content);
     markTeachTextAiAssisted();
     project.updatedAt = new Date().toISOString();
     saveDeskState();
     updateFlowGuideChecklist({ render: false });
     renderPipeline();
+    settleWritingRouteAnswer(outlineReceiptId, true, content);
     return content;
   } finally {
     endLongTask(taskId);
@@ -248,34 +290,10 @@ async function generateOutline() {
   }
 }
 
-// Consumer-facing failure copy for a route command that asked a model: what
-// happened, then the action that fixes it. Diagnostics stay in the console.
-async function reportWritingRouteModelFailure(error, taskLabel) {
-  const detail = typeof explainStatusError === "function"
-    ? explainStatusError(String(error?.message || error || ""))
-    : "";
-  const headline = currentLanguage === "zh"
-    ? `「${taskLabel}」没有完成。`
-    : `${taskLabel} could not finish.`;
-  const message = [headline, detail].filter(Boolean).join(" ");
-  setStatus(message);
-  const offline = typeof modelReadyForRequests === "function" && !modelReadyForRequests();
-  try {
-    if (offline) {
-      const openControl = await showSystemModal(
-        currentLanguage === "zh"
-          ? `${message}\n\n要现在打开控制面板接一个模型吗？`
-          : `${message}\n\nOpen Control Panel to connect a model?`,
-        "confirm",
-      );
-      if (openControl === "yes") handleAction("open-control");
-      return;
-    }
-    await showSystemModal(message, "alert");
-  } catch {
-    // Keep the status text if the modal cannot open.
-  }
-}
+// reportWritingRouteModelFailure moved to apps/desktop/app/core/persistence-status.js
+// (a core, always-loaded module) so lazy modules other than this one — Section
+// Drafts' writing-flow.js included — can call it without depending on
+// outline-claim.js happening to be loaded first. See "failure-path lane" there.
 
 function questionSheetPromptLeakReason(markdown) {
   const text = String(markdown || "");
@@ -575,10 +593,12 @@ async function organizeQuestionSheet() {
     return;
   }
 
+  const organizeReceiptId = await recordWritingRouteAnswer({ projectId: project.id, intent: "organize-question-sheet", answerText: organized });
   const preview = clipContextContent(organized, 1600);
   const result = await showSystemModal(t("organize_question_sheet_confirm", preview), "confirm");
   if (result !== "yes") {
     clearStatus();
+    settleWritingRouteAnswer(organizeReceiptId, false, organized);
     return;
   }
 
@@ -588,8 +608,10 @@ async function organizeQuestionSheet() {
     setStatus(currentLanguage === "zh"
       ? `整理问题失败：${error?.message || error}`
       : `Question Sheet organization failed: ${error?.message || error}`);
+    settleWritingRouteAnswer(organizeReceiptId, false, organized);
     return;
   }
+  settleWritingRouteAnswer(organizeReceiptId, true, organized);
   setStatus(t("question_sheet_organized"));
 }
 
@@ -654,7 +676,9 @@ ${outline}`;
     return;
   }
 
-  await confirmAndApplyAiOutline(content, "outline_fill_weak_confirm", "outline_filled_weak");
+  const expandReceiptId = await recordWritingRouteAnswer({ projectId: project.id, intent: "expand-outline", answerText: content });
+  const expandApplied = await confirmAndApplyAiOutline(content, "outline_fill_weak_confirm", "outline_filled_weak");
+  settleWritingRouteAnswer(expandReceiptId, expandApplied, content);
 }
 
 function getOutlineOperationContext(project) {
@@ -740,6 +764,7 @@ ${outline}`;
     showStreamingSurfacePreview("outline", content, { final: true });
 
     if (mode === "critique") {
+      const critiqueReceiptId = await recordWritingRouteAnswer({ projectId: project.id, intent: "outline-critique", answerText: content });
       project.outlineCritique = content;
       markTeachTextAiAssisted();
       project.flowState = { ...(project.flowState || {}), outline: true };
@@ -748,12 +773,17 @@ ${outline}`;
       updateFlowGuideChecklist({ render: false });
       renderPipeline();
       openWindow("outline");
+      settleWritingRouteAnswer(critiqueReceiptId, true, content);
     }
   } catch (error) {
     failed = true;
     if (!isAbortError(error)) {
       console.error("Outline operation failed", error);
-      setStatus(t("reader_error", error.message));
+      // lane-errors: this used to reuse reader_error ("Reader could not open
+      // that page.") - a claim about the wrong window, for what is an Outline
+      // route command asking a model. reportWritingRouteModelFailure is the
+      // shared route-command failure copy (what failed, then the next step).
+      await reportWritingRouteModelFailure(error, t("outline"));
     }
   } finally {
     const cancelled = endLongTask(taskKey);
@@ -763,7 +793,9 @@ ${outline}`;
   if (!failed && mode !== "critique" && content) {
     const confirmKey = mode === "mingming" ? "mingming_outline_confirm" : "outline_structure_confirm";
     const statusKey = mode === "mingming" ? "mingming_outline_done" : "outline_structured";
-    await confirmAndApplyAiOutline(content, confirmKey, statusKey);
+    const opReceiptId = await recordWritingRouteAnswer({ projectId: project.id, intent: `outline-${mode}`, answerText: content });
+    const opApplied = await confirmAndApplyAiOutline(content, confirmKey, statusKey);
+    settleWritingRouteAnswer(opReceiptId, opApplied, content);
   }
 }
 
@@ -865,7 +897,9 @@ ${body}${eli5Block ? `\n\n${eli5Block}` : ""}`;
     return;
   }
 
-  await confirmAndApplySectionDraft(content, "polish_replace_confirm", "section_draft_polished");
+  const polishReceiptId = await recordWritingRouteAnswer({ projectId: context.project.id, intent: "polish-draft", answerText: content });
+  const polishApplied = await confirmAndApplySectionDraft(content, "polish_replace_confirm", "section_draft_polished");
+  settleWritingRouteAnswer(polishReceiptId, polishApplied, content);
 }
 
 async function suggestDraft() {
@@ -927,14 +961,20 @@ ${currentDraft || "No draft yet. Give planning suggestions for starting this sec
     return;
   }
 
+  const suggestReceiptId = await recordWritingRouteAnswer({ projectId: context.project.id, intent: "suggest-draft", answerText: content });
   const preview = clipContextContent(content, 1800);
   const result = await showSystemModal(t("suggest_append_confirm", preview), "confirm");
   if (result !== "yes") {
     clearStatus();
+    settleWritingRouteAnswer(suggestReceiptId, false, content);
     return;
   }
 
-  applySectionDraftMarkdown(content, { append: true, ai: true, statusKey: "section_draft_suggested" });
+  // Both halves are load-bearing: awaiting the write is what makes the
+  // outcome real (an unawaited save let a refusal be announced as success),
+  // and the receipt settles on that real outcome rather than on hope.
+  const suggestApplied = await applySectionDraftMarkdown(content, { append: true, ai: true, statusKey: "section_draft_suggested" });
+  settleWritingRouteAnswer(suggestReceiptId, suggestApplied !== false, content);
 }
 
 function getClaimCheckWritingObjectContext(project = getActiveProject()) {
@@ -1253,11 +1293,21 @@ ${body}`;
       setStatus(t("claim_check_receiving", markdown.length));
       renderClaimCheckDraft(markdown);
     });
-    renderClaimResults(stripRebuildMarkdownFence(content));
+    const claimReportText = stripRebuildMarkdownFence(content);
+    renderClaimResults(claimReportText);
+    // The report is on screen the moment it renders, but nowhere durable
+    // until the writer separately saves a Project CD copy; without a receipt
+    // a claim check the writer never exports vanishes on reload.
+    const claimReceiptId = await recordWritingRouteAnswer({
+      projectId: activeProjectId,
+      intent: sectionOnly ? "claim-check-section" : "claim-check",
+      answerText: claimReportText,
+    });
+    settleWritingRouteAnswer(claimReceiptId, true, claimReportText);
   } catch (error) {
     if (!isAbortError(error)) {
       console.error("Claim check failed", error);
-      const message = t("claim_check_error", error.message);
+      const message = t("claim_check_error", friendlyErrorDetail(error));
       claimResultsEl.innerHTML = `<div class="empty-folder-note">${message}</div>`;
       setStatus(message);
     }

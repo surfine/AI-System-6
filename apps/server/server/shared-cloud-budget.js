@@ -4,11 +4,17 @@ const crypto = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
 
-const DEFAULT_DAILY_TOKEN_BUDGET = 250000;
+// The trial has one job: a visitor must be able to finish one piece of
+// writing on it. A full route -- sheet, outline, a draft per section, review,
+// listen, one rewrite -- costs 9 to 14 requests before any retry, so a
+// 12-request session ran out before the finish line and a 1800-token answer
+// truncated a long section. These numbers carry a whole draft with a retry
+// to spare; the env vars still override them per deployment.
+const DEFAULT_DAILY_TOKEN_BUDGET = 600000;
 const DEFAULT_DAILY_REQUEST_LIMIT = 100;
-const DEFAULT_SESSION_REQUEST_LIMIT = 12;
+const DEFAULT_SESSION_REQUEST_LIMIT = 28;
 const DEFAULT_MAX_INPUT_TOKENS = 32000;
-const DEFAULT_MAX_OUTPUT_TOKENS = 1800;
+const DEFAULT_MAX_OUTPUT_TOKENS = 4000;
 // DeepSeek's published ceiling after vision resizing. Counting a data URL as
 // JSON text makes a modest image look like tens of thousands of text tokens
 // and blocks the shared vision route before the provider can meter it.

@@ -100,6 +100,11 @@
                   </div>
                   <div class="system-tab-panel" role="tabpanel"><span data-i18n="appearance">Appearance</span></div>
                 </div>
+                <!-- The shipping progress meter (rebuild flow, model/import/OCR
+                     runs): one part, dressed by --progress-* tokens. Frozen at
+                     a fixed fill since a still specimen has no real run. The
+                     replica here had its own theme-lab-progress-* wardrobe. -->
+                <p class="theme-lab-progress-row"><span data-i18n="theme_lab_progress">Progress</span><span class="progress-meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="62" aria-label="Progress" data-i18n-aria-label="theme_lab_progress"><span></span></span></p>
               </section>
 
               <section class="theme-lab-group theme-lab-window-chrome" aria-labelledby="theme-lab-window-chrome-title">
@@ -145,18 +150,13 @@
                     <button type="button"><span class="sys-icon" data-system-icon="applications" aria-hidden="true"></span><span data-i18n="applications">Applications</span></button>
                     <button type="button"><span class="sys-icon" data-system-icon="trash" aria-hidden="true"></span><span data-i18n="trash">Trash</span></button>
                   </nav>
-                  <div class="theme-lab-list-frame is-focused" tabindex="0">
-                    <div class="theme-lab-list" role="listbox" aria-label="List">
-                      <button type="button" role="option"><span class="theme-lab-list-icon" aria-hidden="true"></span><span>Appearance</span></button>
-                      <button class="is-selected" type="button" role="option" aria-selected="true"><span class="theme-lab-list-icon" aria-hidden="true"></span><span>Control Panels</span></button>
-                      <button type="button" role="option"><span class="theme-lab-list-icon" aria-hidden="true"></span><span>System Folder</span></button>
-                    </div>
-                    <div class="theme-lab-scrollbar theme-lab-list-scrollbar" aria-hidden="true">
-                      <div class="theme-lab-scrollbar-track"><span class="theme-lab-scrollbar-thumb is-active"></span></div>
-                      <span class="theme-lab-scrollbar-button is-decrement is-active"></span>
-                      <span class="theme-lab-scrollbar-button is-increment"></span>
-                    </div>
-                  </div>
+                  <!-- Finder's own list view (.finder-list / .finder-list-row),
+                       posed with fixed rows via window.AISystem6FinderList.create()
+                       (project-disk.js) -- the same adoption pattern as the
+                       scroll specimen's window.AISystem6WindowFrameBar. The
+                       replica here drew its own theme-lab-list-* rows and icon
+                       a second time, in every era, and drifted from Finder's. -->
+                  <div class="theme-lab-list-frame" data-theme-lab-list-specimen></div>
                 </div>
                 <div class="theme-lab-snow-source-list" aria-hidden="true" lang="en" translate="no">
                   <h4 class="theme-lab-snow-group" data-i18n="theme_lab_snow_devices">Devices</h4>
@@ -545,6 +545,20 @@
       specimen.append(frameBar.bar);
     }
     return specimen;
+  }
+
+  // Fixed rows, not a real folder -- a still specimen has no project to list,
+  // so it poses the same three kinds a Finder window's list view already
+  // shows (a folder, a draft, a reference).
+  function buildFinderListSpecimen(win) {
+    const host = win.querySelector("[data-theme-lab-list-specimen]");
+    if (!host || host.childElementCount) return;
+    const list = window.AISystem6FinderList?.create([
+      { iconId: "folder", name: "Section Drafts", kind: "Folder", meta: "3 items", selected: false },
+      { iconId: "document", name: "Opening beat", kind: "Draft", meta: "412 words", selected: true },
+      { iconId: "documents", name: "Interview notes", kind: "Reference", meta: "1.2 KB", selected: false },
+    ]);
+    if (list) host.append(list);
   }
 
   function buildWindowChromeSpecimens(win) {
@@ -1497,6 +1511,7 @@
     wire(win);
     buildTokenPanel(win);
     buildWindowChromeSpecimens(win);
+    buildFinderListSpecimen(win);
     renderEraTimeline(theme);
     renderLineage(theme);
     if (typeof initSystemSelectControls === "function") initSystemSelectControls();

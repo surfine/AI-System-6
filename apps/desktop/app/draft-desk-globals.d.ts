@@ -6,6 +6,11 @@ declare const endpointInput: HTMLInputElement | null;
 declare const mountedTextDisk: any;
 
 declare function getWindow(name: string): any;
+// Declared by feature modules that load after core/. The concatenated bundle
+// has them at runtime; every call site here still guards with `typeof`,
+// because a lazy module may not have loaded yet.
+declare function isTeachTextManuscriptRole(role?: any): boolean;
+declare function setProjectOutlineMarkdown(project: any, markdown: string): void;
 declare function openWindow(name: string, options?: any): Promise<any>;
 declare function maximizeWindow(win: any): void;
 declare function formatReviewVoiceStats(text: string): string;
@@ -41,6 +46,10 @@ declare function leavePreviewToCaret(input: any, preview: any): boolean;
 declare function escapeHtml(text: string): string;
 declare const translations: Record<string, Record<string, any>>;
 declare function titleFromBody(body?: string): string;
+// Receipt bodies are hashed by documents-chat.js's classic-script helper;
+// the Quick Draft chain calls it with a guard, so the typecheck needs the
+// ambient name (documents-chat.js is outside this config's include list).
+declare function contentHash(body?: string): string;
 // 文字亮室's durable half is lazy, so the darkroom loads it before reading for
 // it. Declared here for the same reason as the image helpers below: the loader
 // is eager in config.js, which this typecheck's include list does not cover.

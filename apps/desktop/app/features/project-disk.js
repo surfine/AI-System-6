@@ -11,6 +11,15 @@ const teachTextImageAttachmentLimit = 48;
 // in wide windows and a compact document-stack menu in existing window chrome
 // when space is constrained. CSS @container queries choose the presentation;
 // state, switching, closing, and reordering remain identical.
+//
+// tdi-rail tier 2: this pair (renderTdiTabStrip for the wide rail,
+// renderTdiDocumentStack for the compact stack) is the one builder every
+// consumer -- Reader, TeachText, DocMap, Time Machine -- already calls; no
+// consumer keeps a private copy of row markup. window.AISystem6TdiRail below
+// names it a documented primitive the way window.AISystem6WindowFrameBar and
+// window.AISystem6FinderList name theirs. Its base recipe lives in
+// styles/20-reader-docmap.css (.tdi-rail / .tdi-tabs / .tdi-tab); every
+// appearance sheet answers the rail's tokens, never a second selector.
 
 function getReaderTabSite(url) {
   try {
@@ -363,6 +372,13 @@ function renderTdiTabStrip(container, tabs, options = {}) {
     dirtyFor = () => false,
     closableFor = () => true,
     hideWhenEmpty = true,
+    // Tier 2: an optional section heading between clusters of rows -- e.g.
+    // TeachText's Manuscript above its Section Drafts. groupFor returns a
+    // group key per tab (falsy = no heading); the caller is responsible for
+    // ordering tabs so rows sharing a key are already adjacent. groupLabelFor
+    // turns that key into the heading's visible text.
+    groupFor = null,
+    groupLabelFor = (group) => group,
     onOpen = () => {},
     onClose = () => {},
     onMove = null,
@@ -374,7 +390,19 @@ function renderTdiTabStrip(container, tabs, options = {}) {
   container.classList.toggle("is-crowded", visibleTabs.length > 7);
   renderTdiDocumentStack(container, visibleTabs, options);
   if (!visibleTabs.length) return;
+  let lastGroup;
   visibleTabs.forEach((tab, index) => {
+    if (typeof groupFor === "function") {
+      const group = groupFor(tab, index);
+      if (group && group !== lastGroup) {
+        const heading = document.createElement("div");
+        heading.className = "tdi-tabs-heading";
+        heading.setAttribute("role", "presentation");
+        heading.textContent = groupLabelFor(group, tab);
+        container.append(heading);
+      }
+      lastGroup = group;
+    }
     const closable = !!closableFor(tab);
     const button = document.createElement("button");
     button.type = "button";
@@ -441,6 +469,18 @@ function renderTdiTabStrip(container, tabs, options = {}) {
     container.append(wrap);
   });
 }
+
+// The documented primitive. render() is the vertical rail (with the tier-2
+// section-heading option); renderCompactStack() is the narrow-window
+// projection of the same tab state. Reader, TeachText, DocMap, and Time
+// Machine call the bare functions above directly (classic-script global
+// scope); this object exists so the primitive can be found and named the way
+// window.AISystem6WindowFrameBar and window.AISystem6FinderList are found and
+// named, without a second implementation for any consumer to keep in sync.
+window.AISystem6TdiRail = Object.freeze({
+  render: renderTdiTabStrip,
+  renderCompactStack: renderTdiDocumentStack,
+});
 
 // Drag-to-resize the vertical tab rail (TeachText / DocMap), mirroring Reader's
 // split handle. Drives the per-shell --tdi-rail-width custom property; no inline
@@ -1898,6 +1938,33 @@ function renderProjectRootListItem(item, project, mode, orderedItems = []) {
   return row;
 }
 
+// A still specimen for Theme Lab: the same .finder-list header/row markup
+// Finder's own list view builds above, posed with fixed rows instead of a
+// live project. Mirrors window.AISystem6WindowFrameBar.create() -- a real
+// part exposed for the Lab to adopt, not a second implementation of it.
+window.AISystem6FinderList = {
+  create(rows) {
+    const list = document.createElement("div");
+    list.className = "finder-list";
+    const header = document.createElement("div");
+    header.className = "finder-list-header";
+    header.innerHTML = `<span>${escapeHtml(t("file_name"))}</span><span>${escapeHtml(t("kind"))}</span><span>${escapeHtml(t("size"))}</span><span>${escapeHtml(t("modified"))}</span>`;
+    list.append(header);
+    for (const entry of rows) {
+      const row = document.createElement("div");
+      row.className = `finder-list-row${entry.selected ? " is-selected" : ""}`;
+      row.innerHTML = `
+        <span class="finder-list-name-cell">${renderSystemIcon(entry.iconId, { size: "list" })}<span>${escapeHtml(entry.name)}</span></span>
+        <span>${escapeHtml(entry.kind)}</span>
+        <span>${escapeHtml(entry.meta)}</span>
+        <span>${escapeHtml(entry.modified)}</span>
+      `;
+      list.append(row);
+    }
+    return list;
+  },
+};
+
 function renderProjectRootIconItem(item, orderedItems = []) {
   const button = document.createElement("button");
   button.type = "button";
@@ -2039,6 +2106,7 @@ function renderProjectDisks() {
     projectDiskGridEl.append(empty);
     updateFinderViewButtons(getWindow("projects"), mode);
     setFinderViewClasses(projectDiskGridEl, mode);
+    if (typeof settlePendingFinderFit === "function") settlePendingFinderFit(getWindow("projects"));
     return;
   }
 
@@ -2070,6 +2138,7 @@ function renderProjectDisks() {
     items.forEach((item) => fragment.append(renderProjectRootIconItem(item, items)));
   }
   projectDiskGridEl.append(fragment);
+  if (typeof settlePendingFinderFit === "function") settlePendingFinderFit(getWindow("projects"));
 }
 
 function renderProjectReferences() {
@@ -2222,7 +2291,7 @@ async function moveProjectReferencesToTrash(referenceIds) {
     try {
       await deleteStoredProjectReference(reference.id);
     } catch (error) {
-      setStatus(t("project_reference_error", error.message));
+      setStatus(t("project_reference_error", friendlyErrorDetail(error)));
     }
     movedNames.push(reference.name);
   }
@@ -2272,7 +2341,7 @@ async function loadActiveProjectReferences() {
       setStatus(t("project_reference_loaded", projectReferences.length));
     }
   } catch (error) {
-    setStatus(t("project_reference_error", error.message));
+    setStatus(t("project_reference_error", friendlyErrorDetail(error)));
   }
 }
 

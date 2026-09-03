@@ -67,7 +67,7 @@ async function fetchMoreResults() {
       moreButton.disabled = false;
       moreButton.textContent = originalLabel;
     }
-    setStatus(t("find_path_error", error.message));
+    setStatus(t("find_path_error", friendlyErrorDetail(error)));
   }
 }
 
@@ -301,7 +301,11 @@ function normalizeFindPathErrorMessage(error) {
     if (/fetch failed|cannot reach|cannot resolve|network|dns|firewall|tls/i.test(raw)) {
       return t("searcher_connection_failed", provider);
     }
-    return raw;
+    // Anything else that still reads as a raw transport/error-code string
+    // (rather than an already-human message) gets the same replacement
+    // every other model-calling surface uses, so Searcher never shows a
+    // bare code either.
+    return friendlyErrorDetail(raw);
   }
 }
 
@@ -337,7 +341,7 @@ async function translateFindPathResult(index) {
     renderFindPathResults();
     setStatus(t("result_translated"));
   } catch (error) {
-    setStatus(t("translation_failed", error.message));
+    setStatus(t("translation_failed", friendlyErrorDetail(error)));
   } finally {
     if (translateButton) {
       translateButton.disabled = false;
@@ -369,7 +373,7 @@ ${context}`;
       max_tokens: 500,
     }, getLongTaskSignal());
 
-    if (!response.ok) throw new Error("AI Synthesis failed");
+    if (!response.ok) throw new Error(serviceErrorDetail(response.status, await response.text()));
     const data = await response.json();
     const summary = data?.choices?.[0]?.message?.content?.trim();
 
@@ -379,8 +383,8 @@ ${context}`;
       findPathSummaryEl.scrollTop = 0;
     }
   } catch (error) {
-    console.error(error);
-    setStatus(t("find_path_error", error.message));
+    console.error("Searcher synthesis failed", error);
+    setStatus(t("find_path_error", friendlyErrorDetail(error)));
   } finally {
     synthesizeFindPathButton.textContent = originalLabel;
     synthesizeFindPathButton.disabled = false;

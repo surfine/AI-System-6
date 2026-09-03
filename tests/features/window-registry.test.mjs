@@ -1,3 +1,4 @@
+import { createAppBootVm } from "../helpers/app-boot-vm.mjs";
 import { createFeatureTest, read, windowRegistryRecords } from "../helpers/feature-test-harness.mjs";
 import { windowInterfaceRegistry } from "../../tooling/interface-guidelines-contract.mjs";
 
@@ -85,16 +86,75 @@ Object.entries(records).forEach(([name, record]) => {
 });
 
 // The lazy trap this file has to keep avoiding: a bare reference to a lazily
-// loaded function resolves at boot and throws. Every loader and hook is an
-// arrow, so the reference is deferred to the moment it is called.
-Object.entries(records).forEach(([name, record]) => {
-  ["lazy", "onOpen", "onReveal"].forEach((field) => {
-    const source = record[field];
-    if (typeof source !== "string" || field === "lazy") return;
-    test.assert(source.startsWith("("), `${name}.${field} is an arrow, so a lazy identifier is not resolved at boot`);
-  });
-});
+// loaded function resolves at boot and throws. Converted from a heuristic —
+// "the hook's source text starts with '(', so it must be an arrow, so the
+// identifier is probably deferred" — into the real proof: boot the actual
+// eager module set, load EVERY lazy window's module through its real
+// ensure() (the same loader a real click uses), then actually CALL every
+// onOpen / onReveal / lazy.* hook for every one of the registry's ~70
+// windows and watch what the real engine does with the identifiers inside.
+// A bare reference to a not-yet-declared name throws a ReferenceError — the
+// one error type this loop watches for. Everything else (a TypeError from a
+// DOM shim that has no real geometry or CSSOM, for instance) is expected
+// harness noise unrelated to the trap this test exists to catch, so it is
+// deliberately not flagged: the hooks are real render/attach code written
+// for a real browser, and this harness's DOM shim (see app-boot-vm.mjs) does
+// not attempt to be one.
+const vmw = createAppBootVm();
+const lazyWindowNames = vmw.run(`
+  Object.entries(windowRegistry).filter(([, r]) => r.lazy && typeof r.lazy.ensure === "function").map(([n]) => n)
+`);
+test.assert(lazyWindowNames.length > 20, `the real registry has lazy windows to load (got ${lazyWindowNames.length}, expected well over 20)`);
+// A module that paints on a real 2D context cannot finish loading against a
+// DOM shim: the canvas answers no getContext. Named here the way
+// lazy-command-loading names it, and covered for real by the browser walk.
+const canvasBackedWindows = new Set(["clioPaint"]);
+for (const name of lazyWindowNames) {
+  if (canvasBackedWindows.has(name)) continue;
+  // eslint-disable-next-line no-await-in-loop -- each ensure() is the real
+  // sequential loader a real window open goes through; running them
+  // concurrently would not match how any single window actually opens.
+  await vmw.run(`windowRegistry[${JSON.stringify(name)}].lazy.ensure()`);
+}
+test.assert(true, `every one of ${lazyWindowNames.length - canvasBackedWindows.size} headless-testable lazy windows' real module loads through its real ensure() without throwing`);
+
+const hookReferenceErrors = JSON.parse(vmw.run(`
+  JSON.stringify((() => {
+    const out = [];
+    for (const [name, record] of Object.entries(windowRegistry)) {
+      for (const field of ["onOpen", "onReveal"]) {
+        const fn = record[field];
+        if (typeof fn !== "function") continue;
+        try { fn(); } catch (error) {
+          if (error instanceof ReferenceError) out.push({ name, field, message: String(error.message) });
+        }
+      }
+      const lazy = record.lazy;
+      if (lazy && typeof lazy === "object") {
+        for (const field of Object.keys(lazy)) {
+          if (field === "ensure") continue;
+          const fn = lazy[field];
+          if (typeof fn !== "function") continue;
+          try { fn(); } catch (error) {
+            if (error instanceof ReferenceError) out.push({ name, field: "lazy." + field, message: String(error.message) });
+          }
+        }
+      }
+    }
+    return out;
+  })())
+`));
+test.assert(
+  hookReferenceErrors.length === 0,
+  hookReferenceErrors.length
+    ? `no window hook throws a ReferenceError once every lazy module is loaded — offenders: ${hookReferenceErrors.map((e) => `${e.name}.${e.field} (${e.message})`).join("; ")}`
+    : `every onOpen / onReveal / lazy hook across the whole registry resolves its identifiers for real (0 ReferenceErrors after loading ${lazyWindowNames.length} lazy modules)`
+);
 
 test.assertIncludes(read("tooling/runtime-manifest.mjs"), '"app/core/window-registry.js"', "the registry boots with the system");
 
 test.finish();
+// See action-registry-dispatch.test.mjs's comment on this same line: a real
+// boot can leave unrelated background async work in flight, and
+// test.finish() does not exit on success.
+process.exit(0);

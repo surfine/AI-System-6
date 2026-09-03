@@ -198,8 +198,8 @@ function renderClioProject() {
   parts.edges.setAttribute("viewBox", `0 0 ${width} ${height}`);
   parts.edges.setAttribute("width", String(width));
   parts.edges.setAttribute("height", String(height));
-  parts.canvas.style.minWidth = `${width}px`;
-  parts.canvas.style.minHeight = `${height}px`;
+  parts.canvas.style.setProperty("--clio-project-canvas-min-w", `${width}px`);
+  parts.canvas.style.setProperty("--clio-project-canvas-min-h", `${height}px`);
 
   plan.edges.forEach((edge) => {
     const from = positions.get(edge.from);

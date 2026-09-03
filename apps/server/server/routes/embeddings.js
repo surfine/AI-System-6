@@ -17,7 +17,7 @@
 
 "use strict";
 
-const { send, readJsonBody, requestSignal } = require("../lib/http.js");
+const { send, readJsonBody, requestSignal, respondIfClientError } = require("../lib/http.js");
 const { postJsonWithFallback } = require("../lib/fetch.js");
 const { getLocalUrls } = require("../lib/local-urls.js");
 
@@ -46,6 +46,9 @@ async function handleEmbeddings(req, res) {
     });
   } catch (error) {
     if (/** @type {any} */ (error)?.name === "AbortError") return;
+    // A rejected body never went to the model server, so it is not a proxy
+    // failure and must not get the label of one.
+    if (respondIfClientError(res, error)) return;
     send(res, 502, JSON.stringify({
       error: "Proxy failed",
       detail: /** @type {Error} */ (error).message,

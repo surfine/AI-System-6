@@ -209,7 +209,7 @@ async function cleanTranscript() {
     }
   } catch (error) {
     console.error("Clean transcript failed", error);
-    setStatus(t("reader_error", error.message));
+    setStatus(t("reader_error", friendlyErrorDetail(error)));
   } finally {
     updateDictationTranscriptButtons();
     dictationStatusEl.textContent = t("ready");

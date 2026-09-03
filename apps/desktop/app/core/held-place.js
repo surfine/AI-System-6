@@ -91,16 +91,26 @@ function readHeldThoughts() {
 }
 
 function writeHeldThoughts() {
+  let persisted = true;
   try {
     if (heldThoughts.length) localStorage.setItem(heldThoughtsStorageKey, JSON.stringify(heldThoughts));
     else localStorage.removeItem(heldThoughtsStorageKey);
     localStorage.removeItem(heldPlaceLegacyStorageKey);
-  } catch {}
+  } catch (error) {
+    // lane-errors: this used to swallow the failure outright, so a full or
+    // blocked localStorage (private browsing, quota) left the in-memory
+    // array updated while nothing durable existed — the caller showed
+    // "Held" and the thought was gone on reload. holdThatThought() below
+    // checks this return value and says so instead.
+    console.warn("Hold My Place: could not persist held thoughts", error);
+    persisted = false;
+  }
   if (typeof updateMenuState === "function") updateMenuState();
   // The Control Strip's Your Place tile reads this same pile, and a capture can
   // arrive from the key equivalent or from a phone tap — paths the strip's own
   // click never sees. One module refresh, not a whole redraw.
   window.AISystem6ControlStrip?.refreshStrip?.("heldPlace");
+  return persisted;
 }
 
 function getHeldThoughts() {
@@ -248,9 +258,9 @@ async function holdThatThought() {
   });
   if (restack) heldThoughts[0] = thought;
   else heldThoughts.unshift(thought);
-  writeHeldThoughts();
+  const persisted = writeHeldThoughts();
 
-  setStatus(t("held_thought_caught", position.title));
+  setStatus(persisted ? t("held_thought_caught", position.title) : t("held_thought_save_failed"));
   await openWindow("holdThought");
   if (typeof focusHeldThoughtCapture === "function") focusHeldThoughtCapture();
 }

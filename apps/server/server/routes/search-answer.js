@@ -198,13 +198,22 @@ async function handleSearchAnswer(req, res) {
     send(res, 200, JSON.stringify(envelope(result)), { "Content-Type": "application/json" });
   } catch (error) {
     if (signal.aborted) return;
-    const status = /** @type {any} */ (error)?.statusCode || 502;
+    const declaredStatus = Number(/** @type {any} */ (error)?.statusCode);
+    const status = Number.isInteger(declaredStatus) && declaredStatus >= 400 ? declaredStatus : 502;
+    const message = String(/** @type {Error} */ (error).message);
     const headers = { "Content-Type": "application/json" };
     if (/** @type {any} */ (error)?.retryAfter > 0) {
       headers["Retry-After"] = String(/** @type {any} */ (error).retryAfter);
     }
+    // Only an error that names its own status was written for the user. An
+    // unexpected internal error gets a sentence the user can act on; its raw
+    // text stays in `detail` for a bug report. Before this split, an internal
+    // fault put a symbol name such as "Cannot read properties of null" into
+    // the field the interface shows.
     send(res, status, JSON.stringify({
-      error: String(/** @type {Error} */ (error).message),
+      error: Number.isInteger(declaredStatus)
+        ? message
+        : "Web search answer failed. Check the network connection and the cloud model settings in Control Panel, then try again.",
       ...(/** @type {any} */ (error)?.code ? { code: /** @type {any} */ (error).code } : {}),
       ...(/** @type {any} */ (error)?.warning ? { warning: /** @type {any} */ (error).warning } : {}),
       detail: String(/** @type {Error} */ (error).message),

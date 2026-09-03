@@ -88,6 +88,15 @@ const windowRegistry = Object.freeze({
     attach: () => window.AISystem6ClioChart?.attach?.(),
   },
   },
+  clioPaint: {
+    app: "clioPaint",
+    builtByModule: true,
+    width: 640,
+    lazy: {
+      ensure: () => ensureClioPaintModule(),
+      attach: () => window.AISystem6ClioPaint?.attach?.(),
+    },
+  },
   clioProject: {
     app: "clioProject",
     builtByModule: true,

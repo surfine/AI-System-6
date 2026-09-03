@@ -787,7 +787,23 @@ function restoreTeachTextWorkingSession(state = {}) {
   teachTextBodyInput.value = String(state.body || "");
   teachTextFileLabel = normalizeFileLabel(state.fileLabel || "");
   setTeachTextWorkflowState(state.workflowState || teachTextFileLabel || "draft");
-  setTeachTextStatus(state.statusKey || (teachTextBodyInput.value ? "modified" : "unsaved"));
+  // The document tab records what its own text actually is, so ask it before
+  // guessing. A session restored without a status key used to be called
+  // "modified" purely because it had text in it -- which meant a project
+  // restored from a backup, whose disk says "saved" and whose content was
+  // just written by the import, announced unsaved changes and then blocked
+  // the next window behind a save prompt. Guessing stays as the last resort,
+  // where there is genuinely nothing to ask.
+  const restoredTabStatus = (() => {
+    if (state.statusKey) return state.statusKey;
+    if (typeof getDocumentTabs !== "function") return "";
+    const project = typeof getActiveProject === "function" ? getActiveProject() : null;
+    if (!project) return "";
+    const tabs = getDocumentTabs("teachText", project) || [];
+    const active = tabs.find((tab) => tab?.id === state.activeTabId) || tabs[0];
+    return String(active?.state?.statusKey || "");
+  })();
+  setTeachTextStatus(restoredTabStatus || (teachTextBodyInput.value ? "modified" : "unsaved"));
   if (typeof syncTeachTextLabelControl === "function") syncTeachTextLabelControl();
   if (typeof syncTeachTextPreview === "function") syncTeachTextPreview();
   if (typeof updateTeachTextBoundaries === "function") updateTeachTextBoundaries();

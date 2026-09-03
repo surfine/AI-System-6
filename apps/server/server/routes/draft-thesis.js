@@ -1424,6 +1424,20 @@ async function callModel(body, messages, signal, req) {
     }
   }
 
+  // Below this line the draft goes to a local model. The public host runs
+  // none, so the attempt reached LM Studio's own answer and the visitor was
+  // told to load a model "in the developer page or use the 'lms load'
+  // command" -- an instruction for a program on a machine that is not theirs,
+  // and one wasted connection per draft. Name the real cause instead.
+  if (isPublicDeployment) {
+    const error = /** @type {Error & { statusCode?: number, code?: string }} */ (
+      new Error("这个站点没有本地模型。请在 Control Panel 打开云端模型，然后再出稿。")
+    );
+    error.statusCode = 400;
+    error.code = "cloud_model_required";
+    throw error;
+  }
+
   const endpoint = body._local_endpoint || "";
   const { chatUrl } = getLocalUrls(provider, endpoint);
   const payload = tuneLmStudioChatPayload({

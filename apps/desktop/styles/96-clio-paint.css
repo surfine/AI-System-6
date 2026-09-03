@@ -1,0 +1,173 @@
+/* ClioPaint — the 1-bit painting surface, MacPaint lineage.
+   Every selector here is scoped to .clio-paint-*; the window travels lazily
+   with ensureClioPaintModule() and this sheet loads with it (see
+   tooling/style-manifest.mjs). Toggle buttons reuse the shared
+   .view-switch-option component (30-surfaces.css) for their pressed/hover
+   states instead of inventing a second toggle-button skin. */
+
+.clio-paint-window {
+  width: min(720px, calc(100vw - 72px));
+}
+
+.clio-paint-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  box-sizing: border-box;
+  overflow: auto;
+}
+
+.clio-paint-toolbar,
+.clio-paint-patterns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 2px;
+  border: var(--system-border);
+  background: var(--shade);
+}
+
+.clio-paint-toolbar .view-switch-option {
+  min-width: 52px;
+  padding: 4px 8px;
+  font-family: var(--ui-font);
+  font-size: 12px;
+}
+
+.clio-paint-tool-sep {
+  width: 1px;
+  align-self: stretch;
+  background: var(--shade-dark);
+  margin: 2px 4px;
+}
+
+.clio-paint-patterns .view-switch-option {
+  width: 28px;
+  height: 20px;
+  min-width: 28px;
+  padding: 0;
+  background-repeat: repeat;
+  background-position: 0 0;
+  image-rendering: pixelated;
+}
+
+.clio-paint-canvas-wrap {
+  position: relative;
+  align-self: flex-start;
+  border: var(--system-border);
+  background: #fff;
+  line-height: 0;
+}
+
+.clio-paint-canvas {
+  display: block;
+  background: #fff;
+  image-rendering: pixelated;
+  touch-action: none;
+}
+
+.clio-paint-canvas[data-clio-paint-tool="pencil"],
+.clio-paint-canvas[data-clio-paint-tool="fill"],
+.clio-paint-canvas[data-clio-paint-tool="text"] {
+  cursor: crosshair;
+}
+
+.clio-paint-canvas[data-clio-paint-tool="eraser"] {
+  cursor: cell;
+}
+
+.clio-paint-canvas[data-clio-paint-tool="marquee"] {
+  cursor: default;
+}
+
+.clio-paint-marquee {
+  position: absolute;
+  border: 1px dashed var(--ink);
+  pointer-events: none;
+}
+
+.clio-paint-text-input {
+  position: absolute;
+  left: var(--clio-paint-text-x, 0px);
+  top: var(--clio-paint-text-y, 0px);
+  min-width: 60px;
+  padding: 1px 2px;
+  border: 1px solid var(--ink);
+  background: #fff;
+  font-family: var(--mono-font);
+  font-size: 14px;
+  line-height: 1;
+}
+
+.clio-paint-status-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* Side-by-side echo: the sketch on the left, what the model read on the
+   right, per the sketch-to-outline evidence draft — a reader who cannot see
+   both at once cannot tell a good read from a bad one. */
+.clio-paint-result {
+  container-type: inline-size;
+  border: var(--system-border);
+  padding: 8px;
+}
+
+.clio-paint-result-echo {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+@container (min-width: 480px) {
+  .clio-paint-result-echo {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+.clio-paint-result-sketch img {
+  display: block;
+  max-width: 100%;
+  border: var(--system-border);
+  image-rendering: pixelated;
+}
+
+.clio-paint-result-markdown {
+  margin: 0;
+  padding: 6px;
+  border: var(--system-border);
+  background: #fff;
+  font-family: var(--mono-font);
+  font-size: 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 220px;
+  overflow: auto;
+}
+
+/* The "could not read" block stays visible even when empty -- it is the
+   integrity credential for this path, not an error state. */
+.clio-paint-result-unread {
+  margin-top: 6px;
+  padding: 4px 6px;
+  border: 1px dotted var(--shade-dark);
+  background: var(--shade);
+  font-family: var(--ui-font);
+  font-size: 12px;
+  color: var(--shade-dark);
+}
+
+.clio-paint-result-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.clio-paint-pane[data-clio-paint-busy="true"] .clio-paint-toolbar,
+.clio-paint-pane[data-clio-paint-busy="true"] .clio-paint-status-actions {
+  opacity: 0.6;
+  pointer-events: none;
+}

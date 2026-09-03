@@ -1474,6 +1474,7 @@
     if (rendererState) rendererState.viewIsCustom = false;
     syncViewControls();
     applyCmfView(name, { animate: true });
+    if (typeof updateMenuState === "function") updateMenuState();
   }
 
   function resetCmfView() {
@@ -1600,7 +1601,11 @@
       buffer,
       recipe: buildBrowserExportRecipe(),
     });
-    window.AISystem6WebPlatform.saveArtifact({
+    // The model itself built fine at this point; saveArtifact's own dispatch
+    // result is a separate, later thing that can still refuse (e.g. no File
+    // constructor) - the caller must not claim "exported" over that without
+    // triggering an unrelated server-side retry.
+    return window.AISystem6WebPlatform.saveArtifact({
       blob: result.blob,
       fileName: exportFileName(),
       mimeType: "model/vnd.usdz+zip",
@@ -1611,8 +1616,9 @@
     setBusy(true, t("cmf_exporting"));
     setCmfControlLoading("cmf-export", true, t("cmf_exporting"));
     try {
+      let saved;
       try {
-        await exportUsdzBrowser();
+        saved = await exportUsdzBrowser();
       } catch (error) {
         // Static deployments own the source asset and the browser exporter.
         // Local/VPS deployments can still fall through to the Node engine.
@@ -1628,14 +1634,16 @@
           throw new Error(data.detail || data.error || response.statusText);
         }
         const blob = await response.blob();
-        window.AISystem6WebPlatform.saveArtifact({
+        saved = window.AISystem6WebPlatform.saveArtifact({
           blob,
           fileName: exportFileName(),
           mimeType: "model/vnd.usdz+zip",
         });
       }
-      setCmfStatus(t("cmf_export_done"));
-      playSystemSound?.("save");
+      // The model built fine either way; only claim "exported" once
+      // saveArtifact's own dispatch actually confirms it.
+      setCmfStatus(saved ? t("cmf_export_done") : t("cmf_export_download_failed"));
+      if (saved) playSystemSound?.("save");
     } catch (error) {
       setCmfStatus(`${t("cmf_export_failed")} ${error.message}`);
       playSystemSound?.("alert");
@@ -1740,19 +1748,23 @@
     try {
       const views = activeViews();
       const offscreen = createOffscreenRenderer();
+      let allSaved = true;
       for (const view of views) {
         snapCamera(cameraPoseForView(view));
         offscreen.renderer.render(state.scene, state.camera);
         const blob = await canvasToPngBlob(offscreen.canvas);
-        window.AISystem6WebPlatform.saveArtifact({
+        const saved = window.AISystem6WebPlatform.saveArtifact({
           blob,
           fileName: `${recipe.name || activeModel().id}-${view.name}.png`,
           mimeType: "image/png",
         });
+        if (!saved) allSaved = false;
       }
       offscreen.renderer.dispose();
-      setCmfStatus(t("cmf_export_views_done"));
-      playSystemSound?.("save");
+      // Every frame rendered fine either way; only claim "exported" once
+      // every saveArtifact dispatch actually confirmed.
+      setCmfStatus(allSaved ? t("cmf_export_views_done") : t("cmf_export_views_download_failed"));
+      if (allSaved) playSystemSound?.("save");
     } catch (error) {
       setCmfStatus(`${t("cmf_export_views_failed")} ${error.message}`);
       playSystemSound?.("alert");
@@ -1820,10 +1832,18 @@
   window.renderCmfStudio = renderCmfStudio;
   window.AISystem6CMFStudio = Object.freeze({
     cancelRender: cancelModelRender,
+    // Empty once the camera has been dragged away from a named view, so the
+    // three View rows mark nothing rather than naming a view the model is
+    // no longer at.
+    currentView: () => (rendererState?.viewIsCustom ? "" : selectedView || ""),
     runMenuCommand(command) {
+      // Keys must match action.slice("cmf-".length) — the registered ids are
+      // "cmf-save-recipe" and "cmf-export-usdz", not "cmf-save"/"cmf-export",
+      // so "save"/"export" here never matched and both menu items silently
+      // did nothing.
       const commands = {
-        save: () => saveRecipe(),
-        export: exportUsdz,
+        "save-recipe": () => saveRecipe(),
+        "export-usdz": exportUsdz,
         shuffle: shuffleRecipe,
         reset: resetRecipe,
         "reset-view": resetCmfView,

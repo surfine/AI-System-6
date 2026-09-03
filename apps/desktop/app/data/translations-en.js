@@ -307,6 +307,28 @@ window.AISystem6TranslationsEn = {
     page_setup_saved: "Page setup saved for Project CD PDF.",
     project_cd_pdf_printing: (name) => `Printing ${name} to PDF.`,
     project_cd_pdf_blocked: "The print window could not open. Allow pop-up windows, then try Print to PDF again.",
+    // Word export. Every string states a fact: a refusal names the structural
+    // problem that was read from the document, with no score and no estimate,
+    // and nothing says "saved" before saveArtifact confirmed the download.
+    export_word_document: "Word Document…",
+    save_as_word: "Save as Word",
+    word_export_preview_opened: (name) => `${name} is laid out as pages. Check it, then choose Save as Word.`,
+    word_export_saved: (name) => `${name}.docx downloaded.`,
+    word_export_failed: "The Word file was not written. Try again.",
+    word_export_refused: "No Word file was written. The document has these structural problems:",
+    word_export_problem_empty_body: "The body is empty.",
+    word_export_problem_empty_heading: "A heading has no text.",
+    word_export_problem_heading_skipped: "A heading level was skipped.",
+    word_export_problem_ragged_table: "A table row does not match the header (row: cells/columns).",
+    word_export_problem_image_without_alt: "An image has no alternative text.",
+    word_export_comments_planned: (placed, requested) =>
+      `${placed} of ${requested} review notes travel as Word comments.`,
+    word_export_comments_unanchored: (count) => `${count} could not be anchored and do not travel:`,
+    word_export_comment_skip_anchor_not_found: "the quoted words are not in this manuscript",
+    word_export_comment_skip_anchor_ambiguous: "the quoted words appear more than once",
+    word_export_comment_skip_anchor_empty: "the note quotes nothing to anchor to",
+    word_export_comment_skip_note_empty: "the note has no words to carry",
+    word_export_comment_skip_anchor_unplaceable: "the quoted words could not carry a comment range",
     // Finishing Receipt. Every string here reports something that was stored,
     // never a judgement of the writing: no praise, no score, no encouragement.
     finishing_receipt: "Finishing Receipt",
@@ -368,6 +390,7 @@ window.AISystem6TranslationsEn = {
     sideask_pad_interview_next: "Answered — next",
     sideask_pad_temporary: "Not saved. Open in ClioTalk to keep it.",
     sideask_pad_asking: "Asking...",
+    sideask_pad_empty_question: "Type a question first.",
     sideask_pad_failed: "No answer. The model did not reply.",
     sideask_pad_promoted: "SideAsk moved into ClioTalk.",
     sideask_prompt_placeholder: "Ask about the paired content...",
@@ -393,11 +416,19 @@ window.AISystem6TranslationsEn = {
     restart_starting: "Restarting AI System 6...",
     shutdown_message: "It is now safe to shut down AI System 6.",
     shutdown_confirm: "Shut down AI System 6?\nThe desktop state will be saved, and you can restart from the shutdown screen.",
+    // lane-errors: restartSystem()/shutDownSystem() used to save the desktop
+    // state and, on failure, only log to the console before proceeding as if
+    // it had worked. These name the save failure and give the writer a real
+    // choice (restart) or an honest status (shutdown) instead.
+    shutdown_save_failed: "The desktop could not be saved before shutting down. Recent changes may be lost.",
+    restart_save_failed_confirm: "The desktop could not be saved. Restarting now may lose recent changes.\n\nRestart anyway?",
+    restart_save_failed_cancelled: "Restart cancelled so nothing is lost. Wait a moment and try Restart again.",
     balloon_system_help: "Open System Help: look up terms, or search how a feature works.",
     no_running_apps: "No running applications",
     hide_app: (name) => `Hide ${name}`,
     hide_others: "Hide Others",
     show_all: "Show All",
+    bring_all_to_front_already: "Every window of this application is already in front.",
     bring_all_to_front: "Bring All to Front",
     quit_app: (name) => `Quit ${name}`,
     multifinder_switcher: "MultiFinder",
@@ -429,6 +460,10 @@ window.AISystem6TranslationsEn = {
     held_thought_next: "First thing back?",
     held_thought_done: "Done",
     held_thought_caught: (where) => `Caught it. ${where} will keep.`,
+    // lane-errors: writeHeldThoughts() used to swallow a localStorage
+    // failure, so this success message showed even when nothing was
+    // actually saved — a claim the product then couldn't back up on reload.
+    held_thought_save_failed: "Could not hold this place - browser storage may be full or unavailable. Copy anything you need before you close this window.",
     apple_menu_writing_da: "Writing DA",
     apple_menu_reference_da: "Reference DA",
     apple_menu_utility_da: "Utility DA",
@@ -510,6 +545,9 @@ window.AISystem6TranslationsEn = {
     project_disk_exported: (name) => `${name} hard disk backup exported.`,
     project_disk_backup_read_failed: "Could not create the Project Hard Disk backup because the version history could not be read completely. The current project was not changed.",
     project_disk_export_failed: "Could not create the Project Hard Disk backup. The current project was not changed.",
+    // [lane-emptystates] honest counterpart: saveArtifact built the backup
+    // but the browser refused to dispatch the download.
+    project_disk_export_dispatch_failed: "The backup was built, but this browser could not start the download. Try again or use Share instead.",
     share_project_disk: "Share Project Hard Disk…",
     project_disk_shared: (name) => `${name} hard disk backup shared.`,
     project_disk_share_canceled: "Sharing canceled.",
@@ -603,6 +641,7 @@ window.AISystem6TranslationsEn = {
     copy: "Copy",
     paste: "Paste",
     select_all: "Select All",
+    edit_command_no_target: "No text field is focused. Click into TeachText or ClioTalk first.",
     document_status: "Status",
     document_role_manuscript: "Manuscript",
     document_role_scratch_file: "Scratch File",
@@ -614,7 +653,7 @@ window.AISystem6TranslationsEn = {
     label_ai: "AI Assisted",
     label_final: "Final",
     file_label_changed: (label) => `Marked as: ${label}`,
-    final_label_confirm: "Mark Final? Save, clear Outline/Drafts, link Review Desk.",
+    final_label_confirm: "Mark Final? Save, clear Outline/Drafts, link Review Desk. The version before this stays in File \u25b8 Versions\u2026",
     teachtext_review_requires_final: "Mark TeachText as Final before using Review Desk.",
     teachtext_manuscript_required: "Switch to the Manuscript tab before exporting to Project CD.",
     reader_selection_sent_manuscript: "Selection sent to Manuscript.",
@@ -776,6 +815,7 @@ window.AISystem6TranslationsEn = {
     synthesize: "Synthesize",
     switch_language: "简体中文",
     tile_windows: "Tile Windows",
+    windows_tiled: "Windows tiled.",
     writer_mode: "Writer Mode",
     desk_mode: "Desktop Mode",
     assistant_title: "ClioTalk",
@@ -800,6 +840,7 @@ window.AISystem6TranslationsEn = {
     cloud_api_key_optional: "Your API Key (optional)",
     cloud_shared_hint: "Leave the key blank to use the site's shared allowance. Your questions and selected material are sent to DeepSeek through this site's server (VPS); nothing is stored here.",
     cloud_byok_hint: "Using your own key, for this tab only. Your key and selected material are sent to DeepSeek through this site's server (VPS); nothing is stored here.",
+    cloud_key_left_browser_storage: "For safety, your saved API key was removed from browser storage — it no longer persists there. Reconnect to use your key again.",
     cloud_model_label: "Model",
     cloud_model_auto: "Automatic",
     context_length_preset: "Preset",
@@ -970,6 +1011,7 @@ window.AISystem6TranslationsEn = {
     project_storage_unavailable_action: "Export Project Hard Disk backups regularly.",
     share_ellipsis: "Share…",
     share_markdown_done: "Markdown shared.",
+    share_markdown_cancelled: "Sharing was cancelled; nothing changed.",
     share_markdown_failed: "The Markdown could not be shared. Copy or download it instead.",
     first_work_backup_reminder: "Your first work is saved. Export a Project Hard Disk backup for safekeeping.",
     guide_connect_ai: "Connect AI…",
@@ -1037,12 +1079,25 @@ window.AISystem6TranslationsEn = {
     todo_da_add: "Add",
     todo_da_remove_done: "Remove Done",
     todo_da_empty: "Nothing waiting. Add the next action.",
+    todo_da_add_empty: "Type the next action first.",
     hold_that_thought: "Hold That Thought",
     previous_page: "Previous",
     next_page: "Next",
     clipboard_empty: "Clipboard is empty.",
     clipboard_meta: (count, source) => `${count} chars${source ? ` from ${source}` : ""}`,
     clipboard_cleared: "Clipboard cleared.",
+    copied_selection: "Copied to the clipboard.",
+    cut_selection: "Cut to the clipboard.",
+    cleared_selection: "Cleared.",
+    // Paste, Undo and Redo stay enabled whenever a text surface owns the menu
+    // bar, so each one can be asked at a moment when it has nothing to do. A
+    // receipt makes the difference between "it worked" and "it is broken"
+    // readable; without one the two look the same.
+    pasted_selection: "Pasted from the clipboard.",
+    clipboard_empty_nothing_to_paste: "The clipboard is empty. Copy or cut something first.",
+    paste_not_allowed: "The browser did not release the clipboard. Press ⌘V to paste.",
+    nothing_to_undo: "Nothing left to undo in this field.",
+    nothing_to_redo: "Nothing left to redo in this field.",
     // The window is already titled Clipboard, so the button names the verb
     // only. The long form was the widest item in a row that does not fit.
     translate_clipboard: "Translate",
@@ -1150,6 +1205,8 @@ window.AISystem6TranslationsEn = {
     local_connection_safari_http_unavailable: "The Safari local entry (HTTP) is not set up yet. Open this site in Chrome or Edge, or use a cloud model.",
     local_connection_safari_http_ready: "Safari local entry (HTTP). It opens this site in a separate Safari window that can reach your Mac. Start LM Studio, enable CORS (cross-origin access), then connect.",
     safari_http_local_copied: (url) => `Safari will not jump from a secure page to the local HTTP entry. The address is copied: ${url}`,
+    // [lane-honesty] Shown when the clipboard write was denied — do not say "copied" over a failed write.
+    safari_http_local_not_copied: (url) => `Safari will not jump from a secure page to the local HTTP entry. The clipboard was not available, so copy this address by hand: ${url}`,
     safari_http_local_paste_hint: "A blank tab opened for you — paste the address into the address bar and press Return.",
     local_connection_v1_required: "This build requires LM Studio's v1 API (the latest API). Update LM Studio and restart its server.",
     local_connection_loopback_required: "LM Studio must use a loopback address (your Mac's own address), such as http://127.0.0.1:1234.",
@@ -1293,6 +1350,7 @@ window.AISystem6TranslationsEn = {
     theme_lab_tab_objects: "Objects",
     theme_lab_tab_surfaces: "Surfaces",
     theme_lab_tab_tokens: "Tokens",
+    theme_lab_progress: "Progress",
     theme_lab_window_chrome: "Window chrome",
     theme_lab_lineage: (path, tiers, appearances) =>
       `Recipe ${path} · authored tiers ${tiers} px · ${appearances} appearance${appearances === 1 ? "" : "s"}`,
@@ -1431,6 +1489,7 @@ window.AISystem6TranslationsEn = {
     balloon_reader_open_clio_stage_disabled: "Open a Reader article first, then send it to ClioStage.",
     balloon_docmap_save_disabled: "Generate a DocMap first, then save it to the Project Hard Disk.",
     balloon_close_box: "Closes this window.",
+    balloon_scrapbook_page_end: "There is no clip on this side. Clip more material, or pick another stack.",
     balloon_finder_view_switch: "Switches this window between icon and list views.",
     balloon_docmap_fit_view: "Fits the whole mind map into the window.",
     balloon_soundscape_repeat: "Repeats the playlist or the current track.",
@@ -1523,6 +1582,8 @@ window.AISystem6TranslationsEn = {
     balloon_disabled_menu_project: "Mount or create a Project Hard Disk to use this command.",
     balloon_disabled_menu_model: "This command asks a model. Connect one in Control Panel; the rest of the writing route works without it.",
     balloon_disabled_menu_context: "This command is unavailable in the current window or selection.",
+    balloon_disabled_chart_no_order: "Measure at least two objects on this metric. One measurement is not an order to reverse.",
+    balloon_disabled_menu_empty_field: "This field is empty, so there is nothing to select. Type or paste something first.",
     startup_environment_explanation: "Finder uses one application at a time. MultiFinder keeps several applications open and switches between them from the right side of the menu bar.",
     multifinder_switcher_discovery: "MultiFinder is on. Switch running applications from the right side of the menu bar.",
     sound_effects: "Sound Effects",
@@ -1660,6 +1721,8 @@ window.AISystem6TranslationsEn = {
     clio_run_record_delivery: "The linked Run Record will receive a destination, operation, time, and before/after hashes.",
     clio_temporary_delivery_record: "Temporary Chat keeps this receipt only in the current window. If you save the Chat, it is kept.",
     clio_result_written: (target) => `Reply written to ${target}. Undo is available beside the reply.`,
+    // [lane-honesty] Shown when the apply landed in the destination but the desk save itself was refused.
+    clio_result_written_unsaved: (target) => `Reply applied to ${target}, but it could not be saved to the project record yet. Try saving again.`,
     clio_result_write_failed: "The destination changed before the write could be completed.",
     clio_result_undo: "Undo write",
     clio_result_undone: "The last ClioTalk write was undone.",
@@ -1728,6 +1791,12 @@ window.AISystem6TranslationsEn = {
     teachtext_focus_typewriter: "Focus: Typewriter",
     teachtext_focus_sentence: "Focus: Sentence",
     focus_mode_cycle: "Focus",
+    // paper-lane: line spacing preference (MacWrite ruler, Task 2)
+    line_spacing: "Line Spacing",
+    line_spacing_compact: "Compact",
+    line_spacing_standard: "Standard",
+    line_spacing_relaxed: "Relaxed",
+    // /paper-lane
     rebuild_writing_flow: "Rebuild Writing Objects...",
     rebuild_writing_flow_title: "Rebuild Writing Objects",
     rebuild_article: "Rebuild Writing Objects",
@@ -2066,6 +2135,7 @@ window.AISystem6TranslationsEn = {
     micropolis_status_paused: "Paused.",
     micropolis_status_needs_bulldoze: "That spot must be bulldozed first.",
     micropolis_status_no_money: "Not enough funds.",
+    micropolis_status_no_nuclear_plant: "There is no nuclear plant to melt down.",
     micropolis_status_assets_failed: "The tile art did not load. Check the connection, then try again.",
     micropolis_msg_welcome: "Welcome to your new city, Mayor.",
     micropolis_msg_budget_applied: "The annual budget was applied at the current rates.",
@@ -2145,6 +2215,11 @@ window.AISystem6TranslationsEn = {
     ips_error: "Prompt writing failed.",
     ips_sideask: "Ask SideAsk",
     ips_sideask_opening: "Opening SideAsk…",
+    // lane-errors: SideAsk's open failure used to borrow ips_unavailable
+    // ("No model available.") or ips_error ("Prompt writing failed.") for
+    // this case, so the status line named the wrong problem. This key names
+    // the actual one.
+    ips_sideask_failed: "SideAsk could not open. Try again, or open ClioTalk from Applications instead.",
     cmf_model: "Model",
     cmf_model_iphone_17: "iPhone 17",
     cmf_model_iphone_17_pro: "iPhone 17 Pro",
@@ -2178,6 +2253,9 @@ window.AISystem6TranslationsEn = {
     cmf_export_views: "Export Views",
     cmf_exporting_views: "Exporting views…",
     cmf_export_views_done: "Views exported.",
+    // [lane-emptystates] honest counterpart: every frame rendered fine, but
+    // at least one saveArtifact download dispatch refused.
+    cmf_export_views_download_failed: "The views rendered, but this browser could not start every download. Try again.",
     cmf_export_views_failed: "View export failed:",
     cmf_export_views_unavailable: "Load a model before exporting views.",
     cmf_reset_view_short: "View",
@@ -2203,6 +2281,9 @@ window.AISystem6TranslationsEn = {
     cmf_cap_missing: "Interactive model and export unavailable",
     cmf_exporting: "Exporting USDZ...",
     cmf_export_done: "USDZ exported.",
+    // [lane-emptystates] honest counterpart: the model built fine, but
+    // saveArtifact's own download dispatch refused.
+    cmf_export_download_failed: "The USDZ file built, but this browser could not start the download. Try again.",
     cmf_export_failed: "Export failed:",
     cmf_recipe_saved: "CMF recipe saved.",
     cmf_reset_done: "CMF recipe reset.",
@@ -2660,10 +2741,14 @@ window.AISystem6TranslationsEn = {
     docmap_no_node_selected: "Select a DocMap branch first.",
     docmap_source_clipboard: "Clipboard",
     docmap_saved_file: (name) => `${name} saved to Writing Records.`,
+    // [lane-honesty] Shown when the DocMap file exists in memory but the desk save was refused.
+    docmap_saved_file_unsaved: (name) => `${name} was created here, but it could not be saved to the project record yet. Try saving again.`,
     docmap_reopened: (name) => `${name} reopened as DocMap.`,
     docmap_sent_questions: "DocMap branch rewritten into the Question Sheet.",
     docmap_rewriting_question_sheet: "Rewriting DocMap branch as Question Sheet...",
     docmap_inserted_outline: "Outline replaced from DocMap branch.",
+    // [lane-honesty] Shown when the outline was rewritten in memory but the save was refused.
+    docmap_inserted_outline_unsaved: "The outline was replaced here, but it could not be saved to the project record yet. Try saving again.",
     replace_outline_confirm: "Replace the outline with this DocMap branch? Linked section drafts may be reset.",
     docmap_ask_label: "Ask this map",
     docmap_ask_hint: "Ask this DocMap...",
@@ -2776,6 +2861,8 @@ window.AISystem6TranslationsEn = {
     translation_label: "Translation",
     original_text: "Original",
     translated_document_saved: (name) => `Translation saved as TeachText document: ${name}.`,
+    // [lane-emptystates] honest counterpart: saveDeskState refused the write.
+    translated_document_saved_unsaved: (name) => `${name} was created here, but it could not be saved to the project record yet. Try saving again.`,
     translation_failed: (message) => `Translation could not finish. ${message}`,
     style_sheet: "Style Sheet",
     review_desk: "Review Desk",
@@ -2884,8 +2971,12 @@ window.AISystem6TranslationsEn = {
     writing_spine_has_content: "has content",
     writing_route_last_stop: "The Review Desk is the last stop on the route.",
     writing_route_no_stop: "Open a writing-route window to move to the next stop.",
+    writing_route_not_route_document: "This window holds a scratch file, not the route's own document. The route moves the manuscript.",
     edit_sections_again: "Edit Sections Again",
     drafts_autosaved_to_manuscript: "Sections merged into the manuscript. You now write here; Section Drafts are read-only.",
+    phase_advance_needs_version_history: "Could not save the version you could return to, so the manuscript step was not taken.",
+    phase_advance_version_history_failed: "The step was taken, but the version you could return to was not saved.",
+    manuscript_sync_kept_your_text: "Your text is still here. The route did not replace it with the outline.",
     manuscript_returned_to_drafts: "Section Drafts hold the text again. The manuscript is a read-only preview.",
     manuscript_final_owns_document: "The manuscript is Final. Change its status in TeachText before editing the sections again.",
     section_draft_readonly_manuscript: "read-only · the manuscript holds the text",
@@ -2894,6 +2985,8 @@ window.AISystem6TranslationsEn = {
     new_outline_section: "New Section",
     outline_markdown_hint: "Write Markdown freely. Use ## for draftable sections; ### stays inside a section for now.",
     outline_section_added: "Outline section added.",
+    // [lane-emptystates] honest counterpart: saveDeskState refused the write.
+    outline_section_added_unsaved: "The section was added here, but it could not be saved to the project record yet. Try saving again.",
     expand_weak_topic: "Fill Weak Spots",
     mingming_outline: "Rewrite through the Reader's Eye",
     mingming_outline_running: "Rewriting through the Reader's Eye...",
@@ -2911,6 +3004,13 @@ window.AISystem6TranslationsEn = {
     question_sheet_gap_rawInput: "Not said yet: what you noticed yourself",
     question_sheet_gap_objections: "Not said yet: where someone will disagree",
     question_sheet_gap_handoff: "Not said yet: where the handoff will snag",
+    question_sheet_cards: "Question Sheet cards",
+    question_sheet_view_page: "As Page",
+    question_sheet_view_cards: "As Cards",
+    question_sheet_view_page_active: "Back to the page view.",
+    question_sheet_view_cards_active: "Switched to cards. Same Question Sheet, a different way to look at it.",
+    question_sheet_card_unnamed: "Notes",
+    question_sheet_card_unnamed_hint: "Put it here first; you do not have to know which section it belongs to yet.",
     style_finding_line: (line) => `Line ${line}`,
     style_finding_output_rule: "Your output rule",
     output_rule_breached: (term) => `You wrote that "${term}" should not appear.`,
@@ -2926,6 +3026,12 @@ window.AISystem6TranslationsEn = {
     outline_tree_demote: "Lower a Level",
     outline_tree_select_first: "Select a section in the outline tree first.",
     outline_tree_pasted: (n) => `${n} section${n === 1 ? "" : "s"} pasted in.`,
+    // [lane-emptystates] honest counterpart: saveDeskState refused the write.
+    outline_tree_pasted_unsaved: (n) => `${n} section${n === 1 ? "" : "s"} pasted in here, but it could not be saved to the project record yet. Try saving again.`,
+    outline_cards: "Outline cards",
+    outline_cards_view: "As Cards",
+    outline_cards_opened: "Cards. Drag a card's grip onto another to reorder; dragging the card itself only moves it. Double-click to open a section.",
+    outline_cards_closed: "Back to the outline text.",
     outline_tree_write: "Write This Section",
     outline_tree_words: (n) => `${n} words`,
     outline_tree_shell: "empty",
@@ -2958,6 +3064,7 @@ window.AISystem6TranslationsEn = {
     section_draft_ai_drafted: "Section draft written by AI. Status changed to AI Assisted.",
     section_draft_polished: "Section draft polished. Status changed to AI Assisted.",
     section_draft_suggested: "AI suggestions appended. Status changed to AI Assisted.",
+    section_draft_ai_unsaved_recovered: "AI drafted this section, but it could not be saved to the project record yet. A recovery copy was kept — the text is still here; try saving again.",
     section_draft_eli5_rewriting: "Making it listenable…",
     section_draft_eli5_reviewing: "Checking where it gets lost…",
     section_draft_eli5_replace_confirm: (preview) => `ELI5 rewrite result:\n\n${preview}\n\nReplace the current section draft? Applying this will change the status to AI Assisted.`,
@@ -3045,6 +3152,7 @@ window.AISystem6TranslationsEn = {
     time_machine_label: "Time Machine",
     time_machine_view_group: "Time Machine views",
     time_machine_new_tab: "New Time Machine Tab",
+    time_machine_tab_closed: "Tab closed.",
     time_machine_title_live: (title) => `Now · ${title}`,
     time_machine_title_target: (date) => `Target ${date} · Time Machine`,
     time_machine_title_archive: (date, title) => `${date} · ${title}`,
@@ -3143,7 +3251,6 @@ window.AISystem6TranslationsEn = {
     seven_items: "7 items",
     eight_items: "8 items",
     twelve_items: "12 items",
-    eighteen_items: "18 items",
     ten_items: "10 items",
     eleven_items: "11 items",
     local_disk: "Desktop",
@@ -3218,8 +3325,12 @@ window.AISystem6TranslationsEn = {
     make_alias: "Make Alias",
     make_alias_select_file: "Select a file first to make an alias",
     alias_created: (name) => `Alias created: ${name}`,
+    // [lane-emptystates] honest counterpart: saveDeskState refused the write.
+    alias_created_unsaved: (name) => `${name} was created here, but it could not be saved to the project record yet. Try saving again.`,
     alias_broken: (name) => `Alias is broken: ${name}`,
     alias_replaced: (name) => `Replaced with original: ${name}`,
+    // [lane-emptystates] honest counterpart: saveDeskState refused the write.
+    alias_replaced_unsaved: (name) => `${name} was replaced here, but it could not be saved to the project record yet. Try saving again.`,
     alias_target_label: "Original",
     alias_status_ok: "Original found",
     alias_status_broken: "Original is missing or outside this project",
@@ -3234,6 +3345,8 @@ window.AISystem6TranslationsEn = {
     clipping_source_label: "Source",
     clipping_captured_label: "Captured",
     clipping_inserted: (name) => `Clipping inserted: ${name}`,
+    // [lane-emptystates] honest counterpart: saveDeskState refused the write.
+    clipping_inserted_unsaved: (name) => `${name} was inserted here, but it could not be saved to the project record yet. Try saving again.`,
     clipping_drop_only_clipping: "Only clipping files can be dragged into the text",
     clipping_drop_no_quote: "This clipping is marked not for direct quoting; change it in Get Info",
     clipping_drop_readonly: (surface) => `This view is read-only — edit it in ${surface}`,
@@ -3406,6 +3519,10 @@ window.AISystem6TranslationsEn = {
     project_peek_has_darkroom_plain: "darkroom",
     speech_recognition_unsupported: "Speech recognition is not supported in this browser.",
     hkrr_review_none_to_save: "There is no HKRR Review to save.",
+    // lane-errors: this confirm was a hardcoded English string with no zh
+    // branch, so a Chinese session saw English here even though every other
+    // confirm in this file is bilingual.
+    hkrr_review_save_confirm: (preview) => `Save this HKRR Lift review to Project CD?\n\n${preview}`,
     file_name: "File name",
     folder: "Folder",
     text: "Text",
@@ -3418,7 +3535,7 @@ window.AISystem6TranslationsEn = {
     save_chat_title: "Save Chat",
     saved_chats_hint: "Saved chats appear in Writing Records.",
     save_text_title: "Save TeachText Document",
-    saved_text_hint: "Choose the Writing Records folder for this TeachText document.",
+    saved_text_hint: "This name comes from the document itself — rename it in TeachText. Choose the Writing Records folder here.",
     title: "Title",
     delete: "Delete",
     restore_latest: "Restore Latest",
@@ -3491,10 +3608,15 @@ window.AISystem6TranslationsEn = {
     downloaded_markdown_exported: (name) => `Markdown burned to Project CD: ${name}.`,
     downloaded_markdown_only: "Markdown downloaded. Mount a Project Hard Disk to keep it on Project CD.",
     downloaded_plain_markdown: "Markdown downloaded.",
+    // [lane-honesty] Download can fail (e.g. the browser refused to build the file) — never claim "downloaded" over that.
+    markdown_download_failed: "The file could not be downloaded. Try again.",
+    burned_markdown_download_failed: (name) => `Markdown burned to Project CD: ${name}. The download itself failed — open the item from Project CD instead.`,
+    downloaded_html_file: "HTML downloaded.",
     slides_document_created: (name) => `Editable slides Markdown created: ${name}.`,
     copy_failed: "I could not copy to the clipboard. Try Download .md instead.",
     no_document_export: "Open TeachText or a saved writing record first, then export Markdown.",
     choose_files: "Choose one or more files first.",
+    file_picker_opened: "Choose a file…",
     reading_files: "Reading files...",
     cancel: "Cancel",
     remove: "Remove",
@@ -3956,6 +4078,9 @@ window.AISystem6TranslationsEn = {
     disable_project_memory: "Disable Project Memory",
     docmap_was_not_generated_demo_stopped: "DocMap was not generated; demo stopped.",
     drag_a_project_hard_disk_document: "Drag a Project Hard Disk document onto the droplet",
+    // lane-errors: a failed drop used to be console-only, so the item just
+    // snapped back with no explanation.
+    drop_failed: (detail) => `Could not complete that drop. ${detail}`,
     eli5_review_did_not_return_parseable: "ELI5 review did not return parseable JSON.",
     estimated_tokens: "estimated tokens",
     generated_outline_has_no_writable_sections: "Generated outline has no writable ## sections.",
@@ -3999,5 +4124,52 @@ window.AISystem6TranslationsEn = {
     reader_figure_ready: "Here is what came back. Nothing is kept until you clip it.",
     reader_figure_clip: "Clip these notes",
     reader_figure_discard: "Discard",
+
+    // ClioPaint (lane-cliopaint): the 1-bit painting surface and 草图变大纲.
+    nineteen_items: "19 items",
+    menu_paint: "Paint",
+    clio_paint_label: "ClioPaint",
+    clio_paint_toolbar_label: "Paint tools",
+    clio_paint_patterns_label: "Patterns",
+    clio_paint_canvas_label: "Painting canvas",
+    clio_paint_tool_pencil: "Pencil",
+    clio_paint_tool_eraser: "Eraser",
+    clio_paint_tool_fill: "Fill",
+    clio_paint_tool_line: "Line",
+    clio_paint_tool_rect: "Rectangle",
+    clio_paint_tool_oval: "Oval",
+    clio_paint_tool_marquee: "Select",
+    clio_paint_tool_text: "Text",
+    clio_paint_shape_filled: "Filled",
+    clio_paint_pattern: (n) => `Pattern ${n}`,
+    clio_paint_new: "New",
+    clio_paint_new_confirm: "Start a new picture? Unsaved changes will be lost.",
+    clio_paint_saved: "Picture saved.",
+    // [lane-emptystates] honest counterpart: saveDeskState refused the write.
+    clio_paint_saved_unsaved: "The picture is ready here, but it could not be saved to the project record yet. Try saving again.",
+    clio_paint_status_new: "New picture.",
+    // "New picture." is also what the window says when it opens, so New on an
+    // untouched canvas repeated a sentence already on screen and read as a
+    // command that did nothing. This one says there was nothing to clear.
+    clio_paint_status_already_new: "This picture is already new. Nothing to clear.",
+    clio_paint_status_saved: "Picture saved.",
+    clio_paint_status_unsaved: "Unsaved changes.",
+    clio_paint_no_picture: "Draw something first.",
+    clio_paint_sketch_to_outline: "Sketch to Outline",
+    clio_paint_sketch_to_prompt: "Sketch to Image Prompt",
+    clio_paint_apply_outline: "Apply to Outline",
+    clio_paint_outline_confirm: (preview) => `Outline read from the sketch:\n\n${preview}\n\nReplace the current Outline? Applying this will change the status to AI Assisted.`,
+    clio_paint_outline_applied: "Outline applied. Status changed to AI Assisted.",
+    clio_paint_outline_copied: "Outline copied.",
+    clio_paint_prompt_copied: "Prompt copied.",
+    clio_paint_copy_failed: "Could not copy to the clipboard.",
+    clio_paint_reading: "Reading the sketch...",
+    clio_paint_read_done: "Here is what came back.",
+    clio_paint_read_empty: "The model returned nothing.",
+    clio_paint_read_failed: (reason) => `Could not read the sketch: ${reason}`,
+    clio_paint_cloud_confirm: "Reading this sketch will send it to your cloud provider. Send it?",
+    clio_paint_cloud_declined: "Sketch stayed on this Mac.",
+    clio_paint_unread_label: "Could not read",
+    clio_paint_unread_empty: "Nothing was flagged as unreadable.",
 
   };

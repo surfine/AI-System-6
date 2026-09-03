@@ -222,6 +222,43 @@ function dictationButtonWouldCoverControl(candidate, target) {
   });
 }
 
+// The slot the button prefers -- the band directly above the field -- is the
+// window's own details bar, so the button arrives as a second control in a row
+// that already has one. It used to be dropped flush against the field at a
+// height of its own (28px, and 30px under Liquid Glass), which left it 4-11px
+// taller than that row's pop-up menu, 6-9px below the menu's centre line, and
+// with its bottom edge over the first line of the paper. Return the row's own
+// control, so the button can take that height and that centre line. No token
+// holds the number: every era measures its pop-up from its own evidence, and
+// Aqua's is a 21px pixel-art rail.
+function dictationToolbarRowAbove(textTarget, fieldRect) {
+  const owner = textTarget.closest(".window");
+  if (!owner) return null;
+  for (const bar of owner.querySelectorAll(".details-bar")) {
+    const barBox = bar.getBoundingClientRect();
+    if (barBox.height <= 0) continue;
+    // Directly above means the bar ends before the field starts, and the two
+    // are no further apart than the bar is tall.
+    if (barBox.bottom > fieldRect.top + 2) continue;
+    if (fieldRect.top - barBox.bottom > barBox.height) continue;
+    const control = [...bar.querySelectorAll(".system-select-button, select, button")]
+      .find((element) => !element.hidden
+        && !element.closest(".is-hidden")
+        // The select harness leaves the native control in place at the
+        // wrapper's full size and paints nothing. Under Liquid Glass that
+        // wrapper is 1.3px taller than the pop-up the reader sees, so the
+        // row's control is the button the harness draws, never the select.
+        && !(element.tagName === "SELECT" && element.closest(".select-wrap.has-system-select"))
+        && element.getBoundingClientRect().height > 0);
+    // A row with no control of its own -- Question Sheet's bar is three pieces
+    // of text -- tells the button where the line is, not how tall to be. Taking
+    // the bar's own height there made a button as tall as the whole row.
+    const controlBox = control ? control.getBoundingClientRect() : null;
+    return { barTop: barBox.top, barHeight: barBox.height, control: controlBox };
+  }
+  return null;
+}
+
 function positionDictationFieldButton(target = dictationFieldButtonTarget) {
   const textTarget = getVisibleEditableTextTarget(target);
   if (!textTarget || textTarget.closest(".is-hidden")) {
@@ -244,11 +281,22 @@ function positionDictationFieldButton(target = dictationFieldButtonTarget) {
   // window frame. Unhiding here costs no frame -- the position is written
   // before this task yields, so nothing is painted in between.
   button.classList.remove("is-hidden");
+  button.style.removeProperty("--dictation-field-button-height");
 
   const gap = 4;
   const margin = 4;
   const buttonWidth = button.offsetWidth || 48;
-  const buttonHeight = button.offsetHeight || 28;
+  const buttonHeight = button.getBoundingClientRect().height || 28;
+  const row = dictationToolbarRowAbove(textTarget, rect);
+  const rowSlot = row
+    ? {
+      left: rect.right - buttonWidth - gap,
+      top: row.control ? row.control.top : row.barTop + (row.barHeight - buttonHeight) / 2,
+      width: buttonWidth,
+      height: row.control ? row.control.height : buttonHeight,
+      rowHeight: row.control ? row.control.height : 0,
+    }
+    : null;
   // The button belongs to the window that owns the field, not to the screen.
   // Clamping against the viewport alone let a field near the right edge of a
   // narrow window push the button onto the window frame and the scroll lane,
@@ -269,7 +317,7 @@ function positionDictationFieldButton(target = dictationFieldButtonTarget) {
     !rightSideHasControl && canSitOutside
       ? { left: rect.right + gap, top: rect.top + gap, width: buttonWidth, height: buttonHeight }
       : null,
-    { left: rect.right - buttonWidth - gap, top: rect.top - buttonHeight - gap, width: buttonWidth, height: buttonHeight },
+    rowSlot || { left: rect.right - buttonWidth - gap, top: rect.top - buttonHeight - gap, width: buttonWidth, height: buttonHeight },
     { left: rect.right - buttonWidth - gap, top: rect.top + gap, width: buttonWidth, height: buttonHeight },
     rect.left >= buttonWidth + gap + margin
       ? { left: rect.left - buttonWidth - gap, top: rect.top + gap, width: buttonWidth, height: buttonHeight }
@@ -282,7 +330,7 @@ function positionDictationFieldButton(target = dictationFieldButtonTarget) {
   const clampedCandidates = candidates.map((candidate) => ({
     ...candidate,
     left: clampNumber(candidate.left, limitLeft, limitRight),
-    top: clampNumber(candidate.top, 28, Math.max(28, window.innerHeight - buttonHeight - margin)),
+    top: clampNumber(candidate.top, 28, Math.max(28, window.innerHeight - candidate.height - margin)),
   }));
   const selected = clampedCandidates.find((candidate) => !dictationButtonWouldCoverControl(candidate, textTarget))
     || clampedCandidates[0]
@@ -291,8 +339,13 @@ function positionDictationFieldButton(target = dictationFieldButtonTarget) {
       top: clampNumber(rect.top + gap, 28, Math.max(28, window.innerHeight - buttonHeight - margin)),
     };
 
-  button.style.left = `${selected.left}px`;
-  button.style.top = `${selected.top}px`;
+  // Only the row slot carries a height: everywhere else the button keeps the
+  // era's push-button height from the stylesheet.
+  if (selected.rowHeight) {
+    button.style.setProperty("--dictation-field-button-height", `${selected.rowHeight}px`);
+  }
+  button.style.setProperty("--dictation-field-button-x", `${selected.left}px`);
+  button.style.setProperty("--dictation-field-button-y", `${selected.top}px`);
 }
 
 function showDictationFieldButtonForTarget(target) {

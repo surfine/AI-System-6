@@ -544,7 +544,7 @@ test.assertMatches(
 );
 test.assertMatches(
   bootSource,
-  /if \(!clioOnboardingCompleted && !resumedWorkingSession\) \{\s*openStartupItems\(\);/,
+  /if \(!clioOnboardingCompleted && !resumedWorkingSession\) \{\s*await runBootStep\("Startup items", \(\) => openStartupItems\(\)\);/,
   "the Clio introduction still owns a true first launch, and only a true first launch"
 );
 

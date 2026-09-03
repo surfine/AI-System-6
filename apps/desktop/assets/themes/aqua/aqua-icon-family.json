@@ -117,7 +117,8 @@
           "lumStd": 46,
           "edgeEnergy": 236
         }
-      }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "hardDisk": {
       "genre": "hardware",
@@ -164,7 +165,8 @@
       "generationStatus": "technically-clean",
       "provenanceClass": "A",
       "historicalReviewStatus": "pending",
-      "runtimeAsset": true
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "folder": {
       "genre": "file",
@@ -211,7 +213,8 @@
       "generationStatus": "technically-clean",
       "provenanceClass": "A",
       "historicalReviewStatus": "pending",
-      "runtimeAsset": true
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "document": {
       "genre": "document",
@@ -258,7 +261,8 @@
       "generationStatus": "technically-clean",
       "provenanceClass": "A",
       "historicalReviewStatus": "pending",
-      "runtimeAsset": true
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "applications": {
       "genre": "file",
@@ -305,7 +309,8 @@
           "lumStd": 64.21,
           "edgeEnergy": 493
         }
-      }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "trash": {
       "genre": "hardware",
@@ -352,7 +357,8 @@
       "generationStatus": "technically-clean",
       "provenanceClass": "A",
       "historicalReviewStatus": "pending",
-      "runtimeAsset": true
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "finderApp": {
       "genre": "application",
@@ -401,7 +407,8 @@
       "provenanceClass": "A",
       "historicalReviewStatus": "reference-validated",
       "runtimeAsset": true,
-      "blindMixStatus": "not-run"
+      "blindMixStatus": "not-run",
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "fileFloppy": {
       "genre": "hardware",
@@ -448,7 +455,8 @@
           "lumStd": 75.4,
           "edgeEnergy": 409
         }
-      }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "assistant": {
       "genre": "application",
@@ -496,7 +504,8 @@
       "generationStatus": "technically-clean",
       "provenanceClass": "B",
       "historicalReviewStatus": "pending",
-      "runtimeAsset": true
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "quickDraft": {
       "genre": "document",
@@ -543,7 +552,8 @@
           "lumStd": 49.56,
           "edgeEnergy": 600
         }
-      }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "writingStudio": {
       "genre": "application",
@@ -590,7 +600,8 @@
           "lumStd": 76.63,
           "edgeEnergy": 798
         }
-      }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "projectDisk": {
       "genre": "hardware",
@@ -637,7 +648,8 @@
       "generationStatus": "technically-clean",
       "provenanceClass": "B",
       "historicalReviewStatus": "historically-reviewed",
-      "runtimeAsset": true
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "projectDisc": {
       "genre": "hardware",
@@ -684,7 +696,8 @@
           "lumStd": 46.4,
           "edgeEnergy": 310
         }
-      }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "cloudModel": {
       "genre": "utility",
@@ -731,7 +744,8 @@
           "lumStd": 61.29,
           "edgeEnergy": 596
         }
-      }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "cloudModelOff": {
       "genre": "utility",
@@ -778,7 +792,8 @@
           "lumStd": 47.7,
           "edgeEnergy": 412
         }
-      }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "questionSheet": {
       "genre": "document",
@@ -825,7 +840,8 @@
           "lumStd": 44.96,
           "edgeEnergy": 383
         }
-      }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "outline": {
       "genre": "document",
@@ -872,7 +888,8 @@
           "lumStd": 49.17,
           "edgeEnergy": 626
         }
-      }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "sectionDrafts": {
       "genre": "document",
@@ -919,7 +936,8 @@
           "lumStd": 51.15,
           "edgeEnergy": 696
         }
-      }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "manuscript": {
       "genre": "document",
@@ -966,7 +984,8 @@
           "lumStd": 52.65,
           "edgeEnergy": 434
         }
-      }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "reviewDesk": {
       "genre": "application",
@@ -1013,7 +1032,8 @@
           "lumStd": 58.53,
           "edgeEnergy": 602
         }
-      }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "searcher": {
       "genre": "application",
@@ -1060,7 +1080,8 @@
       "generationStatus": "technically-clean",
       "provenanceClass": "B",
       "historicalReviewStatus": "historically-reviewed",
-      "runtimeAsset": true
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "reader": {
       "genre": "application",
@@ -1107,7 +1128,8 @@
           "lumStd": 58.42,
           "edgeEnergy": 329
         }
-      }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "timeMachine": {
       "genre": "utility",
@@ -1154,7 +1176,8 @@
           "lumStd": 59.98,
           "edgeEnergy": 647
         }
-      }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "docMap": {
       "genre": "application",
@@ -1244,7 +1267,8 @@
           "lumStd": 60.04,
           "edgeEnergy": 634
         }
-      }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "clioStage": {
       "genre": "application",
@@ -1291,7 +1315,8 @@
           "lumStd": 76.9,
           "edgeEnergy": 687
         }
-      }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "clioChart": {
       "genre": "application",
@@ -1338,7 +1363,8 @@
           "lumStd": 65.19,
           "edgeEnergy": 549
         }
-      }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "liquidCover": {
       "genre": "application",
@@ -1385,7 +1411,8 @@
           "lumStd": 57.05,
           "edgeEnergy": 707
         }
-      }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "cmfStudio": {
       "genre": "application",
@@ -1432,7 +1459,8 @@
           "lumStd": 52.33,
           "edgeEnergy": 649
         }
-      }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "soundscape": {
       "genre": "application",
@@ -1479,7 +1507,8 @@
           "lumStd": 60.18,
           "edgeEnergy": 576
         }
-      }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "scrapbook": {
       "genre": "application",
@@ -1526,7 +1555,8 @@
       "generationStatus": "technically-clean",
       "provenanceClass": "B",
       "historicalReviewStatus": "pending",
-      "runtimeAsset": true
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "systemFolder": {
       "genre": "file",
@@ -1573,7 +1603,8 @@
           "lumStd": 44.54,
           "edgeEnergy": 342
         }
-      }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "helpFolder": {
       "genre": "file",
@@ -1620,7 +1651,8 @@
           "lumStd": 57.18,
           "edgeEnergy": 439
         }
-      }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "importUtility": {
       "genre": "utility",
@@ -1667,7 +1699,8 @@
           "lumStd": 62.66,
           "edgeEnergy": 474
         }
-      }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "controlPanel": {
       "genre": "utility",
@@ -1714,7 +1747,8 @@
       "generationStatus": "technically-clean",
       "provenanceClass": "B",
       "historicalReviewStatus": "historically-reviewed",
-      "runtimeAsset": true
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "chooser": {
       "genre": "utility",
@@ -1761,7 +1795,8 @@
           "lumStd": 50.28,
           "edgeEnergy": 576
         }
-      }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "systemHelp": {
       "genre": "application",
@@ -1808,7 +1843,8 @@
           "lumStd": 53.05,
           "edgeEnergy": 498
         }
-      }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "dictionary": {
       "genre": "application",
@@ -1855,7 +1891,8 @@
           "lumStd": 59.02,
           "edgeEnergy": 604
         }
-      }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "teachText": {
       "genre": "application",
@@ -1902,7 +1939,8 @@
       "generationStatus": "technically-clean",
       "provenanceClass": "B",
       "historicalReviewStatus": "pending",
-      "runtimeAsset": true
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "writingDemo": {
       "genre": "document",
@@ -1949,7 +1987,8 @@
           "lumStd": 50.34,
           "edgeEnergy": 415
         }
-      }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "chatFile": {
       "genre": "document",
@@ -1996,7 +2035,8 @@
           "lumStd": 44.65,
           "edgeEnergy": 412
         }
-      }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "chatImport": {
       "genre": "utility",
@@ -2043,7 +2083,8 @@
           "lumStd": 53.78,
           "edgeEnergy": 448
         }
-      }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "systemStatus": {
       "genre": "utility",
@@ -2090,7 +2131,8 @@
           "lumStd": 59.52,
           "edgeEnergy": 759
         }
-      }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "contextPanel": {
       "genre": "utility",
@@ -2137,7 +2179,8 @@
           "lumStd": 52.49,
           "edgeEnergy": 356
         }
-      }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "rebuildArticle": {
       "genre": "utility",
@@ -2184,7 +2227,8 @@
           "lumStd": 77.3,
           "edgeEnergy": 652
         }
-      }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "bureaucracyMeme": {
       "genre": "application",
@@ -2231,7 +2275,8 @@
           "lumStd": 83.3,
           "edgeEnergy": 501
         }
-      }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "endfieldTerminal": {
       "genre": "utility",
@@ -2278,7 +2323,8 @@
           "lumStd": 54.22,
           "edgeEnergy": 542
         }
-      }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "documents": {
       "genre": "file",
@@ -2325,7 +2371,8 @@
           "lumStd": 41.27,
           "edgeEnergy": 271
         }
-      }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "alias": {
       "genre": "document",
@@ -2372,7 +2419,8 @@
           "lumStd": 34.96,
           "edgeEnergy": 253
         }
-      }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "systemFile": {
       "genre": "document",
@@ -2419,7 +2467,8 @@
           "lumStd": 53.42,
           "edgeEnergy": 316
         }
-      }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "multiFinderApp": {
       "genre": "application",
@@ -2468,7 +2517,8 @@
         }
       },
       "metaphorKey": "current-finder-identity-plus-multiplicity",
-      "blindMixStatus": "not-run"
+      "blindMixStatus": "not-run",
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "daHandler": {
       "genre": "utility",
@@ -2515,7 +2565,8 @@
       "generationStatus": "technically-clean",
       "provenanceClass": "A",
       "historicalReviewStatus": "pending",
-      "runtimeAsset": true
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "writingBell": {
       "genre": "accessory",
@@ -2562,7 +2613,8 @@
           "lumStd": 60.99,
           "edgeEnergy": 693
         }
-      }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "trashFull": {
       "genre": "hardware",
@@ -2609,7 +2661,8 @@
           "lumStd": 42.58,
           "edgeEnergy": 437
         }
-      }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "control": {
       "genre": "utility",
@@ -2656,7 +2709,8 @@
           "lumStd": 51.98,
           "edgeEnergy": 599
         }
-      }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "localModel": {
       "genre": "utility",
@@ -2703,7 +2757,8 @@
           "lumStd": 49.98,
           "edgeEnergy": 544
         }
-      }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     },
     "controlStrip": {
       "genre": "utility",
@@ -2750,7 +2805,8 @@
           "lumStd": 49.3,
           "edgeEnergy": 298
         }
-      }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
     }
   },
   "reviewedCore": [

@@ -18,6 +18,7 @@ const dragDrop = read("app/core/drag-drop.js");
 const systemIcons = read("app/core/system-icons.js");
 const menus = read("app/data/menus.js");
 const quickDraftHandoff = read("app/features/quick-draft-handoff.js");
+const writingFlow = read("app/features/writing-flow.js");
 
 const teachTextMenusBlock = menus.slice(menus.indexOf("const teachTextMenus"), menus.indexOf("const quickDraftMenus"));
 const quickDraftMenusBlock = menus.slice(menus.indexOf("const quickDraftMenus"), menus.indexOf("const clioTalkMenus"));
@@ -86,7 +87,11 @@ test.assertMatches(systemIcons, /writingStudio:[\s\S]*M7 2h18v10/, "Writing Stud
 test.assertIncludes(actions, '"quit-active-app": () => quitApp(activeAppId)', "the existing right-side MultiFinder owns Writing Studio Quit");
 test.assertIncludes(profile, "await openWritingStudioDefaultSurface()", "Writing Studio opens onto the route's current state, never OOBE or ClioTalk");
 test.assertIncludes(actions, 'registerCommand?.("open-teachtext"', "TeachText entry follows the active profile");
-test.assertIncludes(actions, '"print-current": printCurrentTeachTextDocument', "TeachText printing reuses the existing print pipeline");
+// Called through the name, not captured: printCurrentTeachTextDocument is a
+// lazy-stubbed function, and a bare reference here froze whatever the name
+// held while the registry object was being built -- undefined -- so the
+// command dispatched nothing at all. See the lazy-action-handlers gate.
+test.assertIncludes(actions, '"print-current": () => printCurrentTeachTextDocument()', "TeachText printing reuses the existing print pipeline");
 test.assertIncludes(teachText, "function openDesktopTeachTextWindow()", "Desktop reuses TeachText through a role-aware entry");
 test.assertMatches(teachText, /workspaceProfile !== workspaceProfileDesktop \|\| tab\.role === "scratch_file"/, "Desktop hides manuscript tabs without deleting them");
 test.assertIncludes(teachText, 'tab.role === "scratch_file"', "Desktop reuses existing scratch tabs");
@@ -100,5 +105,46 @@ test.assertIncludes(profile, '"about_finder"', "Desktop switches the existing Ab
 test.assertIncludes(persistence, 'workspaceProfile === workspaceProfileDesktop ? "workspace_desktop" : "workspace_writing"', "System Status names the active profile");
 test.assertIncludes(html, 'data-drag-type="mounted-disk"', "the mounted File Floppy exposes the existing drag contract");
 test.assertMatches(dragDrop, /data\.type === "mounted-disk"[\s\S]*ejectTextDisk\(\)/, "dragging the whole File Floppy to Trash reuses Eject");
+
+// --- Fresh-project stop-1 focus + no standing conflict ---------------------
+//
+// A stranger-walk on a fresh profile hit a P0 trio at route stop 1:
+//   A. clicking Question Sheet also opened TeachText, which took focus and
+//      fully covered it;
+//   B. the desk-record conflict fence immediately false-fired against that
+//      self-spawned TeachText window;
+//   C. typing into the Question Sheet lost the keystrokes when TeachText
+//      re-fronted itself.
+// Root cause: getFlowProgress's "check" step read `claimResultsEl.innerHTML
+// .length > 100` as a stand-in for "a fact check has run" — true from a
+// project's very first pipeline render, because the *empty-state placeholder
+// markup itself* is over 100 characters once its localized copy grew past a
+// short line. `renderPipeline()` persists that miscomputed state onto
+// `project.flowState.check` on every render, so any fresh project with
+// non-empty Question Sheet text got permanently misread as "under review".
+// `writingStudioDefaultEntry()` then routed re-entry to Review Desk, whose
+// entry branch opened TeachText right after it with neither call awaited —
+// two unawaited opens racing for focus, decided by whichever's lazy module
+// happened to resolve last.
+test.assertNotIncludes(
+  writingFlow,
+  "claimResultsEl.innerHTML.length > 100",
+  "the review-progress check does not treat DOM markup length as a proxy for real fact-check content"
+);
+test.assertMatches(
+  writingFlow,
+  /states\.check = claimResultsHaveContent \|\| project\.flowState\?\.check === true;/,
+  "the check step reads whether the panel holds a real, non-placeholder result"
+);
+test.assertMatches(
+  actions,
+  /async function openReviewDesk\(mode = "style"\) \{\s*\n[\s\S]*?await openWindow\("reviewDesk"\);/,
+  "opening Review Desk is awaited by its own function, so a caller opening a companion window right after cannot race it"
+);
+test.assertMatches(
+  profile,
+  /await openReviewDesk\("style"\);\s*\n\s*await openWindow\("teachText", \{ skipFocus: true \}\);/,
+  "entering Writing Studio into a reviewing project opens the manuscript beside Review Desk without letting it steal focus"
+);
 
 test.finish();

@@ -79,8 +79,19 @@ function runReceiptDefaultName(record) {
   return `Run ${stamp}${app ? ` · ${app}` : ""}${intent && app ? ` · ${intent}` : ""}`;
 }
 
+// Adopted is derived, never stored twice: it is true exactly when a user
+// checkpoint accepted this run's result, so the line can never drift from
+// userAction. A run that finished with a proposal but no accept is exactly
+// the case this file exists for — an answer that was already paid for and
+// is still sitting here unused, not a run that failed.
+function runReceiptIsAdopted(record = {}) {
+  return record.userAction === "accept" || record.userAction === "edit";
+}
+
 function formatRunReceiptBody(record = {}) {
   const tools = Array.isArray(record.toolInvocations) ? record.toolInvocations : [];
+  const adopted = runReceiptIsAdopted(record);
+  const hasProposal = Boolean(String(record.proposal || "").trim());
   const lines = [
     `Run Receipt · ${record.sourceAppId || "—"} · ${record.status || "running"}`,
     `- Run: ${record.runId || "—"}`,
@@ -94,6 +105,7 @@ function formatRunReceiptBody(record = {}) {
     `- Allowed tools: ${(record.allowedTools || []).join(", ") || "—"}`,
     `- Tool calls: ${tools.length ? tools.map((tool) => `${tool.name} [${tool.effect || ""}] ${tool.ok ? "ok" : "failed"}`).join("; ") : "—"}`,
     `- Proposal: ${record.proposal || "—"}`,
+    `- Adopted: ${adopted ? "yes" : "no"}${!adopted && hasProposal ? " (already generated — reuse it here instead of running the command again)" : ""}`,
     `- Checkpoint: ${record.checkpointState || "none"}`,
     `- User action: ${record.userAction || "—"}${record.finalBodyHash ? ` (final body ${record.finalBodyHash})` : ""}`,
     `- Outputs: ${(record.outputObjectIds || []).join(", ") || "—"}`,
@@ -307,6 +319,38 @@ function subscribeRunReceipts(listener) {
   return () => runReceiptListeners.delete(listener);
 }
 
+// The charter rule: "temporary, but never lost." A model answer is durable
+// the moment it arrives, before any decision about whether it lands in the
+// writer's prose. This glues the existing three-step receipt lifecycle
+// (create -> hold the answer as the proposal -> finish) into one call so
+// every arrival site gets the same honest record: which command, when,
+// which model, and — via recordUserAction, called later at the landing
+// decision — whether it was adopted. No second store, no new UI: the answer
+// lives in the same receipt file the Versions/Run Records surfaces already
+// read.
+async function recordModelAnswer({
+  projectId,
+  sourceAppId = "",
+  intent = "",
+  provider = "",
+  model = "",
+  inputObjectIds = [],
+  sourceScope = null,
+  answerText = "",
+  status = "completed",
+  publicErrorReason = "",
+} = {}) {
+  const text = String(answerText || "");
+  if (!text.trim()) return { ok: false, reason: "empty" };
+  const created = await createReceipt({
+    projectId, sourceAppId, intent, provider, model, inputObjectIds, sourceScope,
+  });
+  if (!created.ok) return created;
+  await updateReceipt(created.receiptId, { proposal: text });
+  const finished = await finishReceipt(created.receiptId, { status, publicErrorReason });
+  return { ok: finished.ok, receiptId: created.receiptId, file: finished.file, reason: finished.reason || "" };
+}
+
 async function repeatReceipt(receiptId, overrides = {}) {
   const file = findReceiptFile(receiptId);
   const record = file?.runReceipt;
@@ -349,6 +393,7 @@ window.AISystem6RunReceipts = Object.freeze({
   createReceipt,
   updateReceipt,
   finishReceipt,
+  recordModelAnswer,
   recordUserAction,
   getReceipt,
   queryReceipts,

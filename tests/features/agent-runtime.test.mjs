@@ -290,7 +290,8 @@ for (const toolName of [
 ]) {
   test.assertIncludes(coordinatorSource, `name: "${toolName}"`, `${toolName} is registered as a typed writing tool`);
 }
-test.assertIncludes(chatMessages, "assistant content or tool calls", "JSON model routing accepts content-free provider tool calls");
+test.assertIncludes(chatMessages, "const toolCalls = Array.isArray(message?.tool_calls) ? message.tool_calls : [];", "JSON model routing accepts content-free provider tool calls");
+test.assertIncludes(chatMessages, "if (!content && !toolCalls.length)", "and only refuses when a provider sends neither words nor tool calls");
 
 // The loop stops at three rounds. When it stops with more it wanted to read,
 // the answer is shorter than the question deserved, and the run used to compute

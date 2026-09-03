@@ -66,8 +66,7 @@ async function copyMarkdown(markdown) {
     const helper = document.createElement("textarea");
     helper.value = markdown;
     helper.setAttribute("readonly", "");
-    helper.style.position = "fixed";
-    helper.style.left = "-9999px";
+    helper.className = "visually-hidden";
     document.body.append(helper);
     helper.select();
     const copied = document.execCommand("copy");
@@ -98,8 +97,10 @@ function saveMarkdownArtifact(markdown, name) {
 }
 
 function downloadMarkdown(markdown, name) {
-  saveMarkdownArtifact(markdown, name);
-  setStatus(t("downloaded_markdown_only"));
+  // [lane-honesty] saveArtifact returns false when it could not build a file
+  // (e.g. empty content) — the status must not claim "downloaded" over that.
+  const saved = saveMarkdownArtifact(markdown, name);
+  setStatus(saved ? t("downloaded_markdown_only") : t("markdown_download_failed"));
 }
 
 /**
@@ -120,14 +121,17 @@ async function burnMarkdownToProjectCd(markdown, name, options = {}) {
 async function downloadMarkdownAndBurnToProjectCd(markdown, name, options = {}) {
   const item = await addProjectCdItem(markdown, name, options);
   if (!item) return false;
-  saveMarkdownArtifact(markdown, name);
-  setStatus(t("downloaded_markdown_exported", item.title));
-  return true;
+  // [lane-honesty] The burn already landed; if the download step itself
+  // fails, say so distinctly rather than claiming a download that did not
+  // happen.
+  const saved = saveMarkdownArtifact(markdown, name);
+  setStatus(saved ? t("downloaded_markdown_exported", item.title) : t("burned_markdown_download_failed", item.title));
+  return saved;
 }
 
 function downloadPlainMarkdown(markdown, name, statusKey = "downloaded_plain_markdown") {
-  saveMarkdownArtifact(markdown, name);
-  setStatus(t(statusKey));
+  const saved = saveMarkdownArtifact(markdown, name);
+  setStatus(saved ? t(statusKey) : t("markdown_download_failed"));
 }
 
 function projectCdItemArtifact(item) {
@@ -142,8 +146,13 @@ function projectCdItemArtifact(item) {
 
 function downloadProjectCdItem(item) {
   if (!item) return;
-  window.AISystem6WebPlatform.saveArtifact(projectCdItemArtifact(item));
-  setStatus((item.format || "text/markdown") === "text/html" ? "HTML downloaded." : t("downloaded_plain_markdown"));
+  // [lane-honesty] Same guard as the other download helpers above.
+  const saved = window.AISystem6WebPlatform.saveArtifact(projectCdItemArtifact(item));
+  if (!saved) {
+    setStatus(t("markdown_download_failed"));
+    return;
+  }
+  setStatus((item.format || "text/markdown") === "text/html" ? t("downloaded_html_file") : t("downloaded_plain_markdown"));
 }
 
 function downloadJsonFile(data, name) {
@@ -297,8 +306,11 @@ async function readyProjectDiskBackup() {
 async function exportActiveProjectDisk() {
   const backup = await readyProjectDiskBackup();
   if (!backup) return;
-  window.AISystem6WebPlatform.saveArtifact(backup);
-  setStatus(t("project_disk_exported", backup.project.name));
+  // saveArtifact's own return value is the only signal that the download was
+  // actually dispatched - it can refuse (e.g. no File constructor) even
+  // though the backup itself built fine.
+  const dispatched = window.AISystem6WebPlatform.saveArtifact(backup);
+  setStatus(dispatched ? t("project_disk_exported", backup.project.name) : t("project_disk_export_dispatch_failed"));
 }
 
 // The same backup, handed to the system share sheet instead of the disk —
@@ -1576,6 +1588,14 @@ async function commitImportedProjectAtomically(imported) {
     const importedSettings = {
       ...settingsSnapshotPayload(),
       activeProjectId: imported.project.id,
+      // loadDeskState() re-asserts activeProjectId = startupProjectId on every
+      // boot whenever that project still exists (the "resume into the project
+      // you started up with" contract for MultiFinder-style startup). Without
+      // also updating startupProjectId here, the settings snapshot above still
+      // carries the PRE-import value, so the very next boot silently switched
+      // back to the old project -- the freshly restored/created one stayed on
+      // disk but was never seen again until the user re-selected it by hand.
+      startupProjectId: imported.project.id,
       projectMounted: true,
       projectCdItems: importedProjectCdItems,
     };
@@ -1655,6 +1675,13 @@ async function commitImportedProjectAtomically(imported) {
         await Promise.all(writes);
       }
     );
+    // The desk-plan save below (saveDeskState) decides "another window
+    // changed this" by comparing against the base it last saw. This
+    // transaction just wrote settings and every affected collection directly,
+    // outside that bookkeeping, so without reporting what it wrote, the next
+    // save compares against a stale or absent base and refuses itself as a
+    // foreign conflict -- see commitDeskPlansAfterAtomicImport in the caller.
+    return importedSettings;
   } finally {
     db.close();
   }
@@ -1688,7 +1715,7 @@ async function importProjectBackupAsNewProject() {
         });
       }
     }
-    await commitImportedProjectAtomically(imported);
+    const committedSettings = await commitImportedProjectAtomically(imported);
 
     projects.unshift(imported.project);
     chatFolders.unshift(...imported.folders);
@@ -1700,6 +1727,14 @@ async function importProjectBackupAsNewProject() {
 
     isProjectMounted = true;
     activeProjectId = imported.project.id;
+    // The commit above already wrote startupProjectId to disk (see the
+    // comment on importedSettings), but the saveDeskState() call below
+    // recomputes its own settings snapshot from the live globals, and
+    // startupProjectId is one of them (persistence-status.js's
+    // settingsSnapshotPayload()). Leaving the in-memory variable at its
+    // pre-import value let that second, ordinary save quietly overwrite the
+    // commit's correct value with the old project's id.
+    startupProjectId = imported.project.id;
     selectedProjectId = imported.project.id;
     selectedFolderId = "all";
     clearProjectTransientState();
@@ -1713,7 +1748,24 @@ async function importProjectBackupAsNewProject() {
     if (imported.workingSession) {
       await restoreWorkingSession({ projectId: imported.project.id, mounted: true }).catch(() => false);
     }
+    // commitImportedProjectAtomically wrote settings and every affected
+    // collection directly, bypassing the desk-plan dirty-tracking the save
+    // below uses to tell "another window changed this" apart from "we just
+    // changed this ourselves". Without resyncing the bases here, saveDeskState
+    // compared its fresh settings snapshot against an undefined base, saw the
+    // import's own write as a foreign edit, and refused with a standing
+    // "changed in another window" conflict -- which also left the freshly
+    // imported document showing whatever the previous project held, since the
+    // refusal aborted before scheduleDesktopMaintenance ran. Priming both
+    // caches to what was actually just committed makes the save below see its
+    // own prior write as the base, so it proceeds as an ordinary update.
     storageSnapshotCache.clear();
+    if (committedSettings) storageSnapshotCache.set("settings", JSON.stringify(committedSettings));
+    if (typeof deskCollectionDefinitions === "function" && typeof deskCollectionPlan === "function") {
+      deskCollectionDefinitions().forEach((definition) => {
+        storageRecordFingerprintCache.set(definition.key, deskCollectionPlan(definition).current);
+      });
+    }
     const saved = await saveDeskState();
     if (!saved) throw new Error("Imported project committed, but the active workspace state could not be saved.");
     scheduleDesktopMaintenance("import");

@@ -44,7 +44,13 @@ function showSystemModal(message, type = "confirm", options = {}) {
 
     modalScrim.classList.remove("is-hidden");
     systemModal.showModal();
-    if (type === "confirm" && options.defaultAction === "cancel") systemModalCancel.focus();
+    // showModal()'s own initial-focus algorithm lands on the first focusable
+    // descendant in tree order, which is Cancel — not whichever button just
+    // received the "default" class above. Left alone, Enter fired the wrong
+    // action on every dialog whose default is Yes/OK/Save (the common case:
+    // only options.defaultAction === "cancel" was ever handled), including
+    // the unsaved-changes prompt on close. Focus the actual default button.
+    (options.defaultAction === "cancel" ? systemModalCancel : systemModalYes).focus();
   });
 }
 
@@ -110,5 +116,34 @@ function showInputDialog({
       input.focus();
       input.select();
     });
+  });
+}
+
+// A dialog whose first focusable control is a radio (or another native
+// form field that isn't the "default" button itself) inherits a browser
+// behavior distinct from the buttons-only case above: pressing Enter while
+// that field has focus submits the form through its OWN default-button
+// algorithm, which is always the first submit button in DOM order — never
+// whichever button the dialog's own markup marks "default". Moving initial
+// focus onto the default button (as showSystemModal now does) is the wrong
+// fix here, since it would stop arrow keys from changing the radio
+// selection before the writer has tabbed anywhere. This instead intercepts
+// Enter at the dialog and fires the real default explicitly, leaving
+// initial focus on the radio group alone. Call once per dialog; the getter
+// is re-read on every Enter, so it can point at a default that changes as
+// the writer picks a different option (see clio-use-result-modal, whose
+// default target changes with selection).
+function wireDialogEnterDefault(dialog, getDefaultButton) {
+  dialog.__enterDefaultGetter = getDefaultButton;
+  if (dialog.dataset.enterDefaultWired) return;
+  dialog.dataset.enterDefaultWired = "true";
+  dialog.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" || event.defaultPrevented || eventIsTextComposition(event)) return;
+    const target = event.target;
+    if (target?.tagName === "BUTTON" || target?.tagName === "TEXTAREA") return;
+    const button = dialog.__enterDefaultGetter?.();
+    if (!button || button.disabled) return;
+    event.preventDefault();
+    button.click();
   });
 }

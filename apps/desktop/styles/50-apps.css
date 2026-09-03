@@ -854,6 +854,139 @@
   box-shadow: inset 0 -2px 0 var(--ink);
 }
 
+/* The outline as a corkboard: a third view over the same records the tree
+   reads, freely placed. The three marks reuse the writing spine's own class
+   names (is-selected, holds-pen, has-content) rather than inventing a
+   parallel vocabulary for the same three facts. */
+.outline-cards {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  background: var(--paper);
+}
+
+.outline-card {
+  position: absolute;
+  left: var(--outline-card-x, 0px);
+  top: var(--outline-card-y, 0px);
+  width: 200px;
+  min-height: 108px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 8px 8px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  box-shadow: 2px 2px 0 var(--shade);
+  color: inherit;
+  text-align: left;
+  cursor: grab;
+  touch-action: none;
+  font: inherit;
+}
+
+.outline-card.is-child {
+  border-style: dashed;
+}
+
+.outline-card.is-selected {
+  background: var(--system-selection-bg, var(--selection-bg));
+  color: var(--system-selection-fg, var(--selection-fg));
+}
+
+.outline-card.is-drop-target {
+  box-shadow: inset 0 0 0 2px var(--ink);
+}
+
+.outline-cards.is-dragging .outline-card {
+  cursor: grabbing;
+}
+
+.outline-card-grip {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 16px;
+  height: 10px;
+  background-image: radial-gradient(currentColor 0.5px, transparent 0.5px);
+  background-size: 3px 3px;
+  background-position: 1px 1px;
+  opacity: 0.55;
+  cursor: grab;
+}
+
+.outline-card:hover .outline-card-grip,
+.outline-card.is-selected .outline-card-grip {
+  opacity: 1;
+}
+
+.outline-card-title {
+  padding-right: 20px;
+  font-weight: var(--system-emphasis-weight);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.outline-card-snippet {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  font-size: 11px;
+  color: var(--shade-dark);
+}
+
+.outline-card.is-selected .outline-card-snippet {
+  color: inherit;
+}
+
+/* Filled badge: this record's Section Draft holds text. */
+.outline-card-pen {
+  position: absolute;
+  bottom: 4px;
+  left: 6px;
+  width: 8px;
+  height: 8px;
+  border: 1px solid var(--ink);
+  background: transparent;
+}
+
+.outline-card.holds-pen .outline-card-pen {
+  background: var(--ink);
+}
+
+.outline-card.is-selected .outline-card-pen {
+  border-color: currentColor;
+  background: transparent;
+}
+
+.outline-card.is-selected.holds-pen .outline-card-pen {
+  background: currentColor;
+}
+
+/* Diamond: the classic mark for "this one has something in it" -- here, the
+   outline record's own text under the heading. */
+.outline-card-diamond {
+  position: absolute;
+  bottom: 5px;
+  left: 20px;
+  width: 6px;
+  height: 6px;
+  background: var(--ink);
+  transform: rotate(45deg);
+  display: none;
+}
+
+.outline-card.has-content .outline-card-diamond {
+  display: block;
+}
+
+.outline-card.is-selected .outline-card-diamond {
+  background: currentColor;
+}
+
 .teachtext-preview {
   flex: 1;
   min-height: 0;
@@ -865,7 +998,7 @@
      28 -- a measure that holds on only one side of the paper is not locked. */
   font-family: var(--editor-font);
   font-size: var(--mde-font-size);
-  line-height: 1.8;
+  line-height: var(--paper-line-height-preview);
   user-select: text;
   background: var(--teachtext-preview-bg);
   color: var(--ink);
@@ -1153,6 +1286,23 @@
   text-align: center;
 }
 
+/* MacWrite ruler (line spacing only, Writing > Line Spacing): the writer's
+   density choice for every writing surface's paper and preview alike. No
+   attribute (or an old/unknown stored value) means "standard" -- the
+   :root defaults above -- so this feature ships with zero visual change
+   until a writer opens the menu. Set via mdeSetLineSpacing() in
+   markdown-editor.js and read by .mde-input/.mde-highlight and
+   .teachtext-preview below. */
+body[data-line-spacing="compact"] {
+  --paper-line-height-editor: 1.4;
+  --paper-line-height-preview: 1.5;
+}
+
+body[data-line-spacing="relaxed"] {
+  --paper-line-height-editor: 2;
+  --paper-line-height-preview: 2.1;
+}
+
 /* Live markdown highlight overlay. The textarea (.mde-input) and the painted
    overlay (.mde-highlight) share identical metrics so the caret stays aligned
    with the highlighted glyphs. Only width-neutral styling is painted. */
@@ -1184,7 +1334,7 @@
   border: 0;
   font-family: var(--editor-font);
   font-size: var(--mde-font-size);
-  line-height: 1.7;
+  line-height: var(--paper-line-height-editor);
   letter-spacing: 0;
   white-space: pre-wrap;
   overflow-wrap: normal;
@@ -1208,9 +1358,21 @@
   z-index: var(--z-local-chrome);
   padding-right: calc(var(--mde-scrollbar-gutter, 32px) + var(--mde-page-padding-x, 24px));
   /* This transparent layer sits ON TOP of the highlight overlay; a backdrop
-     blur here would smear the text painted behind it (liquid-glass theme). */
+     blur here would smear the text painted behind it (liquid-glass theme), and
+     an era's inset field shadow would darken the ink's first and last lines. */
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
+  box-shadow: none;
+}
+
+/* The ink is painted by the overlay BEHIND this textarea, so an opaque
+   selection drawn in the textarea's own layer covers the very words being
+   selected: the writer selected a line and watched it vanish, spelling
+   underline still showing, in every appearance. The selection keeps the era's
+   own colour and turns translucent, so the glyphs behind read through it. */
+.mde-surface > .mde-input::selection {
+  background: color-mix(in srgb, var(--editor-selection-tint, var(--selection-bg)) 32%, transparent);
+  color: transparent;
 }
 
 .mde-surface > .mde-input::placeholder {
@@ -1234,8 +1396,11 @@
   height: 1.7em;
   transform: translateY(-50%);
   background: linear-gradient(to right, transparent, rgba(250, 240, 130, 0.18), transparent);
+  /* No z-index. --z-local-base is 0, and 0 and auto put a positioned element
+     in the same painting step; the value only adds a stacking context, which
+     a pseudo-element with no descendants cannot use. The band is the last
+     child in tree order, so it paints over the ink either way. */
   pointer-events: none;
-  z-index: var(--z-local-base);
 }
 
 .mde-surface.is-typewriter-mode > .mde-input,
@@ -1280,6 +1445,9 @@
 .md-strong {
   -webkit-text-stroke: var(--md-weight-stroke) currentColor;
 }
+/* The record id is the machine's half of a heading line: still selectable
+   text, drawn in the marker ink so the title keeps the eye. */
+.md-record-id { color: var(--md-marker-ink); }
 .md-link { text-decoration: underline; text-underline-offset: 2px; text-decoration-color: currentColor; }
 .md-strike { text-decoration: line-through; text-decoration-color: currentColor; }
 .md-mark { background: var(--md-mark-wash); }
@@ -1479,6 +1647,18 @@
   text-align: right;
 }
 
+/* The status host moved into the details-bar's trailing grid cell (paper-lane
+   chrome reduction) so its own row could go away. .status-bar-trailing's
+   justify-self:end sizes a short button to its own content, which is right
+   for a button but overflows the grid track for a long status sentence with
+   nowhere left to ellipsize -- it drew across the leading cell instead of
+   truncating. Stretching this one cell to the track's width lets the existing
+   .window-status-slot ellipsis (30-surfaces.css) do its job. */
+.status-bar-trailing.window-status-strip {
+  justify-self: stretch;
+  overflow: hidden;
+}
+
 @container (max-width: 520px) {
   .teachtext-surface-window .details-bar span,
   .teachtext-surface-window .details-bar button {
@@ -1648,6 +1828,64 @@
   max-width: 14ch;
 }
 
+/* The Question Sheet as a deck: a view over the same eleven sections the page
+   edits, plus one unnamed card for the mess that has not been sorted yet.
+   Twelve small forms rather than one long one -- CLAUDE.md's charge that the
+   sheet "welcome messy human input before prose" needed a card with no box
+   to check before the writer knows which section it belongs to. */
+.question-sheet-cards {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 8px;
+  padding: 8px;
+  background: var(--paper);
+}
+
+.qs-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 140px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+}
+
+.qs-card-unnamed {
+  border-style: dashed;
+}
+
+.qs-card-label {
+  padding: 3px 6px;
+  border-bottom: 1px solid var(--ink);
+  background: var(--shade);
+  font-size: 11px;
+  font-weight: var(--system-emphasis-weight);
+}
+
+.qs-card-label-unnamed {
+  min-height: 1em;
+  background: transparent;
+  border-bottom-style: dashed;
+}
+
+.qs-card-body {
+  flex: 1;
+  min-height: 0;
+  padding: 6px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  resize: none;
+}
+
+.qs-card-body:focus {
+  outline: none;
+  background: var(--system-selection-bg, var(--selection-bg));
+}
+
 /* Clipped pictures in Scrapbook, plus the note that says a picture-only clip
    is not searchable. Tokens only, so both appearances follow. */
 .scrap-pictures {
@@ -1705,9 +1943,11 @@
 }
 
 .image-manager-list-header {
+  /* No stacking token needed: .image-manager-item rows below are static, so
+     this sticky (positioned) header already paints above them while
+     scrolling. */
   position: sticky;
   top: 0;
-  z-index: var(--z-local-control);
   display: grid;
   grid-template-columns: minmax(180px, 1.8fr) minmax(110px, 1fr) 78px 88px;
   gap: 8px;

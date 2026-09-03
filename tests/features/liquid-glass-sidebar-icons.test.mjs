@@ -26,3 +26,5 @@ for (const [source, iconId, label] of [
 ]) {
   test.assertIncludes(source, `iconFor: () => "${iconId}"`, `${label} declares its semantic rail icon`);
 }
+
+test.finish();

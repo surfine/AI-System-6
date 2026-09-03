@@ -1175,3 +1175,43 @@ fast path by name.
 
 The build went out as 1.0.50 (build 20260831.3) to GitHub's public snapshot and
 Mac Beta v1.0.50-beta.5, the VPS web host, and Cloudflare Pages.
+
+## Public Beta 1.0.51 - 2026-09-02
+
+A version about keeping promises the product had already made.
+
+The largest of them was the plainest: in the Aqua and Snow Leopard appearances,
+putting the caret into a writing surface erased the page. The words were there
+— selectable, spell-checked — but nothing was drawn, because those eras painted
+an opaque focus fill over the layer that carries the ink. Liquid Glass washed
+the same text out, and every appearance hid a line the moment it was selected.
+Six instances of one defect class, found by reading the layer order rather than
+the colour values. A contract now resolves the real cascade over five surfaces,
+six appearances, two focus states and three widths, and fails on any fill,
+filter or inset shadow that could cover the writer's own words.
+
+The route learned to hand work over. A manuscript exports as a real `.docx`
+whose page and the page on screen come from one text and one Page Setup; it
+refuses to write when its own structure check fails, naming the fact it read.
+The Review Desk's findings travel as real Word comments anchored to their
+sentences, while the manuscript itself comes out byte for byte identical to an
+export with no review attached — the review is a suggestion handed to a person,
+not an edit. Three built-in skills advise on which carrier the work wants and
+what a manuscript or a table owes its reader, and never touch the sentences.
+
+Two objects stopped lying about themselves. The Liquid Glass slider — the
+control named after the appearance — had no styling at all and was drawn by the
+browser; it is glass now, and the windows behind it refract instead of tinting.
+On a phone, opening the Question Sheet used to leave the writer in the
+manuscript a second later, because a companion window opened with focus and a
+single-foreground screen gave it the room; the route hands over the screen
+deliberately now, in both orientations.
+
+The verification itself was repaired where it had been reassuring rather than
+checking. The pixel net spent most of six minutes waiting for windows it never
+photographed and covered 20 of 33 cells; it covers 33 of 33 in 99 seconds. The
+merge verifier ended a run over a non-merge commit with "merge content
+verified". The boot harness invented an element for any id it was asked for,
+which had reported 72 of 76 windows healthy while their real construction had
+never once run — and the first thing the honest harness found was Time Machine's
+Clip + Translate, which had never made a clip and blamed the translation for it.

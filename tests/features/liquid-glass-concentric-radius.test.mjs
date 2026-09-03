@@ -17,3 +17,5 @@ test.assertIncludes(liquid, "border-radius: var(--liquid-card-radius-xs)", "Find
 test.assertNotIncludes(liquid, "border-radius: 999px;", "no liquid selector keeps a hard-coded pill radius");
 test.assertNotIncludes(liquid, "border-radius: 18px;", "no liquid selector keeps a hard-coded 18px surface radius");
 test.assertNotIncludes(liquid, "border-radius: 12px;", "no liquid selector keeps a hard-coded 12px surface radius");
+
+test.finish();

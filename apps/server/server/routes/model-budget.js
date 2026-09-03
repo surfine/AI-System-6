@@ -13,7 +13,7 @@
 
 "use strict";
 
-const { send, readJsonBody } = require("../lib/http.js");
+const { send, readJsonBody, respondIfClientError } = require("../lib/http.js");
 const { calculateModelBudget } = require("../lmstudio.js");
 
 /**
@@ -28,6 +28,9 @@ async function handleModelBudget(req, res) {
     });
   } catch (error) {
     if (/** @type {any} */ (error)?.name === "AbortError") return;
+    // No budget was calculated when the body itself was rejected, so the
+    // caller must see the fault in its request, not a budget failure.
+    if (respondIfClientError(res, error)) return;
     send(res, 502, JSON.stringify({
       error: "Model budget failed",
       detail: /** @type {Error} */ (error).message,

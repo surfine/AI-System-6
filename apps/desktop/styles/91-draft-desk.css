@@ -647,25 +647,17 @@
   background: var(--quick-draft-actions-bg);
 }
 
-.draft-desk-display-switch,
 .draft-desk-drawer-switch {
   align-items: center;
-}
-
-.draft-desk-display-switch {
-  display: flex;
 }
 
 .draft-desk-display-label-narrow {
   display: none;
 }
 
-.draft-desk-display-switch .btn + .btn {
-  margin-left: -1px;
-}
-
-.draft-desk-display-switch .btn.is-active,
-.draft-desk-display-switch .btn[aria-selected="true"],
+/* .draft-desk-display-switch is now the shared .view-switch part -- its
+   selected-tab material lives in .view-switch-option[aria-selected="true"]
+   (30-surfaces.css) plus the era's --view-switch-* tokens, not here. */
 .draft-desk-drawer-switch .btn.is-active,
 .draft-desk-drawer-switch .btn[aria-expanded="true"] {
   background: var(--ink);

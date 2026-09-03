@@ -322,7 +322,16 @@ function mdeLineHtml(line, state) {
   if (state.fence) return `<span class="md-code">${mdeEscapeHtml(line)}</span>`;
 
   let m = line.match(/^(\s*#{1,6}\s+)(.*)$/);
-  if (m) return `<span class="md-marker">${mdeEscapeHtml(m[1])}</span><span class="md-heading">${mdeInlineHtml(m[2])}</span>`;
+  if (m) {
+    // A section carries its record id in its own heading, so the writer sees
+    // it while editing. It is real text -- selecting and copying still take
+    // it -- but it is the machine's half of the line, so it steps back and
+    // lets the title read as a title.
+    const withId = m[2].match(/^(.*?)(\s*\{#[0-9a-zA-Z_-]+\})\s*$/);
+    const title = withId ? withId[1] : m[2];
+    const idPart = withId ? `<span class="md-record-id">${mdeEscapeHtml(withId[2])}</span>` : "";
+    return `<span class="md-marker">${mdeEscapeHtml(m[1])}</span><span class="md-heading">${mdeInlineHtml(title)}</span>${idPart}`;
+  }
 
   m = line.match(/^(\s*>+\s?)(.*)$/);
   if (m) return `<span class="md-marker">${mdeEscapeHtml(m[1])}</span><span class="md-quote">${mdeInlineHtml(m[2])}</span>`;
@@ -599,6 +608,7 @@ function mdeRepaintHighlight(textarea) {
 function attachMarkdownHighlight(textarea) {
   if (!textarea || textarea.dataset.mdeHighlight === "true" || !textarea.parentNode) return;
   textarea.dataset.mdeHighlight = "true";
+  mdeEnsureLineSpacingRestored();
 
   const surface = document.createElement("div");
   surface.className = "mde-surface";
@@ -710,4 +720,59 @@ function mdeCycleFocusMode(textarea) {
   const current = surface?.dataset.mdeFocusMode || "off";
   const next = current === "off" ? "typewriter" : current === "typewriter" ? "sentence" : "off";
   return mdeSetFocusMode(textarea, next);
+}
+
+// MacWrite's ruler, narrowed to the one setting the owner kept: line spacing
+// (紧凑/标准/宽松). Unlike focus mode, this is not a per-textarea attention
+// state -- it is a reading/writing density the writer sets once and expects
+// every writing surface's paper and preview to honor, so it lives on <body>
+// as one data attribute rather than per .mde-surface. --paper-line-height-*
+// (00-foundation.css / 50-apps.css) read it.
+const MDE_LINE_SPACING_STORAGE_KEY = "ai-system6-line-spacing";
+const MDE_LINE_SPACING_VALUES = ["compact", "standard", "relaxed"];
+
+function mdeStoredLineSpacing() {
+  let stored = "";
+  try {
+    stored = String(localStorage.getItem(MDE_LINE_SPACING_STORAGE_KEY) || "").trim();
+  } catch {}
+  return MDE_LINE_SPACING_VALUES.includes(stored) ? stored : "standard";
+}
+
+function mdeStoreLineSpacing(value) {
+  try {
+    localStorage.setItem(MDE_LINE_SPACING_STORAGE_KEY, value);
+  } catch {}
+}
+
+// "standard" carries no attribute at all: it is the base-sheet default, so a
+// reader with no stored preference (or an old one it does not recognize)
+// renders exactly as before this feature existed.
+function mdeApplyLineSpacing(value) {
+  const next = MDE_LINE_SPACING_VALUES.includes(value) ? value : "standard";
+  if (next === "standard") delete document.body.dataset.lineSpacing;
+  else document.body.dataset.lineSpacing = next;
+  return next;
+}
+
+function mdeSetLineSpacing(value, { remember = true } = {}) {
+  const next = mdeApplyLineSpacing(value);
+  if (remember) mdeStoreLineSpacing(next);
+  return next;
+}
+
+function mdeCurrentLineSpacing() {
+  return MDE_LINE_SPACING_VALUES.includes(document.body.dataset.lineSpacing)
+    ? document.body.dataset.lineSpacing
+    : "standard";
+}
+
+// Applied once at the first writing surface rather than at boot: markdown-
+// editor.js has no init hook of its own, and every writing window's textarea
+// passes through attachMarkdownHighlight before the writer can see it.
+let mdeLineSpacingRestored = false;
+function mdeEnsureLineSpacingRestored() {
+  if (mdeLineSpacingRestored) return;
+  mdeLineSpacingRestored = true;
+  mdeApplyLineSpacing(mdeStoredLineSpacing());
 }

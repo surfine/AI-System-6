@@ -239,9 +239,18 @@ async function executeDerivedIndexJob(job) {
   });
 }
 
-function updateDerivedIndexNotification(message, state) {
+// Takes a translation key + args rather than a pre-rendered string: derived
+// indexing runs on a background timer that can fire before the writer's
+// language preference has settled, or sit in the Notification Center across a
+// later language switch. A message rendered once at push time stayed frozen
+// in whatever language was current at that instant; pushSystemNotification
+// re-renders from messageKey/messageArgs at DRAW time instead, so this only
+// needs to hand over the key.
+function updateDerivedIndexNotification(messageKey, messageArgs, state) {
   if (derivedIndexSilent || typeof pushSystemNotification !== "function") return;
-  derivedIndexNotificationId = pushSystemNotification(message, {
+  derivedIndexNotificationId = pushSystemNotification(t(messageKey, ...messageArgs), {
+    messageKey,
+    messageArgs,
     replaceId: derivedIndexNotificationId,
     state,
   });
@@ -310,7 +319,8 @@ async function synchronizeAndProcessDerivedIndex() {
       if (synchronized.changedSourceKeys.length) {
         notificationSources += synchronized.changedSourceKeys.length;
         updateDerivedIndexNotification(
-          t("derived_index_running", synchronized.changedSourceKeys.length),
+          "derived_index_running",
+          [synchronized.changedSourceKeys.length],
           "running"
         );
       }
@@ -319,10 +329,17 @@ async function synchronizeAndProcessDerivedIndex() {
       notificationEmbeddingFailures += outcome.failedEmbeddings;
     } while (derivedIndexNeedsSync);
     if (notificationSources) {
-      const message = notificationEmbeddingFailures
-        ? t("derived_index_keyword_ready", notificationChunks, notificationSources)
-        : t("derived_index_ready", notificationChunks, notificationSources);
-      updateDerivedIndexNotification(message, notificationEmbeddingFailures ? "failed" : "done");
+      const messageKey = notificationEmbeddingFailures ? "derived_index_keyword_ready" : "derived_index_ready";
+      // The keyword index really is ready, and the message says the
+      // embeddings will retry. Calling that "Failed" borrows the vocabulary
+      // of real failures for the ordinary state of having no model connected
+      // yet -- every cold open earned an alarm, which teaches a daily writer
+      // to stop reading the notifications that matter.
+      updateDerivedIndexNotification(
+        messageKey,
+        [notificationChunks, notificationSources],
+        "done"
+      );
     }
   } finally {
     derivedIndexRunning = false;

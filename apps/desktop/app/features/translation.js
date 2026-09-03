@@ -351,11 +351,13 @@ async function translateTeachTextDocument() {
     teachTextBodyInput.classList.remove("is-hidden");
     teachTextTogglePreviewButton.textContent = t("preview");
     renderDocuments();
-    saveDeskState();
+    // The translated file above is only in memory until the desk save
+    // actually lands - don't claim "saved" over a refused write.
+    const saved = await saveDeskState();
     openTextFile(file.id);
-    setStatus(t("translated_document_saved", name));
+    setStatus(saved ? t("translated_document_saved", name) : t("translated_document_saved_unsaved", name));
   } catch (error) {
-    if (!isAbortError(error)) setStatus(t("translation_failed", error.message));
+    if (!isAbortError(error)) setStatus(t("translation_failed", friendlyErrorDetail(error)));
   } finally {
     endLongTask("translate-document");
     updateTeachTextTranslateButton();
@@ -393,7 +395,7 @@ async function translateTeachTextSelection(selection, targetLanguage) {
     teachTextBodyInput.focus();
     clearStatus();
   } catch (error) {
-    if (!isAbortError(error)) setStatus(t("translation_failed", error.message));
+    if (!isAbortError(error)) setStatus(t("translation_failed", friendlyErrorDetail(error)));
   } finally {
     endLongTask("translate-selection");
     updateTeachTextTranslateButton();
@@ -545,6 +547,18 @@ ${body}`;
       // Findings are on screen; only their absence needs saying.
       if (findings.length) clearStatus();
       else setStatus(t("no_style_results"));
+      // The findings list is only visible while this session's memory holds
+      // it. A receipt makes the model's report recoverable even though style
+      // findings have no "insert into prose" landing of their own.
+      const recorded = await window.AISystem6RunReceipts?.recordModelAnswer?.({
+        projectId: activeProjectId,
+        sourceAppId: "reviewDesk",
+        intent: sectionOnly ? "style-check-section" : "style-check",
+        provider: (typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudConfig.provider && typeof cloudCredentialReady === "function" && cloudCredentialReady()) ? "cloud" : "local",
+        model: typeof getLocalModelRequestName === "function" ? getLocalModelRequestName() : "",
+        answerText: content,
+      });
+      if (recorded?.receiptId) window.AISystem6RunReceipts?.recordUserAction?.(recorded.receiptId, { action: "accept" });
     }
   } catch (error) {
     if (!isAbortError(error)) {
@@ -849,7 +863,20 @@ function writingToolActiveTextControl() {
     clipboard: clipboardTextInput,
     dictation: dictationCleanedInput || dictationRawInput,
   };
-  return controlsByWindow[activeWin] || null;
+  if (controlsByWindow[activeWin]) return controlsByWindow[activeWin];
+
+  // The menu's own isAvailable() (window-manager.js canUseWritingTools)
+  // enables this whole family whenever TeachText holds a visible manuscript
+  // body, regardless of which window last became .is-active — a menu click
+  // can reach here without TeachText ever winning that race. A control the
+  // menu already promised is usable must not come back empty-handed here;
+  // fall back to the same document the availability check already found.
+  const teachTextWin = document.querySelector('[data-window="teachText"]');
+  const teachTextVisible = !!teachTextWin && !teachTextWin.classList.contains("is-hidden");
+  if (teachTextVisible && teachTextBodyInput?.value?.trim() && isTeachTextManuscriptRole()) {
+    return teachTextBodyInput;
+  }
+  return null;
 }
 
 function writingToolTarget(control, mode) {
@@ -954,6 +981,7 @@ async function runDirectWritingTool(mode) {
 
   if (!beginLongTask("writing-tool", t("writing_tool_running"))) return;
   let result = "";
+  let failure = "";
   try {
     const prompt = buildDirectWritingToolPrompt(mode, target.target, instruction.trim(), resolvedPrompt);
     window.AISystem6PromptFilesRuntime?.recordPromptRun(activeProjectId, writingToolPromptId(mode), resolvedPrompt);
@@ -968,13 +996,21 @@ async function runDirectWritingTool(mode) {
     const data = await readChatJson(response);
     result = stripRebuildMarkdownFence(data?.choices?.[0]?.message?.content || "").trim();
   } catch (error) {
-    if (!isAbortError(error)) console.error("Writing tool failed", error);
+    // A model failure used to reach the console and nowhere else, and the
+    // line below then wiped the "Working..." receipt: the tool that failed
+    // and the tool that is broken looked the same. praiseReviewDeskText()
+    // in this same file already answers a failure this way.
+    if (!isAbortError(error)) {
+      console.error("Writing tool failed", error);
+      failure = friendlyErrorDetail(error);
+    }
   } finally {
     endLongTask("writing-tool");
   }
 
   if (!result) {
-    clearStatus();
+    if (failure) setStatus(failure);
+    else clearStatus();
     return;
   }
 
@@ -1014,7 +1050,13 @@ function buildSelectionToAiPrompt(mode, context, instruction = "", resolvedPromp
 }
 
 async function sendPrintToAiRequest(mode, publicRequest, hiddenPrompt, sourceWindowName, resolvedPrompt = null) {
-  if (activeAbortController) return;
+  if (activeAbortController) {
+    // One model task at a time is the rule; being ignored is not how to say
+    // so. beginLongTask() already answers this exact question in words, and
+    // this path returned in silence, which reads as a broken command.
+    setStatus(t("task_already_running", localModelState.task || t("working_locally")));
+    return;
+  }
   await openAssistantAvoidingWindow(sourceWindowName);
   addMessage("user", publicRequest);
   const pendingMessage = createPendingMessage();
@@ -1038,7 +1080,7 @@ async function sendPrintToAiRequest(mode, publicRequest, hiddenPrompt, sourceWin
     if (error.name === "AbortError") {
       resolvePendingStatus(pendingMessage, t("stopped"));
     } else {
-      resolvePendingStatus(pendingMessage, `${t("connection_error")} ${error.message}`);
+      resolvePendingStatus(pendingMessage, friendlyErrorDetail(error));
     }
   } finally {
     stopWaitCycle();
@@ -1110,7 +1152,11 @@ async function praiseReviewDeskText() {
     openWindow("reviewDesk");
     return;
   }
-  if (activeAbortController) return;
+  if (activeAbortController) {
+    // Same silence as sendPrintToAiRequest above, same answer.
+    setStatus(t("task_already_running", localModelState.task || t("working_locally")));
+    return;
+  }
   const resolvedPrompt = resolveWritingToolPrompt("reviewPraise");
   if (writingToolPromptUnavailable(resolvedPrompt)) return;
   setReviewDeskMode("facts");
@@ -1137,7 +1183,7 @@ async function praiseReviewDeskText() {
     ].join("\n"));
     clearStatus();
   } catch (error) {
-    if (error.name !== "AbortError") setStatus(`${t("connection_error")} ${error.message}`);
+    if (error.name !== "AbortError") setStatus(friendlyErrorDetail(error));
   } finally {
     activeAbortController = null;
   }
@@ -1181,7 +1227,7 @@ async function reviewSectionAsMingming() {
     clearStatus();
   } catch (error) {
     if (!isAbortError(error)) {
-      const message = `${t("connection_error")} ${error.message}`;
+      const message = friendlyErrorDetail(error);
       if (claimResultsEl) claimResultsEl.innerHTML = `<div class="empty-folder-note">${escapeHtml(message)}</div>`;
       setStatus(message);
     }

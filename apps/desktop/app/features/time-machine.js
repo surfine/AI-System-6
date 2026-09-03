@@ -57,14 +57,11 @@ timeMachineFrameEl?.addEventListener("load", () => {
 const timeMachineReaderEl = document.querySelector("#time-machine-reader");
 const timeMachineHomeEl = document.querySelector("#time-machine-home");
 const timeMachineLoadingEl = document.querySelector("#time-machine-loading");
-const timeMachineClipButton = document.querySelector("#time-machine-clip");
-const timeMachineClipTranslateButton = document.querySelector("#time-machine-clip-translate");
 const timeMachineDocMapButton = document.querySelector("#time-machine-docmap");
 const timeMachineAskForm = document.querySelector("#time-machine-ask-form");
 const timeMachineQuestionInput = document.querySelector("#time-machine-question");
 const timeMachineProvenanceEl = document.querySelector("#time-machine-provenance");
 let timeMachineReceiptTimer = 0;
-const timeMachineSendManuscriptButton = document.querySelector("#time-machine-send-manuscript");
 const timeMachineSaveWaybackLink = document.querySelector("#time-machine-save-wayback");
 const timeMachineSaveArchiveIsLink = document.querySelector("#time-machine-save-archive-is");
 
@@ -636,6 +633,10 @@ function closeTimeMachineTab(tabId) {
   if (result.wasActive && result.next) openTimeMachineTab(result.next.id);
   if (result.wasActive && !result.next) timeMachineShowHome();
   saveDeskState();
+  // Closing the only tab lands back on the home panel, which is what the
+  // window was already showing when that tab held nothing: the command
+  // removed a real tab and looked like it had done nothing. Say what closed.
+  timeMachineSetStatus(t("time_machine_tab_closed"));
   return true;
 }
 
@@ -754,14 +755,11 @@ function renderTimeMachineProvenance() {
 }
 
 function timeMachineSetReaderActions(enabled) {
-  [
-    timeMachineReaderViewButton,
-    timeMachineClipButton,
-    timeMachineClipTranslateButton,
-    timeMachineSendManuscriptButton,
-  ].forEach((button) => {
-    if (button) button.disabled = !enabled;
-  });
+  // Clip, Clip + Translate and Send to Manuscript are MENU commands here, not
+  // buttons on the page: those three ids appear nowhere in the markup, so the
+  // handles they were read into were always null. The menu-state painter owns
+  // their availability. Only the reader-view button is a real control.
+  if (timeMachineReaderViewButton) timeMachineReaderViewButton.disabled = !enabled;
   syncDocMapEntryButton(timeMachineDocMapButton, enabled ? timeMachineDocMapReadiness() : { state: "empty", ready: false });
   // The ask bar's own input and button are owned by describeTimeMachineAskScope
   // so all five ask bars gate on the same rule.
@@ -1062,10 +1060,10 @@ async function timeMachineNavigate(value, options = {}) {
     const copy = timeMachineHomeEl.querySelector(".time-machine-home-copy");
     if (copy) {
       copy.querySelector("h3").textContent = t("time_machine_could_not_open");
-      copy.querySelector("p").textContent = error.message;
+      copy.querySelector("p").textContent = friendlyErrorDetail(error);
     }
     timeMachineSetStatus(t("time_machine_could_not_open"));
-    timeMachineSetStatus(t("time_machine_error", error.message), { error: true });
+    timeMachineSetStatus(t("time_machine_error", friendlyErrorDetail(error)), { error: true });
     return false;
   } finally {
     // A superseded request (address/date/checkbox changes each fire their
@@ -1431,8 +1429,10 @@ function clipTimeMachineSelection() {
     timeMachineSetStatus(t("select_text_first"));
     return;
   }
-  createTimeMachineClip(text);
-  timeMachineSetStatus(t("reader_clipped"));
+  // [lane-honesty] createTimeMachineClip's only failure mode is "no project
+  // mounted" (via createScrap), which already shows that status and returns
+  // null. Don't clobber it with a false "clipped" claim.
+  if (createTimeMachineClip(text)) timeMachineSetStatus(t("reader_clipped"));
 }
 
 async function clipTimeMachineSelectionWithTranslation() {
@@ -1448,20 +1448,20 @@ async function clipTimeMachineSelectionWithTranslation() {
   }
   try {
     document.body.classList.add("is-busy");
-    timeMachineClipTranslateButton.disabled = true;
     const createdAt = new Date().toISOString();
     const model = currentTranslationModel();
     const translatedText = await translateTextWithLocalModel(text, language, {
       preserveMarkdown: false,
       title: currentTimeMachinePage?.title || t("time_machine"),
     });
-    createTimeMachineClip(text, translatedText, { language, createdAt, model });
-    timeMachineSetStatus(t("reader_bilingual_clipped"));
+    // [lane-honesty] Same guard as clipTimeMachineSelection above.
+    if (createTimeMachineClip(text, translatedText, { language, createdAt, model })) {
+      timeMachineSetStatus(t("reader_bilingual_clipped"));
+    }
   } catch (error) {
     timeMachineSetStatus(t("translation_failed", error.message), { error: true });
   } finally {
     document.body.classList.remove("is-busy");
-    timeMachineClipTranslateButton.disabled = !currentTimeMachinePage?.reader?.text;
   }
 }
 

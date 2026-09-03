@@ -74,6 +74,18 @@ test.assertMatches(
 );
 test.assertIncludes(chatMessages, "const canResolve = window.AISystem6ClioProvider?.canAttempt?.() === true;", "Send stays available while a resolution is still possible");
 
+// --- The welcome copy's promised check actually starts itself -----------------
+// "Getting Clio ready..." tells the writer a background check is running, but
+// resolve() used to run only on message submit — the module was never even
+// loaded, so a writer with no model connected saw that text sit unchanged
+// forever. The welcome render must kick the check off itself.
+
+test.assertMatches(
+  chatMessages,
+  /if \(providerResolving && typeof ensureClioProviderResolver === "function"\) \{\s*\n\s*ensureClioProviderResolver\(\)\s*\n\s*\.then\(\(\) => window\.AISystem6ClioProvider\?\.resolve\?\.\(\{ reason: "welcome" \}\)\)/,
+  "rendering the resolving welcome loads the resolver and starts the check it promises"
+);
+
 // --- The runtime snapshot is allowlisted --------------------------------------
 
 for (const key of ["deploymentTarget", "appearance", "workspaceProfile", "writeMode", "remainingSessionRequests"]) {

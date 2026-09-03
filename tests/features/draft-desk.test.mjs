@@ -138,7 +138,7 @@ test.assertIncludes(quickWindowHtml, 'aria-haspopup="menu" aria-expanded="false"
 test.assertIncludes(quickWindowHtml, 'aria-haspopup="menu" aria-expanded="false" aria-controls="quick-draft-deliver-menu"', "Deliver announces a pull-down menu and its controlled surface");
 test.assertIncludes(quickWindowHtml, 'data-quick-draft-delivery="copy-markdown"', "Markdown copy remains available");
 test.assertIncludes(quickWindowHtml, 'data-quick-draft-delivery="export-markdown"', "Markdown export remains available");
-test.assertIncludes(quickWindowHtml, 'class="draft-desk-display-switch" role="tablist"', "Grain, Read, and Listen use the shared roving tab pattern");
+test.assertIncludes(quickWindowHtml, 'class="view-switch draft-desk-display-switch" role="tablist"', "Grain, Read, and Listen use the shared roving tab pattern, on the real segmented-control part");
 // The tablist and the panel it controls must be in the SAME window. They were
 // not: the tabs moved into 文字亮室 with the split and kept naming the paper
 // body left behind in Quick Draft, so the tablist advertised a relationship
@@ -453,5 +453,16 @@ test.assertMatches(editor, /function lastLightroomDevelopVersion\([\s\S]{0,300}?
 test.assertMatches(editor, /async function undoLightroomDevelop\(\)[\s\S]{0,700}?restoreQuickDraftVersion\(version\.id, "version"\)/, "undo goes back through the same restore path every version row uses");
 test.assertMatches(editor, /async function printLightroomComposite\(\)[\s\S]{0,400}?lightroom_print_none/, "a page that cannot be built refuses instead of opening a blank window");
 test.assertIncludes(actions, '{ id: "lightroom-undo-develop", key: "z", code: "KeyZ", option: true, action: "lightroom-undo-develop"', "⌥⌘Z is scoped to the darkroom, beside the text undo instead of on top of it");
+
+// --- Show/Hide Adjustments: one predicate, not two ------------------------
+// isAvailable used to ask "does the subject have body text" while the toggle
+// asked "is the live form empty", so the row could light up on one condition
+// and refuse on the other. Both now call quickDraftPanelActionable("inspector")
+// -- the darkroom's own subject text when developing a document that is not
+// the live draft, the live form's own emptiness otherwise -- so there is one
+// answer to "can this panel show anything" instead of two that can disagree.
+test.assertIncludes(handoff, 'if (action === "lightroom-toggle-inspector") return quickDraftPanelActionable("inspector");', "the availability check reads the toggle's own predicate, not a separately derived hasBody");
+test.assertMatches(coordinator, /function toggleQuickDraftPanel\(panel = "shelf"\) \{\s*const target = panel === "inspector" \? "inspector" : "shelf";\s*if \(!quickDraftPanelActionable\(target\)\) return false;/, "the toggle's own guard is the same predicate the menu row asks");
+test.assertMatches(coordinator, /function quickDraftPanelActionable\(panel = "shelf"\) \{[\s\S]{0,200}?lightroomSubject[\s\S]{0,150}?is-empty-draft/, "the shared predicate is subject-aware for the inspector and live-draft-aware otherwise");
 
 test.finish();

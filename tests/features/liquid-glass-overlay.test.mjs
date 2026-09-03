@@ -37,3 +37,5 @@ test.assertIncludes(overlay, 'getPropertyValue("--liquid-refraction")', "overlay
 test.assertIncludes(overlay, 'getPropertyValue("--liquid-motion-scale")', "overlay runtime reads the shared motion parameter");
 test.assertIncludes(overlay, "0.72 + 0.28 * tintLevel", "an unresolved custom-property calc still drives refraction from the tint control");
 test.assertIncludes(overlay, "0.8 + 0.4 * tintLevel", "an unresolved custom-property calc still drives overlay motion from the tint control");
+
+test.finish();

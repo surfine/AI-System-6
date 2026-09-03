@@ -787,6 +787,7 @@ function getApplicationsItems() {
       { name: t("clio_stage_label"), iconId: "clioStage", icon: "tools-icon", action: "open-clio-stage", type: "application", kind: t("application") },
       { name: t("clio_chart_label"), iconId: "clioChart", icon: "tools-icon", action: "open-clio-chart", type: "application", kind: t("application") },
       { name: t("clio_project_label"), iconId: "clioProject", icon: "tools-icon", action: "open-clio-project", type: "application", kind: t("application") },
+      { name: t("clio_paint_label"), iconId: "clioPaint", icon: "tools-icon", action: "open-clio-paint", type: "application", kind: t("application") },
       { name: t("liquid_cover_label"), iconId: "liquidCover", icon: "tools-icon", action: "open-liquid-cover", type: "application", kind: t("application") },
       { name: t("cmf_studio_label"), iconId: "cmfStudio", icon: "tools-icon", action: "open-cmf-studio", type: "application", kind: t("application") },
       { name: t("image_prompt_studio_label"), iconId: "imagePromptStudio", action: "open-image-prompt-studio", type: "application", kind: t("application") },
@@ -1399,6 +1400,12 @@ let localModelState = {
 let cloudConfig = null;
 let cloudRuntimeApiKey = "";
 let publicSharedCloudAvailable = false;
+// True for exactly one boot: the boot that finds a key an older build wrote
+// into browser storage. The caller consumes it once to decide whether the
+// owner's "never silently discard a working key" rule needs a notice this
+// time, then it resets — later boots read a clean, keyless record and have
+// nothing left to report.
+let cloudLegacyKeyMigrated = false;
 const CLOUD_STORAGE_KEY = "ai-system6-cloud-config";
 const CLOUD_SESSION_KEY = "ai-system6-cloud-api-key";
 
@@ -1482,6 +1489,7 @@ function loadCloudConfig() {
   }
 
   setCloudRuntimeApiKey(sessionApiKey || legacyApiKey);
+  cloudLegacyKeyMigrated = !!(sessionApiKey || legacyApiKey);
   if (!persistedConfig && cloudRuntimeApiKey) persistedConfig = {};
   if (
     persistedConfig
@@ -1508,6 +1516,15 @@ function loadCloudConfig() {
 
   cloudConfig = persistedConfig;
   return cloudConfig;
+}
+
+// The Control Panel calls this once, right after loadCloudConfig(), to learn
+// whether this boot just migrated a key out of browser storage. Reading it
+// clears it, so a later call in the same tab reports nothing to migrate.
+function consumeCloudLegacyKeyMigration() {
+  const migrated = cloudLegacyKeyMigrated;
+  cloudLegacyKeyMigrated = false;
+  return migrated;
 }
 
 function saveCloudConfig() {
@@ -1746,6 +1763,11 @@ function openTransientFilePicker({ accept = "", multiple = false, onSelect } = {
   input.addEventListener("cancel", () => input.remove(), { once: true });
   document.body.append(input);
   input.click();
+  // The OS file dialog that click() just opened is a native surface with no
+  // DOM trace of its own -- a command that reaches this point and stops here
+  // (the writer cancels, or picks nothing) otherwise left no sign it ever
+  // ran. One shared receipt covers every caller of this picker.
+  setStatus(t("file_picker_opened"), { notify: false });
 }
 
 function syncDocMapDropZoneLabel(message = t("docmap_drop_files")) {
@@ -1950,7 +1972,11 @@ function applyLanguage() {
   if (typeof refreshCloudUsageDisplay === "function") refreshCloudUsageDisplay();
   if (typeof window.syncCloudCredentialUi === "function") window.syncCloudCredentialUi();
   renderWritingBell();
-  renderAlarmClock();
+  // typeof: alarm-clock.js is lazy, and a language refresh can run long before
+  // it loads -- a bare call threw right through applyLanguage and killed
+  // whatever asked for it (a module-built window building its own chrome, for
+  // one). The neighbours below already guard for exactly this reason.
+  if (typeof renderAlarmClock === "function") renderAlarmClock();
   // 文字亮室 paints its subject from a record, not from data-i18n, so a language
   // switch left the old word on screen. typeof: draft-desk.js is lazy.
   if (typeof renderLightroomSubject === "function") renderLightroomSubject();
@@ -2011,7 +2037,8 @@ function syncPromptPlaceholder() {
     );
     return;
   }
-  const isCloudActive = typeof cloudConfig !== "undefined" && cloudConfig && cloudConfig.active && cloudConfig.provider && cloudConfig.apiKey;
+  const isCloudActive = typeof cloudConfig !== "undefined" && cloudConfig && cloudConfig.active && cloudConfig.provider
+    && typeof cloudCredentialReady === "function" && cloudCredentialReady();
   promptInput.placeholder = isCloudActive ? t("prompt_placeholder_cloud") : t("prompt_placeholder");
 }
 
@@ -2542,7 +2569,8 @@ async function importFilesToMountedTextDisk(files, options = {}) {
   setImportStatus(t("embedding_chunks", chunks.length));
   const batchSize = 16;
   const embeddedChunks = [];
-  const isCloud = typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudConfig.apiKey;
+  const isCloud = typeof cloudConfig !== "undefined" && cloudConfig?.active
+    && typeof cloudCredentialReady === "function" && cloudCredentialReady();
   const selectedEmbeddingModel = embeddingModelInput?.value?.trim() || "";
   const hasEmbeddingModel = isCloud || !!selectedEmbeddingModel;
   let embeddingFailed = !hasEmbeddingModel;

@@ -291,7 +291,7 @@ async function dispatchApplicationIntent(appId, { intent, items = [], sourceAppI
   } catch (error) {
     const cancelled = error?.name === "AbortError" || options?.signal?.aborted === true;
     if (typeof setStatus === "function") {
-      setStatus(cancelled ? t("stopped") : String(error?.message || error));
+      setStatus(cancelled ? t("stopped") : friendlyErrorDetail(error));
     }
     return recordDispatchFailure(app.id, receiptId, activityHandle, {
       status: cancelled ? "cancelled" : "failed",

@@ -86,9 +86,9 @@ test.assertIncludes(writingFlow, "const draftsOwnDocument = manuscriptPhase() ==
 test.assertIncludes(html, 'data-action="advance-drafts-to-manuscript"', "Section Drafts forwards to the manuscript, the route's next stop");
 test.assertIncludes(html, 'data-action="advance-manuscript-to-review"', "the manuscript carries the step into review");
 test.assertIncludes(html, 'data-action="return-document-to-section-drafts"', "the manuscript phase has a way back to the sections");
-test.assertIncludes(actions, '"advance-drafts-to-manuscript": advanceDraftsToManuscript', "the forward action is wired");
-test.assertIncludes(actions, '"advance-manuscript-to-review": advanceManuscriptToReview', "the review step is wired");
-test.assertIncludes(actions, '"return-document-to-section-drafts": returnDocumentToSectionDrafts', "the way back is wired");
+test.assertIncludes(actions, '"advance-drafts-to-manuscript": () => advanceDraftsToManuscript()', "the forward action is wired");
+test.assertIncludes(actions, '"advance-manuscript-to-review": () => advanceManuscriptToReview()', "the review step is wired");
+test.assertIncludes(actions, '"return-document-to-section-drafts": () => returnDocumentToSectionDrafts()', "the way back is wired");
 test.assertIncludes(config, '"advanceDraftsToManuscript"', "the To Manuscript action is lazy-loaded before the action table references it");
 test.assertIncludes(config, '"advanceManuscriptToReview"', "the To Review action is lazy-loaded before the action table references it");
 test.assertIncludes(writingFlow, "async function advanceDraftsToManuscript", "advancing to the manuscript hands over ownership");
@@ -97,8 +97,17 @@ test.assertNotIncludes(writingFlow, 'setTeachTextFileLabel("final", { persist: t
 test.assertIncludes(writingFlow, "async function advanceManuscriptToReview", "review finalization is its own step, taken from the manuscript");
 test.assertMatches(
   writingFlow,
-  /async function advanceManuscriptToReview\(\)[\s\S]*await setTeachTextFileLabel\("final", \{ persist: true \}\);/,
+  // `confirmed: true` rides along because this step asks the finalize question
+  // itself, BEFORE it writes anything, so a cancel leaves the document
+  // byte-identical -- see route-command-write-order.test.mjs. The finalize call
+  // is still this step's alone.
+  /async function advanceManuscriptToReview\(\)[\s\S]*await setTeachTextFileLabel\("final", \{ persist: true, confirmed: true \}\);/,
   "only the manuscript's own step marks the document Final and opens the paired desk",
+);
+test.assertMatches(
+  writingFlow,
+  /async function advanceManuscriptToReview\(\)[\s\S]*?showSystemModal\(t\("final_label_confirm"\)[\s\S]*?savePipelineData\(\);/,
+  "the finalize question is asked before the step writes anything",
 );
 test.assertIncludes(writingFlow, "async function returnDocumentToSectionDrafts", "the manuscript phase is reversible");
 test.assertIncludes(writingFlow, "project.manuscriptOwnsDraft = false;", "returning to the sections gives the pen back");

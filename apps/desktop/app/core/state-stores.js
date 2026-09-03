@@ -53,12 +53,37 @@ function snapshotProjectState() {
   return snapshot;
 }
 
+// A plain splice-to-clone replaces every element's identity, not just the
+// ones the updater actually touched. getActiveProject() hands callers one of
+// these objects, and an AI write that spans an await (generate-outline holds
+// its own `project` reference across a model call) can still be mid-write on
+// the OLD object when an unrelated commit - a run receipt landing in between
+// - swaps every project out from under it: the write then lands on an object
+// no longer in the live array, and is silently lost. Match by id and merge
+// fields onto the existing object in place instead, so a reference taken
+// before this commit is still the live one after it - the same reason
+// applyDeskRecordChanges (persistence-status.js) merges the records another
+// window announces rather than replacing the slot.
+function mergeArrayPreservingIdentity(target, source) {
+  if (!Array.isArray(target) || !Array.isArray(source)) return;
+  const identityOf = (item) => item?.id ?? item?._storageId;
+  const targetByIdentity = new Map(target.map((item) => [identityOf(item), item]));
+  const merged = source.map((item) => {
+    const identity = identityOf(item);
+    const existing = identity !== undefined ? targetByIdentity.get(identity) : undefined;
+    if (!existing) return item;
+    Object.keys(existing).forEach((field) => {
+      if (!Object.prototype.hasOwnProperty.call(item, field)) delete existing[field];
+    });
+    Object.assign(existing, item);
+    return existing;
+  });
+  target.splice(0, target.length, ...merged);
+}
+
 function restoreProjectState(snapshot) {
   projectStateBindings().forEach(([name, target]) => {
-    const value = snapshot[name];
-    if (Array.isArray(value) && Array.isArray(target)) {
-      target.splice(0, target.length, ...value);
-    }
+    mergeArrayPreservingIdentity(target, snapshot[name]);
   });
 }
 
@@ -69,9 +94,7 @@ function snapshotWritingState() {
 }
 
 function restoreWritingState(snapshot) {
-  if (Array.isArray(snapshot.projects)) {
-    projects.splice(0, projects.length, ...snapshot.projects);
-  }
+  mergeArrayPreservingIdentity(projects, snapshot.projects);
 }
 
 // The Desktop updater is handed the runtime environment scalar.

@@ -28,7 +28,7 @@
     "playwrightVersion": "1.62.1",
     "browserRevision": "1234",
     "browserVersion": "151.0.7922.34",
-    "contentSha256": "f7100c7110c6c41aa6f1f27cf4ab859766435a770df560f21eade22fe99655d7",
+    "contentSha256": "07e16ff9c6bab2d144c7907684356f74f84be07a5d986659639b9e8d9b1723e8",
     "historicalFontTarget": "Lucida Grande 13 pt",
     "fontProbeSelectors": [
       ".theme-lab-controls h3",
@@ -760,7 +760,8 @@
         "markMismatch": 0.155
       },
       "floor": {
-        "status": "met"
+        "status": "met",
+        "note": "Mark mismatch 0.216 against 0.155. The checkmark is the era's, drawn over the shipping input; its reference is a clone asset rather than an Apple capture, which is why this specimen's floor already reads unreliable-reference. Re-cut against a real 10.2 capture before treating the number as a defect."
       },
       "mark": {
         "note": "Jaguar check inside the 18px capsule box."

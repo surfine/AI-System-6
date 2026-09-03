@@ -266,13 +266,6 @@
   box-shadow: var(--theme-lab-group-shadow, var(--system-inset));
 }
 
-/* Complete semantic icon overview. The main painter is the real 32 px runtime
-   path; historical themes also attach their independently authored native
-   16 px hint in the top-right corner. */
-.theme-lab-icon-set {
-  grid-column: 1 / -1;
-}
-
 .theme-lab-icon-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
@@ -816,23 +809,6 @@
   user-select: text;
 }
 
-.theme-lab-new-intro {
-  margin: 0 0 8px;
-  color: var(--shade-dark);
-}
-
-.theme-lab-new-form {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.theme-lab-new-form > label {
-  min-width: 0;
-  display: grid;
-  gap: 3px;
-}
-
 @container (max-width: 760px) {
   .theme-lab-panel {
     grid-template-columns: minmax(0, 1fr);
@@ -850,8 +826,7 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .theme-lab-token-filters,
-  .theme-lab-new-form {
+  .theme-lab-token-filters {
     grid-template-columns: minmax(0, 1fr);
   }
 
@@ -1131,55 +1106,6 @@
   --theme-lab-disabled-control-shadow: var(--theme-lab-disabled-popup-shadow);
 }
 
-.theme-lab-segmented {
-  display: flex;
-  margin-top: var(--theme-lab-control-margin-top, 10px);
-}
-
-.theme-lab-segmented {
-  gap: var(--theme-lab-segmented-gap, 0);
-  --theme-lab-control-min-height: var(--theme-lab-segmented-button-min-height, 26px);
-  --theme-lab-control-height: var(--theme-lab-segmented-button-height, auto);
-  --theme-lab-control-padding: var(--theme-lab-segmented-button-padding, 3px 12px);
-  --theme-lab-control-border: var(--theme-lab-segmented-button-border, var(--system-border));
-  --theme-lab-control-radius: var(--theme-lab-segmented-button-radius, 0);
-  --theme-lab-control-bg: var(--theme-lab-segmented-button-bg, var(--tab-bg, var(--control-bg, var(--surface-primary))));
-  --theme-lab-control-shadow: var(--theme-lab-segmented-button-shadow, var(--control-shadow, none));
-  --theme-lab-control-hover-bg: var(--theme-lab-segmented-hover-bg, var(--tab-hover-bg, var(--control-bg, var(--surface-primary))));
-  --theme-lab-control-selected-bg: var(--theme-lab-segmented-selected-bg, var(--tab-active-bg, var(--selection-bg)));
-  --theme-lab-control-selected-fg: var(--theme-lab-segmented-selected-fg, var(--tab-active-fg, var(--selection-fg)));
-  --theme-lab-control-selected-shadow: var(--theme-lab-segmented-selected-shadow, var(--control-active-shadow, var(--system-inset)));
-  --theme-lab-control-line-height: var(--theme-lab-segmented-line-height, normal);
-}
-
-.theme-lab-segmented button {
-  min-height: var(--theme-lab-control-min-height);
-  height: var(--theme-lab-control-height);
-  padding: var(--theme-lab-control-padding);
-  border: var(--theme-lab-control-border);
-  border-right: 0;
-  border-radius: var(--theme-lab-control-radius);
-  background: var(--theme-lab-control-bg);
-  color: var(--theme-lab-control-fg, var(--ink));
-  box-shadow: var(--theme-lab-control-shadow);
-  font-family: var(--theme-lab-control-font-family, inherit);
-  font-size: var(--theme-lab-control-font-size, inherit);
-  font-weight: var(--theme-lab-control-font-weight, inherit);
-  line-height: var(--theme-lab-control-line-height, normal);
-}
-
-.theme-lab-segmented button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--theme-lab-segmented-content-gap, 4px);
-  border-right: var(--theme-lab-segmented-button-border-right, 0);
-}
-
-.theme-lab-segmented button > span:last-child {
-  display: var(--theme-lab-segmented-label-display, inline);
-}
-
 .theme-lab-view-icon {
   width: var(--theme-lab-view-icon-width, 12px);
   height: var(--theme-lab-view-icon-height, 10px);
@@ -1213,29 +1139,6 @@
     linear-gradient(currentColor, currentColor) 10px 0 / 2px 10px no-repeat,
     linear-gradient(currentColor, currentColor) 0 0 / 12px 1px no-repeat,
     linear-gradient(currentColor, currentColor) 0 9px / 12px 1px no-repeat;
-}
-
-.theme-lab-segmented button:hover {
-  background: var(--theme-lab-control-hover-bg, var(--tab-hover-bg, var(--control-bg, var(--surface-primary))));
-}
-
-.theme-lab-segmented button:first-child {
-  border-radius: var(--control-radius) 0 0 var(--control-radius);
-}
-
-.theme-lab-segmented button:last-child {
-  border-right: var(--system-border);
-  border-radius: 0 var(--control-radius) var(--control-radius) 0;
-}
-
-.theme-lab-segmented button:last-child {
-  border-right: var(--theme-lab-segmented-last-border-right, var(--system-border));
-}
-
-.theme-lab-segmented button.is-selected {
-  background: var(--theme-lab-control-selected-bg);
-  color: var(--theme-lab-control-selected-fg);
-  box-shadow: var(--theme-lab-control-selected-shadow);
 }
 
 .theme-lab-split-view {
@@ -1988,6 +1891,10 @@
   box-shadow: var(--theme-lab-sheet-owner-shadow, none);
 }
 
+/* The progress specimen is the real .progress-meter part (see
+   20-reader-docmap.css / 00-foundation.css --progress-* tokens) -- this row
+   is only the Lab's own layout furniture around it, still posed at a fixed
+   fill so a still specimen reads as one. */
 .theme-lab-progress-row {
   display: grid;
   grid-template-columns: max-content minmax(0, 1fr);
@@ -1996,24 +1903,8 @@
   margin-top: var(--theme-lab-progress-row-margin-top, 11px);
 }
 
-.theme-lab-progress {
-  height: var(--theme-lab-progress-height, 14px);
-  padding: var(--theme-lab-progress-padding, 1px);
-  border: var(--theme-lab-progress-border, var(--system-border));
-  border-radius: var(--theme-lab-progress-radius, var(--control-radius));
-  background: var(--theme-lab-progress-bg, var(--surface-inset));
-  box-shadow: var(--theme-lab-progress-shadow, none);
-  overflow: hidden;
-}
-
-.theme-lab-progress span {
-  display: block;
+.theme-lab-progress-row .progress-meter span {
   width: 62%;
-  height: 100%;
-  border-right: var(--theme-lab-progress-value-border-right, 0);
-  border-radius: var(--theme-lab-progress-value-radius, max(0px, calc(var(--control-radius) - 2px)));
-  background: var(--theme-lab-progress-value-bg, var(--selection-bg));
-  box-shadow: var(--theme-lab-progress-value-shadow, none);
 }/* The scroll specimen is a framed document window: the product's own frame
    installer fits its arrows,
 track and thumb,
@@ -2130,100 +2021,7 @@ so the base is where the state
   margin: 0 0 5px;
 }
 
-.theme-lab-scrollbar {
-  display: grid;
-  grid-template-rows: minmax(0, 1fr) var(--scrollbar-width) var(--scrollbar-width);
-  border-left: var(--theme-lab-scrollbar-border-left, var(--scrollbar-track-border, 0));
-  background: var(--theme-lab-scrollbar-bg, var(--scrollbar-track));
-}
-
-.theme-lab-scrollbar-track {
-  position: relative;
-  border: var(--theme-lab-scrollbar-track-border, var(--scrollbar-track-border, 0));
-  border-width: var(--theme-lab-scrollbar-track-border-width, 0 0 1px);
-  background: var(--theme-lab-scrollbar-track-bg, var(--scrollbar-track));
-  box-shadow: var(--theme-lab-scrollbar-track-shadow, var(--scrollbar-track-shadow, none));
-  overflow: hidden;
-}
-
-.theme-lab-scrollbar-thumb {
-  position: absolute;
-  top: var(--theme-lab-scrollbar-thumb-top, 5px);
-  right: var(--theme-lab-scrollbar-thumb-right, -1px);
-  left: var(--theme-lab-scrollbar-thumb-left, -1px);
-  min-height: var(--theme-lab-scrollbar-thumb-min-height, 18px);
-  height: var(--theme-lab-scrollbar-thumb-height, 52%);
-  border: var(--theme-lab-scrollbar-thumb-border, var(--window-frame-thumb-border));
-  border-width: var(--theme-lab-scrollbar-thumb-border-width, 1px);
-  border-radius: var(--theme-lab-scrollbar-thumb-radius, var(--window-frame-thumb-radius));
-  background: var(--theme-lab-scrollbar-thumb-bg, var(--scrollbar-thumb));
-  box-shadow: var(--theme-lab-scrollbar-thumb-shadow, var(--scrollbar-thumb-shadow, none));
-}
-
-.theme-lab-scrollbar-thumb::after {
-  content: var(--theme-lab-scrollbar-thumb-grip-content, none);
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: var(--theme-lab-scrollbar-thumb-grip-width, 0);
-  height: var(--theme-lab-scrollbar-thumb-grip-height, 0);
-  background: var(--theme-lab-scrollbar-thumb-grip-bg, none);
-  transform: translate(-50%, -50%);
-}
-
-.theme-lab-scrollbar-thumb:is(:active, .is-active) {
-  background: var(--theme-lab-scrollbar-thumb-active-bg, var(--theme-lab-scrollbar-thumb-bg, var(--scrollbar-thumb)));
-  box-shadow: var(--theme-lab-scrollbar-thumb-active-shadow, var(--theme-lab-scrollbar-thumb-shadow, var(--scrollbar-thumb-shadow, none)));
-}
-
-.theme-lab-scrollbar-thumb:is(:active, .is-active)::after {
-  background: var(--theme-lab-scrollbar-thumb-active-grip-bg, var(--theme-lab-scrollbar-thumb-grip-bg, none));
-}
-
-.theme-lab-scrollbar-button {
-  position: relative;
-  border: var(--theme-lab-scrollbar-button-border, var(--scrollbar-button-border, 0));
-  border-width: var(--theme-lab-scrollbar-button-border-width, 0 0 1px);
-  background: var(--theme-lab-scrollbar-button-bg, var(--scrollbar-button));
-  box-shadow: var(--theme-lab-scrollbar-button-shadow, var(--scrollbar-button-shadow, none));
-}
-
-.theme-lab-scrollbar-button:is(:active, .is-active) {
-  background: var(--theme-lab-scrollbar-button-active-bg, var(--theme-lab-scrollbar-button-bg, var(--scrollbar-button)));
-  box-shadow: var(--theme-lab-scrollbar-button-active-shadow, var(--theme-lab-scrollbar-button-shadow, var(--scrollbar-button-shadow, none)));
-}
-
-.theme-lab-scrollbar-button:last-child {
-  border-bottom: 0;
-}
-
-.theme-lab-scrollbar-button::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: var(--theme-lab-scrollbar-arrow-width, 0);
-  height: var(--theme-lab-scrollbar-arrow-height, 0);
-  border-right: var(--theme-lab-scrollbar-arrow-side-border, 4px solid transparent);
-  border-left: var(--theme-lab-scrollbar-arrow-side-border, 4px solid transparent);
-  background-position: center;
-  background-repeat: no-repeat;
-  transform: var(--theme-lab-scrollbar-arrow-transform, translate(-50%, -50%));
-}
-
-.theme-lab-scrollbar-button.is-decrement::after {
-  border-bottom: var(--theme-lab-scrollbar-decrement-border, 4px solid var(--ink));
-  background-image: var(--theme-lab-scrollbar-decrement-image, none);
-}
-
-.theme-lab-scrollbar-button.is-increment::after {
-  border-top: var(--theme-lab-scrollbar-increment-border, 4px solid var(--ink));
-  background-image: var(--theme-lab-scrollbar-increment-image, none);
-}
-
-.theme-lab-list-scrollbar.theme-lab-scrollbar {
-  display: var(--theme-lab-list-scrollbar-display, none);
-}/* The window chrome specimen is a pair of real windows, so the era paints it
+/* The window chrome specimen is a pair of real windows, so the era paints it
    through .window and .title-bar with no help from here. Fifty-six
    --theme-lab-mini-* tokens and a hand-drawn three-lamp title bar used to
    stand in this place, re-deriving that material era by era and inventing a

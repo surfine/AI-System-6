@@ -61,6 +61,20 @@ async function handleSubtitlesTranslate(req, res) {
       return;
     }
 
+    // Without the cloud route this translates through a local model. The
+    // public host has none and never will, so the attempt reached LM Studio's
+    // own answer and the visitor was told to run "lms load" -- an instruction
+    // for a program on a machine that is not theirs. Say the real cause here,
+    // before the connection is opened.
+    if (isPublicDeployment && !body._cloud_active) {
+      send(res, 400, JSON.stringify({
+        error: "Subtitle translation on this site needs the cloud model",
+        code: "cloud_model_required",
+        detail: "This site runs no local model. Turn on the cloud model in Control Panel, then translate again.",
+      }), { "Content-Type": "application/json" });
+      return;
+    }
+
     const options = {
       cloudActive: !!body._cloud_active,
       cloudApiKey: "",

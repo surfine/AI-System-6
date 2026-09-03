@@ -22,6 +22,11 @@ const balloonHelpSelectionRequiredActions = new Set([
   "rename-project-disk",
   "duplicate-project-disk",
   "archive-project-disk",
+  // Cut/Copy/Clear grey out with a caret and no selection — see the comment
+  // by hasEditableSelectionRange in window-manager.js.
+  "cut",
+  "copy",
+  "clear-edit",
 ]);
 
 const balloonHelpProjectRequiredActions = new Set([
@@ -44,6 +49,14 @@ function balloonHelpKeyFor(target) {
 
 function disabledMenuBalloonHelpKey(button) {
   const action = button?.dataset.action || button?.dataset.submenuAction || "";
+  // A lazy module that failed to load names itself, instead of falling
+  // through to the generic "unavailable in the current window" reason below,
+  // which would be honest about the symptom but not the cause. The stored
+  // value is already-rendered text, not a translation key — t() returns an
+  // unrecognized key unchanged, so this displays as-is.
+  if (typeof failedLazyCommandActions !== "undefined" && failedLazyCommandActions.has(action)) {
+    return failedLazyCommandActions.get(action);
+  }
   // "Why is this unavailable?" is Balloon Help's job, and with no model
   // connected it is the answer for every model-backed command at once.
   if (typeof actionNeedsModel === "function"
@@ -54,6 +67,11 @@ function disabledMenuBalloonHelpKey(button) {
   }
   if (balloonHelpProjectRequiredActions.has(action)) return "balloon_disabled_menu_project";
   if (balloonHelpSelectionRequiredActions.has(action)) return "balloon_disabled_menu_selection";
+  // "Unavailable in the current window" is true but useless here: the window
+  // is right, the table is what is missing measurements.
+  if (action === "clio-chart-reverse-sort") return "balloon_disabled_chart_no_order";
+  // Same reason to be specific: the window is right and the field is empty.
+  if (action === "select-all") return "balloon_disabled_menu_empty_field";
   return "balloon_disabled_menu_context";
 }
 
