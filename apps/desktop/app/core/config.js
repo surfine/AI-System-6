@@ -478,6 +478,10 @@ const ensureDarkroomModule = createLazyModuleLoader("AISystem6DarkroomStore", [
 const ensureContextGistModule = createLazyModuleLoader("AISystem6ContextGist", ["app/core/context-gist.js"]);
 const ensureDocMapSourcePolicyModule = createLazyModuleLoader("AISystem6DocMapSourcePolicy", ["app/core/docmap-source-policy.js"]);
 const ensureUserRecoveryMessagesModule = createLazyModuleLoader("AISystem6UserRecoveryMessages", ["app/core/user-recovery-messages.js"]);
+ const ensureCityDemandGauge = createLazyModuleLoader("AISystem6CityDemandGaugeLoaded", ["app/features/city-demand-gauge.js"]);
+ const ensureBonsaiSc2000Reader = createLazyModuleLoader("AISystem6BonsaiSc2000ReaderLoaded", ["app/features/bonsai-sc2000-reader.js"]);
+const ensureBonsaiLargeDatReader = createLazyModuleLoader("AISystem6BonsaiLargeDatReaderLoaded", ["app/features/bonsai-large-dat-reader.js"]);
+const ensureBonsaiSc2kPalette = createLazyModuleLoader("AISystem6BonsaiSc2kPaletteLoaded", ["app/features/bonsai-sc2k-palette.js"]);
 const ensureTeachtextWritingModule = createLazyModuleLoader("AISystem6TeachtextWriting", ["app/features/teachtext-writing.js"]);
 const ensureDocumentRolePolicyModule = createLazyModuleLoader("AISystem6DocumentRolePolicy", ["app/core/document-role-policy.js"]);
 const ensureMarkdownParser = createLazyModuleLoader("marked", ["app/vendor/marked.umd.js"]);
@@ -561,6 +565,11 @@ window.AISystem6EnsureThemeLabModule = ensureThemeLabModule;
 const ensureMicropolisModule = createLazyModuleLoader("AISystem6MicropolisLoaded", [
   "app/core/application-shell.js",
   "app/vendor/micropolis/micropolis-engine.js",
+  "app/features/micropolis-views.js",
+  "app/features/micropolis-audio.js",
+  "app/features/micropolis-scenarios.js",
+  "app/features/micropolis-cty-codec.js",
+  "app/features/city-demand-gauge.js",
   "app/features/micropolis.js",
 ], false, ["styles.micropolis.css"]);
 // The wasm game itself loads inside the window's iframe, not through this
@@ -573,9 +582,12 @@ const ensureOpenTTDModule = createLazyModuleLoader("AISystem6OpenTTDLoaded", [
 // System 6 shell together; the shell's flag proves all three arrived.
 const ensureBonsaiCityModule = createLazyModuleLoader("AISystem6BonsaiCityLoaded", [
   "app/features/bonsai-translations.js",
+  "app/features/city-demand-gauge.js",
   "app/features/bonsai-city-sim.js",
   "app/features/bonsai-sc2-codec.js",
   "app/features/bonsai-micropolis-codec.js",
+  "app/features/bonsai-micropolis-export.js",
+  "app/features/micropolis-cty-codec.js",
   "app/features/bonsai-catalog.js",
   "app/features/bonsai-audio.js",
   "app/features/bonsai-save-worker-manager.js",

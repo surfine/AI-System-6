@@ -17,30 +17,65 @@
 
 .micropolis-details-bar {
   display: flex;
-  gap: 12px;
-  align-items: baseline;
   min-width: 0;
-  flex-wrap: wrap;
+  align-items: center;
+  gap: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  container-type: inline-size;
+  padding: 2px 4px;
 }
 
-/* On a phone the details bar stacks tight instead of truncating each field. */
-@media (max-width: 700px) {
-  .micropolis-details-bar {
-    gap: 4px 10px;
-    font-size: 11px;
-  }
+.micropolis-details-bar > span {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  min-height: 22px;
+  padding: 0 7px;
+  border-left: 1px solid var(--shade);
+  font-size: 10px;
+  line-height: 1.2;
+}
 
-  .micropolis-details-bar .micropolis-status {
-    margin-left: 0;
-    flex-basis: 100%;
-  }
+.micropolis-details-bar > span:first-child {
+  border-left: 0;
+  padding-left: 0;
+}
+
+/* Fixed drop order: never scroll, never clip. As the bar narrows, cells hide
+   from the front of this list; funds and RCI are never dropped. */
+@container (max-width: 585px) {
+  .micropolis-details-bar .micropolis-status { display: none; }
+}
+@container (max-width: 470px) {
+  .micropolis-details-bar .micropolis-population { display: none; }
+}
+@container (max-width: 330px) {
+  .micropolis-details-bar .micropolis-date { display: none; }
+}
+
+/* The RCI demand gauge: the same 26x14 instrument Bonsai City keeps in its
+   gauge bar, drawn in the bar's ink so every appearance recolours it. */
+.micropolis-details-bar .micropolis-rci-cell {
+  display: flex;
+  align-items: center;
+}
+
+.micropolis-details-bar .micropolis-rci {
+  display: block;
+  width: 32px;
+  height: 20px;
+  image-rendering: pixelated;
+  shape-rendering: crispEdges;
 }
 
 .micropolis-details-bar .micropolis-status {
-  margin-left: auto;
+  flex: 1 1 auto;
+  min-width: 8ch;
   overflow: hidden;
+  text-align: right;
   text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .micropolis-layout {
@@ -59,6 +94,39 @@
   flex: 0 0 auto;
   border-right: var(--system-border);
   background: var(--paper);
+}
+
+.micropolis-toolbar-footer {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 6px;
+  border-top: var(--system-border);
+}
+
+.micropolis-armed-tool {
+  font-size: 10px;
+  padding: 2px 4px;
+  min-height: 16px;
+}
+
+.micropolis-rci-panel {
+  display: block;
+  width: 58px;
+  height: 36px;
+  align-self: center;
+  image-rendering: pixelated;
+  shape-rendering: crispEdges;
+}
+
+/* On a phone the toolbar is too narrow for the 58px panel gauge; the
+   gauge-bar cell in the details bar is the only RCI there (the same rule as
+   Bonsai's docked-edge, applied to the Micropolis phone width). */
+@media (max-width: 700px) {
+  .micropolis-toolbar-footer {
+    display: none;
+  }
 }
 
 .micropolis-tool {
@@ -107,6 +175,71 @@
 
 .micropolis-viewport canvas {
   display: block;
+}
+
+/* The zoom layer holds the engine canvas and the data overlay. Its layout
+   size is the viewport's divided by the zoom and the transform scales it
+   back up, so the engine keeps measuring an unscaled parent (HD backing
+   store math unchanged) while the player sees bigger tiles. */
+.micropolis-zoom-layer {
+  position: relative;
+  width: calc(100% / var(--micropolis-zoom, 1));
+  height: calc(100% / var(--micropolis-zoom, 1));
+  transform: scale(var(--micropolis-zoom, 1));
+  transform-origin: 0 0;
+}
+
+/* Data views paint on a second canvas over the map and never take input. */
+.micropolis-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* Maps panel: the whole city at two pixels per tile, then the view chips. */
+.micropolis-minimap {
+  display: block;
+  width: 240px;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto 6px;
+  border: var(--system-border);
+  image-rendering: pixelated;
+  cursor: pointer;
+}
+
+.micropolis-map-kinds {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.micropolis-map-kind[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* Graphs panel: a one-bit chart with its legend drawn on the chart. */
+.micropolis-graph {
+  display: block;
+  width: 100%;
+  height: 150px;
+  margin-bottom: 6px;
+  border: var(--system-border);
+}
+
+.micropolis-graph-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  padding: 2px 0;
+  font-size: 11px;
+}
+
+.micropolis-graph-choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .micropolis-map-area {
@@ -161,6 +294,30 @@
   justify-content: flex-start;
 }
 
+.micropolis-notice-list {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+  font-size: 11px;
+}
+
+.micropolis-notice {
+  padding: 2px 0;
+  border-bottom: var(--system-border);
+}
+
+.micropolis-notice-date {
+  opacity: 0.7;
+  font-size: 10px;
+}
+
+.micropolis-panel-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 200px;
+  font: inherit;
+}
+
 .micropolis-panel-note {
   margin: 4px 0;
   font-size: 11px;
@@ -169,6 +326,14 @@
 .micropolis-panel-list {
   margin: 2px 0 6px;
   padding-left: 18px;
+}
+
+/* The query panel prints the classic word scale first and the raw block-map
+   score after it, small, for players who want the number. */
+.micropolis-query-raw {
+  font-size: 10px;
+  font-weight: normal;
+  opacity: 0.7;
 }
 
 .micropolis-panel-actions {

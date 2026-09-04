@@ -13,25 +13,25 @@
     <meta name="apple-mobile-web-app-title" content="AI System 6" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="theme-color" content="#000000" />
-    <link rel="apple-touch-icon" href="assets/app-icon/app-icon-180.png?v=20260903.1" />
-    <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png?v=20260903.1" />
-    <link rel="manifest" href="assets/app-icon/manifest.json?v=20260903.1" />
-    <script src="app/core/theme-registry.js?v=20260903.1"></script>
-    <link rel="stylesheet" href="styles.bundle.css?v=20260903.1" />
+    <link rel="apple-touch-icon" href="assets/app-icon/app-icon-180.png?v=20260904.2" />
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png?v=20260904.2" />
+    <link rel="manifest" href="assets/app-icon/manifest.json?v=20260904.2" />
+    <script src="app/core/theme-registry.js?v=20260904.2"></script>
+    <link rel="stylesheet" href="styles.bundle.css?v=20260904.2" />
     <!-- The app bundle is referenced at the end of a ~340 KB body, so the
          preload scanner reaches it late. This starts the download beside the
          stylesheet instead. Both URLs carry the same build stamp, so the
          browser serves the script tag from this one request. -->
-    <link rel="preload" as="script" href="app.bundle.js?v=20260903.1" />
+    <link rel="preload" as="script" href="app.bundle.js?v=20260904.2" />
   </head>
   <body class="is-booting">
-    <script src="app/core/theme-body-init.js?v=20260903.1"></script>
+    <script src="app/core/theme-body-init.js?v=20260904.2"></script>
     <!-- Registers a window-level error/unhandledrejection net before
          app.bundle.js loads, so a top-level crash in the bundle (a
          temporal-dead-zone ReferenceError, for example) still shows the Sad
          Mac recovery screen instead of leaving a blank page. See
          app/core/boot-safety-net.js. -->
-    <script src="app/core/boot-safety-net.js?v=20260903.1"></script>
+    <script src="app/core/boot-safety-net.js?v=20260904.2"></script>
     <header class="menu-bar" aria-label="System menu" data-i18n-aria-label="system_menu">
       <div class="menu">
         <button class="apple" aria-label="Apple menu" data-i18n-aria-label="apple_menu" data-balloon-help="balloon_apple_menu">
@@ -547,6 +547,12 @@
                   <span class="compose-tool-copy">
                     <b data-i18n="compose_insert_floppy">Insert File Floppy</b>
                     <small id="compose-floppy-help" data-i18n="compose_floppy_help">Short-term memory: mounted for this startup; reinsert after restart</small>
+                  </span>
+                </button>
+                <button class="compose-tools-general" id="compose-endfield-source" type="button" role="menuitem" data-action="toggle-endfield-source" aria-pressed="false" aria-describedby="compose-endfield-source-help" data-i18n-aria-label="compose_endfield_source">
+                  <span class="compose-tool-copy">
+                    <b data-i18n="compose_endfield_source">Endfield story source</b>
+                    <small id="compose-endfield-source-help" data-i18n="compose_endfield_source_help_off">Off: normal conversations do not search the Endfield corpus. Turn on to retrieve story + worldview evidence for every message.</small>
                   </span>
                 </button>
                 <button class="compose-tools-quick-draft-import is-hidden" type="button" role="menuitem" data-action="quick-draft-import-chat" aria-describedby="compose-chat-import-help" data-i18n-aria-label="quick_draft_import_chat_records">
@@ -3405,7 +3411,7 @@
       </section>
     </main>
 
-    <script src="app/generated/build-info.js?v=20260903.1"></script>
-    <script src="app.bundle.js?v=20260903.1"></script>
+    <script src="app/generated/build-info.js?v=20260904.2"></script>
+    <script src="app.bundle.js?v=20260904.2"></script>
   </body>
 </html>

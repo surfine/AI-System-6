@@ -67,7 +67,8 @@ async function loadEndfieldStoryData() {
   const raw = await fs.readFile(filePath, "utf8");
   const data = JSON.parse(raw);
   const lines = [];
-  for (const mission of data.missions || []) {
+  for (const [missionIndex, mission] of (data.missions || []).entries()) {
+    const official = /skland/i.test(String(mission.source || mission.url || ""));
     for (const [lineIndex, line] of (mission.transcript || []).entries()) {
       lines.push({
         missionId: mission.id,
@@ -80,6 +81,11 @@ async function loadEndfieldStoryData() {
         initial: line.initial || "",
         text: line.text || "",
         lineIndex,
+        kind: official ? (line.speaker ? "通讯" : "日志") : "对话",
+        version: official ? "v1.5" : "v1.4",
+        versionBasis: "mission",
+        missionIndex,
+        chapterKey: endfieldChapterKey(mission),
       });
     }
   }
@@ -92,6 +98,39 @@ async function loadEndfieldStoryData() {
     lines,
   };
   return endfieldStoryCache;
+}
+
+/**
+ * Where a mission sits in the story, for the progress gate. 'v1_5' sorts
+ * after each successive chapter; 'other' / unknown never fold.
+ * @param {any} mission
+ * @returns {string}
+ */
+function endfieldChapterKey(mission) {
+  if (/skland/i.test(String(mission?.source || mission?.url || ""))) return "v1_5";
+  if (mission?.section !== "Main Missions") return "other";
+  if (/Prologue/.test(mission?.chapter || "")) return "prologue";
+  if (/Chapter I\b/.test(mission?.chapter || "")) return "chapter1";
+  if (/Chapter II\b/.test(mission?.chapter || "")) return "chapter2";
+  return "other";
+}
+
+/**
+ * Add the source-type / version stamp a line carries to the client.
+ * Non-mission corpora are dataset-stamped (2026-09-03 = v1.5), mission lines
+ * are stamped per source (v1.4 Warfarin / v1.5 Skland).
+ * @param {Array<any>} lines
+ * @param {string} kind
+ */
+function decorateEndfieldLines(lines, kind) {
+  for (const line of lines) {
+    line.kind = kind;
+    line.version = "v1.5";
+    line.versionBasis = "dataset";
+    line.missionIndex = null;
+    line.chapterKey = null;
+  }
+  return lines;
 }
 
 /**
@@ -144,6 +183,13 @@ async function loadEndfieldOperatorData() {
         pushLine("干员语音", entry.label, operator.name, entry.text);
       }
     }
+    for (const line of lines) {
+      line.kind = line.section === "干员语音" ? "语音" : "档案";
+      line.version = "v1.5";
+      line.versionBasis = "dataset";
+      line.missionIndex = null;
+      line.chapterKey = null;
+    }
     endfieldOperatorCache = {
       source: data.source,
       scrapedAt: data.scrapedAt,
@@ -188,6 +234,7 @@ async function loadEndfieldTutorialData() {
         });
       }
     }
+    decorateEndfieldLines(lines, "教学");
     endfieldTutorialCache = {
       source: data.source,
       scrapedAt: data.scrapedAt,
@@ -232,6 +279,7 @@ async function loadEndfieldLoreData() {
         });
       }
     }
+    decorateEndfieldLines(lines, "见闻辑录");
     endfieldLoreCache = {
       source: data.source,
       scrapedAt: data.scrapedAt,
@@ -278,6 +326,7 @@ async function loadEndfieldDocumentData() {
         });
       }
     }
+    decorateEndfieldLines(lines, "中枢档案");
     endfieldDocumentCache = {
       source: data.source,
       scrapedAt: data.scrapedAt,
@@ -414,6 +463,65 @@ function detectMentionedEndfieldOperators(query, operators = []) {
     .filter((operator) => operator.keys.some((key) => key && normalizedQuery.includes(key)));
 }
 
+const ENDFIELD_QUESTION_STOPWORDS = [
+  "怎么样了", "什么时候", "什么关系", "是什么", "是谁", "区别在哪", "区别",
+  "在哪里", "在哪", "到底", "究竟", "后来", "最后", "为什么", "要怎么",
+  "怎么", "还是", "就是", "吗", "呢", "啊",
+];
+
+function endfieldStrippedQuery(query) {
+  let stripped = String(query || "");
+  for (const word of ENDFIELD_QUESTION_STOPWORDS) {
+    stripped = stripped.split(word).join(" ");
+  }
+  return stripped.trim();
+}
+
+/**
+ * Classify the question so the client can weight source types and the server
+ * can answer structure questions honestly.
+ * @param {string} query
+ * @returns {"unlock"|"who"|"when"|"general"}
+ */
+function endfieldQuestionType(query) {
+  if (/解锁|前置|后续|接下来|做不了|怎么(做|接|开|触发)/.test(String(query))) return "unlock";
+  if (/是谁|什么关系|区别|就是.+吗|是不是/.test(String(query))) return "who";
+  if (/什么时候|何时|在哪(里)?说|哪一?[章话集]/.test(String(query))) return "when";
+  return "general";
+}
+
+/**
+ * Entity-first boost: any of an operator's name or a hub archive / lore /
+ * mission title (length ≥ 2) present in the query counts as a mention.
+ * @param {string} query
+ * @param {{ operators?: any[], documents?: any[], lore?: any[], missions?: any[] }} [collections]
+ * @returns {string[]}
+ */
+function detectMentionedEndfieldEntities(query, collections = {}) {
+  const normalizedQuery = normalizeEndfieldSearchText(query);
+  if (!normalizedQuery) return [];
+  const names = [];
+  for (const operator of collections.operators || []) {
+    if (operator.name && operator.name.length >= 2) names.push(operator.name);
+  }
+  for (const doc of collections.documents || []) {
+    if (doc.title && doc.title.length >= 2) names.push(doc.title);
+  }
+  for (const entry of collections.lore || []) {
+    if (entry.title && entry.title.length >= 2) names.push(entry.title);
+  }
+  for (const mission of collections.missions || []) {
+    if (mission.title && mission.title.length >= 2) names.push(mission.title);
+  }
+  return [...new Set(names)].filter((name) => {
+    const normalizedName = normalizeEndfieldSearchText(name);
+    if (normalizedQuery.includes(normalizedName)) return true;
+    // A two-character prefix is enough for names like 萨米维格 queried as 萨米.
+    if (normalizedName.length >= 2 && normalizedQuery.includes(normalizedName.slice(0, 2))) return true;
+    return false;
+  });
+}
+
 /**
  * @param {any} item
  * @param {any[]} [mentionedOperators]
@@ -451,7 +559,7 @@ function endfieldOperatorEntityScore(item, mentionedOperators = []) {
  * @param {any[]} [mentionedOperators]
  * @returns {number}
  */
-function scoreEndfieldLine(line, query, tokens, mentionedOperators = []) {
+function scoreEndfieldLine(line, query, tokens, mentionedOperators = [], mentionedEntities = [], questionType = "general") {
   const haystacks = {
     text: line.text.toLowerCase(),
     speaker: line.speaker.toLowerCase(),
@@ -483,13 +591,32 @@ function scoreEndfieldLine(line, query, tokens, mentionedOperators = []) {
   if (/中枢|档案|见闻|世界观|lore|document/i.test(query) && line.section === "见闻辑录") score += 70;
   if (/中枢|档案|世界观|document/i.test(query) && line.section === "中枢档案") score += 90;
   if (/中枢|document/i.test(query) && line.chapter === "中枢档案") score += 40;
+  const titleText = (line.missionTitle || "").toLowerCase();
+  if (mentionedEntities.some((entity) => titleText.includes(normalizeEndfieldSearchText(entity)))) {
+    score += 40;
+  }
   score += endfieldOperatorEntityScore({
     id: line.missionId?.replace(/^operator:/, ""),
     title: line.missionTitle,
     text: [line.speaker, line.text, line.chapter, line.process].join(" "),
     section: line.section,
   }, mentionedOperators);
+  const questionMultiplier = endfieldLineQuestionWeight(line, questionType);
+  if (questionMultiplier !== 1) score = Math.round(score * questionMultiplier);
   return score;
+}
+
+function endfieldLineQuestionWeight(line, questionType) {
+  const section = line.section || "";
+  const kind = line.kind || "";
+  if (questionType === "who") {
+    if (["档案", "中枢档案", "见闻辑录"].includes(kind) || ["干员档案", "中枢档案", "见闻辑录"].includes(section)) return 1.6;
+  } else if (questionType === "when") {
+    if (kind === "档案" || section === "干员档案") return 1.5;
+    if (kind === "对话") return 1.3;
+    if (kind === "语音") return 1.2;
+  }
+  return 1;
 }
 
 /**
@@ -552,12 +679,42 @@ function nearbyEndfieldLines(lines, line, radius = 1) {
  * @param {number} [limit]
  * @returns {Promise<{ meta: any, results: any[], missionMatches: any[] }>}
  */
-async function findEndfieldStoryMatches(query, limit = 12) {
+/**
+ * Per-dataset provenance, so a partial refresh is visible instead of hidden
+ * behind one file's version stamp.
+ *
+ * @param {Record<string, any>} sets
+ * @returns {Array<{ id: string, scrapedAt: string, gameVersion: string }>}
+ */
+function endfieldDatasetStamps(sets) {
+  return Object.entries(sets).map(([id, set]) => ({
+    id,
+    scrapedAt: set?.scrapedAt || "",
+    gameVersion: set?.gameVersion || "",
+  }));
+}
+
+/**
+ * The oldest scrape time among the datasets that have one. With none, it
+ * answers "" rather than inventing a date.
+ *
+ * @param {Array<string>} stamps
+ * @returns {string}
+ */
+function endfieldOldestScrape(stamps) {
+  const usable = stamps.filter((stamp) => typeof stamp === "string" && stamp);
+  if (!usable.length) return "";
+  return usable.reduce((oldest, stamp) => (stamp < oldest ? stamp : oldest));
+}
+
+async function findEndfieldStoryMatches(query, limit = 12, options = {}) {
   const data = await loadEndfieldStoryData();
   const operatorData = await loadEndfieldOperatorData();
   const tutorialData = await loadEndfieldTutorialData();
   const loreData = await loadEndfieldLoreData();
   const documentData = await loadEndfieldDocumentData();
+  const questionType = endfieldQuestionType(query);
+  const strippedQuery = endfieldStrippedQuery(query) || query;
   const archiveLines = dedupeEndfieldLines([
     ...data.lines,
     ...operatorData.lines,
@@ -565,13 +722,32 @@ async function findEndfieldStoryMatches(query, limit = 12) {
     ...documentData.lines,
     ...loreData.lines,
   ]);
-  const tokens = endfieldSearchTokens(query);
+  const tokens = endfieldSearchTokens(strippedQuery);
   const mentionedOperators = detectMentionedEndfieldOperators(query, operatorData.operators);
-  const scored = archiveLines
-    .map((line) => ({ line, score: scoreEndfieldLine(line, query, tokens, mentionedOperators) }))
+  const mentionedEntities = detectMentionedEndfieldEntities(query, {
+    operators: operatorData.operators,
+    documents: documentData.documents,
+    lore: loreData.lore,
+    missions: data.missions,
+  });
+  const sortedScored = archiveLines
+    .map((line) => ({ line, score: scoreEndfieldLine(line, query, tokens, mentionedOperators, mentionedEntities, questionType) }))
     .filter((item) => item.score > 0)
-    .sort((a, b) => b.score - a.score || a.line.missionId.localeCompare(b.line.missionId) || a.line.lineIndex - b.line.lineIndex)
-    .slice(0, limit)
+    .sort((a, b) => b.score - a.score || a.line.missionId.localeCompare(b.line.missionId) || a.line.lineIndex - b.line.lineIndex);
+  const chapterOrder = { prologue: 1, chapter1: 2, chapter2: 3, v1_5: 4 };
+  const progress = String(options?.progress || "all");
+  let visible = sortedScored;
+  let foldedCount = 0;
+  if (progress !== "all" && ["when", "general"].includes(questionType)) {
+    const threshold = chapterOrder[progress] || 5;
+    visible = sortedScored.filter((item) => {
+      const key = item.line.chapterKey;
+      if (!key || chapterOrder[key] === undefined) return true;
+      return chapterOrder[key] <= threshold;
+    });
+    foldedCount = sortedScored.length - visible.length;
+  }
+  const scored = visible.slice(0, limit)
     .map(({ line, score }) => ({
       score,
       missionId: line.missionId,
@@ -584,6 +760,11 @@ async function findEndfieldStoryMatches(query, limit = 12) {
       initial: line.initial,
       text: line.text,
       lineIndex: line.lineIndex,
+      kind: line.kind,
+      version: line.version,
+      versionBasis: line.versionBasis,
+      missionIndex: line.missionIndex,
+      chapterKey: line.chapterKey,
       context: nearbyEndfieldLines(archiveLines, line),
     }));
 
@@ -640,27 +821,48 @@ async function findEndfieldStoryMatches(query, limit = 12) {
     .slice(0, 8)
     .map(({ score: _score, ...item }) => item);
 
+  const meta = {
+    source: data.source,
+    scrapedAt: data.scrapedAt,
+    gameVersion: data.gameVersion,
+    lastUpdated: data.lastUpdated,
+    // The terminal announced the version from this file alone, while the
+    // other four datasets carry only a scrape time. A refresh that updated
+    // the missions and failed on the lore would claim the new version with
+    // most of its evidence still from the old story -- exactly the
+    // unsupported claim this product exists to refuse. The oldest scrape
+    // across all five is what the archive can honestly stand behind.
+    datasets: endfieldDatasetStamps({
+      missions: data,
+      operators: operatorData,
+      tutorials: tutorialData,
+      lore: loreData,
+      documents: documentData,
+    }),
+    oldestScrapedAt: endfieldOldestScrape([
+      data.scrapedAt, operatorData.scrapedAt, tutorialData.scrapedAt,
+      loreData.scrapedAt, documentData.scrapedAt,
+    ]),
+    missionCount: data.missions.length,
+    transcriptLineCount: archiveLines.length,
+    operatorCount: operatorData.operators.length,
+    operatorLineCount: operatorData.lines.length,
+    tutorialCount: tutorialData.tutorials.length,
+    tutorialLineCount: tutorialData.lines.length,
+    loreCount: loreData.lore.length,
+    loreLineCount: loreData.lines.length,
+    loreTypeCounts: loreData.typeCounts,
+    documentCount: documentData.documents.length,
+    documentLineCount: documentData.lines.length,
+    documentTypeCounts: documentData.typeCounts,
+    questionType,
+    foldedCount,
+    ...(questionType === "unlock" ? { reason: "structure_not_indexed" } : {}),
+  };
   return {
-    meta: {
-      source: data.source,
-      scrapedAt: data.scrapedAt,
-      gameVersion: data.gameVersion,
-      lastUpdated: data.lastUpdated,
-      missionCount: data.missions.length,
-      transcriptLineCount: archiveLines.length,
-      operatorCount: operatorData.operators.length,
-      operatorLineCount: operatorData.lines.length,
-      tutorialCount: tutorialData.tutorials.length,
-      tutorialLineCount: tutorialData.lines.length,
-      loreCount: loreData.lore.length,
-      loreLineCount: loreData.lines.length,
-      loreTypeCounts: loreData.typeCounts,
-      documentCount: documentData.documents.length,
-      documentLineCount: documentData.lines.length,
-      documentTypeCounts: documentData.typeCounts,
-    },
-    results: scored,
-    missionMatches,
+    meta,
+    results: questionType === "unlock" ? [] : scored,
+    missionMatches: questionType === "unlock" ? [] : missionMatches,
   };
 }
 
@@ -681,6 +883,20 @@ async function buildEndfieldEmptyMeta() {
     scrapedAt: data.scrapedAt,
     gameVersion: data.gameVersion,
     lastUpdated: data.lastUpdated,
+    // The terminal reads its header from THIS branch (it opens with an empty
+    // query), so the stamps must be here too, or the mixed-scrape warning
+    // the query branch carries never reaches the header.
+    datasets: endfieldDatasetStamps({
+      missions: data,
+      operators: operatorData,
+      tutorials: tutorialData,
+      lore: loreData,
+      documents: documentData,
+    }),
+    oldestScrapedAt: endfieldOldestScrape([
+      data.scrapedAt, operatorData.scrapedAt, tutorialData.scrapedAt,
+      loreData.scrapedAt, documentData.scrapedAt,
+    ]),
     missionCount: data.missions.length,
     transcriptLineCount: dedupeEndfieldLines([
       ...data.lines,

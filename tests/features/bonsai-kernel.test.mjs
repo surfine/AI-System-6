@@ -26,8 +26,9 @@ function command(state, type, payload, targetTick = state.tick) {
 function flatSpot(state) {
   for (let y = 1; y < state.size - 2; y += 1) for (let x = 1; x < state.size - 2; x += 1) {
     const a = y * state.size + x;
-    const cells = [a, a + 1, a + state.size, a + state.size + 1];
-    if (cells.every((i) => !state.water[i] && state.alt[i] === state.alt[a])) return { x, y };
+    const cells = [];
+    for (let dy = 0; dy < 4; dy += 1) for (let dx = 0; dx < 4; dx += 1) cells.push(a + dy * state.size + dx);
+    if (x + 4 < state.size && y + 4 < state.size && cells.every((i) => !state.water[i] && state.alt[i] === state.alt[a])) return { x, y };
   }
   throw new Error("no flat facility spot");
 }
@@ -105,9 +106,9 @@ for (const size of sim.SUPPORTED_SIZES) for (const terrainPreset of sim.TERRAIN_
   const state = sim.createCity({ seed: 12, size: 64 });
   const spot = flatSpot(state);
   const plant = sim.submitCommand(state, command(state, "place-facility", { kind: "coal", ...spot }));
-  test.assert(plant.accepted && plant.footprint.tiles.length === 4 && state.facilities.length === 1, "a 2x2 facility commits as one footprint");
+  test.assert(plant.accepted && plant.footprint.tiles.length === 16 && state.facilities.length === 1, "a 4x4 facility commits as one footprint");
   const demolished = sim.submitCommand(state, command(state, "demolish-area", { x: spot.x, y: spot.y, width: 1, height: 1 }));
-  test.assert(demolished.accepted && demolished.footprint.tiles.length === 4 && state.facilities.length === 0, "demolishing one occupied cell removes the whole facility atomically");
+  test.assert(demolished.accepted && demolished.footprint.tiles.length === 16 && state.facilities.length === 0, "demolishing one occupied cell removes the whole facility atomically");
   const treeSpot = bareLandTile(state);
   const planted = sim.submitCommand(state, command(state, "terraform-area", { mode: "tree", x: treeSpot.x, y: treeSpot.y, width: 1, height: 1 }));
   test.assert(planted.accepted && state.tree[treeSpot.y * state.size + treeSpot.x], "terraform commands use their dedicated terrain layer");

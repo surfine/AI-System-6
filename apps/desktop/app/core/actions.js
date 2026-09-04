@@ -1708,6 +1708,31 @@ window.AISystem6Runtime?.registerCommand?.("open-teachtext",{handler:openTeachTe
 window.AISystem6Runtime?.registerCommand?.("open-finishing-receipt",{handler:()=>openFinishingReceiptForSelection(),isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-clio-attachment-picker",{handler:beginClioTalkAttachmentPicker,isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-clio-image-picker",{handler:openClioImagePicker,isAvailable:()=>!0});
+function syncEndfieldSourceButton(enabled) {
+  const button = document.getElementById("compose-endfield-source");
+  const help = document.getElementById("compose-endfield-source-help");
+  if (!button) return;
+  button.setAttribute("aria-pressed", enabled ? "true" : "false");
+  const key = enabled ? "compose_endfield_source_help_on" : "compose_endfield_source_help_off";
+  if (help) {
+    help.dataset.i18n = key;
+    help.textContent = t(key);
+  }
+}
+window.AISystem6Runtime?.registerCommand?.("toggle-endfield-source",{
+  handler: async () => {
+    if (typeof ensureLazySystemModule === "function") {
+      await ensureLazySystemModule("app/core/endfield-grounding.js", "AISystem6EndfieldGroundingLoaded").catch(() => {});
+    }
+    const api = window.AISystem6EndfieldGrounding;
+    if (!api) return false;
+    const enabled = api.setSourceEnabled(!api.isSourceEnabled());
+    syncEndfieldSourceButton(enabled);
+    setStatus(t(enabled ? "endfield_source_on" : "endfield_source_off"));
+    return enabled;
+  },
+  isAvailable: () => true,
+});
 window.AISystem6Runtime?.registerCommand?.("open-local-ai-settings",{handler:()=>{openWindow("control");if(typeof setControlTab==="function")setControlTab("local");return true;},isAvailable:()=>!0});
 // The model popover offers a "Control Panel" row in every application's own
 // menu, and it was wired only to the popover's private click listener -- so

@@ -8,16 +8,31 @@ window.AISystem6BonsaiRendererLoaded = true;
 (function initBonsaiRenderer() {
   "use strict";
 
-  const TILE_W = 48;
-  const TILE_H = 24;
-  const HEIGHT_STEP = 8;
+  const TILE_W = 64;
+  const TILE_H = 32;
+  const HEIGHT_STEP = 10;
   const MIN_ZOOM = 0.4;
   const MAX_ZOOM = 2.5;
-  const DEFAULT_ZOOM = 0.82;
+  const DEFAULT_ZOOM = 0.7;
   const ROTATIONS = 4;
 
   function clampZoom(zoom) {
     return Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom));
+  }
+
+  // How much city a viewport shows at a zoom: the screen length of one tile
+  // edge, then how many full diamond widths fit across and how many diamond
+  // rows fit down. The voxel backend reports the same readout from the same
+  // 48px tile, so the two backends agree on the tile-scale fact.
+  function measureFrame(zoom = DEFAULT_ZOOM, cssWidth = 1024, cssHeight = 640) {
+    const z = clampZoom(Number.isFinite(zoom) ? zoom : DEFAULT_ZOOM);
+    const scale = (TILE_W / Math.SQRT2) * z;
+    return {
+      zoom: z,
+      pxPerTileEdge: scale,
+      tilesAcross: cssWidth / (scale * Math.SQRT2),
+      tilesDown: cssHeight / (scale * Math.SQRT2 * 0.5),
+    };
   }
 
   function normalizeRotation(rotation) {
@@ -252,6 +267,7 @@ window.AISystem6BonsaiRendererLoaded = true;
     DEFAULT_ZOOM,
     ROTATIONS,
     clampZoom,
+    measureFrame,
     normalizeRotation,
     createCamera,
     rotateTile,

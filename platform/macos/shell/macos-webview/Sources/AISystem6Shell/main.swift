@@ -112,6 +112,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
   private var serverProcess: Process?
   private let options = parseOptions()
   private var loadAttempts = 0
+  /// A deep link (aisystem6://launch?route=…) received before the local
+  /// desktop finished loading. Consumed by the first successful load.
+  private var pendingDeepLink: URL?
 
   func applicationDidFinishLaunching(_ notification: Notification) {
     shellLog("applicationDidFinishLaunching args=\(CommandLine.arguments.joined(separator: " "))")
@@ -129,6 +132,38 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
 
   func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
     true
+  }
+
+  func application(_ application: NSApplication, open urls: [URL]) {
+    guard let url = urls.first, url.scheme?.lowercased() == "aisystem6" else { return }
+    // Keep in sync with launch-intent.js route table and the /go redirectors.
+    let allowedRoutes = [
+      "endfield-terminal", "bonsai-city", "micropolis", "openttd", "doom",
+      "time-machine", "liquid-cover",
+    ]
+    guard
+      let incoming = URLComponents(url: url, resolvingAgainstBaseURL: false),
+      let route = incoming.queryItems?.first(where: { $0.name == "route" })?.value?.lowercased(),
+      allowedRoutes.contains(route)
+    else { return }
+
+    var target = URLComponents(url: options.url, resolvingAgainstBaseURL: false) ?? URLComponents()
+    var items = [URLQueryItem(name: "launch", value: route)]
+    if incoming.queryItems?.first(where: { $0.name == "mode" })?.value == "fullscreen" {
+      items.append(URLQueryItem(name: "mode", value: "fullscreen"))
+    }
+    target.queryItems = items
+    guard let launchURL = target.url else { return }
+
+    NSApp.activate(ignoringOtherApps: true)
+    window.makeKeyAndOrderFront(nil)
+    window.orderFrontRegardless()
+
+    if webView.url != nil && loadAttempts > 0 {
+      webView.load(URLRequest(url: launchURL))
+    } else {
+      pendingDeepLink = launchURL
+    }
   }
 
   func applicationWillTerminate(_ notification: Notification) {
@@ -357,7 +392,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
 
   private func loadLocalDesktopWhenReady() {
     loadAttempts += 1
-    shellLog("load attempt \(loadAttempts) url=\(options.url.absoluteString)")
+    let launchURL = pendingDeepLink
+    shellLog("load attempt \(loadAttempts) url=\(options.url.absoluteString) deepLink=\(launchURL?.absoluteString ?? "none")")
     window.title = loadAttempts <= 1 ? "AI System 6 — starting..." : "AI System 6 — waiting for server..."
     statusLabel?.stringValue = loadAttempts <= 1
       ? "Starting AI System 6 Beta..."
@@ -368,7 +404,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
     NSApp.activate(ignoringOtherApps: true)
 
     let request = URLRequest(
-      url: options.url,
+      url: launchURL ?? options.url,
       cachePolicy: .reloadIgnoringLocalCacheData,
       timeoutInterval: 0.8
     )
@@ -380,7 +416,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         shellLog("probe status=\(status) attempt=\(self.loadAttempts) error=\(errorMessage)")
         if status > 0 {
           self.statusLabel?.stringValue = "Opening AI System 6..."
-          self.webView.load(URLRequest(url: self.options.url))
+          self.webView.load(URLRequest(url: launchURL ?? self.options.url))
+          self.pendingDeepLink = nil
           return
         }
 

@@ -81,7 +81,7 @@ async function handleEndfieldAsk(req, res) {
         ? (body._cloud_model || "deepseek-v4-flash")
         : (body.model || getLoadedLmStudioModelInfo()?.model || "local-model")
     ).trim();
-    const matches = await findEndfieldStoryMatches(query, limit);
+    const matches = await findEndfieldStoryMatches(query, limit, { progress: String(body.progress || "all") });
 
     if (!matches.results.length) {
       send(res, 200, JSON.stringify({
@@ -113,21 +113,12 @@ async function handleEndfieldAsk(req, res) {
           role: "system",
           content: [
             "你是《明日方舟：终末地》剧情检索终端的回答模块。",
-            "只能依据用户提供的【剧情证据】回答，不要把未出现在证据里的内容说成官方事实。",
-            "这是一款二次元剧情游戏，可以保留人物关系、动机和情绪氛围的合理解读，但必须明确标成“剧情解读”或“合理推测”。",
-            "每个直接事实结论都要附证据编号，例如【1】；不要只写笼统依据。",
-            "“直接结论”本身也必须附证据编号；不要写没有编号支撑的总判断。",
-            "“直接结论”中的每一句都必须以一个或多个证据编号结尾，例如“……【2】【9】”。",
-            "除非证据直接写明组织隶属或上下级关系，不要把人物关系定性为“下属”“上级”“同事”。可使用更稳妥的说法，如“合作对象”“可信赖的协作者”“关系亲近的剧情互动对象”。",
-            "如果是合理推测，也要说明它从哪些证据编号延伸而来，例如“基于【2】【4】的合理推测”。",
-            "如果证据没有直接给关系定名，不要写“证据不足以证明恋爱关系”这类扫兴表述；改写为“官方未直接定名”“剧情留白”“可供玩家解读”。",
-            "谈人物亲密度时，可以用“信赖感”“陪伴感”“暧昧空间”“玩家可解读的关系张力”等二次元剧情语汇，但必须附证据编号。",
-            "回答面向中文玩家，使用自然简体中文，避免翻译腔和过度学术化。",
-            "如果证据不足，不要硬补剧情；请说明当前证据只能支持到哪里，以及需要检索哪类任务/档案进一步确认。",
-            "优先使用 Markdown。",
-            "推荐结构：1. 直接结论；2. 证据直接支持；3. 剧情解读/玩家可解读空间；4. 官方未明说的留白。",
-            "引用台词时必须带上角色名、任务名和证据编号。",
-            "不要复述过长原文，优先概括。",
+            "只能依据用户提供的【剧情证据】回答；证据里没有的，不要说成官方事实。",
+            "只输出两行，不要标题、不要列表、不要复述证据：",
+            "第一行以「结论 」开头，一句话，≤80 字，句中每个事实后紧跟证据编号，如【1】【3】。",
+            "第二行以「留白 」开头，一句话，≤60 字，说明官方未直接定名、证据未收录、或可供玩家解读之处；若无留白，写「留白 无。」。",
+            "人物关系除非证据直接定名，只能写「合作对象」「可信赖的协作者」等稳妥说法；合理推测要写「基于【n】的推测」。",
+            "不要写「证据不足以证明」这类扫兴表述，改写为「官方未直接定名」「剧情留白」。",
           ].join("\n"),
         },
         {
@@ -143,6 +134,15 @@ async function handleEndfieldAsk(req, res) {
         },
       ],
     };
+
+    if (process.env.AI_SYSTEM6_ENDFIELD_DRY_RUN === "1") {
+      send(res, 200, JSON.stringify({
+        dryRun: true,
+        messages: payload.messages,
+        ...matches,
+      }), { "Content-Type": "application/json" });
+      return;
+    }
 
     const { response: upstream, source, model, autoLoaded, autoLoadedModel, autoSelectedModel, reservation } =
       await postEndfieldChatPayload(payload, body, signal, req);

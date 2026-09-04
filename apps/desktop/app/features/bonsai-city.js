@@ -173,6 +173,10 @@ window.AISystem6BonsaiCityLoaded = true;
     "budget-settled": "bonsai_event_budget_settled",
     "service-dispatched": "bonsai_event_service_dispatched",
     "history-cleared": "bonsai_history_cleared_simulation",
+    // A disaster chosen from the menu used to show nothing in the status
+    // line: the siren played, the flames drew, the words stayed "Ready".
+    "disaster-started": "bonsai_event_disaster_started",
+    "disaster-ended": "bonsai_event_disaster_ended",
     milestone: "bonsai_event_milestone",
     broke: "bonsai_event_broke",
     brownout: "bonsai_event_brownout",
@@ -221,6 +225,8 @@ window.AISystem6BonsaiCityLoaded = true;
     paletteOpen: false,
     pendingTouchTool: null,
     lastPointer: null,
+    demandHighlight: null,
+    demandBlinkTimers: [],
     lastToolByCategory: new Map(TOOL_GROUPS.map((group) => [group.id, group.tools[0]?.id])),
     lastLandscape: typeof window !== "undefined" ? window.innerWidth > window.innerHeight : false,
     completedGoals: new Set(),
@@ -234,6 +240,14 @@ window.AISystem6BonsaiCityLoaded = true;
     // infrastructure / zones / underground). Session state only — never part
     // of a city save.
     display: { buildings: true, infrastructure: true, zones: true, underground: false },
+    // 自动预算 (auto-budget): off by default, as in the original game, so
+    // January holds the clock with the budget pane open. Session state,
+    // never part of a city save. yearEndHold marks that pause.
+    autoBudget: false,
+    yearEndHold: false,
+    // Wall-clock stamp of the last confirmed write; the gauge bar says how
+    // long ago, the way OpenTTD's status line reports its IDBFS sync.
+    lastSavedAt: 0,
     // M4 graph panel view state: which range and which (up to three) series.
     graphRange: "halfYearly",
     graphSeries: ["residents", "commerce", "industry"],
@@ -296,6 +310,7 @@ window.AISystem6BonsaiCityLoaded = true;
 
   function setMessage(key, ...args) {
     state.latestMessage = { key, args };
+    maybeDemandBlink(key);
     const target = query("[data-bonsai-status-message]");
     if (!target) return;
     target.textContent = t(key, ...args);
@@ -305,6 +320,37 @@ window.AISystem6BonsaiCityLoaded = true;
     target.style.animation = "none";
     void target.offsetWidth;
     target.style.animation = "";
+  }
+
+  // Message key -> the demand bar it names. A city that needs more of one kind
+  // flashes that bar so the gauge and the ticker use the same word.
+  const DEMAND_BAR_BY_MESSAGE = Object.freeze({
+    need_residential: "residential",
+    need_commercial: "commercial",
+    need_industrial: "industrial",
+  });
+  function maybeDemandBlink(key) {
+    const id = DEMAND_BAR_BY_MESSAGE[key];
+    if (!id) return;
+    blinkDemandBar(id);
+  }
+  function blinkDemandBar(id) {
+    state.demandBlinkTimers.forEach(clearTimeout);
+    state.demandBlinkTimers = [];
+    const reduced = typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduced) {
+      // Draw the highlight once as a long hold; no toggling.
+      state.demandHighlight = { id, until: Date.now() + 3000 };
+      renderStatus();
+      return;
+    }
+    const seq = [id, null, id, null];
+    seq.forEach((value, index) => {
+      state.demandBlinkTimers.push(setTimeout(() => {
+        state.demandHighlight = value ? { id: value, until: Date.now() + 1000 } : null;
+        renderStatus();
+      }, index * 250));
+    });
   }
 
   // A gentle first-run hand: after a fresh city is born, a quiet line sits on
@@ -366,9 +412,11 @@ window.AISystem6BonsaiCityLoaded = true;
       <div class="details-bar bonsai-details-bar bonsai-gauge">
         <span class="bonsai-gauge-city" data-bonsai-status-city data-bonsai-city-name></span>
         <span class="bonsai-gauge-date" data-bonsai-status-date data-bonsai-date></span>
+        <span class="bonsai-gauge-weather" data-bonsai-weather></span>
         <span class="bonsai-gauge-funds" data-bonsai-status-funds data-bonsai-funds></span>
+        <span class="bonsai-gauge-saved" data-bonsai-status-saved></span>
         <span class="bonsai-gauge-population" data-bonsai-status-population data-bonsai-population></span>
-        <span class="bonsai-gauge-rci" data-bonsai-status-rci><canvas class="bonsai-rci-gauge" data-bonsai-rci-gauge width="26" height="14" role="img" aria-label="RCI"></canvas></span>
+        <span class="bonsai-gauge-rci" data-bonsai-status-rci><button type="button" class="btn bonsai-rci-button" data-bonsai-rci-button aria-label="Demand"><canvas class="bonsai-rci-gauge" data-bonsai-rci-gauge width="32" height="20" role="img" aria-label="RCI"></canvas></button></span>
         <span class="bonsai-gauge-speed bonsai-speed-controls" role="group" aria-label="${t("bonsai_speed")}">
           ${SPEEDS.map((speed) => `<button class="btn mini-btn${state.speed === speed.value ? " is-selected" : ""}" type="button" data-bonsai-speed="${speed.value}" aria-pressed="${state.speed === speed.value}" aria-label="${t(`bonsai_speed_${speed.id}`)}" title="${t(`bonsai_speed_${speed.id}`)}">${speed.glyph}</button>`).join("")}
         </span>
@@ -395,6 +443,9 @@ window.AISystem6BonsaiCityLoaded = true;
               <section class="bonsai-city-browser" data-bonsai-city-browser aria-labelledby="bonsai-city-browser-title" hidden></section>
             </main>
             <aside class="bonsai-sub-palette" data-bonsai-sub-palette aria-label="${t("bonsai_toolbox")}"></aside>
+            <aside class="bonsai-palette-footer" data-bonsai-palette-footer>
+              <button type="button" class="btn bonsai-rci-panel-button" data-bonsai-rci-panel-button aria-label="Demand"><canvas class="bonsai-rci-panel" data-bonsai-rci-panel width="72" height="44" role="img" aria-label="RCI"></canvas></button>
+            </aside>
             <aside class="bonsai-inspector" data-bonsai-inspector aria-labelledby="bonsai-inspector-title" hidden></aside>
           </div>
         </div>
@@ -716,6 +767,7 @@ window.AISystem6BonsaiCityLoaded = true;
     state.playing = speed > 0;
     state.tickCarry = 0;
     if (speed > 0) {
+      state.yearEndHold = false;
       state.lastRunningSpeed = speed;
       state.completedGoals.add("run");
       if (state.fallbackUndo.length || state.fallbackRedo.length || state.current?.undoStack?.length || state.current?.redoStack?.length) {
@@ -766,11 +818,12 @@ window.AISystem6BonsaiCityLoaded = true;
       tool: t(`bonsai_tool_${tool.id.replaceAll("-", "_")}`),
       cost: state.tool === "pan" ? "—" : `$${formatMoney(cost)}`,
       overlay: state.overlay && state.overlay !== "none" ? t(`bonsai_overlay_${state.overlay.replaceAll("-", "_")}`) : "",
+      saved: !state.current ? "" : state.lastSavedAt ? t("bonsai_status_saved_ago", Math.max(0, Math.round((Date.now() - state.lastSavedAt) / 1000))) : t("bonsai_status_unsaved"),
     };
     Object.entries(values).forEach(([name, value]) => {
       const target = win.querySelector(`[data-bonsai-status-${name}]`);
       if (!target) return;
-      target.textContent = name === "date" || name === "city" || name === "overlay" ? value : `${t(`bonsai_status_label_${name}`)} ${value}`;
+      target.textContent = name === "date" || name === "city" || name === "overlay" || name === "saved" ? value : `${t(`bonsai_status_label_${name}`)} ${value}`;
     });
     if (state.current) {
       const r = demandValue("residential");
@@ -778,52 +831,44 @@ window.AISystem6BonsaiCityLoaded = true;
       const i = demandValue("industrial");
       const gauge = win.querySelector("[data-bonsai-rci-gauge]");
       if (gauge) {
-        drawRciGauge(gauge, r, c, i);
-        gauge.setAttribute("aria-label", `RCI ${r}/${c}/${i}`);
+        const cs = getComputedStyle(gauge);
+        window.AISystem6CityDemandGauge.draw(gauge, "gauge-bar", { r: r / 200, c: c / 200, i: i / 200 }, {
+          colors: {
+            r: cs.getPropertyValue("--city-demand-r") || "#1f9d3a",
+            c: cs.getPropertyValue("--city-demand-c") || "#2a55c7",
+            i: cs.getPropertyValue("--city-demand-i") || "#d9a900",
+          },
+          ink: cs.color || "#000",
+          highlight: state.demandHighlight?.id || null,
+        });
+        gauge.setAttribute("aria-label", `${t("city_demand_label")} R ${r} C ${c} I ${i}`);
+      }
+      const panel = win.querySelector("[data-bonsai-rci-panel]");
+      if (panel) {
+        const cs = getComputedStyle(panel);
+        window.AISystem6CityDemandGauge.draw(panel, "bonsai-panel", { r: r / 200, c: c / 200, i: i / 200 }, {
+          colors: {
+            r: cs.getPropertyValue("--city-demand-r") || "#1f9d3a",
+            c: cs.getPropertyValue("--city-demand-c") || "#2a55c7",
+            i: cs.getPropertyValue("--city-demand-i") || "#d9a900",
+          },
+          ink: cs.color || "#000",
+          highlight: state.demandHighlight?.id || null,
+        });
+        panel.setAttribute("aria-label", `${t("city_demand_label")} R ${r} C ${c} I ${i}`);
+      }
+      // Deterministic weather (clean-room SC2K MISC): a pure function of the
+      // city seed + calendar, shown live in the gauge bar.
+      const weatherEl = win.querySelector("[data-bonsai-weather]");
+      if (weatherEl) {
+        const weather = sim().buildRenderSnapshot(state.current)?.weather;
+        if (weather) {
+          weatherEl.textContent = t(`bonsai_weather_${weather.type}`) || weather.type;
+          weatherEl.setAttribute("title", `${weather.temperature}°F · wind ${weather.wind}mph · humidity ${weather.humidity}%`);
+        }
       }
     }
     setMessage(state.latestMessage.key, ...state.latestMessage.args);
-  }
-
-  // The RCI demand gauge: three bars on a centre zero line, 26x14 CSS px,
-  // 1-bit, told apart by fill pattern (solid / 50% dither / hatch) so it
-  // reads in Classic without colour.
-  function drawRciGauge(canvas, r, c, i) {
-    const dpr = Math.max(1, Math.min(2, Number(window.devicePixelRatio) || 1));
-    const width = 26;
-    const height = 14;
-    if (canvas.width !== width * dpr || canvas.height !== height * dpr) {
-      canvas.width = width * dpr;
-      canvas.height = height * dpr;
-    }
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, width, height);
-    ctx.fillStyle = getComputedStyle(canvas).color || "#000";
-    const zeroY = 7;
-    const barW = 4;
-    const gap = 3;
-    const left = 4;
-    const values = [r, c, i];
-    values.forEach((value, index) => {
-      const h = Math.max(-4, Math.min(4, Math.round((Number(value) || 0) / 50)));
-      if (h === 0) return;
-      const x = left + index * (barW + gap);
-      // Bars grow out of the centre line: up for demand, down for oversupply,
-      // each sitting flush against the line (up ends at zeroY - 1, down starts
-      // at zeroY + 1) so the line never punctures a bar.
-      const startY = h > 0 ? zeroY - Math.abs(h) : zeroY + 1;
-      const endY = h > 0 ? zeroY : zeroY + 1 + Math.abs(h);
-      for (let py = startY; py < endY; py += 1) {
-        for (let px = x; px < x + barW; px += 1) {
-          // index 0 solid, 1 dither, 2 hatch — colour-free 1-bit patterns.
-          const keep = index === 0 ? true : index === 1 ? ((px + py) % 2 === 0) : ((px % 2) === 0);
-          if (keep) ctx.fillRect(px, py, 1, 1);
-        }
-      }
-    });
-    ctx.fillRect(left - 2, zeroY, 3 * barW + 2 * gap + 4, 1);
   }
 
   function renderCity(city = state.current) {
@@ -848,9 +893,21 @@ window.AISystem6BonsaiCityLoaded = true;
     syncDisplayMenuChecks();
   }
 
+  // One sound per event kind, all synthesized in bonsai-audio.js: placement
+  // and demolition play from the tool path (plop / bulldoze / reject); the
+  // simulation's own events play from here. Zero audio assets.
+  const SFX_BY_EVENT = Object.freeze({
+    "disaster-started": "siren",
+    "disaster-ended": "allclear",
+    "reward-offered": "reward",
+    milestone: "milestone",
+    "plant-expired": "alarm",
+    brownout: "alarm",
+  });
+
   function handleSimEvent(event) {
     const key = EVENT_KEYS[event?.type];
-    if (event?.type === "disaster-started") audioEngine()?.sfx("siren");
+    if (SFX_BY_EVENT[event?.type]) audioEngine()?.sfx(SFX_BY_EVENT[event.type]);
     else if (event?.type === "newspaper-published" && event.payload?.extra) audioEngine()?.sfx("extra");
     else if (event?.type === "policy-changed" && event.payload?.policy === "bond" && event.payload?.action === "issue") audioEngine()?.sfx("cash");
     if (!key) return;
@@ -882,12 +939,43 @@ window.AISystem6BonsaiCityLoaded = true;
     if (count < 1) return;
     state.tickCarry -= count;
     const ticksPerMonth = (Number(sim().TICKS_PER_DAY) || 5) * (Number(sim().DAYS_PER_MONTH) || 25);
-    const monthBefore = Math.floor((Number(state.current.tick) || 0) / ticksPerMonth);
+    const ticksPerYear = ticksPerMonth * (Number(sim().MONTHS_PER_YEAR) || 12);
+    const tickBefore = Number(state.current.tick) || 0;
+    const monthBefore = Math.floor(tickBefore / ticksPerMonth);
     sim().advanceTicks(state.current, count);
     state.dirty = true;
-    if (Math.floor((Number(state.current.tick) || 0) / ticksPerMonth) !== monthBefore) scheduleAutosave();
+    const tickAfter = Number(state.current.tick) || 0;
+    if (Math.floor(tickAfter / ticksPerMonth) !== monthBefore) scheduleAutosave();
     sim().drainEvents?.(state.current)?.forEach(handleSimEvent);
+    if (Math.floor(tickAfter / ticksPerYear) !== Math.floor(tickBefore / ticksPerYear)) holdForYearEndBudget();
     renderAll();
+  }
+
+  // January stops the clock for the budget review, as in the original game,
+  // unless 自动预算 (auto-budget) is on: then the previous tax, funding, and
+  // ordinance lines apply unchanged and the year rolls on. The hold is a
+  // pause with the budget pane open; any speed choice resumes it.
+  function holdForYearEndBudget() {
+    if (state.autoBudget || !state.current) return;
+    setSpeed(0);
+    state.yearEndHold = true;
+    audioEngine()?.sfx("bell");
+    openBudget();
+    setMessage("bonsai_status_year_end_budget", sim().dateOf?.(state.current)?.year ?? "");
+  }
+
+  function setAutoBudget(on) {
+    state.autoBudget = !!on;
+    if (state.autoBudget && state.yearEndHold) resumeFromYearEnd();
+    if (state.inspectorMode === "budget") renderInspector();
+    syncDisplayMenuChecks();
+    scheduleSessionCommit();
+  }
+
+  function resumeFromYearEnd() {
+    if (!state.yearEndHold) return;
+    state.yearEndHold = false;
+    setSpeed(state.lastRunningSpeed || 1);
   }
 
   function isWindowVisible() {
@@ -1456,6 +1544,11 @@ window.AISystem6BonsaiCityLoaded = true;
       bonsai_tile_water: yesNo(info.watered ?? info.hasWater),
       bonsai_tile_road: yesNo(info.roadConnected ?? info.roadOk),
       bonsai_tile_problem: problemCode ? t("bonsai_rejection_reason", problemCode) : "—",
+      // A plant built before the SC2K 4x4 footprint keeps its 2x2 pad; the
+      // balloon says so instead of letting the map lie about its size.
+      bonsai_tile_footprint: info.facilityFootprint
+        ? `${info.facilityFootprint.w}×${info.facilityFootprint.h}${info.facilityFootprint.legacy ? ` · ${t("bonsai_footprint_legacy")}` : ""}`
+        : "—",
     };
     balloon.innerHTML = `
       <div class="bonsai-tile-balloon-title">${t("bonsai_tile_inspector")}<span>${tile.x}, ${tile.y}</span></div>
@@ -1568,8 +1661,8 @@ window.AISystem6BonsaiCityLoaded = true;
   function syncDisplayMenuChecks() {
     document.querySelectorAll(".menu-popover button, .menu-submenu-popover button").forEach((button) => {
       const key = button.dataset.bonsaiDisplay;
-      if (!key) return;
-      const on = state.display[key] === true;
+      const on = key ? state.display[key] === true : button.dataset.bonsaiAutoBudget ? state.autoBudget : null;
+      if (on === null) return;
       button.classList.toggle("is-checked", on);
       if (button.hasAttribute("aria-pressed")) setArmed(button, on);
     });
@@ -1660,6 +1753,8 @@ window.AISystem6BonsaiCityLoaded = true;
           ${bonds.length ? `<ul class="bonsai-bond-list">${bonds.map((bond, index) => `<li><span>${formatMoney(bond.principal)} · ${bond.rate}%</span><button class="btn mini-btn" type="button" data-bonsai-policy-bond-repay="${index}">${t("bonsai_bond_repay")}</button></li>`).join("")}</ul>` : `<p class="bonsai-bond-empty">${t("bonsai_bond_none")}</p>`}
           ${ordinanceIds.map((id) => `<label class="bonsai-ordinance"><input type="checkbox" data-bonsai-policy-ordinance="${id}"${ordinances[id] ? " checked" : ""}><span>${t(`bonsai_ordinance_${id}`)}</span></label>`).join("")}
           <label class="bonsai-ordinance"><input type="checkbox" data-bonsai-policy-disasters${state.current?.disastersOff ? "" : " checked"}><span>${t("bonsai_disasters_enabled")}</span></label>
+          <label class="bonsai-ordinance"><input type="checkbox" data-bonsai-auto-budget${state.autoBudget ? " checked" : ""}><span>${t("bonsai_auto_budget")}</span></label>
+          ${state.yearEndHold ? `<div class="bonsai-loan-actions"><button class="btn mini-btn" type="button" data-bonsai-year-end-resume>${t("bonsai_budget_resume")}</button></div>` : ""}
         </div>`)}
       </div>`;
   }
@@ -2209,7 +2304,7 @@ window.AISystem6BonsaiCityLoaded = true;
   // playing. Every warning code the codec emits gets a line, and an unknown
   // code shows itself rather than disappearing, so a new code can never go
   // silently unreported.
-  async function reportMicropolisImport(warnings) {
+  async function reportMicropolisImport(warnings, introKey = "bonsai_micropolis_report_intro") {
     const codes = Array.isArray(warnings) ? warnings : [];
     if (!codes.length) return;
     const lines = codes.map((code) => {
@@ -2217,7 +2312,122 @@ window.AISystem6BonsaiCityLoaded = true;
       const text = t(`bonsai_micropolis_note_${name.replace(/-/g, "_")}`, Number(count) || 0);
       return `• ${text}`;
     });
-    await showSystemModal(`${t("bonsai_micropolis_report_intro")}\n${lines.join("\n")}`, "alert");
+    await showSystemModal(`${t(introKey)}\n${lines.join("\n")}`, "alert");
+  }
+
+  // The way back. Bonsai summons Micropolis cities and can send a city
+  // back; both directions are lossy, and the loss report is the honesty
+  // gate here as it is on the way in. The record lands in the GPL game's
+  // own `cities` store as plain JSON numbers with a provenance stamp; this
+  // Bonsai city is not changed.
+  async function sendPayloadToMicropolis(payload, meta) {
+    const exporter = window.AISystem6BonsaiMicropolisExport;
+    if (!exporter || !payload) return false;
+    const window_ = exporter.cropWindowFor(payload);
+    const answer = await showSystemModal(
+      t("bonsai_micropolis_send_confirm", meta.name || t("bonsai_city_unnamed"), window_.width, window_.height),
+      "confirm",
+    );
+    if (answer !== "yes" && answer !== "ok") return false;
+    setMessage("bonsai_status_sending_micropolis");
+    try {
+      const exportedAt = new Date().toISOString();
+      const exported = await saveCodec().exportMicropolis(payload, {
+        name: meta.name, cityId: meta.id || null, exportedAt,
+        powered: meta.powered ? Array.from(meta.powered) : null, population: meta.population | 0,
+      });
+      const record = {
+        id: crypto.randomUUID ? crypto.randomUUID() : `city-${Date.now()}`,
+        name: exported.name || t("bonsai_city_unnamed"),
+        createdAt: exportedAt, updatedAt: exportedAt, schemaVersion: 1,
+        population: exported.population, saveData: exported.saveData,
+      };
+      const db = await openAppDb();
+      try {
+        await window.AISystem6StorageTransactions.runTransaction(
+          db, citiesStoreName, "readwrite",
+          (tx) => idbRequest(tx.objectStore(citiesStoreName).put(record)),
+        );
+      } finally {
+        db.close();
+      }
+      setMessage("bonsai_status_sent_micropolis", record.name);
+      await reportMicropolisImport(exported.warnings, "bonsai_micropolis_send_report_intro");
+      return true;
+    } catch {
+      setMessage("bonsai_status_export_failed");
+      return false;
+    }
+  }
+
+  async function sendCurrentToMicropolis() {
+    if (!state.current) return false;
+    return sendPayloadToMicropolis(sim().serialize(state.current), {
+      id: state.record?.id, name: state.record?.name || state.current.name,
+      powered: state.current.powered, population: state.current.population,
+    });
+  }
+
+  async function sendRecordToMicropolis(target) {
+    try {
+      const decoded = await saveCodec().decode(target.saveData);
+      return sendPayloadToMicropolis(sim().serialize(decoded.state), { id: target.id, name: target.name });
+    } catch {
+      setMessage("bonsai_status_export_failed");
+      return false;
+    }
+  }
+
+  // The .cty export is the file form of the same lossy conversion: the city
+  // becomes a Micropolis-format save and then the classic 120x100 file, so
+  // a Bonsai city can leave as bytes and come back through the Micropolis
+  // import path. The loss report is the honesty gate, as on the way in.
+  async function exportPayloadAsCty(payload, meta) {
+    const exporter = window.AISystem6BonsaiMicropolisExport;
+    const codec = window.AISystem6MicropolisCtyCodec;
+    if (!exporter || !codec || !payload) return false;
+    setMessage("bonsai_status_exporting_cty");
+    try {
+      const exportedAt = new Date().toISOString();
+      const exported = await saveCodec().exportMicropolis(payload, {
+        name: meta.name || t("bonsai_city_unnamed"), cityId: meta.id || null, exportedAt,
+        powered: meta.powered ? Array.from(meta.powered) : null, population: meta.population | 0,
+      });
+      const bytes = codec.encodeCty(exported.saveData);
+      const fileName = `${String(exported.name || meta.name || t("bonsai_city_unnamed")).replace(/[^a-z0-9_-]+/gi, "-")}.cty`;
+      const ok = window.AISystem6WebPlatform?.saveArtifact?.({
+        blob: new Blob([bytes], { type: "application/octet-stream" }),
+        fileName,
+        mimeType: "application/octet-stream",
+      });
+      setMessage(ok ? "bonsai_status_exported_cty" : "bonsai_status_export_failed");
+      if (ok) await reportMicropolisImport(exported.warnings, "bonsai_micropolis_export_cty_report_intro");
+      return Boolean(ok);
+    } catch {
+      setMessage("bonsai_status_export_failed");
+      return false;
+    }
+  }
+
+  async function exportCurrentAsCty() {
+    if (!state.current) return false;
+    return exportPayloadAsCty(sim().serialize(state.current), {
+      id: state.record?.id, name: state.record?.name || state.current.name,
+      powered: state.current.powered, population: state.current.population,
+    });
+  }
+
+  async function exportRecordAsCty(target) {
+    try {
+      const decoded = await saveCodec().decode(target.saveData);
+      return exportPayloadAsCty(sim().serialize(decoded.state), {
+        id: target.id, name: target.name,
+        powered: decoded.state.powered, population: decoded.state.population,
+      });
+    } catch {
+      setMessage("bonsai_status_export_failed");
+      return false;
+    }
   }
 
   async function importMicropolisRecord(record) {
@@ -2304,6 +2514,7 @@ window.AISystem6BonsaiCityLoaded = true;
           && matchesSaveGuard(cityAtStart, mutationStamp);
         if (state.record === recordAtStart) state.record.updatedAt = metadata.updatedAt;
         state.dirty = !unchanged;
+        state.lastSavedAt = Date.now();
         setMessage(unchanged ? "bonsai_status_saved" : "bonsai_status_saved_pending_changes");
         return true;
       } catch (error) {
@@ -2567,7 +2778,7 @@ window.AISystem6BonsaiCityLoaded = true;
         summary.append(name, date);
         const actions = document.createElement("div");
         actions.className = "bonsai-city-row-actions";
-        ["open", "export", "export-sc2", "delete"].forEach((action) => {
+        ["open", "export", "export-sc2", "export-cty", "send-micropolis", "delete"].forEach((action) => {
           const button = document.createElement("button");
           button.type = "button";
           button.className = `btn mini-btn${action === "delete" ? " danger" : ""}`;
@@ -2612,6 +2823,8 @@ window.AISystem6BonsaiCityLoaded = true;
       setMessage(ok ? "bonsai_status_exported" : "bonsai_status_export_failed");
       return;
     }
+    if (action === "send-micropolis") return sendRecordToMicropolis(target);
+    if (action === "export-cty") return exportRecordAsCty(target);
     if (action === "export-sc2") {
       try {
         const decoded = await saveCodec().decode(target.saveData);
@@ -2669,7 +2882,7 @@ window.AISystem6BonsaiCityLoaded = true;
       const setup = query("[data-bonsai-map-setup]");
       if (setup) setup.hidden = true;
       selectTool("road");
-      renderer()?.resetView?.({ center: builtViewCenter(city) || city.spawnCenter || null, size: city.size, zoom: 0.82 });
+      renderer()?.resetView?.({ center: builtViewCenter(city) || city.spawnCenter || null, size: city.size, zoom: city.view?.zoom ?? 0.82 });
       setMessage("bonsai_status_scenario_started");
       openReport();
       renderAll();
@@ -2754,7 +2967,7 @@ window.AISystem6BonsaiCityLoaded = true;
       const setup = query("[data-bonsai-map-setup]");
       if (setup) setup.hidden = true;
       selectTool("road");
-      renderer()?.resetView?.({ center: builtViewCenter(city) || city.spawnCenter || null, size: city.size, zoom: 0.82 });
+      renderer()?.resetView?.({ center: builtViewCenter(city) || city.spawnCenter || null, size: city.size, zoom: city.view?.zoom ?? 0.82 });
       setMessage("bonsai_status_ready");
       renderAll();
       scheduleSessionCommit();
@@ -2900,6 +3113,12 @@ window.AISystem6BonsaiCityLoaded = true;
       const speedButton = event.target.closest("[data-bonsai-speed]");
       if (speedButton) return setSpeed(Number(speedButton.dataset.bonsaiSpeed));
       if (event.target.closest("[data-bonsai-minimap-toggle]")) return toggleMinimapCard();
+      if (event.target.closest("[data-bonsai-rci-button]") || event.target.closest("[data-bonsai-rci-panel-button]")) {
+        openReport();
+        const demand = query("[data-bonsai-report-demand]");
+        if (demand) demand.focus();
+        return;
+      }
       if (event.target.closest("[data-bonsai-inspector-close]")) return closeInspector();
       if (event.target.closest("[data-bonsai-browser-close]")) {
         hideCityBrowser(true);
@@ -2908,6 +3127,7 @@ window.AISystem6BonsaiCityLoaded = true;
       }
       if (event.target.closest("[data-bonsai-browser-new]")) return showSetup();
       if (event.target.closest("[data-bonsai-browser-import]")) return query("[data-bonsai-import-input]")?.click();
+      if (event.target.closest("[data-bonsai-year-end-resume]")) return resumeFromYearEnd();
       if (event.target.closest("[data-bonsai-policy-bond-issue]")) return submitPolicy({ policy: "bond", action: "issue" });
       const repayButton = event.target.closest("[data-bonsai-policy-bond-repay]");
       if (repayButton) return submitPolicy({ policy: "bond", action: "repay", index: Number(repayButton.dataset.bonsaiPolicyBondRepay) });
@@ -2988,6 +3208,9 @@ window.AISystem6BonsaiCityLoaded = true;
       if (event.target.matches("[data-bonsai-policy-disasters]")) {
         submitPolicy({ policy: "disasters", enabled: event.target.checked });
       }
+      if (event.target.matches("[data-bonsai-auto-budget]")) {
+        setAutoBudget(event.target.checked);
+      }
       if (event.target.matches("[data-bonsai-policy-newspaper]")) {
         submitPolicy({ policy: "newspaper", enabled: event.target.checked });
       }
@@ -3031,6 +3254,7 @@ window.AISystem6BonsaiCityLoaded = true;
         const records = await listSavedCities();
         const record = records.find((entry) => entry.id === state.sessionRestore.cityId);
         if (record && await openSavedRecord(record)) {
+          if (typeof state.sessionRestore.autoBudget === "boolean") state.autoBudget = state.sessionRestore.autoBudget;
           if (state.sessionRestore.tool) selectTool(state.sessionRestore.tool);
           if (state.sessionRestore.overlay) setOverlay(state.sessionRestore.overlay);
           if (state.sessionRestore.view) renderer()?.resetView?.(state.sessionRestore.view);
@@ -3064,6 +3288,7 @@ window.AISystem6BonsaiCityLoaded = true;
         inspectorMode: state.inspectorMode,
         selectedTile: state.selectedTile ? { ...state.selectedTile } : null,
         view: renderer()?.debugStats?.()?.view || null,
+        autoBudget: state.autoBudget,
       }),
       restore: (value) => {
         state.sessionRestore = value && typeof value === "object" ? value : null;
@@ -3239,6 +3464,8 @@ window.AISystem6BonsaiCityLoaded = true;
       audioMode: state.audioMode,
       backend: state.rendererBackend,
       dirty: state.dirty,
+      autoBudget: state.autoBudget,
+      yearEndHold: state.yearEndHold,
       graphMonths: state.current?.graphs?.monthly?.residents?.length ?? 0,
       saving: !!state.saving,
       display: Object.freeze({ ...state.display }),
@@ -3301,9 +3528,9 @@ window.AISystem6BonsaiCityLoaded = true;
   // the gauge bar or in menus (M1 §3.1). Commands are registered through the
   // runtime exactly like Micropolis; the split follows the Macintosh release
   // of the original game (§12): File, Speed, Options, Disasters, Windows and
-  // Newspaper. Items whose destination does not exist yet (人口, 工业, 图表,
-  // 邻市, 自动预算, the display toggles) are deliberately not shipped rather
-  // than opening nothing.
+  // Newspaper. Every item here has a destination: the city data windows
+  // (人口, 工业, 图表, 邻市), the display toggles, and 自动预算 all ship, and
+  // tests/features/bonsai-no-dead-ends.test.mjs runs each one to prove it.
   const bonsaiMenuCommands = {
     "new-city": () => showSetup(),
     "open-city": () => openCityBrowser(),
@@ -3312,6 +3539,8 @@ window.AISystem6BonsaiCityLoaded = true;
     "save": () => saveCurrentCity(),
     "save-as": () => saveCurrentCityAs(),
     "export-sc2": () => exportCurrentSc2(),
+    "export-cty": () => exportCurrentAsCty(),
+    "send-micropolis": () => sendCurrentToMicropolis(),
     "undo": () => performUndo(),
     "redo": () => performRedo(),
     "report": () => openReport(),
@@ -3324,6 +3553,7 @@ window.AISystem6BonsaiCityLoaded = true;
     "open-goals": () => openGoals(),
     "ordinances": () => openBudget(),
     "toggle-renderer": () => setRendererBackend(state.rendererBackend === "three-voxel" ? "canvas-2d" : "three-voxel"),
+    "auto-budget": () => setAutoBudget(!state.autoBudget),
     "minimap": () => toggleMinimapCard(),
     "display-buildings": () => setDisplay("buildings"),
     "display-infrastructure": () => setDisplay("infrastructure"),
@@ -3337,7 +3567,8 @@ window.AISystem6BonsaiCityLoaded = true;
     "disasters-off": () => submitPolicy({ policy: "disasters", enabled: false }),
   };
   OVERLAYS.forEach((overlay) => { bonsaiMenuCommands[`overlay-${overlay}`] = () => setOverlay(overlay); });
-  ["fire", "flood", "tornado", "earthquake", "monster"].forEach((kind) => { bonsaiMenuCommands[`disaster-${kind}`] = () => submitDisaster(kind); });
+  const DISASTER_MENU = ["fire", "flood", "tornado", "earthquake", "monster", "riot", "toxic-spill", "meltdown", "microwave-spill", "volcano", "firestorm", "mass-floods", "pollution-accident", "hurricane", "air-crash"];
+  DISASTER_MENU.forEach((kind) => { bonsaiMenuCommands[`disaster-${kind}`] = () => submitDisaster(kind); });
   SPEEDS.forEach((speed) => { bonsaiMenuCommands[`speed-${speed.value}`] = () => setSpeed(speed.value); });
 
   const commandsNeedingCity = new Set([
@@ -3348,11 +3579,11 @@ window.AISystem6BonsaiCityLoaded = true;
     // to start, no gauge to arm, no date to advance. The four rows stayed
     // black and did nothing when chosen.
     ...SPEEDS.map((speed) => `speed-${speed.value}`),
-    "save", "save-as", "export-sc2", "undo", "redo", "report", "budget", "news", "subscribe", "extra", "ordinances", "minimap", "disasters-off",
+    "save", "save-as", "export-sc2", "export-cty", "send-micropolis", "undo", "redo", "report", "budget", "news", "subscribe", "extra", "ordinances", "minimap", "disasters-off",
     "open-graphs", "open-population", "open-industry", "open-neighbors", "open-goals",
     "display-buildings", "display-infrastructure", "display-zones", "display-underground",
     ...OVERLAYS.map((overlay) => `overlay-${overlay}`),
-    ...["fire", "flood", "tornado", "earthquake", "monster"].map((kind) => `disaster-${kind}`),
+    ...DISASTER_MENU.map((kind) => `disaster-${kind}`),
   ]);
 
   function runBonsaiMenuCommand(command) {
@@ -3376,7 +3607,7 @@ window.AISystem6BonsaiCityLoaded = true;
     const separator = { type: "separator" };
     const submenu = (labelKey, items) => ({ type: "submenu", labelKey, items });
     const overlayItems = OVERLAYS.map((overlay) => item(`overlay-${overlay}`, `bonsai_overlay_${overlay.replaceAll("-", "_")}`));
-    const disasterItems = ["fire", "flood", "tornado", "earthquake", "monster"].map((kind) => item(`disaster-${kind}`, `bonsai_tool_disaster_${kind}`));
+    const disasterItems = DISASTER_MENU.map((kind) => item(`disaster-${kind}`, `bonsai_tool_disaster_${kind.replaceAll("-", "_")}`));
     // Speed cells borrow registry shortcut ids purely for their ⌘1..⌘4 menu
     // labels; the keys themselves are handled by the shell's window listener
     // (bare digits 1-4 belong to terrain tools through handleMapKey).
@@ -3400,6 +3631,8 @@ window.AISystem6BonsaiCityLoaded = true;
           item("save", "bonsai_save_city", "save"),
           item("save-as", "bonsai_save_as"),
           item("export-sc2", "bonsai_export_sc2"),
+          item("export-cty", "bonsai_export_cty"),
+          item("send-micropolis", "bonsai_send_micropolis"),
           separator,
           { type: "item", action: "close-active-window", labelKey: "close", shortcutId: "close-window", conditionId: "close-active-window" },
         ],
@@ -3419,6 +3652,7 @@ window.AISystem6BonsaiCityLoaded = true;
             item("sound-off", "bonsai_audio_off"),
           ]),
           item("toggle-renderer", "bonsai_renderer_switch"),
+          { ...item("auto-budget", "bonsai_auto_budget"), dataset: { bonsaiAutoBudget: "1" } },
           separator,
           submenu("bonsai_menu_data_views", overlayItems),
           separator,
@@ -3481,7 +3715,21 @@ window.AISystem6BonsaiCityLoaded = true;
     restore: attach,
     commands: {
       "open-bonsai-city": {
-        handler: () => openWindow(WINDOW_NAME),
+        // The desktop icon and the Micropolis "Open in Bonsai City" hook both
+        // arrive here. When a Micropolis record id rides on the payload, the
+        // summon path imports it after the same confirmation the browser's
+        // own Micropolis section uses; a plain open stays a plain open.
+        handler: async (payload = {}) => {
+          await openWindow(WINDOW_NAME);
+          if (payload?.micropolisRecordId) {
+            const saves = await listMicropolisSaves();
+            const record = saves.find((candidate) => candidate.id === payload.micropolisRecordId);
+            if (record) return importMicropolisRecord(record);
+            setMessage("bonsai_status_import_failed");
+            return false;
+          }
+          return true;
+        },
         isAvailable: () => true,
       },
     },

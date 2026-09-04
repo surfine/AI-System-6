@@ -16,14 +16,25 @@ const source = JSON.parse(await readFile(sourcePath, "utf8"));
 const geometry = source.geometry;
 const directions = ["north", "east", "south", "west"];
 
+// SC2K retune: the atlas is authored on a 64x32 diamond (SimCity 2000's
+// tile pitch), so the isometric unit, frame cell, and anchor all come
+// directly from the source geometry. No runtime stretch: the art is drawn
+// at the SC2K proportion.
+const ISO_U = geometry.tileWidth / 2; // 32
+const ISO_V = geometry.tileHeight / 2; // 16
+const CELL_W = geometry.cellWidth; // 213
+const CELL_H = geometry.cellHeight; // 171
+const ANCHOR_Y = Math.round(104 * (CELL_H / 128)); // ground line scales with the cell (139)
+const ANCHOR_X = Math.floor(geometry.cellWidth / 2) + 12; // 118
+
 function invariant(condition, message) {
   if (!condition) throw new Error(`bonsai-atlas-invalid: ${message}`);
 }
 
 invariant(source.schema === "ai-system-6-bonsai-micro-voxel-source-v2", "source schema");
 invariant(source.license === "MIT" && source.source === "original", "provenance boundary");
-invariant(geometry.tileWidth === 48 && geometry.tileHeight === 24, "2:1 tile geometry");
-invariant(geometry.heightStep === 8, "height step");
+invariant(geometry.tileWidth === 64 && geometry.tileHeight === 32, "2:1 tile geometry (64x32 SC2K)");
+invariant(geometry.heightStep === 10, "height step");
 
 function rgba(name) {
   const value = source.palette[name];
@@ -170,9 +181,9 @@ function expandSprites() {
 const sprites = expandSprites();
 const columns = geometry.columns;
 const rows = Math.ceil(sprites.length / columns);
-const atlasWidth = columns * geometry.cellWidth;
-const atlasHeight = rows * geometry.cellHeight;
-const anchor = { x: Math.floor(geometry.cellWidth / 2), y: 104 };
+const atlasWidth = columns * CELL_W;
+const atlasHeight = rows * CELL_H;
+const anchor = { x: ANCHOR_X, y: ANCHOR_Y };
 
 function putPixel(buffer, width, height, x, y, color) {
   x = Math.round(x);
@@ -234,10 +245,10 @@ function diamond(cx, cy, footprintWidth = 1, footprintHeight = 1) {
   const w = Math.min(2.35, footprintWidth);
   const h = Math.min(2.35, footprintHeight);
   return [
-    [cx + (-w + h) * 12, cy - (w + h) * 6],
-    [cx + (w + h) * 12, cy + (w - h) * 6],
-    [cx + (w - h) * 12, cy + (w + h) * 6],
-    [cx - (w + h) * 12, cy + (-w + h) * 6],
+    [cx + (-w + h) * ISO_V, cy - (w + h) * (ISO_V / 2)],
+    [cx + (w + h) * ISO_V, cy + (w - h) * (ISO_V / 2)],
+    [cx + (w - h) * ISO_V, cy + (w + h) * (ISO_V / 2)],
+    [cx - (w + h) * ISO_V, cy + (-w + h) * (ISO_V / 2)],
   ];
 }
 
@@ -404,17 +415,18 @@ function drawConnector(buffer, frame, cx, cy, directionIndex) {
   // where no edge-adjacent neighbour ever is, and every road and power line
   // came out as a field of disconnected studs.
   const points = {
-    n: [cx + 12, cy - 6],
-    e: [cx + 12, cy + 6],
-    s: [cx - 12, cy + 6],
-    w: [cx - 12, cy - 6],
+    n: [cx + ISO_V, cy - ISO_V / 2],
+    e: [cx + ISO_V, cy + ISO_V / 2],
+    s: [cx - ISO_V, cy + ISO_V / 2],
+    w: [cx - ISO_V, cy - ISO_V / 2],
   };
   const color = rgba(frame.color);
   const accent = rgba(frame.accent);
   const kind = frame.kind;
-  const thickness = kind === "road" ? 9 : kind === "rail" ? 6
+  const scale = ISO_V / 12; // 4/3: the tie/pole width scales with the tile
+  const thickness = Math.round((kind === "road" ? 9 : kind === "rail" ? 6
     : kind === "highway" || kind.startsWith("bridge-") ? 10
-      : kind === "onramp" ? 7 : kind === "subway" ? 8 : kind === "pipe" ? 5 : 3;
+      : kind === "onramp" ? 7 : kind === "subway" ? 8 : kind === "pipe" ? 5 : 3) * scale);
   const ports = connectorPorts(frame.shape).map((port) => rotatePort(port, directionIndex));
 
   if (kind === "onramp" && ports.length === 2) {
@@ -687,10 +699,10 @@ function drawTree(buffer, frame, cx, cy, directionIndex) {
 
 function buildingWindowRects(frame) {
   const height = Math.min(68, frame.height);
-  const rows = Math.max(1, Math.floor(height / 12));
+  const rows = Math.max(1, Math.floor(height / ISO_V));
   const rects = [];
   for (let row = 0; row < rows; row += 1) {
-    const y = 104 - height + 10 + row * 10;
+    const y = ANCHOR_Y - height + 10 + row * 10;
     rects.push({ x: 88, y, w: 5, h: 4 });
     rects.push({ x: 67, y: y + 4, w: 5, h: 4 });
     if (frame.variant % 2 === 0) rects.push({ x: 98, y: y + 5, w: 4, h: 3 });
@@ -710,7 +722,7 @@ function drawFacadeDetails(buffer, cx, cy, box, base, light) {
   drawLine(buffer, atlasWidth, atlasHeight, box.top[1][0], box.top[1][1], box.top[2][0], box.top[2][1], shade(light, 18), 1);
   drawLine(buffer, atlasWidth, atlasHeight, box.top[2][0], box.top[2][1], box.top[3][0], box.top[3][1], shade(light, 10), 1);
   drawLine(buffer, atlasWidth, atlasHeight, box.top[2][0], box.top[2][1], box.base[2][0], box.base[2][1], shade(base, -32), 2);
-  const rows = Math.max(1, Math.floor((box.top[2][1] - box.base[2][1]) / 12));
+  const rows = Math.max(1, Math.floor((box.top[2][1] - box.base[2][1]) / ISO_V));
   for (let row = 1; row < rows; row += 1) {
     const f = row / rows;
     const a = [box.top[3][0] + (box.base[3][0] - box.top[3][0]) * f, box.top[3][1] + (box.base[3][1] - box.top[3][1]) * f];
@@ -776,7 +788,7 @@ function ditherPolygon(buffer, points, dark, light, mix) {
 // Tile space: u and v run along the two ground axes, z is pixels upward, and
 // the footprint is centred on (cx, cy) the same way diamond() centres it.
 function isoPoint(cx, cy, u, v, z) {
-  return [cx + (u - v) * 24, cy + (u + v) * 12 - z];
+  return [cx + (u - v) * ISO_U, cy + (u + v) * ISO_V - z];
 }
 
 // One rectangular prism. Returns the anchors a caller needs to put windows and
@@ -804,8 +816,8 @@ function drawMass(buffer, cx, cy, mass, paint) {
     top,
     // Face-local frames: anchor is the wall's bottom-near corner, step is how
     // far one pixel along the wall moves on screen.
-    left: { anchor: isoPoint(cx, cy, u1, v0, z0), step: [-1, 0.5], span: Math.round((v1 - v0) * 24) },
-    right: { anchor: isoPoint(cx, cy, u0, v1, z0), step: [1, 0.5], span: Math.round((u1 - u0) * 24) },
+    left: { anchor: isoPoint(cx, cy, u1, v0, z0), step: [-1, 0.5], span: Math.round((v1 - v0) * ISO_U) },
+    right: { anchor: isoPoint(cx, cy, u0, v1, z0), step: [1, 0.5], span: Math.round((u1 - u0) * ISO_U) },
   };
 }
 
@@ -1524,8 +1536,8 @@ function drawAgent(buffer, frame, cx, cy, directionIndex) {
 function drawSprite(buffer, frame, slot, directionIndex) {
   const col = slot % columns;
   const row = Math.floor(slot / columns);
-  const cx = col * geometry.cellWidth + anchor.x;
-  const cy = row * geometry.cellHeight + anchor.y;
+  const cx = col * CELL_W + anchor.x;
+  const cy = row * CELL_H + anchor.y;
   if (frame.category === "slope") drawSlope(buffer, frame, cx, cy, directionIndex);
   else if (frame.category === "terrain") drawTerrain(buffer, frame, cx, cy, directionIndex);
   else if (frame.category === "connector") drawConnector(buffer, frame, cx, cy, directionIndex);
@@ -1599,10 +1611,10 @@ for (let directionIndex = 0; directionIndex < directions.length; directionIndex 
 const frames = {};
 sprites.forEach((frame, slot) => {
   frames[frame.id] = {
-    x: (slot % columns) * geometry.cellWidth,
-    y: Math.floor(slot / columns) * geometry.cellHeight,
-    w: geometry.cellWidth,
-    h: geometry.cellHeight,
+    x: (slot % columns) * CELL_W,
+    y: Math.floor(slot / columns) * CELL_H,
+    w: CELL_W,
+    h: CELL_H,
     footprint: { w: frame.footprint[0], h: frame.footprint[1] },
     anchor,
     height: frame.height,
@@ -1627,7 +1639,7 @@ const metadata = {
     tileHeight: geometry.tileHeight,
     heightStep: geometry.heightStep,
   },
-  atlas: { width: atlasWidth, height: atlasHeight, cellWidth: geometry.cellWidth, cellHeight: geometry.cellHeight, columns, rows },
+  atlas: { width: atlasWidth, height: atlasHeight, cellWidth: CELL_W, cellHeight: CELL_H, columns, rows },
   directions: files,
   frames,
   completeness: {
@@ -1700,12 +1712,12 @@ await writeFile(path.join(assetsDir, "provenance.json"), `${JSON.stringify(prove
     if (slot === undefined) return;
     const col = slot % columns;
     const row = Math.floor(slot / columns);
-    const ox = col * geometry.cellWidth;
-    const oy = row * geometry.cellHeight;
-    for (let y = 0; y < geometry.cellHeight; y += 1) {
+    const ox = col * CELL_W;
+    const oy = row * CELL_H;
+    for (let y = 0; y < CELL_H; y += 1) {
       const py = sy + y - 104;
       if (py < 0 || py >= previewHeight) continue;
-      for (let x = 0; x < geometry.cellWidth; x += 1) {
+      for (let x = 0; x < CELL_W; x += 1) {
         const px = sx + x - 80;
         if (px < 0 || px >= previewWidth) continue;
         const from = ((oy + y) * atlasWidth + (ox + x)) * 4;
@@ -1799,12 +1811,12 @@ await writeFile(path.join(assetsDir, "provenance.json"), `${JSON.stringify(prove
     const blitTo = (target, targetW, targetH, frameId, sx, sy) => {
       const slot = slotOf.get(frameId);
       if (slot === undefined) return false;
-      const ox = (slot % columns) * geometry.cellWidth;
-      const oy = Math.floor(slot / columns) * geometry.cellHeight;
-      for (let y = 0; y < geometry.cellHeight; y += 1) {
+      const ox = (slot % columns) * CELL_W;
+      const oy = Math.floor(slot / columns) * CELL_H;
+      for (let y = 0; y < CELL_H; y += 1) {
         const py = sy + y - 104;
         if (py < 0 || py >= targetH) continue;
-        for (let x = 0; x < geometry.cellWidth; x += 1) {
+        for (let x = 0; x < CELL_W; x += 1) {
           const px = sx + x - 80;
           if (px < 0 || px >= targetW) continue;
           const from = ((oy + y) * atlasWidth + (ox + x)) * 4;

@@ -16,6 +16,7 @@ import { MapGenerator } from "../../external/micropolisjs/src/mapGenerator.js";
 import * as Messages from "../../external/micropolisjs/src/messages.ts";
 import { ParkTool } from "../../external/micropolisjs/src/parkTool.js";
 import { RailTool } from "../../external/micropolisjs/src/railTool.js";
+import { Random } from "../../external/micropolisjs/src/random.ts";
 import { RoadTool } from "../../external/micropolisjs/src/roadTool.js";
 import { Simulation } from "../../external/micropolisjs/src/simulation.js";
 import { TileSet } from "../../external/micropolisjs/src/tileSet.js";
@@ -53,6 +54,8 @@ export {
   GameMap,
   MapGenerator,
   Messages,
+  // Random carries the AI System 6 setRandomSource hook (see the vendor build).
+  Random,
   Simulation,
   TileSet,
   TileValues,

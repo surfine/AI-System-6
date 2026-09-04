@@ -97,6 +97,27 @@ persistence store, or dependencies.
 - Special-zone ground visuals (M5-2g): military, airport, and seaport zones
   render as installation, runway, and dock ground — with continuous runway
   markings on the Canvas pad — instead of invisible grass.
+
+### Tile scale
+
+Both backends share one 48-pixel isometric tile and one default zoom (0.82),
+so the tile-scale review has a single fact to argue from. At default zoom a
+1024×640 viewport shows about 26.0 tile diamonds across and 32.5 diamond rows
+down — measured by `measureFrame` in `app/features/bonsai-renderer.js` and in
+the voxel backend's pure toolkit, which report the same numbers. A SimCity
+2000 proportion retune remains an owner proposal pending reference captures,
+never a silent change.
+
+Reference constants for that proposal (verified 2026-09-04 against the
+disc copy and the SC2k-docs / sc2k-city-viewer renderer notes): SimCity 2000
+draws 64-pixel-wide, 32-pixel-high diamond tiles with a 24-pixel layer
+offset (2:1 ratio, the same 30-degree elevation). At the same 1024×640
+viewport and the same on-screen diamond pitch as our default zoom, a 64px
+tile shows about 19.5 diamonds across and 24.4 rows down — roughly 25%
+closer framing with the same tile-edge pixel length as our canvas at zoom
+1.05. The retune (48 → 64 px with a matching zoom retarget) touches the
+atlas, voxel wall tiling, pointer math, and acceptance pins together, which
+is why it stays an owner call, not a silent change.
 - The Canvas 2D view gains SC2000-style 2.5D depth (M5-2h): lit roof
   parapets, facade floor lines, front doors, two-tone trees with shadows,
   richer terrain (speckle, blades, water sheen, coast foam), and soft
@@ -156,6 +177,36 @@ persistence store, or dependencies.
   project recipes, and original synthesized music and sound. EA expression
   (code, art, sound, text, city files) stays fully prohibited; see
   [LEGAL-AND-PROVENANCE.md](LEGAL-AND-PROVENANCE.md).
+- Completion program, lane B (2026-09-03/04), toward the owner's
+  OpenTTD-level acceptance:
+  - No dead ends: `tests/features/bonsai-no-dead-ends.test.mjs` boots the
+    shell in the app harness, founds a city through the real setup form,
+    and runs every menu command (each must change the DOM, the shell state,
+    or the city checkpoint), arms every rail tool through the rail click
+    path, checks the core understands every tool command, and requires every
+    reachable `bonsai_*` key in both languages. 自动预算 (auto-budget) ships:
+    off by default, January holds the clock with the budget pane open; on,
+    the previous budget lines roll on. A disaster chosen from the menu now
+    reports in the status line.
+  - Two hours without a stall: `npm run verify:bonsai-playthrough` runs a
+    deterministic scripted mayor on the headless core (lattice, zoning by
+    demand, plants and waterworks, services and transit, bonds, ordinances,
+    one disaster per decade, rewards) and refuses on a stall, a reward left
+    unplaced, a missing story key, or twelve months in the red. Its first
+    run found the core oscillating (a serviced 6 000-resident city fell to
+    16 in two months); oversupply now has to hold for three settled months
+    before a working building declines. The mayor reaches 50 000 residents
+    in game year 1909 and plateaus near 68 000 on a 128-square map. It is a
+    quiet ship gate.
+  - SC2K parity: a coal plant takes the 4×4 pad (save rule 3.1, older
+    plants keep 2×2 and the query balloon says so), `sc2DerivedGrids` reads
+    the 64×64 / 32×32 grids, the EQ/LE ordinance hooks are confirmed live,
+    and [SC2-COMPAT.md](SC2-COMPAT.md) carries the owner's certification
+    run sheet.
+  - Integration at OpenTTD's level: a saved-N-s-ago line in the gauge bar,
+    the pagehide flush confirmed through the application registry, the
+    window already in the mobile full-screen and immersive sets, and one
+    synthesized sound per simulation event.
 
 ## Document map
 
@@ -169,6 +220,9 @@ persistence store, or dependencies.
   what may and may not be adopted.
 - [SC2-COMPAT.md](SC2-COMPAT.md) — the `.sc2` import/export status, known
   approximations, fixture policy, and the owner's manual check protocol.
+- [SC2K-SYSTEMS-STUDY.md](SC2K-SYSTEMS-STUDY.md) — clean-room system study
+  from the published save spec: what SC2K does as systems, what Bonsai has,
+  and the gaps (weather, underground crossovers, military base, arco family).
 - [AGENTS.md](AGENTS.md) — scoped working rules for agents.
 - `foundation-contract.json` — the machine-readable Phase 0 contract enforced
   by `tests/features/city-simulator-foundation.test.mjs`.
@@ -181,6 +235,7 @@ persistence store, or dependencies.
 npm run verify:quick -- --feature city-simulator-foundation --docs --no-build
 npm run verify:feature -- city-simulator-foundation
 npm run verify:docs
+npm run verify:bonsai-playthrough   # the scripted two-hour mayor (quiet ship gate)
 ```
 
 Repo-wide release gates are documented in [DEVELOPMENT.md](../DEVELOPMENT.md).

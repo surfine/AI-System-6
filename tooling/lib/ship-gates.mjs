@@ -1,4 +1,5 @@
-// The seven browser gates a release must pass, declared once.
+// The gates a release must pass, declared once: seven browser gates and one
+// CPU-only playthrough.
 //
 // verify-ship.mjs runs them as a queue; verify-gate.mjs runs one of them during
 // development and banks the receipt. Both read this list, so a developer and a
@@ -9,6 +10,7 @@ export const SHIP_REQUIRED_CHECKS = Object.freeze([
   "theme-lab-regression",
   "appearance-real-apps",
   "bonsai-acceptance",
+  "bonsai-playthrough",
   "eight-stop-walk",
   "appearance-phase5",
   "appearance-snapshot",
@@ -61,6 +63,16 @@ export const SHIP_GATES = Object.freeze([
     args: ["tooling/verify-appearance-phase5.mjs"],
     quiet: true,
     costHintMs: 27_000,
+  },
+  {
+    // The executable form of 「两小时试玩不卡壳」: a scripted mayor plays the
+    // headless core to the population target with disasters, bonds,
+    // ordinances, rewards, and the newspaper, and a stall is a refusal.
+    // No browser; CPU only, so it runs alone to keep its clock honest.
+    name: "bonsai-playthrough",
+    args: ["tooling/play-bonsai-two-hours.mjs", "--quiet"],
+    quiet: true,
+    costHintMs: 90_000,
   },
   {
     // Behaviour, not pixels: eight browser scenarios that assert what the game

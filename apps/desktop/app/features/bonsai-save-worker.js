@@ -11,6 +11,16 @@
     scope.window = scope;
     importScripts("bonsai-sc2-codec.js");
   }
+  // The two halves of the Micropolis path: the importer holds the tile
+  // facts the exporter reads, so it loads first.
+  if (!scope.AISystem6BonsaiMicropolisCodec) {
+    scope.window = scope;
+    importScripts("bonsai-micropolis-codec.js");
+  }
+  if (!scope.AISystem6BonsaiMicropolisExport) {
+    scope.window = scope;
+    importScripts("bonsai-micropolis-export.js");
+  }
 
   scope.onmessage = async (event) => {
     const message = event && event.data;
@@ -27,6 +37,10 @@
             ? scope.AISystem6BonsaiSc2Codec.importSc2(message.bytes)
           : message.operation === "sc2-export"
             ? Array.from(scope.AISystem6BonsaiSc2Codec.exportSc2(message.payload))
+          : message.operation === "micropolis-import"
+            ? scope.AISystem6BonsaiMicropolisCodec.importMicropolis(message.record, message.options || {})
+          : message.operation === "micropolis-export"
+            ? scope.AISystem6BonsaiMicropolisExport.exportMicropolis(message.payload, message.options || {})
           : (() => { throw new Error("bonsai-save-worker-operation"); })();
       scope.postMessage({ id: message.id, ok: true, value });
     } catch (error) {

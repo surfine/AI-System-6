@@ -258,7 +258,7 @@ for (const [label, bytes] of [
   let pad = null;
   for (let y = 2; y < 59 && !pad; y += 1) for (let x = 2; x < 54; x += 1) {
     let clear = true;
-    for (let dy = 0; dy < 3 && clear; dy += 1) for (let dx = 0; dx < 8; dx += 1) {
+    for (let dy = 0; dy < 4 && clear; dy += 1) for (let dx = 0; dx < 9; dx += 1) {
       const i = (y + dy) * 64 + x + dx;
       if (town.water[i] || town.alt[i] !== town.alt[y * 64 + x]) { clear = false; break; }
     }
@@ -267,8 +267,8 @@ for (const [label, bytes] of [
   test.assert(!!pad, "the native town finds flat ground");
   const submit = (type, payload) => sim.submitCommand(town, { schemaVersion: 2, type, payload, targetTick: town.tick, clientCommandId: `${type}-${town.nextCommandSequence}` });
   test.assert(submit("place-facility", { kind: "coal", x: pad.x, y: pad.y }).accepted, "the native town builds a plant");
-  test.assert(submit("build-path", { network: "road", points: [{ x: pad.x + 3, y: pad.y }, { x: pad.x + 7, y: pad.y }] }).accepted, "the native town builds a road");
-  test.assert(submit("build-path", { network: "highway", points: [{ x: pad.x + 3, y: pad.y + 1 }, { x: pad.x + 6, y: pad.y + 1 }] }).accepted, "the native town builds a highway");
+  test.assert(submit("build-path", { network: "road", points: [{ x: pad.x + 4, y: pad.y }, { x: pad.x + 8, y: pad.y }] }).accepted, "the native town builds a road");
+  test.assert(submit("build-path", { network: "highway", points: [{ x: pad.x + 4, y: pad.y + 1 }, { x: pad.x + 7, y: pad.y + 1 }] }).accepted, "the native town builds a highway");
   test.assert(submit("build-path", { network: "onramp", points: [{ x: pad.x + 5, y: pad.y }] }).accepted, "the native town joins them with an onramp");
   sim.advanceTicks(town, 125);
   town.things.push({ kind: "ship", x: 2, y: 3, z: 0, dir: 1 });

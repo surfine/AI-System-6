@@ -114,4 +114,16 @@ test.assertNotIncludes(declaration(chat, "addPendingClioImageFiles"), "URL.creat
 test.assertIncludes(chat, "appendClioTalkImageHistory", "reopened messages visibly record which turn carried images");
 test.assertIncludes(chat, "data-clio-image-history", "the historical image marker is rendered without base64 content");
 
+// Web search and image attachments are both request material, not rival
+// modes: with both on, the search answer is injected as cited context and the
+// same turn still reaches the vision model with the images attached.
+test.assertIncludes(chat, "if (useWebSearch && !hasClioImages) {", "search-only turns keep the pure cited-answer path");
+test.assertIncludes(chat, "if (useWebSearch && hasClioImages) {", "image + web-search turns take the combined path");
+test.assertIncludes(chat, "modelUserText = `${t(\"clio_web_search_context\")}${clioWebResult.answer}${t(\"clio_web_search_end\")}${userText}`",
+  "the combined path feeds the cited search answer into the vision-model turn as context");
+test.assertNotIncludes(chat, 't("clio_image_web_search_incompatible")',
+  "images and web search are no longer mutually exclusive at submit time");
+test.assertIncludes(chat, "appendClioTalkWebSearchCitations(pendingMessage, clioWebResult.citations)",
+  "the combined path renders the same cited-sources block under the reply");
+
 test.finish();

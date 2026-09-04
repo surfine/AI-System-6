@@ -59,6 +59,14 @@ window.AISystem6BonsaiAudioLoaded = true;
     siren: [{ wave: "square", from: 620, to: 620, duration: 0.22, gain: 0.09 }, { wave: "square", from: 470, to: 470, duration: 0.22, gain: 0.09, delay: 0.24 },
       { wave: "square", from: 620, to: 620, duration: 0.22, gain: 0.09, delay: 0.48 }, { wave: "square", from: 470, to: 470, duration: 0.22, gain: 0.09, delay: 0.72 }],
     extra: [{ wave: "triangle", from: 520, to: 780, duration: 0.12, gain: 0.1 }, { wave: "triangle", from: 780, to: 520, duration: 0.12, gain: 0.08, delay: 0.13 }],
+    // Event effects (B4): a rising triad for a reward, two notes for a
+    // milestone, a low pulse for an outage, a falling third for all-clear,
+    // and one bell stroke for the January budget hold.
+    reward: [{ wave: "triangle", from: 523, to: 523, duration: 0.1, gain: 0.1 }, { wave: "triangle", from: 659, to: 659, duration: 0.1, gain: 0.1, delay: 0.11 }, { wave: "triangle", from: 784, to: 784, duration: 0.18, gain: 0.1, delay: 0.22 }],
+    milestone: [{ wave: "sine", from: 440, to: 440, duration: 0.12, gain: 0.1 }, { wave: "sine", from: 660, to: 660, duration: 0.2, gain: 0.1, delay: 0.14 }],
+    alarm: [{ wave: "square", from: 160, to: 160, duration: 0.14, gain: 0.08 }, { wave: "square", from: 160, to: 160, duration: 0.14, gain: 0.08, delay: 0.2 }],
+    allclear: [{ wave: "sine", from: 660, to: 660, duration: 0.14, gain: 0.09 }, { wave: "sine", from: 554, to: 554, duration: 0.2, gain: 0.08, delay: 0.16 }],
+    bell: [{ wave: "sine", from: 988, to: 988, duration: 0.5, gain: 0.09 }, { wave: "sine", from: 1976, to: 1976, duration: 0.25, gain: 0.03 }],
   });
 
   function createEngine(options = {}) {

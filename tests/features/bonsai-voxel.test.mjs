@@ -21,7 +21,8 @@ test.assertIncludes(voxelSource, "/app/vendor/bonsai-renderer.js?v=", "the vendo
 test.assertIncludes(voxelSource, "import(", "the renderer lazy-loads its three.js vendor");
 test.assertNotIncludes(voxelSource, "Math.random", "view variation never falls back to Math.random");
 test.assertNotIncludes(voxelSource, "Date.now", "the renderer never reads the wall clock");
-test.assertNotIncludes(voxelSource, "performance.now", "the renderer never reads performance clocks");
+test.assert((voxelSource.match(/performance\.now/g) || []).length <= 3 && voxelSource.includes("frameStart") && voxelSource.includes("shadowReduced"),
+  "the only performance clock in the renderer feeds the first-30-frame budget probe");
 test.assertNotIncludes(voxelSource, "setInterval", "the renderer never starts its own timer loop");
 test.assertNotIncludes(voxelSource, "advanceTicks", "the renderer never advances the simulation");
 test.assertNotIncludes(voxelSource, "submitCommand", "the renderer never emits simulation commands");
@@ -122,9 +123,25 @@ test.assert(voxel.pickTile(10, 10, { left: 0, top: 0, width: 100, height: 100 })
 const pure = voxel.pure;
 test.assert(pure && Object.isFrozen(pure), "the pure toolkit is frozen");
 
+// --- tile scale: both backends report the same frame readout ----------------
+test.assert(typeof pure.measureFrame === "function", "the voxel backend exposes the tile-scale readout");
+if (exists("app/features/bonsai-renderer.js")) {
+  const sharedSource = read("app/features/bonsai-renderer.js");
+  test.assertIncludes(sharedSource, "function measureFrame", "the Canvas projection module exposes the same readout");
+  const sharedContext = vm.createContext({ window: {}, console });
+  vm.runInContext(sharedSource, sharedContext);
+  const shared = sharedContext.window.AISystem6BonsaiRenderer;
+  const voxelFrame = pure.measureFrame();
+  const canvasFrame = shared.measureFrame();
+  test.assert(Math.abs(voxelFrame.tilesAcross - canvasFrame.tilesAcross) < 1e-9 && Math.abs(voxelFrame.tilesDown - canvasFrame.tilesDown) < 1e-9,
+    `both backends count the same tiles in a 1024x640 frame (${voxelFrame.tilesAcross.toFixed(2)} x ${voxelFrame.tilesDown.toFixed(2)})`);
+  test.assert(Math.abs(voxelFrame.tilesAcross - 1024 / (64 * 0.7)) < 1e-9, "tiles across = viewport width over the diamond width at zoom 1");
+  test.assert(Math.abs(voxelFrame.tilesDown - 640 / (32 * 0.7)) < 1e-9, "tiles down = viewport height over the diamond-row advance at zoom 1");
+}
+
 // --- view math parity: project and pick agree on every rotation ---------------
 
-test.assert(pure.clampZoom(99) === 2.5 && pure.clampZoom(0.01) === 0.4 && pure.DEFAULT_ZOOM === 0.82, "zoom clamps to the Canvas backend range");
+test.assert(pure.clampZoom(99) === 2.5 && pure.clampZoom(0.01) === 0.4 && pure.DEFAULT_ZOOM === 0.7, "zoom clamps to the Canvas backend range");
 test.assert(pure.normalizeRotation(-1) === 3 && pure.normalizeRotation(5) === 1, "rotation normalizes to four quarter-turns");
 
 for (let rotation = 0; rotation < 4; rotation += 1) {
@@ -189,9 +206,55 @@ if (exists("assets/bonsai/atlas-source.json")) {
     "recipe colors come from the atlas-source palette, not hardcoded art"
   );
   test.assert(
-    Math.abs(recipes.stages[3].height - source.buildingStages[2].height / 48) < 1e-9,
+    Math.abs(recipes.stages[3].height - source.buildingStages[2].height / 64) < 1e-9,
     "stage 3 height converts atlas pixels to world units"
   );
+}
+
+// --- building grammar: the 2D composer's vocabulary as blocks -----------------
+
+test.assert(Math.abs(pure.PX_PER_WORLD_Y - (64 / Math.SQRT2) * (Math.sqrt(3) / 2)) < 1e-9, "one world unit of height projects like the 2D pixel column at zoom 1");
+test.assert(Math.abs(pure.pxToWorld(pure.PX_PER_WORLD_Y) - 1) < 1e-9, "pxToWorld inverts the projection scale");
+test.assert(pure.tileCropFraction("wall.r.day#2/3") === 2 / 3 && pure.tileCropFraction("wall.r.day") === 1 && pure.tileCropFraction("x#9/3") === 1, "a cropped tile key parses to its storey fraction and rejects bad crops");
+test.assert(pure.tileMaterialId("wall.c.day#1/3") === "wall.c.day", "a cropped tile key resolves to its material id");
+test.assertIncludes(voxelSource, "function pushWallMass", "walls tile the texture once per world unit with a cropped top block");
+test.assertIncludes(voxelSource, "function pushRoofClutter", "roof furniture comes from the grammar clutter list");
+test.assertIncludes(voxelSource, "function pushGroundFloor", "ground floors read door, shopfront, and loading kinds");
+test.assertIncludes(voxelSource, "function createWallMaterial", "wall blocks use the glass-mask material");
+test.assertIncludes(voxelSource, "uGlassGlow", "night windows glow from a uniform");
+test.assertIncludes(voxelSource, 'startsWith("wall.")', "only wall tiles route to the glass-mask material");
+
+if (exists("assets/bonsai/atlas-source.json")) {
+  const source = JSON.parse(read("assets/bonsai/atlas-source.json"));
+  const expectedMasses = { single: 1, setback: 2, twin: 2, wing: 2, courtyard: 4, podium: 2, stepped: 3, gable: 2 };
+  let checked = 0;
+  Object.entries(source.buildingGrammar).forEach(([zone, byStage]) => {
+    Object.entries(byStage).forEach(([stage, grammar]) => {
+      const stageRecipe = source.buildingStages.find((entry) => String(entry.stage) === stage);
+      const footprint = { w: stageRecipe.footprint[0], h: stageRecipe.footprint[1] };
+      for (let variant = 1; variant <= 24; variant += 1) {
+        const masses = pure.buildingMasses(footprint, stageRecipe.height, grammar, variant, variant * 2654435761);
+        const form = grammar.massing[(variant - 1) % grammar.massing.length];
+        const px = stageRecipe.height;
+        const applies = (form === "setback" && px > 24) || (form === "twin" && footprint.w > 1.2) || form === "wing"
+          || (form === "courtyard" && footprint.w > 1.2) || (form === "podium" && px > 30) || (form === "stepped" && px > 26) || form === "gable";
+        const expected = applies ? expectedMasses[form] : 1;
+        test.assert(masses.length === expected, `${zone} stage ${stage} variant ${variant} composes ${expected} mass(es) for ${form}`);
+        masses.forEach((mass) => {
+          test.assert(mass.y1 > mass.y0 && mass.u1 > mass.u0 && mass.v1 > mass.v0, `${zone} stage ${stage} variant ${variant}: every mass has volume`);
+          test.assert(mass.u0 >= -footprint.w / 2 && mass.u1 <= footprint.w / 2 && mass.v0 >= -footprint.h / 2 && mass.v1 <= footprint.h / 2 + 0.16, `${zone} stage ${stage} variant ${variant}: masses stay inside the footprint`);
+        });
+        checked += 1;
+      }
+    });
+  });
+  test.assert(checked === 9 * 24, "every zone, stage and variant was composed");
+  const tallest = pure.buildingMasses({ w: 3, h: 3 }, 76, source.buildingGrammar.commercial["3"], 1, 7);
+  // A 76px stage-3 tower must clear two storey units at the current
+  // PX_PER_TILE normalization (the world height shrinks as the tile pitch
+  // grows, so the bound is the same pxToWorld contract the masses use).
+  const twoStoreys = 2 * (10 / ((64 / Math.SQRT2) * (Math.sqrt(3) / 2)));
+  test.assert(Math.max(...tallest.map((mass) => mass.y1)) > twoStoreys, "a stage-3 tower is taller than two storey units");
 }
 
 // --- defensive snapshot reads against a v3-flavored fake ----------------------
@@ -268,7 +331,7 @@ test.assert(
 const blocks = pure.collectChunkBlocks(snapshot, fallbackRecipes, 0, 0, sceneObjects);
 test.assert(blocks.opaque.length > 0, "the chunk collector emits opaque voxel blocks");
 test.assert(blocks.water.length === 1, "the water tile emits one translucent surface block");
-test.assert(Math.abs(blocks.water[0].y - (3 * pure.ALT_STEP - 0.05)) < 1e-9, "a future waterLevel layer lifts the water surface defensively");
+test.assert(Math.abs(blocks.water[0].y - (3 * pure.ALT_STEP + 0.02)) < 1e-9, "a waterLevel layer lifts the water surface, which rides just above the bed top");
 test.assert(blocks.tint.filter((block) => block.sx === 0.96 && block.sy === 0.024).length === 1, "an empty zoned tile emits one zone tint slab");
 test.assert(blocks.tint.some((block) => block.sy === 0.02 && (block.sx === 1 || block.sz === 1)), "cliff shadows join the translucent tint pass");
 const tallest = blocks.opaque.reduce((best, block) => (block.y > best.y ? block : best), blocks.opaque[0]);

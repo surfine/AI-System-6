@@ -1,5 +1,5 @@
 <!-- canonical-source: apps/desktop/app/vendor/micropolis/NOTICE.md -->
-<!-- source-sha256: d94386696cf3e4fb2d503b5b8fe29c2e1e6339a5ef194aa71b9332a4b089a666 -->
+<!-- source-sha256: d74fff1ea27652727b2c2627134b641ff6d3ea4c7c6173a0f91488cb9746d36e -->
 
 # Micropolis 引擎第三方声明
 
@@ -19,6 +19,11 @@
 - 缺陷修复（AI System 6）：上游 simulation.js 第 9 相位人口普查以未声明的
   裸标识符 `budget` 调用 `take10Census`，首次普查即抛出 ReferenceError 并使
   调用方的动画循环静默停止；打包时修补为 `this.budget`。
+- 可播种随机源（AI System 6）：random.ts 经可替换的随机源取数
+  （`Random.setRandomSource`），地形与剧本地图可由种子复现；传 null
+  恢复 Math.random。
+- 音效转发（AI System 6）：spriteManager.js 把精灵的音效提示（爆炸、鸣笛、
+  怪兽、拥堵）转发给管理器的监听者，外壳的合成音效才听得到。
 - 许可：GNU GPL v3 及附加条款——详见本目录内 LICENSE 与 COPYING。
 - 名称／用语「MICROPOLIS」是 Micropolis GmbH 的注册商标；商标所有者出于善意，
   许可 Micropolis 项目使用。

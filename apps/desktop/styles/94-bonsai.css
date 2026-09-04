@@ -59,8 +59,8 @@
 
 .bonsai-window .bonsai-gauge .bonsai-rci-gauge {
   display: block;
-  width: 26px;
-  height: 14px;
+  width: 32px;
+  height: 20px;
   image-rendering: pixelated;
   shape-rendering: crispEdges;
 }
@@ -110,9 +110,8 @@
 @container (max-width: 295px) {
   .bonsai-window .bonsai-gauge .bonsai-gauge-undo-redo .btn[data-bonsai-action="redo"] { display: none; }
 }
-@container (max-width: 270px) {
-  .bonsai-window .bonsai-gauge .bonsai-gauge-rci { display: none; }
-}
+/* Decision 8: the gauge-bar RCI is never dropped as the bar narrows; funds
+   and RCI are the two fields that always stay. */
 
 /* Phones: the status element becomes a transient toast over the playfield.
    Same element, same aria-live — only its position and decay change. */
@@ -162,6 +161,7 @@
   --bonsai-palette: 140px;
   display: grid;
   grid-template-columns: var(--bonsai-rail) var(--bonsai-palette) minmax(0, 1fr) auto;
+  grid-template-rows: minmax(0, 1fr) auto;
   min-width: 0;
   min-height: 0;
   border: var(--system-border);
@@ -175,7 +175,7 @@
 
 .bonsai-window .bonsai-map-shell {
   grid-column: 3;
-  grid-row: 1;
+  grid-row: 1 / 3;
 }
 
 .bonsai-window .bonsai-sub-palette {
@@ -186,6 +186,25 @@
 .bonsai-window .bonsai-inspector {
   grid-column: 4;
   grid-row: 1;
+}
+
+.bonsai-window .bonsai-palette-footer {
+  grid-column: 1 / 3;
+  grid-row: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-top: var(--system-border);
+  background: var(--paper);
+}
+
+.bonsai-window .bonsai-rci-panel {
+  display: block;
+  width: 72px;
+  height: 44px;
+  image-rendering: pixelated;
+  shape-rendering: crispEdges;
 }
 
 .bonsai-window .bonsai-rail {
@@ -253,6 +272,13 @@
 @container (max-width: 839px) {
   .bonsai-window .bonsai-workspace-container .bonsai-workspace {
     grid-template-columns: var(--bonsai-rail) minmax(0, 1fr) auto;
+  }
+
+  /* A 28-px rail cannot hold the 72x44 panel gauge, so the panel gauge is
+     hidden below the docked edge; the gauge-bar tier (32x20, never dropped)
+     is the only RCI there (decision 8's phone rule applied one width earlier). */
+  .bonsai-window .bonsai-workspace-container .bonsai-palette-footer {
+    display: none;
   }
 
   .bonsai-window .bonsai-workspace-container .bonsai-rail {

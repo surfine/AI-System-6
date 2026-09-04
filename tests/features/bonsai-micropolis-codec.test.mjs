@@ -31,6 +31,9 @@ function buildSave(size = 32) {
   map[at(8, 8)] = codec.TILE_FACTS.RES_LOW;
   map[at(16, 16)] = codec.TILE_FACTS.COAL_CENTER;
   map[at(20, 20)] = codec.TILE_FACTS.TREE_LOW;
+  map[at(24, 24)] = codec.TILE_FACTS.ROAD_BRIDGE_H;
+  map[at(26, 26)] = codec.TILE_FACTS.RES_GROWN_LOW + 9 * 5 + 4;  // centre of grown family 5
+  map[at(27, 27)] = codec.TILE_FACTS.HOUSE_LOW + 3;
   return {
     width: size, height: size, map,
     totalFunds: 25000, _cityTime: 4800,
@@ -50,7 +53,7 @@ const imported = codec.importMicropolis(save, { name: "Old Town" });
 test.assert(imported.payload.format === "bonsai-city" && imported.payload.version === 3, "the importer emits a v3 engine payload");
 test.assert(imported.payload.size === 128, "the classic map embeds centered in the 128-square grid");
 test.assert(imported.name === "Old Town", "the caller's name wins over the save's");
-test.assert(imported.payload.sc2Sidecar?.kind === "micropolis-save-v1", "the untouched original rides the sidecar slot, upgrade-only");
+test.assert(imported.payload.sc2Sidecar?.kind === "micropolis-save-v1", "the untouched original rides the sidecar slot");
 
 const offset = Math.floor((128 - save.width) / 2); // 48
 const atBonsai = (x, y) => (y + offset) * 128 + (x + offset);
@@ -58,6 +61,11 @@ test.assert(imported.payload.water[atBonsai(2, 2)] === 1, "water tiles map to th
 test.assert(imported.payload.road[atBonsai(5, 5)] === 1, "road tiles map to the road layer");
 test.assert(imported.payload.tree[atBonsai(20, 20)] === 1, "tree tiles map to the tree layer");
 test.assert(imported.payload.zone[atBonsai(8, 8)] === 1, "residential tiles map to a zone");
+test.assert(imported.payload.water[atBonsai(24, 24)] === 1 && imported.payload.road[atBonsai(24, 24)] === 1, "a bridge is water with the road on top");
+test.assert(imported.payload.variant[atBonsai(26, 26)] === codec.variantOfLevel(5) && imported.payload.stage[atBonsai(26, 26)] >= 1, "a grown block remembers its classic family in the variant layer");
+test.assert(imported.payload.variant[atBonsai(27, 27)] === codec.variantOfLevel(3) && imported.payload.stage[atBonsai(27, 27)] === 1, "a single house remembers which house it was");
+test.assert(codec.TILE_FACTS.RES_GROWN_LOW + 9 * codec.TILE_FACTS.RES_GROWN_LEVELS === codec.TILE_FACTS.HOSPITAL_LOW, "the sixteen residential families end where the hospital family starts");
+test.assert(codec.TILE_FACTS.IND_GROWN_LOW + 9 * codec.TILE_FACTS.IND_GROWN_LEVELS === codec.TILE_FACTS.IND_HIGH + 1, "the eight industrial families end at the last industrial tile");
 test.assert(
   imported.payload.facilities.some((facility) => facility.kind === "coal" && facility.x === 63 && facility.y === 63),
   "a working power plant centre becomes a live Bonsai facility at the embedded frame position",

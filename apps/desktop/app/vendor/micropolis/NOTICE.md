@@ -17,6 +17,12 @@
   `take10Census(budget)` with an undeclared identifier, throwing on the
   first 10-census and killing the caller's animation loop; patched to
   `this.budget` at bundle time.
+- Seedable random (AI System 6): random.ts draws through a replaceable
+  source (`Random.setRandomSource`) so terrain and scenario maps can be
+  reproduced from a seed; null restores Math.random.
+- Sound relay (AI System 6): spriteManager.js relays the sprite sound cues
+  (explosion, honk, monster, heavy traffic) to the manager's listeners, so
+  the shell's synthesized audio can hear them.
 - License: GNU GPL v3 with additional terms — see LICENSE and COPYING here.
 - The name/term "MICROPOLIS" is a registered trademark of Micropolis GmbH,
   licensed to the Micropolis project as a courtesy of the owner.

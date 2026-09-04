@@ -1,12 +1,13 @@
-// One-way city save import: a Micropolis save opens in Bonsai City.
+// City save import: a Micropolis save opens in Bonsai City.
 //
-// The direction is the design. SimCity 2000 could open a SimCity 1 city and
-// never wrote one back, and the two desk toys keep that shape: Micropolis is
-// the earlier, thinner model, Bonsai City the later, richer one. This
-// contract holds the mapping table — what carries, what carries by a defined
-// rule, and what cannot come across at all — and holds the product rule that
-// the facts which cannot come across are told to the player instead of being
-// silently invented.
+// Bonsai summons Micropolis cities and can send a city back; both directions
+// are lossy and report the loss. Micropolis is the earlier, thinner model,
+// Bonsai City the later, richer one. This contract holds the inbound mapping
+// table — what carries, what carries by a defined rule, and what cannot come
+// across at all — and holds the product rule that the facts which cannot come
+// across are told to the player instead of being silently invented. The
+// outbound half and the round-trip properties live in
+// bonsai-micropolis-roundtrip.test.mjs.
 //
 // The fixture is a REAL Micropolis save: this test drives the vendored
 // engine and its own tools, then serializes with the same steps the
@@ -175,6 +176,18 @@ test.assert(
 );
 test.assert(payload.tick > 0, "the classic clock carries across as a Bonsai tick");
 test.assert(imported.name === "Riverbend", "the record name carries across");
+// A bridge is water with the network on top, in both models.
+{
+  let bridges = 0;
+  for (let y = 0; y < MAP_H; y += 1) for (let x = 0; x < MAP_W; x += 1) {
+    const id = classicId(x, y);
+    if (codec.BRIDGE_LAYER[id] === undefined) continue;
+    bridges += 1;
+    const i = at(x, y);
+    if (!(payload.water[i] === 1 && payload[codec.BRIDGE_LAYER[id]][i] === 1)) test.assert(false, "a classic bridge lands as water carrying the network");
+  }
+  test.ok(`bridge tiles checked: ${bridges}`);
+}
 
 // Every tile of the real map is checked against the table, not a sample.
 let checked = { water: 0, tree: 0, road: 0, rail: 0, wire: 0, zoneR: 0, zoneC: 0, zoneI: 0, grown: 0 };
@@ -281,10 +294,23 @@ test.assert(
   "the sidecar copy is the whole original save, not a summary",
 );
 
-// --- the direction is one way ------------------------------------------------
+// --- the direction is two way, and the way back is its own module ------------
 
 const codecSource = read("app/features/bonsai-micropolis-codec.js");
-test.assertNotMatches(codecSource, /exportMicropolis|toMicropolis|writeMicropolis/, "there is no reverse path: SC2K never wrote an SC1 city back");
+const exporterSource = read("app/features/bonsai-micropolis-export.js");
+test.assertIncludes(codecSource, "can send a city back", "the importer states the two-way doctrine");
+test.assertIncludes(exporterSource, "exportMicropolis", "the reverse path exists as its own MIT module");
+test.assertIncludes(exporterSource, "provenance", "a city sent back is stamped with where it came from");
+test.assertNotMatches(exporterSource, /Math\.random|Date\.now|performance\.now|fetch\(/, "the exporter is headless and deterministic");
+vm.runInContext(exporterSource, codecContext);
+const exporter = codecContext.window.AISystem6BonsaiMicropolisExport;
+const sentBack = exporter.exportMicropolis(payload, { name: "Riverbend", window: { x: offsetX, y: offsetY } });
+test.assert(codec.looksLikeMicropolisSave(sentBack.saveData), "what the exporter writes is a save the importer recognises");
+test.assert(sentBack.saveData.provenance?.from === "bonsai-city", "the record carries its provenance");
+test.assert(sentBack.saveData.map.every((value) => Number.isInteger(value)), "the exporter emits plain JSON numbers only");
+for (const code of sentBack.warnings) {
+  test.assert(exporter.WARNING_CODES.includes(String(code).split(":")[0]), `the export warning "${code}" is a declared code`);
+}
 
 // --- the player is told: every code has copy in both languages ----------------
 
@@ -302,11 +328,18 @@ test.assertIncludes(translations, "bonsai_micropolis_report_intro", "the report 
 // key, and keeps a removed one from leaving dead copy behind.
 const emitted = [...codecSource.matchAll(/warnings\.push\(`?"?([a-z0-9-]+)/g)].map((match) => match[1]);
 test.assert(emitted.length >= 6, "the codec's warning codes are readable from its source");
-for (const code of new Set(emitted)) {
+for (const code of new Set([...emitted, ...exporter.WARNING_CODES])) {
   const key = `bonsai_micropolis_note_${code.replace(/-/g, "_")}`;
   const occurrences = (translations.match(new RegExp(`${key}:`, "g")) || []).length;
   test.assert(occurrences === 2, `the warning "${code}" has copy in both English and Chinese`);
 }
+test.assertIncludes(translations, "bonsai_micropolis_send_report_intro", "the way back has its own opening line");
+test.assertIncludes(cityWindowSource, "sendRecordToMicropolis", "a saved city can be sent to Micropolis from the browser");
+test.assertIncludes(cityWindowSource, "\"send-micropolis\": () => sendCurrentToMicropolis()", "the File menu can send the open city");
+test.assertIncludes(cityWindowSource, "exportPayloadAsCty", "a Bonsai city can leave as a classic .cty file");
+test.assertIncludes(cityWindowSource, "\"export-cty\": () => exportCurrentAsCty()", "the File menu can export the open city as .cty");
+test.assertIncludes(translations, "bonsai_status_exported_cty", "the .cty export says when the file is written");
+test.assertIncludes(cityWindowSource, "payload?.micropolisRecordId", "the Open-in-Bonsai command consumes the Micropolis record id it is sent");
 
 // --- the imported city is playable, and saves as a Bonsai city ---------------
 
@@ -345,7 +378,7 @@ test.assert(city.funds < payload.funds, "building on the imported city spends it
 
 // Saving again writes a Bonsai city, not a Micropolis one.
 const resaved = sim.serialize(city);
-test.assert(resaved.format === "bonsai-city" && resaved.version === 3, "saving the imported city writes a Bonsai save");
+test.assert(resaved.format === "bonsai-city" && resaved.version === 4, "saving the imported city writes a Bonsai save");
 test.assert(resaved.road[spotY * SIZE + spotX] === 1, "the new road survives the round trip");
 const reloaded = sim.deserialize(resaved);
 test.assert(reloaded.road[spotY * SIZE + spotX] === 1, "the resaved city loads again with the player's work intact");

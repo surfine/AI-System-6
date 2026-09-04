@@ -1542,8 +1542,22 @@ function captureClioTalkGroundingSnapshot(options = {}) {
     ? lastRetrievedContextItems.filter((contextItem) => contextItem.included !== false && !contextItem.excluded)
     : [];
   const sideAskSource = clioTalkSideAskGroundingSource();
+  const endfieldSourceEnabled = window.AISystem6EndfieldSource?.enabled === true
+    || window.AISystem6EndfieldGrounding?.isSourceEnabled?.() === true;
+  // Endfield Terminal is a SideAsk anchor whose "material" is retrieval
+  // evidence, not a pasted document. Merge the per-question grounding built
+  // by the shared adapter so the same evidence that fed the prompt also
+  // renders as clickable chips on the reply.
+  const endfieldGrounding = (!isMultiFinderMode()
+      && sideAskEnabled
+      && sideAskAnchorAppId === "endfieldTerminal"
+      && window.AISystem6EndfieldGrounding?.snapshot?.().grounding) || null;
+  const endfieldSourceGrounding = (endfieldSourceEnabled
+      && window.AISystem6EndfieldGrounding?.snapshot?.().grounding) || null;
   const sources = uniqueClioTalkGroundingSources([
     sideAskSource,
+    ...(endfieldGrounding?.sources || []),
+    ...(endfieldSourceGrounding?.sources || []),
     ...clioTalkAttachedClipSources(),
     ...usedContextItems.map(formatClioTalkGroundingSource),
     ...[...(window.lastTaskRetrospectiveIds || [])].map((id) => {
@@ -1562,6 +1576,8 @@ function captureClioTalkGroundingSnapshot(options = {}) {
   ]);
   const contextWasRequested = !!(
     sideAskSource
+    || (endfieldGrounding?.sources?.length > 0)
+    || (endfieldSourceGrounding?.sources?.length > 0)
     || sources.length
     || lastContextBudget
     || rememberInput?.checked
@@ -1652,6 +1668,21 @@ function appendMessageGrounding(item, grounding) {
 // Finder; anything else falls back to the context panel, which is where the
 // retrieval detail actually lives.
 function revealClioTalkGroundingSource(source) {
+  if (source?.kind === "endfield") {
+    if (typeof openWindow === "function") openWindow("endfieldTerminal");
+    const terminalWin = typeof getWindow === "function"
+      ? getWindow("endfieldTerminal")
+      : document.querySelector('.window[data-window="endfieldTerminal"]');
+    if (typeof focusWindow === "function" && terminalWin) focusWindow(terminalWin);
+    const index = Number(source.index) || 0;
+    const evidence = index ? document.getElementById(`endfield-evidence-${index}`) : null;
+    if (evidence) {
+      evidence.open = true;
+      evidence.scrollIntoView({ block: "center", behavior: "smooth" });
+      evidence.focus({ preventScroll: true });
+      return;
+    }
+  }
   const contextItem = lastRetrievedContextItems?.find((item) => (
     typeof getContextSourceKey === "function" && getContextSourceKey(item) === source?.key
   ));
@@ -3402,7 +3433,48 @@ function formatSideAskAnchorContext() {
     ].filter(Boolean).join("\n\n");
     return section(t("image_prompt_studio_label"), content, 12000);
   }
+  if (anchor === "endfieldTerminal") {
+    const adapter = window.AISystem6EndfieldGrounding;
+    const fresh = adapter?.snapshot?.();
+    const cached = window.AISystem6EndfieldSideAsk;
+    const query = fresh?.query || cached?.query || "";
+    const results = (fresh && fresh.results && fresh.results.length)
+      ? fresh.results
+      : (Array.isArray(cached?.results) ? cached.results : []);
+    const label = query
+      ? `${t("endfield_terminal_label")} / ${query}`
+      : t("endfield_terminal_label");
+    const body = adapter
+      ? adapter.toSideAskContext(query, results, { lang: currentLanguage === "zh" ? "zh" : "en" })
+      : "";
+    if (!body) return "";
+    const fallbackNote = fresh?.fallback
+      ? (currentLanguage === "zh"
+        ? "\n\n（本次实时检索未成功，以上为终端上一次问答的证据；如需最新结果可重试。）"
+        : "\n\n(Live retrieval failed just now; the evidence above is from the terminal's last answer. Retry for fresher results.)")
+      : "";
+    return section(label, `${body}${fallbackNote}`, 14000);
+  }
   return "";
+}
+
+// Optional, session-scoped Endfield retrieval source for ordinary ClioTalk
+// conversation (off by default; SideAsk pairing is independent).
+function buildEndfieldSourceContext() {
+  if (window.AISystem6EndfieldSource?.enabled !== true) return "";
+  const api = window.AISystem6EndfieldGrounding;
+  const snapshot = api?.snapshot?.();
+  if (!snapshot || !snapshot.query) return "";
+  const body = api?.toSideAskContext
+    ? api.toSideAskContext(snapshot.query, snapshot.results, {
+        lang: currentLanguage === "zh" ? "zh" : "en",
+      })
+    : "";
+  if (!body) return "";
+  const label = currentLanguage === "zh"
+    ? "终末地检索源（剧情+世界观共享语料，已开启）"
+    : "Endfield retrieval source (shared story + worldview corpus, enabled)";
+  return `${label}\n\n${body}`;
 }
 
 function buildPayload(userText, options = {}) {
@@ -3459,6 +3531,10 @@ function buildPayload(userText, options = {}) {
 
   const sideAskContext = skipContext ? "" : formatSideAskAnchorContext();
   if (sideAskContext) contextSections.push(sideAskContext);
+  if (!skipContext && !isScopedSideAskChat) {
+    const endfieldSourceContext = buildEndfieldSourceContext();
+    if (endfieldSourceContext) contextSections.push(endfieldSourceContext);
+  }
 
   if (!skipContext && !isScopedSideAskChat && attachedClipIds.size > 0) {
     const attachedScraps = [...attachedClipIds]
@@ -4903,6 +4979,8 @@ async function sendLocalModelTask(options = {}) {
   return finalResult;
 }
 
+if (typeof window !== "undefined") window.AISystem6SendLocalModelTask = sendLocalModelTask;
+
 async function sendToLmStudio(userText, signal, options = {}) {
   return runWritingTask({
     ...options,
@@ -4979,6 +5057,13 @@ function captureClioTalkGroundingSafely(options = {}) {
   } catch (error) {
     console.warn("ClioTalk grounding receipt failed; preserving the reply without it.", error);
     return null;
+  }
+}
+
+async function ensureEndfieldGroundingLoaded() {
+  if (window.AISystem6EndfieldGrounding) return;
+  if (typeof ensureLazySystemModule === "function") {
+    await ensureLazySystemModule("app/core/endfield-grounding.js", "AISystem6EndfieldGroundingLoaded").catch(() => {});
   }
 }
 
@@ -5306,10 +5391,6 @@ async function submitUserTextCore(userText, options = {}) {
     setStatus(t("clio_image_local_vision_required"));
     return;
   }
-  if (useWebSearch && hasClioImages) {
-    setStatus(t("clio_image_web_search_incompatible"));
-    return;
-  }
   if (useWebSearch && !clioTalkWebSearchReady()) {
     setStatus(t("clio_web_search_cloud_required"));
     return;
@@ -5463,7 +5544,22 @@ async function submitUserTextCore(userText, options = {}) {
     const hasMountedProjectDisk = ragChunks.some((chunk) => chunk.projectId === activeProjectId);
     updatePendingMessage(pendingMessage, hasMountedProjectDisk ? 0 : 1, hasMountedProjectDisk ? t("searching_scraps") : `${modelRouteText("consulting_model", "consulting_cloud_model")}.`);
     await prepareStreamingMarkdownPreview();
-    if (useWebSearch) {
+    // Paired with the Endfield Terminal, every SideAsk question re-runs the
+    // shared corpus search for THAT question; the adapter stores the fresh
+    // evidence for both the prompt context and the reply's grounding chips.
+    const endfieldSourceEnabled = window.AISystem6EndfieldSource?.enabled === true
+      || window.AISystem6EndfieldGrounding?.isSourceEnabled?.() === true;
+    if (endfieldSourceEnabled
+      || (!isMultiFinderMode() && sideAskEnabled && sideAskAnchorAppId === "endfieldTerminal")) {
+      await ensureEndfieldGroundingLoaded();
+      const groundingApi = window.AISystem6EndfieldGrounding;
+      if (groundingApi) {
+        await groundingApi.prepare(userText, {
+          signal: activeAbortController.signal,
+        }).catch(() => {});
+      }
+    }
+    if (useWebSearch && !hasClioImages) {
       updatePendingMessage(pendingMessage, 1, t("clio_web_search_running"));
       const webResult = await runClioTalkWebSearch(userText, activeAbortController.signal, {
         onDelta: (content) => updatePendingStreamContent(pendingMessage, content),
@@ -5501,7 +5597,20 @@ async function submitUserTextCore(userText, options = {}) {
       else clearStatus();
       return;
     }
-    receivedAssistantText = await sendToLmStudio(userText, activeAbortController.signal, {
+    // 联网搜索 + 带图共用：先跑云端检索拿带引用的答案，作为上下文注入，
+    // 再连图片一起送视觉模型，让二者都参与这次回答（而非二选一）。
+    let modelUserText = userText;
+    let clioWebResult = null;
+    if (useWebSearch && hasClioImages) {
+      updatePendingMessage(pendingMessage, 1, t("clio_web_search_running"));
+      clioWebResult = await runClioTalkWebSearch(userText, activeAbortController.signal, {
+        onDelta: (content) => updatePendingStreamContent(pendingMessage, content),
+      });
+      if (String(clioWebResult?.answer || "").trim()) {
+        modelUserText = `${t("clio_web_search_context")}${clioWebResult.answer}${t("clio_web_search_end")}${userText}`;
+      }
+    }
+    receivedAssistantText = await sendToLmStudio(modelUserText, activeAbortController.signal, {
       ...runtimeOptions,
       taskKind: messageTaskKind,
       streamPreference: "auto",
@@ -5525,6 +5634,7 @@ async function submitUserTextCore(userText, options = {}) {
       temporaryChat: isTemporaryChat,
       providerResponseId: window.lastLocalModelResponseId,
       providerResponseApi: window.lastLocalModelResponseApi,
+      ...(clioWebResult ? { webSearch: { citations: clioWebResult.citations || [], usage: clioWebResult.usage || null } } : {}),
     });
     const finalization = finalizeClioTalkAssistantReply({
       pendingMessage,
@@ -5533,6 +5643,9 @@ async function submitUserTextCore(userText, options = {}) {
       assistantRecord,
       runStatus: assistantRecord.incomplete ? "incomplete" : "completed",
     });
+    if (clioWebResult && Array.isArray(clioWebResult.citations) && clioWebResult.citations.length) {
+      appendClioTalkWebSearchCitations(pendingMessage, clioWebResult.citations);
+    }
     updateLocalModelState({ server: true, selected: true, ready: true, running: false, task: "" });
     if (finalization.warnings.length) setStatus(t("clio_reply_preserved_record_warning"));
     else clearStatus();

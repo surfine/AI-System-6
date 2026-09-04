@@ -5,11 +5,11 @@
   "license": "MIT",
   "source": "original",
   "geometry": {
-    "tileWidth": 48,
-    "tileHeight": 24,
-    "heightStep": 8,
-    "cellWidth": 160,
-    "cellHeight": 128,
+    "tileWidth": 64,
+    "tileHeight": 32,
+    "heightStep": 10,
+    "cellWidth": 213,
+    "cellHeight": 171,
     "columns": 10
   },
   "palette": {

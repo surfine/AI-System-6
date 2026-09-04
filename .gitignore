@@ -94,6 +94,14 @@ tooling/__pycache__/
 __pycache__/
 # local personal scratch output (audit dumps, temp exports)
 internal/evidence/drafts/coverage/
+# Endfield archive capture cache: browser session, saved HTML corpus, logs
+.scratch/endfield-capture/
+# Endfield official-source scratch pipeline (superseded by internal/archive/endfield/work-skland)
+.scratch/skland-v15/
+.scratch/skland-v15-capture.log
+# Endfield official-source (Skland) work products: raw task payloads, parsed
+# sections, drafts. The pipeline scripts live in internal/archive/endfield/scripts/.
+internal/archive/endfield/work-skland/
 # Per-commit HIG interaction audit screenshots, traces, videos, and device receipts.
 # The canonical report and machine-readable ledgers live outside drafts/.
 internal/evidence/drafts/hig-ui-ux-audit/

@@ -11,6 +11,7 @@ const test = createFeatureTest("micropolis");
 
 const engineSource = read("app/vendor/micropolis/micropolis-engine.js");
 const shellSource = read("app/features/micropolis.js");
+const gaugeSource = read("app/features/city-demand-gauge.js");
 const config = read("app/core/config.js");
 const manifest = read("tooling/runtime-manifest.mjs");
 const styleManifest = read("tooling/style-manifest.mjs");
@@ -40,7 +41,9 @@ const sim = new engine.Simulation(map, engine.Simulation.LEVEL_EASY, engine.Simu
 test.assert(sim.budget.totalFunds === 20000, "a new city starts with the classic treasury");
 
 const tools = engine.createTools(map);
-test.assert(!("query" in tools), "the jQuery-bound query tool stays out of the engine tools");
+// The query tool is the shell's own: the engine tool box carries no query
+// (the upstream one is jQuery-bound UI), and the shell palette leads with it.
+test.assert(!("query" in tools), "the engine tool box carries no query tool; the shell owns it");
 // The map is random: find bare dirt so the road result is deterministic.
 let dirt = null;
 for (let y = 2; y < map.height - 2 && !dirt; y += 1) {
@@ -79,6 +82,7 @@ test.assert(
 
 const shellContext = { window: context.window, console };
 vm.createContext(shellContext);
+vm.runInContext(gaugeSource, shellContext);
 vm.runInContext(shellSource, shellContext);
 const game = shellContext.window.AISystem6Micropolis;
 test.assert(!!game, "the shell installs window.AISystem6Micropolis without touching the DOM at load");
@@ -86,6 +90,190 @@ for (const member of ["open", "attach", "render", "runMenuCommand", "hasCity", "
   test.assert(typeof game[member] === "function", `the public API exposes ${member}`);
 }
 test.assert(game.hasCity() === false, "a freshly loaded module has no city yet");
+
+// --- C1 query tool (shell-only, reads the map and block maps directly) --------
+
+test.assert(game.toolIds[0] === "query", "the palette leads with the query tool");
+test.assertIncludes(shellSource, '{ id: "query", cost: 0 }', "the query tool costs nothing");
+const roadQuery = game.describeTile(sim, dirt.x, dirt.y);
+test.assert(roadQuery && roadQuery.kind === "road", "querying the laid road names a road tile");
+test.assert(roadQuery.power === "none", "a road neither conducts nor reports power");
+for (const level of ["density", "landValue", "crime", "pollution", "traffic"]) {
+  test.assert(["none", "low", "medium", "high"].includes(roadQuery.levels[level]), `the query rates ${level} on the classic four-word scale`);
+}
+test.assert(["declining", "steady", "growing", "booming"].includes(roadQuery.levels.growth), "growth reads as a trend word");
+test.assert(game.tileKind(engine.TileValues.RIVER) === "water", "river tiles read as water");
+test.assert(game.tileKind(engine.TileValues.COMCLR) === "commercial", "an empty commercial plot reads as a commercial zone");
+test.assert(game.tileKind(engine.TileValues.NUCLEAR) === "nuclear", "the nuclear plant reads as nuclear");
+test.assert(game.tileKind(engine.TileValues.HOSPITAL) === "hospital", "hospital tiles do not read as residential");
+test.assert(game.describeTile(sim, -1, 0) === null, "an off-map query answers null, not a throw");
+test.assertNotIncludes(shellSource, "queryTool", "the shell never names the upstream jQuery query tool");
+
+// --- C2 RCI demand gauge ---------------------------------------------------------
+
+const rci = game.rciBars({ residential: 2000, commercial: 0, industrial: -3000 });
+test.assert(rci.length === 3 && rci[0].id === "residential" && rci[1].id === "commercial" && rci[2].id === "industrial",
+  "the gauge carries the three classic demand bars in order");
+test.assert(rci[0].fraction === 1 && rci[1].fraction === 0 && rci[2].fraction === -1,
+  "bars are the valve's fraction of its engine range, clamped to -1..1");
+test.assert(game.rciBars(null).every((bar) => bar.fraction === 0), "no valves yet draws three empty bars");
+test.assertIncludes(shellSource, "Messages.VALVES_UPDATED", "the gauge follows the engine's valve updates");
+test.assertIncludes(shellSource, 'data-micropolis-rci width="32" height="20"', "the gauge is the 32x20 instrument of the Bonsai gauge bar");
+test.assertIncludes(css, ".micropolis-details-bar .micropolis-rci {", "the gauge has a scoped style in the details bar");
+test.assertIncludes(css, "container-type: inline-size", "the details bar is a container (fixed cell drop order, no wrap)");
+test.assert(!/\.micropolis-details-bar[^}]*flex-wrap\s*:/.test(css), "the details bar no longer wraps its cells");
+test.assertIncludes(shellSource, 'data-micropolis-rci-panel width="58" height="36"', "the toolbar footer carries the 58x36 panel gauge");
+test.assertIncludes(shellSource, "micropolis-toolbar-footer", "the palette gains a bottom footer");
+
+// --- C3 data overlays and the city map (micropolis-views.js) -----------------
+
+const viewsSource = read("app/features/micropolis-views.js");
+vm.runInContext(viewsSource, shellContext);
+const views = shellContext.window.AISystem6MicropolisViews;
+test.assert(!!views, "the views module installs window.AISystem6MicropolisViews without a DOM");
+test.assert(views.OVERLAY_KINDS.length === 8, "the eight classic data views exist");
+const densitySample = views.overlaySampler(sim, "density")(dirt.x, dirt.y);
+test.assert(densitySample >= 0 && densitySample <= 1, "block-map views sample to 0..1");
+test.assert(views.overlaySampler(sim, "power")(dirt.x, dirt.y) === 0, "a road tile is not part of the power view");
+test.assert(views.overlayColor("power", 1).startsWith("rgba("), "a powered tile paints a tint");
+test.assert(views.overlayColor("crime", 0) === null, "a zero score paints nothing");
+const fills = [];
+const fakeContext = { fillStyle: "", clearRect() {}, fillRect: (...args) => fills.push(args), strokeRect() {}, strokeStyle: "", lineWidth: 1 };
+views.drawOverlay(fakeContext, sim, "landValue", { originX: 0, originY: 0, tilesX: 8, tilesY: 8, tilePx: 16 });
+test.assert(fills.every((call) => call[2] === 16 && call[3] === 16), "overlay fills are one tile each");
+fills.length = 0;
+views.drawMiniMap(fakeContext, sim, "", 2, game.tileKind);
+test.assert(fills.length === 120 * 100, "the city map paints every tile once with no view selected");
+test.assertIncludes(shellSource, 'data-micropolis-zoom-layer', "the engine canvas lives in a zoom layer");
+test.assertIncludes(shellSource, 'data-micropolis-overlay aria-hidden="true"', "the overlay canvas is a second, non-interactive layer");
+test.assertIncludes(shellSource, "paintMicropolisOverlay();", "the frame loop repaints the active view");
+test.assertMatches(shellSource, /id: "view",[\s\S]{0,200}item\("maps", "micropolis_maps_title"\)/, "Maps lives in the View menu");
+test.assertIncludes(css, ".micropolis-overlay {", "the overlay has a scoped style");
+test.assertIncludes(css, "pointer-events: none;", "the overlay never takes input");
+test.assertIncludes(manifest, '"app/features/micropolis-views.js"', "the views module is a lazy runtime file");
+test.assertMatches(config, /ensureMicropolisModule[\s\S]{0,300}"app\/features\/micropolis-views\.js"/, "the Micropolis loader names the views module");
+for (const kind of views.OVERLAY_KINDS) {
+  const key = `micropolis_overlay_${kind.replace(/([A-Z])/g, "_$1").toLowerCase()}`;
+  test.assertIncludes(en, `${key}:`, `English copy exists for ${key}`);
+  test.assertIncludes(zh, `${key}:`, `Chinese copy exists for ${key}`);
+}
+
+// --- C4 graphs -------------------------------------------------------------------
+
+test.assert(views.GRAPH_SERIES.length === 6 && views.GRAPH_RANGES.join() === "10,120", "the six classic series over 10 and 120 years");
+const fakeCensus = { resHist10: [3, 2, 1], resHist120: [9, 8] };
+test.assert(views.graphSeries(fakeCensus, "res", "10").join() === "1,2,3", "a series reads oldest to newest (the engine keeps newest first)");
+test.assert(views.graphSeries(fakeCensus, "res", "120").join() === "8,9", "the 120-year range reads the long history");
+test.assert(views.graphSeries(fakeCensus, "com", "10").length === 0, "a missing history is empty, not a throw");
+fills.length = 0;
+const drawnSeries = views.drawGraph(fakeContext, sim._census, ["res", "money"], "10", { width: 200, height: 100 }, "#000");
+test.assert(drawnSeries === 2 && fills.length > 2, "the chart draws every requested series with one-bit lines");
+test.assert(views.drawGraph(fakeContext, {}, ["res"], "10", { width: 200, height: 100 }, "#000") === 0, "no history draws no series");
+test.assertIncludes(shellSource, 'addEventListener("change", handleMicropolisPanelChange)', "range and series controls change the chart");
+test.assertMatches(shellSource, /id: "view",[\s\S]{0,300}item\("graphs", "micropolis_graphs_title"\)/, "Graphs lives in the View menu");
+for (const id of views.GRAPH_SERIES) {
+  test.assertIncludes(en, `micropolis_graph_${id}:`, `English copy exists for micropolis_graph_${id}`);
+  test.assertIncludes(zh, `micropolis_graph_${id}:`, `Chinese copy exists for micropolis_graph_${id}`);
+}
+
+// --- C5 New City dialog ------------------------------------------------------------
+
+const seededOnce = game.generateSeededMap(0xc0ffee);
+const seededTwice = game.generateSeededMap(0xc0ffee);
+test.assert(
+  seededOnce._data.every((tile, index) => tile.value === seededTwice._data[index].value),
+  "the shell reproduces a terrain from its seed",
+);
+const seededOther = game.generateSeededMap(0xc0ffef);
+test.assert(seededOther._data.some((tile, index) => tile.value !== seededOnce._data[index].value), "a different seed is a different terrain");
+test.assert(game.levelFunds.join() === "20000,10000,5000", "difficulty sets the classic starting funds");
+test.assert(game.levelNames.join() === "easy,med,hard", "the three levels map to LEVEL_EASY, LEVEL_MED, LEVEL_HARD");
+test.assertIncludes(shellSource, "sim.budget.setFunds(MICROPOLIS_LEVEL_FUNDS[level])", "a new city's treasury follows its difficulty");
+test.assertIncludes(shellSource, "terrainSeed: micropolisState.terrainSeed", "the terrain seed is saved with the city");
+test.assertIncludes(shellSource, 'data-micropolis-new-regenerate', "the dialog can regenerate the terrain before the player accepts");
+test.assertIncludes(shellSource, 'data-micropolis-new-level', "the dialog offers the difficulty");
+test.assertIncludes(shellSource, "cancelMicropolisNewCity()", "closing the dialog restores the running city");
+test.assertIncludes(shellSource, '<div class="select-wrap"><select data-micropolis-new-level>', "difficulty uses the System 6 select harness");
+for (const name of game.levelNames) {
+  test.assertIncludes(en, `micropolis_level_${name}:`, `English copy exists for micropolis_level_${name}`);
+  test.assertIncludes(zh, `micropolis_level_${name}:`, `Chinese copy exists for micropolis_level_${name}`);
+}
+
+// --- C6 notices log, options, keyboard -----------------------------------------------
+
+game.recordNotice("micropolis_msg_need_roads");
+game.recordNotice("micropolis_msg_need_roads");
+game.recordNotice("micropolis_msg_high_crime");
+const notices = game.notices();
+test.assert(notices.length === 2 && notices[0].key === "micropolis_msg_high_crime", "the log keeps notices newest first and folds a repeat in the same month");
+test.assert(typeof notices[0].year === "number" && typeof notices[0].month === "number", "every notice carries its city date");
+test.assertIncludes(shellSource, "recordMicropolisNotice(key);", "every ticker message also enters the log");
+test.assert(Object.values(game.keyTools).length === 16 && new Set(Object.values(game.keyTools)).size === 16, "every tool has exactly one key");
+test.assert(game.toolIds.every((id) => Object.values(game.keyTools).includes(id)), "no palette tool is without a key");
+test.assert(game.keyAction("r").toolId === "road" && game.keyAction("R").toolId === "road", "letter keys pick tools whatever the case");
+test.assert(game.keyAction(" ").type === "pause", "space pauses");
+test.assert(game.keyAction("ArrowLeft").dx < 0 && game.keyAction("ArrowDown").dy > 0, "arrows scroll the map");
+test.assert(game.keyAction("r", { meta: true }) === null, "a Command shortcut is left to the menu bar");
+test.assert(game.keyAction("x") === null, "an unbound key means nothing");
+const bulldozeBefore = game.autoBulldoze();
+game.setAutoBulldoze(!bulldozeBefore);
+test.assert(game.autoBulldoze() === !bulldozeBefore && engine.BaseTool.getAutoBulldoze() === !bulldozeBefore, "auto-bulldoze flips the engine's tool-box flag");
+game.setAutoBulldoze(bulldozeBefore);
+test.assertIncludes(shellSource, "autoBulldoze: micropolisAutoBulldoze(),", "auto-bulldoze is saved with the city (the engine save omits it)");
+test.assertMatches(shellSource, /item\("options", "micropolis_options_title"\)/, "Options lives in the City menu");
+test.assertMatches(shellSource, /item\("notices", "micropolis_notices_title"\)/, "Notices lives in the View menu");
+test.assertIncludes(shellSource, 'win.addEventListener("keydown", handleMicropolisKeyDown)', "shortcuts listen on the window, not the document");
+test.assertIncludes(shellSource, 'closest("input, select, textarea, [contenteditable]")', "typing in a field never fires a shortcut");
+
+// --- C8 sound: synthesized, zero assets ----------------------------------------------
+
+const audioSource = read("app/features/micropolis-audio.js");
+vm.runInContext(audioSource, shellContext);
+const audio = shellContext.window.AISystem6MicropolisAudio;
+test.assert(!!audio, "the audio module installs window.AISystem6MicropolisAudio without a DOM");
+for (const cueName of ["SOUND_EXPLOSIONHIGH", "SOUND_EXPLOSIONLOW", "SOUND_HONKHONK", "SOUND_MONSTER", "SOUND_HEAVY_TRAFFIC"]) {
+  test.assert(typeof engine.Messages[cueName] === "string", `the engine exports the ${cueName} cue`);
+  test.assert(audio.SFX[audio.CUE_RECIPES[cueName]], `${cueName} has a recipe`);
+}
+const scheduled = [];
+const fakeNode = () => ({ connect() {}, start: () => scheduled.push("start"), stop() {}, type: "", buffer: null,
+  frequency: { setValueAtTime() {}, linearRampToValueAtTime() {} }, gain: { setValueAtTime() {}, exponentialRampToValueAtTime() {} } });
+class FakeAudioContext {
+  constructor() { this.currentTime = 0; this.sampleRate = 8000; this.state = "running"; this.destination = {}; }
+  createOscillator() { return fakeNode(); }
+  createGain() { return fakeNode(); }
+  createBufferSource() { return fakeNode(); }
+  createBuffer(channels, length) { return { getChannelData: () => new Float32Array(length) }; }
+  close() {}
+}
+const audioEngine = audio.createEngine({ AudioContextCtor: FakeAudioContext });
+test.assert(audioEngine.cue("SOUND_MONSTER") === true && scheduled.length === 2, "a monster cue schedules its two-step recipe on the audio clock");
+test.assert(audioEngine.cue("SOUND_MONSTER") === false, "the same cue inside the gap window plays once, not per burning tile");
+audioEngine.setSfxEnabled(false);
+test.assert(audioEngine.sfx("build") === false, "sound off schedules nothing");
+test.assert(audio.createEngine({ AudioContextCtor: null }).sfx("build") === false, "no AudioContext means silence, not a throw");
+test.assertNotMatches(audioSource, /\.(mp3|wav|ogg|m4a)["'`]/, "no sound assets: every sound is a recipe");
+test.assertNotIncludes(audioSource, "fetch(", "the audio module never fetches anything");
+test.assertIncludes(shellSource, "sim.spriteManager.addEventListener(subject, play)", "the shell listens for cues on the sprite manager");
+test.assertIncludes(shellSource, "tools.bulldozer.addEventListener(subject, play)", "the bulldozer's own explosion cues are heard too");
+test.assertIncludes(shellSource, "micropolisState.audio?.dispose()", "disposing the app closes the audio context");
+test.assertIncludes(manifest, '"app/features/micropolis-audio.js"', "the audio module is a lazy runtime file");
+test.assertMatches(config, /ensureMicropolisModule[\s\S]{0,400}"app\/features\/micropolis-audio\.js"/, "the Micropolis loader names the audio module");
+
+// --- C7 zoom -----------------------------------------------------------------------
+
+test.assert(game.zoomLevels.join() === "1,2", "two zoom levels: the classic tile and the HD tile at one backing pixel per device pixel");
+test.assert(game.nextZoom(1, 1) === 2 && game.nextZoom(2, 1) === 2 && game.nextZoom(2, -1) === 1 && game.nextZoom(1, -1) === 1, "zoom steps clamp to the two levels");
+test.assert(game.pinchDirection(1.5) === 1 && game.pinchDirection(0.5) === -1 && game.pinchDirection(1.1) === 0, "a pinch past the threshold steps the zoom; a wobble does not");
+test.assert(game.keyAction("+").type === "zoom" && game.keyAction("-").direction === -1, "plus and minus zoom");
+test.assertIncludes(shellSource, 'setProperty("--micropolis-zoom"', "zoom is a CSS custom property, not an inline layout style");
+test.assertIncludes(css, "calc(100% / var(--micropolis-zoom, 1))", "the zoom layer's layout size is the viewport over the zoom");
+test.assertIncludes(css, "transform: scale(var(--micropolis-zoom, 1))", "the transform scales the layer back to the viewport");
+test.assertIncludes(shellSource, "(event.clientX - rect.left) / zoom", "pointer math divides by the zoom");
+test.assertIncludes(shellSource, "const tileWidth = micropolisScreenTileWidth();", "pan and wheel deltas use the on-screen tile width");
+test.assertNotIncludes(shellSource, "const tileWidth = micropolisCssTileWidth();", "no pan path still uses the unzoomed tile width");
+test.assertIncludes(shellSource, "checkMicropolisPinch();", "two fingers can pinch while panning");
+test.assertMatches(shellSource, /item\("zoom-in", "micropolis_zoom_in"\)/, "Zoom In lives in the View menu");
 
 // --- license boundary ---------------------------------------------------------
 
@@ -139,6 +327,31 @@ test.assertIncludes(read("tooling/build-micropolis-vendor.mjs"), "micropolisHdPa
 test.assertIncludes(engineSource, "this._tileSet.scale || 1", "the engine bundle carries the HD scale contract");
 test.assertIncludes(engineSource, "take10Census(this.budget)",
   "the phase-9 census ReferenceError (undeclared `budget`) stays fixed");
+
+// --- engine hooks added at bundle time (seedable random, sound relay) ---------
+
+test.assert(typeof engine.Random?.setRandomSource === "function", "the engine exports Random with the AI System 6 seed hook");
+function lcg(seed) {
+  let value = seed >>> 0;
+  return () => {
+    value = (Math.imul(value, 1664525) + 1013904223) >>> 0;
+    return value / 4294967296;
+  };
+}
+engine.Random.setRandomSource(lcg(7));
+const seededA = engine.MapGenerator(120, 100);
+engine.Random.setRandomSource(lcg(7));
+const seededB = engine.MapGenerator(120, 100);
+engine.Random.setRandomSource(null);
+test.assert(
+  seededA._data.every((tile, index) => tile.value === seededB._data[index].value),
+  "the same seed generates the same terrain twice",
+);
+test.assert(engine.Random.getRandom(10) >= 0, "resetting the source returns the engine to Math.random");
+test.assertIncludes(engineSource, "newSprite.addEventListener(soundCues[s]", "sprites relay their sound cues to the sprite manager");
+test.assertIncludes(read("tooling/build-micropolis-vendor.mjs"), "seedableRandomFix", "the seed hook is a vendor build patch, not a hand edit");
+test.assertIncludes(read("app/vendor/micropolis/NOTICE.md"), "Seedable random (AI System 6)", "the provenance notice records the seed hook");
+test.assertIncludes(read("app/vendor/micropolis/NOTICE.md"), "Sound relay (AI System 6)", "the provenance notice records the sound relay");
 
 // Headless geometry: HD backing store, CSS-pixel APIs, logical 16px tiles.
 const hdView = {
@@ -219,7 +432,7 @@ test.assertIncludes(shellSource, "AISystem6StorageTransactions.runTransaction", 
 
 test.assertIncludes(shellSource, "window.AISystem6MicropolisLoaded = true;", "the lazy module installs its loaded flag");
 test.assertIncludes(config, 'createLazyModuleLoader("AISystem6MicropolisLoaded"', "config.js owns the lazy loader");
-test.assertMatches(config, /ensureMicropolisModule[\s\S]{0,200}styles\.micropolis\.css/,
+test.assertMatches(config, /ensureMicropolisModule[\s\S]{0,400}styles\.micropolis\.css/,
   "the lazy loader pulls the Micropolis stylesheet with the module");
 test.assert(
   /ensure: \(\) => ensureMicropolisModule\(\)/.test(windowRegistryRecords().micropolis?.lazy || ""),
@@ -263,6 +476,13 @@ const staticKeys = [
   "micropolis_disaster_fire", "micropolis_disaster_flood", "micropolis_disaster_tornado",
   "micropolis_disaster_earthquake", "micropolis_disaster_monster", "micropolis_disaster_crash",
   "micropolis_disaster_meltdown",
+  "micropolis_menu_view", "micropolis_maps_title", "micropolis_maps_head", "micropolis_minimap_label", "micropolis_overlay_none",
+  "micropolis_graphs_title", "micropolis_graphs_head", "micropolis_graph_range_10", "micropolis_graph_range_120", "micropolis_graph_empty",
+  "micropolis_new_city_head", "micropolis_new_city_name", "micropolis_new_city_level", "micropolis_new_city_seed",
+  "micropolis_new_city_regenerate", "micropolis_new_city_start", "micropolis_status_previewing",
+  "micropolis_notices_title", "micropolis_notices_head", "micropolis_notices_empty", "micropolis_options_title",
+  "micropolis_options_head", "micropolis_option_auto_bulldoze", "micropolis_option_auto_budget", "micropolis_option_sound",
+  "micropolis_option_shortcuts_note", "micropolis_zoom_in", "micropolis_zoom_out", "micropolis_status_zoomed",
   ...Object.values(game.classKeys),
   ...game.problemKeys,
   ...game.toolIds.map((id) => `micropolis_tool_${id}`),

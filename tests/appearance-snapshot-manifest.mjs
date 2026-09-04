@@ -44,6 +44,14 @@ const SHOWCASE_PIXEL_THEMES = SHOWCASE_THEMES.filter((theme) => theme !== "liqui
 
 export const WORKING_THEMES = ["classic", "liquid-glass"];
 
+// The city games' HUD promise: the palette column plus gauge bar, at desktop
+// size, in the two appearances with pixel-reproducible surfaces. The map
+// itself is not the promise (not reproducible across GPUs), so the frame is
+// clipped to the left 220px and top 60px. Fixed seed, paused.
+export const GAME_THEMES = ["classic", "liquid-glass"];
+export const GAME_WINDOWS = ["micropolis", "bonsaiCity"];
+export const GAME_CLIP = { left: 220, top: 60 };
+
 export const WIDTHS = [
   { id: "phone", width: 375, height: 812 },
   { id: "tablet", width: 768, height: 1024 },
@@ -106,7 +114,7 @@ export const TOKEN_COMPARED_THEMES = [
   "liquid-glass",
 ];
 
-/** Every cell in the promised matrix: 5 showcase + 25 working + 2 controls = 32. */
+/** Every cell in the promised matrix: 5 showcase + 25 working + 2 controls + 4 games = 36. */
 export function snapshotCells() {
   const cells = [];
   for (const theme of SHOWCASE_PIXEL_THEMES) {
@@ -145,6 +153,21 @@ export function snapshotCells() {
         widthId: DESKTOP_WIDTH.id,
         width: DESKTOP_WIDTH.width,
         height: DESKTOP_WIDTH.height,
+      });
+    }
+  }
+  for (const theme of GAME_THEMES) {
+    for (const windowId of GAME_WINDOWS) {
+      cells.push({
+        id: `games-${theme}-desktop-${windowId}`,
+        tier: "games",
+        theme,
+        target: windowId,
+        widthId: DESKTOP_WIDTH.id,
+        width: DESKTOP_WIDTH.width,
+        height: DESKTOP_WIDTH.height,
+        clip: GAME_CLIP,
+        game: true,
       });
     }
   }

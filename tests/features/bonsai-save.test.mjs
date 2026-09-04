@@ -1,4 +1,4 @@
-// Bonsai City v3 save, migration, worker fallback, and repository contracts.
+// Bonsai City v4 save, migration, worker fallback, and repository contracts.
 import vm from "node:vm";
 import { webcrypto } from "node:crypto";
 import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
@@ -55,14 +55,14 @@ function rendererBuildingFrameKeys(snapshot) {
   }));
 }
 
-// v3 envelope is stable, tamper-evident, and round-trips every supported size.
+// v4 envelope is stable, tamper-evident, and round-trips every supported size.
 for (const size of sim.SUPPORTED_SIZES) {
   const state = sim.createCity({ seed: 42, size, terrainPreset: "river", name: "Lakeview" });
   test.assert(!Object.prototype.hasOwnProperty.call(sim.serialize(state), "speed"), `${size} city saves exclude shell pacing state`);
   const spot = landTile(state, 10);
   sim.submitCommand(state, { schemaVersion: 2, type: "build-path", payload: { network: "road", points: [spot] }, targetTick: 0 });
   const envelope = await sim.encodeSave(state, metadata);
-  test.assert(envelope.formatVersion === 3 && envelope.engine.rulesetVersion === 3, `${size} save separates format and ruleset v3`);
+  test.assert(envelope.formatVersion === 4 && envelope.engine.rulesetVersion === 4, `${size} save separates format and ruleset v4`);
   test.assert(/^[a-f0-9]{64}$/.test(envelope.integrity.digest) && sim.validateSaveEnvelope(envelope).valid, `${size} save carries valid SHA-256 integrity`);
   const decoded = await sim.decodeSave(envelope);
   test.assert(await sim.checkpoint(decoded.state) === await sim.checkpoint(state), `${size} save round-trips byte-identically`);
@@ -78,11 +78,11 @@ for (const size of sim.SUPPORTED_SIZES) {
   try { await sim.decodeSave(tampered); } catch (error) { rejected = String(error.message).includes("bonsai-save-integrity"); }
   test.assert(rejected, "tampering fails integrity verification");
   let future = false;
-  try { sim.migrateSave({ ...envelope, formatVersion: 4 }); } catch (error) { future = String(error.message).includes("too-new"); }
+  try { sim.migrateSave({ ...envelope, formatVersion: 5 }); } catch (error) { future = String(error.message).includes("too-new"); }
   test.assert(future, "future saves reject without partial migration");
 }
 
-// A signed v1 envelope migrates purely through the chain to v3: 64 remains 64
+// A signed v1 envelope migrates purely through the chain to v4: 64 remains 64
 // and tick v2=tick v1*5.
 {
   const old = sim.createCity({ seed: 4, size: 64 });
@@ -102,14 +102,14 @@ for (const size of sim.SUPPORTED_SIZES) {
   const frozenInput = JSON.stringify(envelope);
   const migrated = sim.migrateSave(envelope);
   test.assert(JSON.stringify(envelope) === frozenInput && migrated !== envelope, "v1 migration never mutates its input");
-  test.assert(migrated.formatVersion === 3 && migrated.payload.size === 64 && migrated.payload.tick === 365, "v1 migration lands on the current format and preserves size and calendar date");
+  test.assert(migrated.formatVersion === 4 && migrated.payload.size === 64 && migrated.payload.tick === 365, "v1 migration lands on the current format and preserves size and calendar date");
   test.assert(migrated.payload.rngState === old.rngState && migrated.payload.nextCommandSequence === 2
     && migrated.payload.pendingCommands[0].targetTick === 400, "v1 migration preserves PRNG and command sequencing");
   const decoded = await sim.decodeSave(envelope);
   test.assert(decoded.migratedFromFormatVersion === 1 && decoded.state.tick === 365, "decode verifies v1 before migrating through the chain");
 }
 
-// A signed v2 envelope migrates purely to v3: the new SC2K-model layers arrive
+// A signed v2 envelope migrates purely to v4: the new SC2K-model layers arrive
 // zero-filled, waterKind mirrors the water layer, and the founding year
 // defaults to 1900.
 {
@@ -123,7 +123,7 @@ for (const size of sim.SUPPORTED_SIZES) {
   const frozenInput = JSON.stringify(envelope);
   const migrated = sim.migrateSave(envelope);
   test.assert(JSON.stringify(envelope) === frozenInput && migrated !== envelope, "v2 migration never mutates its input");
-  test.assert(migrated.formatVersion === 3 && migrated.migratedFromFormatVersion === 2, "v2 envelopes migrate to v3");
+  test.assert(migrated.formatVersion === 4 && migrated.migratedFromFormatVersion === 2, "v2 envelopes migrate to v4");
   const decoded = await sim.decodeSave(envelope);
   test.assert(decoded.migratedFromFormatVersion === 2 && decoded.state.yearFounded === 1900, "v2 decode lands with the default founding year");
   const count = decoded.state.size * decoded.state.size;
@@ -236,8 +236,11 @@ test.assertIncludes(workerSource, "importScripts(\"bonsai-city-sim.js\")", "the 
     // additive fields, so a loaded city no longer resets them until the next
     // month boundary. Serialized bytes change; no tick consumes a new random
     // draw, and funds and metrics remain unchanged.
-    "starter-town": "80f8f7a94b0ded841fc54c68b017a6bb5c2eaeb61fbdc969628cea3d9719ffb5",
-    "troubled-mid-size": "808f373bf8d819d060721961a46529d316de9ffb85988b9d6c340db5f8135618",
+    "starter-town": "d528ce9e7e553ba7109a172850bf955b8fc4c78dd8126f0e6d381d7b8abe6b35",
+    // The SC2K 4x4 coal pad (save rule 3.1): the troubled recipe's plant
+    // moves west of the tower and its main wire runs five tiles longer, so
+    // funds fall by $20; facility records carry their footprint from now on.
+    "troubled-mid-size": "ce324b2e5112ebb167e57e1cdda05aa4bcf4c82ad6f15ae4a2d7c0df8c7cc608",
   };
   test.assert(Object.isFrozen(sim.EXAMPLES) && Object.values(sim.EXAMPLES).every((recipe) => Object.isFrozen(recipe)
     && Object.isFrozen(recipe.commandLog) && recipe.commandLog.every((item) => item.schemaVersion === 2)), "example metadata and v2 command logs are read-only");
@@ -250,7 +253,7 @@ test.assertIncludes(workerSource, "importScripts(\"bonsai-city-sim.js\")", "the 
       const frames = rendererBuildingFrameKeys(sim.buildRenderSnapshot(replayed));
       const report = sim.cityReport(replayed);
       test.assert(frames.size === 26, "troubled-mid-size simultaneously exercises 26 renderer building/state frame keys");
-      test.assert(report.population === 576 && report.jobs === 692 && report.funds === 16832
+      test.assert(report.population === 576 && report.jobs === 692 && report.funds === 16812
         && report.railService.connectedStations === 1 && report.railService.passengerCapacity === 132
         && report.railService.roadTrafficRelief === 666, "troubled-mid-size pins its real population, finance, and rail metrics");
     }

@@ -3,19 +3,19 @@
   "files": [
     {
       "file": "assets/bonsai/atlas-north.png",
-      "sha256": "cd81ea3d2513481f5b9ee277237b7b39f0ae376dd4ae368c70b90a86e943f83b"
+      "sha256": "02c30a2bd9ae722175c0df1095307b3ac771cfcd0581549ccb9825fcce31f730"
     },
     {
       "file": "assets/bonsai/atlas-east.png",
-      "sha256": "847443ead50d6304a6feae23557d3aec106adcbc1ceaec5c979d07ca7f5f5501"
+      "sha256": "a828e2d444cc35494a0db082643a4239c0a453d6de86546316d8b9e44298328c"
     },
     {
       "file": "assets/bonsai/atlas-south.png",
-      "sha256": "485698f260a95e84140e9f7528cb003c99e20aeb4af3396b4e08c175b21eaecc"
+      "sha256": "98e37c97f1253ad03b9dbde081f1ba2e1a0c0a8ddef858cd19922e0b31c2a5a8"
     },
     {
       "file": "assets/bonsai/atlas-west.png",
-      "sha256": "77bc2667c5d564f020f36af4dcda1ce1dcfdafa989964126303b36d1bb8d1fd6"
+      "sha256": "8eab37a22ab7183f51f0480e1e6c302157c38b1e25df0a6177c4e6c49d57a148"
     }
   ],
   "metadata": "assets/bonsai/atlas-metadata.json",

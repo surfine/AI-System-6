@@ -12,6 +12,12 @@
   /* Colors */
   --ink: #000000;
   --paper: #ffffff;
+  /* RCI demand gauge colours — declared ONCE here; every appearance (Classic
+     included) uses them via the city-demand-gauge draw callback. M8 replaces
+     these with measured values from the owner's emulator captures. */
+  --city-demand-r: #1f9d3a;
+  --city-demand-c: #2a55c7;
+  --city-demand-i: #d9a900;
   --pane-bg: transparent;
   --messages-bg: var(--paper);
   --details-bar-bg: var(--paper);

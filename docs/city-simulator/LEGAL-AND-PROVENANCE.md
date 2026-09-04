@@ -13,7 +13,7 @@ written from public, non-copyrightable ideas and first principles.
 | Material | Allowed | Forbidden |
 | --- | --- | --- |
 | OpenSC2K (GPL v3) | Read, record high-level facts, cite a pinned commit | Copy, port, approximate-rewrite, extract tests/enums/tables/flows/structure |
-| micropolisJS (GPL v3 + terms) | Keep as a separate lazy vendor game payload | Any contribution to the Bonsai path; trademark "MICROPOLIS" is licensed only to that project |
+| micropolisJS (GPL v3 + terms) | Keep as a separate lazy vendor game payload; read its save *data shape* (JSON field names, tile numbers) as format facts so Bonsai can summon a city and send one back | Any contribution to the Bonsai path — no engine code, tables, or algorithms; trademark "MICROPOLIS" is licensed only to that project |
 | OpenTTD (GPL v2), DOOM | Separate game payloads | Any contribution to the Bonsai path |
 | Original MIT/ISC upstreams | Future use only after separate review from the original upstream, with license retained | Back-port from GPL adaptations of those upstreams |
 | SC2k-docs (CC BY-SA 4.0) | Cite with attribution; record independently worded protocol facts | Verbatim text, tables, diagrams, or extracted data |
@@ -24,6 +24,23 @@ written from public, non-copyrightable ideas and first principles.
 | Original art/sound/copy/data | Create and register in a provenance manifest (author, date, tool, license, source); matching color values observed from the reference is allowed | Tracing original outlines, tiles, sounds, or copy — shapes and pixels stay ours alone |
 
 ## Decisions
+
+- **2026-09-03 — Two-way save interop authorized (owner directive).** The
+  owner chose bidirectional lossy conversion between Bonsai City and the
+  separate Micropolis game, with a "what was lost" report on every
+  conversion. Licensing review for this decision: a save is a data format,
+  not code. `bonsai-micropolis-codec.js` (inbound) and
+  `bonsai-micropolis-export.js` (outbound) are MIT modules that read and
+  write plain JSON numbers in the shape the Micropolis shell stores; the
+  classic tile numbers and flag bits they use are public format facts,
+  confirmed by observing the vendored engine's own output in tests, and no
+  engine code, lookup table, or algorithm is copied or ported. The outbound
+  module writes one record into the GPL game's `cities` IndexedDB store with
+  `provenance: { from: "bonsai-city", cityId, exportedAt }`; no GPL text
+  enters the MIT path, and the foundation scans stay the gate. The `.cty`
+  container (`micropolis-cty-codec.js`) is written clean-room from the
+  public classic city-file layout; no EA-origin `.cty` file is ever
+  committed, bundled, or referenced — user files load at runtime only.
 
 - **2026-08-24 — Visual fidelity reference authorized (owner directive).**
   The owner set the Macintosh SimCity 2000 releases as the visual fidelity

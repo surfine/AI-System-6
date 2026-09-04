@@ -345,6 +345,16 @@ async function captureCell(page, cell, outDir) {
     // being slow.
     const selector = `.window[data-window="${cell.target}"]`;
     await settleSurface(page, selector);
+    // Games: open on a fixed seed, paused, so the palette column and gauge
+    // bar are stable across runs (the map itself is not the pixel promise).
+    if (cell.game) {
+      await page.evaluate(({ target }) => {
+        if (target === "micropolis" && typeof window.AISystem6Micropolis?.generateSeededMap === "function") {
+          window.AISystem6Micropolis.generateSeededMap(12345);
+        }
+      }, { target: cell.target });
+      await page.waitForTimeout(300);
+    }
     // A phone or tablet route window is position:fixed and fills the screen.
     // An element screenshot scrolls its target into view first, and that
     // ceremony never finishes on a fixed element: Playwright reported "element
@@ -368,8 +378,18 @@ async function captureCell(page, cell, outDir) {
           && box.right <= window.innerWidth && box.bottom <= window.innerHeight,
       };
     }, selector);
+    const gameClip = cell.game && cell.clip
+      ? { x: Math.round(frame.x) + cell.clip.left, y: Math.round(frame.y) + cell.clip.top, width: cell.clip.left, height: cell.clip.top }
+      : null;
     try {
-      if (frame?.insideViewport) {
+      if (gameClip) {
+        await page.screenshot({
+          path: file,
+          animations: "disabled",
+          timeout: 30000,
+          clip: { x: gameClip.x, y: gameClip.y, width: gameClip.width, height: gameClip.height },
+        });
+      } else if (frame?.insideViewport) {
         await page.screenshot({
           path: file,
           animations: "disabled",

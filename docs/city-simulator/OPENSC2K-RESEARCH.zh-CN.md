@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/city-simulator/OPENSC2K-RESEARCH.md -->
-<!-- source-sha256: b69798116a2d52572a8d97f92e39a4a39cddb1da30319f41a92bac3a21552f0a -->
+<!-- source-sha256: e307bc6e6dd09b8039bf43706d4258a9337d860f9e3bd662a568c800fd6fd7e9 -->
 
 > 英文版为准 ・ 仅供人类参考
 
@@ -55,3 +55,15 @@
   不查阅 OpenSC2K 的解析代码；fixture 全部由项目代码在测试时合成生成。
 
 本文件是工程风险记录，不是法律意见。
+
+## 参考景观现状（2026-09-04 核实）
+
+- 2018 年 DMCA 下架移除的是当时的 OpenSC2K 仓库。项目已重新上传，至今仍
+  在 `nicholas-ochoa/OpenSC2K` 在线（最后提交 2019-09-22）；其 README 声明
+  不包含任何 EA 素材，`LARGE.DAT` / `PAL_MSTR.BMP` 由玩家自行提供。*当前*
+  仓库应视为无素材；下架针对的是早期版本随附的素材，而非留存代码。
+- `JDrocks450/OpenSC2Kv2`（2022-10-23 创建）是独立的 C# 重写，自称是
+  OpenSC2K 的延续。2026-09-04 核实：其 70 个文件中不含 EA 素材（无
+  `LARGE.DAT`、`PAL_MSTR.BMP` 或提取的精灵表），也**没有 LICENSE 文件**，
+  因此其代码不能进入 MIT-clean 的 Bonsai 路径；作为结构与格式事实的参考
+  则是合法的。

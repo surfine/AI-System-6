@@ -22,6 +22,54 @@ assert(parse("?appearance=not-a-theme").appearance === "", "unknown appearances 
 assert(parse("?tour=secrets").tour === "", "unknown tours are ignored");
 assert(parse("?open=micropolis&apiKey=should-not-appear").open?.command === "open-micropolis", "extra query parameters do not expand the contract");
 
+// Standalone launch routes (1.0.52): an external ?launch= route maps to the
+// feature command that owns the window, and ?mode=fullscreen requests the
+// System 6 zoom behaviour.
+assert(parse("?launch=endfield-terminal").launch?.command === "open-endfield-terminal", "launch=endfield-terminal resolves to the terminal command");
+assert(parse("?launch=endfield-terminal").launch?.window === "endfieldTerminal", "launch routes name the window they own");
+assert(parse("?launch=bonsai-city").launch?.command === "open-bonsai-city", "launch=bonsai-city resolves to the bonsai command");
+assert(parse("?launch=time-machine").launch?.command === "open-time-machine", "launch=time-machine resolves to the time-machine command");
+assert(parse("?launch=liquid-cover").launch?.command === "open-liquid-cover", "launch=liquid-cover resolves to the liquid-cover command");
+assert(parse("?launch=micropolis").launch?.command === "open-micropolis", "launch=micropolis resolves to the micropolis command");
+assert(parse("?launch=openttd").launch?.command === "open-openttd", "launch=openttd resolves to the openttd command");
+assert(parse("?launch=doom").launch?.command === "open-doom", "launch=doom resolves to the doom command");
+assert(parse("?launch=endfield-terminal&mode=fullscreen").launch?.fullscreen === true, "mode=fullscreen requests the zoomed layout");
+assert(parse("?launch=endfield-terminal&mode=plain").launch?.fullscreen === false, "an unknown mode stays ordinary");
+assert(parse("?launch=not-a-route").launch === null, "unknown launch routes are ignored");
+assert(parse("?launch=endfield-terminal&apiKey=should-not-appear").launch?.command === "open-endfield-terminal", "extra launch query parameters do not expand the contract");
+
+// The route table is replicated on purpose: the browser module cannot require
+// the Node server, and Cloudflare Pages ships its own function. A consistency
+// contract keeps the three copies from drifting apart.
+const launchSource = read("app/core/launch-intent.js");
+const serverGo = read("apps/server/server/routes/go.js");
+let pagesGo = "";
+try {
+  pagesGo = read("functions/go/[route].js");
+} catch {
+  // Pages Functions are not part of the public source snapshot; the
+  // three-copy contract still runs fully in the private tree.
+}
+assert(
+  serverGo.includes('"endfield-terminal"') && serverGo.includes('"liquid-cover"'),
+  "the local /go redirector carries every launch route",
+);
+if (pagesGo) {
+  assert(
+    pagesGo.includes('"endfield-terminal"') && pagesGo.includes('"liquid-cover"'),
+    "the Cloudflare Pages /go function carries every launch route",
+  );
+}
+assert(
+  launchSource.includes('"endfield-terminal"') && launchSource.includes('"liquid-cover"'),
+  "the browser launch-intent carries every launch route",
+);
+const appSource = read("app.js");
+assert(
+  appSource.includes("runStandaloneLaunchIntent") && appSource.includes("launch"),
+  "boot wakes the standalone launch intent when ?launch= is present",
+);
+
 console.log("\nlaunch-intent feature test passed.");
 
 // Writer Mode is entered once, at boot, from ?tour=writing. It has no switch.

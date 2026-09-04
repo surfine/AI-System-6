@@ -688,6 +688,12 @@ function sideAskSourceDisplayLabel(appId = sideAskAnchorAppId) {
     return title ? `${t("time_machine")} / ${title}` : t("time_machine");
   }
   if (appId === "imagePromptStudio") return t("image_prompt_studio_label");
+  if (appId === "endfieldTerminal") {
+    const ctx = window.AISystem6EndfieldSideAsk;
+    return ctx?.query
+      ? `${t("endfield_terminal_label")} / ${ctx.query}`
+      : t("endfield_terminal_label");
+  }
   return t("sideask");
 }
 
@@ -702,6 +708,7 @@ function focusSideAskSource() {
     clioStage: "clioStage",
     timeMachine: "timeMachine",
     imagePromptStudio: "imagePromptStudio",
+    endfieldTerminal: "endfieldTerminal",
   }[sideAskAnchorAppId];
   const sourceWindow = windowName ? getWindow(windowName) : null;
   if (sourceWindow) focusWindow(sourceWindow);
@@ -4274,6 +4281,7 @@ async function arrangeWindowAssistantSplit(sourceWindowName, options = {}) {
     clioStage: "clioStage",
     timeMachine: "timeMachine",
     imagePromptStudio: "imagePromptStudio",
+    endfieldTerminal: "endfieldTerminal",
   }[sourceWindowName] || sourceAppId;
   if (!isMultiFinderMode()) {
     const canOpenPair = await prepareFinderModeForApp(sourceAppId);

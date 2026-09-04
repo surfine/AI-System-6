@@ -27,21 +27,15 @@ function landTiles(state, count) {
 }
 
 function flatPlantSpot(state) {
-  for (let y = 1; y < state.size - 1; y += 1) {
-    for (let x = 1; x < state.size - 1; x += 1) {
+  for (let y = 1; y < state.size - 4; y += 1) {
+    for (let x = 1; x < state.size - 4; x += 1) {
       const alt = state.alt[y * state.size + x];
-      if (
-        state.water[y * state.size + x]
-        || state.water[y * state.size + x + 1]
-        || state.water[(y + 1) * state.size + x]
-        || state.water[(y + 1) * state.size + x + 1]
-      ) continue;
-      if (
-        state.alt[y * state.size + x] === alt
-        && state.alt[y * state.size + x + 1] === alt
-        && state.alt[(y + 1) * state.size + x] === alt
-        && state.alt[(y + 1) * state.size + x + 1] === alt
-      ) return { x, y };
+      let flat = true;
+      for (let dy = 0; dy < 4 && flat; dy += 1) for (let dx = 0; dx < 4; dx += 1) {
+        const i = (y + dy) * state.size + x + dx;
+        if (state.water[i] || state.alt[i] !== alt) { flat = false; break; }
+      }
+      if (flat) return { x, y };
     }
   }
   return null;

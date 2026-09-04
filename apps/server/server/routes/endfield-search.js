@@ -42,7 +42,7 @@ async function handleEndfieldSearch(req, res) {
       return;
     }
 
-    const matches = await findEndfieldStoryMatches(query, limit);
+    const matches = await findEndfieldStoryMatches(query, limit, { progress: String(body.progress || "all") });
     send(res, 200, JSON.stringify({
       query,
       ...matches,

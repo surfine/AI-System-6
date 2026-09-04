@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/city-simulator/README.md -->
-<!-- source-sha256: f25b0ad00790528cbb6693b378cd1bf308e8dcc216ec640626d3efe7babf48e9 -->
+<!-- source-sha256: 625e9e587601084f5f3fd57a3613b44e64676e2f98283ce7eb8ea8346bb7d78d -->
 
 > 英文版为准 ・ 仅供人类参考
 
@@ -80,6 +80,22 @@ Phase 0 不实现玩法、地图渲染、窗口、持久化 store 或依赖。
   时钟动画；活动中的龙卷风与怪兽灾害有可见的漏斗与怪兽。
 - 特殊分区地面视觉（M5-2g）：军事、机场与海港分区渲染为营地、跑道与
   码头地面——Canvas 跑道带连续标记——不再是隐形草地。
+
+### 瓦片尺度
+
+两个后端共享同一个 48 像素等距瓦片与同一个默认缩放（0.82），瓦片尺度评审
+就有了一个可以依据的事实。默认缩放下，1024×640 视口大约显示 26.0 个瓦片
+菱形横排、32.5 行菱形纵深——由 `app/features/bonsai-renderer.js` 与体素后端
+纯工具里的 `measureFrame` 度量，两边报告相同的数字。向 SimCity 2000 比例
+靠拢仍是等待参考截图的 owner 提案，绝不静默改动。
+
+该提案的参考常数（2026-09-04 对照光盘副本与 SC2k-docs / sc2k-city-viewer
+渲染器笔记核实）：SimCity 2000 画 64 像素宽、32 像素高的菱形瓦片，层偏移
+24 像素（2:1 比例、同一 30 度仰角）。在同一 1024×640 视口、与我们默认缩放
+相同的屏幕瓦片间距下，64px 瓦片约显示 19.5 个菱形横排、24.4 行纵深——与
+我们 canvas 在缩放 1.05 时具有相同瓦片边长像素，取景近约 25%。调整
+（48 → 64 px 并重新瞄准缩放）会同时触及图集、体素墙面贴片、指针数学与
+验收钉点，所以它保持为 owner 决策，而非静默改动。
 - Canvas 2D 视图获得 SC2000 式 2.5D 深度（M5-2h）：受光屋顶檐口、
   立面层线、正门、双色树冠加投影、更丰富的地形（噪点、草叶、水面
   反光、海岸泡沫），以及每座建筑与地标下的柔和地面投影。
@@ -126,6 +142,26 @@ Phase 0 不实现玩法、地图渲染、窗口、持久化 store 或依赖。
   两者只读同一渲染快照）、由项目配方生成的原创 Minecraft 风格微体素美术，
   以及原创合成音乐与音效。EA 的表达（代码、美术、声音、文本、城市文件）
   仍然全面禁止；见 [LEGAL-AND-PROVENANCE.md](LEGAL-AND-PROVENANCE.zh-CN.md)。
+- 补完计划 B 车道（2026-09-03/04），朝所有者定下的「OpenTTD 完成度」验收推进：
+  - 无死角：`tests/features/bonsai-no-dead-ends.test.mjs` 在应用测试壳里启动
+    外壳，经真实的建城表单建一座城，逐一执行每个菜单命令（每个都必须改变
+    DOM、外壳状态或城市检查点），经工具栏点击路径武装每个工具，检查核心能
+    理解每个工具命令，并要求每个可达的 `bonsai_*` 键在两种语言里都存在。
+    自动预算上线：默认关闭，每年一月停表并打开预算面板；开启后沿用上一年的
+    预算线继续。从菜单选择的灾害现在会在状态行报告。
+  - 两小时不卡壳：`npm run verify:bonsai-playthrough` 在无头核心上运行一个
+    确定性的脚本市长（路网格、按需求分区、电厂与水厂、服务与交通、债券、
+    法令、每十年一次灾害、奖励），遇到停滞、奖励未放置、报纸故事缺失或
+    连续十二个月赤字即拒绝。它第一次运行就发现核心在振荡（一座 6 000 人的
+    有服务城市两个月内跌到 16 人）；现在供给过剩必须持续三个结算月，正常
+    运转的建筑才会衰退。市长在游戏年 1909 达到 50 000 人，在 128 格地图上
+    稳定在约 68 000 人。它是一个安静的发布门禁。
+  - SC2K 对等：煤电厂占 4×4（存档规则 3.1，旧电厂保持 2×2，查询气球会
+    说明），`sc2DerivedGrids` 读出 64×64 / 32×32 网格，EQ/LE 法令挂钩确认
+    已生效，[SC2-COMPAT.md](SC2-COMPAT.zh-CN.md) 带上所有者的认证运行表。
+  - OpenTTD 级别的集成：状态栏多一行「N 秒前已保存」，pagehide 刷写经应用
+    注册表确认，窗口已在移动端全屏与沉浸集合里，每个模拟事件各有一个合成
+    音效。
 
 ## 文档地图
 
@@ -138,6 +174,9 @@ Phase 0 不实现玩法、地图渲染、窗口、持久化 store 或依赖。
   可采纳/不可采纳边界。
 - [SC2-COMPAT.md](SC2-COMPAT.zh-CN.md)——`.sc2` 导入/导出状态、已知近似、
   fixture 政策与所有者手工验证流程。
+- [SC2K-SYSTEMS-STUDY.md](SC2K-SYSTEMS-STUDY.zh-CN.md)——按公开存档规范
+  整理的系统层面干净房间学习：SC2K 作为系统做了什么、Bonsai 有什么、缺口
+  有哪些（天气、地下交叉、军事基地、巨型建筑家族）。
 - [AGENTS.md](AGENTS.md)——面向 agent 的范围化工作规则。
 - `foundation-contract.json`——由
   `tests/features/city-simulator-foundation.test.mjs` 强制执行的 Phase 0
@@ -151,6 +190,7 @@ Phase 0 不实现玩法、地图渲染、窗口、持久化 store 或依赖。
 npm run verify:quick -- --feature city-simulator-foundation --docs --no-build
 npm run verify:feature -- city-simulator-foundation
 npm run verify:docs
+npm run verify:bonsai-playthrough   # 脚本市长的两小时试玩（安静发布门禁）
 ```
 
 仓库级发布门禁见 [DEVELOPMENT.md](../DEVELOPMENT.zh-CN.md)。

@@ -31,10 +31,10 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
   const OVERLAYS = Object.freeze(["none", "power", "water", "traffic", "pollution", "land-value", "police", "fire", "education", "health"]);
 
   // View constants shared with the Canvas backend (bonsai-renderer.js).
-  const PX_PER_TILE = 48;
+  const PX_PER_TILE = 64;
   const MIN_ZOOM = 0.4;
   const MAX_ZOOM = 2.5;
-  const DEFAULT_ZOOM = 0.82;
+  const DEFAULT_ZOOM = 0.7;
   const ROTATIONS = 4;
 
   // Camera elevation of thirty degrees keeps the exact 2:1 ground ratio the
@@ -49,6 +49,26 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
   // at about 14 texels per tile and the default zoom at about 28.
   const SHADOW_MAP_SIZE = 2048;
   const SUN_DISTANCE = 220;
+
+  // Small surfaces at device pixel ratio 1 are the low-power phones and
+  // tablets; half the texels there keep the frame budget.
+  function shadowMapSizeFor(cssWidth, dpr) {
+    if ((Number(dpr) || 1) <= 1 && (Number(cssWidth) || 0) < 700) return SHADOW_MAP_SIZE / 2;
+    return SHADOW_MAP_SIZE;
+  }
+
+  // How much city a viewport shows at a zoom: tiles across the screen width
+  // and down its height, the fact the tile-scale review needs from both
+  // backends.
+  function measureFrame(zoom = DEFAULT_ZOOM, cssWidth = 1024, cssHeight = 640) {
+    const scale = pixelsPerWorldUnit(zoom);
+    return {
+      zoom: clampZoom(zoom),
+      pxPerTileEdge: scale,
+      tilesAcross: cssWidth / (scale * Math.SQRT2),
+      tilesDown: cssHeight / (scale * Math.SQRT2 * 0.5),
+    };
+  }
 
   // --- pure helpers: no THREE, no DOM ----------------------------------------
 
@@ -308,8 +328,8 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     const grassTop = color("grass");
     const terrain = {
       grass: { top: grassTop, side: color("soil") },
-      soil: { top: lean(grassTop, color("soilLight"), 0.42), side: color("soil") },
-      rock: { top: lean(grassTop, color("rockLight"), 0.45), side: color("rock") },
+      soil: { top: lean(grassTop, color("soilLight"), 0.16), side: color("soil") },
+      rock: { top: lean(grassTop, color("rockLight"), 0.18), side: color("rock") },
       coast: { top: color("sand"), side: color("soil") },
       slope: { top: lean(grassTop, color("grassLight"), 0.55), side: color("soil") },
       water: { surface: color("water"), lit: color("waterLight"), bed: color("grassDark") },
@@ -343,6 +363,7 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
       stages[entry.stage] = {
         footprint: normalizeFootprint(entry.footprint),
         height: Math.max(0.2, (Number(entry.height) || 24) / PX_PER_TILE),
+        heightPx: Number(entry.height) || 24,
       };
     });
 
@@ -356,6 +377,7 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
       facilities[kind] = {
         footprint: normalizeFootprint(entry.footprint),
         height: Math.max(0.2, (Number(entry.height) || 30) / PX_PER_TILE),
+        heightPx: Number(entry.height) || 30,
         base: color(entry.base, "concrete"),
         light: color(entry.light, "white"),
       };
@@ -407,6 +429,11 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
       facilities,
       catalog,
       things,
+      // The 2D composer's grammar (massing, roof, clutter, walls) and a
+      // palette lookup, so the block composer below reads the same recipes.
+      grammar: raw.buildingGrammar && typeof raw.buildingGrammar === "object" ? raw.buildingGrammar : null,
+      facilityGrammar: raw.facilityGrammar && typeof raw.facilityGrammar === "object" ? raw.facilityGrammar : null,
+      paletteColor: (name, fallback) => color(name, fallback),
       // The same category hues the Canvas backend paints for catalog tiles
       // with no recipe of their own, so the two backends agree on color.
       catalogCategories: {
@@ -613,8 +640,8 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
       sunX: Math.cos(time * Math.PI * 2) * 0.8,
       sunY: 0.55 + sun * 0.65,
       sunZ: 0.45,
-      sunIntensity: 0.2 + dayFactor * 0.6,
-      ambientIntensity: 0.24 + dayFactor * 0.34,
+      sunIntensity: 0.25 + dayFactor * 0.7,
+      ambientIntensity: 0.34 + dayFactor * 0.3,
       skyR: mix(0.11, 0.043), skyG: mix(0.165, 0.059), skyB: mix(0.125, 0.094),
       dayFactor,
     };
@@ -654,6 +681,9 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
           variant: Number(gridValue(snapshot, ["variant", "buildingVariant"], index, 1)) || 1,
           state: buildingState,
           footprint: { w: 1, h: 1 },
+          // Derived tile by tile, not grouped by the core: a tall stage on a
+          // one-tile lot must not become a needle.
+          derived: true,
         });
       }
     }
@@ -977,6 +1007,408 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     pushBlock(opaque, cx, topY + h + 0.02, cz, 0.8 * h, 0.04, 0.8 * h, light, "metal");
   }
 
+  // --- building grammar: the 2D composer's vocabulary as blocks -------------
+  //
+  // The Canvas atlas composes every building from massing, roof form, roof
+  // furniture and a facade treatment (tooling/build-bonsai-atlas.mjs). The
+  // voxel backend reads the same grammar from atlas-source.json and turns
+  // each part into blocks, so both backends show the same silhouettes.
+  // Grammar heights are 2D screen pixels; one world unit projects to
+  // PX_PER_WORLD_Y pixels at zoom 1, and thresholds stay in pixels so both
+  // backends choose the same form for the same variant.
+  const PX_PER_WORLD_Y = (PX_PER_TILE / Math.SQRT2) * COS_ELEVATION;
+  // Storey bands per wall texture tile: the wall tiles carry one storey per
+  // row, so a one-unit wall block shows whole floors.
+  const WALL_ROWS = Object.freeze({ r: 3, c: 3, i: 2 });
+  const ZONE_NAMES = Object.freeze({ r: "residential", c: "commercial", i: "industrial" });
+
+  function pxToWorld(px) {
+    return (Number(px) || 0) / PX_PER_WORLD_Y;
+  }
+
+  function grammarForZone(recipes, prefix, stage) {
+    const byZone = recipes.grammar && recipes.grammar[ZONE_NAMES[prefix]];
+    if (!byZone || typeof byZone !== "object") return null;
+    return byZone[String(stage)] || byZone["2"] || null;
+  }
+
+  function grammarPalette(recipes) {
+    const color = (name, fallback) => recipes.paletteColor(name, fallback);
+    return {
+      steel: color("steel", "metal"),
+      brick: color("brick", "residential"),
+      stack: color("stack", "concrete"),
+      sign: color("sign", "yellow"),
+      signCool: color("signCool", "commercial"),
+      red: color("red"),
+      metal: color("metal"),
+      concrete: color("concrete"),
+      black: color("black"),
+      door: color("door", "black"),
+      glassCool: color("glassCool", "glass"),
+      awning: color("awning", "red"),
+      awningAlt: color("awningAlt", "commercial"),
+      roofDeck: color("roofDeck", "concrete"),
+      construction: color("construction", "yellow"),
+      roofDark: color("roofDark", "abandoned"),
+      roofTile: color("roofTile", "residential"),
+    };
+  }
+
+  // massesFor() from the 2D composer in tile units around the footprint
+  // centre: u runs along x, v along z, y is world height. A variant picks
+  // one form, so buildings of one stage do not share an outline.
+  function buildingMasses(footprint, heightPx, grammar, variant, seed) {
+    const fw = Math.max(0.4, Number(footprint.w) || 1);
+    const fd = Math.max(0.4, Number(footprint.h) || 1);
+    const inset = Number.isFinite(grammar.inset) ? grammar.inset : 0.07;
+    const u0 = -fw / 2 + inset;
+    const v0 = -fd / 2 + inset;
+    const u1 = fw / 2 - inset;
+    const v1 = fd / 2 - inset;
+    const px = Math.max(6, Number(heightPx) || 24);
+    const height = pxToWorld(px);
+    const forms = Array.isArray(grammar.massing) && grammar.massing.length ? grammar.massing : ["single"];
+    const form = forms[(Math.max(1, variant | 0) - 1) % forms.length];
+    const wobble = ((seed >>> 6) & 7) / 40;
+    if (form === "setback" && px > 24) {
+      // The setback tower: a full base and a narrower upper body.
+      const split = height * (0.5 + wobble);
+      const s = 0.14 + wobble;
+      return [
+        { u0, v0, u1, v1, y0: 0, y1: split },
+        { u0: u0 + s, v0: v0 + s, u1: u1 - s, v1: v1 - s, y0: split, y1: height },
+      ];
+    }
+    if (form === "twin" && fw > 1.2) {
+      const mid = (u0 + u1) / 2;
+      const gap = 0.08;
+      return [
+        { u0, v0, u1: mid - gap, v1, y0: 0, y1: height },
+        { u0: mid + gap, v0, u1, v1, y0: 0, y1: height * (0.6 + wobble) },
+      ];
+    }
+    if (form === "wing") {
+      const cut = v0 + (v1 - v0) * (0.54 + wobble);
+      return [
+        { u0, v0, u1, v1: cut, y0: 0, y1: height },
+        { u0, v0: cut, u1, v1, y0: 0, y1: Math.max(pxToWorld(10), height * (0.44 + wobble)) },
+      ];
+    }
+    if (form === "courtyard" && fw > 1.2) {
+      const t = 0.26 + wobble * 0.4;
+      return [
+        { u0, v0, u1, v1: v0 + (v1 - v0) * t, y0: 0, y1: height },
+        { u0, v0: v1 - (v1 - v0) * t, u1, v1, y0: 0, y1: height * (0.9 + wobble) },
+        { u0, v0, u1: u0 + (u1 - u0) * t, v1, y0: 0, y1: height * (0.86 + wobble) },
+        { u0: u1 - (u1 - u0) * t, v0, u1, v1, y0: 0, y1: height * (0.94 + wobble) },
+      ];
+    }
+    if (form === "podium" && px > 30) {
+      const skirt = Math.max(pxToWorld(10), height * (0.26 + wobble));
+      const s = Math.min(0.3 + wobble, Math.min(fw, fd) * 0.3);
+      return [
+        { u0, v0, u1, v1, y0: 0, y1: skirt },
+        { u0: u0 + s, v0: v0 + s, u1: u1 - s, v1: v1 - s, y0: skirt, y1: height },
+      ];
+    }
+    if (form === "stepped" && px > 26) {
+      const s = Math.min(0.13 + wobble * 0.5, Math.min(fw, fd) * 0.15);
+      const a = height * (0.4 + wobble);
+      const b = height * (0.72 + wobble * 0.5);
+      return [
+        { u0, v0, u1, v1, y0: 0, y1: a },
+        { u0: u0 + s, v0: v0 + s, u1: u1 - s, v1: v1 - s, y0: a, y1: b },
+        { u0: u0 + s * 2, v0: v0 + s * 2, u1: u1 - s * 2, v1: v1 - s * 2, y0: b, y1: height },
+      ];
+    }
+    if (form === "gable") {
+      const t = 0.42 + wobble;
+      return [
+        { u0, v0, u1, v1, y0: 0, y1: height },
+        { u0: u0 + (u1 - u0) * 0.22, v0: v1 - 0.06, u1: u0 + (u1 - u0) * 0.72, v1: v1 + 0.16, y0: 0, y1: height * t },
+      ];
+    }
+    return [{ u0, v0, u1, v1, y0: 0, y1: height }];
+  }
+
+  function grammarWallColor(recipes, grammar, variant, seed, fallback) {
+    const walls = Array.isArray(grammar.walls) ? grammar.walls : [];
+    const chosen = walls.length
+      ? recipes.paletteColor(walls[((Math.max(1, variant | 0) - 1) * 5) % walls.length], "concrete")
+      : fallback;
+    // The 2D composer drifts each wall by up to 14/255 per building.
+    const drift = (((seed >>> 9) & 15) - 7) * 2;
+    // The neutral wall tile sits at 208/255, so the tint compensates by
+    // 255/208 and the palette colour lands on the wall surface itself.
+    return shade(chosen, (1 + drift / 160) * (255 / 208));
+  }
+
+  // Wall blocks tile the texture once per world unit. The wall tiles carry
+  // one storey per row, so a column of one-unit blocks shows whole floors,
+  // and the top block is cropped to k/rows rows so the height ends on a
+  // floor line. Returns the built top of the mass (may round up).
+  function pushWallMass(opaque, cx, cz, topY, mass, color, tile, rows) {
+    const width = Math.max(0.05, mass.u1 - mass.u0);
+    const depth = Math.max(0.05, mass.v1 - mass.v0);
+    const cols = Math.max(1, Math.ceil(width - 1e-6));
+    const deps = Math.max(1, Math.ceil(depth - 1e-6));
+    const cw = width / cols;
+    const cd = depth / deps;
+    const bands = Math.max(1, rows | 0);
+    const total = Math.max(1 / bands, mass.y1 - mass.y0);
+    const full = Math.floor(total + 1e-6);
+    const remainder = total - full;
+    const partRows = remainder > 1e-3 ? Math.min(bands, Math.max(1, Math.ceil(remainder * bands - 1e-6))) : 0;
+    for (let i = 0; i < cols; i += 1) {
+      for (let j = 0; j < deps; j += 1) {
+        const bx = cx + mass.u0 + cw * (i + 0.5);
+        const bz = cz + mass.v0 + cd * (j + 0.5);
+        // Every segment under the top one shrinks by a hair, so the block
+        // above covers its top face and the seam does not z-fight.
+        const seam = 0.004;
+        for (let level = 0; level < full; level += 1) {
+          const topmost = !partRows && level === full - 1;
+          const inset = topmost ? 0 : seam;
+          pushBlock(opaque, bx, topY + mass.y0 + level + 0.5, bz, cw - inset, 1, cd - inset, color, tile);
+        }
+        if (partRows) {
+          const h = partRows / bands;
+          pushBlock(opaque, bx, topY + mass.y0 + full + h / 2, bz, cw, h, cd, color, `${tile}#${partRows}/${bands}`);
+        }
+      }
+    }
+    return mass.y0 + full + (partRows ? partRows / bands : 0);
+  }
+
+  // A flat roof is a dark deck inside a light parapet rim, not a lid.
+  function pushFlatRoof(opaque, cx, cz, y, mass, rimColor, deckColor) {
+    const w = mass.u1 - mass.u0;
+    const d = mass.v1 - mass.v0;
+    const mx = cx + (mass.u0 + mass.u1) / 2;
+    const mz = cz + (mass.v0 + mass.v1) / 2;
+    const t = 0.06;
+    const h = 0.07;
+    pushBlock(opaque, mx, y + h / 2, cz + mass.v0 + t / 2, w, h, t, rimColor, "concrete");
+    pushBlock(opaque, mx, y + h / 2, cz + mass.v1 - t / 2, w, h, t, rimColor, "concrete");
+    pushBlock(opaque, cx + mass.u0 + t / 2, y + h / 2, mz, t, h, d, rimColor, "concrete");
+    pushBlock(opaque, cx + mass.u1 - t / 2, y + h / 2, mz, t, h, d, rimColor, "concrete");
+    pushBlock(opaque, mx, y + 0.015, mz, Math.max(0.05, w - 2 * t), 0.03, Math.max(0.05, d - 2 * t), deckColor, "roof.deck");
+  }
+
+  // A stepped gabled roof: stacked slabs narrowing to the ridge along the
+  // longer axis, with an eave overhang; hipped narrows along both axes.
+  function pushPitchedRoof(opaque, cx, cz, y, mass, roofColor, risePx, hipped) {
+    const w = mass.u1 - mass.u0;
+    const d = mass.v1 - mass.v0;
+    const mx = cx + (mass.u0 + mass.u1) / 2;
+    const mz = cz + (mass.v0 + mass.v1) / 2;
+    const rise = Math.max(0.12, pxToWorld(risePx));
+    const tiers = 4;
+    const th = rise / tiers;
+    const ridgeAlongX = w >= d;
+    for (let i = 0; i < tiers; i += 1) {
+      const across = 1.06 - (i / (tiers - 1)) * 0.84;
+      const along = hipped ? 1.04 - (i / (tiers - 1)) * 0.54 : 1.04;
+      const sx = ridgeAlongX ? w * along : w * across;
+      const sz = ridgeAlongX ? d * across : d * along;
+      pushBlock(opaque, mx, y + th * (i + 0.5), mz, sx, th, sz, shade(roofColor, 1 - i * 0.05), "roof.deck");
+    }
+  }
+
+  function pushSawtoothRoof(opaque, cx, cz, y, mass, roofColor, glassColor) {
+    const w = mass.u1 - mass.u0;
+    const d = mass.v1 - mass.v0;
+    const mz = cz + (mass.v0 + mass.v1) / 2;
+    const teeth = Math.max(2, Math.round(w * 2));
+    const step = w / teeth;
+    const rise = Math.max(0.1, pxToWorld(5));
+    for (let i = 0; i < teeth; i += 1) {
+      const ax = cx + mass.u0 + step * (i + 0.5);
+      pushBlock(opaque, ax, y + rise * 0.25, mz, step, rise * 0.5, d, shade(roofColor, 0.85), "roof.deck");
+      pushBlock(opaque, ax + step * 0.25, y + rise * 0.75, mz, step * 0.5, rise * 0.5, d, roofColor, "roof.deck");
+      pushBlock(opaque, ax + step * 0.5 - 0.012, y + rise * 0.5, mz, 0.024, rise * 0.9, d * 0.96, glassColor);
+    }
+  }
+
+  // A raised centre block on a flat roof: the stepped-parapet skyline.
+  function pushSteppedRoof(opaque, cx, cz, y, mass, rimColor, deckColor) {
+    pushFlatRoof(opaque, cx, cz, y, mass, rimColor, deckColor);
+    const w = mass.u1 - mass.u0;
+    const d = mass.v1 - mass.v0;
+    const s = Math.min(0.2, Math.min(w, d) * 0.25);
+    const mx = cx + (mass.u0 + mass.u1) / 2;
+    const mz = cz + (mass.v0 + mass.v1) / 2;
+    const stepH = 0.2;
+    pushBlock(opaque, mx, y + 0.07 + stepH / 2, mz, Math.max(0.1, w - 2 * s), stepH, Math.max(0.1, d - 2 * s), rimColor, "concrete");
+    pushBlock(opaque, mx, y + 0.07 + stepH + 0.01, mz, Math.max(0.06, w - 2 * s - 0.08), 0.02, Math.max(0.06, d - 2 * s - 0.08), deckColor, "roof.deck");
+  }
+
+  // Roof furniture is the strongest "this is a city" signal per block spent.
+  function pushRoofClutter(opaque, cx, cz, y, mass, items, palette, wallColor, seed, massHeightPx) {
+    const w = mass.u1 - mass.u0;
+    const d = mass.v1 - mass.v0;
+    const at = (fu, fv) => ({ x: cx + mass.u0 + w * Math.min(0.92, fu), z: cz + mass.v0 + d * Math.min(0.92, fv) });
+    items.forEach((item, index) => {
+      const jitterA = ((seed >>> (index * 3)) & 7) / 16;
+      const jitterB = ((seed >>> (index * 5 + 2)) & 7) / 16;
+      if (item === "tank") {
+        const c = at(0.24 + jitterA, 0.26 + jitterB);
+        const s = Math.min(0.16, Math.max(0.08, w * 0.1));
+        const drum = pxToWorld(Math.max(5, Math.min(11, Math.round(massHeightPx * 0.16))));
+        pushBlock(opaque, c.x, y + 0.05, c.z, s * 2, 0.1, s * 2, palette.steel, "metal");
+        pushBlock(opaque, c.x, y + 0.1 + drum / 2, c.z, s * 2, drum, s * 2, shade(palette.steel, 1.12), "metal");
+      } else if (item === "bulkhead") {
+        const c = at(0.26 + jitterA, 0.6);
+        pushBlock(opaque, c.x, y + 0.15, c.z, 0.4, 0.3, 0.4, wallColor, "concrete");
+      } else if (item === "vents") {
+        for (let i = 0; i < 3; i += 1) {
+          const c = at(0.2 + i * 0.26, 0.3 + (i % 2) * 0.32);
+          pushBlock(opaque, c.x, y + 0.05, c.z, 0.18, 0.1, 0.18, palette.metal, "metal");
+        }
+      } else if (item === "chimney") {
+        const c = at(0.7, 0.28);
+        const h = pxToWorld(11);
+        pushBlock(opaque, c.x, y + h / 2 - 0.05, c.z, 0.24, h, 0.24, palette.brick, "concrete");
+      } else if (item === "stack") {
+        const c = at(0.22 + jitterA + index * 0.18, 0.3 + jitterB * 0.5);
+        const tallPx = Math.max(20, Math.round(massHeightPx * 0.62)) + (((seed >>> (index * 4)) & 3) * 3);
+        const tall = pxToWorld(tallPx);
+        const r = Math.min(0.2, Math.max(0.1, w * 0.11));
+        pushBlock(opaque, c.x, y + tall / 2, c.z, r * 2, tall, r * 2, palette.stack, "concrete");
+        pushBlock(opaque, c.x, y + tall - pxToWorld(8), c.z, r * 2 + 0.02, pxToWorld(2), r * 2 + 0.02, shade(palette.red, 0.75), "metal");
+      } else if (item === "coolingTower") {
+        // A wide foot, a pinched waist, a flared lip, a dark mouth.
+        const c = at(0.28 + index * 0.4, 0.42);
+        const tall = pxToWorld(Math.max(26, Math.round(massHeightPx * 0.7)));
+        const foot = Math.min(0.42, Math.max(0.24, w * 0.28));
+        const drums = [[foot, 0, 0.4, 0.9], [foot * 0.7, 0.4, 0.78, 1], [foot * 0.92, 0.78, 1, 1.1]];
+        drums.forEach(([radius, a, b, tone]) => {
+          pushBlock(opaque, c.x, y + tall * (a + b) / 2, c.z, radius * 2, tall * (b - a), radius * 2, shade(palette.concrete, tone), "concrete");
+        });
+        const mouth = foot * 0.92 * 0.72;
+        pushBlock(opaque, c.x, y + tall + 0.01, c.z, mouth * 2, 0.02, mouth * 2, palette.black);
+      } else if (item === "sign") {
+        const c = at(0.5, 0.46);
+        const h = pxToWorld(7);
+        const lift = pxToWorld(2);
+        const signColor = index % 2 ? palette.signCool : palette.sign;
+        pushBlock(opaque, c.x, y + lift + h / 2, c.z, w * 0.6, h, 0.06, signColor, "metal");
+        pushBlock(opaque, c.x - w * 0.25, y + lift / 2, c.z, 0.03, lift, 0.03, palette.metal, "metal");
+        pushBlock(opaque, c.x + w * 0.25, y + lift / 2, c.z, 0.03, lift, 0.03, palette.metal, "metal");
+      } else if (item === "antenna") {
+        const c = at(0.5, 0.5);
+        const h = pxToWorld(15);
+        pushBlock(opaque, c.x, y + h / 2, c.z, 0.03, h, 0.03, palette.metal, "metal");
+        pushBlock(opaque, c.x, y + h + 0.03, c.z, 0.06, 0.06, 0.06, palette.red);
+      }
+    });
+  }
+
+  // Ground floor on the tallest mass: a door, a shopfront with an awning,
+  // or a loading door, as untextured blocks that stand a little proud of
+  // the wall so they read from every rotation.
+  function pushGroundFloor(opaque, cx, cz, baseY, mass, spec, palette, variant, prefix) {
+    if (!spec || typeof spec !== "object") return;
+    const w = mass.u1 - mass.u0;
+    const d = mass.v1 - mass.v0;
+    const mx = cx + (mass.u0 + mass.u1) / 2;
+    const mz = cz + (mass.v0 + mass.v1) / 2;
+    const h = Math.max(0.16, pxToWorld(spec.height || 7));
+    if (spec.kind === "shopfront") {
+      const glassH = Math.max(0.1, h - 0.06);
+      const faces = [
+        [mx, cz + mass.v1 + 0.006, Math.max(0.1, w - 0.1), 0.012, mx, cz + mass.v1 + 0.05, 0.1],
+        [mx, cz + mass.v0 - 0.006, Math.max(0.1, w - 0.1), 0.012, mx, cz + mass.v0 - 0.05, 0.1],
+        [cx + mass.u1 + 0.006, mz, 0.012, Math.max(0.1, d - 0.1), cx + mass.u1 + 0.05, mz, 0.1],
+        [cx + mass.u0 - 0.006, mz, 0.012, Math.max(0.1, d - 0.1), cx + mass.u0 - 0.05, mz, 0.1],
+      ];
+      const awning = prefix === "c" && variant % 2 ? palette.awningAlt : palette.awning;
+      faces.forEach(([x, z, sx, sz, ax, az, depth]) => {
+        pushBlock(opaque, x, baseY + 0.03 + glassH / 2, z, sx, glassH, sz, palette.glassCool);
+        const alongX = sx > sz;
+        pushBlock(opaque, ax, baseY + h + 0.02, az, alongX ? sx : depth, 0.04, alongX ? depth : sz, awning);
+      });
+      return;
+    }
+    if (spec.kind === "loading") {
+      const doorH = Math.max(0.12, h - 0.04);
+      pushBlock(opaque, mx, baseY + doorH / 2, cz + mass.v1 + 0.01, Math.max(0.16, w * 0.44), doorH, 0.02, palette.door);
+      pushBlock(opaque, cx + mass.u1 + 0.01, baseY + doorH / 2, mz, 0.02, doorH, Math.max(0.16, d * 0.44), palette.door);
+      return;
+    }
+    pushBlock(opaque, mx, baseY + 0.12, cz + mass.v1 + 0.01, 0.14, 0.24, 0.02, palette.door);
+    pushBlock(opaque, cx + mass.u1 + 0.01, baseY + 0.12, mz, 0.02, 0.24, 0.14, palette.door);
+  }
+
+  // One building from its grammar: masses, walls, roofs, ground floor and
+  // roof furniture. States follow the 2D composer: foundation is a slab,
+  // construction is a short striped body with scaffold poles, abandoned
+  // keeps its masses under a dark deck and no furniture.
+  function pushGrammarBuilding(opaque, recipes, palette, options) {
+    const { cx, cz, topY, footprint, grammar, variant, night, stateName, wallTile, wallColor, heightPx, seed, rows } = options;
+    const parapetColor = options.parapetColor || wallColor;
+    if (stateName === "foundation") {
+      pushBlock(opaque, cx, topY + 0.04, cz, footprint.w * 0.9, 0.08, footprint.h * 0.9, palette.concrete, "concrete");
+      return;
+    }
+    const masses = buildingMasses(footprint, heightPx, grammar, variant, seed);
+    const built = masses.map((mass) => ({ mass, top: pushWallMass(opaque, cx, cz, topY, mass, wallColor, wallTile, rows) }));
+    const tallest = Math.max(...built.map((entry) => entry.top));
+    const construction = stateName === "construction";
+    if (construction) {
+      // Two scaffold poles past the corners, the 2D composer's diagonal
+      // construction lines read as blocks.
+      const poleH = tallest + 0.3;
+      const outer = masses[0];
+      pushBlock(opaque, cx + outer.u0 - 0.03, topY + poleH / 2, cz + outer.v1 + 0.03, 0.04, poleH, 0.04, palette.construction, "metal");
+      pushBlock(opaque, cx + outer.u1 + 0.03, topY + poleH / 2, cz + outer.v0 - 0.03, 0.04, poleH, 0.04, palette.construction, "metal");
+    }
+    const roofForms = Array.isArray(grammar.roof) && grammar.roof.length ? grammar.roof : ["flat"];
+    const roofForm = roofForms[((Math.max(1, variant | 0) - 1) * 3) % roofForms.length];
+    const roofSet = Array.isArray(grammar.roofColors) ? grammar.roofColors : [];
+    const roofColor = night
+      ? palette.roofDark
+      : roofSet.length ? recipes.paletteColor(roofSet[((Math.max(1, variant | 0) - 1) * 11) % roofSet.length], "roofTile") : palette.roofTile;
+    const deckColor = night ? shade(palette.roofDeck, 0.6) : palette.roofDeck;
+    built.forEach(({ mass, top }) => {
+      const y = topY + top;
+      if (stateName === "abandoned") {
+        pushFlatRoof(opaque, cx, cz, y, mass, parapetColor, shade(deckColor, 0.7));
+        return;
+      }
+      if (roofForm === "pitched") pushPitchedRoof(opaque, cx, cz, y, mass, roofColor, grammar.roofRise || 8, false);
+      else if (roofForm === "hipped") pushPitchedRoof(opaque, cx, cz, y, mass, roofColor, grammar.roofRise || 8, true);
+      else if (roofForm === "sawtooth") pushSawtoothRoof(opaque, cx, cz, y, mass, roofColor, night ? shade(palette.glassCool, 0.5) : palette.glassCool);
+      else if (roofForm === "stepped") pushSteppedRoof(opaque, cx, cz, y, mass, parapetColor, deckColor);
+      else pushFlatRoof(opaque, cx, cz, y, mass, parapetColor, deckColor);
+      if (top !== tallest) return;
+      pushGroundFloor(opaque, cx, cz, topY, mass, grammar.groundFloor, palette, variant, options.prefix || "");
+      if (construction || !Array.isArray(grammar.clutter) || !grammar.clutter.length) return;
+      const massHeightPx = (mass.y1 - mass.y0) * PX_PER_WORLD_Y;
+      const massWidth = Math.min(mass.u1 - mass.u0, mass.v1 - mass.v0);
+      // Tall furniture needs a tall building under it; a small roof gets
+      // vents and a chimney and nothing more.
+      const allowed = grammar.clutter.filter((item) => {
+        if (item === "stack" || item === "coolingTower") return massHeightPx >= 26;
+        if (item === "tank") return massHeightPx >= 34 && massWidth >= 0.9;
+        if (item === "antenna") return massHeightPx >= 44;
+        if (item === "sign") return massWidth >= 0.9;
+        if (item === "bulkhead") return massHeightPx >= 22;
+        return true;
+      });
+      if (!allowed.length) return;
+      const identity = allowed.some((item) => item === "stack" || item === "coolingTower");
+      const cap = identity ? allowed.length : massHeightPx >= 44 ? allowed.length : massHeightPx >= 26 ? 2 : 1;
+      const count = identity
+        ? Math.min(allowed.length, 3)
+        : 1 + ((seed >>> 3) % Math.max(1, Math.min(cap, allowed.length)));
+      const items = [];
+      for (let i = 0; i < count; i += 1) items.push(allowed[(Math.max(1, variant | 0) - 1 + i) % allowed.length]);
+      pushRoofClutter(opaque, cx, cz, y, mass, items, palette, wallColor, seed, massHeightPx);
+    });
+  }
+
   function terrainTopY(snapshot, index) {
     return altitudeAt(snapshot, index) * ALT_STEP;
   }
@@ -1012,7 +1444,7 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
         const topY = alt * ALT_STEP;
         // Kept gentle: instance colors now convert through sRGB, which
         // widens multiplicative steps, so ±6% here read as a checkerboard.
-        const jitter = 0.97 + (hashTile(index) % 4) * 0.02;
+        const jitter = 0.985 + (hashTile(index) % 4) * 0.01;
 
         if (kind === "water") {
           // Bed column below, translucent surface on top. A future v3
@@ -1030,8 +1462,11 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
                 r: Math.min(1, surface.r + 0.12), g: Math.min(1, surface.g + 0.14), b: Math.min(1, surface.b + 0.18), a: 0.92,
               }
             : season === 0 ? shade(surface, 1.06) : surface;
+          // The surface rides just above the bed's top face: with both faces
+          // at the same height the transparent surface lost the depth test
+          // and the lake showed as bare bed.
           water.push({
-            x: x + 0.5, y: surfaceY - 0.05, z: y + 0.5, sx: 1, sy: 0.1, sz: 1,
+            x: x + 0.5, y: surfaceY + 0.02, z: y + 0.5, sx: 1, sy: 0.06, sz: 1,
             r: seasonalSurface.r, g: seasonalSurface.g, b: seasonalSurface.b, a: seasonalSurface.a,
             tile: "water",
           });
@@ -1051,10 +1486,14 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
             const winter = Math.floor(((Number(snapshot.tick) || 0) % 1500) / 375) === 3;
             const snow = (kind === "grass" || kind === "slope") && (alt >= 24 || winter);
             const color = shade(snow && top ? { r: 0.92, g: 0.94, b: 0.96, a: 1 } : (top ? style.top : style.side), jitter);
+            // Natural soil and rock in the lowland keep the grass texture
+            // under their leaned colour: three ground textures scattered
+            // tile by tile read as camouflage, one texture reads as ground.
             const terrainTile = snow && top ? "terrain.snow"
               : kind === "grass" || kind === "slope" ? "terrain.grass"
                 : kind === "coast" ? "terrain.sand"
-                  : `terrain.${kind}`;
+                  : (kind === "soil" || kind === "rock") && alt < 24 ? "terrain.grass"
+                    : `terrain.${kind}`;
             pushBlock(opaque, x + 0.5, level * ALT_STEP - ALT_STEP / 2, y + 0.5, 1, ALT_STEP, 1, color, top ? terrainTile : (kind === "grass" || kind === "slope" ? "terrain.grass" : `terrain.${kind}`));
           }
           // Cliff shadow bands: the lower tile carries a dark edge toward
@@ -1214,9 +1653,11 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
             pushBlock(opaque, cx, topY + 0.08, cz, 0.08, 0.16, 0.08, recipes.tree.trunk, "tree.trunk");
             pushBlock(opaque, cx, topY + 0.27, cz, 0.34, 0.26, 0.34, shade(canopy, shadeV + 0.04), canopyTile);
           } else {
-            // Broadleaf: trunk under one leafy blob.
+            // Broadleaf: trunk under a wide lower crown and a narrow upper
+            // crown, so the tree reads as a crown and not as a cube.
             pushBlock(opaque, cx, topY + 0.175, cz, 0.12, 0.35, 0.12, recipes.tree.trunk, "tree.trunk");
-            pushBlock(opaque, cx, topY + 0.62, cz, 0.55, 0.55, 0.55, shade(canopy, shadeV), canopyTile);
+            pushBlock(opaque, cx, topY + 0.5, cz, 0.5, 0.3, 0.5, shade(canopy, shadeV), canopyTile);
+            pushBlock(opaque, cx, topY + 0.78, cz, 0.34, 0.26, 0.34, shade(canopy, shadeV + 0.08), canopyTile);
           }
         }
 
@@ -1258,26 +1699,53 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     const inChunk = (object) => object.x >= startX && object.x < endX && object.y >= startY && object.y < endY;
 
     const night = isNight(snapshot);
+    const clutterPalette = grammarPalette(recipes);
     sceneObjects.buildings.filter(inChunk).forEach((building) => {
       const prefix = zonePrefix(building.zone || building.type) || "r";
       const family = recipes.families[prefix] || recipes.families.r;
       const stage = Math.max(1, Math.min(3, Number(building.stage || building.level || 1) | 0));
-      const stageRecipe = recipes.stages[stage] || recipes.stages[1] || { height: 0.5 };
+      const stageRecipe = recipes.stages[stage] || recipes.stages[1] || { height: 0.5, heightPx: 24 };
       const stateName = normalizeBuildingState(building.state || building.status);
       const stateRecipe = recipes.states[stateName] || recipes.states.normal;
       const footprint = building.footprint || { w: 1, h: 1 };
       const baseX = Math.max(0, Math.min(size - 1, Math.floor(building.x)));
       const baseY = Math.max(0, Math.min(size - 1, Math.floor(building.y)));
       const topY = terrainTopY(snapshot, baseY * size + baseX);
-      const height = Math.max(0.06, stageRecipe.height * (stateRecipe.heightScale || 1));
       const variant = Math.max(1, Number(building.variant) || 1);
+      const cx = building.x + footprint.w / 2;
+      const cz = building.y + footprint.h / 2;
+      const decorSeed = hashTile(((building.x * 7919 + building.y * 104729 + variant * 31) >>> 0) ^ (footprint.w * 7 + footprint.h));
+      const grammar = grammarForZone(recipes, prefix, stage);
+      if (grammar) {
+        let wallColor = grammarWallColor(recipes, grammar, variant, decorSeed, family.base);
+        if (stateName === "declined") wallColor = shade(wallColor, 0.72);
+        if (stateName === "recovering") wallColor = shade(wallColor, 0.9);
+        if (stateName === "abandoned") wallColor = recipes.paletteColor("abandoned");
+        if (night) wallColor = shade(wallColor, 0.55);
+        // Construction keeps its walls (the 2D composer only changes the
+        // glass and adds scaffold lines); foundation is a slab.
+        const wallTile = stateName === "abandoned"
+          ? "abandoned"
+          : night ? `wall.${prefix}.night` : `wall.${prefix}.day`;
+        pushGrammarBuilding(opaque, recipes, clutterPalette, {
+          cx, cz, topY, footprint, grammar, variant, night, stateName, wallTile, wallColor,
+          heightPx: building.derived && stage > 1
+            ? Math.min(stageRecipe.heightPx || 24, 22 + stage * 12)
+            : (stageRecipe.heightPx || stageRecipe.height * PX_PER_TILE),
+          seed: decorSeed,
+          rows: WALL_ROWS[prefix] || 3,
+          parapetColor: wallColor,
+        });
+        return;
+      }
+      // No grammar loaded (offline fallback recipes): one tinted box with a
+      // flat deck, so a city still reads as a city.
+      const height = Math.max(0.06, stageRecipe.height * (stateRecipe.heightScale || 1));
       let color = stateRecipe.color || family.base;
       if (!stateRecipe.color) color = shade(color, 1 + ((variant - 1) % 4 - 1.5) * 0.07);
       if (stateRecipe.shade) color = shade(color, stateRecipe.shade);
       const w = footprint.w * 0.92;
       const d = footprint.h * 0.92;
-      const cx = building.x + footprint.w / 2;
-      const cz = building.y + footprint.h / 2;
       const wallMaterial = stateName === "abandoned"
         ? "abandoned"
         : stateName === "construction" || stateName === "foundation"
@@ -1285,52 +1753,8 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
           : night ? `wall.${prefix}.night` : `wall.${prefix}.day`;
       pushBlock(opaque, cx, topY + height / 2, cz, w, height, d, color, wallMaterial);
       if (stateName === "normal" || stateName === "recovering") {
-        const roofColor = night ? shade(family.light, 0.55) : family.light;
-        const roofTile = night ? "roof.dark" : "roof";
-        const decorSeed = hashTile(((building.x * 7919 + building.y * 104729 + variant * 31) >>> 0) ^ (footprint.w * 7 + footprint.h));
-        if (footprint.w === 1 && footprint.h === 1 && stateName === "normal") {
-          // Small house: a stepped gabled roof reads as a house, with a
-          // chimney and a front door. The ridge axis alternates by variant.
-          const ridgeAlongX = variant % 2 === 0;
-          [0.78, 0.5, 0.24].forEach((width, tier) => {
-            const slope = shade(roofColor, 1 - tier * 0.07);
-            if (ridgeAlongX) {
-              pushBlock(opaque, cx, topY + height + 0.03 + tier * 0.06, cz, width, 0.06, 1.0, slope, roofTile);
-            } else {
-              pushBlock(opaque, cx, topY + height + 0.03 + tier * 0.06, cz, 1.0, 0.06, width, slope, roofTile);
-            }
-          });
-          pushBlock(opaque, cx + (variant % 3 === 0 ? 0.2 : -0.2), topY + height + 0.24, cz + 0.16, 0.1, 0.2, 0.1, recipes.connectors.wire, "concrete");
-          pushBlock(opaque, cx + 0.38, topY + 0.12, cz, 0.03, 0.24, 0.15, shade(family.base, 0.55), "concrete");
-          return;
-        }
-        if (footprint.w >= 3 && footprint.h >= 3) {
-          // High-rise: a setback tower, the SC2000 skyline shape.
-          const lowerH = height * 0.62;
-          const upperH = height * 0.38;
-          pushBlock(opaque, cx, topY + lowerH / 2, cz, w, lowerH, d, color, wallMaterial);
-          const uw = w * 0.62;
-          const ud = d * 0.62;
-          pushBlock(opaque, cx, topY + lowerH + upperH / 2, cz, uw, upperH, ud, shade(color, 1.05), wallMaterial);
-          pushBlock(opaque, cx, topY + height + 0.02, cz, uw * 0.9, 0.04, ud * 0.9, roofColor, roofTile);
-          pushBlock(opaque, cx, topY + height + 0.14, cz, 0.06, 0.26, 0.06, recipes.connectors.railAccent, "metal");
-          return;
-        }
-        // Mid building: a flat roof with per-variant machinery.
-        pushBlock(opaque, cx, topY + height + 0.02, cz, w * 0.9, 0.04, d * 0.9, roofColor, roofTile);
-        const roofTop = topY + height + 0.06;
-        const kind = decorSeed % 3;
-        const ox = ((decorSeed >>> 5) % 3) - 1;
-        const oz = ((decorSeed >>> 9) % 3) - 1;
-        const px = cx + ox * Math.max(0.12, footprint.w * 0.14);
-        const pz = cz + oz * Math.max(0.12, footprint.h * 0.14);
-        if (kind === 0) {
-          pushBlock(opaque, px, roofTop + 0.03, pz, 0.2, 0.06, 0.2, shade(recipes.catalogCategories.highway, 1.08), "metal");
-        } else if (kind === 1) {
-          pushBlock(opaque, px, roofTop + 0.09, pz, 0.11, 0.18, 0.11, recipes.connectors.wire, "concrete");
-        } else {
-          pushBlock(opaque, px, roofTop + 0.12, pz, 0.05, 0.24, 0.05, recipes.connectors.railAccent, "metal");
-        }
+        const roofTile = night ? "roof.dark" : "roof.deck";
+        pushBlock(opaque, cx, topY + height + 0.02, cz, w * 0.9, 0.04, d * 0.9, night ? shade(family.light, 0.55) : family.light, roofTile);
       }
     });
 
@@ -1344,6 +1768,26 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
       const w = footprint.w * 0.9;
       const d = footprint.h * 0.9;
       const facilityTile = state.textures && state.textures.materials[`facility.${facility.kind}`] ? `facility.${facility.kind}` : "concrete";
+      const grammar = recipes.facilityGrammar ? recipes.facilityGrammar[`facility.${facility.kind}`] : null;
+      if (grammar) {
+        // Plants and services read by silhouette: the same composer, the
+        // facility's own tile as the wall, stacks and towers from its
+        // clutter list.
+        const seed = hashTile(((facility.x * 7919 + facility.y * 104729) >>> 0) ^ 97);
+        pushGrammarBuilding(opaque, recipes, clutterPalette, {
+          cx: facility.x + footprint.w / 2, cz: facility.y + footprint.h / 2, topY, footprint, grammar,
+          variant: 1, night, stateName: "normal", seed,
+          // Plants and services wear the 2D composer's base colour on the
+          // neutral concrete tile; the dark facility patterns made every
+          // plant a black tower.
+          wallTile: "concrete",
+          wallColor: shade(recipe.base, night ? 0.8 : 1.7),
+          heightPx: recipe.heightPx || recipe.height * PX_PER_TILE,
+          rows: 2,
+          parapetColor: recipe.base,
+        });
+        return;
+      }
       pushBlock(opaque, facility.x + footprint.w / 2, topY + recipe.height / 2, facility.y + footprint.h / 2, w, recipe.height, d, recipe.base, facilityTile);
       pushBlock(opaque, facility.x + footprint.w / 2, topY + recipe.height + 0.02, facility.y + footprint.h / 2, w * 0.85, 0.04, d * 0.85, recipe.light, "metal");
     });
@@ -1618,6 +2062,13 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
   }
 
   const PURE = Object.freeze({
+    PX_PER_WORLD_Y,
+    measureFrame,
+    shadowMapSizeFor,
+    pxToWorld,
+    buildingMasses,
+    tileCropFraction,
+    tileMaterialId,
     ALT_STEP,
     PX_PER_TILE,
     MIN_ZOOM,
@@ -1696,6 +2147,7 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     camera: null,
     ambient: null,
     sun: null,
+    fill: null,
     staticGroup: null,
     dynamicGroup: null,
     sharedGeometry: null,
@@ -1703,6 +2155,7 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     textures: null,
     texture: null,
     texturedMaterial: null,
+    wallMaterial: null,
     waterTexture: null,
     tileGeometries: new Map(),
     recipes: buildRecipes(null),
@@ -1724,6 +2177,10 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     lastKeys: {},
     activeRaf: 0,
     instanceCount: 0,
+    // First-30-frame budget probe: if the median render is slow, the shadow
+    // map halves once and stays halved for this mount.
+    frameSamples: [],
+    shadowReduced: false,
     ledger: createResourceLedger(),
   };
 
@@ -1806,6 +2263,39 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     }
   }
 
+  // Wall tiles are tint-neutral with a glass mask in alpha (alpha 0 = glass).
+  // This material multiplies the instance colour into wall pixels only and
+  // paints the glass from a uniform, so one tile serves every wall colour,
+  // and at night the glass glows from the same uniform pair.
+  function createWallMaterial(THREE, texture) {
+    const material = new THREE.MeshLambertMaterial({ map: texture, color: 0xffffff });
+    const uniforms = {
+      uGlassColor: { value: new THREE.Color(0.48, 0.62, 0.71) },
+      uGlassGlow: { value: new THREE.Color(0, 0, 0) },
+    };
+    material.onBeforeCompile = (shader) => {
+      shader.uniforms.uGlassColor = uniforms.uGlassColor;
+      shader.uniforms.uGlassGlow = uniforms.uGlassGlow;
+      shader.fragmentShader = shader.fragmentShader
+        .replace("#include <common>", "#include <common>\nuniform vec3 uGlassColor;\nuniform vec3 uGlassGlow;\nvec4 bonsaiWallTexel;")
+        .replace("#include <map_fragment>", [
+          "bonsaiWallTexel = texture2D( map, vMapUv );",
+          "#ifdef USE_INSTANCING_COLOR",
+          "vec3 bonsaiWall = bonsaiWallTexel.rgb * vColor;",
+          "#else",
+          "vec3 bonsaiWall = bonsaiWallTexel.rgb;",
+          "#endif",
+          "diffuseColor.rgb *= mix( bonsaiWallTexel.rgb * uGlassColor, bonsaiWall, bonsaiWallTexel.a );",
+          "diffuseColor.a = 1.0;",
+        ].join("\n"))
+        .replace("#include <color_fragment>", "")
+        .replace("#include <emissivemap_fragment>", "#include <emissivemap_fragment>\ntotalEmissiveRadiance += uGlassGlow * bonsaiWallTexel.rgb * ( 1.0 - bonsaiWallTexel.a );");
+    };
+    material.customProgramCacheKey = () => "bonsai-wall-v1";
+    material.userData.uniforms = uniforms;
+    return material;
+  }
+
   function createMaterials(THREE) {
     const opaque = state.ledger.track(new THREE.MeshLambertMaterial({ color: 0xffffff }));
     const water = state.ledger.track(new THREE.MeshLambertMaterial({
@@ -1856,37 +2346,53 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
   // four sides its side tile, with texture v=0 at the top edge so wall
   // windows stay upright. Geometries are cached per material id and disposed
   // with the renderer.
-  function tileGeometry(THREE, materialId) {
+  // A tile key may carry a crop suffix "material#k/rows": the side faces
+  // then show only the top k of rows storey bands, for the last block of a
+  // wall column whose height ends between whole units.
+  function tileMaterialId(key) {
+    return String(key).split("#")[0];
+  }
+
+  function tileCropFraction(key) {
+    const crop = String(key).split("#")[1];
+    if (!crop) return 1;
+    const [k, rows] = crop.split("/").map(Number);
+    if (!(k > 0) || !(rows > 0) || k > rows) return 1;
+    return k / rows;
+  }
+
+  function tileGeometry(THREE, key) {
     if (!state.textures) return state.sharedGeometry;
-    const material = state.textures.materials[materialId];
+    const material = state.textures.materials[tileMaterialId(key)];
     if (!material) return state.sharedGeometry;
     const topRect = state.textures.tiles[material.top];
     const sideRect = state.textures.tiles[material.side];
     if (!topRect || !sideRect) return state.sharedGeometry;
-    const cached = state.tileGeometries.get(materialId);
+    const cached = state.tileGeometries.get(key);
     if (cached) return cached;
+    const fraction = tileCropFraction(key);
     const geometry = new THREE.BoxGeometry(1, 1, 1);
     const size = state.textures.atlas.height;
     const uv = geometry.attributes.uv.array;
-    const setFace = (face, rect) => {
+    const setFace = (face, rect, crop = 1) => {
       const u0 = rect.x / size;
       const u1 = (rect.x + rect.w) / size;
       const vt = rect.y / size;
-      const vb = (rect.y + rect.h) / size;
+      const vb = (rect.y + rect.h * crop) / size;
       const o = face * 8;
       uv[o] = u0; uv[o + 1] = vb;
       uv[o + 2] = u1; uv[o + 3] = vb;
       uv[o + 4] = u0; uv[o + 5] = vt;
       uv[o + 6] = u1; uv[o + 7] = vt;
     };
-    setFace(0, sideRect);
-    setFace(1, sideRect);
+    setFace(0, sideRect, fraction);
+    setFace(1, sideRect, fraction);
     setFace(2, topRect);
     setFace(3, sideRect);
-    setFace(4, sideRect);
-    setFace(5, sideRect);
+    setFace(4, sideRect, fraction);
+    setFace(5, sideRect, fraction);
     geometry.attributes.uv.needsUpdate = true;
-    state.tileGeometries.set(materialId, geometry);
+    state.tileGeometries.set(key, geometry);
     state.ledger.track(geometry);
     return geometry;
   }
@@ -1899,7 +2405,7 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     const flat = [];
     const byTile = new Map();
     blocks.forEach((block) => {
-      if (!block.tile || !state.textures || !state.textures.materials[block.tile]) {
+      if (!block.tile || !state.textures || !state.textures.materials[tileMaterialId(block.tile)]) {
         flat.push(block);
         return;
       }
@@ -1913,8 +2419,12 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     const flatMesh = buildInstancedMesh(flat, state.materials.opaque, 0, state.sharedGeometry, "both");
     if (flatMesh) meshes.push(flatMesh);
     byTile.forEach((group, tile) => {
-      const mesh = buildInstancedMesh(group, state.materials.textured, 0, tileGeometry(state.THREE, tile), "both");
-      if (mesh) meshes.push(mesh);
+      const material = state.wallMaterial && tileMaterialId(tile).startsWith("wall.") ? state.wallMaterial : state.materials.textured;
+      const mesh = buildInstancedMesh(group, material, 0, tileGeometry(state.THREE, tile), "both");
+      if (mesh) {
+        mesh.userData.tileKey = tile;
+        meshes.push(mesh);
+      }
     });
     return meshes;
   }
@@ -2034,6 +2544,21 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     }
     state.sun.intensity = light.sunIntensity;
     state.ambient.intensity = light.ambientIntensity;
+    if (state.fill) {
+      state.fill.position.set(-light.sunX, 0.6, -light.sunZ);
+      state.fill.intensity = 0.12 + light.dayFactor * 0.3;
+    }
+    if (state.wallMaterial) {
+      // Glass: daylight blue-grey by day, warm lit windows as the day
+      // factor falls; the glow is what makes the night skyline.
+      const uniforms = state.wallMaterial.userData.uniforms;
+      const glass = state.recipes.paletteColor("glass");
+      const lit = state.recipes.paletteColor("windowNight", "yellow");
+      const nightMix = Math.max(0, Math.min(1, (0.6 - light.dayFactor) / 0.45));
+      const mix = (a, b) => a + (b - a) * nightMix;
+      uniforms.uGlassColor.value.setRGB(mix(glass.r, lit.r), mix(glass.g, lit.g), mix(glass.b, lit.b), state.THREE.SRGBColorSpace);
+      uniforms.uGlassGlow.value.setRGB(lit.r * 0.7 * nightMix, lit.g * 0.7 * nightMix, lit.b * 0.7 * nightMix, state.THREE.SRGBColorSpace);
+    }
     state.scene.background.setRGB(light.skyR, light.skyG, light.skyB, state.THREE.SRGBColorSpace);
     const bob = waterBob(snapshot.timeOfDay);
     state.chunks.forEach((record) => {
@@ -2130,6 +2655,7 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
       state.texture = texture;
       state.ledger.track(texture);
       state.texturedMaterial = state.ledger.track(new THREE.MeshLambertMaterial({ map: texture, color: 0xffffff }));
+      state.wallMaterial = state.ledger.track(createWallMaterial(THREE, texture));
       const waterRect = state.textures.tiles.water;
       if (waterRect && typeof document !== "undefined") {
         const tileCanvas = document.createElement("canvas");
@@ -2169,20 +2695,26 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     };
     canvas.addEventListener("webglcontextlost", state.contextLostHandler, false);
 
+    const rect0 = containerRect();
     state.scene = new THREE.Scene();
     state.scene.background = new THREE.Color(0x1b2a20);
     state.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 2000);
     state.ambient = new THREE.AmbientLight(0xffffff, 0.62);
     state.sun = new THREE.DirectionalLight(0xffffff, 0.85);
     state.sun.castShadow = true;
-    state.sun.shadow.mapSize.set(SHADOW_MAP_SIZE, SHADOW_MAP_SIZE);
+    state.sun.shadow.mapSize.set(shadowMapSizeFor(rect0.width, state.dpr), shadowMapSizeFor(rect0.width, state.dpr));
+    state.frameSamples.length = 0;
+    state.shadowReduced = false;
     state.sun.shadow.bias = -0.0006;
     state.sun.shadow.normalBias = 0.03;
     state.sun.shadow.camera.near = 1;
     state.sun.shadow.camera.far = SUN_DISTANCE * 2;
+    // A fill light opposite the sun, no shadow: the faces the sun does not
+    // reach keep their colour instead of dropping to ambient black.
+    state.fill = new THREE.DirectionalLight(0xffffff, 0.3);
     state.staticGroup = new THREE.Group();
     state.dynamicGroup = new THREE.Group();
-    state.scene.add(state.ambient, state.sun, state.sun.target, state.staticGroup, state.dynamicGroup);
+    state.scene.add(state.ambient, state.sun, state.sun.target, state.fill, state.staticGroup, state.dynamicGroup);
     state.sharedGeometry = state.ledger.track(new THREE.BoxGeometry(1, 1, 1));
     state.materials = createMaterials(THREE);
     if (state.waterTexture) {
@@ -2230,6 +2762,7 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     if (!state.ready || state.disposed || !snapshot) return;
     state.snapshot = snapshot;
     applyViewState(viewState);
+    const frameStart = typeof performance !== "undefined" && typeof performance.now === "function" ? performance.now() : 0;
     // The static sweep hashes every chunk, so gate it on the snapshot's
     // structural revision. A foreign snapshot without rev sweeps every frame,
     // which stays correct, only slower.
@@ -2245,6 +2778,23 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     syncLighting(snapshot);
     syncCamera(snapshot);
     state.renderer.render(state.scene, state.camera);
+    if (frameStart) {
+      const elapsed = performance.now() - frameStart;
+      state.frameSamples.push(elapsed);
+      if (state.frameSamples.length >= 30 && !state.shadowReduced) {
+        const sorted = [...state.frameSamples].sort((a, b) => a - b);
+        if (sorted[14] > 24) {
+          // A slow small surface keeps its silhouette but halves shadow
+          // texels; the budget probe fires once per mount.
+          state.shadowReduced = true;
+          const half = Math.max(256, Math.floor(shadowMapSizeFor(state.cssWidth, state.dpr) / 2));
+          state.sun.shadow.map?.dispose?.();
+          state.sun.shadow.map = null;
+          state.sun.shadow.mapSize.set(half, half);
+        }
+      }
+      if (state.frameSamples.length > 60) state.frameSamples.splice(0, 30);
+    }
   }
 
   function pickTile(clientX, clientY, rect) {
@@ -2418,6 +2968,7 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     state.camera = null;
     state.ambient = null;
     state.sun = null;
+    state.fill = null;
     state.staticGroup = null;
     state.dynamicGroup = null;
     state.sharedGeometry = null;
@@ -2425,6 +2976,7 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     state.textures = null;
     state.texture = null;
     state.texturedMaterial = null;
+    state.wallMaterial = null;
     state.waterTexture = null;
     state.tileGeometries.clear();
     state.stack = null;
@@ -2438,6 +2990,50 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     state.disposed = true;
     state.cssWidth = 0;
     state.cssHeight = 0;
+  }
+
+  // The instance count of what is on screen now: every chunk mesh plus the
+  // dynamic meshes. A running counter would only grow across rebuilds.
+  // Instances per tile key across the static chunks: the probe that says
+  // which materials actually reached the GPU.
+  function tileGroupCounts() {
+    const counts = {};
+    state.chunks.forEach((record) => {
+      (record.meshes || []).forEach((mesh) => {
+        if (!mesh) return;
+        const key = mesh.userData.tileKey || (mesh === record.waterMesh ? "water" : "flat");
+        counts[key] = (counts[key] || 0) + mesh.count;
+      });
+    });
+    return counts;
+  }
+
+  function tileGroupColors() {
+    const colors = {};
+    state.chunks.forEach((record) => {
+      (record.meshes || []).forEach((mesh) => {
+        if (!mesh || !mesh.userData.tileKey || colors[mesh.userData.tileKey] || !mesh.instanceColor) return;
+        const array = mesh.instanceColor.array;
+        const seen = new Set();
+        for (let i = 0; i < mesh.count; i += 1) {
+          seen.add([array[i * 3], array[i * 3 + 1], array[i * 3 + 2]].map((v) => Math.round(v * 255)).join(","));
+        }
+        colors[mesh.userData.tileKey] = [...seen].slice(0, 12);
+      });
+    });
+    return colors;
+  }
+
+  function liveInstanceCount() {
+    let count = 0;
+    state.chunks.forEach((record) => {
+      (record.meshes || []).forEach((mesh) => { count += mesh ? mesh.count : 0; });
+    });
+    Object.keys(state.dynamicMeshes).forEach((key) => {
+      const mesh = state.dynamicMeshes[key];
+      count += mesh ? mesh.count : 0;
+    });
+    return count;
   }
 
   function debugStats() {
@@ -2460,7 +3056,20 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
       chunkBuildCount: state.chunkBuildCount,
       visibleTileCount: state.snapshot ? mapSize(state.snapshot) ** 2 : 0,
       layerCount: 1,
-      instanceCount: state.instanceCount,
+      instanceCount: liveInstanceCount(),
+      tileGroups: tileGroupCounts(),
+      tileColors: tileGroupColors(),
+      glass: state.wallMaterial ? {
+        color: state.wallMaterial.userData.uniforms.uGlassColor.value.getHexString(),
+        glow: state.wallMaterial.userData.uniforms.uGlassGlow.value.getHexString(),
+      } : null,
+      timeOfDay: state.snapshot ? state.snapshot.timeOfDay : null,
+      night: state.snapshot ? isNight(state.snapshot) : null,
+      shadowMapSize: state.sun ? state.sun.shadow.mapSize.x : 0,
+      frameProbe: {
+        samples: state.frameSamples.length,
+        reduced: state.shadowReduced,
+      },
       outstandingResources: state.ledger.count(),
       contextLost: state.contextLost,
       rotation: state.view.rotation,

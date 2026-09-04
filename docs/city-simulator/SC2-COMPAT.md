@@ -37,8 +37,12 @@ Every decompressed segment is preserved verbatim in the save's
 
 ## Known M2 approximations
 
-- SC2K power plants are 4×4; the working facility covers a smaller anchor
-  footprint. `catalogId` keeps the real building id on every tile.
+- SC2K power plants are 4×4. A native coal plant now takes the full 4×4 pad
+  (save rule 3.1); the importer still opens the other plant kinds and any
+  imported coal plant on the smaller anchor footprint, and such a record
+  keeps that size on the map (the query panel names it "older 2×2 plant").
+  Mapping the importer's coal footprint to the full pad is codec work.
+  `catalogId` keeps the real building id on every tile.
 - Highways and onramps are working layers (M3b-2b): imported highway ids
   (including crossovers and reinforced bridges) land on the `highway`
   layer, crossovers also keep the road/rail/power line they cross, and
@@ -53,8 +57,15 @@ Every decompressed segment is preserved verbatim in the save's
   XTHG re-emits verbatim from the sidecar, so deploys, monsters, and the
   header record are never lost, at the cost that simulated movement does
   not reach an imported city's re-export.
-- The 64×64/32×32 derived grids are recomputed by our simulation rather
-  than seeded from XTRF…XROG [planned].
+- The 64×64/32×32 derived grids are recomputed by our simulation:
+  `sc2DerivedGrids(state)` is a pure read that downsamples traffic to 64×64
+  and pollution, land value, crime, police strength, and fire strength to
+  32×32 by cell mean, whatever the map size. Export writes XTRF/XPLT/XVAL/
+  XCRM (quarter grids) and XPLC/XFIR/XPOP (sixteenth grids) plus XROG/XGRP
+  from the live model; import preserves the original grid segments verbatim
+  in the sidecar and the display reads the simulation's recomputed grids, so
+  an imported city's overlays always match its running state rather than a
+  stale snapshot.
 
 ## Owner manual check (with a legally-owned copy of SC2K)
 
@@ -73,6 +84,26 @@ following runs entirely on the owner's machine:
 
 Record findings in the implementation-status file; divergences feed the
 parity tuning milestones.
+
+### Certification run sheet
+
+One row per system, filled on the owner's machine; the sample city is the
+synthetic one `tests/features/bonsai-sc2.test.mjs` builds ("the native
+town"), exported through the File menu, never an EA file.
+
+| System | Original window | Bonsai surface | Match (yes / no / note) |
+| --- | --- | --- | --- |
+| Map, coastline, altitude | map view | 2D and 3D views | |
+| Funds, date, tax rates | budget window | gauge bar, budget pane | |
+| Eleven funding lines | budget window | budget pane | |
+| Zones and density | zone view | 分区 display toggle | |
+| Roads, rail, power, pipes, subway | network views | 基础设施 / 地下 toggles | |
+| Plants and their outputs | query dialog | query balloon (footprint row) | |
+| Traffic 64×64, pollution / land value / crime / police / fire 32×32 | data views | Data Views submenu | |
+| Ordinances | ordinance window | budget pane checklist | |
+| Rewards offered | reward dialogs | rewards rail group | |
+| Newspaper | newspaper | Newspaper menu | |
+| Re-export plays on in SC2K | game accepts the file | File → Export .sc2 | |
 
 ## Fixture policy
 

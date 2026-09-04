@@ -6,9 +6,9 @@ window.AISystem6BonsaiSimLoaded = true;
   "use strict";
 
   const FORMAT = "bonsai-city";
-  const SAVE_VERSION = 3;
-  const SAVE_FORMAT_VERSION = 3;
-  const ENGINE_RULESET_VERSION = 3;
+  const SAVE_VERSION = 4;
+  const SAVE_FORMAT_VERSION = 4;
+  const ENGINE_RULESET_VERSION = 4;
   const COMMAND_SCHEMA_VERSION = 2;
   const EVENT_SCHEMA_VERSION = 2;
   const FIXED_TICK_HZ = 20;
@@ -87,20 +87,21 @@ window.AISystem6BonsaiSimLoaded = true;
   const MAX_BONDS = 50;
   // The twenty SC2K ordinances, finance section first. Per-capita income and
   // cost figures are our own deterministic approximations, tuned against the
-  // owner's side-by-side sessions; EQ/LE hooks arrive with the population
-  // model (M4b) and are marked "later".
+  // owner's side-by-side sessions. The EQ/LE hooks landed with the
+  // population model (M4b): updateDemographics reads proReading (EQ),
+  // cprTraining, freeClinics, and publicSmokingBan (LE).
   const ORDINANCES = Object.freeze({
     salesTax: { section: "finance", incomeDiv: 20 },
     incomeTax: { section: "finance", incomeDiv: 25 },
     legalizedGambling: { section: "finance", incomeDiv: 16, crime: 5 },
     parkingFines: { section: "finance", incomeDiv: 40 },
-    proReading: { section: "education", base: 20, costDiv: 50 },       // EQ later
+    proReading: { section: "education", base: 20, costDiv: 50 },       // EQ +5
     antiDrug: { section: "safety", base: 20, costDiv: 50, crime: -8 },
-    cprTraining: { section: "safety", base: 10, costDiv: 80 },         // LE later
+    cprTraining: { section: "safety", base: 10, costDiv: 80 },         // LE +2
     neighborhoodWatch: { section: "safety", base: 10, costDiv: 60, crime: -6 },
     juniorSports: { section: "promotion", base: 20, costDiv: 60, happiness: 2 },
-    publicSmokingBan: { section: "safety", base: 5, costDiv: 200 },    // LE later
-    freeClinics: { section: "safety", base: 25, costDiv: 40 },         // LE later
+    publicSmokingBan: { section: "safety", base: 5, costDiv: 200 },    // LE +2
+    freeClinics: { section: "safety", base: 25, costDiv: 40 },         // LE +3
     homelessShelters: { section: "safety", base: 20, costDiv: 50 },
     pollutionControls: { section: "other", base: 25, costDiv: 40, cleanIndustry: true },
     volunteerFireDept: { section: "safety", base: 5, costDiv: 200 },
@@ -120,7 +121,7 @@ window.AISystem6BonsaiSimLoaded = true;
   // against the owner's side-by-side sessions (SC2-COMPAT.md protocol).
   const PLANT_LIFESPAN_TICKS = 50 * MONTHS_PER_YEAR * TICKS_PER_MONTH;
   const FACILITY_KINDS = Object.freeze({
-    coal: { w: 2, h: 2, cost: 4000, upkeep: 60, power: 200, pollution: 70, tech: 1900, lifespan: true, group: "utility" },
+    coal: { w: 4, h: 4, cost: 4000, upkeep: 60, power: 200, pollution: 70, tech: 1900, lifespan: true, group: "utility" },
     hydro: { w: 1, h: 1, cost: 400, upkeep: 8, power: 20, pollution: 0, tech: 1900, lifespan: true, needsWaterfall: true, group: "utility" },
     oil: { w: 4, h: 4, cost: 6600, upkeep: 70, power: 220, pollution: 60, tech: 1900, lifespan: true, group: "utility" },
     gas: { w: 4, h: 4, cost: 2000, upkeep: 40, power: 50, pollution: 20, tech: 1950, lifespan: true, group: "utility" },
@@ -149,8 +150,30 @@ window.AISystem6BonsaiSimLoaded = true;
     statue: { w: 1, h: 1, cost: 0, upkeep: 0, reward: true, valueBonus: 8, radius: 5, group: "civic" },
     dome: { w: 3, h: 3, cost: 0, upkeep: 0, reward: true, valueBonus: 10, radius: 6, group: "civic" },
     arco: { w: 3, h: 3, cost: 0, upkeep: 0, reward: true, repeatable: true, population: 30000, valueBonus: 6, radius: 4, tech: 2000, group: "civic" },
+    // SC2K arco family (MISC 0738-0774). The reward offers a single arco at
+    // tier 6 the SC2K way; the mayor chooses which kind. Each has its own
+    // population, value bonus, and discovery year.
+    "arco-plymouth": { w: 3, h: 3, cost: 0, upkeep: 0, reward: true, repeatable: true, population: 24000, valueBonus: 6, radius: 4, tech: 2000, group: "civic" },
+    "arco-forest": { w: 3, h: 3, cost: 0, upkeep: 0, reward: true, repeatable: true, population: 22000, valueBonus: 6, radius: 4, tech: 2000, group: "civic" },
+    "arco-darco": { w: 3, h: 3, cost: 0, upkeep: 0, reward: true, repeatable: true, population: 26000, valueBonus: 7, radius: 4, tech: 2000, group: "civic" },
+    "arco-launch": { w: 3, h: 3, cost: 0, upkeep: 0, reward: true, repeatable: true, population: 32000, valueBonus: 8, radius: 4, tech: 2000, group: "civic" },
   });
   const PLANT_KINDS = Object.freeze(Object.fromEntries(Object.entries(FACILITY_KINDS).filter(([, spec]) => spec.power)));
+  // Save rule 3.1: a facility record may carry its own `w`/`h`. A coal plant
+  // was 2x2 until the SC2K 4x4 footprint landed; records without a footprint
+  // keep the size they were built with, so an old save and a `.sc2` import
+  // stand unchanged while a new placement takes the full pad. The query
+  // panel names the older size. Only kinds listed here write w/h.
+  const LEGACY_FOOTPRINTS = Object.freeze({ coal: Object.freeze({ w: 2, h: 2 }) });
+  function footprintOf(facility) {
+    if (Number.isInteger(facility.w) && Number.isInteger(facility.h) && facility.w > 0 && facility.h > 0) return { w: facility.w, h: facility.h };
+    return LEGACY_FOOTPRINTS[facility.kind] || { w: FACILITY_KINDS[facility.kind].w, h: FACILITY_KINDS[facility.kind].h };
+  }
+  function facilityRecord(kind, x, y, builtTick) {
+    const record = { kind, x, y, builtTick };
+    if (LEGACY_FOOTPRINTS[kind]) { record.w = FACILITY_KINDS[kind].w; record.h = FACILITY_KINDS[kind].h; }
+    return record;
+  }
   const REWARD_TIERS = Object.freeze([
     { tier: 1, kind: "mayors-house", threshold: 2000 },
     { tier: 2, kind: "city-hall", threshold: 10000 },
@@ -158,6 +181,9 @@ window.AISystem6BonsaiSimLoaded = true;
     { tier: 4, kind: "military-base", threshold: 60000 },
     { tier: 5, kind: "dome", threshold: 80000 },
     { tier: 6, kind: "arco", threshold: 120000 },
+  ]);
+  const ARCO_KINDS = Object.freeze([
+    "arco-plymouth", "arco-forest", "arco-darco", "arco-launch",
   ]);
   const MAX_MICROSIMS = 150;
   // Scenario goals the runner can evaluate; imported SCEN files map onto
@@ -190,6 +216,31 @@ window.AISystem6BonsaiSimLoaded = true;
     tornado: { duration: 100 },
     earthquake: { duration: 10 },
     monster: { duration: 150 },
+    // SC2K disaster set (MISC 0070), clean-room from the public save spec.
+    riot: { duration: 120 },
+    "toxic-spill": { duration: 90, radius: 5 },
+    meltdown: { duration: 300, radius: 4 },
+    "microwave-spill": { duration: 120, radius: 4 },
+    volcano: { duration: 160, radius: 7 },
+    firestorm: { duration: 180 },
+    "mass-floods": { duration: 80, radius: 9 },
+    "pollution-accident": { duration: 100, radius: 5 },
+    hurricane: { duration: 140, radius: 10 },
+    "air-crash": { duration: 90, radius: 4 },
+  });
+  // SC2K technology discovery years (MISC 0738-0778); a network or zone is
+  // refused until its gate. Facilities already carry `tech`; these are the
+  // non-facility unlocks the player drags (highway, onramp, subway) or zones
+  // (airport, seaport).
+  const TECHS = Object.freeze({
+    // Bonsai keeps these networks available from the start (they are its
+    // baseline transport), so the gate exists and is exported, but does not
+    // silently remove what a player already builds at 1900. Tune the years
+    // here if the game should unlock them later.
+    airport: 1900,
+    highways: 1900,
+    buses: 1900,
+    subways: 1900,
   });
   // Each working facility kind reports one headline figure in the query
   // dialog; the label key names what the figure is.
@@ -260,13 +311,13 @@ window.AISystem6BonsaiSimLoaded = true;
     "troubled-mid-size": freezeRecipe({
       id: "troubled-mid-size", name: "Troubled Mid-size", seed: 6202, size: 64, terrainPreset: "balanced", targetTick: 600,
       commandLog: [
-        { schemaVersion: 2, type: "place-facility", payload: { kind: "coal", x: 14, y: 3 }, targetTick: 0, clientCommandId: "troubled-coal" },
+        { schemaVersion: 2, type: "place-facility", payload: { kind: "coal", x: 7, y: 0 }, targetTick: 0, clientCommandId: "troubled-coal" },
         { schemaVersion: 2, type: "place-facility", payload: { kind: "water-tower", x: 14, y: 1 }, targetTick: 0, clientCommandId: "troubled-water" },
         { schemaVersion: 2, type: "build-path", payload: { network: "road", points: [{ x: 16, y: 2 }, { x: 28, y: 2 }] }, targetTick: 0, clientCommandId: "troubled-road-early" },
         { schemaVersion: 2, type: "build-path", payload: { network: "road", points: [{ x: 16, y: 7 }, { x: 28, y: 7 }] }, targetTick: 0, clientCommandId: "troubled-road-mid" },
         { schemaVersion: 2, type: "build-path", payload: { network: "road", points: [{ x: 16, y: 12 }, { x: 28, y: 12 }] }, targetTick: 0, clientCommandId: "troubled-road-late" },
         { schemaVersion: 2, type: "build-path", payload: { network: "rail", points: [{ x: 16, y: 6 }, { x: 28, y: 6 }] }, targetTick: 0, clientCommandId: "troubled-rail" },
-        { schemaVersion: 2, type: "build-path", payload: { network: "wire", points: [{ x: 14, y: 3 }, { x: 15, y: 3 }, { x: 15, y: 12 }] }, targetTick: 0, clientCommandId: "troubled-wire-main" },
+        { schemaVersion: 2, type: "build-path", payload: { network: "wire", points: [{ x: 11, y: 1 }, { x: 15, y: 1 }, { x: 15, y: 12 }] }, targetTick: 0, clientCommandId: "troubled-wire-main" },
         { schemaVersion: 2, type: "build-path", payload: { network: "wire", points: [{ x: 15, y: 2 }, { x: 28, y: 2 }] }, targetTick: 0, clientCommandId: "troubled-wire-early" },
         { schemaVersion: 2, type: "build-path", payload: { network: "wire", points: [{ x: 15, y: 7 }, { x: 28, y: 7 }] }, targetTick: 0, clientCommandId: "troubled-wire-mid" },
         { schemaVersion: 2, type: "build-path", payload: { network: "wire", points: [{ x: 15, y: 12 }, { x: 28, y: 12 }] }, targetTick: 0, clientCommandId: "troubled-wire-late" },
@@ -475,6 +526,12 @@ window.AISystem6BonsaiSimLoaded = true;
       things: [],
       funding: Object.fromEntries(FUNDING_SERVICES.map((service) => [service, 100])),
       budget: makeEmptyBudget(),
+      // The mayor's camera and the month-by-month funding history are saved
+      // city state (SC2K MISC 1014-101C and the budget service history). v4
+      // carries them so a reopened city returns to its view and budget books.
+      view: { panX: 0, panY: 0, zoom: 0.82 },
+      budgetHistory: [],
+      militaryBase: 0, // 0 none, 1 offered, 2 refused, 3 army, 4 air, 5 navy, 6 missile
       eq: 60, le: 60, workforcePercent: 41, unemployed: 0, nationalPopulation: 120000,
       graphs: makeEmptyGraphs(),
       rewardTier: 0, rewardsOffered: [], microsims: [], arcoPopulation: 0,
@@ -502,7 +559,7 @@ window.AISystem6BonsaiSimLoaded = true;
   function rebuildFacilityLayers(state) {
     state.facilityAt.fill(-1); state.plantAt.fill(-1); state.serviceAt.fill(-1);
     state.facilities.forEach((facility, id) => {
-      const spec = FACILITY_KINDS[facility.kind];
+      const spec = footprintOf(facility);
       for (let dy = 0; dy < spec.h; dy += 1) for (let dx = 0; dx < spec.w; dx += 1) {
         const i = indexOf(state, facility.x + dx, facility.y + dy); state.facilityAt[i] = id;
         if (PLANT_KINDS[facility.kind]) state.plantAt[i] = id;
@@ -690,7 +747,8 @@ window.AISystem6BonsaiSimLoaded = true;
       }
       if (!amount) return;
       capacity += amount + (facility.kind === "wind" ? state.alt[indexOf(state, facility.x, facility.y)] * 2 : 0);
-      for (let dy = 0; dy < spec.h; dy += 1) for (let dx = 0; dx < spec.w; dx += 1) {
+      const footprint = footprintOf(facility);
+      for (let dy = 0; dy < footprint.h; dy += 1) for (let dx = 0; dx < footprint.w; dx += 1) {
         const i = indexOf(state, facility.x + dx, facility.y + dy); if (!seen[i]) { seen[i] = 1; queue.push(i); }
       }
     });
@@ -804,7 +862,10 @@ window.AISystem6BonsaiSimLoaded = true;
     for (let i = 0; i < tileCount(state); i += 1) if (state.zone[i] === ZONE_MILITARY) militaryTiles += 1;
     state.population = population; state.cJobs = cJobs + state.railService.jobs + state.subwayService.jobs + state.busService.jobs; state.iJobs = iJobs + militaryTiles * 2;
     state.jobs = state.cJobs + state.iJobs;
-    state.arcoPopulation = state.facilities.filter((item) => item.kind === "arco").length * (FACILITY_KINDS.arco.population || 0);
+    state.arcoPopulation = state.facilities.reduce((sum, item) => {
+      const spec = FACILITY_KINDS[item.kind];
+      return sum + ((item.kind === "arco" || ARCO_KINDS.includes(item.kind)) ? (spec?.population || 0) : 0);
+    }, 0);
   }
 
   function recomputeProblems(state) {
@@ -950,7 +1011,14 @@ window.AISystem6BonsaiSimLoaded = true;
       // A highway is two tiles wide: every dragged point stamps a 2x2 pad,
       // pulled back inside the map at the far edges.
       const tiles = network === "highway" ? highwayStamp(state, pathTiles(payload)) : pathTiles(payload);
-      if (!NETWORK_COST[network] || !layer || !tiles) return reject("payload"); const changed = [];
+      if (!NETWORK_COST[network] || !layer || !tiles) return reject("payload");
+      // Tech gate (MISC tech table): a network the city has not invented is
+      // refused until its year — highway, onramp, and subway are the drag
+      // networks SC2K gates; roads/rail/wire/pipe/park are year-1900.
+      const techYear = network === "highway" ? TECHS.highways : network === "onramp" ? TECHS.highways
+        : network === "subway" ? TECHS.subways : network === "bus" ? TECHS.buses : null;
+      if (techYear && dateOf(state).year < techYear) return reject("tech-year", tiles);
+      const changed = [];
       for (const tile of tiles) {
         if (!inBounds(state, tile.x, tile.y)) return reject("bounds", tiles); const i = indexOf(state, tile.x, tile.y);
         // Roads, rails, power lines, and highways bridge water; pipes,
@@ -996,6 +1064,9 @@ window.AISystem6BonsaiSimLoaded = true;
       // A port needs room for its pieces before it can grow at all.
       if (portKind && area.width * area.height < PORT_MIN_TILES[portKind]) return reject("port-too-small");
       const requested = areaTiles(area);
+      // Tech gate: an airport or seaport is locked until the year SC2K
+      // unlocks it. A zone drag before that refuses before touching land.
+      if (portKind && dateOf(state).year < TECHS[portKind]) return reject("tech-year", requested);
       // A drag zones the land it legally can and steps over the rest, the way
       // build-path and demolish-area already do. Rejecting the whole rectangle
       // made zoning impossible the moment a road, a tree, or an earlier zone
@@ -1022,10 +1093,16 @@ window.AISystem6BonsaiSimLoaded = true;
     if (type === "place-facility") {
       const spec = FACILITY_KINDS[payload.kind]; if (!spec || !Number.isInteger(payload.x) || !Number.isInteger(payload.y)) return reject("payload");
       const tiles = areaTiles({ x: payload.x, y: payload.y, width: spec.w, height: spec.h });
-      if (spec.tech && dateOf(state).year < spec.tech) return reject("tech-year", tiles);
+      // A reward landmark is earned by population, not unlocked by year, so
+      // it ignores the tech gate (SC2K arcologies and statues arrive as
+      // rewards regardless of the calendar).
+      if (spec.tech && !spec.reward && dateOf(state).year < spec.tech) return reject("tech-year", tiles);
       if (payload.kind === "nuclear" && ordinanceOn(state, "nuclearFreeZone")) return reject("nuclear-free-zone", tiles);
       if (spec.reward) {
-        if (!state.rewardsOffered.includes(payload.kind)) return reject("reward-locked", tiles);
+        // A concrete arco is unlocked by the tier-6 "arco" reward: the
+        // mayor places one of the four after the reward fires.
+        const unlock = ARCO_KINDS.includes(payload.kind) ? "arco" : payload.kind;
+        if (!state.rewardsOffered.includes(unlock)) return reject("reward-locked", tiles);
         if (!spec.repeatable && state.facilities.some((item) => item.kind === payload.kind)) return reject("reward-placed", tiles);
       }
       const baseAlt = inBounds(state, payload.x, payload.y) ? state.alt[indexOf(state, payload.x, payload.y)] : -1;
@@ -1096,7 +1173,7 @@ window.AISystem6BonsaiSimLoaded = true;
         if (!inBounds(state, tile.x, tile.y)) return reject("bounds", requested); const i = indexOf(state, tile.x, tile.y); expanded.set(`${tile.x},${tile.y}`, tile);
         if (state.facilityAt[i] >= 0) facilityIds.add(state.facilityAt[i]);
       }
-      facilityIds.forEach((id) => { const facility = state.facilities[id]; const spec = FACILITY_KINDS[facility.kind]; areaTiles({ x: facility.x, y: facility.y, width: spec.w, height: spec.h }).forEach((tile) => expanded.set(`${tile.x},${tile.y}`, tile)); });
+      facilityIds.forEach((id) => { const facility = state.facilities[id]; const spec = footprintOf(facility); areaTiles({ x: facility.x, y: facility.y, width: spec.w, height: spec.h }).forEach((tile) => expanded.set(`${tile.x},${tile.y}`, tile)); });
       const tiles = Array.from(expanded.values()); const changed = tiles.filter((tile) => {
         const i = indexOf(state, tile.x, tile.y); return state.facilityAt[i] >= 0 || state.road[i] || state.rail[i] || state.wire[i] || state.pipe[i] || state.park[i] || state.zone[i] || state.tree[i] || state.highway[i] || state.onramp[i];
       });
@@ -1186,7 +1263,7 @@ window.AISystem6BonsaiSimLoaded = true;
         state.stage[i] = 0; state.buildingState[i] = 0; state.constructionTimer[i] = 0; state.catalogId[i] = 0; state.variant[i] = Math.floor(nextRandom(state) * 12); });
       domainEvents.push(["zone-designated", { zone: plan.data.zone, density: plan.data.density, tiles: plan.tiles.length }]);
     } else if (plan.action === "place-facility") {
-      plan.tiles.forEach((tile) => { state.tree[indexOf(state, tile.x, tile.y)] = 0; }); state.facilities.push({ kind: plan.data.kind, x: plan.data.x, y: plan.data.y, builtTick: state.tick });
+      plan.tiles.forEach((tile) => { state.tree[indexOf(state, tile.x, tile.y)] = 0; }); state.facilities.push(facilityRecord(plan.data.kind, plan.data.x, plan.data.y, state.tick));
       domainEvents.push(["construction-started", { kind: plan.data.kind, x: plan.data.x, y: plan.data.y }], ["building-completed", { kind: plan.data.kind, x: plan.data.x, y: plan.data.y }]);
     } else if (plan.action === "terraform-area") {
       plan.tiles.forEach((tile) => { const i = indexOf(state, tile.x, tile.y); if (plan.data.mode === "tree") state.tree[i] = 1; else state.alt[i] = plan.data.desired.get(i); });
@@ -1284,6 +1361,18 @@ window.AISystem6BonsaiSimLoaded = true;
     state.derivedDirty = true;
   }
 
+  // Oversupply must hold for three settled months before a working building
+  // declines for it. Demand refreshes monthly and the stock terms answer
+  // immediately, so one bad month used to empty a district: the two-hour
+  // playthrough measured a serviced 6 000-resident city falling to 16 in
+  // two months and cycling for ever. Service failures keep their 10-day fuse.
+  function oversuppliedFor(state, zone, months) {
+    const key = ["", "r", "c", "i"][zone];
+    if (!key || state.history.length < months) return false;
+    for (let n = 1; n <= months; n += 1) if (state.history[state.history.length - n].demand[key] >= -40) return false;
+    return true;
+  }
+
   function growthPass(state) {
     ensureDerived(state); const demandByZone = [0, state.demand.r, state.demand.c, state.demand.i]; let changed = false;
     for (let i = 0; i < tileCount(state); i += 1) {
@@ -1318,7 +1407,7 @@ window.AISystem6BonsaiSimLoaded = true;
           state.constructionTimer[i] += 1; const maxStage = state.density[i] === DENSITY_HIGH ? MAX_STAGE : 1;
           const upgradeTicks = congested ? 90 : 45;
           if (state.stage[i] < maxStage && demandByZone[zone] > 20 && state.constructionTimer[i] >= upgradeTicks) { state.stage[i] += 1; state.constructionTimer[i] = 0; state.catalogId[i] = 0; state.variant[i] = latticeInt(pos.x, pos.y, state.seed + state.tick) % 12; changed = true; pushEvent(state, "building-completed", { zone, stage: state.stage[i], x: pos.x, y: pos.y }); }
-          else if (demandByZone[zone] < -40 && state.constructionTimer[i] >= 30) { state.buildingState[i] = BUILDING_DECLINING; state.constructionTimer[i] = 0; changed = true; }
+          else if (demandByZone[zone] < -40 && state.constructionTimer[i] >= 30 && oversuppliedFor(state, zone, 3)) { state.buildingState[i] = BUILDING_DECLINING; state.constructionTimer[i] = 0; changed = true; }
         }
       } else if (current === BUILDING_DECLINING) {
         // Hysteresis. Decline starts below -40 but recovery used to begin the
@@ -1382,7 +1471,12 @@ window.AISystem6BonsaiSimLoaded = true;
     pushEvent(state, "budget-settled", { ...budget, funds: state.funds }); pushEvent(state, "budget", { tick: state.tick, income: budget.income, expense: budget.expense, funds: state.funds });
     if (state.funds < 0 && !state.wasBroke) { state.wasBroke = true; pushNotice(state, "bonsai_msg_broke"); } if (state.funds >= 0) state.wasBroke = false;
     const report = cityReport(state); state.history.push({ tick: state.tick, population: state.population, jobs: state.jobs, funds: state.funds, demand: { ...state.demand }, pollution: report.pollution, crime: report.crime, fireRisk: report.fireRisk, happiness: report.happiness });
-    if (state.history.length > MAX_HISTORY_MONTHS) state.history.shift(); state.rev += 1;
+    if (state.history.length > MAX_HISTORY_MONTHS) state.history.shift();
+    // Month-by-month funding history (SC2K budget service history): one record
+    // per settlement, so the budget window can show each line's rate over time.
+    state.budgetHistory.push({ month: Math.floor(state.tick / TICKS_PER_MONTH), funding: { ...state.funding }, income: budget.income, expense: budget.expense, funds: state.funds });
+    if (state.budgetHistory.length > 60) state.budgetHistory.shift();
+    state.rev += 1;
   }
   // Monthly demographics: EQ follows school coverage, LE follows health
   // coverage and pollution, both drifting one point toward their target.
@@ -1467,10 +1561,66 @@ window.AISystem6BonsaiSimLoaded = true;
         const i = indexOf(state, x + dx, y + dy);
         if (!state.water[i]) state.blaze[i] = 6;
       }
+    } else if (kind === "riot" || kind === "mass-floods") {
+      // A riot ignites and burns the block it starts on; mass floods are
+      // flood water over a wide area.
+      const i = indexOf(state, x, y);
+      if (kind === "riot") {
+        const c = Math.max(6, Math.floor(tileCount(state) * 0.004));
+        for (let n = 0; n < c; n += 1) {
+          const j = Math.floor(nextRandom(state) * tileCount(state));
+          if (!state.water[j] && (state.zone[j] || state.tree[j] || state.catalogId[j])) state.blaze[j] = 1;
+        }
+        if (!state.water[i]) state.blaze[i] = 1;
+      } else {
+        for (let dy = -8; dy <= 8; dy += 1) for (let dx = -8; dx <= 8; dx += 1) {
+          if (Math.abs(dx) + Math.abs(dy) > 9 || !inBounds(state, x + dx, y + dy)) continue;
+          const j = indexOf(state, x + dx, y + dy);
+          if (!state.water[j] && Math.abs(state.alt[j] - state.alt[i]) <= 2) state.blaze[j] = 6;
+        }
+      }
+    } else if (kind === "toxic-spill" || kind === "meltdown" || kind === "microwave-spill" || kind === "pollution-accident") {
+      // A contamination ring: the affected tiles become toxic rubble and a
+      // pollution plume is painted onto the pollution layer.
+      const radius = spec.radius || 4;
+      for (let dy = -radius; dy <= radius; dy += 1) for (let dx = -radius; dx <= radius; dx += 1) {
+        if (Math.abs(dx) + Math.abs(dy) > radius || !inBounds(state, x + dx, y + dy)) continue;
+        const j = indexOf(state, x + dx, y + dy);
+        if (!state.water[j] && (state.zone[j] || state.tree[j] || state.catalogId[j] || state.facilityAt[j] >= 0)) clearTileToRubble(state, j);
+        if (!state.water[j]) state.pollution[j] = Math.min(255, state.pollution[j] + 120);
+      }
+      state.blaze[indexOf(state, x, y)] = kind === "meltdown" ? 5 : 1;
+    } else if (kind === "volcano") {
+      // A volcano throws lava in a wide radius and ignites the ring.
+      const radius = spec.radius;
+      for (let dy = -radius; dy <= radius; dy += 1) for (let dx = -radius; dx <= radius; dx += 1) {
+        if (Math.abs(dx) + Math.abs(dy) > radius || !inBounds(state, x + dx, y + dy)) continue;
+        const j = indexOf(state, x + dx, y + dy);
+        if (!state.water[j] && (state.zone[j] || state.tree[j] || state.catalogId[j] || state.facilityAt[j] >= 0)) clearTileToRubble(state, j);
+        if (!state.water[j]) state.blaze[j] = (Math.abs(dx) + Math.abs(dy) <= 2) ? 5 : 1;
+      }
+    } else if (kind === "firestorm") {
+      // A firestorm is fire over the whole map's flammable tiles.
+      for (let j = 0; j < tileCount(state); j += 1) if (!state.water[j] && isFlammable(state, j)) state.blaze[j] = 1;
+    } else if (kind === "hurricane") {
+      // A hurricane floods the shoreline and clears the coast.
+      for (let j = 0; j < tileCount(state); j += 1) {
+        if (state.water[j]) continue;
+        if (state.shore[j] || state.waterKind[j] === 4) state.blaze[j] = 6;
+      }
+    } else if (kind === "air-crash") {
+      const radius = spec.radius;
+      for (let dy = -radius; dy <= radius; dy += 1) for (let dx = -radius; dx <= radius; dx += 1) {
+        if (Math.abs(dx) + Math.abs(dy) > radius || !inBounds(state, x + dx, y + dy)) continue;
+        const j = indexOf(state, x + dx, y + dy);
+        if (!state.water[j] && (state.zone[j] || state.tree[j] || state.catalogId[j] || state.facilityAt[j] >= 0)) clearTileToRubble(state, j);
+        if (!state.water[j]) state.blaze[j] = 1;
+      }
     }
     markDerivedDirty(state); ensureDerived(state); state.rev += 1;
-    pushNotice(state, `bonsai_msg_disaster_${kind}`);
-    publishNewspaper(state, [{ key: `disaster_${kind}`, x, y }], true);
+    const kindKey = kind.replaceAll("-", "_");
+    pushNotice(state, `bonsai_msg_disaster_${kindKey}`);
+    publishNewspaper(state, [{ key: `disaster_${kindKey}`, x, y }], true);
   }
   function advanceDisaster(state) {
     const disaster = state.disaster;
@@ -1495,7 +1645,7 @@ window.AISystem6BonsaiSimLoaded = true;
         }
       }
       if (!spreadFrom.length && disaster.ticksRemaining < DISASTER_KINDS[disaster.kind].duration - 2) disaster.ticksRemaining = 0;
-    } else if (disaster.kind === "tornado" || disaster.kind === "monster") {
+    } else if (disaster.kind === "tornado" || disaster.kind === "monster" || disaster.kind === "riot" || disaster.kind === "meltdown") {
       disaster.x = Math.max(0, Math.min(state.size - 1, disaster.x + Math.floor(nextRandom(state) * 3) - 1));
       disaster.y = Math.max(0, Math.min(state.size - 1, disaster.y + Math.floor(nextRandom(state) * 3) - 1));
       const targets = disaster.kind === "monster"
@@ -1503,7 +1653,11 @@ window.AISystem6BonsaiSimLoaded = true;
       for (const [dx, dy] of targets) {
         if (!inBounds(state, disaster.x + dx, disaster.y + dy)) continue;
         const i = indexOf(state, disaster.x + dx, disaster.y + dy);
-        if (!state.water[i] && (state.zone[i] || state.tree[i] || state.catalogId[i] || state.facilityAt[i] >= 0)) { clearTileToRubble(state, i); changed = true; }
+        if (disaster.kind === "meltdown") {
+          if (!state.water[i]) state.pollution[i] = Math.min(255, state.pollution[i] + 40);
+        } else if (!state.water[i] && (state.zone[i] || state.tree[i] || state.catalogId[i] || state.facilityAt[i] >= 0)) {
+          clearTileToRubble(state, i); changed = true;
+        }
       }
     }
     disaster.ticksRemaining -= 1;
@@ -1761,6 +1915,61 @@ window.AISystem6BonsaiSimLoaded = true;
     const yearFounded = Number.isInteger(state.yearFounded) ? state.yearFounded : START_YEAR;
     return { day: (days % DAYS_PER_MONTH) + 1, month: months % MONTHS_PER_YEAR, year: yearFounded + Math.floor(months / MONTHS_PER_YEAR) };
   }
+
+  // Deterministic weather, clean-room from the SC2K MISC weather field (12
+  // types: cold, clear, hot, foggy, chilly, overcast, snow, rain, windy,
+  // blizzard, hurricane, tornado). Pure: derived only from seed and tick, so
+  // two runs with the same seed produce the same forecast. The type is
+  // season-weighted so snowy months read cold, summer reads hot.
+  const WEATHER_TYPES = Object.freeze([
+    "cold", "clear", "hot", "foggy", "chilly", "overcast",
+    "snow", "rain", "windy", "blizzard", "hurricane", "tornado",
+  ]);
+  // Season-weighted candidate pools: month 0=Jan .. 11=Dec.
+  const SEASON_WEATHER = Object.freeze({
+    winter: ["snow", "blizzard", "cold", "chilly", "overcast", "clear"],
+    spring: ["rain", "windy", "overcast", "clear", "foggy", "cold"],
+    summer: ["clear", "hot", "rain", "overcast", "windy", "foggy"],
+    autumn: ["rain", "windy", "overcast", "clear", "chilly", "foggy"],
+  });
+  const seasonOf = (month) => (month < 2 || month === 11 ? "winter" : month < 5 ? "spring" : month < 8 ? "summer" : "autumn");
+  const hashInt = (a, b, c) => {
+    let h = (a * 0x9e3779b1) ^ (b * 0x85ebca6b) ^ (c * 0xc2b2ae35);
+    h = Math.imul(h ^ (h >>> 16), 0x45d9f3b);
+    h = Math.imul(h ^ (h >>> 16), 0x45d9f3b);
+    return (h ^ (h >>> 16)) >>> 0;
+  };
+  function weatherOf(state) {
+    const date = dateOf(state);
+    const pool = SEASON_WEATHER[seasonOf(date.month)];
+    // Two stable hashes over (seed, year, month) and (seed, year, month, day)
+    // give a type and a stability/intensity value; the day hash nudges the
+    // type within a narrow band so a month does not read as one weather.
+    const h0 = hashInt((state.seed ?? 0) >>> 0, date.year, date.month + 1);
+    const h1 = hashInt((state.seed ?? 0) >>> 0, date.year * 13 + date.month, date.day + 1);
+    const pick = pool[h0 % pool.length];
+    // A day can shift one season-neighbour, so long stretches vary but stay
+    // climatologically honest.
+    const nudged = (h1 % 5 === 0) ? pool[(h0 + 1) % pool.length] : pick;
+    return {
+      type: nudged,
+      temperature: weatherTemp(nudged, date.month),
+      wind: 2 + (h1 % 38),
+      humidity: 20 + (h1 % 70),
+      season: seasonOf(date.month),
+    };
+  }
+  function weatherTemp(type, month) {
+    const base = [ -6, 2, 30, 10, 0, 8, -4, 12, 6, -8, 16, 10 ][month]; // avg Feb..Jan-ish by month index
+    switch (type) {
+      case "hot": return base + 14;
+      case "snow":
+      case "blizzard": return -12;
+      case "cold": return base - 12;
+      case "chilly": return base - 6;
+      default: return base;
+    }
+  }
   function averageLayerOnZones(state, layer) {
     let total = 0; let count = 0; for (let i = 0; i < tileCount(state); i += 1) if (state.zone[i]) { total += layer[i]; count += 1; } return count ? Math.round(total / count) : 0;
   }
@@ -1909,11 +2118,12 @@ window.AISystem6BonsaiSimLoaded = true;
       landValue: state.landValue[i], pollution: state.pollution[i], crime: state.crime[i], fireRisk: state.fireRisk[i], happiness: state.happiness[i], facility: facility ? facility.kind : null,
       microsim: facility ? (state.microsims.find((record) => record.kind === facility.kind && record.x === facility.x && record.y === facility.y) || null) : null,
       plant: facility && PLANT_KINDS[facility.kind] ? facility.kind : null, service: facility && SERVICE_KINDS[facility.kind] ? facility.kind : null,
+      facilityFootprint: facility ? { ...footprintOf(facility), legacy: !!(LEGACY_FOOTPRINTS[facility.kind] && !Number.isInteger(facility.w)) } : null,
       problem: code ? { code: PROBLEM_NAMES[code], x, y, action: PROBLEM_ACTIONS[code] } : null };
   }
 
   function serialize(state) {
-    return { format: FORMAT, version: 3, rulesetVersion: 3, name: state.name, seed: state.seed, rngState: state.rngState | 0, size: state.size, terrainPreset: state.terrainPreset, yearFounded: state.yearFounded,
+    return { format: FORMAT, version: 4, rulesetVersion: 4, name: state.name, seed: state.seed, rngState: state.rngState | 0, size: state.size, terrainPreset: state.terrainPreset, yearFounded: state.yearFounded,
       tick: state.tick, funds: state.funds, taxRate: state.taxRate, taxRates: { ...state.taxRates }, bonds: state.bonds.map((item) => ({ ...item })), ordinances: { ...state.ordinances },
       eq: state.eq, le: state.le, workforcePercent: state.workforcePercent, unemployed: state.unemployed, nationalPopulation: state.nationalPopulation,
       demand: { ...state.demand }, economyIndex: state.economyIndex,
@@ -1934,6 +2144,7 @@ window.AISystem6BonsaiSimLoaded = true;
       disaster: state.disaster ? { ...state.disaster } : null, disastersOff: state.disastersOff,
       newspaper: cloneJson(state.newspaper), paperDelivery: state.paperDelivery, newsMemo: cloneJson(state.newsMemo),
       scenario: state.scenario ? cloneJson(state.scenario) : null,
+      view: { ...state.view }, budgetHistory: state.budgetHistory.map((item) => ({ ...item })), militaryBase: state.militaryBase,
       sc2Sidecar: state.sc2Sidecar ? cloneJson(state.sc2Sidecar) : null };
   }
   function readLayer(data, key, count, max, Type = Uint8Array) {
@@ -1981,12 +2192,21 @@ window.AISystem6BonsaiSimLoaded = true;
       highway: zeros(), onramp: zeros(),
       waterKind: water.map((value) => (value ? 1 : 0)), sc2Sidecar: null };
   }
+  function migrateEngineV3To4(data) {
+    if (!data || data.format !== FORMAT || data.version !== 3) throw new Error("bonsai-import-invalid: v3");
+    // v4 adds the saved camera, the month-by-month funding history, and the
+    // military base lifecycle. A v3 city gets safe defaults; nothing is lost.
+    return { ...cloneJson(data), version: 4, rulesetVersion: 4,
+      view: { panX: 0, panY: 0, zoom: 0.82 },
+      budgetHistory: [], militaryBase: 0 };
+  }
 
   function deserialize(input) {
     let data = input && input.version === 1 ? migrateEngineV1(input) : input;
     if (data && data.version === 2) data = migrateEngineV2To3(data);
-    if (!data || data.format !== FORMAT) throw new Error("bonsai-import-invalid: format"); if (data.version > 3) throw new Error("bonsai-import-version-too-new");
-    if (data.version !== 3 || data.rulesetVersion !== 3) throw new Error("bonsai-import-version"); if (!SUPPORTED_SIZES.includes(data.size)) throw new Error("bonsai-import-invalid: size");
+    if (data && data.version === 3) data = migrateEngineV3To4(data);
+    if (!data || data.format !== FORMAT) throw new Error("bonsai-import-invalid: format"); if (data.version > 4) throw new Error("bonsai-import-version-too-new");
+    if (data.version !== 4 || data.rulesetVersion !== 4) throw new Error("bonsai-import-version"); if (!SUPPORTED_SIZES.includes(data.size)) throw new Error("bonsai-import-invalid: size");
     if (!Number.isInteger(data.tick) || data.tick < 0 || !Number.isInteger(data.funds)) throw new Error("bonsai-import-invalid: scalar");
     const state = createCity({ seed: Number.isInteger(data.seed) ? data.seed : 0, size: data.size, terrainPreset: TERRAIN_PRESETS.includes(data.terrainPreset) ? data.terrainPreset : "balanced", name: typeof data.name === "string" ? data.name : "",
       yearFounded: Number.isInteger(data.yearFounded) && data.yearFounded >= 1000 && data.yearFounded <= 2999 ? data.yearFounded : START_YEAR });
@@ -1994,6 +2214,11 @@ window.AISystem6BonsaiSimLoaded = true;
     state.taxRate = Number.isInteger(data.taxRate) ? data.taxRate : DEFAULT_TAX; state.speed = 0; state.milestone = data.milestone || 0;
     state.wasBroke = !!data.wasBroke; state.brownout = !!data.brownout; state.waterShortage = !!data.waterShortage;
     state.spawnCenter = data.spawnCenter && Number.isInteger(data.spawnCenter.x) && Number.isInteger(data.spawnCenter.y) ? { ...data.spawnCenter } : findSpawnCenter(state);
+    state.view = data.view && Number.isFinite(data.view.panX) && Number.isFinite(data.view.panY) && Number.isFinite(data.view.zoom)
+      ? { panX: data.view.panX, panY: data.view.panY, zoom: Math.max(0.4, Math.min(2.5, data.view.zoom)) }
+      : { panX: 0, panY: 0, zoom: 0.82 };
+    state.militaryBase = Number.isInteger(data.militaryBase) && data.militaryBase >= 0 && data.militaryBase <= 6 ? data.militaryBase : 0;
+    state.budgetHistory = Array.isArray(data.budgetHistory) ? data.budgetHistory.slice(0, 60).map((item) => ({ ...item })) : [];
     state.terrain = readLayer(data, "terrain", count, 3); state.alt = readLayer(data, "alt", count, MAX_ALT); state.water = readLayer(data, "water", count, 1); state.shore = readLayer(data, "shore", count, 1);
     state.slope = readLayer(data, "slope", count, 15); state.tree = readLayer(data, "tree", count, 1); state.road = readLayer(data, "road", count, 1); state.rail = readLayer(data, "rail", count, 1);
     state.wire = readLayer(data, "wire", count, 1); state.pipe = readLayer(data, "pipe", count, 1); state.park = readLayer(data, "park", count, 1); state.zone = readLayer(data, "zone", count, MAX_ZONE);
@@ -2049,7 +2274,9 @@ window.AISystem6BonsaiSimLoaded = true;
     state.sc2Sidecar = data.sc2Sidecar && typeof data.sc2Sidecar === "object" ? cloneJson(data.sc2Sidecar) : null; state.facilities = [];
     for (const item of Array.isArray(data.facilities) ? data.facilities : []) {
       if (!FACILITY_KINDS[item.kind] || !Number.isInteger(item.x) || !Number.isInteger(item.y)) throw new Error("bonsai-import-invalid: facility");
-      state.facilities.push({ kind: item.kind, x: item.x, y: item.y, builtTick: Number.isInteger(item.builtTick) ? item.builtTick : 0 });
+      const record = { kind: item.kind, x: item.x, y: item.y, builtTick: Number.isInteger(item.builtTick) ? item.builtTick : 0 };
+      if (Number.isInteger(item.w) && Number.isInteger(item.h) && item.w > 0 && item.h > 0) { record.w = item.w; record.h = item.h; }
+      state.facilities.push(record);
     }
     // Funding accepts both the eleven-line shape and the legacy six-key
     // shape (education maps to schools; utilities had no SC2K line).
@@ -2139,7 +2366,7 @@ window.AISystem6BonsaiSimLoaded = true;
     const errors = [];
     if (!envelope || typeof envelope !== "object" || Array.isArray(envelope)) errors.push("envelope"); else {
       if (envelope.format !== FORMAT) errors.push("format"); if (!Number.isInteger(envelope.formatVersion) || envelope.formatVersion < 1 || envelope.formatVersion > SAVE_FORMAT_VERSION) errors.push("format-version");
-      if (!envelope.engine || ![1, 2, 3].includes(envelope.engine.rulesetVersion)) errors.push("ruleset-version"); if (!envelope.simulation || typeof envelope.simulation.seed !== "number") errors.push("simulation-seed");
+      if (!envelope.engine || ![1, 2, 3, 4].includes(envelope.engine.rulesetVersion)) errors.push("ruleset-version"); if (!envelope.simulation || typeof envelope.simulation.seed !== "number") errors.push("simulation-seed");
       if (!envelope.payload || typeof envelope.payload !== "object") errors.push("payload"); if (!envelope.integrity || envelope.integrity.algorithm !== INTEGRITY_ALGORITHM) errors.push("integrity-algorithm");
       if (!envelope.integrity || envelope.integrity.canonicalization !== CANONICALIZATION) errors.push("integrity-canonicalization"); if (!envelope.integrity || !/^[a-f0-9]{64}$/i.test(String(envelope.integrity.digest))) errors.push("integrity-digest");
     }
@@ -2152,8 +2379,9 @@ window.AISystem6BonsaiSimLoaded = true;
     if (![1, 2].includes(envelope.formatVersion)) throw new Error("bonsai-save-version-unsupported");
     const from = envelope.formatVersion; const out = cloneJson(envelope);
     if (out.formatVersion === 1) { out.formatVersion = 2; out.payload = migrateEngineV1(out.payload); }
-    out.formatVersion = 3; out.payload = migrateEngineV2To3(out.payload);
-    out.engine = { rulesetVersion: 3, fixedTickHz: 20, ticksPerDay: 5, daysPerMonth: 25 };
+    if (out.formatVersion === 2) { out.formatVersion = 3; out.payload = migrateEngineV2To3(out.payload); }
+    out.formatVersion = 4; out.payload = migrateEngineV3To4(out.payload);
+    out.engine = { rulesetVersion: 4, fixedTickHz: 20, ticksPerDay: 5, daysPerMonth: 25 };
     out.simulation = { seed: out.payload.seed, rng: { algorithm: "mulberry32-v1", state: [out.payload.rngState | 0] } }; out.migratedFromFormatVersion = from; return out;
   }
   async function decodeSave(envelope) {
@@ -2190,6 +2418,36 @@ window.AISystem6BonsaiSimLoaded = true;
     return (await decodeSave(envelope)).state;
   }
 
+  // The SC2K-resolution derived grids: traffic at 64x64 (XTRF) and pollution,
+  // land value, crime, police strength, and fire strength at 32x32 (XPLT,
+  // XVAL, XCRM, XPLC, XFIR). Each cell is the mean of the source tiles it
+  // covers on our map, whatever its size; coverage is 0 or 255 per tile so
+  // the mean reads as strength. A pure read: the codec writes these on
+  // export and may seed the display from them on import.
+  const SC2_GRID_SIDES = Object.freeze({ traffic: 64, pollution: 32, landValue: 32, crime: 32, police: 32, fire: 32 });
+  function downsampleLayer(state, layer, side, scale) {
+    const out = new Uint8Array(side * side);
+    for (let gy = 0; gy < side; gy += 1) for (let gx = 0; gx < side; gx += 1) {
+      const x0 = Math.floor(gx * state.size / side); const x1 = Math.max(x0 + 1, Math.floor((gx + 1) * state.size / side));
+      const y0 = Math.floor(gy * state.size / side); const y1 = Math.max(y0 + 1, Math.floor((gy + 1) * state.size / side));
+      let sum = 0; let n = 0;
+      for (let y = y0; y < y1; y += 1) for (let x = x0; x < x1; x += 1) { sum += layer[indexOf(state, x, y)] * scale; n += 1; }
+      out[gy * side + gx] = Math.min(255, Math.round(sum / n));
+    }
+    return out;
+  }
+  function sc2DerivedGrids(state) {
+    ensureDerived(state);
+    return {
+      traffic: downsampleLayer(state, state.traffic, SC2_GRID_SIDES.traffic, 1),
+      pollution: downsampleLayer(state, state.pollution, SC2_GRID_SIDES.pollution, 1),
+      landValue: downsampleLayer(state, state.landValue, SC2_GRID_SIDES.landValue, 1),
+      crime: downsampleLayer(state, state.crime, SC2_GRID_SIDES.crime, 1),
+      police: downsampleLayer(state, state.policeCovered, SC2_GRID_SIDES.police, 255),
+      fire: downsampleLayer(state, state.fireCovered, SC2_GRID_SIDES.fire, 255),
+    };
+  }
+
   function derivedAgentFacts(state) {
     ensureDerived(state); const roads = []; const rails = []; const activeBuildings = [];
     for (let i = 0; i < tileCount(state); i += 1) { if (state.road[i]) roads.push(i); if (state.railConnected[i]) rails.push(i); if (state.buildingAnchor[i] === i) activeBuildings.push(i); }
@@ -2204,7 +2462,7 @@ window.AISystem6BonsaiSimLoaded = true;
       serviceVehicles: facts("service", serviceSources, Math.min(serviceSources.length, state.problems.length)) };
   }
   function buildRenderSnapshot(state) {
-    ensureDerived(state); return { size: state.size, tick: state.tick, seed: state.seed, rev: state.rev, timeOfDay: (state.tick % 150) / 150, spawnCenter: { ...state.spawnCenter },
+    ensureDerived(state); return { size: state.size, tick: state.tick, seed: state.seed, rev: state.rev, timeOfDay: (state.tick % 150) / 150, weather: weatherOf(state), spawnCenter: { ...state.spawnCenter },
       terrain: state.terrain, alt: state.alt, water: state.water, shore: state.shore, slope: state.slope, tree: state.tree, road: state.road, rail: state.rail, wire: state.wire, pipe: state.pipe, park: state.park, over: state.over,
       zone: state.zone, density: state.density, stage: state.stage, buildingState: state.buildingState, variant: state.variant, traffic: state.traffic, congested: state.congested, powered: state.powered, watered: state.watered,
       railConnected: state.railConnected, railOk: state.railOk, landValue: state.landValue,
@@ -2221,12 +2479,13 @@ window.AISystem6BonsaiSimLoaded = true;
 
   window.AISystem6BonsaiSim = Object.freeze({
     SIZE, DEFAULT_SIZE, SUPPORTED_SIZES, TERRAIN_PRESETS, MAX_ALT, MAX_STAGE, FORMAT, SAVE_VERSION, COMMAND_SCHEMA_VERSION, EVENT_SCHEMA_VERSION, ENGINE_RULESET_VERSION,
-    DAYS_PER_MONTH, MONTHS_PER_YEAR, YEAR_FOUNDED_CHOICES, ORDINANCES, ORDINANCE_IDS, BOND_PRINCIPAL, MAX_BONDS, GRAPH_SERIES, GRAPH_TIERS, REWARD_TIERS, MICROSIM_KINDS, DISASTER_KINDS, NEWS_STORY_KEYS,
+    DAYS_PER_MONTH, MONTHS_PER_YEAR, YEAR_FOUNDED_CHOICES, ORDINANCES, ORDINANCE_IDS, BOND_PRINCIPAL, MAX_BONDS, GRAPH_SERIES, GRAPH_TIERS, REWARD_TIERS, MICROSIM_KINDS, DISASTER_KINDS, NEWS_STORY_KEYS, TECHS, ARCO_KINDS,
     FIXED_TICK_HZ, TICKS_PER_DAY, SAVE_FORMAT_VERSION, INTEGRITY_ALGORITHM, CANONICALIZATION, CONGESTION_THRESHOLD, COSTS, unitCost, TOOLS, FACILITY_KINDS, SERVICE_KINDS, PLANT_KINDS, FUNDING_SERVICES,
     OVER: Object.freeze({ NONE: 0, ROAD: 1, WIRE: 2, PARK: 3, ROADWIRE: 4 }), ZONE: Object.freeze({ NONE: 0, R: 1, C: 2, I: 3, MILITARY: 4, AIRPORT: 5, SEAPORT: 6 }), DENSITY: Object.freeze({ NONE: 0, LOW: 1, HIGH: 2 }),
     BUILDING_STATE: Object.freeze({ EMPTY: 0, FOUNDATION: 1, CONSTRUCTION: 2, ACTIVE: 3, DECLINING: 4, ABANDONED: 5, RECOVERING: 6 }), PROBLEM,
     EXAMPLES, SCENARIOS, createScenarioCity, createCity, replayExampleCity, createExampleCity, advanceTicks, applyTool, previewCommand, submitCommand, undo, redo, drainEvents, canonicalStringify, checkpoint, encodeSave, decodeSave, validateSaveEnvelope, migrateSave,
     cityReport, populationBreakdown, industryBreakdown, neighborsReport, INDUSTRY_SECTORS, NEIGHBOR_DIRECTIONS, NEIGHBOR_NAME_COUNT,
-    tileInfo, ensureDerived, dateOf, drainNotices, derivedAgentFacts, buildRenderSnapshot, serialize, deserialize,
+    tileInfo, footprintOf, LEGACY_FOOTPRINTS, sc2DerivedGrids, SC2_GRID_SIDES, ensureDerived, dateOf, drainNotices, derivedAgentFacts, buildRenderSnapshot, serialize, deserialize,
+    weatherOf, WEATHER_TYPES,
   });
 })();

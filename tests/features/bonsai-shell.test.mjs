@@ -50,9 +50,11 @@ test.assertIncludes(shellSource, "commandsNeedingCity", "city-only commands gate
 test.assertNotIncludes(shellSource, "data-bonsai-renderer-toggle", "the playfield command strip is gone; the toggle lives in a menu");
 test.assertNotIncludes(shellSource, ".bonsai-command-strip", "the playfield command strip element is deleted");
 test.assertNotIncludes(shellSource, "buildCommandStrip", "the playfield command strip builder is deleted");
-test.assertIncludes(shellSource, "drawRciGauge", "the RCI demand gauge is drawn, not typed");
-test.assertIncludes(shellSource, 'data-bonsai-rci-gauge width="26" height="14"', "the RCI gauge is 26x14 CSS px");
-test.assertIncludes(shellSource, "index 0 solid, 1 dither, 2 hatch", "R/C/I differ by fill pattern, not colour");
+test.assertIncludes(shellSource, "AISystem6CityDemandGauge.draw(", "the RCI demand gauge is drawn by the shared core");
+test.assertIncludes(shellSource, 'data-bonsai-rci-gauge width="32" height="20"', "the RCI gauge is the core 32x20 gauge-bar tier");
+test.assertIncludes(shellSource, "--city-demand-r", "the gauge colours come from the shared colour tokens");
+test.assertIncludes(shellSource, 'data-bonsai-rci-panel width="72" height="44"', "the palette footer carries the 72x44 panel gauge");
+test.assertIncludes(shellSource, "bonsai-palette-footer", "the palette gains a bottom footer");
 test.assertIncludes(shellSource, 'data-bonsai-status role="status" aria-live="polite"', "the status host keeps its element and aria-live");
 test.assertIncludes(shellSource, "bonsai-gauge-city", "the gauge bar leads with the city name");
 test.assertIncludes(shellSource, "bonsai-gauge-funds", "the gauge bar always keeps funds");

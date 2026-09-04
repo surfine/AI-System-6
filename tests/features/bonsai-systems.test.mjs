@@ -36,16 +36,17 @@ function flatPadAt(state, side) {
 }
 
 function wireBasicDistrict(state, density = "high") {
-  const base = findLandRect(state, 10, 7, flatPadAt(state, 2));
+  const base = findLandRect(state, 12, 8, flatPadAt(state, 4));
   // SC2K-faithful outputs (M3a) make a lone wind turbine what it is in the
   // original: a trickle. The starter district runs on coal, like a real
   // SC2K opening.
+  // The plant is SC2K's 4x4 pad; the tower, road, and zone sit east of it.
   const plant = { x: base.x, y: base.y };
-  const tower = { x: base.x, y: base.y + 2 };
-  const zone = { x: base.x + 3, y: base.y + 2, width: 3, height: 3 };
+  const tower = { x: base.x + 5, y: base.y };
+  const zone = { x: base.x + 5, y: base.y + 2, width: 3, height: 3 };
   test.assert(command(state, "place-facility", { kind: "coal", ...plant }).accepted, "district builds a coal plant");
   test.assert(command(state, "build-path", { network: "road", start: { x: zone.x, y: base.y + 1 }, end: { x: zone.x + zone.width - 1, y: base.y + 1 } }).accepted, "district builds road access");
-  test.assert(command(state, "build-path", { network: "wire", start: plant, end: { x: zone.x, y: zone.y } }).accepted, "district connects power");
+  test.assert(command(state, "build-path", { network: "wire", start: { x: base.x + 4, y: base.y }, end: { x: zone.x, y: zone.y } }).accepted, "district connects power");
   test.assert(command(state, "zone-area", { zone: "residential", density, ...zone }).accepted, "district zones a residential area");
   return { base, wind: plant, plant, tower, zone };
 }
@@ -408,11 +409,11 @@ function findFlatRect(state, width, height) {
 // M6-3: moving things — a working airport keeps one airplane aloft.
 {
   const state = sim.createCity({ seed: 509, size: 64 });
-  const base = findLandRect(state, 12, 10, flatPadAt(state, 2));
+  const base = findLandRect(state, 14, 10, flatPadAt(state, 4));
   test.assert(command(state, "place-facility", { kind: "coal", x: base.x, y: base.y }).accepted, "the airfield city builds a plant");
-  test.assert(command(state, "build-path", { network: "road", start: { x: base.x + 3, y: base.y + 1 }, end: { x: base.x + 8, y: base.y + 1 } }).accepted, "the airfield city builds a road");
-  test.assert(command(state, "build-path", { network: "wire", start: { x: base.x, y: base.y + 2 }, end: { x: base.x + 4, y: base.y + 2 } }).accepted, "the airfield city connects power");
-  test.assert(command(state, "zone-area", { zone: "airport", x: base.x + 3, y: base.y + 2, width: 4, height: 3 }).accepted, "the airfield city zones an airport");
+  test.assert(command(state, "build-path", { network: "road", start: { x: base.x + 5, y: base.y + 1 }, end: { x: base.x + 10, y: base.y + 1 } }).accepted, "the airfield city builds a road");
+  test.assert(command(state, "build-path", { network: "wire", start: { x: base.x + 4, y: base.y + 2 }, end: { x: base.x + 5, y: base.y + 2 } }).accepted, "the airfield city connects power");
+  test.assert(command(state, "zone-area", { zone: "airport", x: base.x + 5, y: base.y + 2, width: 4, height: 3 }).accepted, "the airfield city zones an airport");
   test.assert(state.things.length === 0, "no thing exists before the port works");
   sim.advanceTicks(state, 125);
   const plane = state.things.find((thing) => thing.kind === "airplane");
@@ -430,9 +431,9 @@ function findFlatRect(state, width, height) {
   const twin = sim.createCity({ seed: 509, size: 64 });
   const replay = (target) => {
     command(target, "place-facility", { kind: "coal", x: base.x, y: base.y });
-    command(target, "build-path", { network: "road", start: { x: base.x + 3, y: base.y + 1 }, end: { x: base.x + 8, y: base.y + 1 } });
-    command(target, "build-path", { network: "wire", start: { x: base.x, y: base.y + 2 }, end: { x: base.x + 4, y: base.y + 2 } });
-    command(target, "zone-area", { zone: "airport", x: base.x + 3, y: base.y + 2, width: 4, height: 3 });
+    command(target, "build-path", { network: "road", start: { x: base.x + 5, y: base.y + 1 }, end: { x: base.x + 10, y: base.y + 1 } });
+    command(target, "build-path", { network: "wire", start: { x: base.x + 4, y: base.y + 2 }, end: { x: base.x + 5, y: base.y + 2 } });
+    command(target, "zone-area", { zone: "airport", x: base.x + 5, y: base.y + 2, width: 4, height: 3 });
     sim.advanceTicks(target, 225);
   };
   replay(twin);
@@ -477,7 +478,7 @@ function findFlatRect(state, width, height) {
 {
   const port = sim.createCity({ seed: 506, size: 64 });
   const plain = sim.createCity({ seed: 506, size: 64 });
-  const base = findLandRect(port, 12, 10, flatPadAt(port, 2));
+  const base = findLandRect(port, 12, 10, flatPadAt(port, 4));
   for (const state of [port, plain]) {
     test.assert(command(state, "place-facility", { kind: "coal", x: base.x, y: base.y }).accepted, "port comparison city builds a coal plant");
     test.assert(command(state, "build-path", { network: "road", start: { x: base.x, y: base.y + 8 }, end: { x: base.x + 9, y: base.y + 8 } }).accepted, "port comparison city builds a road");
@@ -665,6 +666,42 @@ function findFlatRect(state, width, height) {
   const monthsLeft = debt.scenario.months;
   sim.advanceTicks(debt, 125 * (monthsLeft + 1));
   test.assert(debt.scenario.status === "lost", "an unmet deadline loses the scenario");
+}
+
+// Save rule 3.1: a coal plant records its 4x4 pad; a record without a
+// footprint is an older 2x2 plant and keeps that size, on the map and in the
+// query panel.
+{
+  const state = sim.createCity({ seed: 610, size: 64, terrainPreset: "balanced" });
+  const base = findLandRect(state, 12, 6, flatPadAt(state, 4));
+  test.assert(command(state, "place-facility", { kind: "coal", x: base.x, y: base.y }).accepted, "a new coal plant takes the SC2K 4x4 pad");
+  test.assert(state.facilities[0].w === 4 && state.facilities[0].h === 4, "the record carries its footprint");
+  test.assert(state.facilityAt[(base.y + 3) * state.size + base.x + 3] === 0, "the fourth row and column belong to the plant");
+  const saved = sim.serialize(state);
+  saved.facilities.push({ kind: "coal", x: base.x + 6, y: base.y, builtTick: 0 });
+  const loaded = sim.deserialize(saved);
+  test.assert(sim.footprintOf(loaded.facilities[1]).w === 2 && loaded.facilityAt[(base.y + 1) * 64 + base.x + 7] === 1 && loaded.facilityAt[(base.y + 2) * 64 + base.x + 8] === -1,
+    "an older record without a footprint stays a 2x2 plant");
+  test.assert(sim.tileInfo(loaded, base.x + 6, base.y).facilityFootprint.legacy === true && sim.tileInfo(loaded, base.x, base.y).facilityFootprint.legacy === false,
+    "the query panel can say which plant is the older size");
+  test.assert(sim.serialize(loaded).facilities[1].w === undefined, "a round-trip never invents a footprint for an older record");
+  test.assert(command(loaded, "demolish-area", { x: base.x + 7, y: base.y + 1, width: 1, height: 1 }).footprint.tiles.length === 4, "demolishing the older plant clears its own four tiles");
+}
+
+// SC2K-resolution derived grids are a pure read of the current state.
+{
+  const state = sim.createCity({ seed: 611, size: 96, terrainPreset: "balanced" });
+  const grids = sim.sc2DerivedGrids(state);
+  test.assert(grids.traffic.length === 64 * 64 && ["pollution", "landValue", "crime", "police", "fire"].every((key) => grids[key].length === 32 * 32), "traffic is 64x64, the five others 32x32");
+  const spot = findLandRect(state, 3, 3);
+  test.assert(command(state, "place-facility", { kind: "police", x: spot.x, y: spot.y }).accepted, "a police station stands");
+  const after = sim.sc2DerivedGrids(state);
+  const cell = Math.floor(spot.y * 32 / 96) * 32 + Math.floor(spot.x * 32 / 96);
+  test.assert(after.police[cell] > 0 && grids.police[cell] === 0, "police strength appears in the cell that covers the station");
+  test.assert(sim.canonicalStringify(Array.from(after.police)) === sim.canonicalStringify(Array.from(sim.sc2DerivedGrids(state).police)), "two reads agree");
+  const before = sim.canonicalStringify(sim.serialize(state));
+  sim.sc2DerivedGrids(state);
+  test.assert(sim.canonicalStringify(sim.serialize(state)) === before, "the read never mutates the save");
 }
 
 test.finish();

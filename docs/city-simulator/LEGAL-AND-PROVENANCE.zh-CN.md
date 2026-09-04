@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/city-simulator/LEGAL-AND-PROVENANCE.md -->
-<!-- source-sha256: af42aa4f38a7707bca1a0e719e1982ad8fe4d036cf820a5acd8e153e41875778 -->
+<!-- source-sha256: bd228945186a002248f566ef2f2e0efd16d4313f0b367f28b29e690f27d1cff9 -->
 
 > 英文版为准 ・ 仅供人类参考
 
@@ -17,7 +17,7 @@ Bonsai City 路径保持 MIT 洁净：只允许原创代码与原创资产，且
 | 材料 | 允许 | 禁止 |
 | --- | --- | --- |
 | OpenSC2K（GPL v3） | 阅读、记录高层事实、引用固定 commit | 复制、移植、近似改写、提取测试/枚举/表/流程/结构 |
-| micropolisJS（GPL v3 + 附加条款） | 作为独立懒加载 vendor 游戏载荷保留 | 对 Bonsai 路径的任何贡献；"MICROPOLIS" 商标仅授权给该独立项目 |
+| micropolisJS（GPL v3 + 附加条款） | 作为独立懒加载 vendor 游戏载荷保留；把它的存档*数据形状*（JSON 字段名、tile 编号）当作格式事实来读，使盆景城市能召唤一座城、也能送一座城回去 | 对 Bonsai 路径的任何贡献——不要引擎代码、表或算法；"MICROPOLIS" 商标仅授权给该独立项目 |
 | OpenTTD（GPL v2）、DOOM | 独立游戏载荷 | 对 Bonsai 路径的任何贡献 |
 | 原始 MIT/ISC 上游 | 未来经单独审查后从原始上游使用，并保留许可 | 从这些上游的 GPL 改编版本反向移植 |
 | SC2k-docs（CC BY-SA 4.0） | 注明出处引用；以独立措辞记录协议事实 | 直接搬运文字、表格、图示或提取数据 |
@@ -28,6 +28,18 @@ Bonsai City 路径保持 MIT 洁净：只允许原创代码与原创资产，且
 | 原创美术/声音/文案/数据 | 创作并登记 provenance manifest（作者、日期、工具、许可、来源）；匹配从参照观察到的色值是允许的 | 描摹原版轮廓、tile、声音或文案——形状与像素永远只属于我们自己 |
 
 ## 决定
+
+- **2026-09-03 —— 双向存档互通获得授权（所有者指示）。** 所有者选择盆景城市与
+  独立的 Micropolis 游戏之间做双向有损转换，每次转换都显示「丢了什么」的清单。
+  本决定的许可审查：存档是数据格式，不是代码。`bonsai-micropolis-codec.js`
+  （入站）和 `bonsai-micropolis-export.js`（出站）是 MIT 模块，按 Micropolis 外壳
+  存储的形状读写纯 JSON 数字；它们使用的经典 tile 编号和标志位是公开格式事实，
+  由测试观察 vendored 引擎自身的输出来确认，不复制、不移植任何引擎代码、查找表
+  或算法。出站模块向 GPL 游戏的 `cities` IndexedDB store 写入一条记录，带
+  `provenance: { from: "bonsai-city", cityId, exportedAt }`；没有 GPL 文本进入
+  MIT 路径，foundation 扫描仍是门禁。`.cty` 容器（`micropolis-cty-codec.js`）
+  依据公开的经典城市文件布局 clean-room 编写；绝不提交、打包或引用任何 EA 来源
+  的 `.cty` 文件——用户文件只在运行时加载。
 
 - **2026-08-24 —— 视觉保真参照获得授权（所有者指示）。** 所有者把
   Macintosh 版 SimCity 2000 设为 Bonsai City 原创美术的视觉保真参照，并

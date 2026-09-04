@@ -35,8 +35,8 @@ const provenance = JSON.parse(read("assets/bonsai/provenance.json"));
 const source = JSON.parse(read("assets/bonsai/atlas-source.json"));
 
 test.assert(atlas.schema === "ai-system-6-bonsai-atlas-v2" && atlas.version === 2, "runtime metadata uses the Canvas atlas v2 schema");
-test.assert(atlas.geometry.tileWidth === 48 && atlas.geometry.tileHeight === 24, "atlas geometry matches the 48x24 renderer contract");
-test.assert(atlas.geometry.heightStep === 8, "atlas metadata carries the eight-pixel height step");
+test.assert(atlas.geometry.tileWidth === 64 && atlas.geometry.tileHeight === 32, "atlas geometry matches the 64x32 renderer contract");
+test.assert(atlas.geometry.heightStep === 10, "atlas metadata carries the ten-pixel height step");
 test.assert(JSON.stringify(atlas) === JSON.stringify(metadata), "generated runtime metadata exactly matches the reviewable JSON metadata");
 test.assert(source.schema === "ai-system-6-bonsai-micro-voxel-source-v2", "art originates in the checked-in micro-voxel JSON schema");
 test.assert(source.license === "MIT" && source.source === "original", "the source recipes carry the MIT original-art boundary");

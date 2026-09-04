@@ -276,6 +276,10 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
     return Boolean(gridValue(snapshot, ["pipe", "pipes", "waterPipes"], index, false));
   }
 
+  function isSubway(snapshot, index) {
+    return Boolean(gridValue(snapshot, ["subway", "subwayTiles"], index, false));
+  }
+
   function isHighway(snapshot, index) {
     return Boolean(gridValue(snapshot, ["highway"], index, false));
   }
@@ -470,15 +474,27 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
     if (!predicate(snapshot, index)) return;
     const point = projectPoint(snapshot, x, y, altitudeAt(snapshot, index), true);
     const mask = connectorMask(snapshot, x, y, predicate);
+    // A wire or pipe that shares a tile with a road is a covering overlay,
+    // not a second ground ribbon: draw it thin so the road stays readable
+    // underneath (the SC2000 wire-over-road / pipe-under-road look). Without
+    // this the two ribbons painted over each other and the crossing read as a
+    // single murky blob.
+    const roadHere = isRoad(snapshot, index);
+    const overlay = (family === "wire" || family === "pipe") && roadHere;
     // Over water, road and rail tiles draw their deck family so crossings
     // read as bridges with guard rails, not floating ribbons.
     const bridgeFamily = isWater(snapshot, index)
       ? (family === "road" ? "bridge-road" : family === "rail" ? "bridge-rail" : null)
       : null;
     const frameFamily = bridgeFamily || family;
-    if (!drawSprite(context, `${frameFamily}.mask-${mask}`, point.sx, point.sy)) {
+    const spriteDrawn = overlay
+      ? drawSprite(context, `${frameFamily}.mask-${mask}`, point.sx, point.sy)
+      : drawSprite(context, `${frameFamily}.mask-${mask}`, point.sx, point.sy);
+    if (!spriteDrawn) {
       context.fillStyle = family === "road" ? "#555" : family === "rail" ? "#443c35" : "#292929";
-      context.fillRect(point.sx - 9 * state.camera.zoom, point.sy - 2 * state.camera.zoom, 18 * state.camera.zoom, 4 * state.camera.zoom);
+      const w = overlay ? 4 : 18;
+      const h = overlay ? 2 : 4;
+      context.fillRect(point.sx - (w / 2) * state.camera.zoom, point.sy - (h / 2) * state.camera.zoom, w * state.camera.zoom, h * state.camera.zoom);
     }
     if (family === "road" && isTunnel(snapshot, index)) drawTunnelOverlay(context, snapshot, x, y, point);
   }
@@ -737,6 +753,7 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
           hash = fnvUpdate(hash, isRail(snapshot, index));
           hash = fnvUpdate(hash, isWire(snapshot, index));
           hash = fnvUpdate(hash, isPipe(snapshot, index));
+          hash = fnvUpdate(hash, isSubway(snapshot, index));
           hash = fnvUpdate(hash, isHighway(snapshot, index));
           hash = fnvUpdate(hash, isOnramp(snapshot, index));
           hash = fnvAny(hash, gridValue(snapshot, ["zone", "zoneType"], index, 0));
@@ -752,6 +769,7 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
       // of its identity — otherwise toggling re-composes from stale chunks.
       hash = fnvUpdate(hash, state.display.zones ? 1 : 0);
       hash = fnvUpdate(hash, state.display.infrastructure ? 1 : 0);
+      hash = fnvUpdate(hash, state.display.underground ? 1 : 0);
       facilityObjects(snapshot).filter((object) => (
         object.x >= startX && object.x < endX && object.y >= startY && object.y < endY
       )).forEach((object) => {
@@ -814,11 +832,19 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
       tiles.forEach(([x, y]) => {
         if (state.display.zones) drawZone(context, snapshot, x, y);
         if (state.display.infrastructure) {
-          drawConnector(context, snapshot, x, y, "road", isRoad);
-          drawConnector(context, snapshot, x, y, "rail", isRail);
-          drawHighway(context, snapshot, x, y);
-          drawConnector(context, snapshot, x, y, "wire", isWire);
-          drawConnector(context, snapshot, x, y, "pipe", isPipe);
+          if (state.display.underground) {
+            // Subways and tunnels are the only networks that live below the
+            // surface; they draw on the dark underground view and never on
+            // the daylight map (the SC2000 underground display).
+            drawConnector(context, snapshot, x, y, "subway", isSubway);
+            drawConnector(context, snapshot, x, y, "pipe", isPipe);
+          } else {
+            drawConnector(context, snapshot, x, y, "road", isRoad);
+            drawConnector(context, snapshot, x, y, "rail", isRail);
+            drawHighway(context, snapshot, x, y);
+            drawConnector(context, snapshot, x, y, "wire", isWire);
+            drawConnector(context, snapshot, x, y, "pipe", isPipe);
+          }
         }
       });
       if (state.display.infrastructure) {

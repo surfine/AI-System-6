@@ -2916,6 +2916,49 @@ function applyBootLaunchIntent() {
   if (i.open?.command && typeof handleAction === "function") {
     setTimeout(() => handleAction(i.open.command), 0);
   }
+  if (i.launch?.command) {
+    setTimeout(() => runStandaloneLaunchIntent(i.launch), 0);
+  }
+}
+
+// Standalone launch links (1.0.52): open an external ?launch= route after the
+// boot sequence. The link targets the desktop profile, so a session that was
+// left in the Writing view first asks (external links can arrive mid-task);
+// the requested window mode is applied to the launched window afterwards.
+async function runStandaloneLaunchIntent(intent) {
+  if (!intent?.command || typeof handleAction !== "function") return;
+  const inWritingView = typeof workspaceProfile !== "undefined" && workspaceProfile === "writing";
+  if (inWritingView) {
+    if (typeof showSystemModal !== "function") return;
+    const result = await showSystemModal(t("launch_switch_to_desktop"), "confirm", {
+      confirmKey: "launch_open_desktop",
+      defaultAction: "cancel",
+    });
+    if (result !== "yes") {
+      if (typeof setStatus === "function") setStatus(t("launch_cancelled"));
+      return;
+    }
+    if (typeof activateWorkspaceProfile === "function") {
+      await activateWorkspaceProfile("desktop", { openDefault: false, persist: false });
+    }
+  }
+  await handleAction(intent.command);
+  if (!intent.fullscreen || typeof maximizeWindow !== "function") return;
+  // The command is lazily loaded: handleAction resolves once the module is
+  // ready, but the window it opens can land one tick later. Poll briefly for
+  // the launch route's own window so a modal that kept focus never lets us
+  // zoom the wrong surface.
+  const targetName = intent.window || "";
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    const win = typeof getWindow === "function"
+      ? getWindow(targetName)
+      : document.querySelector(`[data-window="${targetName}"]`);
+    if (win && !win.classList.contains("is-hidden")) {
+      maximizeWindow(win);
+      return;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
 }
 
 function ensureLaunchIntentModule() {
@@ -2926,7 +2969,7 @@ function ensureLaunchIntentModule() {
 
 wireAppEvents();
 Promise.resolve(boot()).then(() => {
-  if (document.body.dataset.appReady === "ready" && /[?&](?:open|appearance|tour)=/i.test(bootSearch)) {
+  if (document.body.dataset.appReady === "ready" && /[?&](?:open|launch|appearance|tour)=/i.test(bootSearch)) {
     ensureLaunchIntentModule().catch(() => {}).then(applyBootLaunchIntent);
   }
 });

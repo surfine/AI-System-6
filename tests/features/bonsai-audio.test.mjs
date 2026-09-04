@@ -71,8 +71,22 @@ for (const [name, steps] of Object.entries(audio.SFX)) {
 // Shell wiring: the toggle, the receipt hooks, and lifecycle disposal.
 const shell = read("app/features/bonsai-city.js");
 test.assertIncludes(shell, "setAudioMode", "the sound modes move through the Options menu commands");
-test.assertIncludes(shell, 'sfx("siren")', "disasters sound the siren");
+test.assertIncludes(shell, '"disaster-started": "siren"', "disasters sound the siren");
 test.assertIncludes(shell, 'sfx("reject")', "refusals have a voice");
 test.assertIncludes(shell, "state.audio?.dispose?.()", "closing the window disposes the audio engine");
+
+// B4: one sound per simulation event kind, every name a registered recipe.
+{
+  const shell = read("app/features/bonsai-city.js");
+  const map = shell.match(/const SFX_BY_EVENT = Object\.freeze\(\{([^}]+)\}\)/);
+  test.assert(!!map, "the shell keeps one event-to-sound map");
+  const names = [...map[1].matchAll(/:\s*"([a-z]+)"/g)].map((m) => m[1]);
+  test.assert(names.every((name) => audio.SFX[name]), `every mapped sound is a recipe (${names.join(", ")})`);
+  for (const eventType of ["disaster-started", "disaster-ended", "reward-offered", "milestone", "plant-expired"]) {
+    test.assert(new RegExp(`["']?${eventType}["']?:`).test(map[1]), `${eventType} has a sound`);
+  }
+  test.assertIncludes(shell, 'sfx("bell")', "the January budget hold rings once");
+  test.assertIncludes(shell, 'sfx(tool.command === "demolish-area" ? "bulldoze" : "plop")', "placement and demolition keep their tool sounds");
+}
 
 test.finish();

@@ -14,9 +14,9 @@ const mathContext = vm.createContext({ window: {} });
 vm.runInContext(mathSource, mathContext);
 const math = mathContext.window.AISystem6BonsaiRenderer;
 
-test.assert(math.TILE_W === 48 && math.TILE_H === 24, "the formal renderer uses 48x24 2:1 tiles");
-test.assert(math.HEIGHT_STEP === 8, "each terrain height level lifts eight pixels");
-test.assert(math.DEFAULT_ZOOM === 0.82, "the initial camera uses the acceptance zoom");
+test.assert(math.TILE_W === 64 && math.TILE_H === 32, "the formal renderer uses 64x32 2:1 tiles");
+test.assert(math.HEIGHT_STEP === 10, "each terrain height level lifts ten pixels");
+test.assert(math.DEFAULT_ZOOM === 0.7, "the initial camera uses the SC2K zoom");
 test.assert(math.ROTATIONS === 4, "the camera exposes exactly four quarter-turns");
 
 // --- waterfall edges: the SC2000 mountain signature, pure and deterministic ---
@@ -65,7 +65,7 @@ for (let rotation = 0; rotation < 4; rotation += 1) {
   const camera = math.createCamera();
   const low = math.project(5, 5, 0, camera).sy;
   const high = math.project(5, 5, 4, camera).sy;
-  test.assert(high === low - 32 * camera.zoom, "altitude lift uses the exact height-step contract");
+  test.assert(high === low - 40 * camera.zoom, "altitude lift uses the exact height-step contract");
 }
 
 // --- diagonal culling and multi-tile painter anchors -------------------------

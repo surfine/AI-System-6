@@ -42,6 +42,7 @@ var MicropolisEngine = (() => {
     GameMap: () => GameMap,
     MapGenerator: () => MapGenerator,
     Messages: () => messages_exports,
+    Random: () => Random,
     Simulation: () => Simulation,
     TileSet: () => TileSet,
     TileValues: () => tileValues_exports,
@@ -489,7 +490,11 @@ var MicropolisEngine = (() => {
     const secondCandidate = rng(max);
     return Math.min(firstCandidate, secondCandidate);
   }
-  function getRandom(max, mathGlobal = Math) {
+  var randomSource = { random: () => Math.random(), floor: (n) => Math.floor(n) };
+  function setRandomSource(random) {
+    randomSource.random = random || (() => Math.random());
+  }
+  function getRandom(max, mathGlobal = randomSource) {
     return mathGlobal.floor(mathGlobal.random() * (max + 1));
   }
   function getRandom16(rng = getRandom) {
@@ -508,7 +513,8 @@ var MicropolisEngine = (() => {
     getERandom,
     getRandom,
     getRandom16,
-    getRandom16Signed
+    getRandom16Signed,
+    setRandomSource
   };
 
   // external/micropolisjs/src/tile.ts
@@ -6022,6 +6028,15 @@ var MicropolisEngine = (() => {
       newSprite.addEventListener(CRASHES[i], MiscUtils.reflectEvent.bind(this, CRASHES[i]));
     if (type == SPRITE_HELICOPTER)
       newSprite.addEventListener(HEAVY_TRAFFIC, MiscUtils.reflectEvent.bind(this, HEAVY_TRAFFIC));
+    var soundCues = [
+      SOUND_EXPLOSIONHIGH,
+      SOUND_EXPLOSIONLOW,
+      SOUND_HONKHONK,
+      SOUND_MONSTER,
+      SOUND_HEAVY_TRAFFIC
+    ];
+    for (var s = 0, sl = soundCues.length; s < sl; s++)
+      newSprite.addEventListener(soundCues[s], MiscUtils.reflectEvent.bind(this, soundCues[s]));
     this.spriteList.push(newSprite);
     return newSprite;
   };

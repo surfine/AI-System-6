@@ -92,6 +92,7 @@ const handleSystemMusic = lazyHandler(() => require("./routes/system-music.js"),
 const handleGamdlJobs = lazyHandler(() => require("./routes/gamdl.js"), "./routes/gamdl.js", "handleGamdlJobs");
 const handleGamdlJob = lazyHandler(() => require("./routes/gamdl.js"), "./routes/gamdl.js", "handleGamdlJob");
 const handleGamdlFile = lazyHandler(() => require("./routes/gamdl.js"), "./routes/gamdl.js", "handleGamdlFile");
+const handleGoRedirect = lazyHandler(() => require("./routes/go.js"), "./routes/go.js", "handleGoRedirect");
 
 /**
  * Full local route table. Keep the literal registration pairs intact: feature
@@ -184,6 +185,7 @@ const exactRoutes = isPublicDeployment
  * @type {Array<{ method: string, prefix: string, handler: RouteHandler }>}
  */
 const localPrefixRoutes = [
+  { method: "GET", prefix: "/go", handler: handleGoRedirect },
   { method: "GET", prefix: "/api/search", handler: handleSearch },
   { method: "GET", prefix: "/api/reader", handler: handleReader },
   { method: "GET", prefix: "/api/time-machine", handler: handleTimeMachine },
@@ -195,6 +197,7 @@ const localPrefixRoutes = [
 ];
 
 const publicPrefixRouteKeys = new Set([
+  "GET /go",
   "GET /api/search",
   "GET /api/reader",
   "GET /api/time-machine",

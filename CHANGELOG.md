@@ -1215,3 +1215,34 @@ verified". The boot harness invented an element for any id it was asked for,
 which had reported 72 of 76 windows healthy while their real construction had
 never once run — and the first thing the honest harness found was Time Machine's
 Clip + Translate, which had never made a clip and blamed the translation for it.
+
+## Public Beta 1.0.52 - 2026-09-04
+
+A version that finishes the city-building promise and makes the model route
+stop choosing for you.
+
+Micropolis and Bonsai City now speak one gauge language. The demand bars live
+in the details strip and in the palette footer, open the evaluation or city
+report when you click them, and blink when a message asks for attention — on a
+phone the compact bar survives while the panel steps aside. Bonsai City also
+keeps the promises a city simulation owes itself: the camera returns where you
+left it, the budget remembers month by month, airports and highways arrive in
+their game years instead of all at once, four arcology families grow with
+different populations and unlock years, and fourteen disaster kinds (riots,
+melting reactors, hurricanes, air crashes and more) share one weather-linked
+world. Saves move to the v4 format with a migration chain that opens every
+older city without losing a line of it.
+
+Endfield Terminal answers the way evidence deserves: numbered source cards
+come first, the verdict and the gap after. The retrieval stays deterministic
+on the server, and the answer can be written by your own LM Studio model in
+the browser — or by the cloud route when you prefer — instead of one side
+deciding for the other.
+
+ClioTalk stops making you choose between two useful things. Turn on web search
+and attach a picture: the cited search answer comes back with the image read
+together in one reply, with the sources still one click away.
+
+The LM Studio path prefers the native v1 API — stateful chat, model load
+events, context length in the request — and falls back through the Responses
+API to OpenAI-compatible only when the model needs a shape v1 cannot carry.

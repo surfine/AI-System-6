@@ -714,7 +714,7 @@ window.AISystem6BonsaiSc2CodecLoaded = true;
   }
 
   function exportSc2(payload) {
-    if (!payload || payload.format !== "bonsai-city" || payload.version !== 3) fail("export-payload");
+    if (!payload || payload.format !== "bonsai-city" || (payload.version !== 3 && payload.version !== 4)) fail("export-payload");
     const sidecar = payload.sc2Sidecar && payload.sc2Sidecar.chunks ? payload.sc2Sidecar : null;
     const modeled = buildSegmentsFromPayload(payload);
     const segments = {};

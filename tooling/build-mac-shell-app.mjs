@@ -262,6 +262,17 @@ writeFileSync(
   <string>public.app-category.productivity</string>
   <key>NSHighResolutionCapable</key>
   <true/>
+  <key>CFBundleURLTypes</key>
+  <array>
+    <dict>
+      <key>CFBundleURLName</key>
+      <string>local.aisystem6.beta.shell</string>
+      <key>CFBundleURLSchemes</key>
+      <array>
+        <string>aisystem6</string>
+      </array>
+    </dict>
+  </array>
 </dict>
 </plist>
 `

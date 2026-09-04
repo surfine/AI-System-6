@@ -61,3 +61,19 @@ or file organization.
   code at test time.
 
 This file is an engineering risk record, not legal advice.
+
+## Current status of the reference landscape (verified 2026-09-04)
+
+- The 2018 DMCA takedown removed the then-current OpenSC2K repository. The
+  project was re-uploaded and is still live today at
+  `nicholas-ochoa/OpenSC2K` (last commit 2019-09-22); its README states that
+  no EA assets are included and that `LARGE.DAT` / `PAL_MSTR.BMP` must be
+  supplied by the player. Treat the *current* repository as asset-clean; the
+  takedown applies to the earlier revision's shipped assets, not to the code
+  that remains.
+- `JDrocks450/OpenSC2Kv2` (created 2022-10-23) is a separate C# rewrite that
+  describes itself as a continuation of OpenSC2K. Verified 2026-09-04: its
+  70-file tree contains no EA assets (no `LARGE.DAT`, `PAL_MSTR.BMP`, or
+  extracted sprite sheets) and no LICENSE file, so its code is not usable in
+  the MIT-clean Bonsai path even though it is a legitimate reference for
+  structure and format facts.

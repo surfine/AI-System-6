@@ -1,12 +1,13 @@
 // Bonsai City Micropolis importer / 盆景城市 Micropolis 导入器.
-// One-way, upgrade-only: SimCity 2000 could open SimCity 1 cities and never
-// write them back, and this importer keeps that shape — Micropolis saves come
-// in, nothing exports back. Clean-room mapping from the classic SimCity tile
-// id table (public format facts; the tile ids are data, not code — no GPL
-// engine code is consulted or copied here). Headless and deterministic: no
-// DOM, no timers, no wall clock, no randomness, zero PRNG draws. The importer
-// emits a v3 engine payload (the serialize() shape); the caller runs it
-// through AISystem6BonsaiSim.deserialize.
+// Bonsai summons Micropolis cities and can send a city back (see
+// bonsai-micropolis-export.js); both directions are lossy and report the
+// loss. This file is the inbound half: a Micropolis save becomes a v3 engine
+// payload. Clean-room mapping from the classic SimCity tile id table (public
+// format facts; the tile ids are data, not code — no GPL engine code is
+// consulted or copied here). Headless and deterministic: no DOM, no timers,
+// no wall clock, no randomness, zero PRNG draws. The importer emits a v3
+// engine payload (the serialize() shape); the caller runs it through
+// AISystem6BonsaiSim.deserialize.
 window.AISystem6BonsaiMicropolisCodecLoaded = true;
 
 (function initBonsaiMicropolisCodec() {
@@ -30,19 +31,27 @@ window.AISystem6BonsaiMicropolisCodecLoaded = true;
     RADIOACTIVE: 52,
     FIRE_LOW: 56, FIRE_HIGH: 63,
     ROAD_LOW: 64, ROAD_HIGH: 206,             // bridges, roads, traffic
+    ROAD_BRIDGE_H: 64, ROAD_BRIDGE_V: 65,     // road over water
+    ROAD_PLAIN_LOW: 66, ROAD_PLAIN_HIGH: 76,  // land road shapes, traffic-free
     ROAD_WIRE_H: 77, ROAD_WIRE_V: 78,         // road with a power crossing
+    ROAD_BRIDGE_OPEN_H: 79, ROAD_BRIDGE_OPEN_V: 95,
     WIRE_LOW: 208, WIRE_HIGH: 222,
+    WIRE_BRIDGE_H: 208, WIRE_BRIDGE_V: 209,   // power line over water
     WIRE_RAIL_H: 221, WIRE_RAIL_V: 222,       // power with a rail crossing
     RAIL_LOW: 224, RAIL_HIGH: 238,
+    RAIL_BRIDGE_H: 224, RAIL_BRIDGE_V: 225,   // rail over water
     RAIL_ROAD_H: 237, RAIL_ROAD_V: 238,       // rail with a road crossing
     ROAD_WIRE_X: 239,
     RES_LOW: 240, RES_EMPTY_CENTER: 244,      // empty residential block
-    HOUSE_LOW: 249, HOUSE_HIGH: 264,          // single houses
-    RES_GROWN_LOW: 265,
+    HOUSE_LOW: 249, HOUSE_HIGH: 260,          // twelve single houses
+    // A grown block is nine tiles centred on its family id; the first
+    // family's tiles start four below the centre, so the block of level k
+    // spans GROWN_LOW + 9k .. GROWN_LOW + 9k + 8.
+    RES_GROWN_LOW: 261, RES_GROWN_LEVELS: 16,
     HOSPITAL_LOW: 405, HOSPITAL_CENTER: 409, HOSPITAL_HIGH: 413,
     CHURCH_LOW: 414, CHURCH_HIGH: 422,
-    COM_LOW: 423, COM_GROWN_LOW: 436, COM_HIGH: 611,
-    IND_LOW: 612, IND_GROWN_LOW: 625, IND_HIGH: 692,
+    COM_LOW: 423, COM_EMPTY_CENTER: 427, COM_GROWN_LOW: 432, COM_GROWN_LEVELS: 20, COM_HIGH: 611,
+    IND_LOW: 612, IND_EMPTY_CENTER: 616, IND_GROWN_LOW: 621, IND_GROWN_LEVELS: 8, IND_HIGH: 692,
     PORT_LOW: 693, PORT_HIGH: 708,
     AIRPORT_LOW: 709, AIRPORT_HIGH: 744,
     COAL_LOW: 745, COAL_CENTER: 750, COAL_HIGH: 760,
@@ -60,9 +69,11 @@ window.AISystem6BonsaiMicropolisCodecLoaded = true;
   const inRange = (id, low, high) => id >= low && id <= high;
 
   // Bonsai catalog ids used for buildings without a live facility model.
+  // The exporter reads the same three, so a stadium goes back as a stadium.
   const CATALOG_RADIOACTIVE = 0x05;
   const CATALOG_STADIUM = 0xd7;
   const CATALOG_CHURCH = 0xf7;
+  const CATALOG_FACTS = Object.freeze({ RADIOACTIVE: CATALOG_RADIOACTIVE, STADIUM: CATALOG_STADIUM, CHURCH: CATALOG_CHURCH });
 
   // Zone-center tile id -> Bonsai facility kind (top-left is one tile up and
   // left of the center in every classic multi-tile building).
@@ -72,6 +83,17 @@ window.AISystem6BonsaiMicropolisCodecLoaded = true;
     [T.FIRE_ST_CENTER]: "fire",
     [T.POLICE_CENTER]: "police",
     [T.HOSPITAL_CENTER]: "clinic",
+  });
+
+  // Bridge tile id -> the Bonsai network layer that rides over the water.
+  // The drawbridge animation frames are the same road bridge in motion.
+  const BRIDGE_LAYER = Object.freeze({
+    [T.ROAD_BRIDGE_H]: "road", [T.ROAD_BRIDGE_V]: "road",
+    [T.ROAD_BRIDGE_OPEN_H]: "road", [T.ROAD_BRIDGE_OPEN_V]: "road",
+    828: "road", 829: "road", 830: "road", 831: "road",
+    948: "road", 949: "road", 950: "road", 951: "road",
+    [T.WIRE_BRIDGE_H]: "wire", [T.WIRE_BRIDGE_V]: "wire",
+    [T.RAIL_BRIDGE_H]: "rail", [T.RAIL_BRIDGE_V]: "rail",
   });
 
   function fail(code) { throw new Error(`bonsai-micropolis-invalid: ${code}`); }
@@ -96,6 +118,12 @@ window.AISystem6BonsaiMicropolisCodecLoaded = true;
   function grownLevel(id, base) { return Math.floor((id - base) / 9); }
   function stageOfLevel(level) { return 1 + Math.min(2, Math.floor(Math.max(0, level) / 3)); }
   function densityOfLevel(level) { return level >= 8 ? 2 : 1; }
+  // Bonsai keeps stage and density; the exact classic family is finer than
+  // that. The variant layer carries it as `1 + level` (a single house as
+  // `1 + house index`), so a city sent back gets the same block it arrived
+  // with. Bonsai draws any variant value, and a block the sim rebuilds gets
+  // a fresh variant, which the exporter then treats as "no memory".
+  const variantOfLevel = (level) => 1 + level;
 
   function importMicropolis(input, options = {}) {
     const record = input && input.saveData && Array.isArray(input.saveData.map) ? input : null;
@@ -140,13 +168,16 @@ window.AISystem6BonsaiMicropolisCodecLoaded = true;
       const id = (isInt(raw) ? raw : 0) & TILE_ID_MASK;
 
       // Terrain baseline is flat: land at altitude 1, water at 0. The
-      // classic map has no altitude, so nothing pretends otherwise.
-      let water = false;
-      if (inRange(id, T.WATER_LOW, T.WATER_HIGH)) { water = true; }
+      // classic map has no altitude, so nothing pretends otherwise. A
+      // bridge is water with the network on top: Bonsai roads, rails, and
+      // power lines bridge water too, so the water stays water here.
+      const bridge = BRIDGE_LAYER[id];
+      const water = bridge !== undefined || inRange(id, T.WATER_LOW, T.WATER_HIGH);
       layers.water[bi] = water ? 1 : 0;
       layers.waterKind[bi] = water ? 1 : 0;
       layers.alt[bi] = water ? 0 : 1;
       layers.terrain[bi] = water ? 0 : 1 + (bx + by) % 3;
+      if (bridge !== undefined) { layers[bridge][bi] = 1; continue; }
       if (water) continue;
 
       if (inRange(id, T.TREE_LOW, T.TREE_HIGH)) { layers.tree[bi] = 1; continue; }
@@ -160,9 +191,7 @@ window.AISystem6BonsaiMicropolisCodecLoaded = true;
 
       // Networks. Crossings carry both layers; drawbridge animation frames
       // are still road.
-      if (inRange(id, T.ROAD_LOW, T.ROAD_HIGH)
-        || inRange(id, T.DRAWBRIDGE_H_LOW, T.DRAWBRIDGE_H_HIGH - 1)
-        || inRange(id, T.DRAWBRIDGE_V_LOW, T.DRAWBRIDGE_V_HIGH)) {
+      if (inRange(id, T.ROAD_LOW, T.ROAD_HIGH)) {
         layers.road[bi] = 1;
         if (id === T.ROAD_WIRE_H || id === T.ROAD_WIRE_V) layers.wire[bi] = 1;
         continue;
@@ -188,12 +217,13 @@ window.AISystem6BonsaiMicropolisCodecLoaded = true;
           layers.density[bi] = densityOfLevel(level);
           layers.stage[bi] = stageOfLevel(level % 8);
           layers.buildingState[bi] = 3;
+          layers.variant[bi] = variantOfLevel(level);
         } else if (inRange(id, T.HOUSE_LOW, T.HOUSE_HIGH)) {
           layers.density[bi] = 1; layers.stage[bi] = 1; layers.buildingState[bi] = 3;
+          layers.variant[bi] = variantOfLevel(id - T.HOUSE_LOW);
         } else {
           layers.density[bi] = 1;
         }
-        layers.variant[bi] = id & 3;
         continue;
       }
       if (inRange(id, T.HOSPITAL_LOW, T.HOSPITAL_HIGH)) {
@@ -208,10 +238,10 @@ window.AISystem6BonsaiMicropolisCodecLoaded = true;
           layers.density[bi] = densityOfLevel(Math.floor(level / 2));
           layers.stage[bi] = stageOfLevel(level % 10);
           layers.buildingState[bi] = 3;
+          layers.variant[bi] = variantOfLevel(level);
         } else {
           layers.density[bi] = 1;
         }
-        layers.variant[bi] = id & 3;
         continue;
       }
       if (inRange(id, T.IND_LOW, T.IND_HIGH)) {
@@ -221,10 +251,10 @@ window.AISystem6BonsaiMicropolisCodecLoaded = true;
           layers.density[bi] = densityOfLevel(level);
           layers.stage[bi] = stageOfLevel(level % 8);
           layers.buildingState[bi] = 3;
+          layers.variant[bi] = variantOfLevel(level);
         } else {
           layers.density[bi] = 1;
         }
-        layers.variant[bi] = id & 3;
         continue;
       }
 
@@ -317,7 +347,9 @@ window.AISystem6BonsaiMicropolisCodecLoaded = true;
   }
 
   window.AISystem6BonsaiMicropolisCodec = Object.freeze({
-    BONSAI_SIZE, TILE_ID_MASK, TILE_FACTS: T,
+    BONSAI_SIZE, TILE_ID_MASK, TILE_FACTS: T, CATALOG_FACTS, TICKS_PER_CITY_TIME,
+    FACILITY_BY_CENTER, BRIDGE_LAYER,
+    grownLevel, stageOfLevel, densityOfLevel, variantOfLevel,
     looksLikeMicropolisSave, importMicropolis,
   });
 })();

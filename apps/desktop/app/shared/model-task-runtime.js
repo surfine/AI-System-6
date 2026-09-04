@@ -273,19 +273,6 @@
     ];
   }
 
-  function buildEndfieldMessages(query, evidence) {
-    return [
-      {
-        role: "system",
-        content: systemPromptBody("other-apps.endfield-lore", "zh"),
-      },
-      {
-        role: "user",
-        content: `用户问题：${String(query || "")}\n\n【剧情证据】\n${String(evidence || "")}`,
-      },
-    ];
-  }
-
   function buildBureaucracyMessages({ topic = "", tone = "", mood = "", imageDataUrl = "" } = {}) {
     /** @type {any[]} */
     const content = [
@@ -513,7 +500,6 @@
     buildImportRepairMessages,
     buildVisionMessages,
     buildSubtitleMessages,
-    buildEndfieldMessages,
     buildBureaucracyMessages,
     buildQuickDraftMessages,
     taskContractForPayload,

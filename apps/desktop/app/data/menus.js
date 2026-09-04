@@ -772,6 +772,9 @@ const endfieldMenus = [
   menu("session", "menu_session", [
     menuItem("endfield-new-session", "new_session"),
     menuItem("endfield-run-query", "search"),
+    menuItem("endfield-menu-progress", "endfield_menu_progress"),
+    menuItem("endfield-menu-clip", "endfield_menu_clip"),
+    menuItem("endfield-sideask", "endfield_sideask"),
   ]),
   specialMenu(),
 ];

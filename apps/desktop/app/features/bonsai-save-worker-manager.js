@@ -18,8 +18,20 @@ window.AISystem6BonsaiSaveWorkerManagerLoaded = true;
     const pending = new Map();
 
     const sc2Codec = () => options.sc2Codec || window.AISystem6BonsaiSc2Codec;
+    const micropolisCodec = () => options.micropolisCodec || window.AISystem6BonsaiMicropolisCodec;
+    const micropolisExport = () => options.micropolisExport || window.AISystem6BonsaiMicropolisExport;
 
     function direct(operation, input, metadata) {
+      if (operation === "micropolis-import") {
+        const codec = micropolisCodec();
+        if (!codec) return Promise.reject(new Error("bonsai-micropolis-codec-missing"));
+        return Promise.resolve().then(() => codec.importMicropolis(input, metadata || {}));
+      }
+      if (operation === "micropolis-export") {
+        const exporter = micropolisExport();
+        if (!exporter) return Promise.reject(new Error("bonsai-micropolis-export-missing"));
+        return Promise.resolve().then(() => exporter.exportMicropolis(input, metadata || {}));
+      }
       if (operation === "sc2-import") {
         const codec = sc2Codec();
         if (!codec) return Promise.reject(new Error("bonsai-sc2-codec-missing"));
@@ -95,6 +107,10 @@ window.AISystem6BonsaiSaveWorkerManagerLoaded = true;
                 ? { id, operation, bytes: input }
                 : operation === "sc2-export"
                   ? { id, operation, payload: input }
+                : operation === "micropolis-import"
+                  ? { id, operation, record: input, options: metadata || {} }
+                : operation === "micropolis-export"
+                  ? { id, operation, payload: input, options: metadata || {} }
                   : { id, operation, envelope: input });
         } catch (_) {
           abandonWorker({ fallbackPending: true });
@@ -108,6 +124,8 @@ window.AISystem6BonsaiSaveWorkerManagerLoaded = true;
       parseAndDecode(text) { return run("parse-decode", String(text || "")); },
       importSc2(bytes) { return run("sc2-import", bytes); },
       exportSc2(payload) { return run("sc2-export", payload); },
+      importMicropolis(record, options) { return run("micropolis-import", record, options); },
+      exportMicropolis(payload, options) { return run("micropolis-export", payload, options); },
       dispose() { abandonWorker(); },
     });
   }

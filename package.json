@@ -1,6 +1,6 @@
 {
   "name": "ai-system-6",
-  "version": "1.0.51",
+  "version": "1.0.52",
   "description": "A local-first, model-agnostic AI desktop inspired by Macintosh System 6.",
   "private": true,
   "license": "MIT",
