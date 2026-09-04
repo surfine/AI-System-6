@@ -9,6 +9,8 @@ that owns your question.
   assets, build outputs, and the public-source contract.
 - [Development](DEVELOPMENT.md) — local setup, commands, tests, generated
   files, and contribution workflow.
+- [Desk Port: MCP](MCP.md) — design proposal for a Model Context Protocol
+  server that lets other agents read the route and propose, never commit.
 - [Contributing](../CONTRIBUTING.md) — issue and pull request expectations.
 - [Security](../SECURITY.md) — supported versions and private reporting.
 
