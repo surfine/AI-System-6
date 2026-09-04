@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/city-simulator/README.md -->
-<!-- source-sha256: f25b0ad00790528cbb6693b378cd1bf308e8dcc216ec640626d3efe7babf48e9 -->
+<!-- source-sha256: 8d0d872a1f52699c36c471ce37ea80f340d79221f5dae36ed60f90707799bdd8 -->
 
 > 英文版为准 ・ 仅供人类参考
 
