@@ -19,8 +19,12 @@ window.AISystem6ScanShadow = (() => {
   let installed = false;
   let comparisons = 0;
   let mismatches = [];
-  /** The plans of the save being compared, collected as the desk builds them. */
-  let builtThisSave = [];
+  // One record per save in flight. A save can be entered while another is
+  // still inside its own await (the import does exactly that), and sharing one
+  // set of variables attributed the inner save's plan to the outer one's
+  // report snapshot - which reads as a missed writer that does not exist.
+  const saves = [];
+  const currentSave = () => saves[saves.length - 1] || null;
   // What the app has SAID changed, per collection, since the last plan looked.
   //
   // Asking the save's own dirty register instead would hide writers: that
@@ -71,6 +75,7 @@ window.AISystem6ScanShadow = (() => {
     const deleted = window.markDeskDeleted;
     const plan = window.deskCollectionPlan;
     const persist = window.persistDeskState;
+    const definitions = window.deskCollectionDefinitions;
     if (typeof dirty === "function") {
       window.markDeskDirty = function markDeskDirty(kind = "settings", recordId = "") {
         noteChanged(kind, recordId);
@@ -86,21 +91,35 @@ window.AISystem6ScanShadow = (() => {
     if (typeof plan === "function") {
       window.deskCollectionPlan = function deskCollectionPlan(definition) {
         const built = plan.call(this, definition);
-        if (enabled) builtThisSave.push(built);
+        currentSave()?.plans.push(built);
         return built;
+      };
+    }
+    if (typeof definitions === "function") {
+      // The report snapshot has to be taken where the save is about to look at
+      // the desk - after its own setup pass has run, not when it was entered.
+      // Otherwise a mark made during that pass (the migration above does
+      // exactly that) belongs to the next save and this one looks untouched.
+      window.deskCollectionDefinitions = function deskCollectionDefinitions(...args) {
+        const save = currentSave();
+        if (enabled && save && !save.said) {
+          save.said = takeReported();
+          save.bases = typeof storageRecordFingerprintCache !== "undefined"
+            ? new Map([...storageRecordFingerprintCache].map(([key, map]) => [key, new Map(map)]))
+            : new Map();
+        }
+        return definitions.apply(this, args);
       };
     }
     if (typeof persist === "function") {
       window.persistDeskState = async function persistDeskState(...args) {
-        // The reports have to be read before the plans are built, and compared
-        // after: what the writers said is the whole question.
-        const said = enabled ? takeReported() : null;
-        builtThisSave = [];
+        const save = { said: null, bases: new Map(), plans: [] };
+        saves.push(save);
         try {
           return await persist.apply(this, args);
         } finally {
-          if (said) builtThisSave.forEach((built) => compare(built, said));
-          builtThisSave = [];
+          saves.pop();
+          if (enabled && save.said) save.plans.forEach((built) => compare(built, save.said, save.bases));
         }
       };
     }
@@ -120,6 +139,12 @@ window.AISystem6ScanShadow = (() => {
   }
 
   function report() {
+    // A miss on a collection whose writers have all been migrated is a
+    // regression; the same miss on a collection that is still covered by the
+    // full scan is the migration list. Both are listed, and both are counted:
+    // while the desk trusts nothing, every miss is an unreported writer, which
+    // is the whole point of running the comparison. `notYetMigrated` is what
+    // tells the two apart the day a collection joins the trust list.
     return {
       enabled,
       comparisons,
@@ -127,8 +152,13 @@ window.AISystem6ScanShadow = (() => {
         (total, entry) => total + entry.missedPuts.length + entry.missedDeletes.length,
         0
       ),
+      notYetMigrated: mismatches.filter((entry) => entry.trusted === false).map((entry) => ({
+        key: entry.key,
+        count: entry.missedPuts.length + entry.missedDeletes.length,
+      })),
       mismatches: mismatches.map((entry) => ({
         key: entry.key,
+        trusted: entry.trusted !== false,
         missedPuts: [...entry.missedPuts],
         missedDeletes: [...entry.missedDeletes],
         fields: [...(entry.fields || [])],
@@ -159,37 +189,40 @@ window.AISystem6ScanShadow = (() => {
    * @param {{key: string, items: any[], puts: Array<{id: any, item: any}>, deletes: Array<{id: any}>}} plan
    * @param {Map<string, {puts: Set<string>, deletes: Set<string>, all: boolean}>} said
    */
-  function compare(plan, said) {
+  function compare(plan, said, basesSnapshot) {
     if (!enabled) return;
     const entry = said.get(plan.key) || { puts: new Set(), deletes: new Set(), all: false };
     const previous = storageRecordFingerprintCache.get(plan.key) || new Map();
+    const before = basesSnapshot?.get(plan.key) || new Map();
     const currentIds = new Set(
       (plan.items || []).map((item, index) => String(deskRecordIdentity(plan.key, item, index)))
     );
+    // The bases are the ones the plan itself compared against. Reading the
+    // cache after the commit would call a record written for the first time
+    // "known" and report the creation as a missed writer.
+    const bases = before.size ? before : previous;
     const trustedPuts = new Set(
-      [...currentIds].filter((id) => entry.all || entry.puts.has(id) || !previous.has(id))
+      [...currentIds].filter((id) => entry.all || entry.puts.has(id) || !bases.has(id))
     );
-    const missedPuts = plan.puts.map((put) => String(put.id)).filter((id) => !trustedPuts.has(id));
+    // A put whose fields all match the base moved only in key order: the same
+    // record written with its keys in a different sequence. Nothing a writer
+    // had to announce was lost, so it is not a missed report.
+    const missedPuts = plan.puts
+      .filter((put) => !trustedPuts.has(String(put.id)))
+      .filter((put) => changedFieldNames(bases.get(String(put.id))?.fingerprint, put.item).length > 0)
+      .map((put) => String(put.id));
     const missedDeletes = plan.deletes
       .map((item) => String(item.id))
       .filter((id) => !entry.deletes.has(id) && !reportedDeletes.has(`${plan.key}:${id}`));
     comparisons += 1;
     if (!missedPuts.length && !missedDeletes.length) return;
-    if (typeof window !== "undefined") {
-      window.__scanShadowDebug = window.__scanShadowDebug || [];
-      window.__scanShadowDebug.push({
-        key: plan.key,
-        missedPuts,
-        said: [...entry.puts],
-        all: entry.all,
-        dirty: typeof dirtyDeskRecords !== "undefined" ? [...(dirtyDeskRecords.get(plan.key) || [])] : "(n/a)",
-        deleted: typeof deletedDeskRecords !== "undefined" ? [...(deletedDeskRecords.get(plan.key) || [])] : "(n/a)",
-      });
-    }
+    // Which collections the save plan actually trusts. Read by name from the
+    // desk: the list is the desk's, and the check should not carry a copy.
+    const trusted = typeof trustedKeys !== "undefined" && trustedKeys.includes(plan.key);
     const fields = plan.puts
       .filter((put) => missedPuts.includes(String(put.id)))
-      .flatMap((put) => changedFieldNames(previous.get(String(put.id))?.fingerprint, put.item));
-    mismatches.push({ key: plan.key, missedPuts, missedDeletes, fields: [...new Set(fields)] });
+      .flatMap((put) => changedFieldNames(bases.get(String(put.id))?.fingerprint, put.item));
+    mismatches.push({ key: plan.key, trusted, missedPuts, missedDeletes, fields: [...new Set(fields)] });
   }
 
   return Object.freeze({ enable, isEnabled, report, install });

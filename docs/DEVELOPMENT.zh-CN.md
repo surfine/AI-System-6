@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/DEVELOPMENT.md -->
-<!-- source-sha256: 8decb499bfbaabc32c896caed2f7f3bfddffbdfa05c93d71d5bf3578a7189eff -->
+<!-- source-sha256: db5183cf95b9c22f15192e47bcdefca856caf929ef01dbfd519cf4362388a013 -->
 
 > 英文版为准 ・ 仅供人类参考
 
@@ -51,23 +51,6 @@ CI 会按锁文件安装依赖、执行 lint 与构建，运行契约、重点�
 中执行 smoke。维护者源树还会在临时目录生成干净公开快照，并在其中真实执行 `npm ci`、
 `npm run build` 与 `npm test`。
 
-### 你真正在里面工作的循环
-
-334 项契约合计约 210 CPU 秒。为「你碰过的一个模块」付这笔钱，是小改动最大的单项开销，
-所以按工作内容挑选要跑的那一种：
-
-| 命令 | 跑什么 | 开销 |
-| --- | --- | --- |
-| `npm run verify:quick -- --file <path>` | 只跑**读了这个文件**的契约 | 秒级 |
-| `npm run verify:changed -- --base <sha>` | 同上，选择从你的 diff 推导 | 秒级 |
-| `npm test` | 快线：除六个整机模拟之外的全部契约 | 约 30 秒 |
-| `npm run verify:features -- --lane batch` | 只有那六个整机模拟 | 约 45 秒 |
-| `npm run verify:features -- --all` | 全部契约：夜间与 CI 的答案 | 约 45 秒 |
-
-`--file` 是有意放宽的：只要契约提到该路径就跑；没有任何契约提到的路径就一个也不跑，
-而且会明说，而不是悄悄通过。外观像素网不在这几条里——它在发布泳道（见
-`internal/operations/RELEASE.zh-CN.md`），因为一张截图值一分钟，而一行源码不值。
-
 ## 编辑浏览器运行时
 
 源码位于 `apps/desktop/app/` 与 `apps/desktop/app.js` 入口。浏览器读取生成的
@@ -109,6 +92,84 @@ Chromium 与 WebKit smoke 是发布条件。更广泛的 Playwright 测试仍为
 
 README 聚焦产品价值与第一次成功运行。持久技术细节放在本文或
 [架构](ARCHITECTURE.zh-CN.md)。
+
+## 编写一个应用
+
+应用只注册一次、自己拥有内容区域，并且在真正被销毁时把资源还回去。它对接的接口
+刻意保持很少；下面的例子就是 ClioPaint 与译文板实际使用的那套。
+
+- **注册**：`AISystem6Runtime.registerApplication({ id, windowName, mount, restore, commands })`。
+  注册是全有或全无：缺少 id、`mount` 不是函数、命令没有 handler，都会在写入注册表
+  之前被拒绝，因此不会留下半个应用。懒命令（`registerLazyCommand`）可以把自己的
+  id 交给真正的命令一次。并发调用 `mountApplication(id)` 会共享同一次初始化，并且
+  只有初始化完成后才收到成功。
+- **让一个入口负责打开对象**：`AISystem6ApplicationRegistry.openProjectObject(id, intent)`
+  会在动作真正执行的位置重新解析 id；`applicationObjectAvailability(id, intent, appId?)`
+  则是菜单、工具栏与快捷键在绘制时可以问的廉价、无副作用判断。一秒钟前画出的行
+  可能指向另一个窗口刚删掉的文件，所以这两个问题由同一个解析器回答，动作执行前
+  再复核一次。
+- **命令带着自己的原因**：注册时提供 `{ handler, isAvailable, unavailableReason }`。
+  `AISystem6Runtime.commandAvailability(id, payload)` 返回 `{ available, reason }`，
+  `dispatchCommand` 在不可用时也返回同一个原因，而不是空的拒绝。handler 返回
+  `{ ok: false }` 属于业务失败，绝不上报成成功。
+- **窗口与生命周期**：隐藏或 WindowShade 会保留状态；`dispose` 只用于真正的销毁。
+  `AISystem6InstanceResources.create(name)` 收集监听器（`listen`）、计时器（`timeout`）
+  与其他清理；它的 `dispose()` 只执行一次，某个清理抛错不会影响其余清理，下一次
+  挂载会得到全新的登记表。注册渲染任务时带上所属窗口——
+  `registerRenderTask(name, handler, { windowName })`——这样隐藏窗口会保留待刷新
+  标记，等重新显示时再绘制。
+- **读状态，不复制状态**：`AISystem6StateStores.watch(store, select, { immediate, isEqual })`
+  只观察某个 store 的一个切片，把选出的值连同产生它的那次变更交给监听者，并返回
+  store 自己的取消订阅函数。不要保留第二份可写的项目数据，也不要为了让控件保持
+  刷新而在每次输入事件里写盘。
+- **答案会迟到**：带上开始工作时就确定的对象身份（项目 id、对象 id、运行 id），
+  应用之前再复核一次。图片换了、译文板已经翻页、或者作者换了项目，答案就不显示；
+  运行回执仍然把它记录下来。
+- **写入者要说明自己改了什么**：改动了桌面已经持有的记录之后，调用
+  `markDeskDirty(kind, id)`（删除用 `markDeskDeleted`）。保存计划只搬运写入者
+  报备过的记录，其余记录才逐个比对指纹；在受信集合上保持沉默的写入者，下一次保存
+  就会丢掉这次编辑。
+
+  受信列表是空的，这是一个决定，不是占位符：只有当
+  `tests/e2e/scan-shadow.spec.mjs` 的对照证明某个集合的写入者都会报备，该集合才会
+  加入，而目前还没有任何一个集合通过。所有集合仍然全量扫描，所以未报备的编辑在哪里
+  都还会被抓住。仪器在列表为空时也读得到全部真相——它把两种情况分开命名，受信集合上
+  的漏报是回归，其余地方的漏报是迁移清单（`notYetMigrated`），而不是什么都报不出来。
+
+### 两个试点的维护成本
+
+下表是在这两个真实应用上量出来的，方便下一个人区分"回归"和"四舍五入"。计数来自
+源文件；字节是首次打开真正请求的量。
+
+| | ClioPaint | Translation Pad |
+| --- | --- | --- |
+| 跨应用 DOM 查询（`document.querySelector` / `getElementById`） | 17 → 5 | 0 |
+| 剩下那 5 处在找什么 | 自己窗口的根节点，以及"哪个窗口在最前" | 不适用 |
+| 生命周期：监听器、计时器与清理 | `AISystem6InstanceResources.create("clioPaint")`，`dispose()`，诊断用 `resourceCount()` | 相同，`create("translationPad")` |
+| 首次打开：脚本 | 50,711 B | 11,524 B |
+| 首次打开：样式 | 3,009 B | 无 |
+| 首次打开：本机开发服务器上的网络耗时 | 脚本约 20 ms、样式约 20 ms | 约 4 ms |
+
+给任一试点加一个动作只动一个文件：命令声明在该应用自己的
+`registerApplication({ commands })` 里，可用性来自菜单绘制时用的同一个解析器。
+改关闭行为则是"应用自己的内容一个文件"，外加"如果改的是框架默认关闭行为，才动
+`window-manager.js`"——这正是这套框架要守住的分工。
+
+启动侧不受应用工作影响：桌面发布的是 `app.bundle.js`（1,959,019 B）与
+`styles.bundle.css`（728,131 B），整个 core 的 Floppy 预算为 2,954,112 B。
+开发用仪器不进入这份载荷——例如保存计划影子对照就以懒加载文件发布，由使用它的
+检查自己加载（`app/core/persistence-scan-shadow.js`）。
+
+### 兼容别名
+
+为仍在读它们的消费者保留。每条都写明消费者与退出条件。（`AISystem6Runtime.c`
+与 `AISystem6Runtime.lazyCommands` 原本列在这里；现在所有消费者都改读
+`listCommands`、`listLazyCommands`、`forEachCommand`、`getCommand` 或
+`getLazyCommand`，注册表本身不再对外交出。）
+
+| 别名 | 消费者 | 退出条件 |
+| --- | --- | --- |
+| `setMirroredEditorValue` | 应用代码已无消费者：镜像改走 `applyMirroredWorkingText`，路由中由记录拥有的界面（outline、drafts）改用 `projectRecordIntoWritingSurface` 投影写入（只在字节不同时写入、聚焦字段保留光标、重绘高亮覆盖层）。现在只剩外部抽取：`ai-system6-review-tests/review-regressions.mjs` 按名字加载它，并在旁边断言镜像消息绝不覆盖本地未提交的编辑 | 该测试改断记录馈送路径后即可删除 |
 
 ## Pull request 循环
 

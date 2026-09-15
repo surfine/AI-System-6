@@ -163,6 +163,20 @@ Pad actually use.
   id, object id, run id) and re-check it before applying anything. A picture
   that changed, a pad that moved on, or a project the writer left means the
   answer is not shown; the run receipt still records it.
+- **A writer says what it moved**: after changing a record the desk already
+  holds, call `markDeskDirty(kind, id)` (`markDeskDeleted` for a removal). A
+  save plan carries the records whose writers reported them and only
+  fingerprints the rest, so a writer that stays silent on a trusted collection
+  would lose its edit at the next save.
+
+  The trust list is EMPTY, and that is a decision rather than a stub: nothing
+  is trusted until the comparison in `tests/e2e/scan-shadow.spec.mjs` shows
+  every writer in a collection reporting, and today it shows that for none of
+  them. Every collection is still fully scanned, so an unreported edit is still
+  caught everywhere. The instrument reads the whole truth while it is empty —
+  it names the two cases apart, so a miss on a trusted collection is a
+  regression and a miss anywhere else is the migration list
+  (`notYetMigrated`), rather than reporting nothing at all.
 
 ### What the two pilots cost to maintain
 

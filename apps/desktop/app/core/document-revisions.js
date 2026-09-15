@@ -374,6 +374,10 @@ async function restoreDocumentRevision(revision) {
   };
   target.body = String(revision.body || "");
   target.updatedAt = new Date().toISOString();
+  // Restoring a revision is a write to a record the desk already holds: say
+  // so, or a save that trusts the writers leaves the old body on screen and
+  // the new one on the disk.
+  markDeskDirty("chatFiles", target.id);
   if (target.id === activeTextFileId) {
     teachTextBodyInput.value = target.body;
     markTeachTextModified();

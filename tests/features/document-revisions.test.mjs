@@ -60,6 +60,10 @@ const context = vm.createContext({
   saveDeskState: async () => true,
   renderDocuments: () => {},
   renderProjectDisks: () => {},
+  // Restoring a revision is a write to a record the desk already holds, so the
+  // module names it. The record bookkeeping itself is not under test here.
+  markDeskDirty: () => {},
+  markDeskDeleted: () => {},
   markTeachTextModified: () => {},
   refreshTeachTextDocumentState: () => {},
 });

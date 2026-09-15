@@ -19,7 +19,6 @@
     "core/model-roles.js",
     "core/project-disk-backup.js",
     "core/persistence-scan-shadow.js",
-    "core/persistence-scan-shadow.d.ts",
     "core/adjustment-layers.js",
     "core/protected-ranges.js",
     "core/text-compose.js",

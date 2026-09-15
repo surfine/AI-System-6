@@ -117,6 +117,10 @@ export function createDraftDeskVm() {
 
   let context;
   context = vm.createContext({
+    // The desk's "I changed this record" entry points. The modules under test
+    // call them; the desk's own bookkeeping is not part of these contracts.
+    markDeskDirty: () => {},
+    markDeskDeleted: () => {},
     AbortController,
     Blob,
     Event,

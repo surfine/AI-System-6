@@ -175,7 +175,7 @@ function refreshReceiptFileBody(file) {
   file.updatedAt = runReceiptNow();
   // The receipt file is a record the desk already holds: say it moved, so a
   // save plan that trusts the writers carries it.
-  if (file.id) markDeskDirty("chatFiles", file.id);
+  file.id && markDeskDirty("chatFiles", file.id);
 }
 
 // A working copy of a receipt file, detached from the record in memory.

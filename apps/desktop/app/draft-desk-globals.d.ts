@@ -71,6 +71,7 @@ declare const storageRecordFingerprintCache: Map<string, Map<string, { id: any; 
 declare const deskRecordFingerprint: (item: any) => string;
 declare const persistDeskState: (...args: any[]) => Promise<any>;
 declare const deskCollectionPlan: (...args: any[]) => any;
+declare const trustedKeys: string[];
 declare function imageAttachmentById(id: any): any;
 declare function imageAttachmentVisionDataUrl(attachment: any): string;
 declare function buildImageAttachments(files: any, options?: any): Promise<any[]>;
@@ -152,7 +153,9 @@ interface Window {
   markDeskDirty?: (kind?: string, recordId?: string) => void;
   markDeskDeleted?: (kind: string, recordId: string) => void;
   deskCollectionPlan?: (definition: any) => any;
+  deskCollectionDefinitions?: (...args: any[]) => any[];
   persistDeskState?: (...args: any[]) => Promise<any>;
+  __scanShadowDebug?: any[];
   AISystem6ExplanationLens?: {
     blankExplanationLens?: (options?: any) => any;
     normalizeExplanationLens?: (lens?: any) => any;

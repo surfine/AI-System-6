@@ -292,15 +292,13 @@ function noteUnwithdrawnDeskChanges(kept) {
 }
 
 window.AISystem6DeskPersistence = Object.freeze({
-  markDirty: markDeskDirty,
-  markDeleted: markDeskDeleted,
+  // Through the name, not a captured reference: the entry point has to stay the
+  // one the desk is currently using, so anything that wraps it (the plan
+  // comparison in the development tooling) sees the same calls the app makes.
+  markDirty: (...args) => markDeskDirty(...args),
+  markDeleted: (...args) => markDeskDeleted(...args),
   noteRecordConflict: noteDeskRecordConflict,
   conflictCount: deskRecordConflictCount,
-  /**
-   * Development aid: switch on the shadow comparison between the full save
-   * plan and a report-only plan, and read what the latter would have missed.
-   * Off by default; reads only.
-   */
   getLastStats: () => ({ ...lastDeskPersistenceStats, storesTouched: [...lastDeskPersistenceStats.storesTouched] }),
 });
 
@@ -1264,20 +1262,26 @@ function deskRecordConflictError(conflicts) {
 // because "an edit nobody reported has to be caught, or the run above proves
 // nothing". Trusting chatFiles or the rest before their writers report would
 // skip exactly that comparison, for a few milliseconds, silently.
-const reportedWriterKeys = new Set();
+//
+// The comparison now names the two cases apart: a miss on a collection listed
+// here is a regression, a miss anywhere else is still the migration list. That
+// split is why the list can be read honestly while it is empty — it reports
+// `notYetMigrated` rather than pretending there is nothing to migrate.
+const trustedKeys = [];
 
 function deskCollectionPlan(definition) {
-  const previous = storageRecordFingerprintCache.get(definition.key) || new Map();
+  const key = definition.key;
+  const previous = storageRecordFingerprintCache.get(key) || new Map();
   const current = new Map();
   const puts = [];
   // Trust the writers only while nothing is measuring them: with the
   // comparison switched on the plan reads every record, because that scan is
   // the evidence that the writers are still trustworthy.
-  const trustReports = reportedWriterKeys.has(definition.key)
+  const trustReports = trustedKeys.includes(key)
     && window.AISystem6ScanShadow?.isEnabled?.() !== true;
-  const dirtyHere = dirtyDeskRecords.get(definition.key);
+  const dirtyHere = dirtyDeskRecords.get(key);
   definition.items.forEach((liveItem, index) => {
-    const id = deskRecordIdentity(definition.key, liveItem, index);
+    const id = deskRecordIdentity(key, liveItem, index);
     const cacheKey = String(id);
     const known = previous.get(cacheKey);
     if (trustReports && known && !dirtyHere?.has(cacheKey)) {
@@ -1306,10 +1310,10 @@ function deskCollectionPlan(definition) {
   const deletes = [];
   for (const [cacheKey, cached] of previous) {
     if (current.has(cacheKey)) continue;
-    if (confirmedDeletes.has(`${definition.key}:${cacheKey}`)) continue;
+    if (confirmedDeletes.has(`${key}:${cacheKey}`)) continue;
     deletes.push({ id: cached.id, base: cached.fingerprint });
   }
-  for (const cacheKey of deletedDeskRecords.get(definition.key) || []) {
+  for (const cacheKey of deletedDeskRecords.get(key) || []) {
     const cached = previous.get(cacheKey);
     if (cached && !deletes.some((entry) => String(entry.id) === String(cached.id))) {
       deletes.push({ id: cached.id, base: cached.fingerprint });

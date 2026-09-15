@@ -43,6 +43,11 @@ function createReceiptsContext(overrides = {}) {
     },
   };
   const context = vm.createContext({
+    // The desk's "I changed this record" entry points. Modules loaded alone in
+    // these contracts call them; the record bookkeeping itself is not under
+    // test here.
+    markDeskDirty: () => {},
+    markDeskDeleted: () => {},
     console,
     crypto: webcrypto,
     chatFiles,
