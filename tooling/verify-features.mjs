@@ -4,7 +4,7 @@ import { availableParallelism } from "node:os";
 import { dirname, join } from "node:path";
 import { performance } from "node:perf_hooks";
 import { fileURLToPath } from "node:url";
-import { publicContractFiles, publicProductContracts } from "../tests/feature-manifest.mjs";
+import { batchContractNames, publicContractFiles, publicProductContracts } from "../tests/feature-manifest.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const featureDir = join(root, "tests/features");
@@ -12,6 +12,8 @@ const args = process.argv.slice(2).filter((arg) => arg !== "--");
 const requested = [];
 let requestedJobs = process.env.AI_SYSTEM6_TEST_JOBS;
 let verbose = false;
+let includeBatch = false;
+let onlyBatch = false;
 
 for (let index = 0; index < args.length; index += 1) {
   const arg = args[index];
@@ -25,15 +27,32 @@ for (let index = 0; index < args.length; index += 1) {
     index += 1;
   } else if (arg === "--verbose") {
     verbose = true;
+  } else if (arg === "--all") {
+    includeBatch = true;
+  } else if (arg === "--lane") {
+    const value = args[index + 1];
+    if (value !== "batch" && value !== "fast") {
+      console.error("NO  --lane takes batch or fast.");
+      process.exit(2);
+    }
+    onlyBatch = value === "batch";
+    includeBatch = value === "batch";
+    index += 1;
   } else if (arg === "--help") {
     console.log(`Usage:
-  npm run verify:features
+  npm run verify:features                  # the fast lane, seconds
+  npm run verify:features -- --all         # every contract, simulators included
+  npm run verify:features -- --lane batch  # only the whole-system contracts
   npm run verify:features -- <feature> [feature...]
   npm run verify:features -- --jobs <1-16> [feature...]
 
 AI_SYSTEM6_TEST_JOBS sets the same bounded worker count. The default uses up
 to eight logical CPUs. Successful assertion logs stay in dist/verification/;
---verbose replays all logs. Failures print a bounded tail and the full log path.`);
+--verbose replays all logs. Failures print a bounded tail and the full log path.
+
+The whole-system contracts (batchContractNames in tests/feature-manifest.mjs)
+are left out of the default run: measured 2026-09-15, six of them are 104 s of a
+42 s suite, and the slowest sets the wall clock on its own.`);
     process.exit(0);
   } else {
     requested.push(arg);
@@ -86,9 +105,22 @@ if (unknown.length) {
   process.exit(2);
 }
 
+const batchTests = allTests.filter((name) => batchContractNames.includes(featureName(name)));
+const fastTests = allTests.filter((name) => !batchContractNames.includes(featureName(name)));
+const defaultTests = onlyBatch ? batchTests : (includeBatch ? allTests : fastTests);
 const selectedTests = requested.length
   ? allTests.filter((name) => requested.includes(featureName(name)) || requested.includes(name))
-  : allTests;
+  : defaultTests;
+
+// A run that leaves the whole-system contracts out says so, once, with the
+// number: a green "334 feature tests" that quietly skipped six of them would
+// be exactly the kind of claim this suite exists to prevent.
+if (!requested.length && !includeBatch && batchTests.length) {
+  console.log(
+    `${fastTests.length} contract(s) ran; ${batchTests.length} whole-system contract(s) deferred`
+    + " (npm run verify:features -- --all, or --lane batch for those alone).",
+  );
+}
 
 if (!selectedTests.length) {
   console.error(`NO  no feature tests matched: ${requested.join(", ")}`);

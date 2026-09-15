@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/DEVELOPMENT.md -->
-<!-- source-sha256: 10913c71abbd3d2b07503b6a5aa0d17d76432bedc2f5dc590f73abd1035c6ece -->
+<!-- source-sha256: f57ef5917843c15ea9d6fa65ee97fdfb00734bad24043fcd44b293797ee0b2f3 -->
 
 > 英文版为准 ・ 仅供人类参考
 
@@ -50,6 +50,23 @@ CI 会按锁文件安装依赖、执行 lint 与构建，运行契约、重点�
 再检查版本、checkJs、服务端类型、文档和公开文件树，并在独立的 Chromium 与 WebKit job
 中执行 smoke。维护者源树还会在临时目录生成干净公开快照，并在其中真实执行 `npm ci`、
 `npm run build` 与 `npm test`。
+
+### 你真正在里面工作的循环
+
+334 项契约合计约 210 CPU 秒。为「你碰过的一个模块」付这笔钱，是小改动最大的单项开销，
+所以按工作内容挑选要跑的那一种：
+
+| 命令 | 跑什么 | 开销 |
+| --- | --- | --- |
+| `npm run verify:quick -- --file <path>` | 只跑**读了这个文件**的契约 | 秒级 |
+| `npm run verify:changed -- --base <sha>` | 同上，选择从你的 diff 推导 | 秒级 |
+| `npm test` | 快线：除六个整机模拟之外的全部契约 | 约 30 秒 |
+| `npm run verify:features -- --lane batch` | 只有那六个整机模拟 | 约 45 秒 |
+| `npm run verify:features -- --all` | 全部契约：夜间与 CI 的答案 | 约 45 秒 |
+
+`--file` 是有意放宽的：只要契约提到该路径就跑；没有任何契约提到的路径就一个也不跑，
+而且会明说，而不是悄悄通过。外观像素网不在这几条里——它在发布泳道（见
+`internal/operations/RELEASE.zh-CN.md`），因为一张截图值一分钟，而一行源码不值。
 
 ## 编辑浏览器运行时
 

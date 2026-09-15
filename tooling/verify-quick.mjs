@@ -9,6 +9,7 @@ const args = process.argv.slice(2).filter((arg) => arg !== "--");
 const features = [];
 const cssFiles = [];
 const gates = [];
+const sourceFiles = [];
 let build = true;
 let css = false;
 let docs = false;
@@ -46,6 +47,14 @@ for (let index = 0; index < args.length; index += 1) {
     index += 1;
   } else if (arg === "--docs") {
     docs = true;
+  } else if (arg === "--file") {
+    const path = args[index + 1];
+    if (!path || path.startsWith("--")) {
+      console.error("NO  --file requires a repository-relative path.");
+      process.exit(1);
+    }
+    sourceFiles.push(path);
+    index += 1;
   } else if (arg === "--smoke") {
     smoke = true;
   } else if (arg === "--src") {
@@ -60,6 +69,11 @@ for (let index = 0; index < args.length; index += 1) {
 The quick gate never runs verify:release, global feature verification, visual
 snapshots, packaging, or deployment. Repeat --css-file to isolate CSS checks to
 the styles owned by the current task; plain --css keeps the all-styles gate.
+
+--file narrows the feature contracts to the ones that READ that file: the suite
+is about 210 CPU-seconds across 334 contracts, and a change to one module has no
+business paying for the rest. Repeat it for each file touched. A file no
+contract reads runs no contract, and the run says so.
 
 --gate runs one whole browser ship gate with development receipts. Release
 reuse requires the separate verify:gate -- --release-stamp workflow and exact
@@ -93,6 +107,33 @@ if (features.length) {
     command: process.execPath,
     commandArgs: ["tooling/verify-features.mjs", ...features],
   });
+}
+
+if (sourceFiles.length) {
+  // Every contract that READS one of the changed files. A contract opens the
+  // source it holds to account by name, so the mention is the dependency: the
+  // selection over-approximates on purpose and never guesses the other way.
+  const selection = spawnSync(process.execPath, ["tooling/select-feature-contracts.mjs", ...sourceFiles], {
+    cwd: root,
+    encoding: "utf8",
+  });
+  if (selection.status !== 0) {
+    console.error(selection.stderr || "NO  could not select the contracts for the changed files.");
+    process.exit(selection.status === null ? 1 : selection.status);
+  }
+  const selected = selection.stdout.split("\n").map((line) => line.trim()).filter(Boolean);
+  console.log(
+    selected.length
+      ? `--file ${sourceFiles.join(", ")} → ${selected.length} contract(s): ${selected.join(", ")}`
+      : `--file ${sourceFiles.join(", ")} → no contract reads these files`,
+  );
+  if (selected.length) {
+    checks.push({
+      label: `feature contract${selected.length === 1 ? "" : "s"} for the changed files`,
+      command: process.execPath,
+      commandArgs: ["tooling/verify-features.mjs", ...selected],
+    });
+  }
 }
 
 if (css) {

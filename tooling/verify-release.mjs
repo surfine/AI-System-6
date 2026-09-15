@@ -241,12 +241,29 @@ if (smokeRelease.status === 0) {
   fail(`release smoke verification failed\n${smokeRelease.stderr || smokeRelease.stdout}`);
 }
 
-const featureTests = runReceiptCheck("feature-tests", process.execPath, ["tooling/verify-features.mjs"], {
-  cwd: root,
-  encoding: "utf8",
-  maxBuffer: 64 * 1024 * 1024,
-});
-if (featureTests.status === 0) {
+// The contract suite is 105 s of the release's first two minutes, and the
+// published repository's CI runs exactly this command on every push. A fast
+// release defers it and SAYS SO in the receipt; `release:prepare --batch` (or
+// `npm run verify:features` while working) runs it here.
+const deferFeatureTests = process.env.AI_SYSTEM6_DEFER_FEATURE_TESTS === "1";
+const featureTests = deferFeatureTests
+  ? { status: 0 }
+  : runReceiptCheck("feature-tests", process.execPath, ["tooling/verify-features.mjs"], {
+    cwd: root,
+    encoding: "utf8",
+    maxBuffer: 64 * 1024 * 1024,
+  });
+if (deferFeatureTests) {
+  receiptChecks.push({
+    name: "feature-tests",
+    command: "deferred",
+    exitCode: 0,
+    durationMs: 0,
+    deferred: true,
+    reason: "the public repository's CI runs npm test on every push; release:prepare --batch runs it here",
+  });
+  console.log("--  feature verification deferred to the batch lane and the public CI");
+} else if (featureTests.status === 0) {
   ok("feature verification");
 } else {
   const featureFailureDetails = [

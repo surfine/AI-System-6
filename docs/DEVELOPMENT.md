@@ -48,6 +48,26 @@ tree, and executes the smoke in separate Chromium and WebKit jobs. In the
 maintainer source tree it also builds a clean public snapshot in a temporary
 directory and really runs `npm ci`, `npm run build`, and `npm test` there.
 
+### The loop you actually work in
+
+The 334 contracts are about 210 CPU-seconds together. Paying that for a module
+you touched is the single largest cost of a small change, so pick the run that
+matches the work:
+
+| Command | What it runs | Cost |
+| --- | --- | --- |
+| `npm run verify:quick -- --file <path>` | only the contracts that READ that file | seconds |
+| `npm run verify:changed -- --base <sha>` | the same selection, derived from your diff | seconds |
+| `npm test` | the fast lane: every contract except the six whole-system simulations | ~30 s |
+| `npm run verify:features -- --lane batch` | only those six simulators | ~45 s |
+| `npm run verify:features -- --all` | every contract: the nightly and CI answer | ~45 s |
+
+`--file` over-approximates on purpose: a contract that mentions the path still
+runs, and a path no contract mentions runs none — the run says so rather than
+quietly passing. The appearance pixel net is not in any of these; it runs in the
+release lane (see `internal/operations/RELEASE.md`), because a screenshot is
+worth a minute and a unit of source is not.
+
 ## Editing the browser runtime
 
 Source lives in `apps/desktop/app/` and `apps/desktop/app.js`. The browser loads

@@ -13,7 +13,11 @@ try {
   for (const dir of ["tooling", "tests/features", "bin"]) mkdirSync(join(scratch, dir), { recursive: true });
   copyFileSync(new URL("../../tooling/verify-features.mjs", import.meta.url), join(scratch, "tooling/verify-features.mjs"));
   copyFileSync(new URL("../../tooling/verify-quick.mjs", import.meta.url), join(scratch, "tooling/verify-quick.mjs"));
-  put("tests/feature-manifest.mjs", "export const publicProductContracts = []; export const publicContractFiles = () => [];");
+  put(
+    "tests/feature-manifest.mjs",
+    "export const publicProductContracts = []; export const publicContractFiles = () => [];"
+    + " export const batchContractNames = Object.freeze([]);",
+  );
   put("tests/features/good.test.mjs", "console.log('success-detail-'.repeat(10000)); console.error('warning retained');");
   let result = run("verify-features.mjs", ["good", "typo"]);
   assert.equal(result.status, 2, "a valid selector must not hide an unknown selector");
@@ -38,7 +42,12 @@ try {
   assert.match(result.stderr, /specific failure/);
   assert.match(result.stderr, /exit 7/);
   assert.ok(result.stderr.length < 7000, "failure diagnostics keep a bounded tail");
-  put("tests/feature-manifest.mjs", "export const publicProductContracts = [{feature:'missing public contract', tests:['missing.test.mjs']}]; export const publicContractFiles = () => ['missing.test.mjs'];");
+  put(
+    "tests/feature-manifest.mjs",
+    "export const publicProductContracts = [{feature:'missing public contract', tests:['missing.test.mjs']}];"
+    + " export const publicContractFiles = () => ['missing.test.mjs'];"
+    + " export const batchContractNames = Object.freeze([]);",
+  );
   result = run("verify-features.mjs", ["good"]);
   assert.equal(result.status, 1, "compact output still enforces public coverage");
   assert.match(result.stderr, /missing public-safe contract/);

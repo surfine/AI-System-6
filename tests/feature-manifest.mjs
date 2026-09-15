@@ -122,3 +122,28 @@ export const publicProductContracts = [
 export function publicContractFiles() {
   return publicProductContracts.flatMap((entry) => entry.tests);
 }
+
+/**
+ * The contracts that simulate a whole system, and cost a whole minute.
+ *
+ * Measured on this machine with the suite otherwise idle (2026-09-15): the 334
+ * contracts finish in 42 s, and these five are 104 s of that work — the
+ * slowest one alone (bonsai-no-dead-ends) sets the wall clock at 41 s. They
+ * run the city simulator for simulated years and build the atlas; none of them
+ * can answer a question about a stylesheet or a window, which is what a
+ * development loop is usually asking.
+ *
+ * So the default `npm test` is the fast lane and leaves these out, and it says
+ * how many it left out. `npm run verify:features -- --all` runs everything,
+ * `--lane batch` runs only these, and naming one runs it. They stay required
+ * where a whole-system answer is the point: the nightly run, and the public
+ * repository's CI on a push to main.
+ */
+export const batchContractNames = Object.freeze([
+  "bonsai-no-dead-ends",
+  "bonsai-atlas",
+  "bonsai-kernel",
+  "bonsai-save",
+  "bonsai-systems",
+  "lazy-command-loading",
+]);
