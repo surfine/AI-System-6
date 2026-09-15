@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/README.md -->
-<!-- source-sha256: 4635b3aa4595870fdab9d68e0dbed322854c807d32fa0fa9a6e57a343f6283e1 -->
+<!-- source-sha256: 6cf1b9091005af6d9c1bdb06677e5f249cf944004938ae584ca837167e3ad592 -->
 
 > 英文版为准 ・ 仅供人类参考
 
@@ -12,6 +12,8 @@
 - [架构](ARCHITECTURE.zh-CN.md)——运行时边界、状态、模型提供商、资产、构建产物与
   公开源码契约。
 - [开发指南](DEVELOPMENT.zh-CN.md)——本地设置、命令、测试、生成文件与贡献流程。
+- [Desk Port：MCP](MCP.zh-CN.md)——Model Context Protocol 服务的设计提案：让其他
+  agent 读取路线、提出建议，但永远不能提交。
 - [参与贡献](../CONTRIBUTING.zh-CN.md)——issue 与 pull request 要求。
 - [安全策略](../SECURITY.zh-CN.md)——支持版本与私密报告方式。
 

@@ -450,8 +450,8 @@
       // The 18 Pro was the one phone that opened in the vendor's own scene
       // viewer instead of the studio. That made colour and light two systems:
       // the scene carried Apple's environment, and the reader could not drag
-      // it, pick a part, or compare two finishes the way every other device
-      // works. It now renders in the same interactive renderer as the rest of
+      // it or pick a part the way every other device works. It now renders in
+      // the same interactive renderer as the rest of
       // the line-up, under the same shared EXR environment, with the mesh map
       // below standing in for the scene's material names.
       //
@@ -754,7 +754,6 @@
     initialized = true;
     recipe = loadRecipe();
     ensureMotionControlsMarkup();
-    ensureCompareMarkup();
     selectedPartId = activeParts()[0].id;
     buildModelControls();
     buildPoseControls();
@@ -762,7 +761,6 @@
     buildViewControls();
     bindCmfStudioEvents();
     syncCmfForm();
-    syncCompareControls();
     refreshCapabilities();
     setCmfStatus(t("cmf_ready"));
   }
@@ -823,12 +821,6 @@
       updateInteractiveModel();
       setCmfStatus(t("cmf_preset_applied"));
     });
-    cmfEl("cmf-hold-a")?.addEventListener("click", () => holdCompareSlot("a"));
-    cmfEl("cmf-hold-b")?.addEventListener("click", () => holdCompareSlot("b"));
-    cmfEl("cmf-compare-run")?.addEventListener("click", compareHeldRecipes);
-    cmfEl("cmf-adopt-a")?.addEventListener("click", () => adoptCompareSlot("a"));
-    cmfEl("cmf-adopt-b")?.addEventListener("click", () => adoptCompareSlot("b"));
-    cmfEl("cmf-compare-close")?.addEventListener("click", hideCompareStage);
     cmfEl("cmf-shuffle")?.addEventListener("click", shuffleRecipe);
     cmfEl("cmf-reset")?.addEventListener("click", resetRecipe);
     cmfEl("cmf-reset-view")?.addEventListener("click", resetCmfView);
@@ -1040,7 +1032,6 @@
     buildPartControls();
     buildViewControls();
     syncCmfForm();
-    syncCompareControls();
     saveRecipe({ quiet: true });
     // A different device means different geometry, so the model has to be
     // rebuilt server-side — recoloring the materials in place is not enough.
@@ -1204,151 +1195,6 @@
       [out[i], out[j]] = [out[j], out[i]];
     }
     return out;
-  }
-
-  // A static A/B of two finishes, not two live scenes. The whole value of a
-  // comparison is seeing the difference, so both stills come out of the one
-  // scene, one camera and one environment the studio already has: between the
-  // two frames nothing changes but the recipe's colours. "Same viewpoint, same
-  // light, same scale" is therefore a property of the method rather than
-  // something anyone has to hold steady by hand — the camera is never touched.
-  const COMPARE_SLOTS = ["a", "b"];
-
-  // Slots are kept per device model, so there is no such thing as an A from
-  // another machine and nothing to restore after adopting: the studio is
-  // already on the model the held recipe belongs to.
-  function heldRecipes() {
-    const slots = readStore().compare?.[recipe.model];
-    return { a: slots?.a || null, b: slots?.b || null };
-  }
-
-  function holdCompareSlot(slot) {
-    const store = readStore();
-    const compare = { ...(store.compare || {}) };
-    compare[recipe.model] = { ...(compare[recipe.model] || {}), [slot]: { parts: { ...recipe.parts } } };
-    store.compare = compare;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
-    syncCompareControls();
-    setCmfStatus(t(slot === "a" ? "cmf_compare_held_a" : "cmf_compare_held_b"));
-  }
-
-  function comparePartDifferences(held) {
-    return activeParts().filter((part) => held.a.parts?.[part.id] !== held.b.parts?.[part.id]);
-  }
-
-  async function compareHeldRecipes() {
-    stopCmfMotion();
-    const held = heldRecipes();
-    if (!held.a || !held.b) { setCmfStatus(t("cmf_compare_need_two")); return; }
-    const state = rendererState;
-    if (activeModel().renderer === "lotus" || !state?.model || !state.bounds) {
-      setCmfStatus(t("cmf_compare_unavailable"));
-      return;
-    }
-    const differences = comparePartDifferences(held);
-    if (!differences.length) { setCmfStatus(t("cmf_compare_identical")); return; }
-    const live = { ...recipe.parts };
-    setBusy(true, t("cmf_comparing"));
-    let offscreen = null;
-    try {
-      offscreen = await createOffscreenRenderer();
-      const shots = withOffscreenEnvironment(offscreen, () => {
-        const captured = {};
-        for (const slot of COMPARE_SLOTS) {
-          recipe.parts = { ...live, ...held[slot].parts };
-          applyLiveRecipe();
-          offscreen.renderer.render(state.scene, state.camera);
-          captured[slot] = offscreen.canvas.toDataURL("image/png");
-        }
-        return captured;
-      });
-      showCompareStage(shots, held, differences);
-      setCmfStatus(t("cmf_compare_done"));
-    } catch (error) {
-      setCmfStatus(`${t("cmf_compare_failed")} ${error.message}`);
-    } finally {
-      disposeOffscreenRenderer(offscreen);
-      // The live model goes back to what the writer was actually looking at
-      // before the comparison borrowed it for two frames.
-      recipe.parts = live;
-      applyLiveRecipe();
-      setBusy(false);
-    }
-  }
-
-  function ensureCompareMarkup() {
-    // A group of its own beside the other command groups, not inside one: the
-    // toolbar becomes a two-column grid below 820px, and three more buttons
-    // nested in the export stack crushed Reset View, Export USDZ and Export
-    // Views to 26px wide with their labels printed over each other.
-    const panel = cmfEl("cmf-button-stack-compare") ? null : document.querySelector(".cmf-studio-window .cmf-setup-panel");
-    if (panel) {
-      const row = document.createElement("div");
-      row.className = "cmf-compare-actions";
-      row.id = "cmf-button-stack-compare";
-      row.innerHTML = '<button class="btn" type="button" id="cmf-hold-a" data-i18n="cmf_compare_hold_a">Hold as A</button><button class="btn" type="button" id="cmf-hold-b" data-i18n="cmf_compare_hold_b">Hold as B</button><button class="btn" type="button" id="cmf-compare-run" data-i18n="cmf_compare_run">Compare A/B</button>';
-      panel.append(row);
-    }
-    const viewport = cmfEl("cmf-model-viewport");
-    if (viewport && !cmfEl("cmf-compare-stage")) {
-      const stage = document.createElement("div");
-      stage.className = "cmf-compare-stage";
-      stage.id = "cmf-compare-stage";
-      stage.hidden = true;
-      stage.innerHTML = COMPARE_SLOTS.map((slot) => `<figure class="cmf-compare-shot"><img id="cmf-compare-image-${slot}" alt=""><figcaption><b>${slot.toUpperCase()}</b> <span id="cmf-compare-caption-${slot}"></span></figcaption><button class="btn" type="button" id="cmf-adopt-${slot}" data-i18n="cmf_compare_adopt">Adopt</button></figure>`).join("")
-        + '<button class="btn default cmf-compare-close" type="button" id="cmf-compare-close" data-i18n="cmf_compare_close">Done</button>';
-      viewport.append(stage);
-    }
-    document.querySelectorAll("#cmf-button-stack-compare [data-i18n], #cmf-compare-stage [data-i18n]").forEach((node) => { node.textContent = t(node.dataset.i18n); });
-  }
-
-  function compareCaption(held, slot, differences) {
-    return differences.map((part) => `${t(part.labelKey)} ${t(colorMeta(held[slot].parts?.[part.id]).labelKey)}`).join(" · ");
-  }
-
-  function showCompareStage(shots, held, differences) {
-    const stage = cmfEl("cmf-compare-stage");
-    if (!stage) return;
-    COMPARE_SLOTS.forEach((slot) => {
-      const image = cmfEl(`cmf-compare-image-${slot}`);
-      if (image) image.src = shots[slot];
-      const caption = cmfEl(`cmf-compare-caption-${slot}`);
-      if (caption) caption.textContent = compareCaption(held, slot, differences);
-    });
-    stage.hidden = false;
-  }
-
-  function hideCompareStage() {
-    const stage = cmfEl("cmf-compare-stage");
-    if (!stage || stage.hidden) return;
-    // The two stills are full-size PNGs held as data URLs. Drop them on the
-    // way out rather than keeping two frames of a device nobody is looking at.
-    COMPARE_SLOTS.forEach((slot) => { const image = cmfEl(`cmf-compare-image-${slot}`); if (image) image.removeAttribute("src"); });
-    stage.hidden = true;
-  }
-
-  function adoptCompareSlot(slot) {
-    const held = heldRecipes()[slot];
-    if (!held) return;
-    hideCompareStage();
-    recipe.parts = { ...recipe.parts, ...held.parts };
-    syncCmfForm();
-    refreshCmfPresetControl();
-    saveRecipe({ quiet: true });
-    updateInteractiveModel();
-    setCmfStatus(t("cmf_compare_adopted"));
-  }
-
-  function syncCompareControls() {
-    const held = heldRecipes();
-    COMPARE_SLOTS.forEach((slot) => {
-      const button = cmfEl(`cmf-hold-${slot}`);
-      if (!button) return;
-      button.classList.toggle("is-held", Boolean(held[slot]));
-      button.setAttribute("aria-pressed", String(Boolean(held[slot])));
-    });
-    const run = cmfEl("cmf-compare-run");
-    if (run) run.disabled = cmfBusy || !held.a || !held.b;
   }
 
   // A hung capabilities probe must not leave the preview in an eternal
@@ -2685,7 +2531,7 @@
     cmfBusy = busy;
     if (busy) stopCmfMotion();
     document.querySelectorAll("[data-cmf-color-option], [data-cmf-part-row]").forEach((button) => { button.disabled = busy; });
-    ["cmf-shuffle", "cmf-reset", "cmf-reset-view", "cmf-export", "cmf-export-views", "cmf-fold", "cmf-motion-play", "cmf-model", "cmf-pose", "cmf-preset", "cmf-hold-a", "cmf-hold-b", "cmf-compare-run"].forEach((id) => {
+    ["cmf-shuffle", "cmf-reset", "cmf-reset-view", "cmf-export", "cmf-export-views", "cmf-fold", "cmf-motion-play", "cmf-model", "cmf-pose", "cmf-preset"].forEach((id) => {
       const button = cmfEl(id);
       if (button) button.disabled = busy || button.dataset.capabilityDisabled === "true";
     });
@@ -2693,9 +2539,6 @@
       button.disabled = busy;
     });
     syncCmfMotionControls();
-    // Compare stays disabled until two recipes are actually held, so it must
-    // be decided after the blanket re-enable above, not by it.
-    syncCompareControls();
     if (message) setCmfStatus(message);
   }
 

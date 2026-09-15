@@ -3251,6 +3251,19 @@ body:not(.use-liquid-glass) .desktop-app-icon span[data-liquid-label="DAA Meme"]
   height: 42px;
 }
 
+/* The Finder's icon view is the Finder tier in every era, so it belongs in the
+   foundation rather than in one appearance: Liquid Glass declares its own
+   44 px and the Theme Lab sizes its specimens, but the other five eras
+   inherited the 34 px base box — and Platinum, which sizes its inline
+   artwork by the tier hint, painted the compact 16 px asset inside it, so the
+   whole era read as "small icons" in both view modes. Small Icons keeps its
+   22 px row, and the desktop tier keeps its 42 px: that is the launcher's
+   size, not the Finder's. */
+:where(.finder-grid:not(.finder-small-icons)) .finder-item .sys-icon:not(.sys-icon-desktop) {
+  width: 44px;
+  height: 44px;
+}
+
 .menu-bar .project-switcher-icon.sys-icon,
 .menu-bar .cloud-icon.sys-icon {
   width: 17px;

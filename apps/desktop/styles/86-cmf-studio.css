@@ -110,7 +110,6 @@
 }
 
 .cmf-setup-actions,
-.cmf-compare-actions,
 .cmf-button-stack {
   display: flex;
   flex: 0 0 auto;
@@ -305,61 +304,6 @@
   background: var(--cmf-stage-bg);
   background-position: 0 0, 0 10px, 10px -10px, -10px 0;
   background-size: 20px 20px;
-}
-
-/* A static A/B lives in the preview's own box, at the preview's own size. The
-   point of the comparison is the finish, so the two stills must not also
-   change how large the device reads on screen: same frame, same light, same
-   scale, two colours. It covers the live canvas rather than resizing the
-   window, and the plain attribute has to win over `display: grid` on its own.
-   It shares the canvas's grid cell and is appended after it, so paint order
-   puts it on top without a stacking layer of its own. */
-.cmf-compare-stage {
-  grid-area: 1 / 1;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  align-content: center;
-  gap: 8px;
-  width: 100%;
-  height: 100%;
-  padding: 8px;
-  background: var(--paper);
-  overflow: auto;
-}
-
-.cmf-compare-stage[hidden] {
-  display: none;
-}
-
-.cmf-compare-shot {
-  display: grid;
-  gap: 4px;
-  justify-items: center;
-  min-width: 0;
-  margin: 0;
-}
-
-.cmf-compare-shot img {
-  max-width: 100%;
-  max-height: 100%;
-  min-height: 0;
-  object-fit: contain;
-}
-
-.cmf-compare-shot figcaption {
-  font-size: 11px;
-  text-align: center;
-}
-
-.cmf-compare-close {
-  grid-column: 1 / -1;
-  justify-self: center;
-}
-
-/* Which of the two slots is already holding something is the only state this
-   row has, and it is read before every comparison. */
-.cmf-compare-actions .btn.is-held::after {
-  content: " \2713";
 }
 
 .cmf-preview-stage canvas {
@@ -792,14 +736,6 @@
     margin-left: 0;
   }
 
-  /* Three labelled commands do not fit half a phone toolbar: at 375px each
-     button came out 50px wide with its label clipped. The comparison is one
-     thought, so it takes a line of its own rather than a short label nobody
-     can read ("A", "B", "A/B"). */
-  .cmf-setup-panel .cmf-compare-actions {
-    grid-column: 1 / -1;
-  }
-
   .cmf-studio-pane {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto minmax(300px, 1fr) minmax(260px, auto);
@@ -849,7 +785,6 @@
   }
 
   .cmf-setup-actions .btn,
-  .cmf-compare-actions .btn,
   .cmf-button-stack .btn {
     min-width: 0;
     min-height: 44px;

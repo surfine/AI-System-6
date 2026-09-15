@@ -156,7 +156,9 @@ let failed = 0;
 const runnable = [];
 for (const name of names) {
   const gate = shipGate(name);
-  const current = currentGateState(repositoryRoot, name, cache);
+  const current = currentGateState(repositoryRoot, name, cache, {
+    entryRelativePath: shipGateEntry(gate),
+  });
   const decision = evaluateReuse(repositoryRoot, name, {
     current,
     coverage,
@@ -185,14 +187,14 @@ const lanes = lanePlan(runnable);
 if (runnable.length > 1) {
   console.log(`[verify:gate] run order, cheapest refusal first: ${describeLanes(lanes)}`);
 }
-const outcomes = await runLanes(lanes, { label: "verify:gate", execute });
-for (const gate of lanesInOrder(lanes)) {
-  const { exitCode, durationMs } = outcomes.get(gate.name);
+// A gate is banked the moment it passes, so an interrupted banking run keeps
+// what it already paid for. See `onResult` in tooling/lib/gate-lanes.mjs.
+function settle(gate, { exitCode, durationMs }) {
   if (exitCode !== 0) {
     failed += 1;
     dropGateReceipt(repositoryRoot, gate.name);
     console.error(`[verify:gate] ${gate.name} → exit ${exitCode} (${durationMs}ms); no receipt banked.`);
-    continue;
+    return;
   }
   const { destination } = writeGateReceipt(repositoryRoot, gate.name, {
     command: `${process.execPath} ${gate.args.join(" ")}`,
@@ -205,6 +207,8 @@ for (const gate of lanesInOrder(lanes)) {
     + ` ${path.relative(repositoryRoot, destination)}`,
   );
 }
+
+await runLanes(lanes, { label: "verify:gate", execute, onResult: settle });
 
 if (failed) process.exit(1);
 console.log(`\n[verify:gate] done. Receipts live in ${GATE_RECEIPT_DIR}/ and never leave this machine.`);

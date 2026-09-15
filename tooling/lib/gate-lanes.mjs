@@ -84,24 +84,32 @@ export function collectHeldOutput(child) {
  * terminal and the caller may ignore `output`; with it true the caller captures
  * the child's streams into `output` (see `collectHeldOutput`).
  */
-export async function runLanes(plan, { label, execute }) {
+export async function runLanes(plan, { label, execute, onResult = () => {} }) {
   const outcomes = new Map();
+  // `onResult` runs the moment a gate ends, not when the whole plan does: a
+  // banking run that is interrupted at minute nine keeps the gates that already
+  // passed instead of throwing away fifteen minutes of browser work.
+  const settle = async (gate, promise) => {
+    const outcome = await promise;
+    outcomes.set(gate.name, outcome);
+    onResult(gate, outcome);
+    return outcome;
+  };
   for (const gate of plan.cheapQuiet) {
     process.stdout.write(`\n[${label}] ${gate.name} …\n`);
-    outcomes.set(gate.name, await execute(gate, { holdOutput: false }));
+    await settle(gate, execute(gate, { holdOutput: false }));
   }
   if (plan.shared.length) {
     const names = plan.shared.map((gate) => gate.name).join(", ");
     process.stdout.write(`\n[${label}] ${names} … (sharing the machine, output held until each ends)\n`);
-    const shared = await Promise.all(plan.shared.map((gate) => execute(gate, { holdOutput: true })));
-    plan.shared.forEach((gate, index) => {
-      process.stdout.write(`\n[${label}] ——— ${gate.name} ———\n${shared[index].output ?? ""}`);
-      outcomes.set(gate.name, shared[index]);
+    await Promise.all(plan.shared.map((gate) => settle(gate, execute(gate, { holdOutput: true }))));
+    plan.shared.forEach((gate) => {
+      process.stdout.write(`\n[${label}] ——— ${gate.name} ———\n${outcomes.get(gate.name).output ?? ""}`);
     });
   }
   for (const gate of plan.expensiveQuiet) {
     process.stdout.write(`\n[${label}] ${gate.name} …\n`);
-    outcomes.set(gate.name, await execute(gate, { holdOutput: false }));
+    await settle(gate, execute(gate, { holdOutput: false }));
   }
   return outcomes;
 }

@@ -1,6 +1,6 @@
 // Receipts that let a ship gate be paid during development and spent at release.
 //
-// The ship gates cost about ten minutes together. Most of that work
+// The ship gates cost about sixteen minutes together. Most of that work
 // is done again at release time although nothing the gate reads has changed.
 // A receipt records that one gate passed, and it records a hash of everything
 // that gate reads. At release time a gate whose hash is the same as a green
@@ -79,13 +79,46 @@ export const GATE_INPUT_RULES = Object.freeze([
     // decides which Playwright, and therefore which browser, takes the picture.
   },
   {
+    id: "device-matrix-baseline",
+    pattern: /^tooling\/device-matrix-baseline\.json$/,
+    gates: ["device-matrix"],
+    baselineFor: ["device-matrix"],
+    // The phone matrix's ratchet: every (viewport, window, check) that fails
+    // today. It is read by the gate, not imported by it, so the tooling rule
+    // would drop it from the input set the moment that rule started counting
+    // only what a gate imports — and a baseline edit that does not invalidate
+    // the gate is the one failure this whole mechanism exists to prevent.
+    //
+    // It sits above the tooling rule because rules are matched in order and
+    // that rule claims every path under tooling/.
+  },
+  {
     id: "gate-tooling",
     pattern: /^tooling\//,
     gates: ALL,
+    closureOnly: true,
     // The gate entry points, their shared libraries, the bundle builder, the
-    // runtime and style manifests, and this reuse policy all live here. A rule
-    // that named only the import closure of each gate would leave the builder
-    // and the policy unguarded, so the directory is an input to every gate.
+    // runtime and style manifests, and this reuse policy all live here.
+    //
+    // `closureOnly` means a tooling file counts for a gate only when that
+    // gate's import closure actually reaches it. It used to count for every
+    // gate, and that made the whole banking loop hostage to publishing: an
+    // edit to the public-snapshot manifest, to the release preflight, or to a
+    // budget JSON threw away nine receipts and bought fifteen minutes of
+    // browser work that could not have seen the change. Measured 2026-09-15:
+    // that cost hours in a single afternoon, and the release it was blocking
+    // was not about any of those files.
+    //
+    // The closure is the honest input set because a gate runs by being
+    // imported: nothing in the nine ship gates shells out to another tooling
+    // script. A gate that does start to do so fails `unclaimedClosureFiles`
+    // only if the file is unclaimed -- and the tooling rule still claims every
+    // path for coverage -- so the check for a spawned tool is the review of
+    // that change, not this hash.
+    //
+    // With no entry path the closure is unknown, and every tooling file counts:
+    // the hash may over-cover, never under-cover.
+    //
     // Python bytecode under tooling/__pycache__ is dropped while the files are
     // collected: it is neither served to a browser nor imported by Node.
   },
@@ -301,12 +334,20 @@ function walkFiles(root, relative, out) {
  * that git does not track — the two generated bundles, the lazy style bundles,
  * the machine-local baseline — counts the same as a tracked one.
  */
-export function computeGateInputs(root, gate, cache = new Map()) {
+function closureFor(root, entryRelativePath, cache) {
+  const key = `#closure:${entryRelativePath}`;
+  if (!cache.has(key)) cache.set(key, new Set(importClosure(root, entryRelativePath)));
+  return cache.get(key);
+}
+
+export function computeGateInputs(root, gate, cache = new Map(), { entryRelativePath = "" } = {}) {
   if (!cache.has("#files")) {
     const files = [];
     for (const entry of HASHED_ROOTS) walkFiles(root, entry, files);
     cache.set("#files", files.sort());
   }
+  // Only a `closureOnly` rule reads this, and only to narrow its own set.
+  const closure = entryRelativePath ? closureFor(root, entryRelativePath, cache) : null;
   const inputHash = createHash("sha256");
   const baselineHash = createHash("sha256");
   let inputCount = 0;
@@ -314,6 +355,7 @@ export function computeGateInputs(root, gate, cache = new Map()) {
   for (const relative of cache.get("#files")) {
     const rule = classifyRepoPath(relative);
     if (!rule || !ruleCoversGate(rule, gate)) continue;
+    if (rule.closureOnly && closure && !closure.has(relative)) continue;
     // Seven gates share most of their input set, so a file is read once and
     // its hash is answered from the cache for the other six.
     if (!cache.has(relative)) cache.set(relative, sha256(readFileSync(path.join(root, relative))));
@@ -469,8 +511,8 @@ export function readGateReceipt(root, gate) {
 }
 
 /** Measure the gate now, so a decision and a new receipt use the same numbers. */
-export function currentGateState(root, gate, cache) {
-  return { ...computeGateInputs(root, gate, cache), machine: machineBinding(root) };
+export function currentGateState(root, gate, cache, options) {
+  return { ...computeGateInputs(root, gate, cache, options), machine: machineBinding(root) };
 }
 
 /**

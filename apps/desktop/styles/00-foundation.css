@@ -972,10 +972,6 @@
      is capped in px); the reading route had `max-width: none` and drew a
      2236px line on the same display. */
   --reading-measure: 72ch;
-  /* The row a Writing Flow step number reserves above its icon. Liquid Glass
-     draws a 24px pill instead of a 17px square and declares its own value;
-     every other appearance uses this one. */
-  --spine-step-badge-row: 19px;
   --touch-safe-inset: env(safe-area-inset-bottom, 0px);
 
   /* Writing editor */

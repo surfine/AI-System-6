@@ -339,9 +339,6 @@ body.use-liquid-glass {
   --paper: rgba(255, 255, 255, 0.5);
   --shade: rgba(255, 255, 255, 0.46);
   --shade-dark: rgba(16, 17, 20, 0.42);
-  /* This era's Writing Flow step badge is a 24px pill, so the row it reserves
-     above the icon is taller than the 19px the desk's other appearances use. */
-  --spine-step-badge-row: 1.75rem;
   --desktop: #dce2e6;
   --alarm-clock-title-bg: rgba(255, 255, 255, 0.18);
   --alarm-clock-surface-bg:
@@ -3736,9 +3733,9 @@ body.use-liquid-glass .spine-actions button.holds-pen .spine-step-number {
 }
 
 body.use-liquid-glass .spine-actions .spine-step-number {
-  /* Above the icon, like every other appearance: this era's badge is a 24px
-     pill, so it centres on the icon rather than sitting off its corner. */
-  top: 0;
+  /* On the icon, like every other appearance: this era's badge is a 24px
+     pill, so it centres on the artwork rather than sitting off its corner. */
+  top: -6px;
   left: calc(50% - 0.75rem);
   width: 1.5rem;
   height: 1.5rem;

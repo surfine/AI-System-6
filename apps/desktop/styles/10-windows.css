@@ -116,11 +116,6 @@ body.quick-draft-focus .writing-spine-panel {
   background: transparent;
   border: 0;
   padding: 0;
-  /* The row the step number occupies. A stop without a number — the File
-     Floppy intake — keeps a zero row, so its icon sits exactly where it always
-     did and the stops below it start one row lower. The height itself is the
-     era's (--spine-step-badge-row), because Liquid Glass badges are taller. */
-  --spine-step-row: 0px;
 }
 
 .spine-actions button[hidden] {
@@ -128,12 +123,15 @@ body.quick-draft-focus .writing-spine-panel {
 }
 
 .spine-step-number {
-  /* The number stands above its icon, centred on it: the number is the stop's
-     own label, not a tick on a corner of the artwork. The button reserves the
-     row below (.spine-step-badge-row), so nothing overlaps the icon. */
+  /* The number is a badge LAYERED ON the icon — the stop's own label painted
+     over its artwork — not a row above it. It is absolutely positioned in the
+     button and carries its own z-index, so it paints over the icon whatever
+     paint order would say; leaving that to paint order is what let a reader
+     move the number out of the icon's way instead of on top of it. */
   position: absolute;
-  top: 0;
-  left: calc(50% - 9px);
+  z-index: var(--z-local-control);
+  top: -4px;
+  left: calc(50% - 27px);
   width: 17px;
   height: 17px;
   border: 1px solid var(--ink);
@@ -144,12 +142,6 @@ body.quick-draft-focus .writing-spine-panel {
   font-weight: var(--system-emphasis-weight);
   line-height: 15px;
   text-align: center;
-}
-
-/* Only the numbered stops carry the extra row. */
-.spine-actions button:has(> .spine-step-number) {
-  --spine-step-row: var(--spine-step-badge-row);
-  padding-top: var(--spine-step-row);
 }
 
 /* A stop that cannot be used yet is dimmed the same way in every appearance:
@@ -220,9 +212,10 @@ body.quick-draft-focus .writing-spine-panel {
 
 .spine-step-mark {
   position: absolute;
-  /* The mark belongs to the icon's own corner, so it follows the icon down
-     when the stop carries a number above it. */
-  top: calc(var(--spine-step-row, 0px) + 1px);
+  /* The diamond marks the icon's own corner, opposite the number: both labels
+     are layers on the artwork, and the icon stays where it was. */
+  z-index: var(--z-local-control);
+  top: 1px;
   right: calc(50% - 29px);
   width: 7px;
   height: 7px;
@@ -237,6 +230,11 @@ body.quick-draft-focus .writing-spine-panel {
 
 .writing-spine-panel.is-small-icons .spine-step-mark {
   right: calc(50% - 20px);
+}
+
+.writing-spine-panel.is-small-icons .spine-step-number {
+  top: -3px;
+  left: calc(50% - 19px);
 }
 
 .writing-spine-panel.is-small-icons .spine-actions button {

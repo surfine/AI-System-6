@@ -887,9 +887,15 @@ function getControlStripModuleFinderItems() {
 }
 
 function renderFinderItemIcon(item, mode) {
+  // The view mode chooses the tier, and the tier is what Platinum sizes its
+  // inline artwork by. `mini` for every non-application item was a legacy hint
+  // that made icon view paint the compact 16 px asset, so the era read as
+  // "small icons" in both modes; small-icon view and the list rows are the
+  // compact tier, and icon view is the Finder tier.
+  const compact = isFinderListMode(mode) || normalizeFinderViewMode(mode) === "small-icon";
   return renderSystemIcon(item.iconId || item.icon, {
-    size: item.iconBase === "icon" ? "desktop" : "mini",
-    displaySize: isFinderListMode(mode) ? 22 : 44,
+    size: compact ? "mini" : (item.iconBase === "icon" ? "desktop" : "finder"),
+    displaySize: compact ? 22 : 44,
   });
 }
 

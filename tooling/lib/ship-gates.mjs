@@ -40,6 +40,29 @@ export const SHIP_REQUIRED_CHECKS = Object.freeze([
  * within a second or two of what that run spent, apart from the pixel net —
  * see its entry.
  */
+
+/**
+ * Which lane a gate belongs to decides WHEN it runs, not whether it matters.
+ *
+ * `release` — the fast half runs on every release: about two minutes together.
+ * They are the checks that answer "did this change alter what any era looks
+ * like or how a control behaves": the token/geometry table, the era
+ * propagation sweep, the Theme Lab's six era screenshots, and the 74-control
+ * pass.
+ *
+ * `batch` — the expensive half runs on demand and nightly: the 37-cell pixel
+ * net, the phone matrix, the two Bonsai runs and the eight-stop walk, about
+ * fourteen minutes together. They are not weaker checks; they are the ones
+ * whose evidence a writer can afford to wait for, and whose cost made every
+ * release a fifteen-minute appointment.
+ *
+ * The release report NAMES every deferred gate and the release receipt records
+ * that it was deferred, so nobody can read a fast release as a full one. Add
+ * `--batch` to a prepare, or run `npm run verify:gate -- --all --release-stamp`,
+ * when the full set is the point.
+ */
+export const BATCH_LANE = "batch";
+export const RELEASE_LANE = "release";
 export const SHIP_GATES = Object.freeze([
   {
     // The fast half of the collapsed matrix: the controls-tier cells the pixel
@@ -57,6 +80,7 @@ export const SHIP_GATES = Object.freeze([
     // changes the clock and not the verdict.
     name: "device-matrix",
     args: ["tooling/verify-device-matrix.mjs"],
+    lane: "batch",
     // It photographs nothing and asserts no clock, so a neighbour once seemed
     // free. Measured 2026-09-15, beside the acceptance gate: one cell reported a
     // window that never opened (`iphone-duo-inner-landscape findChange opens
@@ -94,6 +118,7 @@ export const SHIP_GATES = Object.freeze([
     // No browser; CPU only, so it runs alone to keep its clock honest.
     name: "bonsai-playthrough",
     args: ["tooling/play-bonsai-two-hours.mjs", "--quiet"],
+    lane: "batch",
     quiet: true,
     costHintMs: 90_000,
   },
@@ -115,6 +140,7 @@ export const SHIP_GATES = Object.freeze([
     // thousand tiles through one. On hardware all twelve scenarios pass.
     name: "bonsai-acceptance",
     args: ["tooling/verify-bonsai-acceptance.mjs", "--hardware"],
+    lane: "batch",
     quiet: true,
     costHintMs: 90_000,
   },
@@ -132,6 +158,7 @@ export const SHIP_GATES = Object.freeze([
     // same run walks the whole route in 162s and passes. So it runs alone.
     name: "eight-stop-walk",
     args: ["tooling/verify-walk.mjs"],
+    lane: "batch",
     quiet: true,
     costHintMs: 118_000,
   },
@@ -144,6 +171,7 @@ export const SHIP_GATES = Object.freeze([
     // was held behind every cheaper refusal for no gain.
     name: "appearance-snapshot",
     args: ["tooling/appearance-snapshot.mjs", "--verify"],
+    lane: "batch",
     quiet: true,
     costHintMs: 90_000,
   },

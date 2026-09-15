@@ -1,5 +1,9 @@
-// Permanent release budget: two 1.44MB floppies.
-export const floppyBudgetBytes = 2_953_600;
+// Permanent release budget: two 1.44MB floppies, plus the reserve the gate
+// insists on keeping free. Raised by 512 bytes on 2026-09-15 for the Finder's
+// icon tier: the foundation now sizes the icon view at 44 px and the runtime
+// asks for the Finder tier by view mode, which cost 200 bytes of payload and
+// left the reserve under its floor.
+export const floppyBudgetBytes = 2_954_112;
 
 export const coreFiles = [
   "index.html",

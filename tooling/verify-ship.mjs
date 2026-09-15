@@ -32,11 +32,18 @@ import {
   policyDigest,
   writeGateReceipt,
 } from "./lib/gate-receipts.mjs";
-import { SHIP_GATES, SHIP_REQUIRED_CHECKS, shipGateEntry } from "./lib/ship-gates.mjs";
+import { BATCH_LANE, SHIP_GATES, SHIP_REQUIRED_CHECKS, shipGateEntry } from "./lib/ship-gates.mjs";
 import { collectHeldOutput, describeLanes, lanePlan, lanesInOrder, runLanes } from "./lib/gate-lanes.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const checks = SHIP_GATES.map((gate) => ({ ...gate, command: process.execPath }));
+// The fast lane runs on every release; the batch lane runs on demand (--batch)
+// or as the whole thing in a banking pass. A deferred gate is named in the
+// report and in the release receipt, so a fast release cannot be mistaken for
+// a full one.
+const includeBatch = process.argv.includes("--batch");
+const allChecks = SHIP_GATES.map((gate) => ({ ...gate, command: process.execPath }));
+const checks = allChecks.filter((gate) => includeBatch || gate.lane !== BATCH_LANE);
+const deferredChecks = allChecks.filter((gate) => !includeBatch && gate.lane === BATCH_LANE);
 
 function valueAfter(flag) {
   const index = process.argv.indexOf(flag);
@@ -92,7 +99,9 @@ if (!allowReuse) {
 const hashCache = new Map();
 const decisions = new Map();
 for (const check of checks) {
-  const current = currentGateState(repositoryRoot, check.name, hashCache);
+  const current = currentGateState(repositoryRoot, check.name, hashCache, {
+    entryRelativePath: shipGateEntry(check),
+  });
   decisions.set(check.name, {
     current,
     decision: evaluateReuse(repositoryRoot, check.name, {
@@ -170,12 +179,15 @@ function execute(check, { holdOutput }) {
   });
 }
 
-function record(check, outcome) {
-  if (outcome.exitCode !== 0) failed += 1;
-  const { current, decision } = decisions.get(check.name);
-  // A gate that passes banks its receipt here, so the next release finds the
-  // work already paid. A gate that fails removes any older receipt: the inputs
-  // are now known to be bad, and a stale green one would hide that.
+// A gate that passes banks its receipt here, so the next release finds the work
+// already paid. A gate that fails removes any older receipt: the inputs are now
+// known to be bad, and a stale green one would hide that.
+//
+// Banking happens through `onResult` the moment a gate ends, so a release that
+// is interrupted after six of nine gates keeps those six. The report below is
+// still written in plan order, from the finished outcomes.
+function bank(check, outcome) {
+  const { current } = decisions.get(check.name);
   if (outcome.exitCode === 0) {
     writeGateReceipt(repositoryRoot, check.name, {
       command: `${check.command} ${check.args.join(" ")}`,
@@ -186,6 +198,11 @@ function record(check, outcome) {
   } else {
     dropGateReceipt(repositoryRoot, check.name);
   }
+}
+
+function record(check, outcome) {
+  if (outcome.exitCode !== 0) failed += 1;
+  const { current, decision } = decisions.get(check.name);
   results.push({
     name: check.name,
     command: `${check.command} ${check.args.join(" ")}`,
@@ -209,7 +226,7 @@ const lanes = lanePlan(runnableChecks);
 if (runnableChecks.length) {
   process.stdout.write(`[verify:ship] run order, cheapest refusal first: ${describeLanes(lanes)}\n`);
 }
-const outcomes = await runLanes(lanes, { label: "verify:ship", execute });
+const outcomes = await runLanes(lanes, { label: "verify:ship", execute, onResult: bank });
 for (const check of lanesInOrder(lanes)) record(check, outcomes.get(check.name));
 
 const report = {
@@ -231,6 +248,10 @@ const report = {
     unmappedPaths: coverage.unmapped,
     reusedChecks: reusedChecks.map((check) => check.name).sort(),
     ranChecks: runnableChecks.map((check) => check.name).sort(),
+    // A reader of this report must be able to tell a fast release from a full
+    // one without reading the command line that produced it.
+    deferredChecks: deferredChecks.map((check) => check.name).sort(),
+    batchIncluded: includeBatch,
     reusedMs,
   },
   startedAt,
@@ -257,5 +278,12 @@ if (reusedChecks.length) {
   console.log(
     `[verify:ship] A reused check did NOT run in this pass. Its receipt is in ${GATE_RECEIPT_DIR}/;`
     + " use --no-reuse to run all of them again.",
+  );
+}
+if (deferredChecks.length) {
+  console.log(
+    `[verify:ship] DEFERRED (batch lane, not part of this pass): ${deferredChecks.map((check) => check.name).join(", ")}.`
+    + "\n[verify:ship] run `npm run verify:gate -- --all --release-stamp` for the full set,"
+    + " or `release:prepare --batch` to require it before publishing.",
   );
 }
