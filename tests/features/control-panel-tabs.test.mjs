@@ -11,6 +11,9 @@ const foundation = read("styles/00-foundation.css");
 const windows = read("styles/10-windows.css");
 const responsive = read("styles/60-responsive.css");
 const persistence = read("app/core/persistence-status.js");
+// The local model connection (phase switch, diagnostics) lives in its own
+// module since the persistence split; the assertions below are about that code.
+const modelConnection = read("app/core/local-model-connection.js");
 
 for (const name of ["local", "cloud", "general"]) {
   test.assertIncludes(html, `data-control-tab="${name}"`, `a tab exists for ${name}`);
@@ -86,7 +89,7 @@ test.assertIncludes(
 test.assertIncludes(html, 'id="local-connection-details"', "connection diagnostics are collapsible");
 test.assertIncludes(html, 'data-i18n="local_connection_details"', "the disclosure is labelled");
 test.assertIncludes(
-  persistence,
+  modelConnection,
   'if (details && element.dataset.state === "unavailable") details.open = true;',
   "a failed diagnostic reveals itself rather than staying hidden"
 );
@@ -103,14 +106,14 @@ test.assertIncludes(html, 'class="local-connect-fields"', "the connect step is o
 test.assertIncludes(html, 'class="local-model-fields"', "the model step is another group");
 test.assertIncludes(html, 'id="local-advanced-details"', "rarely-touched settings collapse");
 test.assertIncludes(html, 'data-i18n="local_advanced"', "the advanced disclosure is labelled");
-test.assertIncludes(persistence, "function syncLocalModelPhase(", "one function owns the phase switch");
+test.assertIncludes(modelConnection, "function syncLocalModelPhase(", "one function owns the phase switch");
 test.assertIncludes(
-  persistence,
+  modelConnection,
   "syncLocalModelPhase(state === \"ready\")",
   "the phase follows the real connection state, not a click"
 );
 test.assertIncludes(
-  persistence,
+  modelConnection,
   "if (!advanced.contains(connectFields)) advanced.prepend(connectFields);",
   "the connect fields move into Advanced rather than being rendered twice"
 );

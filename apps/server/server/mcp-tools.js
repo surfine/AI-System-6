@@ -148,6 +148,279 @@ const GUEST_TOOLS = [
     },
   },
   {
+    name: "list_writing_route",
+    level: "read",
+    description: "The writing route itself: the ordered stops the desk owns, which document backs each stop, how long it is, and which stop the writer is on now. Read this before any larger pass so you know where a change belongs. 写作路线本身：路线上的站点顺序、每站对应的文档、长度，以及写作者现在停在哪一站。",
+    inputSchema: { type: "object", properties: {}, additionalProperties: false },
+  },
+  {
+    name: "list_desk_applications",
+    level: "read",
+    description: "The applications on this desk and the intents each accepts, split into the ones that run at once and the ones parked until the writer commits them. Read this before dispatch_intent or open_application so the appId is real. 这张桌面上的应用及各自接受的 intent，并区分立即执行与待写作者提交两类。",
+    inputSchema: { type: "object", properties: {}, additionalProperties: false },
+  },
+  {
+    name: "list_projects",
+    level: "read",
+    description: "The projects on this desk and which one is open. switch_project takes an id from here. 这张桌面上的项目以及当前打开的是哪一个；switch_project 用这里的 id。",
+    inputSchema: { type: "object", properties: {}, additionalProperties: false },
+  },
+  {
+    name: "map_document",
+    level: "read",
+    description: "DocMap: a document's structure as nodes and edges instead of full text, so a long manuscript can be navigated without reading all of it. 文档地图：把一份文档的结构读成节点与连线，不必读全文。",
+    inputSchema: {
+      type: "object",
+      properties: {
+        objectId: { type: "string", description: "Project file id; defaults to the current manuscript." },
+        limit: { type: "integer", minimum: 1, maximum: 400, default: 120 },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "list_document_revisions",
+    level: "read",
+    description: "Time Machine: the saved revisions of a document, newest first, with the revision ids read_document_revision and restore_document_revision take. 时间机器：一份文档保存过的版本，按时间倒序，附上读取与恢复所需的版本 id。",
+    inputSchema: {
+      type: "object",
+      properties: { documentId: { type: "string", description: "Defaults to the document open in TeachText." } },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "read_document_revision",
+    level: "read",
+    description: "Read one saved revision of a document, paged by character offset. 读取一份文档的某个历史版本，按字符偏移分页。",
+    inputSchema: {
+      type: "object",
+      properties: {
+        documentId: { type: "string" },
+        revisionId: { type: "string" },
+        offset: { type: "integer", minimum: 0, default: 0 },
+        limit: { type: "integer", minimum: 200, maximum: 20000, default: 6000 },
+      },
+      required: ["documentId", "revisionId"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "read_darkroom_record",
+    level: "read",
+    description: "The darkroom record for a document: which 文字亮室 layers were applied, at what strength, with which masks and human anchor — what earlier passes already did to this text. 文档的暗房记录：已经施加过哪些文字亮室图层、强度、蒙版与人类锚点。",
+    inputSchema: {
+      type: "object",
+      properties: { documentId: { type: "string", description: "Defaults to the document open in TeachText." } },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "list_dictionary_terms",
+    level: "read",
+    description: "The project's own term list: the words this project fixes a meaning for, so the same term is not spelled two ways. 项目术语表：这个项目固定了含义的词条。",
+    inputSchema: { type: "object", properties: {}, additionalProperties: false },
+  },
+  {
+    name: "read_write_lease",
+    level: "read",
+    description: "Who holds the pen. One writer at a time owns the write lease; this says whether the desk is writable, who owns it, and whether a handoff is in progress. 谁在执行笔：同一时刻只有一个写作者持有写入租约，这里说明桌面当前可不可写、归谁、是否正在交接。",
+    inputSchema: { type: "object", properties: {}, additionalProperties: false },
+  },
+  {
+    name: "list_guests",
+    level: "read",
+    description: "The other guests at this desk: name, stated purpose, granted privilege, approval state and whether each is connected right now. 这张桌上的其他访客：名字、用途、获准权限、批准状态与是否在线。",
+    inputSchema: { type: "object", properties: {}, additionalProperties: false },
+  },
+  {
+    name: "propose_scrapbook_clip",
+    level: "propose",
+    description: "Propose material for the Scrapbook — a quoted passage with its source. The clip is not written into the Scrapbook: it lands as a receipt awaiting the writer's commit, because the Scrapbook is the writer's own curated material. 提议一条剪报（引文加出处）。剪报不会直接写进 Scrapbook，而是落成一张待写作者提交的回执。",
+    inputSchema: {
+      type: "object",
+      properties: {
+        title: { type: "string", minLength: 1, maxLength: 200 },
+        body: { type: "string", minLength: 1, maxLength: 20000 },
+        sourceTitle: { type: "string", maxLength: 300 },
+        sourceUrl: { type: "string", maxLength: 2000 },
+        tags: { type: "array", items: { type: "string" }, maxItems: 12 },
+        why: { type: "string", maxLength: 500, description: "One line on what in the manuscript this clip would support." },
+      },
+      required: ["title", "body"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "annotate_section",
+    level: "propose",
+    description: "Propose an HKRR note for one section draft: the desk stores an intent and a note next to that section so the writer sees the hedge, keep, risk and rewrite without the text being touched. Parked as a receipt awaiting the writer's commit. 为一份分节草稿提议一条 HKRR 批注（意图加说明），不动正文，落成待提交回执。",
+    inputSchema: {
+      type: "object",
+      properties: {
+        recordId: { type: "string", description: "Six-hex section id from a heading." },
+        intent: { type: "string", enum: ["lift", "hedge", "keep", "risk", "rewrite"] },
+        note: { type: "string", minLength: 1, maxLength: 2000 },
+      },
+      required: ["recordId", "note"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "open_application",
+    level: "change",
+    description: "Open one of the desk's applications, exactly as its icon would: the same openWindow path the desktop uses. Takes an appId from list_desk_applications, or a window name. 像点图标一样打开桌面上的某个应用，走的是桌面自己的 openWindow 路径；参数用 list_desk_applications 里的 appId，或窗口名。",
+    inputSchema: {
+      type: "object",
+      properties: {
+        appId: { type: "string", description: "teachText, docMap, reviewDesk, clioStage, lightroom, projectCd, clioTalk." },
+        windowName: { type: "string", description: "Used when appId is absent." },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "switch_project",
+    level: "change",
+    description: "Switch the open project, the same call the project switcher makes. Takes an id from list_projects. 切换当前打开的项目，走项目切换器同一个调用；id 来自 list_projects。",
+    inputSchema: {
+      type: "object",
+      properties: { projectId: { type: "string" } },
+      required: ["projectId"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "eject_file_floppy",
+    level: "change",
+    description: "Eject the File Floppy, the same path the desktop's eject uses, and say what was mounted at the time. 弹出文件软盘，走桌面自己的弹出路径，并回报弹出时挂的是什么。",
+    inputSchema: { type: "object", properties: {}, additionalProperties: false },
+  },
+  {
+    name: "commit_receipt",
+    level: "change",
+    description: "Commit a parked run receipt — the same replay the writer's Run Records \"Get Info → Repeat\" runs. Until this is called, a parked proposal has changed nothing. 提交一张待办回执，走写作者在运行记录里「显示简介 → 重复」的同一条重放路径；在此之前，待提交的提议没有改动任何东西。",
+    inputSchema: {
+      type: "object",
+      properties: {
+        receiptId: { type: "string" },
+        awaitWriter: { type: "boolean", default: false, description: "Only affects proposal receipts, and only the ceremony: by default the adoption runs, because 可改动 is already the writer's answer. Set it true to have the desk show the writer the confirmation and wait for their reply. Intent receipts always replay without asking. 只对提议类回执有影响，且只影响那一步确认：默认直接采用，因为「可改动」本身已经是写作者的答复；设为 true 则请写作者在对话框里确认并等待答复。intent 类回执始终直接重放。" },
+      },
+      required: ["receiptId"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "restore_document_revision",
+    level: "change",
+    description: "Restore a document to one of its saved revisions, the same restore Time Machine performs. This overwrites the current text, so read the revision first with read_document_revision. 把文档恢复到某个历史版本，走时间机器同一条恢复路径。这会覆盖当前正文，先用 read_document_revision 读一遍。",
+    inputSchema: {
+      type: "object",
+      properties: {
+        documentId: { type: "string" },
+        revisionId: { type: "string" },
+      },
+      required: ["documentId", "revisionId"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "write_manuscript",
+    level: "change",
+    description: "Put text into the manuscript surface, the way typing does: the editor's own value changes and its save runs. The previous text stays as a Time Machine revision. 把文字放进正文面，和打字一样：编辑器的值与随之而来的保存都会跑，之前的正文留在时间机器里。",
+    inputSchema: {
+      type: "object",
+      properties: { markdown: { type: "string", minLength: 1 } },
+      required: ["markdown"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "create_scrapbook_clip",
+    level: "change",
+    description: "Commit a Scrapbook clip through the Scrapbook's own entry point. This is 可改动 and up: at 可提议 the same material travels as propose_scrapbook_clip and waits. 用 Scrapbook 自己的入口直接建一条剪报。这是可改动及以上的能力；在可提议层，同样的材料走 propose_scrapbook_clip 等写作者提交。",
+    inputSchema: {
+      type: "object",
+      properties: {
+        title: { type: "string", minLength: 1, maxLength: 200 },
+        body: { type: "string", minLength: 1, maxLength: 20000 },
+        sourceTitle: { type: "string", maxLength: 300 },
+        sourceUrl: { type: "string", maxLength: 2000 },
+        tags: { type: "array", items: { type: "string" }, maxItems: 12 },
+      },
+      required: ["title", "body"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "burn_project_cd",
+    level: "change",
+    description: "Burn Markdown onto the Project CD through the same call the desk's burn action makes. 用桌面刻录动作同一个调用，把 Markdown 刻到项目光盘上。",
+    inputSchema: {
+      type: "object",
+      properties: {
+        markdown: { type: "string", minLength: 1 },
+        name: { type: "string", maxLength: 200 },
+        sourceObjectIds: { type: "array", items: { type: "string" } },
+      },
+      required: ["markdown"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "mount_file_floppy",
+    level: "change",
+    description: "Mount a text file on the File Floppy, the way a drag onto the Floppy does, so search_project_sources and read_file_floppy_item can find it. 像把文件拖上软盘那样挂一份文本，之后 search_project_sources 和 read_file_floppy_item 都能找到它。",
+    inputSchema: {
+      type: "object",
+      properties: {
+        name: { type: "string", maxLength: 200 },
+        text: { type: "string", minLength: 1 },
+      },
+      required: ["text"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "export_project_disk",
+    level: "change",
+    description: "Build the Project Hard Disk backup with the desk's own exporter and write it to this Mac's download folder. Returns the size, the integrity hash and the counts inside it, which identify the file without shipping the whole disk through the port. 用桌面自己的导出器生成项目硬盘备份并写到本机下载目录，返回大小、完整性哈希和内含计数——这些足以标识那份文件，不必把整块硬盘塞进端口。",
+    inputSchema: {
+      type: "object",
+      properties: { download: { type: "boolean", default: true, description: "Set false to build and identify the backup without writing a file." } },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "set_route_document",
+    level: "change",
+    description: "Write one of the route documents above the manuscript — the Question Sheet, the Outline, or a single section draft — through the same surfaces the writer uses. Writing the Outline stamps the section record ids the lens and annotation tools take. 通过写作者用的同一个面，写入正文之上的路线文档：问题单、大纲，或某一份分节草稿。写大纲时会为章节记录 id 盖章，供镜头与批注工具使用。",
+    inputSchema: {
+      type: "object",
+      properties: {
+        document: { type: "string", enum: ["question_sheet", "outline", "section_draft"] },
+        markdown: { type: "string", minLength: 1 },
+        recordId: { type: "string", description: "Required for section_draft: the six-hex section id." },
+      },
+      required: ["document", "markdown"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "add_project_reference",
+    level: "change",
+    description: "File a source into the project's reference shelf, built exactly the way the desk builds one when it files a Floppy item into the project, so search_project_sources and retrieval treat it as the desk's own. 把一份来源归入项目的参考资料架，字段与桌面自己归档软盘条目时完全一致，检索与召回都把它当作桌面自己的资料。",
+    inputSchema: {
+      type: "object",
+      properties: {
+        name: { type: "string", minLength: 1, maxLength: 200 },
+        body: { type: "string", minLength: 1 },
+        sourceUrl: { type: "string", maxLength: 2000 },
+      },
+      required: ["name", "body"],
+      additionalProperties: false,
+    },
+  },
+  {
     name: "open_writing_context",
     level: "read",
     description: "Let the desk assemble the minimum useful writing context for you: the selected route documents, current target section, Scrapbook clips and File Floppy index, with a revision id and budget. The desk chooses the source order; you do the interpretation. 让桌面为你组装当前写作所需的最小语境：路线文档、目标段落、Scrapbook 剪辑和文件软盘索引，并返回版本号与预算；资料顺序由桌面决定，推理由你完成。",
@@ -307,12 +580,12 @@ const GUEST_TOOLS = [
   {
     name: "dispatch_intent",
     level: "change",
-    description: "Ask a desk application to run one intent on project objects. `map` and `review` complete at once; `present`, `edit`, `attach`, `export` are recorded as a receipt awaiting the writer's commit and do not run until the writer commits them. 请桌面应用执行一个 intent；会改动项目的 intent 只记成待提交回执。",
+    description: "Ask a desk application to run one intent on project objects. `map` and `review` complete at once; `present`, `edit`, `attach`, `export` and `develop` are recorded as a receipt awaiting the writer's commit and do not run until the writer commits them (with commit_receipt, or from Run Records). 请桌面应用执行一个 intent；会改动项目的 intent 只记成待提交回执。",
     inputSchema: {
       type: "object",
       properties: {
-        intent: { type: "string", enum: ["map", "review", "present", "edit", "attach", "export"] },
-        appId: { type: "string", description: "Optional: teachText, docMap, reviewDesk, clioStage, projectCd." },
+        intent: { type: "string", enum: ["map", "review", "present", "edit", "attach", "export", "develop"] },
+        appId: { type: "string", description: "Optional: teachText, docMap, reviewDesk, clioStage, projectCd, lightroom, clioTalk." },
         objectIds: { type: "array", items: { type: "string" }, minItems: 1 },
         note: { type: "string" },
       },

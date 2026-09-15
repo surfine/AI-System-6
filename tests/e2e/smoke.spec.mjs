@@ -43,10 +43,9 @@ test("smoke: create, save, reload, and hand writing to a second window", async (
 
   const pageB = await context.newPage();
   await bootApp(pageB);
-  await expect(pageB.locator("#write-lease-modal")).toHaveAttribute("open", "");
-  await expect(pageB.locator("#new-project-disk")).toBeDisabled();
-
-  await pageB.click("#write-lease-takeover");
+  // The second window takes the write lease by opening. Nobody is asked to
+  // approve anything and nobody is frozen: the window that loses the lease
+  // keeps typing, and its writes travel through the holder.
   await expect(pageB.locator("#write-lease-modal")).not.toHaveAttribute("open", "");
   await expect.poll(async () => ({
     pageA: await leaseState(pageA),
@@ -56,4 +55,14 @@ test("smoke: create, save, reload, and hand writing to a second window", async (
     pageB: { owner: true, readOnly: false, canMutate: true, mode: "writer" },
   });
   await expect(pageB.locator("#new-project-disk")).toBeEnabled();
+  await expect(pageA.locator("#new-project-disk")).toBeEnabled();
+
+  // What the window without the pen types stays on its own screen: a refused
+  // save is reported as a conflict, and nothing is silently rolled back out
+  // from under the writer. (The handoff write itself, and what the disk and
+  // the other window end up holding, is the subject of
+  // cross-window-consistency.spec.mjs - this smoke path stops here.)
+  await pageA.fill("#question-sheet-body", "Still typed here.");
+  await expect(pageA.locator("#question-sheet-body")).toHaveValue("Still typed here.");
+  expect((await leaseState(pageA)).canMutate).toBe(false);
 });

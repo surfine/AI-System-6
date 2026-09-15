@@ -2769,7 +2769,7 @@ function getActionAvailability() {
   // Explicit runtime commands supply their own availability. Reader has moved
   // off the hard-coded action map, so these rows are still grey/black in the
   // menu without window-manager.js knowing Reader's internals.
-  window.AISystem6Runtime?.c?.forEach((command, action) => { if (availability[action] !== undefined) return; try { availability[action] = command.isAvailable() !== false; } catch { availability[action] = false; } });
+  window.AISystem6Runtime?.forEachCommand?.((command, action) => { if (availability[action] !== undefined) return; try { availability[action] = command.isAvailable() !== false; } catch { availability[action] = false; } });
   Object.keys(availability).forEach((action) => {
     if (!isWorkspaceActionAllowed(action)) availability[action] = false;
   });
@@ -3177,6 +3177,9 @@ async function openWindow(name, options = {}) {
     placeCenteredSystemWindow(win);
   }
   runWindowHook(name, "onReveal", { win, wasAlreadyOpen });
+  // Anything the desk deferred while this window was hidden is due now: the
+  // records moved, the repaint waited, and this is the moment it can be seen.
+  window.AISystem6Runtime?.flushDeferredRenderTasks?.(name);
   updateQuickDraftFocusChrome();
 
   const reusedFinderFrame = !!finderReplacementFrame && !isPortraitDocumentFlow();

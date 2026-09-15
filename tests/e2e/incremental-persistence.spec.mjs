@@ -39,12 +39,33 @@ async function counters(page) {
   return page.evaluate(() => structuredClone(window.__idbWriteCounters));
 }
 
+// A save that writes nothing is the only proof the desk owes nothing: the
+// build-up to a measurement (creating a disk, first paint of its tabs) leaves
+// records waiting to be written, and a spec that starts counting before the
+// desk is level measures the wrong save.
+//
+// Two things are deliberately not part of this. Settings: the desk rewrites
+// its own snapshot for state the writer does not control (the note pad's page
+// pointer is the common one). Deletes: a record the desk has removed keeps its
+// tombstone in the fingerprint cache - that entry is what tells a late
+// announcement apart from a new record, and dropping it made a remote delete
+// come back - so the same delete is offered again on each save. Waiting for
+// that echo to stop would wait forever; the measurements below are about puts.
+async function quiesce(page) {
+  await expect.poll(async () => page.evaluate(async () => {
+    await saveDeskState();
+    const stats = window.AISystem6DeskPersistence.getLastStats();
+    return stats.puts;
+  }), { timeout: 20_000, intervals: [200, 400, 800] }).toBe(0);
+}
+
 test("desk persistence writes only changed records and retries failed puts", async ({ page }) => {
   await bootApp(page);
   if (await page.locator('[data-window="welcomeDisk"]:not(.is-hidden)').isVisible().catch(() => false)) {
     await dismissGuide(page);
   }
   await createProject(page, "Incremental Project");
+  await quiesce(page);
   await installStorageCounters(page);
 
   const projectResult = await page.evaluate(async () => {
@@ -82,6 +103,8 @@ test("desk persistence writes only changed records and retries failed puts", asy
   expect(writes.puts.projects || 0).toBe(0);
   expect(writes.clears).toEqual({});
 
+  // Level the desk before each measurement: a save still queued from the step
+  // before it would otherwise be the save this one counts.
   const deleteStats = await page.evaluate(async (id) => {
     window.__resetIdbWriteCounters();
     const index = chatFiles.findIndex((item) => item.id === id);
@@ -135,7 +158,7 @@ test("desk persistence writes only changed records and retries failed puts", asy
   });
   expect(retry.first).toBe(false);
   expect(retry.second).toBe(true);
-  expect(retry.stats).toMatchObject({ storesTouched: ["projects"], puts: 1 });
+  expect(retry.stats).toMatchObject({ storesTouched: ["projects"], puts: 1, deletes: 0 });
   expect(retry.counters.puts.projects).toBe(1);
 
   const scale = await page.evaluate(async () => {

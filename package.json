@@ -26,7 +26,6 @@
     "build:stream-markdown-vendor": "node tooling/build-stream-markdown-vendor.mjs",
     "docs:sync-hashes": "node tooling/update-doc-locale-hashes.mjs",
     "lint": "eslint apps/server/server tests/integration",
-    "perf:budget": "node tooling/verify-floppy-budget.mjs",
     "prebuild:app": "npm run build:stream-markdown-vendor && npm run build:cmf-renderer-vendor",
     "prestart": "npm run build:app",
     "site:capture-frames": "node tooling/capture-site-frames.mjs",

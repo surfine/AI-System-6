@@ -39,6 +39,7 @@ async function commitQuickDraftProjectDocument({ projectId = "", title = "", bod
   file.folderId = folder?.id || file.folderId || "";
   file.updatedAt = now;
   if (!existing) chatFiles.unshift(file);
+  else markDeskDirty("chatFiles", file.id);
   const shouldRemindBackup = !previousBackupReminderShownAt
     && !chatFiles.some((item) => item.projectId === projectId && item.id !== file.id && item.durable && item.type === "text");
   if (shouldRemindBackup) project.backupReminderShownAt = now;

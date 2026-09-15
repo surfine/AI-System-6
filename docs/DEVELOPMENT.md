@@ -121,6 +121,90 @@ changes, update the mirror and its hash in the same contribution.
 Keep README focused on product value and the first successful run. Put durable
 technical detail here or in [Architecture](ARCHITECTURE.md).
 
+## Writing an application
+
+An application registers once, owns its own content area, and gives its
+resources back when it is really destroyed. The interfaces it talks to are
+small on purpose; the examples below are the ones ClioPaint and the Translation
+Pad actually use.
+
+- **Register**: `AISystem6Runtime.registerApplication({ id, windowName, mount, restore, commands })`.
+  Registration is all-or-nothing: a missing id, a `mount` that is not a
+  function, or a command without a handler is refused before anything is
+  written, so no application is ever half-registered. A lazy command
+  (`registerLazyCommand`) may hand its id to the real command exactly once.
+  Concurrent `mountApplication(id)` callers share one initialization and are
+  told success only after it finished.
+- **Let one entry open your objects**: `AISystem6ApplicationRegistry.openProjectObject(id, intent)`
+  resolves the id again where the action runs, and
+  `applicationObjectAvailability(id, intent, appId?)` is the cheap,
+  side-effect-free answer menus, toolbars and shortcuts use while drawing. A
+  row drawn a moment ago can name a file another window has since deleted, so
+  both questions are answered by the same resolver and the action re-checks
+  before it does anything.
+- **Commands carry their reason**: register with
+  `{ handler, isAvailable, unavailableReason }`. `AISystem6Runtime.commandAvailability(id, payload)`
+  returns `{ available, reason }`, and `dispatchCommand` reports `unavailable`
+  with that same reason instead of an empty refusal. A handler that returns
+  `{ ok: false }` is a business failure and is never reported as a success.
+- **Windows and lifecycle**: hiding or WindowShade'ing a window keeps its
+  state; `dispose` is for a real destroy. `AISystem6InstanceResources.create(name)`
+  collects listeners (`listen`), timers (`timeout`) and other cleanups; its
+  `dispose()` runs once, keeps going when one cleanup throws, and the next
+  mount cycle gets a fresh registry. Register render tasks with their owner
+  window - `registerRenderTask(name, handler, { windowName })` - so a hidden
+  window keeps a pending repaint until it is shown again.
+- **Read state, do not copy it**: `AISystem6StateStores.watch(store, select, { immediate, isEqual })`
+  watches a slice of one store, hands the listener the selected value plus the
+  change that produced it, and returns the store's own unsubscribe function.
+  Do not keep a second writable copy of project data, and do not write to the
+  store from an input event just to keep a control fresh.
+- **Answers arrive late**: carry the identity the work started with (project
+  id, object id, run id) and re-check it before applying anything. A picture
+  that changed, a pad that moved on, or a project the writer left means the
+  answer is not shown; the run receipt still records it.
+
+### What the two pilots cost to maintain
+
+Measured on the two applications this framework work was proved against, so the
+next person can tell a regression from a rounding error. Counts are of the
+source file; bytes are what a first open actually requests.
+
+| | ClioPaint | Translation Pad |
+| --- | --- | --- |
+| Cross-application DOM lookups (`document.querySelector` / `getElementById`) | 17 → 5 | 0 |
+| Window-root lookups (the five that remain in ClioPaint) | the window's own root, plus "which window is active" | n/a |
+| Lifecycle: listeners, timers and cleanups | `AISystem6InstanceResources.create("clioPaint")`, `dispose()`, `resourceCount()` for diagnostics | same, `create("translationPad")` |
+| First open: script | 50,711 B | 11,524 B |
+| First open: stylesheet | 3,009 B | none |
+| First open: network time on a local dev server | ~20 ms script, ~20 ms stylesheet | ~4 ms |
+
+Adding an action to either pilot is one file: the command is declared in that
+application's own `registerApplication({ commands })` call, and its
+availability comes from the same resolver the menu draws with. Changing how a
+window closes is also one file for the application's own content, plus
+`window-manager.js` if the framework's default close behaviour itself changes -
+which is the split the framework is supposed to keep.
+
+The startup side is unchanged by application work: the desk ships
+`app.bundle.js` (1,959,019 B) and `styles.bundle.css` (728,131 B), against a
+Floppy budget of 2,954,112 B for the whole core. Development-only instruments
+do not live in that payload - the save-plan shadow comparison, for instance,
+ships as a lazy file that the check using it loads
+(`app/core/persistence-scan-shadow.js`).
+
+### Compatibility aliases
+
+Kept for consumers that still read them. Each entry names its consumers and
+what has to happen before it can go. (`AISystem6Runtime.c` and
+`AISystem6Runtime.lazyCommands` used to be listed here; every consumer now
+reads `listCommands`, `listLazyCommands`, `forEachCommand`, `getCommand` or
+`getLazyCommand`, and the maps are no longer handed out.)
+
+| Alias | Consumers | Exit condition |
+| --- | --- | --- |
+| `setMirroredEditorValue` | no application code - the mirror refreshes through `applyMirroredWorkingText`, and the route's record-owned surfaces (outline, drafts) are projected by `projectRecordIntoWritingSurface`, which writes only changed bytes, keeps a focused field's caret and repaints the highlight overlay. The extraction is now only external: `ai-system6-review-tests/review-regressions.mjs` loads it by name and asserts beside it that a mirrored message never overwrites a pending local edit | rewrite that harness to assert the record feed instead, then delete |
+
 ## Pull request loop
 
 1. Reproduce and define the owning contract.

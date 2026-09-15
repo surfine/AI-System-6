@@ -110,21 +110,69 @@ const clioPaintState = {
 
 function clioPaintElements() {
   const root = document.querySelector('[data-window="clioPaint"]');
-  return {
+  // Controls are looked up inside the window's own root, never by a bare id:
+  // a window that is rebuilt (or a second instance) must not be answered with
+  // the first instance's nodes, and the ids stay in the markup for labels and
+  // ARIA rather than as a global lookup path.
+  if (!root) {
+    clioPaintElementCache = null;
+    return {};
+  }
+  if (clioPaintElementCache?.root === root) return clioPaintElementCache.elements;
+  const elements = {
     root,
-    pane: root?.querySelector(".clio-paint-pane") || null,
-    toolbar: document.querySelector("#clio-paint-toolbar"),
-    patterns: document.querySelector("#clio-paint-patterns"),
-    canvas: document.querySelector("#clio-paint-canvas"),
-    canvasWrap: document.querySelector("#clio-paint-canvas-wrap"),
-    marquee: document.querySelector("#clio-paint-marquee"),
-    statusLabel: document.querySelector("#clio-paint-status-label"),
-    result: document.querySelector("#clio-paint-result"),
-    resultSketchImg: document.querySelector("#clio-paint-result-sketch-img"),
-    resultMarkdown: document.querySelector("#clio-paint-result-markdown"),
-    resultUnread: document.querySelector("#clio-paint-result-unread"),
-    resultApply: document.querySelector("#clio-paint-result-apply"),
+    pane: root.querySelector(".clio-paint-pane") || null,
+    toolbar: root.querySelector("#clio-paint-toolbar"),
+    patterns: root.querySelector("#clio-paint-patterns"),
+    canvas: root.querySelector("#clio-paint-canvas"),
+    canvasWrap: root.querySelector("#clio-paint-canvas-wrap"),
+    marquee: root.querySelector("#clio-paint-marquee"),
+    statusLabel: root.querySelector("#clio-paint-status-label"),
+    result: root.querySelector("#clio-paint-result"),
+    resultSketchImg: root.querySelector("#clio-paint-result-sketch-img"),
+    resultMarkdown: root.querySelector("#clio-paint-result-markdown"),
+    resultUnread: root.querySelector("#clio-paint-result-unread"),
+    resultApply: root.querySelector("#clio-paint-result-apply"),
   };
+  clioPaintElementCache = { root, elements };
+  return elements;
+}
+
+/** Cached control references; invalidated when the window root changes. */
+let clioPaintElementCache = null;
+
+function clioPaintShapeFilledButton() {
+  return clioPaintElements().toolbar?.querySelector("#clio-paint-shape-filled") || null;
+}
+
+// Everything this window binds lives in one instance registry: listeners,
+// timers and the like are released together when the window is really
+// destroyed, and a hidden or WindowShade'd window keeps its canvas, undo stack
+// and unsaved edits because hiding is not destroying.
+let clioPaintResources = window.AISystem6InstanceResources.create("clioPaint");
+
+/**
+ * The resource set for the CURRENT mount cycle. A destroyed window's set is
+ * spent - a disposed registry refuses new registrations on purpose - so the
+ * next mount gets its own, rather than quietly reusing a finished one.
+ */
+function clioPaintInstanceResources() {
+  if (clioPaintResources.disposed) {
+    clioPaintResources = window.AISystem6InstanceResources.create("clioPaint");
+  }
+  return clioPaintResources;
+}
+
+function disposeClioPaint() {
+  const outcome = clioPaintResources.dispose("clio-paint-disposed");
+  const root = document.querySelector('[data-window="clioPaint"]');
+  // Written as "false" rather than deleted: a data-* attribute is a string, and
+  // a destroyed-then-rebuilt window has to be able to bind again.
+  if (root) root.dataset.clioPaintBound = "false";
+  const canvas = root?.querySelector("#clio-paint-canvas");
+  if (canvas) canvas.dataset.clioPaintWired = "false";
+  clioPaintElementCache = null;
+  return outcome;
 }
 
 // --- Pattern palette ---------------------------------------------------
@@ -225,7 +273,7 @@ function setClioPaintTool(tool) {
 
 function toggleClioPaintShapeFilled() {
   clioPaintState.shapeFilled = !clioPaintState.shapeFilled;
-  document.querySelector("#clio-paint-shape-filled")?.setAttribute("aria-pressed", String(clioPaintState.shapeFilled));
+  clioPaintShapeFilledButton()?.setAttribute("aria-pressed", String(clioPaintState.shapeFilled));
   if (typeof updateMenuState === "function") updateMenuState();
 }
 
@@ -516,13 +564,16 @@ function wireClioPaintCanvas() {
   const { canvas } = clioPaintElements();
   if (!canvas || canvas.dataset.clioPaintWired === "true") return;
   canvas.dataset.clioPaintWired = "true";
-  canvas.addEventListener("pointerdown", (event) => {
+  clioPaintInstanceResources().listen(canvas, "pointerdown", (event) => {
     if (event.button !== undefined && event.button !== 0) return;
     // preventDefault below blocks the browser's default focus-change action,
     // which is also what blurs (and so commits) an open text-tool input. Ask
     // it to commit itself first, synchronously, so a second click on the
     // canvas cannot leave a typed label stranded off-screen.
-    document.querySelector(".clio-paint-text-input")?.blur();
+    // The open label belongs to THIS window: ask inside the root rather than
+    // through a document-wide lookup, which would reach the first instance's
+    // input when a second one is open.
+    clioPaintElements().root?.querySelector(".clio-paint-text-input")?.blur();
     event.preventDefault();
     canvas.setPointerCapture?.(event.pointerId);
     const point = clioPaintCanvasPoint(event);
@@ -536,7 +587,7 @@ function wireClioPaintCanvas() {
       clioPaintBeginText(point, { x: event.clientX - rect.left, y: event.clientY - rect.top });
     }
   });
-  canvas.addEventListener("pointermove", (event) => {
+  clioPaintInstanceResources().listen(canvas, "pointermove", (event) => {
     if (!clioPaintState.drawing && !clioPaintState.selection) return;
     const point = clioPaintCanvasPoint(event);
     const tool = clioPaintState.tool;
@@ -555,8 +606,8 @@ function wireClioPaintCanvas() {
     if ((tool === "pencil" || tool === "eraser") && clioPaintState.drawing) clioPaintEndStroke();
     else if ((tool === "line" || tool === "rect" || tool === "oval") && clioPaintState.drawing) clioPaintEndShape();
   };
-  canvas.addEventListener("pointerup", finish);
-  canvas.addEventListener("pointercancel", finish);
+  clioPaintInstanceResources().listen(canvas, "pointerup", finish);
+  clioPaintInstanceResources().listen(canvas, "pointercancel", finish);
 }
 
 function handleClioPaintKeydown(event) {
@@ -625,6 +676,7 @@ async function saveClioPaintPicture() {
   clioPaintState.projectId = project.id;
   clioPaintState.dirty = false;
   project.updatedAt = new Date().toISOString();
+  markDeskDirty("projects", project.id);
   // The picture is already attached in memory (usable by sketch-read etc.
   // regardless of persistence), but "Picture saved." is a durable claim -
   // only say it once the desk save actually lands.
@@ -798,6 +850,18 @@ async function clioPaintRunSketchRead({ intent, promptText, kind }) {
     setStatus(t("clio_paint_no_picture"));
     return;
   }
+  // The model call is long, and the writer may switch projects or open another
+  // picture while it runs. Remember which picture this answer is about and ask
+  // again before anything is shown: a late answer must not land on whatever
+  // the window happens to display now, and it must not be applied to it later
+  // through the result panel.
+  const requestTarget = { projectId: project.id, attachmentId: clioPaintState.attachmentId || "" };
+  const answerStillBelongsToTheOpenPicture = () => {
+    const active = typeof getActiveProject === "function" ? getActiveProject() : null;
+    return Boolean(active)
+      && active.id === requestTarget.projectId
+      && (clioPaintState.attachmentId || "") === requestTarget.attachmentId;
+  };
 
   if (clioPaintReadGoesToCloud() && !(await confirmClioPaintCloudRead())) {
     setStatus(t("clio_paint_cloud_declined"));
@@ -839,6 +903,22 @@ async function clioPaintRunSketchRead({ intent, promptText, kind }) {
     });
     const raw = String(result?.text || "").trim();
     if (!raw) throw new Error(t("clio_paint_read_empty"));
+
+    if (!answerStillBelongsToTheOpenPicture()) {
+      // The run really answered, so its receipt says completed; the answer is
+      // simply not shown, because the sketch it describes is no longer the one
+      // open. It stays recoverable from Run Records instead of overwriting the
+      // panel of a picture it was never about.
+      if (receiptId) {
+        await window.AISystem6RunReceipts.finishReceipt(receiptId, {
+          status: "completed",
+          affectedObjectIds: [],
+          publicErrorReason: "",
+        });
+      }
+      setStatus(t("clio_paint_result_superseded"));
+      return;
+    }
 
     if (kind === "outline") {
       if (typeof ensureOutlineClaimModule === "function") await ensureOutlineClaimModule();
@@ -929,15 +1009,36 @@ const CLIO_PAINT_COMMAND_NAMES = [
 ];
 
 function clioPaintCommandAvailable(action) {
-  if (action === "open-clio-paint") return true;
+  return clioPaintCommandAvailability(action).available;
+}
+
+/**
+ * The same question, answered with the reason a disabled row can show: which
+ * precondition is missing, not merely "no". Cheap and side-effect free, so a
+ * menu can ask while drawing, and the command asks the same thing where it
+ * runs.
+ *
+ * @param {string} action
+ * @returns {{ available: boolean, reason: string }}
+ */
+function clioPaintCommandAvailability(action) {
+  if (action === "open-clio-paint") return { available: true, reason: "" };
   const activeWindow = document.querySelector(".window.is-active");
-  if (activeWindow?.dataset.window !== "clioPaint") return false;
-  if (action === "clio-paint-undo") return !!clioPaintState.undo;
-  if (action === "clio-paint-clear-selection") return clioPaintState.tool === "marquee" && !!clioPaintState.selection;
-  if (["clio-paint-result-apply", "clio-paint-result-copy", "clio-paint-result-dismiss"].includes(action)) {
-    return !clioPaintElements().result?.hidden;
+  if (activeWindow?.dataset.window !== "clioPaint") {
+    return { available: false, reason: "clio_paint_needs_window" };
   }
-  return true;
+  if (action === "clio-paint-undo" && !clioPaintState.undo) {
+    return { available: false, reason: "clio_paint_nothing_to_undo" };
+  }
+  if (action === "clio-paint-clear-selection" && (clioPaintState.tool !== "marquee" || !clioPaintState.selection)) {
+    return { available: false, reason: "clio_paint_no_selection" };
+  }
+  if (["clio-paint-result-apply", "clio-paint-result-copy", "clio-paint-result-dismiss"].includes(action)) {
+    return clioPaintElements().result?.hidden
+      ? { available: false, reason: "clio_paint_no_result" }
+      : { available: true, reason: "" };
+  }
+  return { available: true, reason: "" };
 }
 
 function runClioPaintCommand(action) {
@@ -959,16 +1060,18 @@ function bindClioPaintControls() {
   const els = clioPaintElements();
   if (!els.root || els.root.dataset.clioPaintBound === "true") return;
   els.root.dataset.clioPaintBound = "true";
-  els.toolbar?.addEventListener("click", (event) => {
+  clioPaintInstanceResources().listen(els.toolbar, "click", (event) => {
     const toolButton = event.target.closest("[data-clio-paint-tool]");
     if (toolButton) setClioPaintTool(toolButton.dataset.clioPaintTool);
   });
-  els.patterns?.addEventListener("click", (event) => {
+  clioPaintInstanceResources().listen(els.patterns, "click", (event) => {
     const button = event.target.closest("[data-clio-paint-pattern]");
     if (button) setClioPaintPattern(Number(button.dataset.clioPaintPattern));
   });
   wireClioPaintCanvas();
-  document.addEventListener("keydown", handleClioPaintKeydown);
+  // The Paint menu's shortcuts are handled while the window is the active one,
+  // so this listener follows the instance rather than the document's lifetime.
+  clioPaintInstanceResources().listen(document, "keydown", handleClioPaintKeydown);
 }
 
 async function openClioPaint() {
@@ -1048,6 +1151,28 @@ window.AISystem6ClioPaint = Object.freeze({
   newPicture: newClioPaintPicture,
   sketchToOutline: runClioPaintSketchToOutline,
   sketchToImagePrompt: runClioPaintSketchToImagePrompt,
+  /**
+   * Release everything this window bound (listeners, timers, cached nodes).
+   * Hiding or WindowShade'ing the window is NOT a reason to call this: the
+   * canvas, undo stack and unsaved edits belong to the open window. It is for
+   * a real destroy, and it is safe to call twice.
+   */
+  dispose: disposeClioPaint,
+  /** Diagnostics: how many resources this instance still holds. */
+  resourceCount: () => (clioPaintResources.disposed ? 0 : clioPaintResources.size),
+  /** A read-only snapshot of what this window currently holds. */
+  state: () => ({
+    projectId: clioPaintState.projectId,
+    attachmentId: clioPaintState.attachmentId,
+    dirty: clioPaintState.dirty === true,
+    tool: clioPaintState.tool,
+    pattern: clioPaintState.pattern,
+    hasResult: Boolean(clioPaintState.lastResult),
+  }),
+  /** The current result as a copy, never the live record. */
+  result: () => (clioPaintState.lastResult ? { ...clioPaintState.lastResult } : null),
+  /** Whether a Paint command can run now, and what it is waiting for. */
+  commandAvailability: (action) => clioPaintCommandAvailability(String(action || "")),
 });
 
 window.AISystem6Runtime?.registerApplication({
@@ -1059,6 +1184,7 @@ window.AISystem6Runtime?.registerApplication({
     ["open-clio-paint", ...CLIO_PAINT_COMMAND_NAMES].map((action) => [action, {
       handler: () => runClioPaintCommand(action),
       isAvailable: () => clioPaintCommandAvailable(action),
+      unavailableReason: () => clioPaintCommandAvailability(action).reason,
     }])
   ),
 });

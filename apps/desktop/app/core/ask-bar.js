@@ -27,6 +27,27 @@ function renderAskBar(appId, scope) {
   form.classList.toggle("is-empty", !ready);
   if (input) input.disabled = !ready;
   if (button) button.disabled = !ready;
+  // Say what the next question will actually carry. The same describe() answer
+  // that decides whether the bar can be used already names the object and the
+  // range ("Whole source" / "Selected passage" / "3 selected scraps"); a bar
+  // that only greys out leaves the writer guessing which of those it picked.
+  // It goes on the accessible description and the title - one string, both
+  // readers - and never restates a range nobody resolved.
+  const object = ready ? String(scope?.object || "").trim() : "";
+  const range = ready ? String(scope?.range || "").trim() : "";
+  const scopeText = !ready
+    ? t("ask_scope_unavailable")
+    : object && range
+      ? t("ask_scope_announcement", object, range)
+      : "";
+  form.dataset.askScope = scopeText;
+  if (scopeText) {
+    form.setAttribute("aria-description", scopeText);
+    form.title = scopeText;
+  } else {
+    form.removeAttribute("aria-description");
+    form.removeAttribute("title");
+  }
 }
 
 function refreshAskBar(appId) {

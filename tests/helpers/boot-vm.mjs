@@ -145,6 +145,9 @@ export function createBootContext(overrides = {}) {
     getWindow: () => null,
     renderStaticFinderWindow: syncNoop,
     startLocalModelMonitor: syncNoop,
+    // boot() starts the desk clock (one timer per displayed minute, see
+    // persistence-status.js); the harness has no clock face to paint.
+    startSystemClock: syncNoop,
     showBootFailure: syncNoop,
     // Called as syncIconColumnDensity?.() — optional chaining only guards a
     // value that resolves to null/undefined, not an unbound identifier, so

@@ -137,6 +137,11 @@ export function createDraftDeskVm() {
     currentLanguage: "zh",
     activeProjectId: "",
     activeProject: null,
+    // markDeskDirty lives in app/core/persistence-status.js, which the boot
+    // bundle loads eagerly, so every module may call it as a plain global. A
+    // VM that loads one module on its own has to install the same global or
+    // the call reads as a ReferenceError here and nowhere in the app.
+    markDeskDirty: () => {},
     projects: [],
     chatFolders: [],
     chatFiles: [],

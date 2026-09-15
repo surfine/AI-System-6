@@ -8,6 +8,13 @@ function translationPadUiTargetLanguage() {
   return currentLanguage === "zh" ? "zh" : "en";
 }
 
+/**
+ * Which translation run the pad is currently waiting for. Clearing the pad or
+ * starting another translation moves it on; an answer from an earlier run is
+ * then stale and is not written into the pad.
+ */
+let translationPadRunId = 0;
+
 function translationPadTargetLabel(language = translationPadUiTargetLanguage()) {
   return language === "zh" ? t("to_chinese") : t("to_english");
 }
@@ -62,6 +69,9 @@ function syncTranslationPadStateFromInputs() {
 }
 
 function clearTranslationPad() {
+  // Whatever is in flight belongs to the text that was just cleared, so its
+  // answer may not refill the pad when it lands.
+  translationPadRunId += 1;
   translationPadSourceText = "";
   translationPadTranslatedText = "";
   translationPadSourceLabel = "";
@@ -145,16 +155,28 @@ async function translateTranslationPadSource() {
   if (translationPadTranslateButton) translationPadTranslateButton.disabled = true;
   translationPadSetStatus("translating_selection");
 
+  // A pad answer belongs to the text it was asked about. Clearing the pad or
+  // starting a second translation makes this run's answer stale, and a stale
+  // answer landing last would replace the newer one: only the run that is still
+  // current may write into the pad.
+  const runId = (translationPadRunId += 1);
+  const runIsStillCurrent = () => runId === translationPadRunId;
+
   try {
     const translated = await translateTextWithLocalModel(source, targetLanguage, {
       preserveMarkdown: true,
       title: translationPadSourceLabel || "",
       onProgress: (partial) => {
+        if (!runIsStillCurrent()) return;
         translationPadTranslatedText = partial;
         if (translationPadResultInput) translationPadResultInput.value = partial;
         translationPadSetStatus("translating_selection");
       },
     });
+    if (!runIsStillCurrent()) {
+      translationPadSetStatus("translation_pad_result_superseded");
+      return;
+    }
     translationPadTranslatedText = translated.trim();
     if (translationPadResultInput) translationPadResultInput.value = translationPadTranslatedText;
     translationPadSetStatus("ready");
@@ -213,5 +235,46 @@ function sendTranslationPad() {
   sendTranslationPadToTeachText();
 }
 
-let tpmounted=!1;function mountTranslationPadRuntime(){if(tpmounted)return!0;tpmounted=!0;translationPadSourceInput?.addEventListener("input",syncTranslationPadStateFromInputs);translationPadResultInput?.addEventListener("input",syncTranslationPadStateFromInputs);translationPadClearButton?.addEventListener("click",clearTranslationPad);translationPadTranslateButton?.addEventListener("click",translateTranslationPadSource);translationPadSendButton?.addEventListener("click",sendTranslationPad);return!0}
+// The pad's controls, bound once per mount cycle and released together. Like
+// ClioPaint, it uses the shared instance registry rather than its own boolean
+// and its own addEventListener calls, so a real destroy gives the listeners
+// back and the next mount binds again.
+let translationPadResources = window.AISystem6InstanceResources.create("translationPad");
+
+function translationPadInstanceResources() {
+  if (translationPadResources.disposed) {
+    translationPadResources = window.AISystem6InstanceResources.create("translationPad");
+  }
+  return translationPadResources;
+}
+
+function mountTranslationPadRuntime() {
+  if (translationPadMounted) return true;
+  translationPadMounted = true;
+  const resources = translationPadInstanceResources();
+  resources.listen(translationPadSourceInput, "input", syncTranslationPadStateFromInputs);
+  resources.listen(translationPadResultInput, "input", syncTranslationPadStateFromInputs);
+  resources.listen(translationPadClearButton, "click", clearTranslationPad);
+  resources.listen(translationPadTranslateButton, "click", translateTranslationPadSource);
+  resources.listen(translationPadSendButton, "click", sendTranslationPad);
+  return true;
+}
+
+let translationPadMounted = false;
+
+/** Release the pad's bindings. Hiding the window is not destroying it. */
+function disposeTranslationPad() {
+  translationPadMounted = false;
+  return translationPadResources.dispose("translation-pad-disposed");
+}
+
+window.AISystem6TranslationPad = Object.freeze({
+  open: openTranslationPad,
+  mount: mountTranslationPadRuntime,
+  dispose: disposeTranslationPad,
+  translate: () => translateTranslationPadSource(),
+  /** Diagnostics: how many bindings this instance still holds. */
+  resourceCount: () => (translationPadResources.disposed ? 0 : translationPadResources.size),
+});
+
 window.AISystem6Runtime?.registerApplication({id:"translationPad",windowName:"translationPad",mount:mountTranslationPadRuntime,restore:()=>mountTranslationPadRuntime(),commands:{"open-translation-pad":{handler:()=>openTranslationPad(),isAvailable:()=>!0}}});

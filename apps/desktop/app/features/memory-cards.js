@@ -90,6 +90,36 @@ function startMemoryCardsTimer() {
   memoryCardsTimer = setInterval(updateMemoryCardsStats, 1000);
 }
 
+/**
+ * The game's clock and the game's repaint are two different things.
+ *
+ * Elapsed time is derived from timestamps, so a hidden window does not need a
+ * repaint every second to keep the time honest - it needs the repaint the
+ * moment it is shown again. The running clock is deliberately left alone
+ * (hiding a game does not pause it: that is the game's own rule), and the
+ * interval comes back with the same start timestamp it had.
+ */
+function syncMemoryCardsVisibility() {
+  const hidden = document.visibilityState === "hidden"
+    || document.querySelector('[data-window="memoryCards"]')?.classList.contains("is-hidden") === true;
+  if (hidden) {
+    stopMemoryCardsTimer();
+    return;
+  }
+  updateMemoryCardsStats();
+  if (memoryCardsRunningSince && !memoryCardsTimer && memoryCardsMatched !== memoryCards.length) {
+    memoryCardsTimer = setInterval(updateMemoryCardsStats, 1000);
+  }
+}
+
+function installMemoryCardsVisibilityWatch() {
+  if (memoryCardsVisibilityWatched) return;
+  memoryCardsVisibilityWatched = true;
+  document.addEventListener("visibilitychange", syncMemoryCardsVisibility);
+}
+
+let memoryCardsVisibilityWatched = false;
+
 function updateMemoryCardsStats() {
   if (memoryCardsMovesEl) {
     memoryCardsMovesEl.textContent = t("moves_count", memoryCardsMoves);
@@ -314,5 +344,26 @@ function handleMemoryCardsKeydown(event) {
   focusMemoryCard((next + memoryCards.length) % memoryCards.length, step);
 }
 
-let mcmounted=!1;function mountMemoryCardsRuntime(){if(mcmounted)return!0;mcmounted=!0;memoryCardsBoardEl?.addEventListener("click",event=>{const button=event.target.closest("[data-memory-card]");if(!button)return;memoryCardsFocusIndex=Number(button.dataset.memoryCardIndex);flipMemoryCard(button.dataset.memoryCard)});memoryCardsBoardEl?.addEventListener("keydown",handleMemoryCardsKeydown);return!0}
+let mcmounted=!1;
+function mountMemoryCardsRuntime(){
+  if(mcmounted)return!0;
+  mcmounted=!0;
+  // Board interactions, plus the one listener that lets a hidden window stop
+  // repainting its clock every second (see syncMemoryCardsVisibility).
+  const resources = window.AISystem6InstanceResources?.create?.("memoryCards") || null;
+  const listen = (target, type, handler) => {
+    if (!target?.addEventListener) return;
+    if (resources) resources.listen(target, type, handler);
+    else target.addEventListener(type, handler);
+  };
+  listen(memoryCardsBoardEl, "click", (event) => {
+    const button = event.target.closest("[data-memory-card]");
+    if (!button) return;
+    memoryCardsFocusIndex = Number(button.dataset.memoryCardIndex);
+    flipMemoryCard(button.dataset.memoryCard);
+  });
+  listen(memoryCardsBoardEl, "keydown", handleMemoryCardsKeydown);
+  installMemoryCardsVisibilityWatch();
+  return true;
+}
 window.AISystem6Runtime?.registerApplication({id:"memoryCards",windowName:"memoryCards",mount:mountMemoryCardsRuntime,restore:()=>mountMemoryCardsRuntime(),commands:{"open-memory-cards":{handler:()=>openWindow("memoryCards"),isAvailable:()=>!0}}});

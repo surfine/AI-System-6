@@ -17,6 +17,9 @@ const html = read("index.html");
 const manifest = read("tooling/runtime-manifest.mjs");
 const chat = read("app/core/chat-messages.js");
 const persistenceStatus = read("app/core/persistence-status.js");
+// The local model connection and selection code lives in its own module since
+// the persistence split; contracts about it read that module.
+const localModelConnection = read("app/core/local-model-connection.js");
 const cloudModel = read("app/features/cloud-model.js");
 const boot = read("app/core/boot.js");
 const context = read("app/core/context-retrieval.js");
@@ -34,9 +37,9 @@ const vision = read("app/core/image-attachments.js");
 const serverModelRoute = read("apps/server/server/routes/models.js");
 const serverLmStudio = read("apps/server/server/lmstudio.js");
 
-const localStateUpdateSource = persistenceStatus.slice(
-  persistenceStatus.indexOf("function updateLocalModelState"),
-  persistenceStatus.indexOf("const contextMinLength")
+const localStateUpdateSource = localModelConnection.slice(
+  localModelConnection.indexOf("function updateLocalModelState"),
+  localModelConnection.indexOf("const contextMinLength")
 );
 ok(
   localStateUpdateSource.includes('refreshCloudUsageDisplay === "function"'),
@@ -601,11 +604,11 @@ const modelPayload = {
     "builds the configured Safari HTTP entry without weakening the HTTPS host"
   );
   ok(
-    /function openSafariHttpLocalEntry\(\)[\s\S]*?const blankTab = window\.open\([\s\S]*?getCapabilities/.test(persistenceStatus),
+    /function openSafariHttpLocalEntry\(\)[\s\S]*?const blankTab = window\.open\([\s\S]*?getCapabilities/.test(localModelConnection),
     "opens the Safari paste tab synchronously inside the click gesture, before any await"
   );
   ok(
-    /blankTab\?\.close\(\)[\s\S]*?throw error/.test(persistenceStatus),
+    /blankTab\?\.close\(\)[\s\S]*?throw error/.test(localModelConnection),
     "closes the paste tab again when the local HTTP origin is not configured"
   );
 }
@@ -723,11 +726,11 @@ ok(
   "server autoload discovery prefers the native v1 inventory"
 );
 ok(!source.includes('"/api/chat"') && !source.includes('"/api/models"'), "client contains no VPS local-model proxy fallback");
-ok(read("app/core/persistence-status.js").includes('local_connection_safari_unsupported'), "control panel maps Safari to a dedicated connection state");
-ok(/connectLocalLmStudio[\s\S]*?setModelPickerOptions\(chatModels, embeddingModels\)[\s\S]*?renderLocalConnectionStatus\("ready", data\)/.test(read("app/core/persistence-status.js")), "a successful connection fills the model pickers before showing ready");
-ok(/connectLocalLmStudio[\s\S]*?if \(!selectedModel && chatModels\.length && !isManualLocalModelMode\(\)\)[\s\S]*?modelInput\.value = selectedModel\.id/.test(persistenceStatus), "switching endpoints selects a model from the new inventory instead of leaving every AI composer disabled");
-ok(read("app/core/persistence-status.js").includes('window.location.assign(`lmstudio:${slashes}`)'), "control panel can open the installed LM Studio app directly");
-ok(/function connectOrLaunchLocalModel\(\)[\s\S]*?openLocalModelApp\(\);[\s\S]*?connectLocalLmStudio\(\{ toggle: false \}\)/.test(read("app/core/persistence-status.js")), "one local-model button launches LM Studio and then attempts the connection");
+ok(localModelConnection.includes('local_connection_safari_unsupported'), "control panel maps Safari to a dedicated connection state");
+ok(/connectLocalLmStudio[\s\S]*?setModelPickerOptions\(chatModels, embeddingModels\)[\s\S]*?renderLocalConnectionStatus\("ready", data\)/.test(localModelConnection), "a successful connection fills the model pickers before showing ready");
+ok(/connectLocalLmStudio[\s\S]*?if \(!selectedModel && chatModels\.length && !isManualLocalModelMode\(\)\)[\s\S]*?modelInput\.value = selectedModel\.id/.test(localModelConnection), "switching endpoints selects a model from the new inventory instead of leaving every AI composer disabled");
+ok(localModelConnection.includes('window.location.assign(`lmstudio:${slashes}`)'), "control panel can open the installed LM Studio app directly");
+ok(/function connectOrLaunchLocalModel\(\)[\s\S]*?openLocalModelApp\(\);[\s\S]*?connectLocalLmStudio\(\{ toggle: false \}\)/.test(localModelConnection), "one local-model button launches LM Studio and then attempts the connection");
 ok(boot.includes('isSafariHttpLocalMode') && boot.includes('setControlTab("local")'), "Safari HTTP entry opens directly on local-model setup");
 ok(read("app/data/translations-en.js").includes("open this site in Chrome or Edge, or use a cloud model"), "English guidance offers two supported next steps");
 ok(read("app/data/translations-zh.js").includes("Safari 本机入口（HTTP）、改用 Chrome/Edge，或改用云端模型"), "Chinese guidance offers supported next steps without blaming LM Studio");

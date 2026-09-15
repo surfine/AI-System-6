@@ -57,10 +57,29 @@ test.assertIncludes(
   "function deskRecordFingerprint(item) {",
   "the cache is written from the bytes that were actually stored"
 );
+// The mechanism, not the spelling: the fingerprint is read off `item` in the
+// same synchronous step that hands `item` to put(). Asserted as "the read is
+// inside putDeskRecordAtBase and ahead of the store.put that follows it", so a
+// guard added around the write cannot make this contract fail while the
+// guarantee it describes is still true.
+const putBaseSource = persistence.slice(
+  persistence.indexOf("function putDeskRecordAtBase"),
+  persistence.indexOf("function deleteDeskRecordAtBase"),
+);
 test.assertIncludes(
-  persistence,
-  "const fingerprint = deskRecordFingerprint(item);\n      const write =",
+  putBaseSource,
+  "function putDeskRecordAtBase(",
+  "the write path is the one being asserted about"
+);
+test.assertMatches(
+  putBaseSource,
+  /const fingerprint = deskRecordFingerprint\(item\);[\s\S]*?store\.put\(item/,
   "the fingerprint is taken immediately before the put, not when the plan was built"
+);
+test.assertNotMatches(
+  putBaseSource,
+  /fingerprint:\s*(plan|put)\./,
+  "and it is never a value carried over from the plan"
 );
 test.assertIncludes(
   persistence,
@@ -100,7 +119,16 @@ test.assertMatches(
   /putDeskRecordAtBase[\s\S]*?store\.get\(id\)[\s\S]*?addEventListener\("success"/,
   "the read and the write stay inside IndexedDB event handlers, with no await to close the transaction",
 );
-test.assertIncludes(persistence, "puts.push({ id, item, base: previous.get(cacheKey)?.fingerprint })", "the plan carries the base each write must still match");
+// The base is still the fingerprint the desk last knew for that record; the
+// plan walk now reads it through a local alias (`const known =
+// previous.get(cacheKey)`) so the trust-reports fast path can use it too.
+// Accept either spelling: what this contract is about is where the base comes
+// from, not what the variable was called on the day it was written.
+test.assertMatches(
+  persistence,
+  /puts\.push\(\{ id, item, base: (?:known|previous\.get\(cacheKey\))\?\.fingerprint \}\)/,
+  "the plan carries the base each write must still match",
+);
 test.assertIncludes(persistence, "deletes.push({ id: cached.id, base: cached.fingerprint })", "a delete carries the base each window last saw");
 test.assertMatches(
   persistence,
@@ -131,8 +159,23 @@ test.assertIncludes(persistence, "broadcastDeskRecordChanges(changedPlans, shoul
 test.assertIncludes(persistence, 'type: "desk-records"', "the feed shares the live-progress channel rather than opening a second one");
 test.assertMatches(
   persistence,
-  /if \(believed !== undefined && deskRecordFingerprint\(local\) !== believed\) return;/,
+  /const pending = !local \? false : \([\s\S]{0,400}?deskRecordFingerprint\(local\) !== believed[\s\S]{0,200}?dirtyDeskRecords\.get\(key\)\?\.has\(cacheKey\)/,
   "a record this window is still editing is never overwritten by the feed",
+);
+test.assertMatches(
+  persistence,
+  /const ids = new Set\(\[\.\.\.state\.reads\.map\(String\), \.\.\.state\.deletes\]\)/,
+  "an announced delete is re-read from the store, not obeyed",
+);
+test.assertMatches(
+  persistence,
+  /if \(!readable && !touched\.get\(key\)\.deletes\.has\(cacheKey\)\) return;/,
+  "an announced update for a record the store no longer holds is not treated as a deletion",
+);
+test.assertMatches(
+  persistence,
+  /if \(!stored && base !== undefined\) \{\s*\n\s*conflicts\.push\(\{ key: plan\.key, id: String\(id\) \}\);\s*\n\s*resolve\(null\);/,
+  "a save carrying a base may not re-create a record the store has deleted",
 );
 test.assertIncludes(persistence, "function deskCollectionDefinitions()", "save, restore and the feed walk one list of durable collections");
 

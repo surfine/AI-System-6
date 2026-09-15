@@ -56,8 +56,10 @@ test.assert(
 // harness's script-tag loader shim (see app-boot-vm.mjs) makes `.ensure()`
 // actually load the real module, so this checks the SAME lazy path a real
 // click uses, not a parallel one.
-const lazyCommands = ctx.window.AISystem6Runtime.lazyCommands;
-test.assert(lazyCommands.size > 0, `the lazy command registry is empty (expected some — got ${lazyCommands.size})`);
+const lazyCommandIds = ctx.window.AISystem6Runtime.listLazyCommands();
+const lazyCommands = new Map(lazyCommandIds.map((id) => [id, ctx.window.AISystem6Runtime.getLazyCommand(id)]));
+const lazyCommandCount = lazyCommandIds.length;
+test.assert(lazyCommandCount > 0, `the lazy command registry is empty (expected some — got ${lazyCommands.size})`);
 const nonCallableLazy = [];
 for (const [id, entry] of lazyCommands) {
   if (typeof entry.ensure !== "function") nonCallableLazy.push(id);

@@ -82,7 +82,7 @@ test.assertIncludes(manifest, '"app/core/derived-index-queue.js"', "the post-com
 // persisted is announced).
 test.assertMatches(
   persistence,
-  /persistDeskState\(\)\)\s*\.then\(\(saved\) => \{\s*if \(saved\) \{?\s*(?:\/\/[^\n]*\n\s*)*window\.AISystem6DerivedIndexQueue\?\.afterProjectCommit\(\)/,
+  /const writtenFingerprints = await commitDeskPlansWhereverTheConnectionIs\([\s\S]{0,6000}?window\.AISystem6DerivedIndexQueue\?\.afterProjectCommit\(\)/,
   "derived work starts only after the source transaction succeeds"
 );
 test.assertIncludes(boot, "AISystem6DerivedIndexQueue.restore()", "durable pending jobs resume at startup");

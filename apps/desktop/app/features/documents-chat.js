@@ -335,6 +335,7 @@ async function renameSelectedDocumentItem() {
     }
     folder.name = isDefaultFolderName(normalized) ? "General" : normalized;
     folder.updatedAt = new Date().toISOString();
+    markDeskDirty("chatFolders", folder.id);
     saveDeskState();
     renderDocuments();
     setStatus(t("folder_renamed", displayFolderName(folder.name)));
@@ -354,6 +355,9 @@ async function renameSelectedDocumentItem() {
   file.name = name.trim();
   if (file.type === "chat") file.titleMode = "manual";
   file.updatedAt = new Date().toISOString();
+  // Renaming a file changes a record the desk already holds, so the save has
+  // to be told which one rather than finding it by scanning the desk.
+  markDeskDirty("chatFiles", file.id);
   if (file.id === activeTextFileId) {
     teachTextNameInput.value = file.name;
     syncTeachTextNameDisplay();
@@ -421,12 +425,18 @@ function moveDocumentFolderToTrashById(folderId) {
   });
 
   for (let index = chatFiles.length - 1; index >= 0; index -= 1) {
-    if (fileIds.has(chatFiles[index].id)) chatFiles.splice(index, 1);
+    if (fileIds.has(chatFiles[index].id)) {
+      markDeskDeleted("chatFiles", chatFiles[index].id);
+      chatFiles.splice(index, 1);
+    }
   }
   removeMountedFilesByName(tree.files.map((item) => item.name), folder.projectId);
   purgeContextForTrashedItems([{ type: "folder", id: folder.id, item: { ...folder, files: tree.files } }]);
   for (let index = chatFolders.length - 1; index >= 0; index -= 1) {
-    if (folderIds.has(chatFolders[index].id)) chatFolders.splice(index, 1);
+    if (folderIds.has(chatFolders[index].id)) {
+      markDeskDeleted("chatFolders", chatFolders[index].id);
+      chatFolders.splice(index, 1);
+    }
   }
 
   if (fileIds.has(activeTextFileId)) {
@@ -533,6 +543,7 @@ function moveDocumentFileToFolder(fileId, targetFolderId = null) {
   );
   file.folderId = normalizedTargetId;
   file.updatedAt = new Date().toISOString();
+  markDeskDirty("chatFiles", file.id);
   selectedChatFileId = normalizedTargetId === currentViewFolderId ? file.id : null;
   selectedDocumentFolderId = targetVisibleInCurrentView ? normalizedTargetId : null;
   if (file.id === activeTextFileId) {
@@ -565,6 +576,7 @@ function moveDocumentFolderToFolder(folderId, targetFolderId = null) {
   );
   folder.parentId = normalizedTargetId;
   folder.updatedAt = new Date().toISOString();
+  markDeskDirty("chatFolders", folder.id);
   selectedDocumentFolderId = normalizedTargetId === currentViewFolderId ? folder.id : targetVisibleInCurrentView ? normalizedTargetId : null;
   selectedChatFileId = null;
   saveDeskState();
@@ -929,6 +941,7 @@ function toggleSelectedProjectMemory() {
   if (!file) return false;
   file.memoryStatus = file.memoryStatus === "disabled" ? "active" : "disabled";
   file.updatedAt = new Date().toISOString();
+  markDeskDirty("chatFiles", file.id);
   saveDeskState();
   renderDocuments();
   return true;
@@ -962,6 +975,7 @@ async function summarizeChatTitle(file, { force = false } = {}) {
     file.titleMode = "auto-summary";
     file.titleSummaryAt = new Date().toISOString();
     file.updatedAt = file.titleSummaryAt;
+    markDeskDirty("chatFiles", file.id);
     saveDeskState();
     renderDocuments();
     return true;
@@ -982,6 +996,7 @@ function persistActiveChatFile() {
   file.messages = normalizeChatMessageRecords(conversation);
   file.compressedMemory = { ...compressedConversationMemory };
   file.updatedAt = new Date().toISOString();
+  markDeskDirty("chatFiles", file.id);
   saveDeskState();
   renderDocuments();
   if (typeof renderClioTalkFileBar === "function") renderClioTalkFileBar();
@@ -1781,6 +1796,7 @@ async function configureSkillAutoCall() {
   }
   const settings = { enabled: enabled && allowedSkillIds.length > 0, allowedSkillIds, readScopes: ["project"] };
   file.body = JSON.stringify(settings, null, 2); file.skillAutoCall = settings; file.updatedAt = new Date().toISOString();
+  markDeskDirty("chatFiles", file.id);
   saveDeskState(); renderDocuments(); renderProjectDisks(); openTextFile(file.id);
   return true;
 }
@@ -1935,6 +1951,7 @@ function toggleSelectedProjectSkill() {
   file.skillManifest = { ...(file.skillManifest || {}), status: file.skillStatus };
   const folder = ensureFolder(enabled ? "Skills" : "Disabled Skills", null);
   file.folderId = folder.id; file.updatedAt = new Date().toISOString();
+  markDeskDirty("chatFiles", file.id);
   saveDeskState(); renderDocuments(); renderProjectDisks(); return true;
 }
 
@@ -2129,6 +2146,9 @@ function saveCurrentChatAsFile(name, folderName) {
   file.compressedMemory = { ...compressedConversationMemory };
   file.updatedAt = now;
   if (!existing) chatFiles.unshift(file);
+  // Saving over the conversation that is already filed changes a record the
+  // desk holds; a new one needs no report.
+  else markDeskDirty("chatFiles", file.id);
   activeChatFileId = file.id;
   selectedFolderId = folder.id;
   selectedChatFileId = file.id;
@@ -2171,6 +2191,7 @@ async function renameActiveClioTalkConversation() {
   file.name = name;
   file.titleMode = "manual";
   file.updatedAt = new Date().toISOString();
+  markDeskDirty("chatFiles", file.id);
   saveDeskState();
   renderDocuments();
   renderClioTalkFileBar();
@@ -2299,6 +2320,9 @@ function moveChatFileToTrash() {
   if (index === -1) return;
 
   const [file] = chatFiles.splice(index, 1);
+  // The record is gone from the desk: name the deletion, or a save that trusts
+  // the writers never learns this file left the drawer.
+  markDeskDeleted("chatFiles", file.id);
   removeMountedFilesByName([file.name], file.projectId);
   purgeContextForTrashedItems([{ type: "file", id: file.id, item: file }]);
   trashItems.unshift({
@@ -2509,6 +2533,7 @@ async function setTeachTextFileLabel(label, { announce = false, persist = false,
   if (file) {
     file.label = next;
     file.updatedAt = new Date().toISOString();
+    markDeskDirty("chatFiles", file.id);
     renderDocuments();
     if (persist) saveDeskState();
   }
@@ -2622,6 +2647,7 @@ async function renameActiveFile() {
 
   file.name = name.trim();
   file.updatedAt = new Date().toISOString();
+  markDeskDirty("chatFiles", file.id);
   if (file.type === "text") {
     teachTextNameInput.value = file.name;
     syncTeachTextNameDisplay();
@@ -2957,6 +2983,9 @@ async function saveTextDocument({ asCopy = false, revealInDocuments = false, pro
     file.body = teachTextBodyInput.value;
     file.label = normalizeFileLabel(teachTextFileLabel);
     file.updatedAt = new Date().toISOString();
+    // Saving over a document that is already on disk: name the record, so a
+    // save plan that trusts the writers carries the edited body.
+    markDeskDirty("chatFiles", file.id);
     if (typeof createDocumentRevision === "function") {
       try {
         await createDocumentRevision({

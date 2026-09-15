@@ -39,7 +39,12 @@ function walkMenuItems(items, out = []) {
 }
 const menuItems = walkMenuItems((menuSets.bonsaiCity || []).flatMap((menu) => menu.items || []));
 test.assert(menuItems.length >= 40, `the Bonsai menu set registers its items (${menuItems.length})`);
-const commands = ctx.window.AISystem6Runtime.c;
+// Read through the runtime when asked, not once at load: the Bonsai commands
+// are registered when its module loads, which happens after this line runs.
+const commands = {
+  get: (id) => ctx.window.AISystem6Runtime.getCommand(id),
+};
+
 for (const item of menuItems) {
   test.assert(typeof commands.get(item.action)?.handler === "function", `menu item ${item.action} has a registered handler`);
 }

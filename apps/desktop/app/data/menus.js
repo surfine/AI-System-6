@@ -862,6 +862,14 @@ function renderApplicationMenuItem(item) {
       // choosing it opened what was already open and said nothing.
       button.dataset.chatFileChoice = file.id;
       button.textContent = file.name;
+      // The list is drawn from the store, and the store can move under it (the
+      // file deleted from another window, the project switched). A row nobody
+      // can act on says so here rather than failing when it is clicked.
+      const availability = typeof window.AISystem6ApplicationRegistry?.applicationObjectAvailability === "function"
+        ? window.AISystem6ApplicationRegistry.applicationObjectAvailability(file.id, "open")
+        : { available: true };
+      button.disabled = availability.available !== true;
+      if (availability.available !== true) button.title = t("open_recent_unavailable");
       fragment.append(button);
     });
     return fragment;

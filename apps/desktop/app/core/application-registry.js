@@ -302,16 +302,57 @@ async function dispatchApplicationIntent(appId, { intent, items = [], sourceAppI
   }
 }
 
+/**
+ * The object an entry names, resolved now.
+ *
+ * An id is a claim made by whoever drew the row; this is where it is checked
+ * again. A menu drawn a moment ago can name a file another window has since
+ * deleted, or one that belongs to a project the writer has left, and routing
+ * the open through one resolver is what keeps every entry - menu, toolbar,
+ * shortcut, double-click - answering the same way about the same id.
+ */
+function resolveProjectObject(itemOrId) {
+  if (itemOrId && typeof itemOrId === "object") return { ok: true, item: itemOrId, reason: "" };
+  const id = String(itemOrId || "");
+  if (!id) return { ok: false, item: null, reason: "no-items" };
+  if (typeof chatFiles === "undefined" || typeof isInActiveProject !== "function") {
+    return { ok: false, item: null, reason: "missing" };
+  }
+  const item = chatFiles.find((file) => file.id === id && isInActiveProject(file)) || null;
+  return item ? { ok: true, item, reason: "" } : { ok: false, item: null, reason: "missing" };
+}
+
+/**
+ * Could this intent be performed on this object right now?
+ *
+ * Cheap and side-effect free, so a menu can ask while drawing: it resolves the
+ * object and the application the way the dispatch would, and answers with the
+ * same reason the execution would report. Nothing is loaded and no model call
+ * is made - drawing a menu may not start work.
+ */
+function applicationObjectAvailability(itemOrId, intent = "open", appId = "") {
+  const resolved = resolveProjectObject(itemOrId);
+  if (!resolved.ok) return { available: false, reason: resolved.reason, appId: "" };
+  const normalized = normalizeApplicationIntent(intent);
+  if (!normalized) return { available: false, reason: "unknown-intent", appId: "" };
+  const target = appId ? getApplication(appId) : resolveApplicationForItem(resolved.item, normalized).app;
+  if (!target) return { available: false, reason: "no-handler", appId: "" };
+  if (!target.acceptedIntents.includes(normalized)) {
+    return { available: false, reason: "unsupported-intent", appId: target.id };
+  }
+  if (!target.acceptedItemKinds.includes(applicationItemKind(resolved.item))) {
+    return { available: false, reason: "unsupported-kind", appId: target.id };
+  }
+  return { available: true, reason: "", appId: target.id };
+}
+
 async function openProjectObject(itemOrId, intent = "open") {
-  let item = itemOrId;
-  if (typeof itemOrId === "string" && typeof chatFiles !== "undefined" && typeof isInActiveProject === "function") {
-    item = chatFiles.find((file) => file.id === itemOrId && isInActiveProject(file)) || null;
-  }
-  if (!item) {
+  const resolved = resolveProjectObject(itemOrId);
+  if (!resolved.ok) {
     if (typeof setStatus === "function") setStatus(t("select_finder_item_first"));
-    return { ok: false, reason: "missing" };
+    return { ok: false, reason: resolved.reason };
   }
-  return dispatchApplicationIntent("", { intent, items: [item], sourceAppId: "finder" });
+  return dispatchApplicationIntent("", { intent, items: [resolved.item], sourceAppId: "finder" });
 }
 
 // ---- First-phase registrations -------------------------------------------
@@ -607,6 +648,8 @@ window.AISystem6ApplicationRegistry = Object.freeze({
   getApplication,
   resolveApplicationForItem,
   dispatchApplicationIntent,
+  resolveProjectObject,
+  applicationObjectAvailability,
   openProjectObject,
   itemKind: applicationItemKind,
   registerApplicationLifecycle,

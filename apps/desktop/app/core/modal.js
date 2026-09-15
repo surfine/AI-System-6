@@ -3,8 +3,79 @@
 // Loaded before app.js as a classic script; function bodies reference
 // DOM handles that app.js initializes before any modal is opened.
 
+/**
+ * Give focus back to whatever opened the dialog, while it still exists and can
+ * take it; otherwise to the front window's first usable control. A dialog that
+ * closes onto the document body leaves the writer with nothing to type into and
+ * no visible sign of where the keyboard went.
+ * @param {Element | null} invoker
+ */
+function restoreFocusAfterModal(invoker) {
+  const target = invoker && invoker.isConnected !== false ? invoker : null;
+  if (target && target.disabled !== true && typeof target.focus === "function" && target.isConnected !== false) {
+    try {
+      target.focus();
+      if (document.activeElement === target) return true;
+    } catch {}
+  }
+  const win = document.querySelector(".window.is-active:not(.is-hidden)");
+  const fallback = win?.querySelector(
+    "button:not([disabled]), input:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])"
+  );
+  try {
+    fallback?.focus?.();
+  } catch {}
+  return false;
+}
+
+/** The control that asked the question, when there was one. */
+function modalInvoker() {
+  const active = document.activeElement;
+  if (!active || active === document.body || active === document.documentElement) return null;
+  return active;
+}
+
+// One modal, one answer, and only one.
+//
+// A second question opened while the first is still waiting used to overwrite
+// the first dialog's onclose handler: the first promise then never settled, and
+// whatever awaited it waited forever. The open dialog is tracked here so a new
+// one settles the old one as a cancel, and every close path goes through one
+// settle() that runs once.
+let activeSystemModal = null;
+/** The input dialog that is currently waiting for an answer, if any. */
+let activeInputDialog = null;
+
+/** The scrim is decorative; a missing one must never break a dialog. */
+function setModalScrimHidden(hidden) {
+  const scrim = typeof modalScrim !== "undefined" ? modalScrim : null;
+  if (!scrim) return;
+  scrim.classList.toggle("is-hidden", hidden === true);
+}
+
 function showSystemModal(message, type = "confirm", options = {}) {
   return new Promise((resolve) => {
+    const previousModal = activeSystemModal;
+    if (previousModal) {
+      // Close the dialog that is on screen as well as settling its promise:
+      // settling alone would leave the old question open under the new one.
+      try {
+        previousModal.dialog?.close?.("cancel");
+      } catch {}
+      previousModal.settle("cancel");
+    }
+    const invoker = modalInvoker();
+    let settled = false;
+    const settle = (value) => {
+      if (settled) return;
+      settled = true;
+      if (activeSystemModal?.settle === settle) activeSystemModal = null;
+      setModalScrimHidden(true);
+      document.body.classList.remove("has-system-modal");
+      restoreFocusAfterModal(invoker);
+      resolve(value);
+    };
+    activeSystemModal = { dialog: systemModal, settle };
     if (typeof closeMenus === "function") closeMenus();
     document.body.classList.add("has-system-modal");
     systemModalMessage.textContent = message;
@@ -13,11 +84,19 @@ function showSystemModal(message, type = "confirm", options = {}) {
     systemModalYes.classList.toggle("danger", options.danger === true);
     playSystemSound(type === "save" ? "save" : "alert");
 
-    systemModal.onclose = () => {
-      modalScrim.classList.add("is-hidden");
-      document.body.classList.remove("has-system-modal");
-      resolve(systemModal.returnValue || "cancel");
-    };
+    systemModal.onclose = () => settle(systemModal.returnValue || "cancel");
+    // Escape answers Cancel here and stops there. Left to bubble, the desk's
+    // own Escape also brakes the running task behind the dialog (wireup's
+    // keydown handler), so one press meant two things at once.
+    if (!systemModal.dataset.escapeWired) {
+      systemModal.dataset.escapeWired = "true";
+      systemModal.addEventListener("keydown", (event) => {
+        if (event.key !== "Escape") return;
+        event.preventDefault();
+        event.stopPropagation();
+        systemModal.close("cancel");
+      });
+    }
 
     if (type === "save") {
       systemModalCancel.hidden = false;
@@ -42,7 +121,7 @@ function showSystemModal(message, type = "confirm", options = {}) {
       systemModalYes.textContent = t(options.confirmKey || "ok");
     }
 
-    modalScrim.classList.remove("is-hidden");
+    setModalScrimHidden(false);
     systemModal.showModal();
     // showModal()'s own initial-focus algorithm lands on the first focusable
     // descendant in tree order, which is Cancel — not whichever button just
@@ -77,6 +156,28 @@ function showInputDialog({
       resolve(null);
       return;
     }
+    // The same rule as the system modal: one question, one answer. A second
+    // input dialog settles the first as a cancel instead of leaving its caller
+    // waiting forever behind a replaced handler.
+    const previousDialog = activeInputDialog;
+    if (previousDialog) {
+      try {
+        previousDialog.dialog?.close?.("cancel");
+      } catch {}
+      previousDialog.settle(null);
+    }
+    const invoker = modalInvoker();
+    let settled = false;
+    const settle = (value) => {
+      if (settled) return;
+      settled = true;
+      if (activeInputDialog?.settle === settle) activeInputDialog = null;
+      setModalScrimHidden(true);
+      document.body.classList.remove("has-system-modal");
+      restoreFocusAfterModal(invoker);
+      resolve(value);
+    };
+    activeInputDialog = { dialog, settle };
 
     const input = multiline ? textarea : field;
     field.hidden = multiline;
@@ -101,14 +202,10 @@ function showInputDialog({
       });
     }
 
-    dialog.onclose = () => {
-      modalScrim.classList.add("is-hidden");
-      document.body.classList.remove("has-system-modal");
-      resolve(dialog.returnValue === "ok" ? input.value : null);
-    };
+    dialog.onclose = () => settle(dialog.returnValue === "ok" ? input.value : null);
 
     playSystemSound("alert");
-    modalScrim.classList.remove("is-hidden");
+    setModalScrimHidden(false);
     document.body.classList.add("has-system-modal");
     if (dialog.open) dialog.close("cancel");
     dialog.showModal();

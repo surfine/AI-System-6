@@ -127,7 +127,16 @@ test("revision durability: backups carry revisions through a wipe and restore", 
   expect(backupDownload).toBeTruthy();
   const backupPath = await backupDownload.path();
   const backupJson = JSON.parse(readFileSync(backupPath, "utf8"));
-  expect(backupJson.formatVersion).toBe(3);
+  // The current format, read from the module that defines it rather than
+  // pinned here: v3 was when revisions joined the backup, and the format has
+  // moved on since (v4 working session, v5 darkroom, v6 pictures, v7 image
+  // inputs). A hard-coded number is a test that fails the next time the schema
+  // grows, which is a normal thing for this schema to do.
+  const currentFormatVersion = await page.evaluate(
+    () => window.AISystem6ProjectDiskBackup?.currentFormatVersion
+  );
+  expect(currentFormatVersion).toBeGreaterThanOrEqual(3);
+  expect(backupJson.formatVersion).toBe(currentFormatVersion);
   expect(backupJson.documentRevisions).toBeDefined();
   expect(backupJson.documentRevisions.length).toBeGreaterThanOrEqual(2);
 

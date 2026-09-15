@@ -148,7 +148,7 @@
       "--active-window-shadow": "0 8px 15px rgba(0,0,0,0.045),0 28px 68px rgba(18,28,38,0.1)",
       "--glass-accent": "#0a84ff",
       "--glass-border": "rgba(255,255,255,0.72)",
-      "--liquid-window-radius": "18px",
+      "--liquid-window-radius": "",
       "--print-directory-preview-bg": "linear-gradient(180deg,rgba(255,255,255,0.92),rgba(246,251,253,0.86)),rgba(246,251,253,0.9)",
       "--file-preview-bg": "linear-gradient(180deg,rgba(255,255,255,0.92),rgba(246,251,253,0.86)),rgba(246,251,253,0.9)",
       "--project-cd-grid-bg": "linear-gradient(180deg,rgba(255,255,255,0.34),rgba(255,255,255,0.12)),rgba(255,255,255,0.14)",
@@ -179,7 +179,7 @@
       "_h": 24
     },
     ".window.is-active": {
-      "border-radius": "18px",
+      "border-radius": "24px",
       "background-color": "rgba(255, 255, 255, 0.14)",
       "box-shadow": "rgba(0, 0, 0, 0.043) 0px 8px 15px 0px, rgba(18, 28, 38, 0.1) 0px 28px 68px 0px",
       "border-top-width": "0px",
@@ -220,7 +220,7 @@
     },
     ".window.is-active > .window-pane": null,
     ".btn": {
-      "border-radius": "10px",
+      "border-radius": "12px",
       "padding-top": "2px",
       "padding-right": "12px",
       "padding-bottom": "2px",

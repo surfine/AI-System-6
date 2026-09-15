@@ -428,9 +428,17 @@ function loadStylesheetOnce(href) {
 
 function createLazyModuleLoader(flag, sources, resolveData = false, stylesheets = []) {
   let loadPromise = null;
+  // A classic script that loaded but did not install its API has already run
+  // its top-level statements: registrations, listeners, timers. Re-inserting
+  // it would run them a second time, so this is remembered and reported
+  // instead of retried - recovery is a reload (retryBoot), not another insert.
+  let ranWithoutInstalling = false;
   return async function ensureLazyModuleLoaded() {
     if (flag && window[flag]) return resolveData ? (window[flag] || {}) : true;
     if (loadPromise) return loadPromise;
+    if (ranWithoutInstalling) {
+      throw new Error(`${flag || sources.join(", ")} ran without installing its API; reload to recover.`);
+    }
     // The stylesheet request starts in parallel with the module and is awaited
     // with it, so the two arrive together.
     const styleChain = Promise.all(stylesheets.map((href) => loadStylesheetOnce(href)));
@@ -445,11 +453,14 @@ function createLazyModuleLoader(flag, sources, resolveData = false, stylesheets 
         // against an uninstalled module.
         if (flag && !window[flag]) {
           sources.forEach(removeLazyScriptNode);
+          ranWithoutInstalling = true;
           throw new Error(`${flag} did not install after loading ${sources.join(", ")}`);
         }
         return resolveData ? (window[flag] || {}) : true;
       })
       .catch((error) => {
+        // A rejected chain is a transfer/parse failure: nothing of this load
+        // ran, so the next call may try again.
         loadPromise = null;
         throw error;
       });
@@ -524,6 +535,12 @@ const ensureDictationPadModule = createLazyModuleLoader("AISystem6DictationPadLo
 ]);
 const ensureHoldThatThoughtModule = createLazyModuleLoader("AISystem6HoldThatThoughtLoaded", ["app/core/application-shell.js", "app/features/hold-that-thought.js"]);
 const ensureProjectPeekModule = createLazyModuleLoader("AISystem6ProjectPeekLoaded", ["app/core/application-shell.js", "app/features/project-peek.js"]);
+// The backup schema and the assembler that reads it travel with an export or
+// a restore, not with every boot.
+const ensureProjectDiskBackupModule = createLazyModuleLoader("AISystem6ProjectDiskBackupLoaded", ["app/core/project-disk-backup.js"]);
+// The save-plan shadow comparison: a development instrument, loaded by the
+// check that uses it rather than carried by every desk.
+const ensureScanShadowModule = createLazyModuleLoader("AISystem6ScanShadow", ["app/core/persistence-scan-shadow.js"]);
 const ensureVideoTranscriptModule = createLazyModuleLoader("AISystem6VideoTranscriptLoaded", ["app/features/video-transcript.js"]);
 const ensureVideoDocMapModule = createLazyModuleLoader("AISystem6VideoDocMapLoaded", ["app/features/video-docmap.js"]);
 const ensureFindPathModule = createLazyModuleLoader("AISystem6FindPathLoaded", ["app/features/findpath.js"]);

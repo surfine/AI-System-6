@@ -974,17 +974,24 @@ async function postJsonWithFallback(targetUrl, payload, signal, extraHeaders = {
     };
   }
 
+  const pending = fetch(targetUrl, {
+    method: "POST",
+    redirect: "error",
+    signal: signal ?? undefined,
+    headers: {
+      "Content-Type": "application/json",
+      ...extraHeaders,
+    },
+    body: JSON.stringify(payload),
+  });
+  // The node transport reports "the request is on the wire" from the request's
+  // own `finish` event. This transport has to report the same moment, or a
+  // caller that keeps a shared-allowance reservation for a request that was
+  // sent and then cut off would release it instead: the callback would never
+  // run, and the call would look like one that never happened.
+  if (typeof options.onRequest === "function") options.onRequest();
   return {
-    response: boundedFetchResponse(await fetch(targetUrl, {
-      method: "POST",
-      redirect: "error",
-      signal: signal ?? undefined,
-      headers: {
-        "Content-Type": "application/json",
-        ...extraHeaders,
-      },
-      body: JSON.stringify(payload),
-    }), options.maxBytes),
+    response: boundedFetchResponse(await pending, options.maxBytes),
     fallback: false,
     transport: "fetch",
   };

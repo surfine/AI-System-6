@@ -17,7 +17,7 @@ if (!ctx.document.createTreeWalker) {
     return { nextNode: () => nodes[i++] || null };
   };
 }
-await ctx.window.AISystem6Runtime.lazyCommands.get("open-endfield-terminal").ensure();
+await ctx.window.AISystem6Runtime.getLazyCommand("open-endfield-terminal").ensure();
 
 const fixture = {
   query: "管理员什么时候认识的提弗洛斯？",

@@ -110,6 +110,7 @@ function stripCloudLocalOnlyFields(payload) {
  *   transportOptions: { maxBytes?: number, pinnedAddress?: string, pinnedFamily?: number },
  *   reserveSharedCall?: (payload: any) => any,
  *   initialUsageTokens?: number,
+ *   onUsage?: (usage: any) => void,
  * }} options
  */
 async function repairCloudHumanizerOutputIfNeeded(options) {
@@ -165,6 +166,10 @@ async function repairCloudHumanizerOutputIfNeeded(options) {
         break;
       }
       const repairUsage = usageTokenTotal(repairData?.usage);
+      // Each repair call is its own upstream call: the run's ledger books it
+      // whether or not its usage arrived, so a missing figure widens the
+      // unknown instead of vanishing into the total.
+      options.onUsage?.(repairData?.usage);
       if (repairUsage !== null) {
         repairReservation?.addUsage(repairData.usage);
         totalUsageTokens += repairUsage;
@@ -216,6 +221,33 @@ function isBudgetStarvedCompletion(data) {
 }
 
 /**
+ * What the run cost, as opposed to what the answer says.
+ *
+ * `data.usage` describes the reply that survived; a run that answered twice
+ * paid for two calls. The returned object keeps the answering call's own
+ * prompt/completion numbers - callers show those - and carries the run total
+ * the caller can add up. When any call never reported its usage the total is
+ * marked as unknown rather than presented as an exact figure.
+ *
+ * @param {any} finalUsage
+ * @param {number} knownTokens
+ * @param {boolean} unknown
+ */
+function cloudRunUsageMetrics(finalUsage, knownTokens, unknown) {
+  if (!finalUsage && !knownTokens && !unknown) return null;
+  const usage = { ...(finalUsage || {}) };
+  if (unknown) {
+    // A call that never reported its usage makes the total a floor, not a
+    // measurement: say so, and do not print a precise-looking zero.
+    usage.total_tokens_known = false;
+    if (knownTokens > 0) usage.total_tokens = knownTokens;
+  } else {
+    usage.total_tokens = knownTokens;
+  }
+  return usage;
+}
+
+/**
  * Run the same request once more with thinking off. The answer budget is
  * unchanged, so the tokens that went into the truncated thinking chain go to
  * the answer instead. Returns null when the retry is not usable.
@@ -237,14 +269,21 @@ async function retryWithoutThinking({ payload, targetUrl, signal, authHeaders, t
   let reservation = null;
   try {
     if (reserveSharedCall) reservation = reserveSharedCall(retryPayload);
+    // The retry is a request of its own, so it is marked the same way every
+    // other send path marks one: from the moment the request is on the wire.
+    // Waiting for the response means a request that was sent and then cut off
+    // looks like one that was never sent, and its reservation is released
+    // instead of retained for a call that really happened.
     const { response } = await postJsonWithFallback(
       targetUrl,
       retryPayload,
       signal,
       authHeaders,
-      transportOptions
+      {
+        ...transportOptions,
+        onRequest: () => reservation?.markUpstreamStarted(),
+      }
     );
-    reservation?.markUpstreamStarted();
     const text = await response.text();
     if (!response.ok) return null;
     if (!(response.headers.get("content-type") || "").includes("application/json")) return null;
@@ -520,8 +559,34 @@ async function handleCloudChat(req, res) {
       return;
     }
 
+    // The run's own ledger, one entry per upstream call.
+    //
+    // The answer that is RETURNED is not the sum of what the run cost: a
+    // thinking fallback replaces the first answer, and a humanizer repair
+    // replaces it again, so reading the total off the surviving `data` charges
+    // the run for whichever call happened to be last. Each call books its own
+    // usage here, and a call whose usage never arrived leaves the total marked
+    // unknown instead of reporting a smaller, precise-looking number.
+    let knownUsageTokens = 0;
+    let usageIsUnknown = false;
+    const noteRunUsage = (usage) => {
+      const total = usageTokenTotal(usage);
+      if (total === null) usageIsUnknown = true;
+      else knownUsageTokens += total;
+      return total;
+    };
+    /** @type {number | null | undefined} what the first answer reported */
+    let firstAnswerUsageTokens;
+    /** @type {number | null | undefined} undefined = this run never retried */
+    let retriedUsageTokens;
+
     if (policy.thinking && isBudgetStarvedCompletion(data)) {
-      if (usageTokenTotal(data?.usage) !== null) sharedReservation?.addUsage(data.usage);
+      // The first request's usage is booked here, once, and before anything
+      // decides to retry. Booking it afterwards is what charged the first
+      // reservation for both calls: the answer the retry returned was added to
+      // the request it replaced, on top of the retry's own settlement.
+      firstAnswerUsageTokens = usageTokenTotal(data?.usage);
+      if (firstAnswerUsageTokens !== null) sharedReservation?.addUsage(data.usage);
       const retried = await retryWithoutThinking({
         payload,
         targetUrl,
@@ -534,6 +599,12 @@ async function handleCloudChat(req, res) {
               const reservation = reserveSharedCloudRequest({
                 sessionNonce: publicSession?.nonce || "",
                 payload: retryPayload,
+                // One reservation per call, at the weight of the model that
+                // will answer. This retry runs with thinking disabled, so the
+                // headroom the first call reserved for reasoning is plain
+                // answer budget here: no allowance is subtracted, which is
+                // this payload's own budget rule rather than the first
+                // call's.
                 modelWeight: cloudModelBudgetWeight(retryPayload.model),
               });
               if (!reservation.ok) {
@@ -553,6 +624,11 @@ async function handleCloudChat(req, res) {
         }), { "Content-Type": "application/json" });
         return;
       }
+      // A second upstream call answered. It settles on its own reservation
+      // (see retryWithoutThinking); this is the same figure booked once for
+      // the run, or null when that call reported no usage at all - which the
+      // total below must keep visible rather than quietly drop.
+      retriedUsageTokens = usageTokenTotal(retried?.usage);
       retried.ai_system6_thinking_fallback = {
         reason: "reasoning_budget_exhausted",
         retried_without_thinking: true,
@@ -560,8 +636,17 @@ async function handleCloudChat(req, res) {
       data = retried;
     }
 
+    // No fallback: this is still the first answer, and its usage belongs to
+    // the first reservation. After a fallback the answer in `data` is the
+    // retry's own, already booked above - so this must not add it to the
+    // first request a second time.
+    if (!data?.ai_system6_thinking_fallback?.retried_without_thinking) {
+      firstAnswerUsageTokens = usageTokenTotal(data?.usage);
+      if (firstAnswerUsageTokens !== null) sharedReservation?.addUsage(data.usage);
+    }
+
+    // What the humanizer is repairing is the answer that will be returned.
     const initialUsageTokens = usageTokenTotal(data?.usage);
-    if (initialUsageTokens !== null) sharedReservation?.addUsage(data.usage);
 
     data = await repairCloudHumanizerOutputIfNeeded({
       data,
@@ -572,12 +657,15 @@ async function handleCloudChat(req, res) {
       authHeaders,
       transportOptions,
       initialUsageTokens: initialUsageTokens || 0,
+      onUsage: noteRunUsage,
       reserveSharedCall: usingSharedCloud
         ? (repairPayload) => {
             const publicSession = sharedSessionFromRequest(req);
             const reservation = reserveSharedCloudRequest({
               sessionNonce: publicSession?.nonce || "",
               payload: repairPayload,
+              reasoningAllowance,
+              modelWeight: cloudModelBudgetWeight(repairPayload.model),
             });
             if (!reservation.ok) {
               const error = /** @type {Error & { code?: string }} */ (new Error(reservation.detail));
@@ -588,14 +676,21 @@ async function handleCloudChat(req, res) {
           }
         : undefined,
     });
+
+    // Assemble the run's ledger from the calls that actually happened: the
+    // first answer, the retry that replaced it if there was one, and anything
+    // the humanizer repaired. Each is booked once.
+    [firstAnswerUsageTokens, retriedUsageTokens].forEach((tokens) => {
+      if (tokens === null) usageIsUnknown = true;
+      else if (typeof tokens === "number") knownUsageTokens += tokens;
+    });
+
     const choice = data && data.choices ? data.choices[0] : {};
     data.ai_system6_metrics = {
       elapsed_ms: Date.now() - startedAt,
       finish_reason: choice.finish_reason || data.stop_reason || "",
       model: data.model || payload.model || "",
-      usage: data.ai_system6_humanizer?.total_usage_tokens
-        ? { ...(data.usage || {}), total_tokens: data.ai_system6_humanizer.total_usage_tokens }
-        : data.usage || null,
+      usage: cloudRunUsageMetrics(data.usage, knownUsageTokens, usageIsUnknown),
     };
 
     send(res, upstream.status, JSON.stringify(data), {

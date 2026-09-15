@@ -69,7 +69,8 @@ test.assert(
 // the shortcut's own scope window is itself lazy.
 const handlers = vmw.context.getApplicationActionHandlers();
 const commandRegistry = vmw.context.getApplicationCommandRegistry();
-const lazyCommands = vmw.context.window.AISystem6Runtime.lazyCommands;
+const lazyCommands = new Map(vmw.context.window.AISystem6Runtime.listLazyCommands()
+  .map((id) => [id, vmw.context.window.AISystem6Runtime.getLazyCommand(id)]));
 const windowRecords = windowRegistryRecords();
 const deadShortcutActions = registry
   .filter((entry) => entry.dispatch !== false)

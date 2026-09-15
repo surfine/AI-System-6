@@ -8,8 +8,10 @@ import { bootApp, dismissGuide, openWindow } from "./helpers.mjs";
 
 async function enableControlStrip(page) {
   await openWindow(page, "control");
-  await page.click('[data-control-tab="general"]');
-  await page.check("#control-strip");
+  // The Control Panel groups its switches into tabs; the strip's own switch
+  // lives on the Strip tab and is spelled for what it controls.
+  await page.click('[data-control-tab="strip"]');
+  await page.check("#control-strip-show");
   await page.waitForFunction(() => window.AISystem6ControlStrip?.isEnabled?.() === true, null, { timeout: 40_000 });
   await page.waitForSelector('[data-control-strip]', { state: "visible", timeout: 40_000 });
 }
@@ -67,7 +69,7 @@ async function restoreStripAfterReload(page) {
   await page.reload();
   await page.waitForFunction(() => document.body.dataset.appReady === "ready", null, { timeout: 45_000 });
   await page.evaluate(() => {
-    const input = document.querySelector("#control-strip");
+    const input = document.querySelector("#control-strip-show");
     if (input?.checked && typeof applyControlStripState === "function") {
       applyControlStripState({ silent: true });
     }

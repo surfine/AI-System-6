@@ -232,7 +232,7 @@ test.describe("module-specific failure and retry", () => {
     });
 
     const pending = page.evaluate(() => {
-      document.querySelector("#control-strip").checked = true;
+      document.querySelector("#control-strip-show").checked = true;
       return window
         .applyControlStripState()
         .catch((error) => ({ rejected: error && error.message }));

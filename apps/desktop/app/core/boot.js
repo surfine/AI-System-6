@@ -4,13 +4,16 @@ let bootInProgress = false;
 
 function registerRuntimeRenderTasks() {
   const tasks = {
-    projectLabels: updateProjectLabels,
-    projectDisks: renderProjectDisks,
-    documents: renderDocuments,
-    scraps: renderScraps,
-    trash: renderTrash,
-    projectCd: renderProjectCd,
-    projectReferences: renderProjectReferences,
+    // The window name is optional and is what lets a hidden window keep its
+    // pending repaint until it is shown again; a task with no owner runs as
+    // before.
+    projectLabels: [updateProjectLabels, "projects"],
+    projectDisks: [renderProjectDisks, "projects"],
+    documents: [renderDocuments, "documents"],
+    scraps: [renderScraps, "scrapbook"],
+    trash: [renderTrash, "trash"],
+    projectCd: [renderProjectCd, "projectCd"],
+    projectReferences: [renderProjectReferences, "projects"],
     mountedTextDisk: renderMountedTextDisk,
     contextPanel: renderContextPanel,
     pipeline: renderPipeline,
@@ -20,9 +23,10 @@ function registerRuntimeRenderTasks() {
     aboutMacintosh: renderAboutMacintosh,
     localModelState: renderLocalModelState,
   };
-  Object.entries(tasks).forEach(([task, handler]) => {
+  Object.entries(tasks).forEach(([task, entry]) => {
+    const [handler, windowName] = Array.isArray(entry) ? entry : [entry, ""];
     if (typeof handler === "function") {
-      window.AISystem6Runtime?.registerRenderTask?.(task, handler);
+      window.AISystem6Runtime?.registerRenderTask?.(task, handler, windowName ? { windowName } : {});
     }
   });
 }
@@ -270,6 +274,11 @@ async function boot() {
     // entry carries its own catch that still leaves a trace.
     await Promise.all([
       runBootStep(t("alarm_clock"), () => ensureAlarmClockModule(), queueEarlyBootFailure),
+      // Not deferrable after all: applySettings() restores the saved Page Setup
+      // through this module while loadDeskState() runs, so the print module has
+      // to be present before the desk state is applied. Measuring first is what
+      // caught it - a deferred preload here left restorePageSetupState undefined
+      // and boot failed outright in the browser.
       runBootStep(t("project_cd"), () => ensureProjectCdPrintModule(), queueEarlyBootFailure),
       ...[ensureContextGistModule, ensureDocMapSourcePolicyModule, ensureUserRecoveryMessagesModule, ensureDocumentRolePolicyModule]
         .map((load) => load().catch((error) => console.warn("AI System 6 boot: a context/policy module failed to load.", error))),
@@ -381,7 +390,9 @@ async function boot() {
     // Once the desktop is actually on screen: this one measures whether the
     // icon column wrapped, so it needs the column placed, not merely present.
     await runBootStep("Desktop icon layout", () => syncIconColumnDensity?.());
-    setInterval(updateClock, 1000);
+    // The clock face is hours and minutes, so it ticks on the minute instead
+    // of repainting the same two digits every second.
+    startSystemClock();
     startLocalModelMonitor();
   } catch (error) {
     console.error("AI System 6 boot failed", error);

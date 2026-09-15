@@ -306,7 +306,7 @@ function installProbe() {
         : null;
       let lazyOnly = false;
       if (!command) {
-        const lazy = window.AISystem6Runtime?.lazyCommands?.get?.(norm);
+        const lazy = window.AISystem6Runtime?.getLazyCommand?.(norm);
         if (lazy) {
           lazyOnly = true;
           try {

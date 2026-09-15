@@ -429,6 +429,11 @@ function saveImageAttachments(records) {
     const index = imageAttachments.findIndex((item) => item && item.id === record.id);
     if (index >= 0) imageAttachments.splice(index, 1, record);
     else imageAttachments.unshift(record);
+    // Pictures are their own collection, and saving one twice replaces a
+    // record that is already on disk. Say which record moved, so a save plan
+    // that trusts the writers instead of scanning every record still carries
+    // it - the same reason every other collection's writers report.
+    markDeskDirty("imageAttachments", record.id);
   });
 }
 
@@ -440,6 +445,7 @@ function removeImageAttachment(id) {
   const index = imageAttachments.findIndex((item) => item && item.id === String(id || ""));
   if (index < 0) return false;
   imageAttachments.splice(index, 1);
+  markDeskDeleted("imageAttachments", id);
   return true;
 }
 

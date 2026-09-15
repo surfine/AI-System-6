@@ -38,24 +38,30 @@ test("persistent fence: two pages hand off safely and reject the old epoch", asy
   const pageB = await context.newPage();
   await bootApp(pageB);
 
-  await expect.poll(() => pageA.evaluate(() => window.AISystem6WriteLease.isOwner())).toBe(true);
-  await expect.poll(() => pageB.evaluate(() => window.AISystem6WriteLease.isReadOnly())).toBe(true);
-  expect(await transactionProbe(pageB)).toEqual({ ok: false, code: "READ_ONLY_INSTANCE" });
+  // The desk is written by one window, and this model makes the newcomer the
+  // one that holds the pen: the window that just opened takes the fence, and
+  // the window already on the desk keeps typing - its surfaces stay editable,
+  // and its writes travel through the holder. This spec used to assert the
+  // opposite (the first window stayed the writer and the second arrived
+  // read-only behind a takeover modal), which is the model this desk left.
+  await expect.poll(() => pageB.evaluate(() => window.AISystem6WriteLease.isOwner())).toBe(true);
+  await expect.poll(() => pageA.evaluate(() => window.AISystem6WriteLease.isOwner())).toBe(false);
+  expect(await transactionProbe(pageA)).toEqual({ ok: false, code: "READ_ONLY_INSTANCE" });
 
-  // A has passed the fast in-memory check. Its captured epoch must still be
-  // rejected if B completes a takeover before A opens the data transaction.
-  const oldFence = await pageA.evaluate(() => window.AISystem6WriteLease.assertCanWrite());
-  const takeover = await pageB.evaluate(() => window.AISystem6WriteLease.requestTakeover());
+  // B has passed the fast in-memory check. Its captured epoch must still be
+  // rejected if A completes a takeover before B opens the data transaction.
+  const oldFence = await pageB.evaluate(() => window.AISystem6WriteLease.assertCanWrite());
+  const takeover = await pageA.evaluate(() => window.AISystem6WriteLease.requestTakeover());
   expect(takeover).toMatchObject({ ok: true, writer: true });
-  await expect.poll(() => pageA.evaluate(() => window.AISystem6WriteLease.isReadOnly())).toBe(true);
+  await expect.poll(() => pageB.evaluate(() => window.AISystem6WriteLease.isReadOnly())).toBe(true);
 
-  expect(await transactionProbe(pageA, { expectedFence: oldFence, value: "stale" }))
+  expect(await transactionProbe(pageB, { expectedFence: oldFence, value: "stale" }))
     .toEqual({ ok: false, code: "STALE_WRITE_FENCE" });
-  expect(await transactionProbe(pageB, { value: "writer-b" })).toEqual({ ok: true });
+  expect(await transactionProbe(pageA, { value: "writer-a" })).toEqual({ ok: true });
 
-  // A's late pagehide/release cannot clear B's owner+epoch tombstone.
-  await pageA.evaluate(() => window.AISystem6WriteLease.release());
-  const fenceAfterLateRelease = await pageB.evaluate(async () => {
+  // B's late pagehide/release cannot clear A's owner+epoch tombstone.
+  await pageB.evaluate(() => window.AISystem6WriteLease.release());
+  const fenceAfterLateRelease = await pageA.evaluate(async () => {
     const db = await openAppDb();
     try {
       return await window.AISystem6StorageTransactions.readWriteFence(db);
@@ -63,22 +69,28 @@ test("persistent fence: two pages hand off safely and reject the old epoch", asy
       db.close();
     }
   });
-  const bIdentity = await pageB.evaluate(() => ({
+  const aIdentity = await pageA.evaluate(() => ({
     ownerId: window.AISystem6WriteLease.instanceId,
     epoch: window.AISystem6WriteLease.assertCanWrite().epoch,
   }));
-  expect(fenceAfterLateRelease).toMatchObject(bIdentity);
+  expect(fenceAfterLateRelease).toMatchObject(aIdentity);
 
-  // Read-only is limited to mutation: backup/Get Info controls remain usable.
-  const readonlySurface = await pageA.evaluate(() => ({
-    mutatingDisabled: document.querySelector("#new-project-disk")?.disabled === true,
+  // Read-only no longer freezes the interface: backup and Get Info stay
+  // usable, and so do the controls whose writes travel through the holder. The
+  // fence below the interface is what refuses an unproxied write, which is the
+  // assertion that still means something.
+  const readonlySurface = await pageB.evaluate(() => ({
     exportDisabled: document.querySelector("#export-project-disk")?.disabled === true,
+    newProjectDisabled: document.querySelector("#new-project-disk")?.disabled === true,
+    typingAllowed: !(document.querySelector("#question-sheet-body")?.readOnly === true),
   }));
-  expect(readonlySurface).toEqual({ mutatingDisabled: true, exportDisabled: false });
+  expect(readonlySurface).toEqual({ exportDisabled: false, newProjectDisabled: false, typingAllowed: true });
 
   // A foreground/BFCache-style reconciliation verifies IndexedDB and never
-  // reclaims B's fence.
-  const reconciled = await pageA.evaluate(() => window.AISystem6WriteLease.reconcile());
+  // reclaims the holder's fence.
+  const reconciled = await pageB.evaluate(() => window.AISystem6WriteLease.reconcile());
   expect(reconciled).toMatchObject({ readOnly: true });
-  expect(await transactionProbe(pageB, { value: "writer-b-after-reconcile" })).toEqual({ ok: true });
+  expect(await transactionProbe(pageA, { value: "writer-a-after-reconcile" })).toEqual({ ok: true });
+  expect(await transactionProbe(pageB, { value: "stale-b-after-reconcile" }))
+    .toEqual({ ok: false, code: "READ_ONLY_INSTANCE" });
 });

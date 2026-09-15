@@ -487,12 +487,18 @@ function wireAppEvents() {
     // stale Manuscript/Draft marker can't make a later command read the wrong
     // surface. The resolver maps "questionSheet" to the Outline default.
     if (typeof noteWritingSurfaceEdit === "function") noteWritingSurfaceEdit("questionSheet");
+    // Dirty at the keystroke, not when a timer expires. The guard that decides
+    // whether another window's version may replace this record asks the
+    // record, and a keystroke the save has not carried yet is exactly the
+    // state it has to see.
+    if (typeof markActiveProjectDirty === "function") markActiveProjectDirty();
     savePipelineData();
     refreshTeachTextSurfacePreview("questionSheet");
   });
 
   outlineContentEl.addEventListener("input", () => {
     if (typeof noteWritingSurfaceEdit === "function") noteWritingSurfaceEdit("outline");
+    if (typeof markActiveProjectDirty === "function") markActiveProjectDirty();
     savePipelineData();
     refreshTeachTextSurfacePreview("outline");
   });
@@ -509,6 +515,7 @@ function wireAppEvents() {
 
   draftBodyInput.addEventListener("input", () => {
     if (typeof noteWritingSurfaceEdit === "function") noteWritingSurfaceEdit("draft");
+    if (typeof markActiveProjectDirty === "function") markActiveProjectDirty();
     savePipelineData();
     updateDraftVoiceStats();
     refreshTeachTextSurfacePreview("sectionDrafts");

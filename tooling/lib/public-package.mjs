@@ -56,7 +56,6 @@ export const publicScriptNames = new Set([
   "verify:docs",
   "verify:src",
   "verify:floppy",
-  "perf:budget",
   "verify:quick",
   "verify:features",
   "verify:feature",

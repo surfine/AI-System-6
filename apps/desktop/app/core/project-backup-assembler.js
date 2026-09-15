@@ -31,6 +31,9 @@ window.AISystem6ProjectBackupAssembler = (() => {
    * } }} options
    */
   async function assembleProjectBackup({ projectId, source }) {
+    // The assembler needs the schema's format version, integrity and validator;
+    // both are lazy now, and the assembler's own loader brings the schema too.
+    if (typeof ensureProjectDiskBackupModule === "function") await ensureProjectDiskBackupModule();
     const project = await source.getProject(projectId);
     if (!project) return null;
     // The desktop scene is optional: a disk with no scene exports as before,

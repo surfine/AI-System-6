@@ -1561,7 +1561,8 @@ function renderBackupPreview(bundle, fileName = "", validation = null) {
   if (importProjectBackupButton) importProjectBackupButton.disabled = false;
 }
 
-function remapProjectDiskBackup(bundle) {
+async function remapProjectDiskBackup(bundle) {
+  if (typeof ensureProjectDiskBackupModule === "function") await ensureProjectDiskBackupModule();
   return window.AISystem6ProjectDiskBackup.remapBackup(bundle, {
     projectName(name) {
       return uniqueProjectName(`${name || t("untitled_project")} Restored`);
@@ -1592,6 +1593,7 @@ async function commitImportedProjectAtomically(imported) {
       // back to the old project -- the freshly restored/created one stayed on
       // disk but was never seen again until the user re-selected it by hand.
       startupProjectId: imported.project.id,
+      startupProjectPinned: true,
       projectMounted: true,
       projectCdItems: importedProjectCdItems,
     };
@@ -1688,6 +1690,7 @@ async function commitImportedProjectAtomically(imported) {
 }
 
 async function importProjectBackupAsNewProject(backup = previewedProjectBackup) {
+  if (typeof ensureProjectDiskBackupModule === "function") await ensureProjectDiskBackupModule();
   const backupTools = window.AISystem6ProjectDiskBackup;
   const validation = backupTools.validateBackup(backup);
   const integrity = validation.valid
@@ -1700,7 +1703,7 @@ async function importProjectBackupAsNewProject(backup = previewedProjectBackup) 
 
   setControlLoading(importProjectBackupButton, true, t("backup_importing"));
   try {
-    const imported = remapProjectDiskBackup(backup);
+    const imported = await remapProjectDiskBackup(backup);
     // Protect the imported documents' version history BEFORE any mutation:
     // if a revision cannot be persisted, the import aborts cleanly instead
     // of importing content with no recovery point.
@@ -1731,6 +1734,8 @@ async function importProjectBackupAsNewProject(backup = previewedProjectBackup) 
     // saveDeskState() below recomputes its settings snapshot from the live
     // globals and would overwrite that value with the old project's id.
     startupProjectId = imported.project.id;
+    // A restored disk is the desk's new home: pin it, so a reload lands there.
+    startupProjectPinned = true;
     selectedProjectId = imported.project.id;
     selectedFolderId = "all";
     clearProjectTransientState();
@@ -1840,6 +1845,9 @@ async function previewProjectBackupFile() {
   }
 
   try {
+    // The schema's own limits and validators live with the backup module, so
+    // the preview is the first place a restore needs it.
+    if (typeof ensureProjectDiskBackupModule === "function") await ensureProjectDiskBackupModule();
     if (file.size > window.AISystem6ProjectDiskBackup.maxBackupBytes) {
       renderBackupPreview({});
       importStatusEl.textContent = t("backup_preview_too_large");

@@ -1493,7 +1493,7 @@ function getApplicationActionHandlers() {
 // Commands are only ever added, never removed, so the runtime map's size is a
 // sound key: it changes exactly when there is something new to fold in.
 function getApplicationCommandRegistry() {
-  const runtimeCommandCount = window.AISystem6Runtime?.c?.size || 0;
+  const runtimeCommandCount = window.AISystem6Runtime?.commandCount?.() || 0;
   if (applicationCommandRegistryCache && applicationCommandRegistryRuntimeCount === runtimeCommandCount) {
     return applicationCommandRegistryCache;
   }
@@ -1506,7 +1506,7 @@ function getApplicationCommandRegistry() {
       shortcut: () => keyboardShortcutRegistry.find((entry) => entry.action === action) || null,
     })])
   );
-  window.AISystem6Runtime?.c?.forEach((command, action) => applicationCommandRegistryCache.set(action, Object.freeze({ id: action, handler: (context) => command.handler(context), isAvailable: () => isWorkspaceActionAllowed(action) && command.isAvailable() !== false, shortcut: () => keyboardShortcutRegistry.find((entry) => entry.action === action) || null })));
+  window.AISystem6Runtime?.forEachCommand?.((command, action) => applicationCommandRegistryCache.set(action, Object.freeze({ id: action, handler: (context) => command.handler(context), isAvailable: () => isWorkspaceActionAllowed(action) && command.isAvailable() !== false, shortcut: () => keyboardShortcutRegistry.find((entry) => entry.action === action) || null })));
   return applicationCommandRegistryCache;
 };
 
@@ -1549,7 +1549,7 @@ async function handleAction(action, commandContext = {}) {
   }
   let command = getApplicationCommandRegistry().get(action);
   if (!command) {
-    const lazy = window.AISystem6Runtime?.lazyCommands?.get?.(action);
+    const lazy = window.AISystem6Runtime?.getLazyCommand?.(action);
     if (lazy) {
       try {
         await lazy.ensure();
@@ -1792,7 +1792,23 @@ window.AISystem6Runtime?.registerCommand?.("open-system-prompt-file",{
   },
   isAvailable:()=>!0
 });
-window.AISystem6Runtime?.registerCommand?.("open-chat-file",{handler:({fileId=""}={})=>openChatFileWindow(fileId),isAvailable:()=>!0});
+// One entry for "open this file", shared with the Finder's own double-click and
+// the Open Recent rows. Availability is answered by the same resolver the
+// execution uses, so a row that names a file another window has deleted (or one
+// from a project the writer has left) is refused with a reason instead of
+// opening an empty window.
+window.AISystem6Runtime?.registerCommand?.("open-chat-file",{
+  handler:({fileId=""}={})=>{
+    const registry = window.AISystem6ApplicationRegistry;
+    if (typeof registry?.openProjectObject === "function") return registry.openProjectObject(fileId, "open");
+    return { ok: false, reason: "no-registry" };
+  },
+  isAvailable:({fileId=""}={})=>{
+    const registry = window.AISystem6ApplicationRegistry;
+    if (typeof registry?.applicationObjectAvailability !== "function") return true;
+    return registry.applicationObjectAvailability(fileId, "open").available === true;
+  },
+});
 window.AISystem6Runtime?.registerCommand?.("open-droplet",{handler:({dropletId=""}={})=>{const command=typeof getScriptableCommand==="function"?getScriptableCommand(dropletId):null;const name=command&&typeof dropletName==="function"?dropletName(command):t("droplet");showSystemModal(t("droplet_open_explainer",name),"alert");},isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-control-strip-modules",{handler:()=>openWindow("controlStripModules"),isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-control-strip-module",{handler:({controlStripModuleId})=>{ensureControlStripModulesFolderModule().then(()=>window.AISystem6ControlStripModulesFolder?.openModule?.(controlStripModuleId)).catch(error=>console.warn("Control Strip Modules folder unavailable.",error));},isAvailable:()=>!0});

@@ -2747,6 +2747,7 @@ function openSavedDocMapFile(file) {
   if (!file.docMap) {
     file.docMap = structuredClone(restoredMap);
     file.updatedAt = new Date().toISOString();
+    markDeskDirty("chatFiles", file.id);
     saveDeskState();
   }
   const map = structuredClone(restoredMap);

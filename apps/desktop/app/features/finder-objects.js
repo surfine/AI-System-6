@@ -227,6 +227,12 @@ function openAliasFile(file) {
   }
   selectedChatFileId = file.id;
   if (typeof openProjectFileWithStationery === "function" && openProjectFileWithStationery(target)) return;
+  // Through the shared entry: an alias target resolved a moment ago is still
+  // re-checked where the open actually happens.
+  if (typeof window.AISystem6ApplicationRegistry?.openProjectObject === "function") {
+    window.AISystem6ApplicationRegistry.openProjectObject(target.id, "open");
+    return;
+  }
   if (target.type === "text") openTextFile(target.id);
   else openChatFileWindow(target.id);
 }

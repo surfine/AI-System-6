@@ -84,8 +84,12 @@ test("durability: StateStore rollback restores memory, UI, and reload state", as
   });
   const commitResult = await page.evaluate(async () => {
     try {
-      await window.AISystem6StateStores.projects.commit(() => {
-        chatFiles.push({
+      // The commit contract is "mutate the draft you are handed". An updater
+      // that pushes onto the live array instead is undone by the merge that
+      // applies the draft, and the save then has nothing to fail over - which
+      // is exactly what this spec used to trip on.
+      await window.AISystem6StateStores.projects.commit((draft) => {
+        draft.chatFiles.push({
           id: "rollback-file",
           projectId: activeProjectId,
           type: "text",

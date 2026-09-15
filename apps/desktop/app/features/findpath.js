@@ -571,6 +571,10 @@ function getFindFileCandidates() {
       text: body,
       open: () => {
         selectedChatFileId = file.id;
+        if (typeof window.AISystem6ApplicationRegistry?.openProjectObject === "function") {
+          window.AISystem6ApplicationRegistry.openProjectObject(file.id, "open");
+          return;
+        }
         if (file.type === "text") openTextFile(file.id);
         else openChatFileWindow(file.id);
       },

@@ -4620,10 +4620,18 @@ async function readChatCompletionStream(response, onToken, signal) {
   let servedModel = "";
   let latestContent = "";
   let toolCalls = [];
+  let streamCompleted = true;
   try {
     const content = await readModelTextStream(response, {
       signal,
       throttleMs: 60,
+      // The reader says whether the stream reached its own completion signal.
+      // A connection that just stops is not the same claim as an answer that
+      // finished, and the difference is what keeps a truncated reply from
+      // being filed as complete.
+      onStreamEnd: (result) => {
+        streamCompleted = result?.completed !== false;
+      },
       onToolCalls: (calls) => {
         toolCalls = Array.isArray(calls) ? calls : [];
       },
@@ -4647,6 +4655,13 @@ async function readChatCompletionStream(response, onToken, signal) {
         servedModel = String(name || "");
       },
     });
+    if (!streamCompleted) {
+      const error = new Error("The model stream ended before it reported that it had finished.");
+      error.code = "model_stream_incomplete";
+      error.partialContent = String(content || "");
+      error.finishReason = "interrupted";
+      throw error;
+    }
     return { content, usage: streamUsage, finishReason, responseId, responseApi, servedModel, toolCalls };
   } catch (error) {
     if (latestContent.trim()) {

@@ -48,11 +48,55 @@ or decline once; the answer is kept in the settings record and listed in
 
 | Level | Chinese | Unlocks |
 | --- | --- | --- |
-| read | 只读 | `get_desk_state`, `list_project_objects`, `read_project_object`, `search_project_sources`, `read_route_document`, `list_file_floppy`, `read_file_floppy_item`, `list_scrapbook_clips`, `list_run_receipts`, `read_run_receipt`, `list_writing_lenses`, `open_writing_lens`, `open_writing_context`, `open_quick_draft_capability`, `validate_capability_result` |
-| propose | 可提议 | read + `put_on_file_floppy`, `submit_review`, `submit_proposal`, `deliver_lens_result`, `deliver_quick_draft_result` |
-| change | 可改动 | propose + `dispatch_intent` (`map` and `review` run at once; `present`, `edit`, `attach`, `export` are parked awaiting commit) |
+| read | 只读 | `get_desk_state`, `list_project_objects`, `read_project_object`, `search_project_sources`, `read_route_document`, `list_file_floppy`, `read_file_floppy_item`, `list_scrapbook_clips`, `list_run_receipts`, `read_run_receipt`, `list_writing_lenses`, `open_writing_lens`, `open_writing_context`, `open_quick_draft_capability`, `validate_capability_result`, `list_writing_route`, `list_desk_applications`, `list_projects`, `map_document`, `list_document_revisions`, `read_document_revision`, `read_darkroom_record`, `list_dictionary_terms`, `read_write_lease`, `list_guests` |
+| propose | 可提议 | read + `put_on_file_floppy`, `submit_review`, `submit_proposal`, `deliver_lens_result`, `deliver_quick_draft_result`, `propose_scrapbook_clip`, `annotate_section` |
+| change | 可改动 | propose + `dispatch_intent` (`map` and `review` run at once; `present`, `edit`, `attach`, `export`, `develop` are parked awaiting commit), `open_application`, `switch_project`, `eject_file_floppy`, `commit_receipt`, `restore_document_revision`, `write_manuscript`, `set_route_document`, `create_scrapbook_clip`, `burn_project_cd`, `mount_file_floppy`, `add_project_reference`, `export_project_disk` |
 
 The writer can lower a guest below what it asked for, never raise it above.
+
+Operating tools go through the same calls the desktop's own controls make —
+`open_application` is the window opener the icons use, `switch_project` is the
+project switcher's own call, `eject_file_floppy` is the Floppy's eject, and
+`commit_receipt` is Run Records' "Get Info → Repeat". There is one code path per
+action; the port does not grow a second one.
+
+`commit_receipt` is what makes 可改动 different from 可提议: a propose-level
+guest can leave work on the desk, and a change-level guest can also finish it.
+Until either the guest commits or the writer does, a parked proposal has changed
+nothing.
+
+Two kinds of parked work sit in the same folder and commit through different
+doors, so `commit_receipt` routes by kind: a receipt carrying a replay contract
+re-runs its application (Run Records → Get Info → Repeat), while a proposal or
+review is text rather than an intent and is adopted the way Review Desk adopts
+it. Committing the wrong door is what made a clip proposal come back
+`ok: false` with no explanation.
+
+Adoption asks a question — "adopt this?" — and who gets asked is decided by the
+grant, not by what the caller is. `adoptGuestReview` keeps its confirmation for
+the button in Review Desk; a guest holding 可改动 adopts without it, because
+that grant already answered the question and the writer can revoke it in
+Chooser → Guests. `awaitWriter: true` puts the dialog back in the way and waits
+for the writer's reply, for callers that want the decision to land visibly.
+
+This is deliberate: the confirmation exists to protect a writer from a
+background agent that was never authorised. It is not a property of the
+software that must survive every caller. 只读 and 可提议 cannot adopt; 可改动
+can, and only the writer hands that out.
+
+`add_project_reference` closes what used to be a hole here. The application has
+no "add this URL as a source" call, so the tool builds the record exactly the
+way the desk builds one when it files a Floppy item into the project
+(`file-disk.js`): same fields, one chunk over the body, the same hash over
+embedding model plus text, stored through `putStoredProjectReference`. A
+reference the desk could not recognise as its own would be worse than none, so
+the shape is copied rather than invented.
+
+`set_route_document` writes the stops above the manuscript — Question Sheet,
+Outline, one section draft — through the surfaces the writer uses.
+`setProjectOutlineMarkdown` is the one road into the outline record because it
+stamps the section record ids the lens and annotation tools take; writing the
+outline around it would hand out ids nothing else knows.
 
 ## What the writer sees
 

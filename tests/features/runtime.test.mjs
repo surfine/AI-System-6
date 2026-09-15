@@ -47,7 +47,7 @@ test.assertNotIncludes(runtimeSource, "indexedDB", "the runtime does not own per
 {
   const { runtime } = createRuntimeContext();
   runtime.registerLazyCommand("reader.lazy", { ensure: () => {} });
-  test.assert(runtime.lazyCommands.has("reader.lazy"), "a lazy command can be registered before its module loads");
+  test.assert(runtime.hasLazyCommand("reader.lazy"), "a lazy command can be registered before its module loads");
 
   const missing = await runtime.dispatchCommand("not-registered", {});
   test.assert(missing.ok === false && missing.status === "unregistered", "an unregistered command fails explicitly");

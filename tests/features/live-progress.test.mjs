@@ -82,14 +82,20 @@ test.assertMatches(
   /function setMirroredEditorValue[\s\S]*?dispatchEvent\(new Event\("input"/,
   "mirrored writes go through the input event so the markdown overlay repaints with them",
 );
-// Every window can be typed in now, so "pure reader" is no longer the same
-// thing as "does not hold the lease". A window with uncommitted typing takes
-// the focus-guarded path whatever the lease says, or the mirror repaints over
-// keystrokes that were never saved.
+// Every window can be typed in, so neither the lease nor the focus decides
+// whether a mirrored message may replace a record. The message is a refresh
+// hint: the window re-reads the stored record through the one entry point that
+// knows which records hold unsaved edits, and a message that was never
+// committed never becomes a version at all.
 test.assertMatches(
   persistence,
-  /const isWriter = window\.AISystem6WriteLease\?\.canMutate\?\.\(\) === true\s*\|\|\s*liveProgressTimer !== 0;[\s\S]*?if \(isWriter\)/,
-  "a window with uncommitted typing keeps the focus-guarded syncs; a pure reader repaints regardless of focus",
+  /function applyMirroredWorkingText\(message\) \{[\s\S]{0,500}?applyDeskRecordChanges\(\{ changes: \[\{ key: "projects", id: project\.id \}\], deletes: \[\] \}\)/,
+  "the mirror refreshes from the stored record instead of assigning the message's text",
+);
+test.assertNotMatches(
+  persistence,
+  /project\.questionSheet = message\.questionSheet/,
+  "an uncommitted message is never written onto the record",
 );
 
 // --- Whatever is persisted is announced (item 9) -------------------------
@@ -112,7 +118,7 @@ test.assertMatches(
 test.assertIncludes(persistence, "function announceWorkingText", "there is one announcement");
 test.assertMatches(
   persistence,
-  /if \(saved\) \{[\s\S]*?announceWorkingText\(\);[\s\S]*?\}/,
+  /const writtenFingerprints = await commitDeskPlansWhereverTheConnectionIs\([\s\S]{0,6000}?announceWorkingText\(\);/,
   "and a successful persist makes it, whether or not anyone was typing",
 );
 test.assertMatches(

@@ -1327,6 +1327,10 @@ let activeProjectId = null;
 let selectedProjectId = null;
 let selectedProjectRootItemId = null;
 let startupProjectId = null;
+// Whether the writer chose that Startup Project Hard Disk or the desk adopted
+// it for itself. The switch above the Finder marks either one the same way, but
+// only a chosen pin outranks the project the writer was last working in.
+let startupProjectPinned = false;
 let startupEnvironment = "finder";
 let startupOpenMode = "cliotalk";
 let startupSelectedApplicationAction = "open-assistant";
@@ -1698,7 +1702,12 @@ async function ensureModelUserErrors() {
 
 let projectBackupAssemblerLoadPromise = null;
 
+// Exporting or restoring a disk needs two lazy pieces: the backup schema
+// (validate / attach integrity / verify / remap) and the assembler that walks
+// the durable collections. Neither is needed to read, write or save, so both
+// travel with the export itself instead of costing every boot their bytes.
 async function ensureProjectBackupAssembler() {
+  if (typeof ensureProjectDiskBackupModule === "function") await ensureProjectDiskBackupModule();
   if (window.AISystem6ProjectBackupAssembler) return true;
   projectBackupAssemblerLoadPromise ||= loadClassicScriptOnce("app/core/project-backup-assembler.js")
     .catch((error) => {

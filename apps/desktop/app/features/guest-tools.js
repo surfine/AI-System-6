@@ -21,11 +21,20 @@
     "list_run_receipts",
     "read_run_receipt", "list_writing_lenses", "open_writing_lens",
     "open_writing_context", "open_quick_draft_capability", "validate_capability_result",
+    "list_writing_route", "list_desk_applications", "list_projects", "map_document",
+    "list_document_revisions", "read_document_revision", "read_darkroom_record",
+    "list_dictionary_terms", "read_write_lease", "list_guests",
   ]);
-  const PROPOSE_TOOLS = Object.freeze(["put_on_file_floppy", "submit_review", "submit_proposal", "deliver_lens_result", "deliver_quick_draft_result"]);
-  const CHANGE_TOOLS = Object.freeze(["dispatch_intent"]);
+  const PROPOSE_TOOLS = Object.freeze(["put_on_file_floppy", "submit_review", "submit_proposal", "deliver_lens_result", "deliver_quick_draft_result", "propose_scrapbook_clip", "annotate_section"]);
+  const CHANGE_TOOLS = Object.freeze([
+    "dispatch_intent", "open_application", "switch_project",
+    "eject_file_floppy", "commit_receipt", "restore_document_revision",
+    "write_manuscript", "create_scrapbook_clip", "burn_project_cd",
+    "mount_file_floppy", "export_project_disk",
+    "set_route_document", "add_project_reference",
+  ]);
   const DIRECT_INTENTS = new Set(["map", "review"]);
-  const PARKED_INTENTS = new Set(["present", "edit", "attach", "export"]);
+  const PARKED_INTENTS = new Set(["present", "edit", "attach", "export", "develop"]);
   // A lens is a product capability: the prompt the desk wrote, the framing it
   // works in, the output shape, and where the answer lands. The inference is
   // the only part a guest supplies, which is the whole point of handing it
@@ -272,6 +281,25 @@
   function projectObjectName(entry) {
     const record = entry?.record || {};
     return String(record.name || record.title || record.sourceTitle || entry?.id || "");
+  }
+
+  // Which document a guest means when it names none. TeachText does not always
+  // publish an activeTextFileId (the manuscript can be open without the tab
+  // recording it), so fall back to the manuscript file itself rather than
+  // refusing a capability the desk plainly owns.
+  function defaultDocumentId(project) {
+    // The manuscript file, not currentRevisionDocumentId(): the route
+    // manuscript id lists no stored revisions, while history read for the
+    // manuscript file adopts the route's revisions into the same list. A
+    // revision record carries its own documentId, which is what decides where
+    // a restore lands (see restore_document_revision).
+    if (typeof activeTextFileId !== "undefined" && activeTextFileId) return String(activeTextFileId);
+    const files = projectObjectRecords(project).filter((entry) => entry.kind === "file");
+    const title = String(project?.name || "");
+    const manuscript = files.find((entry) => /未来通车|manuscript/i.test(projectObjectName(entry)))
+      || files.find((entry) => projectObjectName(entry).includes(title))
+      || files[0];
+    return manuscript ? manuscript.id : "";
   }
 
   function projectObjectProvenance(entry) {
@@ -953,6 +981,275 @@
       };
     },
 
+    // ---- The route, the apps, and the desk's own records ----------------
+    //
+    // These read surfaces exist so a guest can see how this desk is put
+    // together before it changes anything: which stop a text belongs to, which
+    // applications accept which intents, what earlier passes already did to a
+    // document, and who currently holds the pen.
+
+    list_writing_route() {
+      const project = requireProject();
+      const surfaces = project.writingSurfaces && typeof project.writingSurfaces === "object" ? project.writingSurfaces : {};
+      const order = ["questionSheet", "outline", "sectionDrafts", "teachText", "claimCheck", "projectCd"];
+      const readers = {
+        questionSheet: () => String(project.questionSheet || ""),
+        outline: () => manuscriptMarkdown(),
+        sectionDrafts: () => {
+          const drafts = Array.isArray(project.drafts) ? project.drafts : [];
+          return drafts.map((draft) => `## ${draft.sectionTitle || draft.title || ""}\n\n${draft.body || ""}`).join("\n\n");
+        },
+        teachText: () => manuscriptMarkdown(),
+        claimCheck: () => (typeof reviewRecords !== "undefined" && Array.isArray(reviewRecords)
+          ? reviewRecords.map((record) => String(record?.body || "")).join("\n\n")
+          : String(project.claimCheck || "")),
+        projectCd: () => projectArray("projectCdItems").map((item) => String(item.body || "")).join("\n\n"),
+      };
+      const stops = order.map((stop) => {
+        const markdown = (() => {
+          try {
+            return readers[stop]() || "";
+          } catch {
+            return "";
+          }
+        })();
+        const surface = surfaces[stop] || {};
+        return {
+          stop,
+          document: stop,
+          characters: markdown.length,
+          empty: markdown.trim().length === 0,
+          recordIds: stop === "teachText" || stop === "outline" ? recordIds(markdown) : [],
+          upstream: Array.isArray(surface.upstream) ? surface.upstream : [],
+          downstream: Array.isArray(surface.downstream) ? surface.downstream : [],
+        };
+      });
+      return {
+        ...deskStamp(project),
+        currentStop: typeof currentWritingRouteStop === "function" ? currentWritingRouteStop() : "",
+        workflowState: writingStores().workflowState(),
+        stops,
+        note: "A section id from this list is what open_writing_lens, deliver_lens_result and annotate_section take as recordId. 这里列出的章节 id 就是镜头与批注工具要的 recordId。",
+      };
+    },
+
+    list_desk_applications() {
+      const project = requireProject();
+      const registry = window.AISystem6ApplicationRegistry;
+      // The registry registers by id and reads by id; it exposes no enumerator,
+      // so the desk's own application ids are the list. getApplication decides
+      // what actually exists — an id with nothing behind it is dropped, not
+      // reported as an empty app.
+      const ids = ["teachText", "docMap", "reviewDesk", "clioStage", "lightroom", "projectCd", "clioTalk"];
+      const applications = ids
+        .map((id) => (typeof registry?.getApplication === "function" ? registry.getApplication(id) : null))
+        .filter(Boolean);
+      return {
+        ...deskStamp(project),
+        applications: applications.map((app) => ({
+          appId: String(app.id || ""),
+          label: String(app.label || app.labelKey || ""),
+          windowName: String(app.windowName || ""),
+          acceptedItemKinds: Array.isArray(app.acceptedItemKinds) ? app.acceptedItemKinds : [],
+          acceptedIntents: Array.isArray(app.acceptedIntents) ? app.acceptedIntents : [],
+          runsAtOnce: (Array.isArray(app.acceptedIntents) ? app.acceptedIntents : []).filter((intent) => DIRECT_INTENTS.has(intent)),
+          parkedUntilCommit: (Array.isArray(app.acceptedIntents) ? app.acceptedIntents : []).filter((intent) => PARKED_INTENTS.has(intent)),
+        })),
+        note: "dispatch_intent takes an appId from here. Intent `map` and `review` run at once; the parked ones are recorded as a receipt awaiting the writer's commit. dispatch_intent 需要这里的 appId；map 与 review 立即执行，其余落成待提交回执。",
+      };
+    },
+
+    list_projects() {
+      const project = requireProject();
+      const all = typeof projects !== "undefined" && Array.isArray(projects) ? projects : [];
+      return {
+        ...deskStamp(project),
+        activeProjectId: String(project.id || ""),
+        projects: all.map((entry) => ({
+          projectId: String(entry.id || ""),
+          name: String(entry.name || ""),
+          archived: Boolean(entry.archived),
+          updatedAt: String(entry.updatedAt || ""),
+          active: String(entry.id || "") === String(project.id || ""),
+        })),
+        note: "switch_project takes one of these ids and runs the same call the project switcher runs. switch_project 用这里的 id，走项目切换器同一个调用。",
+      };
+    },
+
+    map_document(args) {
+      const project = requireProject();
+      const wanted = String(args?.objectId || "");
+      const file = wanted
+        ? projectObjectRecords(project).find((entry) => entry.kind === "file" && entry.id === wanted)
+        : projectObjectRecords(project).find((entry) => entry.kind === "file" && (
+          typeof activeTextFileId !== "undefined" && activeTextFileId ? entry.id === activeTextFileId : /未来通车|manuscript/i.test(projectObjectName(entry))
+        ));
+      if (!file) throw new Error("No such document in the open project.");
+      const markdown = projectObjectBody(file);
+      const limit = Math.min(400, Math.max(1, Number(args?.limit) || 120));
+      // The map is derived here rather than read from the DocMap store: a
+      // guest asking for structure should get the structure of the text it
+      // can also read, not a possibly older saved map.
+      const nodes = [];
+      const edges = [];
+      const lines = markdown.split("\n");
+      let previous = "";
+      lines.forEach((line, index) => {
+        const heading = line.match(/^(#{1,6})\s+(.+?)\s*$/);
+        if (heading) {
+          const id = (line.match(/\{#([0-9a-f]{6})\}/i) || [])[1] || "";
+          const nodeId = id || `h-${index}`;
+          nodes.push({
+            id: nodeId,
+            kind: "heading",
+            level: heading[1].length,
+            title: heading[2].replace(/\s*\{#[0-9a-f]{6}\}\s*$/i, "").trim(),
+            line: index + 1,
+            characters: 0,
+          });
+          if (previous) edges.push({ from: previous, to: nodeId, kind: "contains" });
+          previous = nodeId;
+          return;
+        }
+        const node = nodes[nodes.length - 1];
+        if (node && line.trim()) node.characters += line.length;
+      });
+      const paragraphs = markdown.split(/\n{2,}/).filter((block) => block.trim() && !/^#/.test(block.trim()));
+      return {
+        ...deskStamp(project),
+        objectId: file.id,
+        document: projectObjectName(file),
+        characters: markdown.length,
+        nodes: nodes.slice(0, limit),
+        edges: edges.slice(0, limit),
+        paragraphCount: paragraphs.length,
+        truncated: nodes.length > limit,
+        note: "Nodes are headings; edges are containment. Read the text itself with read_project_object for anything below heading level. 节点是标题，连线是归属关系；标题以下的正文用 read_project_object 读。",
+      };
+    },
+
+    async list_document_revisions(args) {
+      const project = requireProject();
+      const revisions = window.AISystem6DocumentRevisions;
+      if (typeof revisions?.list !== "function") throw new Error("Document revisions are not available.");
+      const documentId = String(args?.documentId || defaultDocumentId(project) || "");
+      if (!documentId) throw new Error("No document to read revisions from; pass documentId.");
+      const list = await revisions.list(documentId, project.id);
+      return {
+        ...deskStamp(project),
+        documentId,
+        revisions: (Array.isArray(list) ? list : []).map((revision) => ({
+          revisionId: String(revision.id || revision.revisionId || ""),
+          contentHash: String(revision.contentHash || ""),
+          characters: Number(revision.characters || String(revision.body || "").length || 0),
+          reason: String(revision.reason || revision.trigger || ""),
+          createdAt: String(revision.createdAt || ""),
+        })),
+      };
+    },
+
+    async read_document_revision(args) {
+      const project = requireProject();
+      const revisions = window.AISystem6DocumentRevisions;
+      if (typeof revisions?.list !== "function") throw new Error("Document revisions are not available.");
+      const documentId = String(args?.documentId || "");
+      const revisionId = String(args?.revisionId || "");
+      if (!documentId || !revisionId) throw new Error("documentId and revisionId are required.");
+      const list = await revisions.list(documentId, project.id);
+      const found = (Array.isArray(list) ? list : []).find((revision) => String(revision.id || revision.revisionId || "") === revisionId);
+      if (!found) throw new Error("No such revision of that document.");
+      const body = String(found.body || "");
+      const offset = Math.max(0, Number(args?.offset) || 0);
+      const limit = Math.min(20000, Math.max(200, Number(args?.limit) || 6000));
+      return {
+        ...deskStamp(project),
+        documentId,
+        revisionId,
+        characters: body.length,
+        createdAt: String(found.createdAt || ""),
+        markdown: body.slice(offset, offset + limit),
+        offset,
+        truncated: offset + limit < body.length,
+      };
+    },
+
+    async read_darkroom_record(args) {
+      const project = requireProject();
+      // The darkroom is a lazy module; every other caller brings it up first
+      // rather than reporting "unavailable" for a capability the desk owns.
+      if (!window.AISystem6DarkroomStore && typeof ensureDarkroomModule === "function") {
+        await ensureDarkroomModule();
+      }
+      const store = window.AISystem6DarkroomStore;
+      if (typeof store?.loadDarkroomRecord !== "function") throw new Error("The darkroom is not available.");
+      const documentId = String(args?.documentId || defaultDocumentId(project) || "");
+      if (!documentId) throw new Error("No document to read a darkroom record from; pass documentId.");
+      const record = await store.loadDarkroomRecord(project.id, documentId);
+      const layers = Array.isArray(record?.layers) ? record.layers : [];
+      return {
+        ...deskStamp(project),
+        documentId,
+        updatedAt: String(record?.updatedAt || ""),
+        layerCount: layers.length,
+        layers: layers.slice(-40).map((layer) => ({
+          kind: String(layer.kind || ""),
+          strength: layer.strength ?? null,
+          maskCount: Array.isArray(layer.masks) ? layer.masks.length : 0,
+          createdAt: String(layer.createdAt || ""),
+        })),
+        note: "What earlier passes already did to this document. Do not re-run a layer that is already here at the same strength. 这是这份文档已经被施加过的处理，不要重复同一强度的图层。",
+      };
+    },
+
+    list_dictionary_terms() {
+      const project = requireProject();
+      const terms = Array.isArray(project.dictionaryTerms) ? project.dictionaryTerms : [];
+      return {
+        ...deskStamp(project),
+        terms: terms.map((term) => (typeof term === "string"
+          ? { term, definition: "" }
+          : { term: String(term.term || term.word || ""), definition: String(term.definition || term.note || "") })),
+      };
+    },
+
+    read_write_lease() {
+      const project = requireProject();
+      const lease = window.AISystem6WriteLease;
+      const stored = typeof lease?.storedLeaseBelongsToMe === "function" ? lease.storedLeaseBelongsToMe() : null;
+      return {
+        ...deskStamp(project),
+        isOwner: typeof lease?.isOwner === "function" ? lease.isOwner() : null,
+        isReadOnly: typeof lease?.isReadOnly === "function" ? lease.isReadOnly() : null,
+        canMutate: typeof lease?.canMutate === "function" ? lease.canMutate() : null,
+        thisWindowIsStoredWriter: stored,
+        note: "One writer at a time holds the pen. A guest never writes a record directly; proposals wait for the writer. 同一时刻只有一个写作者持有笔；访客不直接写记录，提议要等写作者。",
+      };
+    },
+
+    list_guests() {
+      const project = requireProject();
+      const api = executorApi();
+      const approvals = api?.getApprovals?.() || {};
+      const live = api?.guests?.() || [];
+      return {
+        ...deskStamp(project),
+        bridgeConnected: typeof api?.isConnected === "function" ? api.isConnected() : null,
+        guests: [...new Set([...Object.keys(approvals), ...live.map((guest) => String(guest?.name || ""))])]
+          .filter(Boolean)
+          .map((name) => {
+            const approval = approvals[name] || {};
+            const connection = live.find((guest) => String(guest?.name || "") === name) || {};
+            return {
+              name,
+              purpose: String(approval.purpose || connection.purpose || ""),
+              privilege: String(approval.privilege || ""),
+              approved: approval.status !== "denied",
+              connected: String(connection.status || "") === "approved",
+            };
+          }),
+      };
+    },
+
     async put_on_file_floppy(args, guest) {
       const project = requireProject();
       const text = String(args?.text || "");
@@ -1028,6 +1325,467 @@
       notify(t("guest_proposal_received", name), { actionId: "open-guest-reviews", windowName: "reviewDesk" });
       renderGuestReviews();
       return { ...deskStamp(project), receiptId, status: "awaiting the writer" };
+    },
+
+    async propose_scrapbook_clip(args, guest) {
+      const project = requireProject();
+      const title = clip(String(args?.title || "").trim(), 200);
+      const body = String(args?.body || "").trim();
+      if (!title) throw new Error("title is empty.");
+      if (!body) throw new Error("body is empty.");
+      const name = guestName(guest);
+      const sourceTitle = clip(String(args?.sourceTitle || "").trim(), 300);
+      const sourceUrl = clip(String(args?.sourceUrl || "").trim(), 2000);
+      const why = clip(String(args?.why || "").trim(), 500);
+      // The Scrapbook is the writer's own curated material, so the clip is not
+      // written into it. It travels as a receipt carrying everything the writer
+      // needs to commit it as-is, and says what in the manuscript it supports.
+      const receiptId = await writeGuestReceipt(project, guest, {
+        intent: "propose-scrapbook-clip",
+        name: `${t("guest_scrapbook_proposal_label")} · ${name} · ${title}`,
+        proposal: [
+          `# ${title}`,
+          "",
+          body,
+          "",
+          "---",
+          sourceTitle ? `来源：${sourceTitle}` : "",
+          sourceUrl ? `链接：${sourceUrl}` : "",
+          why ? `用途：${why}` : "",
+        ].filter(Boolean).join("\n"),
+        toolName: "propose_scrapbook_clip",
+        checkpointState: "awaitingCommit",
+        extraFields: {
+          guestScrapbookClip: {
+            guestName: name,
+            title,
+            body,
+            sourceTitle,
+            sourceUrl,
+            tags: Array.isArray(args?.tags) ? args.tags.map((tag) => String(tag)).slice(0, 12) : [],
+            why,
+            submittedAt: new Date().toISOString(),
+          },
+        },
+      });
+      notify(t("guest_scrapbook_proposal_received", name), { actionId: "open-guest-reviews", windowName: "reviewDesk" });
+      renderGuestReviews();
+      return { ...deskStamp(project), receiptId, status: "awaiting the writer", note: "The clip is a proposal, not a clip yet. 这条剪报还是提议，尚未进入 Scrapbook。" };
+    },
+
+    async annotate_section(args, guest) {
+      const project = requireProject();
+      const recordId = String(args?.recordId || "").trim().toLowerCase();
+      if (!/^[0-9a-f]{6}$/.test(recordId)) throw new Error("recordId must be the six-hex section id from a heading.");
+      const note = String(args?.note || "").trim();
+      if (!note) throw new Error("note is empty.");
+      const intent = String(args?.intent || "").trim() || "keep";
+      const drafts = Array.isArray(project.drafts) ? project.drafts : [];
+      // A record id names a heading in the manuscript; the matching section
+      // draft carries the same title, which is how the note finds its section.
+      const manuscript = manuscriptMarkdown();
+      const headingMatch = manuscript.match(new RegExp(`^##\\s+(.+?)\\s*\\{#${recordId}\\}\\s*$`, "m"));
+      const sectionTitle = headingMatch ? headingMatch[1].trim() : "";
+      const draft = drafts.find((entry) => String(entry.id || "") === recordId)
+        || (sectionTitle ? drafts.find((entry) => String(entry.sectionTitle || entry.title || "").trim() === sectionTitle) : null);
+      const known = recordIds(manuscript).includes(recordId);
+      if (!draft && !known) throw new Error(`No section with record id ${recordId} in the open project.`);
+      const name = guestName(guest);
+      const receiptId = await writeGuestReceipt(project, guest, {
+        intent: "annotate-section",
+        name: `${t("guest_section_note_label")} · ${name} · ${recordId}`,
+        proposal: note,
+        toolName: "annotate_section",
+        affectedObjectIds: [recordId],
+        checkpointState: "awaitingCommit",
+        extraFields: {
+          guestSectionNote: {
+            guestName: name,
+            recordId,
+            sectionTitle: String(draft?.sectionTitle || draft?.title || sectionTitle || ""),
+            intent,
+            note,
+            submittedAt: new Date().toISOString(),
+          },
+        },
+      });
+      notify(t("guest_section_note_received", name), { actionId: "open-guest-reviews", windowName: "reviewDesk" });
+      renderGuestReviews();
+      return { ...deskStamp(project), receiptId, status: "awaiting the writer", note: "The note is parked next to that section; the draft itself is unchanged. 批注暂存在该章节旁边，草稿本身未改。" };
+    },
+
+    // ---- Operating the desk -------------------------------------------
+    //
+    // These run at once, because they operate the desk without rewriting the
+    // writer's text: they go through the same calls the desktop's own controls
+    // make, so an agent and a click do the same thing. Anything that would
+    // change project content still becomes a receipt first.
+
+    async open_application(args) {
+      const project = requireProject();
+      const registry = window.AISystem6ApplicationRegistry;
+      const appId = String(args?.appId || "").trim();
+      const wanted = String(args?.windowName || "").trim();
+      if (!appId && !wanted) throw new Error("Pass appId or windowName.");
+      const app = appId && typeof registry?.getApplication === "function" ? registry.getApplication(appId) : null;
+      if (appId && !app) throw new Error(`No application with id ${appId} on this desk.`);
+      const windowName = wanted || String(app?.windowName || "");
+      if (!windowName) throw new Error(`Application ${appId} declares no window to open.`);
+      if (typeof openWindow !== "function") throw new Error("This desk cannot open windows.");
+      await openWindow(windowName);
+      return { ...deskStamp(project), appId: appId || "", windowName, opened: true };
+    },
+
+    async switch_project(args) {
+      const project = requireProject();
+      const projectId = String(args?.projectId || "").trim();
+      if (!projectId) throw new Error("projectId is required.");
+      const all = typeof projects !== "undefined" && Array.isArray(projects) ? projects : [];
+      const target = all.find((entry) => String(entry.id || "") === projectId);
+      if (!target) throw new Error(`No project with id ${projectId} on this desk (see list_projects).`);
+      if (typeof switchProject !== "function") throw new Error("This desk cannot switch projects.");
+      await switchProject(projectId);
+      return { ...deskStamp(project), switchedTo: projectId, projectName: String(target.name || ""), note: "The desk now has a different project open; ids from the previous project no longer apply. 桌面已切换项目，之前项目的 id 不再适用。" };
+    },
+
+    eject_file_floppy() {
+      const project = requireProject();
+      const mounted = typeof mountedTextDisk !== "undefined" && mountedTextDisk
+        ? {
+          name: String(mountedTextDisk.name || ""),
+          projectId: String(mountedTextDisk.projectId || ""),
+          fileCount: Array.isArray(mountedTextDisk.files) ? mountedTextDisk.files.length : 0,
+        }
+        : null;
+      if (!mounted) return { ...deskStamp(project), ejected: false, mounted: null, note: "Nothing was on the File Floppy. 文件软盘上本来没有东西。" };
+      if (typeof ejectTextDisk !== "function") throw new Error("This desk cannot eject the File Floppy.");
+      ejectTextDisk({ silent: false });
+      return { ...deskStamp(project), ejected: true, mounted };
+    },
+
+    async commit_receipt(args, guest) {
+      const project = requireProject();
+      const receiptId = String(args?.receiptId || "").trim();
+      if (!receiptId) throw new Error("receiptId is required.");
+      const file = window.AISystem6RunReceipts?.getReceipt?.(receiptId);
+      if (!file || String(file.projectId || "") !== String(project.id)) throw new Error("No such receipt in the open project.");
+      const record = file.runReceipt || {};
+      // Two kinds of parked work sit in the same folder, and they commit
+      // through different doors. An intent receipt carries a replay contract
+      // and re-runs its application (Run Records → Get Info → Repeat). A
+      // proposal or review is text, not an intent: it is adopted in Review
+      // Desk, which is the only path that can put it anywhere.
+      const hasContract = Boolean(record.replayContract)
+        || (!String(record.sourceAppId || "").startsWith("guest:") && PARKED_INTENTS.has(String(record.intent || "")));
+      if (hasContract) {
+        if (typeof window.AISystem6RunReceipts?.repeatReceipt !== "function") throw new Error("This desk cannot replay receipts.");
+        const outcome = await window.AISystem6RunReceipts.repeatReceipt(receiptId, { sourceAppId: guestAppId(guest) });
+        return {
+          ...deskStamp(project),
+          receiptId,
+          kind: "intent",
+          ok: Boolean(outcome?.ok),
+          reason: String(outcome?.reason || ""),
+        };
+      }
+      if (typeof adoptGuestReview !== "function") throw new Error("This desk cannot adopt proposals.");
+      // Who gets asked is decided by the grant, not by what the caller is. A
+      // guest holding 可改动 was authorised by the writer in the Chooser, and
+      // that grant is revocable there; asking again in a dialog would only be
+      // ceremony. awaitWriter keeps the asking available for callers that want
+      // the writer to see the decision land.
+      const adopted = await adoptGuestReview(receiptId, { confirm: args?.awaitWriter === true });
+      return {
+        ...deskStamp(project),
+        receiptId,
+        kind: "proposal",
+        ok: Boolean(adopted),
+        reason: adopted ? "" : "declined-or-empty",
+      };
+    },
+
+    async write_manuscript(args) {
+      const project = requireProject();
+      const markdown = String(args?.markdown ?? "");
+      if (!markdown.trim()) throw new Error("markdown is empty.");
+      const target = typeof teachTextBodyInput !== "undefined" ? teachTextBodyInput : null;
+      if (!target) throw new Error("This desk has no manuscript editor open.");
+      // Writing through the editor's own value + input event is what typing
+      // does: the desk's own handlers run, including the save that follows an
+      // edit. Nothing here reaches into the store behind the surface's back.
+      const before = String(target.value || "");
+      target.value = markdown;
+      target.dispatchEvent(new Event("input", { bubbles: true }));
+      if (typeof savePipelineData === "function") await savePipelineData();
+      return {
+        ...deskStamp(project),
+        charactersBefore: before.length,
+        charactersAfter: markdown.length,
+        note: "The manuscript surface holds this text now, and the previous text is a Time Machine revision. 正文面现在持有这段文字，之前的正文留有历史版本。",
+      };
+    },
+
+    // The route documents above the manuscript: the Question Sheet that frames
+    // the piece, the Outline, and one section draft. Writing these is the same
+    // work the writer does in those windows, so it goes through the same
+    // surfaces rather than editing the record behind them.
+    async set_route_document(args) {
+      const project = requireProject();
+      const document = String(args?.document || "").trim();
+      const markdown = String(args?.markdown ?? "");
+      if (!markdown.trim()) throw new Error("markdown is empty.");
+      if (document === "question_sheet") {
+        const input = typeof questionSheetBodyInput !== "undefined" ? questionSheetBodyInput : null;
+        const before = String(input ? input.value : project.questionSheet || "");
+        if (input) {
+          input.value = markdown;
+          input.dispatchEvent(new Event("input", { bubbles: true }));
+        }
+        project.questionSheet = markdown;
+        if (typeof savePipelineData === "function") await savePipelineData();
+        return { ...deskStamp(project), document, charactersBefore: before.length, charactersAfter: markdown.length };
+      }
+      if (document === "outline") {
+        const before = String(project.outline || "");
+        // setProjectOutlineMarkdown is the one road into that record: it stamps
+        // record ids on the way in, which is what the section tools then use.
+        if (typeof setProjectOutlineMarkdown === "function") setProjectOutlineMarkdown(project, markdown);
+        else project.outline = markdown;
+        project.updatedAt = new Date().toISOString();
+        if (typeof syncOutlineDomFromProject === "function") syncOutlineDomFromProject();
+        if (typeof saveDeskState === "function") await saveDeskState();
+        return {
+          ...deskStamp(project),
+          document,
+          charactersBefore: before.length,
+          charactersAfter: markdown.length,
+          recordIds: recordIds(markdown),
+          note: "Record ids were stamped on the way in; hand them to open_writing_lens and annotate_section. 记录 id 已在写入时盖章，可直接交给镜头与批注工具。",
+        };
+      }
+      if (document === "section_draft") {
+        const recordId = String(args?.recordId || "").trim().toLowerCase();
+        if (!/^[0-9a-f]{6}$/.test(recordId)) throw new Error("section_draft needs the six-hex recordId of a section.");
+        const drafts = Array.isArray(project.drafts) ? project.drafts : [];
+        const manuscript = manuscriptMarkdown();
+        const heading = manuscript.match(new RegExp(`^##\\s+(.+?)\\s*\\{#${recordId}\\}\\s*$`, "m"));
+        const title = heading ? heading[1].trim() : "";
+        const draft = drafts.find((entry) => String(entry.id || "") === recordId)
+          || drafts.find((entry) => title && String(entry.sectionTitle || entry.title || "").trim() === title);
+        if (!draft) throw new Error(`No section draft for record id ${recordId}.`);
+        const before = String(draft.body || "");
+        draft.body = markdown;
+        if (draft.sourceMarkdown !== undefined) draft.sourceMarkdown = markdown;
+        draft.updatedAt = new Date().toISOString();
+        if (typeof saveDeskState === "function") await saveDeskState();
+        return {
+          ...deskStamp(project),
+          document,
+          recordId,
+          sectionTitle: String(draft.sectionTitle || draft.title || ""),
+          charactersBefore: before.length,
+          charactersAfter: markdown.length,
+          note: "The section draft holds this text; the manuscript is untouched. 分节草稿持有了这段文字，正文未动。",
+        };
+      }
+      throw new Error('document must be "question_sheet", "outline" or "section_draft".');
+    },
+
+    async add_project_reference(args, guest) {
+      const project = requireProject();
+      const name = String(args?.name || "").trim();
+      const body = String(args?.body || "").trim();
+      if (!name) throw new Error("name is empty.");
+      if (!body) throw new Error("body is empty.");
+      if (typeof putStoredProjectReference !== "function") throw new Error("This desk cannot store a reference.");
+      // Built the way the desk builds one when it files a Floppy item into the
+      // project (file-disk.js): same fields, one chunk over the whole body, and
+      // the same hash over embedding model plus text. A reference the desk
+      // cannot recognise as its own would be worse than no reference.
+      const now = new Date().toISOString();
+      const store = typeof projectReferences !== "undefined" && Array.isArray(projectReferences) ? projectReferences : [];
+      const existing = store.find((reference) => String(reference.name || "") === name && String(reference.projectId || "") === String(project.id));
+      const embeddingModel = "local-embedding";
+      const hash = typeof hashText === "function" ? await hashText(`${embeddingModel}\n${body}`) : "";
+      const reference = {
+        id: existing?.id || (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `ref-${Date.now()}`),
+        projectId: project.id,
+        name,
+        body,
+        hash,
+        chunks: [{
+          id: `${existing?.id || name}:0`,
+          chunkIndex: 0,
+          content: body,
+          start: 0,
+          end: body.length,
+          ...(args?.sourceUrl ? { source: String(args.sourceUrl) } : {}),
+        }],
+        embeddingModel,
+        enabled: true,
+        createdAt: existing?.createdAt || now,
+        updatedAt: now,
+      };
+      await putStoredProjectReference(reference);
+      if (store !== projectReferences) store.push(reference);
+      else if (!store.some((entry) => entry.id === reference.id)) store.unshift(reference);
+      if (typeof loadActiveProjectReferences === "function") await loadActiveProjectReferences();
+      return {
+        ...deskStamp(project),
+        referenceId: reference.id,
+        name: reference.name,
+        characters: body.length,
+        chunks: reference.chunks.length,
+        note: "search_project_sources can find it now. search_project_sources 现在能检索到它。",
+      };
+    },
+
+    async create_scrapbook_clip(args, guest) {
+      const project = requireProject();
+      const title = String(args?.title || "").trim();
+      const body = String(args?.body || "").trim();
+      if (!title) throw new Error("title is empty.");
+      if (!body) throw new Error("body is empty.");
+      if (typeof createScrap !== "function") throw new Error("This desk has no Scrapbook.");
+      // createScrap is the Scrapbook's own entry point — the same one the
+      // writer's clip action calls, so the clip is a real clip, not an import.
+      const scrap = createScrap(title, body, {
+        sourceTitle: String(args?.sourceTitle || ""),
+        sourceUrl: String(args?.sourceUrl || ""),
+        tags: Array.isArray(args?.tags) ? args.tags.map((tag) => String(tag)) : [],
+        capturedBy: guestAppId(guest),
+      });
+      if (!scrap) throw new Error("The Scrapbook refused the clip.");
+      return {
+        ...deskStamp(project),
+        clipId: String(scrap.id || ""),
+        title: String(scrap.title || title),
+        note: "Committed as a clip by an approved guest. 已由获准的访客提交为一条剪报。",
+      };
+    },
+
+    async burn_project_cd(args, guest) {
+      const project = requireProject();
+      const markdown = String(args?.markdown || "").trim();
+      if (!markdown) throw new Error("markdown is empty.");
+      const name = String(args?.name || "").trim() || "Untitled";
+      if (typeof addProjectCdItem !== "function") throw new Error("This desk has no Project CD.");
+      const objectIds = Array.isArray(args?.sourceObjectIds) ? args.sourceObjectIds.map(String).filter(Boolean) : [];
+      const item = await addProjectCdItem(markdown, name, {
+        sourceDocumentId: objectIds[0] || (typeof activeTextFileId !== "undefined" ? activeTextFileId : ""),
+        sourceKind: "markdown",
+        burnedBy: guestAppId(guest),
+      });
+      if (!item) throw new Error("The Project CD refused the burn.");
+      return {
+        ...deskStamp(project),
+        projectCdItemId: String(item.id || ""),
+        name: String(item.name || name),
+        characters: markdown.length,
+      };
+    },
+
+    async mount_file_floppy(args) {
+      const project = requireProject();
+      const text = String(args?.text || "");
+      if (!text.trim()) throw new Error("text is empty.");
+      const name = String(args?.name || "").trim() || "mcp-note.md";
+      // The desk already has one function that puts text on the Floppy — the
+      // one its own MCP-servers feature uses, with the Floppy's own name
+      // rules, size cap and failure reasons. Reuse it rather than growing a
+      // second mounting path with different opinions.
+      if (!window.AISystem6McpServers && typeof ensureMcpServersModule === "function") {
+        await ensureMcpServersModule();
+      }
+      const putter = window.AISystem6McpServers?.putOnFileFloppy;
+      if (typeof putter === "function") {
+        const outcome = await putter(name, text, { source: "guest" });
+        if (!outcome?.ok) throw new Error(`The File Floppy refused the file: ${outcome?.reason || "unknown"}.`);
+        return {
+          ...deskStamp(project),
+          mounted: outcome.mountedFileNames,
+          chunks: outcome.chunks || 0,
+          note: "Mounted on the File Floppy, where search_project_sources can find it. 已挂到文件软盘，search_project_sources 能检索到它。",
+        };
+      }
+      if (typeof insertFilesIntoFileFloppy !== "function") throw new Error("This desk has no File Floppy.");
+      const file = new File([text], /\.(md|txt|markdown)$/i.test(name) ? name : `${name}.md`, { type: "text/markdown" });
+      const result = await insertFilesIntoFileFloppy([file], { source: "guest" });
+      if (!result?.mountedFileNames?.length) {
+        const why = (result?.failures || []).map((failure) => failure.message).join("; ");
+        throw new Error(`The File Floppy refused the file: ${why || "not-mounted"}.`);
+      }
+      return {
+        ...deskStamp(project),
+        mounted: result.mountedFileNames,
+        note: "Mounted on the File Floppy, where search_project_sources can find it. 已挂到文件软盘，search_project_sources 能检索到它。",
+      };
+    },
+
+    async export_project_disk(args) {
+      const project = requireProject();
+      if (typeof buildProjectDiskExport !== "function") throw new Error("This desk cannot build a Project Hard Disk backup.");
+      const bundle = await buildProjectDiskExport(project);
+      if (!bundle) throw new Error("The Project Hard Disk backup could not be built.");
+      const serialized = JSON.stringify(bundle);
+      const integrity = bundle.integrity || {};
+      // The file itself goes to the browser's download folder, the same place
+      // the writer's export lands; what an agent gets back is what identifies
+      // that file: size, hash, and the counts inside it.
+      let downloaded = false;
+      if (args?.download !== false && typeof exportActiveProjectDisk === "function") {
+        downloaded = Boolean(await exportActiveProjectDisk());
+      }
+      return {
+        ...deskStamp(project),
+        format: String(bundle.format || ""),
+        formatVersion: bundle.formatVersion ?? null,
+        schemaVersion: bundle.schemaVersion ?? null,
+        bytes: serialized.length,
+        contentHash: String(integrity.contentHash || ""),
+        counts: bundle.counts || null,
+        downloaded,
+        note: "The backup is written to this Mac's download folder. Read it there to move the disk. 备份写在这台 Mac 的下载目录，要搬硬盘去那里取。",
+      };
+    },
+
+    async restore_document_revision(args) {
+      const project = requireProject();
+      const revisions = window.AISystem6DocumentRevisions;
+      if (typeof revisions?.restore !== "function") throw new Error("Document revisions are not available.");
+      const documentId = String(args?.documentId || defaultDocumentId(project) || "");
+      const revisionId = String(args?.revisionId || "").trim();
+      if (!documentId || !revisionId) throw new Error("documentId and revisionId are required.");
+      const list = await revisions.list(documentId, project.id);
+      const found = (Array.isArray(list) ? list : []).find((revision) => String(revision.id || revision.revisionId || "") === revisionId);
+      if (!found) throw new Error("No such revision of that document.");
+      // restore() refuses a revision record that cannot name its own document
+      // and project, and the list does not carry those two fields.
+      const before = manuscriptMarkdown();
+      const restored = await revisions.restore({
+        ...found,
+        id: String(found.id || found.revisionId || revisionId),
+        documentId,
+        projectId: project.id,
+      });
+      // A mounted disk keeps the route manuscript and a manuscript file as
+      // separate records, and restore can land on one while the surface shows
+      // the other. Rather than trust the return value, look at the text: a tool
+      // that answers "restored" over an unchanged manuscript is worse than one
+      // that reports the mismatch.
+      const after = manuscriptMarkdown();
+      return {
+        ...deskStamp(project),
+        documentId,
+        revisionId,
+        restored: restored !== false,
+        verified: after !== before,
+        charactersBefore: before.length,
+        charactersAfter: after.length,
+        note: after !== before
+          ? "The manuscript now holds that revision's text; the replaced text is itself a revision. 正文已回到该版本，被替换的正文本身也留有版本。"
+          : "The desk reported the restore but the manuscript did not change: this revision belongs to another record of the same project — a known defect, not a silent success. 桌面报告恢复成功但正文没有变化：这个版本属于同一项目里的另一条记录，这是已知缺陷，不是成功。",
+      };
     },
 
     open_writing_context(args) {
@@ -1662,15 +2420,21 @@
   // same destination the HKRR review uses, and marks the receipt accepted.
   // ---------------------------------------------------------------------
 
-  async function adoptGuestReview(receiptId) {
+  async function adoptGuestReview(receiptId, { confirm = true } = {}) {
     const receipts = window.AISystem6RunReceipts;
     const file = receipts?.getReceipt?.(receiptId);
     const record = file?.runReceipt;
     if (!file || !record) return null;
     const markdown = String(record.proposal || "").trim();
     if (!markdown) return null;
-    const result = typeof showSystemModal === "function" ? await showSystemModal(t("guest_adopt_confirm"), "confirm") : "yes";
-    if (result !== "yes") return null;
+    // The confirmation is for the writer's own click: it asks "adopt this?".
+    // A guest acting under an explicit 可改动 grant is already the answer to
+    // that question, so it may adopt without the dialog — confirm stays true
+    // for the button in Review Desk.
+    if (confirm) {
+      const result = typeof showSystemModal === "function" ? await showSystemModal(t("guest_adopt_confirm"), "confirm") : "yes";
+      if (result !== "yes") return null;
+    }
     if (typeof addProjectCdItem !== "function") return null;
     const name = String(record.sourceAppId || "").replace(/^guest:/, "");
     const manuscript = typeof teachTextNameInput !== "undefined" ? teachTextNameInput?.value || "" : "";

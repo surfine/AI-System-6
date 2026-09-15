@@ -179,10 +179,25 @@ function extractProbes() {
   return { probes: [...probes.values()], geometryCount, tokenCount };
 }
 
+/**
+ * Drop the build stamp from an asset reference before it is compared.
+ *
+ * Every themed asset URL carries `?v=<build>` as a cache-buster, and that stamp
+ * is SUPPOSED to change on every release. It is not an era's appearance: the
+ * path it was appended to is, and that stays. Without this, stamping a new
+ * build moved about two hundred rows of this table and asked the publisher to
+ * re-photograph six eras to say the same thing — every row of the 2026-09-16
+ * run read `?v=20260914.7 -> ?v=20260916.1` and nothing else.
+ */
+function stripBuildStamp(value) {
+  return value.replace(/([?&]v=)[^"'\s)]*/g, "$1");
+}
+
 function normalize(value) {
-  if (value.length <= VALUE_CAP) return value;
-  const parts = value.split("~").length;
-  return `sha256:${createHash("sha256").update(value).digest("hex")}#parts=${parts}`;
+  const stable = stripBuildStamp(value);
+  if (stable.length <= VALUE_CAP) return stable;
+  const parts = stable.split("~").length;
+  return `sha256:${createHash("sha256").update(stable).digest("hex")}#parts=${parts}`;
 }
 
 async function preparePage(browser, serverUrl) {
@@ -419,8 +434,16 @@ try {
       for (const key of keys) {
         if (baselineUnstable.has(key) || currentUnstable.has(key)) { skipped += 1; continue; }
         compared += 1;
-        const was = known[key];
-        const now = current[key];
+        // The baseline on this machine was captured under its own build id, so
+        // both sides are read through the same stamp-free lens.
+        const was = known[key] && {
+          classic: stripBuildStamp(String(known[key].classic)),
+          value: stripBuildStamp(String(known[key].value)),
+        };
+        const now = current[key] && {
+          classic: stripBuildStamp(String(current[key].classic)),
+          value: stripBuildStamp(String(current[key].value)),
+        };
         if (was && !now) {
           // Absent from the current delta for one of two reasons: the era's
           // value now equals Classic's (probed, but no difference), or the

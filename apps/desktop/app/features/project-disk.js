@@ -73,8 +73,24 @@ function activeDocumentTabIdsFallback(project) {
   };
 }
 
+/**
+ * Document tabs live ON the project record, so anything that opens, closes,
+ * reorders or re-seeds them is a project write like any other - and it has to
+ * say so. It did not, which the shadow scan caught: a save's report-only plan
+ * would have skipped the project whose tabs had just moved.
+ */
+function markProjectTabsDirty(project) {
+  if (!project?.id) return;
+  if (typeof markDeskDirty === "function") markDeskDirty("projects", project.id);
+}
+
 function ensureProjectDocumentTabs(project) {
   if (!project) return [];
+  // The projection runs on every render, for every disk on the desk, so
+  // marking the record unconditionally made "one edit, one record written"
+  // impossible: every save carried every project because a render had walked
+  // past them. `changed` therefore has to mean a real change - see the active
+  // tab below, where "not found, so I set it" used to count as one.
   let changed = false;
   const existing = Array.isArray(project.documentTabs) ? project.documentTabs : [];
   const tabs = existing.map(normalizeDocumentTabRecord).filter(Boolean);
@@ -92,11 +108,17 @@ function ensureProjectDocumentTabs(project) {
   project.activeDocumentTabIds = activeDocumentTabIdsFallback(project);
   ["reader", "teachText", "docMap", "timeMachine"].forEach((app) => {
     const activeId = project.activeDocumentTabIds[app];
-    if (!project.documentTabs.some((tab) => tab.app === app && tab.id === activeId)) {
-      project.activeDocumentTabIds[app] = project.documentTabs.find((tab) => tab.app === app)?.id || null;
-      changed = true;
-    }
+    if (project.documentTabs.some((tab) => tab.app === app && tab.id === activeId)) return;
+    // "It was not found, so I set it" is not a change when the value I set is
+    // the one that was already there. Treating it as one marked every disk on
+    // the desk unsaved on every save, because this projection runs whenever a
+    // project is read - so every save wrote every project back out.
+    const nextId = project.documentTabs.find((tab) => tab.app === app)?.id || null;
+    if (activeId === nextId) return;
+    project.activeDocumentTabIds[app] = nextId;
+    changed = true;
   });
+  if (changed) markProjectTabsDirty(project);
   return project.documentTabs;
 }
 
@@ -157,6 +179,7 @@ function removeDocumentTab(app, tabId, project = getActiveProject()) {
   project.activeDocumentTabIds = activeDocumentTabIdsFallback(project);
   if (wasActive) project.activeDocumentTabIds[app] = next?.id || null;
   project.updatedAt = documentTabNow();
+  markProjectTabsDirty(project);
   return { removed, index, remaining, next, wasActive };
 }
 
@@ -171,6 +194,7 @@ function moveDocumentTab(app, tabId, targetTabId, project = getActiveProject()) 
   const otherTabs = ensureProjectDocumentTabs(project).filter((tab) => tab.app !== app);
   project.documentTabs = [...otherTabs, ...appTabs].map((tab, index) => ({ ...tab, order: index }));
   project.updatedAt = documentTabNow();
+  markProjectTabsDirty(project);
   return true;
 }
 
@@ -1165,10 +1189,20 @@ function ensureActiveProject() {
 
   if (startupProjectId && !projects.some((project) => project.id === startupProjectId)) {
     startupProjectId = null;
+    startupProjectPinned = false;
     changed = true;
   }
 
-  if (!startupProjectId && activeProjectId && projects.some((project) => project.id === activeProjectId)) {
+  // A pin the writer chose is authoritative: the desk boots to it, exactly as
+  // the Startup Project Hard Disk always meant. A pin nobody chose is only the
+  // desk's own default, and following it meant a writer who started a second
+  // project came back to the first one after every reload - their work was on
+  // the desk, just not in front of them. So an unchosen pin follows the project
+  // being worked in, and an explicit "set as Startup Project Hard Disk" keeps
+  // the old behaviour.
+  if (!startupProjectPinned && activeProjectId
+    && activeProjectId !== startupProjectId
+    && projects.some((project) => project.id === activeProjectId)) {
     startupProjectId = activeProjectId;
     changed = true;
   }
@@ -1734,6 +1768,10 @@ function getProjectFileFinderItem(file) {
       withFinderObjects(() => {
         if (isAlias) return openAliasFile(file);
         if (openProjectFileWithStationery(file)) return;
+        if (typeof window.AISystem6ApplicationRegistry?.openProjectObject === "function") {
+          window.AISystem6ApplicationRegistry.openProjectObject(file.id, "open");
+          return;
+        }
         if (file.type === "text") openTextFile(file.id);
         else openChatFileWindow(file.id);
       });

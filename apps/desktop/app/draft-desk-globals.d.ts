@@ -59,6 +59,18 @@ declare function ensureDarkroomModule(): Promise<void>;
 // reaches it the way it reaches the other classic-script globals.
 declare function imageFilesFromList(files: any): File[];
 declare function saveImageAttachments(records: any[]): void;
+// The desk's "I changed this record" entry points. Declared here because every
+// feature that edits a record it did not create calls them.
+declare function markDeskDirty(kind?: string, recordId?: string): void;
+declare function markDeskDeleted(kind: string, recordId: string): void;
+// The identity rule and the base cache the save plan keeps. Read-only for
+// everything except the plan itself; declared for the tooling that inspects a
+// save (the plan comparison in persistence-scan-shadow.js).
+declare function deskRecordIdentity(kind: string, item: any, index: number): string;
+declare const storageRecordFingerprintCache: Map<string, Map<string, { id: any; fingerprint: string }>>;
+declare const deskRecordFingerprint: (item: any) => string;
+declare const persistDeskState: (...args: any[]) => Promise<any>;
+declare const deskCollectionPlan: (...args: any[]) => any;
 declare function imageAttachmentById(id: any): any;
 declare function imageAttachmentVisionDataUrl(attachment: any): string;
 declare function buildImageAttachments(files: any, options?: any): Promise<any[]>;
@@ -117,6 +129,30 @@ interface Window {
   AISystem6WebPlatform?: any;
   AISystem6Capabilities?: any;
   AISystem6Runtime?: any;
+  // Set by app/core/project-disk-backup.js, which travels with an export or a
+  // restore rather than with every boot: config.js waits for this flag before
+  // handing the call to the module.
+  AISystem6ProjectDiskBackupLoaded?: boolean;
+  // The save-plan shadow comparison, loaded by the check that uses it.
+  AISystem6ScanShadow?: {
+    noteChanged?: (kind: string, recordId: string, deleted?: boolean) => void;
+    takeReported?: () => Map<string, { puts: Set<string>; deletes: Set<string>; all: boolean }>;
+    enable?: () => (() => void);
+    report?: () => {
+      enabled: boolean;
+      comparisons: number;
+      totalMissed: number;
+      mismatches: Array<{ key: string; missedPuts: string[]; missedDeletes: string[]; fields: string[] }>;
+    };
+    compare?: (...args: any[]) => void;
+  };
+  // Top-level function declarations are properties of the global object, which
+  // is how the plan comparison attaches itself without the desk shipping
+  // instrument code.
+  markDeskDirty?: (kind?: string, recordId?: string) => void;
+  markDeskDeleted?: (kind: string, recordId: string) => void;
+  deskCollectionPlan?: (definition: any) => any;
+  persistDeskState?: (...args: any[]) => Promise<any>;
   AISystem6ExplanationLens?: {
     blankExplanationLens?: (options?: any) => any;
     normalizeExplanationLens?: (lens?: any) => any;

@@ -8,7 +8,19 @@ const storageSnapshotCache = new Map();
 const storageRecordFingerprintCache = new Map();
 const dirtyDeskRecords = new Map();
 const deletedDeskRecords = new Map();
+// Records whose deletion the disk has already confirmed. The fingerprint cache
+// keeps their tombstone - that entry is what tells a late announcement apart
+// from a brand new record, and dropping it made a remote delete come back - but
+// the plan must not offer the same delete again on every following save. It
+// costs a transaction with nothing in it, and it reports a store the desk never
+// wrote.
+const confirmedDeletes = new Set();
 const dirtyDeskCollections = new Set();
+// Conflicts are tracked per collection and id, not as one flag for the desk.
+// A single boolean meant a receipt that landed cleanly could clear a
+// manuscript's standing conflict, and the status bar would then claim a file
+// was saved while its own write was still refused.
+const deskRecordConflicts = new Map();
 let lastDeskPersistenceStats = {
   storesTouched: [],
   puts: 0,
@@ -115,8 +127,22 @@ function restoreControlStripState(settings) {
 
 function scheduleRenderTasks(...tasks) {
   const list=tasks.flat().filter(Boolean);
+  // A task whose window is hidden or collapsed is parked instead of painted:
+  // the records already moved, and the repaint is due the moment the window is
+  // shown again (window-manager releases it on reveal). The runtime answers
+  // which window owns a task, without reading any DOM itself.
+  const runtime = window.AISystem6Runtime;
+  const paintable = list.filter((task) => {
+    const owner = runtime?.renderTaskOwner?.(task) || "";
+    if (!owner) return true;
+    const win = document.querySelector(`[data-window="${owner}"]`);
+    if (!win) return true;
+    if (!win.classList.contains("is-hidden") && !win.classList.contains("is-collapsed")) return true;
+    runtime?.deferRenderTask?.(task);
+    return false;
+  });
   if(list.some(task=>!["menuState","menuStatus","aboutMacintosh","localModelState"].includes(task))&&typeof invalidateMenuActionCache=="function")invalidateMenuActionCache();
-  list.forEach(task=>window.AISystem6Runtime?.scheduleRenderTask(task));
+  paintable.forEach(task=>runtime?.scheduleRenderTask(task));
 }
 
 function scheduleWorkspaceRender(options = {}) {
@@ -140,6 +166,42 @@ function scheduleStatusRender() {
   scheduleRenderTasks("menuStatus", "aboutMacintosh");
 }
 
+// Which views a record change actually touches.
+//
+// A committed write says which collections and ids moved (the record feed and
+// the commit result both carry them), so the windows that need repainting can
+// be derived instead of guessed: a receipt landing in chatFiles must not
+// repaint the Trash, and a Trash change must not repaint the writing route's
+// pipeline. Anything not listed here still gets picked up by the window that
+// owns it when that window renders for its own reasons - this map is about not
+// waking the whole desk for one record.
+const deskCollectionRenderTasks = new Map([
+  ["projects", ["projectLabels", "projectDisks", "documents", "projectCd", "pipeline"]],
+  ["chatFiles", ["documents", "projectCd"]],
+  ["chatFolders", ["documents"]],
+  ["scraps", ["scraps"]],
+  ["trash", ["trash"]],
+  ["imageAttachments", ["documents", "pipeline"]],
+]);
+
+/**
+ * Schedule only the views the touched collections own. `menuState` is always
+ * included: it is the cheapest task and it is what keeps commands enabled or
+ * disabled matching what is actually on the desk.
+ *
+ * @param {Iterable<string>} keys collection keys that changed
+ * @param {{ extra?: string[], references?: boolean }} [options]
+ */
+function scheduleDeskCollectionRender(keys, options = {}) {
+  const tasks = new Set(["menuState"]);
+  for (const key of keys || []) {
+    (deskCollectionRenderTasks.get(String(key)) || []).forEach((task) => tasks.add(task));
+  }
+  (options.extra || []).forEach((task) => tasks.add(task));
+  if (options.references) tasks.add("projectReferences");
+  scheduleRenderTasks([...tasks]);
+}
+
 function markDeskDirty(kind = "settings", recordId = "") {
   if (kind === "settings") {
     storageSnapshotCache.delete("settings");
@@ -161,9 +223,84 @@ function markDeskDeleted(kind, recordId) {
   dirtyDeskRecords.get(kind)?.delete(String(recordId));
 }
 
+// Typing marks its own record, at the keystroke. Waiting for the autosave
+// timer to notice is how a mirror window ends up judging a record by a
+// fingerprint the writer had already moved past - and the guard that decides
+// whether a remote version may replace it has to be true for the whole
+// window in which the writer's text is newer than the disk.
+function markActiveProjectDirty() {
+  const project = typeof getActiveProject === "function" ? getActiveProject() : null;
+  if (project?.id) markDeskDirty("projects", project.id);
+}
+
+/** @param {string} key @param {string} id */
+function noteDeskRecordConflict(key, id) {
+  const cacheKey = String(id);
+  if (!deskRecordConflicts.has(key)) deskRecordConflicts.set(key, new Set());
+  const entries = deskRecordConflicts.get(key);
+  if (entries.has(cacheKey)) return false;
+  entries.add(cacheKey);
+  refreshDeskRecordConflictStanding();
+  return true;
+}
+
+/**
+ * Clear only the conflicts this commit actually resolved. A conflict for a
+ * record nobody wrote is not a conflict this save answered.
+ * @param {{ key: string, id: any }[]} resolved
+ */
+function clearDeskRecordConflicts(resolved) {
+  let changed = false;
+  resolved.forEach(({ key, id }) => {
+    const entries = deskRecordConflicts.get(key);
+    if (entries?.delete(String(id))) changed = true;
+  });
+  if (changed) refreshDeskRecordConflictStanding();
+}
+
+function deskRecordConflictCount() {
+  let count = 0;
+  deskRecordConflicts.forEach((entries) => { count += entries.size; });
+  return count;
+}
+
+/**
+ * A commit that could not put its own change back is not a lost edit: the
+ * text is on screen and the disk does not have it. Keep it visible and keep
+ * it refused rather than reporting a save that did not happen.
+ * @param {{ target: any[], id: string, kind: string }[]} kept
+ */
+function noteUnwithdrawnDeskChanges(kept) {
+  const keys = new Map([
+    [projects, "projects"],
+    [chatFiles, "chatFiles"],
+    [chatFolders, "chatFolders"],
+    [scraps, "scraps"],
+    [imageAttachments, "imageAttachments"],
+    [projectCdItems, "projects"],
+    [trashItems, "trash"],
+    [projectReferences, "projects"],
+  ]);
+  let noted = false;
+  kept.forEach((change) => {
+    const key = keys.get(change.target);
+    if (!key) return;
+    noteDeskRecordConflict(key, change.id);
+    noted = true;
+  });
+  if (noted && typeof setStatus === "function") setStatus(t("desk_record_conflict_status"));
+}
+
 window.AISystem6DeskPersistence = Object.freeze({
   markDirty: markDeskDirty,
   markDeleted: markDeskDeleted,
+  noteRecordConflict: noteDeskRecordConflict,
+  conflictCount: deskRecordConflictCount,
+  /**
+   * Development aid: switch on the shadow comparison between the full save
+   * plan and a report-only plan, and read what the latter would have missed.
+   * Off by default; reads only.
+   */
   getLastStats: () => ({ ...lastDeskPersistenceStats, storesTouched: [...lastDeskPersistenceStats.storesTouched] }),
 });
 
@@ -236,6 +373,7 @@ function settingsSnapshotPayload() {
     clipboardTranslationModel,
     activeProjectId,
     startupProjectId,
+    startupProjectPinned,
     workspaceProfile,
     startupEnvironment,
     startupOpenMode,
@@ -392,11 +530,28 @@ async function applyDeskRecordChanges(message) {
     if (settingsChanged) storeNames.push(keyvalStoreName);
     const transaction = db.transaction(storeNames, "readonly");
     const completion = window.AISystem6StorageTransactions.transactionDone(transaction);
+    // Every request this transaction needs is issued in its own event loop,
+    // before anything is awaited: an async gap lets WebKit close the
+    // transaction underneath the reads.
+    const readStoredRecord = (store, id) => {
+      if (!store || typeof store.get !== "function") return Promise.resolve({ readable: false, record: null });
+      return idbRequest(store.get(id)).then((record) => ({ readable: true, record: record ?? null }));
+    };
+    // Through the published register rather than the module binding, so the
+    // conflict a window records is the same one the save path clears.
+    const noteConflict = (key, id) => {
+      window.AISystem6DeskPersistence?.noteRecordConflict?.(key, id);
+    };
     const reads = [];
     definitions.forEach((definition) => {
       const store = transaction.objectStore(definition.storeName);
-      touched.get(definition.key).reads.forEach((id) => {
-        reads.push(idbRequest(store.get(id)).then((record) => ({ key: definition.key, id, record })));
+      const state = touched.get(definition.key);
+      // Announced updates AND announced deletes are re-read. A delete notice
+      // is a claim about the stored record, not an order to forget the local
+      // one, so the database is what decides what is there now.
+      const ids = new Set([...state.reads.map(String), ...state.deletes]);
+      ids.forEach((id) => {
+        reads.push(readStoredRecord(store, id).then((result) => ({ key: definition.key, id, ...result })));
       });
     });
     const found = await Promise.all(reads);
@@ -406,7 +561,16 @@ async function applyDeskRecordChanges(message) {
     await completion;
 
     if (settingsChanged) {
-      if (incomingSettings) {
+      // A settings replay is not only a theme: applySettings() can switch the
+      // active project and rebuild the route's views. Landing one on a window
+      // whose settings are still on their way out is how an unsaved editor
+      // gets rebound to another project, so a window with settings of its own
+      // pending keeps them and records the conflict.
+      const localSettingsPending = typeof settingsSnapshotPayload === "function"
+        && storageSnapshotCache.get("settings") !== JSON.stringify(settingsSnapshotPayload());
+      if (incomingSettings && localSettingsPending) {
+        noteConflict("settings", "settings");
+      } else if (incomingSettings) {
         applySettings(incomingSettings);
         storageSnapshotCache.set("settings", JSON.stringify(incomingSettings));
       } else {
@@ -425,27 +589,48 @@ async function applyDeskRecordChanges(message) {
       new Map(storageRecordFingerprintCache.get(definition.key) || []),
     ]));
 
-    definitions.forEach((definition) => {
-      const state = touched.get(definition.key);
-      if (!state.deletes.size) return;
-      for (let index = definition.items.length - 1; index >= 0; index -= 1) {
-        const id = String(deskRecordIdentity(definition.key, definition.items[index], index));
-        if (state.deletes.has(id)) definition.items.splice(index, 1);
-      }
-      state.deletes.forEach((id) => bases.get(definition.key).delete(id));
-    });
-
-    found.forEach(({ key, id, record }) => {
+    found.forEach(({ key, id, record, readable }) => {
       const definition = definitions.find((entry) => entry.key === key);
       if (!definition) return;
       const cacheKey = String(id);
-      if (!record) {
-        bases.get(key).delete(cacheKey);
-        return;
-      }
       const index = definition.items.findIndex(
         (item, position) => String(deskRecordIdentity(key, item, position)) === String(id)
       );
+      const local = index < 0 ? null : definition.items[index];
+      // The one question that may decide whether a remote version replaces a
+      // local one: does this record hold work the disk does not have? Focus
+      // (document.activeElement), permission (canMutate()) and a single
+      // global timer each answer a DIFFERENT question, and every one of them
+      // has already said "clean" for a record with a keystroke the save had
+      // not carried yet.
+      const believed = bases.get(key).get(cacheKey)?.fingerprint;
+      const pending = !local ? false : (
+        believed === undefined
+        || deskRecordFingerprint(local) !== believed
+        || (typeof dirtyDeskRecords !== "undefined" && dirtyDeskRecords.get(key)?.has(cacheKey) === true)
+        || (typeof deskRecordConflicts !== "undefined" && deskRecordConflicts.get(key)?.has(cacheKey) === true)
+      );
+      const removeLocal = () => {
+        if (index >= 0) definition.items.splice(index, 1);
+        bases.get(key).delete(cacheKey);
+      };
+
+      if (!record) {
+        // A store this window cannot read leaves the local copy as the only
+        // evidence there is: an announced delete still stands on a clean
+        // record - that is what deleting from another window has to do - but
+        // an announced update has nothing to say, so it is left alone.
+        if (!readable && !touched.get(key).deletes.has(cacheKey)) return;
+        if (pending) {
+          noteConflict(key, cacheKey);
+          return;
+        }
+        removeLocal();
+        return;
+      }
+
+      // The record is on disk. A late delete notice for a record that is back
+      // is an update, and is merged - or refused - exactly like one.
       if (index < 0) {
         definition.items.push(record);
         bases.get(key).set(cacheKey, { id, fingerprint: deskRecordFingerprint(record) });
@@ -456,9 +641,7 @@ async function applyDeskRecordChanges(message) {
       // than a surprise: their own text is still on screen to compare. The
       // base is deliberately NOT advanced here - that is what turns the next
       // save into a refusal rather than an overwrite.
-      const local = definition.items[index];
-      const believed = bases.get(key).get(cacheKey)?.fingerprint;
-      if (believed !== undefined && deskRecordFingerprint(local) !== believed) return;
+      if (pending) return;
       // Merge in place. Replacing the array slot would strand every reference
       // held elsewhere - getActiveProject() hands out one of these objects.
       Object.keys(local).forEach((field) => {
@@ -470,7 +653,18 @@ async function applyDeskRecordChanges(message) {
 
     bases.forEach((map, key) => storageRecordFingerprintCache.set(key, map));
     if (typeof ensureActiveProject === "function") ensureActiveProject();
-    scheduleWorkspaceRender({ projectLabels: true, projectReferences: true, menuState: true });
+    // Only the views the announced collections own. The reference list follows
+    // the project record (it is read from the mounted project), so it travels
+    // with "projects" rather than with every change.
+    const touchedKeys = new Set();
+    touched.forEach((_state, key) => touchedKeys.add(key));
+    if (typeof scheduleDeskCollectionRender === "function") {
+      scheduleDeskCollectionRender(touchedKeys, { references: touchedKeys.has("projects") });
+    } else {
+      // A context that loaded this function without the rest of the module
+      // keeps the older, wider repaint rather than skipping the refresh.
+      scheduleWorkspaceRender({ projectLabels: true, projectReferences: true, menuState: true });
+    }
   } catch (error) {
     console.warn("Could not apply the record changes another window announced.", error);
   } finally {
@@ -496,51 +690,40 @@ function broadcastWorkingText(project) {
   } catch {}
 }
 
+/**
+ * The mirror between windows.
+ *
+ * This message used to be a version: whatever text it carried was assigned
+ * onto the local project, whether or not the write behind it ever landed, and
+ * a window with its own unsaved edits simply lost them. It is a HINT now.
+ * The message says "this project moved"; the window re-reads the stored
+ * record through the same entry point every other committed change uses, and
+ * that path keeps a record with pending local edits while merging a clean
+ * one. A clean window still refreshes at once; a window that has not carried
+ * its own keystrokes to the disk keeps them, and the record it did not write
+ * never advances the base its next save is measured against.
+ *
+ * The repaint needs nothing new: the desk render pipeline rebuilds the
+ * Question Sheet, Outline, Draft and TeachText surfaces from the record.
+ */
 function applyMirroredWorkingText(message) {
   const project = typeof getActiveProject === "function" ? getActiveProject() : null;
   if (!project || project.id !== message.projectId) return;
-  project.questionSheet = message.questionSheet;
-  project.outline = message.outline;
-  const byId = new Map((message.drafts || []).map((draft) => [draft.id, draft]));
-  (project.drafts || []).forEach((draft) => {
-    const next = byId.get(draft?.id);
-    if (!next) return;
-    draft.title = next.title || draft.title;
-    draft.body = next.body;
-  });
-
-  // Repaint. The route's own sync helpers refuse to touch a FOCUSED editor,
-  // which is the right guard for the window holding the pen and the wrong one
-  // for a pure reader: a mirror window keeps focus from the last time it was
-  // clicked, and would then sit stale forever - the exact thing the mirror
-  // exists to fix.
-  //
-  // "Pure reader" used to be the same thing as "does not hold the lease". It
-  // is not any more: every window can be typed in, so a window with typing it
-  // has not committed yet is a writer whatever the lease says, and repainting
-  // over it would throw away keystrokes. Such a window takes the careful path.
-  const isWriter = window.AISystem6WriteLease?.canMutate?.() === true
-    || liveProgressTimer !== 0;
-  if (isWriter) {
-    if (questionSheetBodyInput && document.activeElement !== questionSheetBodyInput) {
-      setMirroredEditorValue(questionSheetBodyInput, message.questionSheet);
-    }
-    if (typeof syncOutlineDomFromProject === "function") syncOutlineDomFromProject(project);
-    if (typeof syncDraftDomFromProject === "function") syncDraftDomFromProject(project);
-    if (typeof syncLinkedTeachTextFromProject === "function") syncLinkedTeachTextFromProject(project);
-  } else {
-    setMirroredEditorValue(questionSheetBodyInput, message.questionSheet);
-    setMirroredEditorValue(outlineContentEl, message.outline);
-    const draft = selectedDraftIndex >= 0 ? project.drafts?.[selectedDraftIndex] : null;
-    if (draft) setMirroredEditorValue(draftBodyInput, draft.body || "");
-    if (typeof syncLinkedTeachTextFromProject === "function") syncLinkedTeachTextFromProject(project);
-  }
-  if (typeof renderWritingSpineState === "function") renderWritingSpineState();
+  if (typeof applyDeskRecordChanges !== "function") return;
+  applyDeskRecordChanges({ changes: [{ key: "projects", id: project.id }], deletes: [] })
+    .catch((error) => {
+      console.warn("Mirrored working text could not be refreshed from the stored record.", error);
+    });
 }
 
 // A mirrored write goes through the input event so the markdown overlay
 // repaints with it; a silent value assignment would leave the painted layer
-// showing the previous text under a correct textarea.
+// showing the previous text under a correct textarea. Nothing in the app calls
+// this any more -- the mirror refreshes through applyMirroredWorkingText above
+// -- but the review harness in ai-system6-review-tests extracts it by name and
+// asserts beside it that a mirrored message never overwrites a pending local
+// edit. It stays until that harness asserts the record-feed path instead; see
+// the compatibility table in docs/DEVELOPMENT.md.
 function setMirroredEditorValue(element, text) {
   if (!element || element.value === text) return;
   const scrollTop = element.scrollTop;
@@ -585,10 +768,12 @@ function commitWorkingProgress() {
   liveProgressTimer = 0;
   liveProgressDeadline = 0;
   if (typeof savePipelineData !== "function") return;
+  // savePipelineData normalises every surface into the project record and
+  // queues the save. The "this landed" announcement belongs to that save and
+  // rides it (see persistDeskState), never to the keystroke before it: telling
+  // the other windows about text the disk does not have is how an uncommitted
+  // answer becomes a version.
   savePipelineData();
-  // Through the same announcement as every other persist, so one dedupe covers
-  // both roads and the mirror never repaints text it already has.
-  announceWorkingText();
 }
 
 // Commit after a short pause, and never later than liveProgressMaxMs into a
@@ -641,24 +826,19 @@ function saveDeskState() {
   // reason to refuse here is that the desk was never successfully loaded.
 
   if (typeof scheduleWorkingSessionSave === "function") scheduleWorkingSessionSave();
-  saveDeskStatePromise = saveDeskStatePromise
-    .catch(() => {})
-    .then(() => persistDeskState())
-    .then((saved) => {
-      if (saved) {
-        window.AISystem6DerivedIndexQueue?.afterProjectCommit();
-        // Whatever is persisted is announced. Persistence and the mirror used
-        // to be two roads and only one of them told the other windows: the
-        // live-progress commit broadcast, saveDeskState did not. So every
-        // command that saves without typing -- adding a section, any structural
-        // edit of the outline, a toggle -- put the store ahead of every other
-        // window's memory of it, and the next window to take the pen wrote its
-        // older copy back over the top.
-        announceWorkingText();
-      }
-      return saved;
-    });
-  return saveDeskStatePromise;
+  // Every save - a store commit, a keystroke, a settings toggle - takes the
+  // same desk commit slot. Serialising only the write stage would not be
+  // enough: two saves would each read the other's half-applied arrays to
+  // decide what had changed. The slot is named rather than reached for
+  // directly because a state-store commit already holds it and calls
+  // persistDeskState() itself; awaiting this entry from in there would queue
+  // behind the very task making the call.
+  const queue = typeof window !== "undefined" ? window.AISystem6DeskCommits : null;
+  const run = queue?.enqueue
+    ? queue.enqueue(() => persistDeskState())
+    : (saveDeskStatePromise || Promise.resolve()).catch(() => {}).then(() => persistDeskState());
+  saveDeskStatePromise = run;
+  return run;
 }
 
 // The Appearance selector (and menu / control-strip theme actions) persist
@@ -685,836 +865,6 @@ function scheduleSettingsSave() {
   }, 750);
 }
 
-function modelStateCurrentStep() {
-  if (localModelState.running) return t("model_step_running");
-  if (localModelState.ready) return t("model_step_ready");
-  if (localModelState.loaded) return t("model_step_loaded");
-  if (localModelState.selected) return t("model_step_selected");
-  if (localModelState.models) return t("model_step_models");
-  if (localModelState.server) return t("model_step_server");
-  return t("model_step_waiting");
-}
-
-function modelStateNextKey(state = localModelState) {
-  if (state.running) return "model_next_running";
-  if (!state.server) return "model_next_start_lm";
-  if (!state.models) return "model_next_find_models";
-  if (!state.selected) return "model_next_select_model";
-  if (!state.loaded) return "model_next_load_model";
-  return "model_next_ready";
-}
-
-function updateLocalModelState(patch = {}) {
-  localModelState = {
-    ...localModelState,
-    selected: !!modelInput.value.trim(),
-    ...patch,
-  };
-  localModelState.next = modelStateNextKey(localModelState);
-  // The menu-bar model indicator is the global status surface for both cloud
-  // and local routes. Keep it in the same state transition as Control Panel so
-  // a successful load (or disconnect) cannot leave the two surfaces disagreeing
-  // until a later render frame or monitor poll.
-  if (typeof refreshCloudUsageDisplay === "function") refreshCloudUsageDisplay();
-  scheduleRenderTasks("localModelState");
-}
-
-const contextMinLength = 4096;
-const contextDefaultLength = 8192;
-
-function parsePositiveInteger(value) {
-  const number = Number(value);
-  return Number.isFinite(number) && number > 0 ? Math.floor(number) : 0;
-}
-
-function modelContextKey(value = modelInput?.value) {
-  return String(value || "").trim().toLowerCase();
-}
-
-function contextMaxRecordForModel(value = modelInput?.value) {
-  const key = modelContextKey(value);
-  if (!key) return null;
-  const stored = contextMaxByModel[key];
-  if (stored?.max) return stored;
-
-  const catalogMatch = findMatchingModel(modelCatalog, value);
-  if (catalogMatch?.max_context_length) {
-    return {
-      max: catalogMatch.max_context_length,
-      source: catalogMatch.max_context_source || "detected",
-    };
-  }
-
-  return null;
-}
-
-function describeContextMaxSource(source) {
-  if (source === "known") return t("context_ram_source_known");
-  return t("context_ram_source_detected");
-}
-
-function setContextMaxStatus(record) {
-  if (!contextRamStatusEl) return;
-  if (!record?.max) {
-    contextRamStatusEl.textContent = t("context_ram_unknown");
-    contextRamStatusEl.dataset.state = "unavailable";
-    return;
-  }
-  const base = t("context_ram_status", record.max, describeContextMaxSource(record.source));
-  contextRamStatusEl.textContent = record.max < 131072
-    ? `${base} ${t("context_ram_below_ideal")}`
-    : base;
-  contextRamStatusEl.dataset.state = "ready";
-}
-
-function updateContextMaxForCurrentModel() {
-  const cloudActive = (typeof cloudConfig !== "undefined") && cloudConfig?.active;
-  const cloudCtx = cloudActive && typeof knownCloudContextWindow === "function"
-    ? knownCloudContextWindow(cloudConfig)
-    : 0;
-  const record = cloudActive
-    ? (cloudCtx ? { max: cloudCtx, source: "known" } : null)
-    : contextMaxRecordForModel();
-  setContextMaxStatus(record);
-  if (cloudCtx) setContextLengthOptions(record);
-  else if (!cloudActive) normalizeContextLengthInput({ silent: true });
-  return record;
-}
-
-function contextLengthOptionsForMax(max) {
-  const limit = parsePositiveInteger(max);
-  if (limit < contextMinLength) return [];
-  const values = [];
-  for (let value = contextMinLength; value <= limit; value *= 2) {
-    values.push(value);
-  }
-  if (!values.includes(limit)) values.push(limit);
-  return values;
-}
-
-function rememberContextLengthForCurrentModel(userOverride = false) {
-  const key = modelContextKey();
-  const value = parsePositiveInteger(contextLengthInput?.value);
-  if (key && value) contextLengthByModel[key] = value;
-  if (key && userOverride) contextLengthUserOverrides[key] = true;
-  return value;
-}
-
-function setContextLengthOptions(record) {
-  if (!contextLengthInput) return 0;
-  const previous = parsePositiveInteger(contextLengthInput.value);
-  contextLengthInput.disabled = false;
-  if (!record?.max) {
-    renderContextLengthPresets();
-    return previous || 0;
-  }
-
-  const options = contextLengthOptionsForMax(record.max);
-  const key = modelContextKey();
-  const hasUserOverride = !!contextLengthUserOverrides[key];
-  const remembered = hasUserOverride ? contextLengthByModel[key] : 0;
-  const preferred = [remembered, hasUserOverride && previous && previous <= record.max ? previous : 0, record.max]
-    .map(parsePositiveInteger)
-    .find((value) => value && value <= record.max);
-  contextLengthInput.value = String(preferred || options[options.length - 1] || "");
-  rememberContextLengthForCurrentModel();
-  renderContextLengthPresets();
-  return parsePositiveInteger(contextLengthInput.value);
-}
-
-function normalizeContextLengthInput(options = {}) {
-  if (!contextLengthInput) return contextDefaultLength;
-  const record = contextMaxRecordForModel();
-  let value = parsePositiveInteger(contextLengthInput.value);
-  if (!record?.max) {
-    setContextLengthOptions(record);
-    setContextMaxStatus(record);
-    if (value) rememberContextLengthForCurrentModel();
-    return value || 0;
-  }
-  setContextLengthOptions(record);
-  value = parsePositiveInteger(contextLengthInput.value) || setContextLengthOptions(record);
-  if (value > record.max) {
-    value = record.max;
-    contextLengthInput.value = String(value);
-    if (!options.silent && loadModelStatusEl) {
-      loadModelStatusEl.textContent = t("context_length_clamped", record.max);
-    }
-  }
-  contextLengthInput.value = String(value);
-  rememberContextLengthForCurrentModel();
-  setContextMaxStatus(record);
-  return value;
-}
-
-function getContextLoadConfig() {
-  const model = modelInput.value.trim();
-  const record = contextMaxRecordForModel(model);
-  const userContextLength = parsePositiveInteger(contextLengthInput?.value);
-  if (!record?.max) {
-    if (!userContextLength) {
-      loadModelStatusEl.textContent = t("context_ram_required");
-      return null;
-    }
-    rememberContextLengthForCurrentModel(true);
-    return {
-      contextLength: userContextLength,
-      maxContextLength: userContextLength,
-      maxContextSource: "user",
-    };
-  }
-
-  const contextLength = normalizeContextLengthInput();
-  if (!contextLength) {
-    loadModelStatusEl.textContent = t("context_ram_required");
-    return null;
-  }
-  return {
-    contextLength,
-    maxContextLength: record.max,
-    maxContextSource: record.source,
-  };
-}
-
-function currentContextRouteConfig() {
-  const model = modelInput?.value?.trim() || "";
-  const record = contextMaxRecordForModel(model);
-  const contextLength = parsePositiveInteger(contextLengthInput?.value);
-  if (!contextLength && !record?.max) return {};
-  return {
-    ...(contextLength ? { context_length: contextLength } : {}),
-    ...(record?.max ? {
-      max_context_length: record.max,
-      max_context_source: record.source,
-    } : contextLength ? {
-      max_context_length: contextLength,
-      max_context_source: "user",
-    } : {}),
-  };
-}
-
-function renderLocalModelState() {
-  const steps = ["server", "models", "selected", "loaded", "ready"];
-  if (modelStatePanelEl) {
-    steps.forEach((step) => {
-      const row = modelStatePanelEl.querySelector(`[data-model-step="${step}"]`);
-      if (!row) return;
-      const isDone = !!localModelState[step];
-      row.classList.toggle("is-done", isDone);
-      row.classList.toggle("is-current", !isDone && step === steps.find((candidate) => !localModelState[candidate]));
-      const status = row.querySelector("small");
-      if (status) status.textContent = isDone ? t("model_step_done") : t("model_step_waiting");
-    });
-    modelStatePanelEl.classList.toggle("is-running", localModelState.running);
-  }
-  if (modelStateNextEl) {
-    modelStateNextEl.textContent = localModelState.next === "model_next_running"
-      ? t("model_next_running", localModelState.task || t("working_locally"))
-      : t(localModelState.next);
-  }
-  if (localModelState.ready && !localModelState.running) {
-    const displayModel = getLocalModelDisplayName();
-    if (loadModelButton) {
-      loadModelButton.hidden = true;
-      loadModelButton.disabled = false;
-      loadModelButton.textContent = t("load_model");
-    }
-    if (modelPickerStatusEl) {
-      modelPickerStatusEl.hidden = true;
-      modelPickerStatusEl.textContent = "";
-    }
-    if (loadModelStatusEl) loadModelStatusEl.textContent = t("load_model_done", displayModel, contextLengthInput.value || 8192);
-  } else {
-    if (modelPickerStatusEl) modelPickerStatusEl.hidden = false;
-    if (loadModelButton) {
-      loadModelButton.hidden = false;
-      loadModelButton.textContent = t("load_model");
-    }
-  }
-  if (statusModelStateEl) statusModelStateEl.textContent = modelStateCurrentStep();
-  if (statusCurrentTaskEl) statusCurrentTaskEl.textContent = localModelState.running
-    ? (localModelState.task || t("working_locally"))
-    : t("no_current_task");
-  if (typeof refreshCloudUsageDisplay === "function") refreshCloudUsageDisplay();
-}
-
-const contextLengthPresetValues = [8192, 32768, 65536, 131072, 262144];
-
-function localModelSelectEl() {
-  return document.getElementById("model-select");
-}
-
-function localEmbeddingModelSelectEl() {
-  return document.getElementById("embedding-model-select");
-}
-
-function localManualModelInputEl() {
-  return document.getElementById("manual-model-fields");
-}
-
-function contextLengthPresetEl() {
-  return document.getElementById("context-length-preset");
-}
-
-function localConnectionErrorKey(error) {
-  const message = String(error?.message || error || "");
-  if (/ollama_api_incompatible/.test(message)) return "local_connection_ollama_incompatible";
-  if (/ollama_cors_or_offline|ollama_bad_response/.test(message)) return "local_connection_ollama_unavailable";
-  if (/ollama_model_missing/.test(message)) return "local_connection_ollama_no_models";
-  if (/lmstudio_auth_failed/.test(message)) return "local_connection_auth_failed";
-  if (/lmstudio_safari_http_unavailable/.test(message)) return "local_connection_safari_http_unavailable";
-  if (/lmstudio_safari_unsupported/.test(message)) return "local_connection_safari_unsupported";
-  if (/lmstudio_browser_permission_denied/.test(message)) return "local_connection_browser_permission_denied";
-  if (/lmstudio_v1_required/.test(message)) return "local_connection_v1_required";
-  if (/lmstudio_loopback_required|lmstudio_endpoint_invalid/.test(message)) return "local_connection_loopback_required";
-  return "local_connection_cors_failed";
-}
-
-function setLocalConnectionDetailStatus(element, key) {
-  if (!element || !key) return;
-  element.textContent = t(key);
-  element.dataset.state = /failed|denied/.test(key) ? "unavailable" : /verified|granted/.test(key) ? "ready" : "";
-  // These diagnostics sit inside a collapsed disclosure so a healthy connection
-  // reads as one line. A real failure has to stay visible, though, so anything
-  // that went wrong opens it — including the token field, which is what an auth
-  // failure needs the user to fill in.
-  const details = element.closest("details");
-  if (details && element.dataset.state === "unavailable") details.open = true;
-}
-
-function configurePublicLmStudioControls() {
-  if (!window.AISystem6LocalLMStudio?.isPublicWebMode?.()) return;
-  if (localProviderEl) {
-    [...localProviderEl.options].forEach((option) => {
-      const unavailable = option.value === "custom";
-      option.hidden = unavailable;
-      option.disabled = unavailable;
-    });
-    localProviderEl.disabled = false;
-  }
-  endpointInput.value = window.AISystem6LocalLMStudio.normalizeBaseUrl(endpointInput.value);
-}
-
-function isOllamaLocalProvider() {
-  return window.AISystem6LocalLMStudio?.currentProvider?.() === "ollama";
-}
-
-function syncLocalProviderUi() {
-  const ollama = isOllamaLocalProvider();
-  const tokenField = document.getElementById("local-api-token")?.closest(".control-field");
-  if (tokenField) tokenField.hidden = ollama;
-  if (localAuthStatusEl) localAuthStatusEl.textContent = t(ollama ? "local_auth_status_ollama" : "local_auth_status_optional");
-}
-
-function openLocalModelApp() {
-  const slashes = String.fromCharCode(47, 47);
-  if (isOllamaLocalProvider()) {
-    window.open(`https:${slashes}ollama.com/download`, "_blank", "noopener,noreferrer");
-    return;
-  }
-  window.location.assign(`lmstudio:${slashes}`);
-}
-
-function connectOrLaunchLocalModel() {
-  const safariNeedsHttpEntry = window.AISystem6LocalLMStudio?.isSafariPublicWebUnsupported?.();
-  if (localLmStudioConnectionEnabled || isOllamaLocalProvider() || safariNeedsHttpEntry) {
-    connectLocalLmStudio({ toggle: true });
-    return;
-  }
-  renderLocalConnectionStatus("connecting");
-  openLocalModelApp();
-  setTimeout(() => connectLocalLmStudio({ toggle: false }), 1200);
-}
-
-// Local setup is two sequential steps, and showing both at once was most of
-// what made this panel feel long: before a connection exists the model pickers
-// are empty and cannot do anything. Once it exists, the address you just
-// connected to stops being worth a row of its own.
-//
-// The connect fields are *moved* between the two places rather than duplicated,
-// so ids stay unique and their existing listeners keep working.
-function syncLocalModelPhase(connected) {
-  const section = document.querySelector('[data-control-panel="local"]');
-  if (!section) return;
-  const connectFields = section.querySelector(".local-connect-fields");
-  const modelFields = section.querySelector(".local-model-fields");
-  const advanced = section.querySelector("#local-advanced-details");
-  const connectButton = section.querySelector("#connect-local-model");
-  if (!connectFields || !modelFields || !advanced || !connectButton) return;
-
-  modelFields.hidden = !connected;
-  if (connected) {
-    if (!advanced.contains(connectFields)) advanced.prepend(connectFields);
-  } else if (advanced.contains(connectFields)) {
-    connectButton.before(connectFields);
-  }
-  if (typeof refreshSystemSelectControls === "function") refreshSystemSelectControls();
-}
-
-function renderLocalConnectionStatus(state, data = null) {
-  const status = typeof localConnectionStatusEl !== "undefined"
-    ? localConnectionStatusEl
-    : document.getElementById("local-connection-status");
-  const button = typeof connectLocalModelButton !== "undefined"
-    ? connectLocalModelButton
-    : document.getElementById("connect-local-model");
-  if (!status || !button) return;
-  syncLocalProviderUi();
-  const ollama = isOllamaLocalProvider();
-  if (state === "local_connection_waiting" && ollama) state = "local_connection_ollama_waiting";
-  if (state === "local_connection_waiting" && window.AISystem6LocalLMStudio?.isSafariPublicWebUnsupported?.()) {
-    state = "local_connection_safari_unsupported";
-  } else if (state === "local_connection_waiting" && window.AISystem6LocalLMStudio?.isSafariHttpLocalMode?.()) {
-    state = "local_connection_safari_http_ready";
-  }
-  const safariUnsupported = [
-    "local_connection_safari_unsupported",
-    "local_connection_safari_http_unavailable",
-  ].includes(state);
-  const idleState = ["local_connection_waiting", "local_connection_ollama_waiting", "local_connection_safari_http_ready"].includes(state);
-  status.dataset.state = state === "ready" ? "ready" : state.startsWith("local_connection_") && !idleState ? "unavailable" : "";
-  syncLocalModelPhase(state === "ready");
-  const hasToken = !!(typeof localApiTokenInput !== "undefined" && localApiTokenInput?.value?.trim());
-  if (state === "connecting") {
-    status.textContent = t(ollama ? "local_connection_ollama_connecting" : "local_connection_connecting");
-    setLocalConnectionDetailStatus(localAuthStatusEl, ollama ? "local_auth_status_ollama" : hasToken ? "local_auth_status_token" : "local_auth_status_optional");
-    setLocalConnectionDetailStatus(localCorsStatusEl, "local_cors_status_waiting");
-    setLocalConnectionDetailStatus(localBrowserPermissionStatusEl, "local_browser_permission_waiting");
-    button.disabled = true;
-    return;
-  }
-  button.disabled = false;
-  if (state === "ready") {
-    status.textContent = t(
-      ollama ? "local_connection_ollama_ready" : hasToken ? "local_connection_ready" : "local_connection_ready_no_token",
-      data?.chatModels?.length || 0,
-      data?.embeddingModels?.length || 0
-    );
-    setLocalConnectionDetailStatus(localAuthStatusEl, ollama ? "local_auth_status_ollama" : hasToken ? "local_auth_status_verified" : "local_auth_status_optional");
-    setLocalConnectionDetailStatus(localCorsStatusEl, "local_cors_status_verified");
-    const permission = ["granted", "prompt", "denied"].includes(data?.browserPermission)
-      ? data.browserPermission
-      : "unsupported";
-    setLocalConnectionDetailStatus(localBrowserPermissionStatusEl, `local_browser_permission_${permission}`);
-    button.textContent = t(ollama ? "disconnect_ollama" : "disconnect_local_model");
-    return;
-  }
-  button.textContent = safariUnsupported
-    ? t("open_safari_http_local")
-    : t(ollama ? "connect_ollama" : "open_and_connect_lm_studio");
-  status.textContent = t(state === "disconnected"
-    ? (ollama ? "local_connection_ollama_disconnected" : "local_connection_disconnected")
-    : state);
-  setLocalConnectionDetailStatus(localAuthStatusEl, state === "local_connection_auth_failed"
-    ? "local_auth_status_failed"
-    : hasToken ? "local_auth_status_token" : "local_auth_status_optional");
-  setLocalConnectionDetailStatus(localCorsStatusEl, ["local_connection_auth_failed", "local_connection_v1_required"].includes(state)
-    ? "local_cors_status_verified"
-    : state === "disconnected" || idleState || safariUnsupported
-      ? "local_cors_status_waiting"
-      : "local_cors_status_failed");
-  setLocalConnectionDetailStatus(localBrowserPermissionStatusEl, "local_browser_permission_waiting");
-  if (state === "local_connection_browser_permission_denied") {
-    setLocalConnectionDetailStatus(localBrowserPermissionStatusEl, "local_browser_permission_denied");
-  } else if (safariUnsupported) {
-    setLocalConnectionDetailStatus(localBrowserPermissionStatusEl, "local_browser_safari_unsupported");
-  }
-}
-
-async function copyTextToClipboard(text) {
-  if (navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(text);
-    return;
-  }
-  const copyTarget = document.createElement("textarea");
-  copyTarget.className = "visually-hidden";
-  copyTarget.value = text;
-  document.body.append(copyTarget);
-  try {
-    copyTarget.select();
-    if (!document.execCommand("copy")) throw new Error("copy failed");
-  } finally {
-    copyTarget.remove();
-  }
-}
-
-// Safari will not let an HTTPS page navigate straight to the plain-HTTP local
-// host (mixed-content navigation), so a `location.assign` to
-// local.system6.aaronlau.me silently fails. Hand the user the address on the
-// clipboard plus a fresh tab to paste it into instead of a dead redirect.
-async function openSafariHttpLocalEntry() {
-  // Safari blocks window.open once the click gesture has been broken by an
-  // await, so the blank paste tab must open synchronously here. Keep the
-  // handle so a missing or invalid local origin can close it again.
-  const blankTab = window.open("", "_blank");
-  const capabilities = await window.AISystem6PublicAccess?.getCapabilities?.();
-  const origin = capabilities?.public_access?.safari_http_local_origin || "";
-  let url;
-  try {
-    url = window.AISystem6LocalLMStudio.httpLocalEntryUrl(origin);
-  } catch (error) {
-    blankTab?.close();
-    throw error;
-  }
-  // [lane-honesty] Clipboard writes can be denied by the browser; the modal
-  // must not claim "copied" unless the write actually landed.
-  let clipboardCopied = true;
-  try {
-    await copyTextToClipboard(url);
-  } catch {
-    clipboardCopied = false;
-  }
-  const copyStatusKey = clipboardCopied ? "safari_http_local_copied" : "safari_http_local_not_copied";
-  await showSystemModal(
-    `${t(copyStatusKey, url)}\n\n${t("safari_http_local_paste_hint")}`,
-    "alert",
-    { confirmKey: "ok" }
-  );
-}
-
-async function connectLocalLmStudio(options = {}) {
-  if (window.AISystem6LocalLMStudio?.isSafariPublicWebUnsupported?.()) {
-    if (options.toggle !== false) {
-      try {
-        await openSafariHttpLocalEntry();
-      } catch (error) {
-        renderLocalConnectionStatus(localConnectionErrorKey(error));
-        if (!options.silent) setStatus(t(localConnectionErrorKey(error)), { notify: false });
-      }
-    } else {
-      renderLocalConnectionStatus("local_connection_safari_unsupported");
-    }
-    return null;
-  }
-  if (localLmStudioConnectionEnabled && options.toggle !== false) {
-    localLmStudioConnectionEnabled = false;
-    setModelPickerOptions([], []);
-    updateLocalModelState({ server: false, models: false, loaded: false, ready: false, running: false, task: "" });
-    renderLocalConnectionStatus("disconnected");
-    scheduleSettingsSave();
-    return null;
-  }
-  renderLocalConnectionStatus("connecting");
-  try {
-    endpointInput.value = window.AISystem6LocalLMStudio.normalizeBaseUrl(endpointInput.value);
-    const data = await window.AISystem6LocalLMStudio.listModels({ signal: options.signal });
-    const chatModels = Array.isArray(data.chatModels) ? data.chatModels : Array.isArray(data.models) ? data.models : [];
-    const embeddingModels = Array.isArray(data.embeddingModels) ? data.embeddingModels : [];
-    setModelPickerOptions(chatModels, embeddingModels);
-    const loadedModel = syncLoadedLocalModel(data, chatModels);
-    let selectedModel = loadedModel
-      || findMatchingModel(chatModels, activeChatModelIdentifier)
-      || findMatchingModel(chatModels, modelInput.value.trim());
-    if (selectedModel && loadedModel) {
-      modelInput.value = selectedModel.id;
-      if (localModelSelectEl()) localModelSelectEl().value = selectedModel.id;
-      updateContextMaxForCurrentModel();
-    }
-    // A previous endpoint can leave its model id in the shared input. Normal
-    // picker mode must select from the new endpoint's actual inventory or the
-    // connection looks successful while every composer remains disabled.
-    // Manual mode intentionally keeps the operator's explicit model id.
-    if (!selectedModel && chatModels.length && !isManualLocalModelMode()) {
-      selectedModel = chatModels[0];
-      modelInput.value = selectedModel.id;
-      if (localModelSelectEl()) localModelSelectEl().value = selectedModel.id;
-      updateContextMaxForCurrentModel();
-    }
-    const ready = !!(selectedModel && (data.autoLoad || loadedModel?.id === selectedModel.id));
-    if (modelPickerStatusEl) {
-      modelPickerStatusEl.textContent = t("models_found_split", chatModels.length, embeddingModels.length);
-    }
-    updateLocalModelState({
-      server: true,
-      models: chatModels.length > 0,
-      selected: !!selectedModel,
-      loaded: ready,
-      ready,
-      running: false,
-      task: "",
-    });
-    localLmStudioConnectionEnabled = true;
-    renderLocalConnectionStatus("ready", data);
-    scheduleSettingsSave();
-    return data;
-  } catch (error) {
-    localLmStudioConnectionEnabled = false;
-    renderLocalConnectionStatus(localConnectionErrorKey(error));
-    updateLocalModelState({ server: false, models: false, loaded: false, ready: false, running: false, task: "" });
-    if (!options.silent) setStatus(t(localConnectionErrorKey(error)), { notify: false });
-    return null;
-  }
-}
-
-function isManualLocalModelMode() {
-  return !!localManualModelInputEl()?.checked;
-}
-
-function optionTextForModel(model) {
-  return model?.name && model.name !== model.id ? `${model.name} (${model.id})` : model?.id || "";
-}
-
-function setSelectOptions(select, models, value) {
-  if (!select) return;
-  const currentValue = String(value || "").trim();
-  select.replaceChildren();
-  models.forEach((model) => {
-    const option = document.createElement("option");
-    option.value = model.id;
-    option.textContent = optionTextForModel(model);
-    select.append(option);
-  });
-  if (currentValue && ![...select.options].some((option) => option.value === currentValue)) {
-    const option = document.createElement("option");
-    option.value = currentValue;
-    option.textContent = currentValue;
-    select.append(option);
-  }
-  select.value = currentValue || select.options[0]?.value || "";
-  select.disabled = select.options.length === 0;
-}
-
-function syncLocalModelControls() {
-  const manual = isManualLocalModelMode();
-  const modelSelect = localModelSelectEl();
-  const embeddingSelect = localEmbeddingModelSelectEl();
-  if (modelSelect) {
-    modelSelect.hidden = manual;
-    modelSelect.disabled = manual || modelSelect.options.length === 0;
-  }
-  if (embeddingSelect) {
-    embeddingSelect.hidden = manual;
-    embeddingSelect.disabled = manual || embeddingSelect.options.length === 0;
-  }
-  if (modelInput) {
-    modelInput.hidden = !manual;
-    modelInput.disabled = !manual;
-  }
-  if (embeddingModelInput) {
-    embeddingModelInput.hidden = !manual;
-    embeddingModelInput.disabled = !manual;
-  }
-  if (typeof refreshSystemSelectControls === "function") refreshSystemSelectControls();
-}
-
-function renderContextLengthPresets() {
-  const select = contextLengthPresetEl();
-  if (!select) return;
-  const currentValue = String(contextLengthInput?.value || "").trim();
-  const max = Number(typeof currentModelMaxContextTokens === "function" ? currentModelMaxContextTokens() : 0);
-  const values = contextLengthPresetValues.filter((value) => !max || value <= max);
-  if (max && !values.includes(max)) values.push(max);
-  if (currentValue && !values.includes(Number(currentValue))) values.push(Number(currentValue));
-  values.sort((a, b) => a - b);
-  select.replaceChildren();
-  const placeholder = document.createElement("option");
-  placeholder.value = "";
-  placeholder.textContent = typeof t === "function" ? t("context_length_preset") : "Preset";
-  select.append(placeholder);
-  values.filter((value) => Number.isFinite(value) && value > 0).forEach((value) => {
-    const option = document.createElement("option");
-    option.value = String(value);
-    option.textContent = String(value);
-    select.append(option);
-  });
-  select.value = "";
-  if (typeof refreshSystemSelectControls === "function") refreshSystemSelectControls();
-}
-
-function setModelPickerOptions(chatModels, embeddingModels = []) {
-  const previousChatModel = modelInput?.value || "";
-  const previousEmbeddingModel = embeddingModelInput?.value || "";
-  const modelSelect = localModelSelectEl();
-  const embeddingSelect = localEmbeddingModelSelectEl();
-  modelCatalog = Array.isArray(chatModels) ? chatModels : [];
-  embeddingModelCatalog = Array.isArray(embeddingModels) ? embeddingModels : [];
-
-  if (modelCatalog.length) {
-    const selected = findMatchingModel(modelCatalog, previousChatModel) || (previousChatModel ? null : modelCatalog[0]);
-    if (selected) modelInput.value = selected.id;
-    if (selected?.max_context_length) {
-      contextMaxByModel[modelContextKey(selected.id)] = {
-        max: selected.max_context_length,
-        source: selected.max_context_source || "detected",
-      };
-    }
-  }
-  setSelectOptions(modelSelect, modelCatalog, modelInput?.value || previousChatModel);
-
-  if (embeddingModelCatalog.length) {
-    const selectedEmbedding = findMatchingModel(embeddingModelCatalog, previousEmbeddingModel) || (previousEmbeddingModel ? null : embeddingModelCatalog[0]);
-    if (selectedEmbedding) embeddingModelInput.value = selectedEmbedding.id;
-  }
-  setSelectOptions(embeddingSelect, embeddingModelCatalog, embeddingModelInput?.value || previousEmbeddingModel);
-  window.AISystem6ModelRoles?.syncSelects?.(modelCatalog);
-  syncLocalModelControls();
-  updateContextMaxForCurrentModel();
-  renderContextLengthPresets();
-}
-
-function friendlyLocalModelError(message = "") {
-  const text = String(message || "");
-  if (/ollama_cors_or_offline|ollama_bad_response/i.test(text)) return t("local_connection_ollama_unavailable");
-  if (/ollama_api_incompatible/i.test(text)) return t("local_connection_ollama_incompatible");
-  if (/ollama_model_missing/i.test(text)) return t("local_connection_ollama_no_models");
-  if (/ECONNREFUSED|Failed to fetch|fetch failed|NetworkError|ENOTFOUND|EHOSTUNREACH|ETIMEDOUT/i.test(text)) {
-    return t("lm_studio_unavailable_short");
-  }
-  // The commonest local failure by far, and the one that reached a reader raw:
-  // the server is up and answering, but the model this desk has selected is not
-  // among the ones downloaded into it. The name is the useful part, so it is
-  // kept; the upstream code is not a sentence and was never meant to be read.
-  const missingModel = text.match(/(?:Failed to load LLM|not found in downloaded models)[^'"“]*['"“]([^'"”]+)['"”]/i)
-    || text.match(/model_not_found[^'"“]*['"“]([^'"”]+)['"”]/i);
-  if (missingModel) return t("local_model_not_downloaded", missingModel[1]);
-  if (/model_not_found|not found in downloaded models|Failed to load LLM/i.test(text)) {
-    return t("local_model_not_downloaded", "");
-  }
-  return text || t("lm_studio_unavailable_short");
-}
-
-function firstErrorText(...values) {
-  for (const value of values) {
-    if (!value) continue;
-    if (typeof value === "string") return value;
-    if (typeof value === "object") {
-      const nested = firstErrorText(value.message, value.detail, value.error, value.code, value.type);
-      if (nested) return nested;
-      try {
-        return JSON.stringify(value);
-      } catch {
-        return String(value);
-      }
-    }
-    return String(value);
-  }
-  return "";
-}
-
-function findMatchingModel(models, value) {
-  const modelName = String(value || "").trim();
-  if (!modelName) return null;
-  return models.find((model) => model.id === modelName || model.name === modelName)
-    || models.find((model) => model.id.includes(modelName) || model.name.includes(modelName))
-    || null;
-}
-
-function loadedChatModelFromResponse(data, chatModels) {
-  if (!data?.loaded) return null;
-  return findMatchingModel(chatModels, data.loaded_model || data.loadedModel || data.model || "")
-    || chatModels.find((model) => model.loaded)
-    || null;
-}
-
-function syncLoadedLocalModel(data, chatModels) {
-  const loadedModel = loadedChatModelFromResponse(data, chatModels);
-  if (!loadedModel) return null;
-  activeChatModelIdentifier = "";
-  if (data.loaded_context_length) contextLengthInput.value = String(data.loaded_context_length);
-  if (loadedModel.max_context_length) {
-    contextMaxByModel[modelContextKey(loadedModel.id)] = {
-      max: loadedModel.max_context_length,
-      source: loadedModel.max_context_source || "detected",
-    };
-  }
-  return loadedModel;
-}
-
-async function refreshLocalModelReadiness() {
-  if (!localLmStudioConnectionEnabled) return;
-  if (localModelState.running) return;
-  if (!modelInput.value.trim()) return;
-  try {
-    const data = await window.AISystem6LocalLMStudio.listModels();
-    const chatModels = Array.isArray(data.chatModels) ? data.chatModels : Array.isArray(data.models) ? data.models : [];
-    const embeddingModels = Array.isArray(data.embeddingModels) ? data.embeddingModels : [];
-    setModelPickerOptions(chatModels, embeddingModels);
-    const loadedModel = syncLoadedLocalModel(data, chatModels);
-    const selectedModel = findMatchingModel(chatModels, modelInput.value.trim());
-    const autoLoadReady = !!(data.autoLoad && selectedModel);
-    const loadedMatchesSelected = !!(loadedModel && selectedModel && (
-      loadedModel.id === selectedModel.id || loadedModel.name === selectedModel.name
-    ));
-    const matched = selectedModel || loadedModel;
-    if (matched) {
-      updateContextMaxForCurrentModel();
-      updateLocalModelState({ server: true, models: true, selected: true, loaded: loadedMatchesSelected || autoLoadReady, ready: loadedMatchesSelected || autoLoadReady, running: false, task: "" });
-    } else if (chatModels.length) {
-      updateLocalModelState({ server: true, models: true, selected: true, loaded: false, ready: false, running: false, task: "" });
-    }
-    renderLocalConnectionStatus("ready", data);
-  } catch (error) {
-    renderLocalConnectionStatus(localConnectionErrorKey(error));
-    // Leave saved settings intact; the next model action will report any connection issue.
-  }
-}
-
-function shouldMonitorLocalModelState() {
-  return !!modelInput.value.trim()
-    || !getWindow("control")?.classList.contains("is-hidden")
-    || !getWindow("systemStatus")?.classList.contains("is-hidden");
-}
-
-function startLocalModelMonitor() {
-  refreshLocalModelReadiness();
-  return setInterval(() => {
-    if (shouldMonitorLocalModelState()) refreshLocalModelReadiness();
-  }, 5000);
-}
-
-async function detectLocalModelConnection() {
-  const provider = document.getElementById("local-provider");
-  const status = document.getElementById("local-detection-status");
-  const button = document.getElementById("detect-local-models");
-  if (!provider) return false;
-  setControlLoading(button, true, t("local_detection_checking"));
-  for (const candidate of ["lm-studio", "ollama"]) {
-    provider.value = candidate;
-    provider.dispatchEvent(new Event("change", { bubbles: true }));
-    const data = await connectLocalLmStudio({ toggle: false, silent: true });
-    if (data) {
-      if (status) status.textContent = t(candidate === "ollama" ? "local_detection_found_ollama" : "local_detection_found_lm_studio");
-      setControlLoading(button, false);
-      return true;
-    }
-  }
-  if (status) status.textContent = t("local_detection_none");
-  setControlLoading(button, false);
-  return false;
-}
-
-async function resetAiConnection() {
-  window.AISystem6ClioImages?.invalidateCredentials?.("clio_image_connection_reset");
-  window.AISystem6ClioProvider?.setPreference?.("auto", { persist: false });
-  localLmStudioConnectionEnabled = false;
-  const provider = document.getElementById("local-provider");
-  if (provider) provider.value = "lm-studio";
-  endpointInput.value = window.AISystem6LocalLMStudio.defaultBaseUrl("lm-studio");
-  modelInput.value = "";
-  if (typeof embeddingModelInput !== "undefined" && embeddingModelInput) embeddingModelInput.value = "";
-  setModelPickerOptions([], []);
-  updateLocalModelState({ server: false, models: false, selected: false, loaded: false, ready: false, running: false, task: "" });
-  renderLocalConnectionStatus("local_connection_waiting");
-  if (typeof cloudConfig !== "undefined") cloudConfig = null;
-  if (typeof saveCloudConfig === "function") saveCloudConfig();
-  if (typeof setCloudRuntimeApiKey === "function") setCloudRuntimeApiKey("");
-  const cloudProvider = document.getElementById("cloud-provider");
-  const cloudKey = document.getElementById("cloud-api-key");
-  const cloudModel = document.getElementById("cloud-model");
-  if (cloudProvider) cloudProvider.value = "";
-  if (cloudKey) cloudKey.value = "";
-  if (cloudModel) cloudModel.value = "";
-  document.getElementById("cloud-model-select")?.replaceChildren();
-  await saveDeskState();
-  setStatus(t("reset_ai_connection_done"), { notify: false });
-  setControlTab("cloud");
-  return true;
-}
-
-// Control Panel used to be one long scroll; a phone user could not always
-// reach the close box below it. It is now three tabs (Local Model / Cloud
-// Model / General), each short enough to fit one screen, following the same
-// static tab-switch pattern as the Liquid Cover inspector.
 function setControlTab(name) {
   // Cloud is the one-step path (key + Connect); local LM Studio needs a
   // separate app already running, so it's more often the dead end on a first
@@ -1723,6 +1073,19 @@ function deskRecordFingerprint(item) {
   return JSON.stringify(item);
 }
 
+/**
+ * A copy of a value that is about to be written, detached from whatever the
+ * live object does next.
+ * @param {any} value
+ */
+function freezeDeskWriteValue(value) {
+  try {
+    return structuredClone(value);
+  } catch {
+    return JSON.parse(JSON.stringify(value));
+  }
+}
+
 // Optimistic concurrency, one record at a time.
 //
 // A window may overwrite a stored record only when the stored copy still
@@ -1746,6 +1109,17 @@ function putDeskRecordAtBase(store, plan, id, item, base, conflicts) {
     read.addEventListener("error", () => reject(read.error), { once: true });
     read.addEventListener("success", () => {
       const stored = read.result;
+      // A record that used to be here and is not any more was deleted - by
+      // another window, or by this one on another device. An ordinary save
+      // may not put it back: carrying a base means this operation descends
+      // from a version that has since been removed, and re-creating it under
+      // the same id would silently undo that deletion. A record with no base
+      // at all is a genuine creation and still follows the creation rule.
+      if (!stored && base !== undefined) {
+        conflicts.push({ key: plan.key, id: String(id) });
+        resolve(null);
+        return;
+      }
       // A record the store has never seen is nobody's older copy. A record
       // this window has never seen on disk is compared against what it is
       // about to write, so two windows that independently created identical
@@ -1768,7 +1142,16 @@ function putDeskRecordAtBase(store, plan, id, item, base, conflicts) {
       // on disk. A single-tab session has no other window to broadcast the
       // correction, so a mismatch made here never self-clears without this.
       const fingerprint = deskRecordFingerprint(item);
-      const write = plan.key === "trash" ? store.put(item, id) : store.put(item);
+      let write;
+      try {
+        write = plan.key === "trash" ? store.put(item, id) : store.put(item);
+      } catch (error) {
+        // A store that refuses the request throws here, inside a success
+        // listener where nothing else can catch it. Rethrowing into the event
+        // loop left this promise - and the queue behind it - waiting forever.
+        reject(error);
+        return;
+      }
       write.addEventListener("error", () => reject(write.error), { once: true });
       write.addEventListener(
         "success",
@@ -1798,7 +1181,13 @@ function deleteDeskRecordAtBase(store, plan, id, base, conflicts) {
         resolve();
         return;
       }
-      const remove = store.delete(id);
+      let remove;
+      try {
+        remove = store.delete(id);
+      } catch (error) {
+        reject(error);
+        return;
+      }
       remove.addEventListener("error", () => reject(remove.error), { once: true });
       remove.addEventListener("success", () => resolve(), { once: true });
     }, { once: true });
@@ -1814,15 +1203,29 @@ function putSettingsAtBase(store, payload, base, conflicts) {
     read.addEventListener("error", () => reject(read.error), { once: true });
     read.addEventListener("success", () => {
       const stored = read.result;
+      // No base means "this window cannot say what version it descends from" -
+      // which is what a deliberate invalidation leaves behind, and what a
+      // window that has not read the desk yet has too. Requiring the two
+      // snapshots to be identical then reads as a fence but behaves as a wall:
+      // a settings change made after any invalidation was refused forever, so
+      // a toggle the user flipped never reached the disk. The honest base for
+      // a snapshot we cannot date is the disk's own copy, read here inside the
+      // same transaction the write happens in.
       const matches = base === undefined
-        ? !stored || deskRecordFingerprint(stored) === deskRecordFingerprint(payload)
+        ? true
         : !!stored && deskRecordFingerprint(stored) === base;
       if (!matches) {
         conflicts.push({ key: "settings", id: "settings" });
         resolve();
         return;
       }
-      const write = store.put(payload, "settings");
+      let write;
+      try {
+        write = store.put(payload, "settings");
+      } catch (error) {
+        reject(error);
+        return;
+      }
       write.addEventListener("error", () => reject(write.error), { once: true });
       write.addEventListener("success", () => resolve(), { once: true });
     }, { once: true });
@@ -1836,25 +1239,75 @@ function deskRecordConflictError(conflicts) {
   return error;
 }
 
+// The collections whose writers all report their own changes, so a plan may
+// trust the reports instead of fingerprinting every record on the desk. Which
+// ones qualify is measured, not assumed: the save-plan comparison in
+// tests/e2e/scan-shadow.spec.mjs drives the app's own entry points with the
+// comparison switched on, and a collection only joins this list once its
+// writers have been shown to name every record they move.
+//
+// `projects` is deliberately absent. Project records are edited in place from
+// a dozen features (the outline claim, DocMap, the dictionary, the Finder
+// labels, the writing flow), and while the cheap detector below covers the
+// active project, the rest of them have not been migrated yet. Trusting them
+// would trade a measurable few milliseconds for a silent loss.
+// Empty on purpose, and not because the mechanism is unused: this is the
+// migration gate, and the first collection joins it when its scan-shadow run
+// proves every writer names every record it moves. Until then the plan reads
+// the bytes, because the alternative is the failure this desk has already paid
+// for once — a save that reports memory as written while the disk never saw it.
+//
+// The lane that introduced the trust list also wrote the control that rules it
+// out for now: tests/features/desk-commit-consistency.test.mjs edits a record
+// in place with nothing marking it and requires the next plan to catch it, and
+// tests/e2e/scan-shadow.spec.mjs says its instrument is only trustworthy
+// because "an edit nobody reported has to be caught, or the run above proves
+// nothing". Trusting chatFiles or the rest before their writers report would
+// skip exactly that comparison, for a few milliseconds, silently.
+const reportedWriterKeys = new Set();
+
 function deskCollectionPlan(definition) {
   const previous = storageRecordFingerprintCache.get(definition.key) || new Map();
   const current = new Map();
   const puts = [];
-  definition.items.forEach((item, index) => {
-    const id = deskRecordIdentity(definition.key, item, index);
+  // Trust the writers only while nothing is measuring them: with the
+  // comparison switched on the plan reads every record, because that scan is
+  // the evidence that the writers are still trustworthy.
+  const trustReports = reportedWriterKeys.has(definition.key)
+    && window.AISystem6ScanShadow?.isEnabled?.() !== true;
+  const dirtyHere = dirtyDeskRecords.get(definition.key);
+  definition.items.forEach((liveItem, index) => {
+    const id = deskRecordIdentity(definition.key, liveItem, index);
     const cacheKey = String(id);
-    const fingerprint = deskRecordFingerprint(item);
+    const known = previous.get(cacheKey);
+    if (trustReports && known && !dirtyHere?.has(cacheKey)) {
+      // Nothing reported this record and it is already on the desk: carry the
+      // base forward without re-reading bytes that are, by the writers' own
+      // account, unchanged. This is what makes a save cost what the edit cost.
+      current.set(cacheKey, known);
+      return;
+    }
+    // One fingerprint per record is what makes this plan incremental - only a
+    // record whose bytes moved is written - and the scan is bounded by the
+    // desk, not by the edit: the comparison is the scan.
+    const fingerprint = deskRecordFingerprint(liveItem);
     current.set(cacheKey, { id, fingerprint });
-    if (
-      previous.get(cacheKey)?.fingerprint !== fingerprint
-      || dirtyDeskRecords.get(definition.key)?.has(cacheKey)
-    ) {
-      puts.push({ id, item, base: previous.get(cacheKey)?.fingerprint });
+    if (known?.fingerprint !== fingerprint || dirtyHere?.has(cacheKey)) {
+      // Freeze only what this plan will write. A plan is a promise about the
+      // bytes it will store, so the write may not be "whatever the live object
+      // says when the transaction finally opens": typing continues while
+      // IndexedDB works, and a save that reports the newest memory as written
+      // claims bytes the disk never saw. Records that are not written need no
+      // copy at all.
+      const item = freezeDeskWriteValue(liveItem);
+      puts.push({ id, item, base: known?.fingerprint });
     }
   });
   const deletes = [];
   for (const [cacheKey, cached] of previous) {
-    if (!current.has(cacheKey)) deletes.push({ id: cached.id, base: cached.fingerprint });
+    if (current.has(cacheKey)) continue;
+    if (confirmedDeletes.has(`${definition.key}:${cacheKey}`)) continue;
+    deletes.push({ id: cached.id, base: cached.fingerprint });
   }
   for (const cacheKey of deletedDeskRecords.get(definition.key) || []) {
     const cached = previous.get(cacheKey);
@@ -1949,17 +1402,24 @@ function requestProxiedDeskCommit({ changedPlans, settingsPayload, settingsBase,
   }
   const requestId = `${liveProgressInstanceId()}:${Date.now()}:${Math.random().toString(36).slice(2)}`;
   return new Promise((resolve, reject) => {
-    const settle = (error) => {
+    const settle = (error, written) => {
       const pending = pendingDeskProxyWrites.get(requestId);
       if (!pending) return;
       clearTimeout(pending.timeoutId);
       pendingDeskProxyWrites.delete(requestId);
       if (error) reject(error);
-      else resolve();
+      else resolve(written ?? null);
     };
     pendingDeskProxyWrites.set(requestId, {
       settle,
-      timeoutId: setTimeout(() => settle(new Error("The window that owns writing did not answer.")), deskProxyTimeoutMs),
+      timeoutId: setTimeout(() => {
+        // Silence is not a refusal: the holder may have written the records
+        // and lost only the reply. The caller checks the store before deciding
+        // whether this work is still unsent.
+        const error = new Error("The window that owns writing did not answer.");
+        error.code = "DESK_PROXY_TIMEOUT";
+        settle(error);
+      }, deskProxyTimeoutMs),
     });
     try {
       channel.postMessage({
@@ -1983,8 +1443,9 @@ async function handleProxiedDeskWriteRequest(message) {
   if (window.AISystem6WriteLease?.canMutate?.() !== true) return;
   const changedPlans = (message.plans || []).map((plan) => ({ ...plan }));
   let failure = null;
+  let written = null;
   try {
-    await runDeskCommit({
+    written = await runDeskCommit({
       changedPlans,
       settingsPayload: message.settingsPayload,
       settingsBase: message.settingsBase,
@@ -2001,6 +1462,10 @@ async function handleProxiedDeskWriteRequest(message) {
       from: liveProgressInstanceId(),
       requestId: message.requestId,
       failure,
+      // The fingerprints the transaction actually wrote. The sender advances
+      // its base to these and to nothing newer, so a reply that arrives after
+      // the sender kept typing does not make the newer text count as saved.
+      written,
     });
   } catch {}
   if (failure) return;
@@ -2021,7 +1486,7 @@ function handleProxiedDeskWriteReply(message) {
   const pending = pendingDeskProxyWrites.get(message.requestId);
   if (!pending) return;
   if (!message.failure) {
-    pending.settle(null);
+    pending.settle(null, message.written);
     return;
   }
   if (message.failure.code === "DESK_RECORD_CONFLICT") {
@@ -2029,6 +1494,58 @@ function handleProxiedDeskWriteReply(message) {
     return;
   }
   pending.settle(new Error(message.failure.message || "The write could not be completed."));
+}
+
+/**
+ * Did the write this plan describes actually land? A proxied write whose
+ * reply went missing leaves the result unknown, and the store is the only
+ * party that can settle it. Every record the plan would have written must
+ * match and every delete must be gone: a partial match is not a success, and
+ * running the write again over a committed one is worse than waiting.
+ *
+ * @param {{ changedPlans: any[], shouldWriteSettings?: boolean, settingsPayload?: any }} payload
+ * @returns {Promise<any[] | null>} the fingerprints that are on the disk, or null when they are not
+ */
+async function deskPlansLandedOnDisk({ changedPlans, shouldWriteSettings, settingsPayload }) {
+  const storeNames = changedPlans.map((plan) => plan.storeName);
+  if (shouldWriteSettings) storeNames.push(keyvalStoreName);
+  if (!storeNames.length) return [];
+  let db;
+  try {
+    db = await openAppDb();
+    const transaction = db.transaction(storeNames, "readonly");
+    const completion = window.AISystem6StorageTransactions.transactionDone(transaction);
+    const checks = [];
+    changedPlans.forEach((plan) => {
+      const store = transaction.objectStore(plan.storeName);
+      plan.puts.forEach(({ id, item }) => {
+        const fingerprint = deskRecordFingerprint(item);
+        checks.push(idbRequest(store.get(id)).then((stored) => ({
+          ok: Boolean(stored) && deskRecordFingerprint(stored) === fingerprint,
+          entry: { key: plan.key, cacheKey: String(id), id, fingerprint },
+        })));
+      });
+      plan.deletes.forEach(({ id }) => {
+        checks.push(idbRequest(store.get(id)).then((stored) => ({ ok: !stored, entry: null })));
+      });
+    });
+    if (shouldWriteSettings) {
+      const expected = JSON.stringify(settingsPayload);
+      checks.push(idbRequest(transaction.objectStore(keyvalStoreName).get("settings")).then((stored) => ({
+        ok: Boolean(stored) && JSON.stringify(stored) === expected,
+        entry: null,
+      })));
+    }
+    const results = await Promise.all(checks);
+    await completion;
+    if (!results.length || results.some((result) => !result.ok)) return null;
+    return results.map((result) => result.entry).filter(Boolean);
+  } catch (error) {
+    console.warn("A proxied write could not be confirmed against the store.", error);
+    return null;
+  } finally {
+    db?.close();
+  }
 }
 
 // Proxying is for the case where another LIVE window holds the connection. A
@@ -2044,15 +1561,23 @@ async function commitDeskPlansWhereverTheConnectionIs(payload) {
     return await runDeskCommit(payload);
   }
   try {
-    await requestProxiedDeskCommit(payload);
     // A proxied write's cache correction rides the existing multi-window
-    // path instead: the holder already re-syncs its own cache from the
-    // records it just wrote (handleProxiedDeskWriteRequest), broadcasts
-    // them, and this window's applyDeskRecordChanges listener re-reads and
-    // adopts the real disk value from that broadcast. Nothing local here
-    // could be trusted anyway - a different window did the actual write.
-    return null;
+    // path: the holder writes at the fence, tells this window which
+    // fingerprints it stored, and re-syncs its own copy. The reply is the
+    // answer to THIS request (same requestId), so the base advances to what
+    // this commit wrote and not to whatever a later broadcast happens to
+    // carry.
+    return await requestProxiedDeskCommit(payload);
   } catch (error) {
+    // A timeout is not a "no". The holder may have committed and lost only
+    // the reply, and treating that as "nothing happened" is how one committed
+    // write gets performed a second time - a delete of a re-created record,
+    // an insert of a receipt that already exists. Ask the store itself before
+    // deciding this work is still unsent.
+    if (error?.code === "DESK_PROXY_TIMEOUT") {
+      const landed = await deskPlansLandedOnDisk(payload);
+      if (landed) return landed;
+    }
     // A refusal is an answer and stands. Silence is not. A holder that does
     // not answer is a holder in name only - it may have closed between the
     // request and the reply, or be wedged - and leaving every other window
@@ -2068,19 +1593,38 @@ async function commitDeskPlansWhereverTheConnectionIs(payload) {
 
 // A refused save has two edges. While it stands, no surface may claim the
 // work is saved (the capsule and the desk cells would contradict the status
-// bar); when a later commit succeeds, every one of those surfaces must return
-// to normal. One flag, one refresh, called from both transitions.
+// bar); when the record's own commit succeeds, every one of those surfaces
+// must return to normal. The state is per record and the flag is derived from
+// it: one boolean meant any successful save cleared every conflict, so a
+// receipt landing cleanly could make the bar claim a manuscript was saved
+// while its own write was still refused.
 let standingDeskRecordConflict = false;
 
 function isDeskRecordConflictStanding() {
   return standingDeskRecordConflict;
 }
 
-function setDeskRecordConflictStanding(next) {
-  const value = next === true;
+function refreshDeskRecordConflictStanding() {
+  const value = deskRecordConflictCount() > 0;
   if (standingDeskRecordConflict === value) return;
   standingDeskRecordConflict = value;
   if (typeof refreshTeachTextConflictSurfaces === "function") refreshTeachTextConflictSurfaces();
+}
+
+/**
+ * `true` is the coarse edge - a refusal this save could not pin to a named
+ * record. `false` re-derives the flag from the register instead of lowering
+ * it, so clearing one record's conflict cannot clear another's.
+ * @param {boolean} next
+ */
+function setDeskRecordConflictStanding(next) {
+  if (next === true) {
+    if (standingDeskRecordConflict) return;
+    standingDeskRecordConflict = true;
+    if (typeof refreshTeachTextConflictSurfaces === "function") refreshTeachTextConflictSurfaces();
+    return;
+  }
+  refreshDeskRecordConflictStanding();
 }
 
 async function persistDeskState() {
@@ -2095,7 +1639,10 @@ async function persistDeskState() {
     syncCurrentNotePadPage();
     const plans = deskCollectionDefinitions().map(deskCollectionPlan);
     const changedPlans = plans.filter((plan) => plan.puts.length || plan.deletes.length);
-    const settingsPayload = settingsSnapshotPayload();
+    // Settings travel as one record, and the same rule applies: the snapshot
+    // that is written is the one the base will advance to, so it is frozen
+    // rather than pointing at the live inputs behind it.
+    const settingsPayload = freezeDeskWriteValue(settingsSnapshotPayload());
     const settingsSnapshot = JSON.stringify(settingsPayload);
     const settingsBase = storageSnapshotCache.get("settings");
     const shouldWriteSettings = settingsBase !== settingsSnapshot;
@@ -2117,43 +1664,96 @@ async function persistDeskState() {
       settingsBase,
       shouldWriteSettings,
     });
-    setDeskRecordConflictStanding(false);
-    // plan.current was fingerprinted when the plan was built, before the
-    // transaction above ever opened. This window's own code can advance a
-    // record in that gap (a run receipt commit landing between two edits is
-    // the case that surfaced this), so the disk can end up holding bytes
-    // this plan never fingerprinted. writtenFingerprints carries the
-    // fingerprint each record actually had at the moment it was written
-    // (see putDeskRecordAtBase); prefer that over the plan's guess wherever
-    // both exist, or the cache remembers a base that matches neither this
-    // window's memory nor disk, and every later save is refused forever with
-    // no other window to send the correction.
-    if (Array.isArray(writtenFingerprints) && writtenFingerprints.length) {
-      const byKey = new Map();
-      writtenFingerprints.forEach((entry) => {
-        if (!byKey.has(entry.key)) byKey.set(entry.key, new Map());
-        byKey.get(entry.key).set(entry.cacheKey, { id: entry.id, fingerprint: entry.fingerprint });
-      });
-      byKey.forEach((corrections, key) => {
-        const plan = plans.find((candidate) => candidate.key === key);
-        corrections.forEach((value, cacheKey) => plan?.current.set(cacheKey, value));
-      });
-    }
-    plans.forEach((plan) => storageRecordFingerprintCache.set(plan.key, plan.current));
-    broadcastDeskRecordChanges(changedPlans, shouldWriteSettings);
-    if (shouldWriteSettings) storageSnapshotCache.set("settings", settingsSnapshot);
-    changedPlans.forEach((plan) => {
-      dirtyDeskRecords.delete(plan.key);
-      deletedDeskRecords.delete(plan.key);
-      dirtyDeskCollections.delete(plan.key);
-    });
-    lastDeskPersistenceStats = {
+    // From here the transaction HAS committed. Everything below is
+    // bookkeeping, broadcast and derived-index work: it may fail, and when it
+    // does the only honest report is that the interface could not catch up -
+    // never that the save failed, and never a rollback of records the
+    // database already holds.
+    const reported = {
       storesTouched: changedPlans.map((plan) => plan.key),
       puts: changedPlans.reduce((total, plan) => total + plan.puts.length, 0),
       deletes: changedPlans.reduce((total, plan) => total + plan.deletes.length, 0),
       settingsWritten: shouldWriteSettings,
-      durationMs: performance.now() - startedAt,
+      durationMs: 0,
     };
+    try {
+      // plan.current was fingerprinted when the plan was built, before the
+      // transaction above ever opened. This window's own code can advance a
+      // record in that gap (a run receipt commit landing between two edits is
+      // the case that surfaced this), so the disk can end up holding bytes
+      // this plan never fingerprinted. writtenFingerprints carries the
+      // fingerprint each record actually had at the moment it was written
+      // (see putDeskRecordAtBase); prefer that over the plan's guess wherever
+      // both exist, or the cache remembers a base that matches neither this
+      // window's memory nor disk, and every later save is refused forever
+      // with no other window to send the correction.
+      if (Array.isArray(writtenFingerprints) && writtenFingerprints.length) {
+        const byKey = new Map();
+        writtenFingerprints.forEach((entry) => {
+          if (!byKey.has(entry.key)) byKey.set(entry.key, new Map());
+          byKey.get(entry.key).set(entry.cacheKey, { id: entry.id, fingerprint: entry.fingerprint });
+        });
+        byKey.forEach((corrections, key) => {
+          const plan = plans.find((candidate) => candidate.key === key);
+          corrections.forEach((value, cacheKey) => plan?.current.set(cacheKey, value));
+        });
+      }
+      plans.forEach((plan) => {
+        // The base advances to what this write confirmed - never past it, and
+        // never over the base of a record another window created while this
+        // transaction was open and the plan could not see.
+        const next = new Map(plan.current);
+        // Except the records this write just deleted. Keeping a tombstone's
+        // base is what made every following save re-issue the same delete
+        // forever, and it is why the shadow comparison kept naming a deletion
+        // nobody had stopped reporting: the writer reported it once, the cache
+        // remembered it as still present, and each plan deleted it again.
+        storageRecordFingerprintCache.get(plan.key)?.forEach((value, cacheKey) => {
+          if (!next.has(cacheKey)) next.set(cacheKey, value);
+        });
+        storageRecordFingerprintCache.set(plan.key, next);
+      });
+      broadcastDeskRecordChanges(changedPlans, shouldWriteSettings);
+      if (shouldWriteSettings) storageSnapshotCache.set("settings", settingsSnapshot);
+      // Only what this write confirmed stops being dirty. A keystroke that
+      // arrived while the transaction was open belongs to the next save, and
+      // only the conflicts this commit answered are cleared: a receipt that
+      // landed cleanly says nothing about a manuscript whose write is still
+      // refused.
+      changedPlans.forEach((plan) => {
+        const dirty = dirtyDeskRecords.get(plan.key);
+        const deleted = deletedDeskRecords.get(plan.key);
+        const resolved = [];
+        plan.puts.forEach(({ id }) => {
+          const cacheKey = String(id);
+          dirty?.delete(cacheKey);
+          confirmedDeletes.delete(`${plan.key}:${cacheKey}`);
+          resolved.push({ key: plan.key, id: cacheKey });
+        });
+        plan.deletes.forEach(({ id }) => {
+          const cacheKey = String(id);
+          dirty?.delete(cacheKey);
+          deleted?.delete(cacheKey);
+          confirmedDeletes.add(`${plan.key}:${cacheKey}`);
+          resolved.push({ key: plan.key, id: cacheKey });
+        });
+        clearDeskRecordConflicts(resolved);
+        if (!dirty?.size && !deleted?.size) dirtyDeskCollections.delete(plan.key);
+      });
+      setDeskRecordConflictStanding(false);
+      window.AISystem6DerivedIndexQueue?.afterProjectCommit();
+      // Whatever is persisted is announced. Persistence and the mirror used
+      // to be two roads and only one of them told the other windows: the
+      // live-progress commit broadcast, saveDeskState did not. So every
+      // command that saves without typing -- adding a section, any structural
+      // edit of the outline, a toggle -- put the store ahead of every other
+      // window's memory of it, and the next window to take the pen wrote its
+      // older copy back over the top.
+      announceWorkingText();
+    } catch (bookkeepingError) {
+      console.warn("The desk could not finish its post-commit bookkeeping.", bookkeepingError);
+    }
+    lastDeskPersistenceStats = { ...reported, durationMs: performance.now() - startedAt };
     endPerf?.({
       stores: lastDeskPersistenceStats.storesTouched.join(","),
       puts: lastDeskPersistenceStats.puts,
@@ -2180,6 +1780,11 @@ async function persistDeskState() {
     if (conflicted) {
       if (typeof setStatus === "function") setStatus(t("desk_record_conflict_status"));
       setDeskRecordConflictStanding(true);
+      // Name the records too: the coarse flag alone cannot tell which of them
+      // a later, unrelated commit has answered.
+      (Array.isArray(error.conflicts) ? error.conflicts : []).forEach(({ key, id }) => {
+        noteDeskRecordConflict(String(key), String(id));
+      });
     }
     endPerf?.({ error: true, conflict: conflicted });
     return false;
@@ -2527,6 +2132,7 @@ function applySettings(settings) {
   renderClipboard();
   if (settings.activeProjectId) activeProjectId = settings.activeProjectId;
   if (settings.startupProjectId) startupProjectId = settings.startupProjectId;
+  if (typeof settings.startupProjectPinned === "boolean") startupProjectPinned = settings.startupProjectPinned;
   workspaceProfileWasRestored = Object.prototype.hasOwnProperty.call(settings, "workspaceProfile");
   workspaceProfile = normalizeWorkspaceProfile(settings.workspaceProfile);
   syncWorkspaceProfileDom();
@@ -2570,6 +2176,68 @@ function applySettings(settings) {
 
 function updateClock() {
   renderSystemClock();
+  notifySystemClockListeners();
+}
+
+// One clock, one tick. The menu clock, the status clock and the Control
+// Strip's clock tile all show the same minute; a consumer that wants to know
+// when it changes subscribes here instead of running a timer of its own (the
+// Control Strip used to keep a second hand on a one-second interval, so the
+// same minute was refreshed sixty times to keep one tile honest).
+const systemClockListeners = new Set();
+
+/** @param {() => void} listener @returns {() => void} */
+function subscribeSystemClock(listener) {
+  if (typeof listener !== "function") return () => {};
+  systemClockListeners.add(listener);
+  return () => systemClockListeners.delete(listener);
+}
+
+function notifySystemClockListeners() {
+  [...systemClockListeners].forEach((listener) => {
+    try {
+      listener();
+    } catch (error) {
+      console.warn("A clock subscriber failed.", error);
+    }
+  });
+}
+
+// The desk clock shows hours and minutes, so the next moment it can change is
+// the next whole minute. A once-a-second timer repainted the same two digits
+// sixty times over: 3,600 DOM writes an hour for a display that moves once a
+// minute. The tick is scheduled to land on the boundary, and the return from a
+// backgrounded page reads the real time at once instead of waiting for the next
+// boundary (a minute can pass while the page is hidden and no frames run).
+let systemClockTimer = 0;
+
+/** Milliseconds until the wall clock reaches the next whole minute. */
+function millisecondsUntilNextMinute(now = new Date()) {
+  const elapsed = now.getSeconds() * 1000 + now.getMilliseconds();
+  return Math.max(250, 60000 - elapsed);
+}
+
+function scheduleSystemClockTick(now = new Date()) {
+  clearTimeout(systemClockTimer);
+  systemClockTimer = setTimeout(() => {
+    updateClock();
+    scheduleSystemClockTick();
+  }, millisecondsUntilNextMinute(now));
+  return systemClockTimer;
+}
+
+/** Start the clock: paint now, then once per displayed minute. */
+function startSystemClock() {
+  updateClock();
+  scheduleSystemClockTick();
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") return;
+    // Whatever the page missed while it was hidden, the answer is the real
+    // time - not the timer that was left behind.
+    updateClock();
+    scheduleSystemClockTick();
+  });
+  return systemClockTimer;
 }
 
 function formatSystemClockTime(now = new Date()) {

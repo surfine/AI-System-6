@@ -1062,3 +1062,9 @@ window.AISystem6ProjectDiskBackup = (() => {
     verifyIntegrity,
   });
 })();
+
+// The module's own "I am here" flag. The backup travels with an export or a
+// restore rather than with every boot, so config.js loads this file on demand
+// and waits for this flag before handing the call to it; without it the load
+// counts as "ran without installing its API" and the export refuses.
+window.AISystem6ProjectDiskBackupLoaded = true;

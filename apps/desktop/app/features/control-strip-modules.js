@@ -99,6 +99,11 @@ function controlStripSubscribeSoundscape(listener) {
 }
 
 function controlStripSubscribeClock(listener) {
+  // The desk already ticks its clock once per displayed minute; a second,
+  // one-second hand here refreshed the same minute sixty times over for one
+  // tile. Subscribe to the real clock, and keep the old interval only as a
+  // fallback for a page that loaded without the clock module.
+  if (typeof subscribeSystemClock === "function") return subscribeSystemClock(listener);
   const timer = window.setInterval(listener, 1000);
   return () => window.clearInterval(timer);
 }

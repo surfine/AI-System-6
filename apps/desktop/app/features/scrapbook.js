@@ -64,6 +64,19 @@ function refreshScrapMetadata(scrap, { updateTitle = true } = {}) {
   scrap.tags = [...new Set([...sourceTags, ...existingTags.filter((tag) => tag === "reader-clip" || tag === "reader-note" || tag === "document-clip" || tag === "search-result" || tag === "web" || tag === "translation" || tag === "video-transcript"), ...generatedTags])].slice(0, 8);
 }
 
+/**
+ * A scrap that is already on disk was just written to again.
+ *
+ * Scrapbook edits are in-place updates of an existing record, and a save plan
+ * that trusts the writers instead of scanning every record only carries what
+ * the writers named. Editing a scrap, appending a clip to one, and keeping a
+ * model's reading all go through here so none of them depends on the scan.
+ */
+function noteScrapChanged(scrap) {
+  if (!scrap?.id) return;
+  markDeskDirty("scraps", scrap.id);
+}
+
 function getScrapStack(scrap) {
   const body = scrap?.body || "";
   const tags = scrap?.tags || [];
@@ -203,6 +216,7 @@ function clipAssistantSelection() {
 
   scrap.body = `${scrap.body.trim()}\n\n---\n\n${formatClip(selection)}`;
   refreshScrapMetadata(scrap);
+  noteScrapChanged(scrap);
   selectedScrapId = scrap.id;
   lastClipScrapId = scrap.id;
   renderScraps();
@@ -862,6 +876,7 @@ function updateSelectedScrapMetadata() {
 
   scrap.body = scrapBodyInput.value;
   refreshScrapMetadata(scrap);
+  noteScrapChanged(scrap);
 
   scrapTitleDisplay.textContent = scrap.title;
   updateScrapTranslationControls(scrap);
@@ -1434,6 +1449,9 @@ function deleteSelectedScrap() {
     const [scrap] = scraps.splice(index, 1);
     attachedClipIds.delete(scrap.id);
     trashedScraps.push(scrap);
+    // Out of the Scrapbook and into the Trash: the record this save has to
+    // remove has to be named as gone, not left to a scan to notice.
+    markDeskDeleted("scraps", scrap.id);
     trashItems.unshift({
       projectId: activeProjectId,
       title: `${scrap.title}.scrap`,
@@ -1460,8 +1478,32 @@ function deleteSelectedScrap() {
 let smounted=!1;function mountScrapbookRuntime(){if(smounted)return!0;smounted=!0;scrapbookAskForm?.addEventListener("submit",askScrapbookQuestion);registerAskBarSource("scrapbook",describeScrapbookAskScope);toggleScrapTranslationButton?.addEventListener("click",toggleScrapTranslationView);return!0}
 function swin(){return document.querySelector(".window.is-active")?.dataset.window==="scrapbook"}function sctrl(s){const c=document.querySelector(s);return!!c&&!c.disabled&&!c.hidden}
 const sav={"open-scrapbook":()=>!0,"scrapbook-open-source":()=>sctrl("#open-scrap-source"),"scrapbook-page-previous":()=>canMoveScrapbookPage(-1),"scrapbook-page-next":()=>canMoveScrapbookPage(1),"scrapbook-keep-reading":()=>!!scrapReadingProposal,"scrapbook-discard-reading":()=>!!scrapReadingProposal,"scrapbook-toggle-translation":()=>sctrl("#toggle-scrap-translation"),"scrapbook-insert":()=>sctrl("#insert-scrap"),"scrapbook-attach":()=>sctrl("#attach-scrap-to-assistant"),"scrapbook-send-question":()=>sctrl("#send-scraps-to-question"),"scrapbook-outline":()=>sctrl("#outline-scraps"),"scrapbook-export-bilingual":()=>sctrl("#download-scraps-bilingual"),"scrapbook-delete":()=>sctrl("#delete-scrap"),"focus-scrapbook-question":()=>getSelectedScraps().length>0};
+
+/**
+ * Whether a Scrapbook command can run, and what it is waiting for.
+ *
+ * The same answer the menu draws from, with the reason a disabled row can
+ * show: which window has to be in front, or which part of the Scrapbook has to
+ * have something in it first. Side-effect free, so drawing a menu never loads
+ * or starts anything, and the command asks the same question where it runs.
+ */
+function scrapbookCommandAvailability(action) {
+  const name = String(action || "");
+  if (name === "open-scrapbook") return { available: true, reason: "" };
+  if (!swin()) return { available: false, reason: "scrapbook_needs_window" };
+  if (sav[name] && sav[name]() === true) return { available: true, reason: "" };
+  if (name === "scrapbook-keep-reading" || name === "scrapbook-discard-reading") {
+    return { available: false, reason: "scrapbook_no_reading" };
+  }
+  if (name === "focus-scrapbook-question") return { available: false, reason: "scrapbook_no_selection" };
+  if (name === "scrapbook-page-previous" || name === "scrapbook-page-next") {
+    return { available: false, reason: "scrapbook_no_page" };
+  }
+  if (sav[name]) return { available: false, reason: "scrapbook_nothing_selected" };
+  return { available: true, reason: "" };
+}
 const slist=[["open-scrapbook",()=>openWindow("scrapbook")],["scrapbook-open-source",openSelectedScrapSourceInReader],["scrapbook-page-previous",showPreviousScrapbookPage],["scrapbook-page-next",showNextScrapbookPage],["scrapbook-keep-reading",()=>keepScrapReadingProposal()],["scrapbook-discard-reading",()=>discardScrapReadingProposal()],["scrapbook-toggle-translation",toggleScrapTranslationView],["scrapbook-insert",insertScrapIntoPrompt],["scrapbook-attach",toggleClipAttachment],["scrapbook-send-question",sendSelectedScrapsToQuestionSheet],["scrapbook-outline",outlineSelectedScraps],["scrapbook-export-bilingual",downloadSelectedScrapsBilingualMarkdown],["scrapbook-delete",deleteSelectedScrap],["focus-scrapbook-question",()=>scrapbookQuestionInput?.focus()]];
-window.AISystem6Runtime?.registerApplication({id:"scrapbook",windowName:"scrapbook",mount:mountScrapbookRuntime,restore:()=>mountScrapbookRuntime(),commands:Object.fromEntries(slist.map(([a,h])=>[a,{handler:h,isAvailable:()=>a==="open-scrapbook"?!0:swin()&&(sav[a]||(()=>!0))()}]))});
+window.AISystem6Runtime?.registerApplication({id:"scrapbook",windowName:"scrapbook",mount:mountScrapbookRuntime,restore:()=>mountScrapbookRuntime(),commands:Object.fromEntries(slist.map(([a,h])=>[a,{handler:h,isAvailable:()=>scrapbookCommandAvailability(a).available,unavailableReason:()=>scrapbookCommandAvailability(a).reason}]))});
 
 // --- Clipped pictures -------------------------------------------------------
 //
@@ -1607,6 +1649,7 @@ function keepScrapReadingProposal() {
     : scrapReadingProposal.text;
   scrap.body = existing ? `${existing}\n\n${kept}` : kept;
   refreshScrapMetadata(scrap, { updateTitle: !scrap.title });
+  noteScrapChanged(scrap);
   scrapReadingProposal = null;
   renderScraps();
   saveDeskState();

@@ -173,6 +173,21 @@ function refreshReceiptFileBody(file) {
   file.body = body;
   file.hash = typeof contentHash === "function" ? contentHash(body) : "";
   file.updatedAt = runReceiptNow();
+  // The receipt file is a record the desk already holds: say it moved, so a
+  // save plan that trusts the writers carries it.
+  if (file.id) markDeskDirty("chatFiles", file.id);
+}
+
+// A working copy of a receipt file, detached from the record in memory.
+//
+// The live record may only be changed by the commit that persists it. Editing
+// it first and asking the store afterwards means the commit's own
+// before-snapshot already contains the change, so a refused save "puts back"
+// the very state it was supposed to withdraw, and the receipt looks saved
+// while the disk never saw it.
+function runReceiptWorkingCopy(file) {
+  if (typeof structuredClone === "function") return structuredClone(file);
+  return JSON.parse(JSON.stringify(file));
 }
 
 async function persistReceiptFile(file) {
@@ -200,16 +215,20 @@ async function persistReceiptFile(file) {
     console.warn("Run receipt persistence failed.", error);
     return { ok: false, reason: "persist-failed", error };
   }
+  // The commit merged these fields onto the record in the collection, which
+  // may not be the object the caller handed in. Hand back the live one, so
+  // the next update reads the receipt the desk actually shows.
+  const live = findReceiptFile(file.id) || file;
   if (typeof renderDocuments === "function") renderDocuments();
   if (typeof renderProjectDisks === "function") renderProjectDisks();
   runReceiptListeners.forEach((listener) => {
     try {
-      listener({ receiptId: file.id, file });
+      listener({ receiptId: live.id, file: live });
     } catch (error) {
       console.warn("Run receipt listener failed.", error);
     }
   });
-  return { ok: true, file };
+  return { ok: true, file: live };
 }
 
 // Synchronous variant for callers with a sync contract (the ClioTalk Run
@@ -260,7 +279,8 @@ async function createReceipt(input = {}) {
 async function updateReceipt(receiptId, patch = {}) {
   const file = findReceiptFile(receiptId);
   if (!file?.runReceipt) return { ok: false, reason: "missing" };
-  const record = file.runReceipt;
+  const next = runReceiptWorkingCopy(file);
+  const record = next.runReceipt;
   if (Object.prototype.hasOwnProperty.call(patch, "toolCalls") && Array.isArray(patch.toolCalls)) {
     record.toolInvocations = patch.toolCalls.map((tool) => ({
       name: String(tool?.name || ""),
@@ -285,14 +305,15 @@ async function updateReceipt(receiptId, patch = {}) {
     record.affectedObjectIds = [...new Set(patch.affectedObjectIds.map(String).filter(Boolean))];
   }
   if (Object.prototype.hasOwnProperty.call(patch, "replayContract")) record.replayContract = patch.replayContract || null;
-  refreshReceiptFileBody(file);
-  return persistReceiptFile(file);
+  refreshReceiptFileBody(next);
+  return persistReceiptFile(next);
 }
 
 async function finishReceipt(receiptId, { status = "completed", outputObjectIds = [], affectedObjectIds = null, destination = "", publicErrorReason = "" } = {}) {
   const file = findReceiptFile(receiptId);
   if (!file?.runReceipt) return { ok: false, reason: "missing" };
-  const record = file.runReceipt;
+  const next = runReceiptWorkingCopy(file);
+  const record = next.runReceipt;
   const normalizedStatus = runReceiptStatuses.includes(status) ? status : "failed";
   record.status = normalizedStatus;
   if (runReceiptStatusIsTerminal(normalizedStatus) && !record.finishedAt) record.finishedAt = runReceiptNow();
@@ -300,8 +321,8 @@ async function finishReceipt(receiptId, { status = "completed", outputObjectIds 
   if (Array.isArray(affectedObjectIds)) record.affectedObjectIds = [...new Set(affectedObjectIds.map(String).filter(Boolean))];
   if (destination) record.destination = String(destination);
   if (publicErrorReason) record.publicErrorReason = String(publicErrorReason);
-  refreshReceiptFileBody(file);
-  return persistReceiptFile(file);
+  refreshReceiptFileBody(next);
+  return persistReceiptFile(next);
 }
 
 async function recordUserAction(receiptId, { action = "", finalBodyHash = "" } = {}) {
@@ -309,12 +330,13 @@ async function recordUserAction(receiptId, { action = "", finalBodyHash = "" } =
   if (!normalized) return { ok: false, reason: "invalid-action" };
   const file = findReceiptFile(receiptId);
   if (!file?.runReceipt) return { ok: false, reason: "missing" };
-  const record = file.runReceipt;
+  const next = runReceiptWorkingCopy(file);
+  const record = next.runReceipt;
   record.userAction = normalized;
   record.checkpointState = normalized;
   if (finalBodyHash) record.finalBodyHash = String(finalBodyHash);
-  refreshReceiptFileBody(file);
-  return persistReceiptFile(file);
+  refreshReceiptFileBody(next);
+  return persistReceiptFile(next);
 }
 
 function getReceipt(receiptId) {

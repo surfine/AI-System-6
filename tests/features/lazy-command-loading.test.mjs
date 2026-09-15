@@ -10,7 +10,7 @@
 //
 // Two sections, two different guarantees:
 //
-// 1. Every registered lazy ACTION (window.AISystem6Runtime.lazyCommands —
+// 1. Every registered lazy ACTION (window.AISystem6Runtime.listLazyCommands() —
 //    the same map handleAction() itself resolves through) loads through its
 //    real ensure() without throwing.
 //
@@ -45,7 +45,8 @@ const test = createFeatureTest("lazy-command-loading");
 {
   const vmw = createAppBootVm();
   const ctx = vmw.context;
-  const lazyCommands = ctx.window.AISystem6Runtime.lazyCommands;
+  const lazyCommands = new Map(ctx.window.AISystem6Runtime.listLazyCommands()
+    .map((id) => [id, ctx.window.AISystem6Runtime.getLazyCommand(id)]));
   const initialIds = [...lazyCommands.keys()];
 
   test.assert(initialIds.length > 20, `the lazy command registry looks too small to be real (${initialIds.length} entries)`);

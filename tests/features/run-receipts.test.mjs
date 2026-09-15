@@ -47,6 +47,9 @@ function createReceiptsContext(overrides = {}) {
     crypto: webcrypto,
     chatFiles,
     activeProjectId: "project-1",
+    // Installed eagerly by app/core/persistence-status.js in the boot bundle;
+    // the module under test calls it as a plain global.
+    markDeskDirty: () => {},
     ensureFolder: (name, parentId) => {
       folderCalls.push([name, parentId]);
       return { id: `folder-${name}`, name };

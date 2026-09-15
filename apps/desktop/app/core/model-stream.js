@@ -92,13 +92,106 @@ function createToolCallAssembler() {
 }
 
 async function readModelTextStream(response, options = {}) {
-  const { onSnapshot, onUsage, onFinishReason, onResponseId, onResponseApi, onModel, onToolCalls, throttleMs = 80, signal } = options;
+  const { onSnapshot, onUsage, onFinishReason, onResponseId, onResponseApi, onModel, onToolCalls, onStreamEnd, throttleMs = 80, signal } = options;
   if (!response?.ok) {
     const text = await response?.text?.().catch(() => "") || "";
     const detail = text || response?.statusText || `HTTP ${response?.status || 0}`;
     const code = typeof classifyLmStudioError === "function" ? classifyLmStudioError(detail, response) : "";
     throw new Error([code, detail].filter(Boolean).join(": "));
   }
+
+  /**
+   * One assembled SSE event, split into its own lines.
+   *
+   * Assembling first and deciding afterwards is the difference between a
+   * provider's answer and noise: an event ends at a blank line, `data:` lines
+   * inside it belong to the same event, `event:` names it, a line starting
+   * with `:` is the comment a provider sends while it is still thinking, and
+   * every other field is an extension to keep or ignore - never a reason to
+   * fail. Parsing line by line as the bytes arrive is what made a split UTF-8
+   * character, a CRLF, or a JSON object spread over several data lines look
+   * like a broken answer.
+   */
+  const parseEventFrame = (frameText) => {
+    const lines = String(frameText ?? "").split(/\r\n|\r|\n/);
+    const dataLines = [];
+    let eventName = "";
+    let sawControl = false;
+    lines.forEach((line) => {
+      const trimmed = line.trim();
+      if (!trimmed) return;
+      if (trimmed.startsWith(":")) {
+        sawControl = true;
+        return;
+      }
+      const colon = trimmed.indexOf(":");
+      const field = colon === -1 ? trimmed : trimmed.slice(0, colon);
+      let value = colon === -1 ? "" : trimmed.slice(colon + 1);
+      if (value.startsWith(" ")) value = value.slice(1);
+      if (field === "data") {
+        dataLines.push(value);
+        return;
+      }
+      if (field === "event") eventName = value;
+      else if (field === "id" || field === "retry") sawControl = true;
+      // Any other field is an extension: recognised, kept out of the way, and
+      // never a parse failure.
+    });
+    return { eventName, data: dataLines.join("\n"), hasData: dataLines.length > 0, sawControl };
+  };
+
+  /**
+   * The decoded objects an event carries.
+   *
+   * The standard joins an event's data lines with newlines, and that is what
+   * is tried first. Some providers instead put one complete JSON object on
+   * each data line of the same event; when the joined text is not JSON, each
+   * line is decoded on its own. When neither works the event is genuinely
+   * corrupt - and it is reported, never dropped as if it had not arrived yet.
+   */
+  const decodeEventData = (raw) => {
+    try {
+      return [JSON.parse(raw)];
+    } catch {}
+    const pieces = String(raw).split("\n").filter((line) => line.trim());
+    if (!pieces.length) return null;
+    const parsed = [];
+    for (const piece of pieces) {
+      try {
+        parsed.push(JSON.parse(piece));
+      } catch {
+        return null;
+      }
+    }
+    return parsed;
+  };
+
+  /** The failure an event describes, whichever shape the provider uses. */
+  const errorFromEvent = (data) => {
+    const error = data?.error;
+    if (error) {
+      const message = typeof error === "string"
+        ? error
+        : String(error.message || error.detail || error.code || "The model stream failed.");
+      return { code: String(error.code || "model_stream_error"), message };
+    }
+    const own = data?.ai_system6_error;
+    if (own) {
+      const message = typeof own === "string"
+        ? own
+        : String(own.detail || own.error || own.message || "The model stream failed.");
+      return { code: String(own.code || "model_stream_error"), message };
+    }
+    return null;
+  };
+
+  /** A failure that keeps the text already received, verbatim. */
+  const modelStreamFailure = (code, message, partial) => {
+    const error = new Error(message);
+    error.code = code;
+    if (partial) error.partialContent = partial;
+    return error;
+  };
 
   const emitSnapshot = (() => {
     let lastEmitAt = 0;
@@ -116,6 +209,10 @@ async function readModelTextStream(response, options = {}) {
 
   const readJsonFallback = async () => {
     const data = await response.json();
+    // A provider that answers in JSON can still answer with a failure; both
+    // the OpenAI shape and this project's own envelope mean the same thing.
+    const failure = errorFromEvent(data);
+    if (failure) throw modelStreamFailure(failure.code, failure.message, "");
     if (data?.usage?.prompt_tokens) onUsage?.(data.usage);
     if (data?.model) onModel?.(String(data.model));
     if (data?.ai_system6_lmstudio_response_id) onResponseId?.(String(data.ai_system6_lmstudio_response_id));
@@ -132,6 +229,9 @@ async function readModelTextStream(response, options = {}) {
       ?? "";
     const text = String(content || "");
     emitSnapshot(text, true);
+    // A JSON answer is complete when it arrived: the completion rules of an
+    // event stream do not apply to a body that was never framed as events.
+    onStreamEnd?.({ completed: true, sawDone: false, sawFinishReason: Boolean(finishReasonFromJson), streamed: false });
     return text;
   };
 
@@ -152,6 +252,21 @@ async function readModelTextStream(response, options = {}) {
   // the server rather than by the panel.
   let servedModel = "";
   let sawEventFrame = false;
+  let sawDone = false;
+  let deliveredToolCalls = false;
+
+  const stopReader = () => {
+    // Wake a read that is already waiting instead of leaving it to observe the
+    // signal on some later turn of the loop, which is how a cancelled stream
+    // keeps a tab pinned until the provider decides to answer.
+    let cancellation = null;
+    try {
+      cancellation = reader.cancel?.() || null;
+    } catch {
+      return;
+    }
+    if (cancellation && typeof cancellation.catch === "function") cancellation.catch(() => {});
+  };
 
   const appendChunk = (chunk) => {
     if (!chunk) return;
@@ -159,87 +274,133 @@ async function readModelTextStream(response, options = {}) {
     emitSnapshot(content);
   };
 
-  const consumeDataLine = (line) => {
-    const trimmed = String(line || "").trim();
-    if (!trimmed.startsWith("data:")) return false;
-    sawEventFrame = true;
-    const raw = trimmed.replace(/^data:\s*/, "");
-    if (!raw || raw === "[DONE]") return true;
-    try {
-      const data = JSON.parse(raw);
-      if (data.usage?.prompt_tokens) usage = data.usage;
-      if (data.model) servedModel = String(data.model);
-      if (data.ai_system6_lmstudio_response_id) responseId = String(data.ai_system6_lmstudio_response_id);
-      if (data.ai_system6_lmstudio_api) responseApi = String(data.ai_system6_lmstudio_api);
-      const nextFinishReason = data?.choices?.[0]?.finish_reason;
-      if (nextFinishReason) finishReason = String(nextFinishReason);
-      toolCallAssembler.pushDelta(data?.choices?.[0]?.delta?.tool_calls);
-      toolCallAssembler.replaceWithSnapshot(data?.choices?.[0]?.message?.tool_calls);
-      appendChunk(
-        data?.choices?.[0]?.delta?.content
-        ?? data?.choices?.[0]?.message?.content
-        ?? data?.choices?.[0]?.text
-        ?? ""
-      );
-    } catch {
-      // Ignore keepalive or partial event frames; the buffer splitter handles partial frames.
-    }
-    return true;
+  /** Handle one decoded payload of one event. */
+  const consumePayload = (data) => {
+    const failure = errorFromEvent(data);
+    if (failure) throw modelStreamFailure(failure.code, failure.message, content);
+    if (data?.usage?.prompt_tokens) usage = data.usage;
+    if (data.model) servedModel = String(data.model);
+    if (data.ai_system6_lmstudio_response_id) responseId = String(data.ai_system6_lmstudio_response_id);
+    if (data.ai_system6_lmstudio_api) responseApi = String(data.ai_system6_lmstudio_api);
+    const nextFinishReason = data?.choices?.[0]?.finish_reason;
+    if (nextFinishReason) finishReason = String(nextFinishReason);
+    toolCallAssembler.pushDelta(data?.choices?.[0]?.delta?.tool_calls);
+    toolCallAssembler.replaceWithSnapshot(data?.choices?.[0]?.message?.tool_calls);
+    appendChunk(
+      data?.choices?.[0]?.delta?.content
+      ?? data?.choices?.[0]?.message?.content
+      ?? data?.choices?.[0]?.text
+      ?? ""
+    );
   };
 
   const consumeEvent = (eventText) => {
-    const lines = String(eventText || "").split(/\r?\n/);
-    let consumedSse = false;
-    let sawSseControl = false;
-    lines.forEach((line) => {
-      const trimmed = line.trim();
-      if (trimmed.startsWith(":") || /^(?:event|id|retry):/i.test(trimmed)) {
-        sawSseControl = true;
-      }
-      consumedSse = consumeDataLine(line) || consumedSse;
-    });
-    if (!consumedSse && !sawEventFrame && !isEventStream && !sawSseControl) appendChunk(eventText);
+    const frame = parseEventFrame(eventText);
+    const looksLikeEvent = frame.hasData || Boolean(frame.eventName) || frame.sawControl;
+    if (!looksLikeEvent) {
+      // Not an event at all: a transport that ignored stream:true and sent
+      // plain text through a body that happened to contain a blank line.
+      if (!sawEventFrame && !isEventStream) appendChunk(eventText);
+      return;
+    }
+    sawEventFrame = true;
+    if (frame.eventName === "error") {
+      const detail = decodeEventData(frame.data)?.[0];
+      throw modelStreamFailure(
+        String(errorFromEvent(detail)?.code || "model_stream_error"),
+        String(errorFromEvent(detail)?.message || frame.data || "The model stream reported an error."),
+        content
+      );
+    }
+    if (!frame.hasData) return;
+    if (frame.data === "[DONE]") {
+      sawDone = true;
+      return;
+    }
+    const decoded = decodeEventData(frame.data);
+    if (!decoded) {
+      // The buffer splitter only hands over finished events, so a payload that
+      // does not parse is a corrupt answer, not a fragment that is still on
+      // its way. Saying so keeps a decoder's silence from reading as success.
+      throw modelStreamFailure(
+        "model_stream_invalid_json",
+        `The model stream sent an event that is not valid JSON: ${String(frame.data).slice(0, 200)}`,
+        content
+      );
+    }
+    decoded.forEach(consumePayload);
   };
 
-  while (!signal?.aborted) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    if (isEventStream || /data:\s*/.test(buffer) || sawEventFrame) {
-      const events = buffer.split(/\n\n|\r\n\r\n/);
-      buffer = events.pop() || "";
-      events.forEach(consumeEvent);
-    } else {
-      appendChunk(buffer);
-      buffer = "";
-    }
+  const abortError = () => {
+    const error = new DOMException("The model response was stopped.", "AbortError");
+    if (content) error.partialContent = content;
+    return error;
+  };
+  const onAbort = () => stopReader();
+  if (signal) {
+    if (signal.aborted) throw abortError();
+    signal.addEventListener("abort", onAbort, { once: true });
   }
 
-  if (signal?.aborted) {
-    const error = new DOMException("The model response was stopped.", "AbortError");
-    if (content.trim()) error.partialContent = content.trim();
-    throw error;
-  }
-  buffer += decoder.decode();
-  if (buffer.trim()) consumeEvent(buffer);
-  if (toolCallAssembler.size) {
-    // Assembled only after the last frame: the argument JSON is not complete,
-    // and therefore not decodable, until then. A failure here carries the text
-    // that did stream so the caller can still keep it, clearly marked partial.
-    try {
-      onToolCalls?.(toolCallAssembler.finish());
-    } catch (error) {
-      if (content.trim()) error.partialContent = content.trim();
-      throw error;
+  try {
+    while (!signal?.aborted) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      if (isEventStream || sawEventFrame || /data:\s*/.test(buffer)) {
+        const events = buffer.split(/\r?\n\r?\n/);
+        buffer = events.pop() || "";
+        events.forEach(consumeEvent);
+      } else {
+        appendChunk(buffer);
+        buffer = "";
+      }
     }
+
+    if (signal?.aborted) throw abortError();
+    buffer += decoder.decode();
+    if (buffer.trim()) consumeEvent(buffer);
+    if (toolCallAssembler.size) {
+      // Assembled only after the last frame: the argument JSON is not
+      // complete, and therefore not decodable, until then. A failure here
+      // carries the text that did stream so the caller can still keep it,
+      // clearly marked partial.
+      try {
+        onToolCalls?.(toolCallAssembler.finish());
+        deliveredToolCalls = true;
+      } catch (error) {
+        if (content) error.partialContent = content;
+        throw error;
+      }
+    }
+    if (usage) onUsage?.(usage);
+    if (finishReason) onFinishReason?.(finishReason);
+    if (responseId) onResponseId?.(responseId);
+    if (responseApi) onResponseApi?.(responseApi);
+    if (servedModel) onModel?.(servedModel);
+    emitSnapshot(content, true);
+    // The stream is over. Whether that means the answer finished is a separate
+    // question: an event stream that ends without its own completion signal
+    // ([DONE] or a finish reason) may have been cut off mid-answer, and the
+    // caller - not this reader - decides what its run should say about it.
+    onStreamEnd?.({
+      completed: !sawEventFrame || sawDone || Boolean(finishReason) || deliveredToolCalls,
+      sawDone,
+      sawFinishReason: Boolean(finishReason),
+      streamed: true,
+    });
+    return content;
+  } catch (error) {
+    if (content && error && typeof error === "object" && error.partialContent === undefined) {
+      error.partialContent = content;
+    }
+    throw error;
+  } finally {
+    signal?.removeEventListener?.("abort", onAbort);
+    try {
+      reader.releaseLock?.();
+    } catch {}
   }
-  if (usage) onUsage?.(usage);
-  if (finishReason) onFinishReason?.(finishReason);
-  if (responseId) onResponseId?.(responseId);
-  if (responseApi) onResponseApi?.(responseApi);
-  if (servedModel) onModel?.(servedModel);
-  emitSnapshot(content, true);
-  return content;
 }
 
 /**

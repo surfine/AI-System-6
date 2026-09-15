@@ -72,7 +72,12 @@ function tdzError(name) {
 
 // 3. The same failure, but on one lazy-preload in the Promise.all block
 // (ensureAlarmClockModule rejecting, as a real network/script failure
-// would). The sibling preloads in the same batch must still be awaited.
+// would). The sibling preloads in the same batch must still run: one lazy
+// module failing to load may not take the rest of the batch with it.
+//
+// The print module is that sibling on purpose: applySettings() restores saved
+// Page Setup through it while loadDeskState() runs, so deferring its preload
+// past the ready state breaks boot in a real browser (measured 2026-09-15).
 {
   let projectCdPrintLoaded = false;
   const { context, bodyDataset } = createBootContext({

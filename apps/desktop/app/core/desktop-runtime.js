@@ -758,8 +758,12 @@ function setStartupProject(projectId) {
   }
 
   startupProjectId = project.id;
+  // Chosen, not adopted: this is the switch that keeps the desk booting here
+  // even when the writer moves on to another disk.
+  startupProjectPinned = true;
   project.archived = false;
   project.updatedAt = new Date().toISOString();
+  markDeskDirty("projects", project.id);
   selectedProjectId = project.id;
   renderProjectDisks();
   renderProjectSwitcher();
@@ -1609,6 +1613,9 @@ function renameSelectedProject() {
   isPreparingProjectDisk = false;
   project.name = name;
   project.updatedAt = new Date().toISOString();
+  // The Finder renamed a disk the desk is already holding: say which record
+  // moved instead of leaving it to a full-desk scan.
+  markDeskDirty("projects", project.id);
   renderProjectDisks();
   saveDeskState();
   setStatus(t("project_renamed", project.name));
