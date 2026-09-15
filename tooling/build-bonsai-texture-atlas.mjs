@@ -1,24 +1,11 @@
-// Build the Bonsai City micro-voxel texture atlas from the checked-in
-// atlas-source.json recipes: one deterministic 512x512 power-of-two PNG of
-// 64px tiles (grass, soil, rock, sand, road, rail, wire, pipe, park, roof,
-// tint-neutral walls with a glass mask in alpha, a roof deck, tree,
-// construction, concrete, metal, and facility surfaces), plus a JSON manifest
-// that maps block materials to per-face tile rects for the three.js voxel
-// renderer.
-//
-// Wall tiles carry no hue: the renderer multiplies a per-building instance
-// colour into them. Glass cells have alpha 0 (the shader reads alpha < 1 as
-// glass and lights it with a uniform), so `.night` wall tiles are
-// pixel-identical to their `.day` twins.
-//
-// No external art, network input, canvas package, or non-deterministic input
-// participates. Minecraft-style chunky detail is painted from palette colors
-// with deterministic hash noise, so a rebuild is byte-identical.
+// Build offline colour and material-mask atlases from original checked-in sources.
+// Colour alpha means opacity; mask R means glass and G means night emission.
 
 import { createHash } from "node:crypto";
 import { deflateSync } from "node:zlib";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { createCanvas, loadImage } from "canvas";
 import { desktopRoot } from "./lib/paths.mjs";
 
 const assetsDir = path.join(desktopRoot, "assets", "bonsai");
@@ -674,6 +661,86 @@ tiles.forEach((tile, index) => {
   rects[tile.id] = { x: ox, y: oy, w: TILE, h: TILE };
 });
 
+// Offline, reviewed GPT image material plate: semantic windows, markings and
+// seasonal colours remain authored by the recipes; the raster supplies surface
+// grain and material variation without baking perspective into model faces.
+const artPath = path.join(assetsDir, "source-art", "city-materials-v1.png");
+const artBytes = await readFile(artPath);
+const artImage = await loadImage(artBytes);
+const artBoundaries = [0, 313, 627, 940, 1254];
+invariant(artImage.width === 1254 && artImage.height === 1254, "reviewed source-art dimensions");
+const artAssignments = {
+  tunnel: 9, "terrain.grass.top": 8, "terrain.grass.side": 8, "terrain.soil": 10,
+  "terrain.rock": 9, "terrain.sand": 10, "terrain.snow": 7, water: 11,
+  road: 12, "road.side": 9, rail: 15, "rail.side": 7, wire: 15, pipe: 15,
+  park: 13, "park.side": 8, "wall.r.day": 0, "wall.r.night": 0,
+  "wall.c.day": 1, "wall.c.night": 1, "wall.i.day": 3, "wall.i.night": 3,
+  roof: 6, "roof.dark": 5, trunk: 0, canopy: 14, "canopy.maple": 14,
+  construction: 15, abandoned: 3, concrete: 3, metal: 15, "zone.military": 3,
+  "zone.airport": 12, "zone.seaport": 13, "facility.police": 2, "facility.fire": 0,
+  "facility.school": 1, "facility.clinic": 1, "facility.coal": 3, "facility.wind": 15,
+  "facility.nuclear": 3, "facility.solar": 4, "facility.tower": 15,
+  "facility.pump": 15, "facility.station": 13, "canopy.blossom": 14,
+  "canopy.winter": 14, "roof.deck": 7,
+};
+const artCanvas = createCanvas(TILE, TILE);
+const artContext = artCanvas.getContext("2d");
+const artTiles = new Map();
+for (let slot = 0; slot < 16; slot += 1) {
+  const column = slot % 4;
+  const row = Math.floor(slot / 4);
+  const x = artBoundaries[column] + 2;
+  const y = artBoundaries[row] + 2;
+  artContext.clearRect(0, 0, TILE, TILE);
+  artContext.drawImage(artImage, x, y, artBoundaries[column + 1] - x - 2, artBoundaries[row + 1] - y - 2, 0, 0, TILE, TILE);
+  artTiles.set(slot, artContext.getImageData(0, 0, TILE, TILE).data);
+}
+for (const tile of tiles) {
+  invariant(Number.isInteger(artAssignments[tile.id]), `source-art coverage ${tile.id}`);
+  const grain = artTiles.get(artAssignments[tile.id]);
+  const rect = rects[tile.id];
+  let average = 0;
+  for (let offset = 0; offset < grain.length; offset += 4) average += (grain[offset] + grain[offset + 1] + grain[offset + 2]) / 3;
+  average /= TILE * TILE;
+  for (let y = 0; y < TILE; y += 1) {
+    for (let x = 0; x < TILE; x += 1) {
+      const offset = ((rect.y + y) * SIZE + rect.x + x) * 4;
+      const artOffset = (y * TILE + x) * 4;
+      // Preserve window glass, frames and sills; material detail belongs to wall.
+      if (tile.pattern === "wall" && (pixels[offset + 3] === 0 || pixels[offset] < 150 || pixels[offset] > 225)) continue;
+      const luminance = (grain[artOffset] + grain[artOffset + 1] + grain[artOffset + 2]) / 3;
+      const surface = ["grass", "soil", "rock", "sand", "water", "road", "roof", "deck", "canopy", "maple", "blossom", "concrete", "metal", "trunk"].includes(tile.pattern);
+      const strength = tile.pattern === "wall" ? 0.48 : surface ? 0.48 : 0.24;
+      const delta = Math.max(-28, Math.min(28, (luminance - average) * strength));
+      const base = tile.pattern === "wall" ? [208,208,208,255] : rgba(tile.base || "roofDeck");
+      for (let channel = 0; channel < 3; channel += 1) {
+        // Actual generated surface replaces procedural noise. Semantic strokes
+        // (lane lines, windows, signs, snow) retain their authored coverage.
+        const ground = surface || tile.pattern === "wall" ? base[channel] : pixels[offset + channel];
+        pixels[offset + channel] = Math.max(0, Math.min(255, Math.round(ground + delta)));
+      }
+    }
+  }
+}
+
+// Migrate recipe glass coverage into a linear data atlas before PNG encoding.
+// Opaque colour preserves glass luminance through browser image decoders.
+const maskPixels = Buffer.alloc(SIZE * SIZE * 4);
+for (let offset = 0; offset < pixels.length; offset += 4) {
+  const glass = pixels[offset + 3] === 0 ? 255 : 0;
+  maskPixels[offset] = glass;
+  maskPixels[offset + 1] = glass;
+  maskPixels[offset + 3] = 255;
+  pixels[offset + 3] = 255;
+}
+for (const rect of Object.values(rects)) {
+  const mean = [0,0,0];
+  for (let y = rect.y; y < rect.y + rect.h; y += 1) for (let x = rect.x; x < rect.x + rect.w; x += 1) {
+    for (let channel = 0; channel < 3; channel += 1) mean[channel] += pixels[(y * SIZE + x) * 4 + channel];
+  }
+  rect.meanColor = mean.map((sum) => Math.round(sum / (rect.w * rect.h) * 1000) / 1000);
+}
+
 function crc32(buffer) {
   let crc = 0xffffffff;
   for (let index = 0; index < buffer.length; index += 1) {
@@ -693,7 +760,7 @@ function pngChunk(type, data) {
   return Buffer.concat([length, typeBuffer, data, crc]);
 }
 
-function encodePng(width, height) {
+function encodePng(width, height, data = pixels) {
   const header = Buffer.alloc(13);
   header.writeUInt32BE(width, 0);
   header.writeUInt32BE(height, 4);
@@ -703,7 +770,7 @@ function encodePng(width, height) {
   const raw = Buffer.alloc(stride * height);
   for (let y = 0; y < height; y += 1) {
     raw[y * stride] = 0;
-    pixels.copy(raw, y * stride + 1, y * width * 4, (y + 1) * width * 4);
+    data.copy(raw, y * stride + 1, y * width * 4, (y + 1) * width * 4);
   }
   return Buffer.concat([
     Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
@@ -724,12 +791,18 @@ const png = encodePng(SIZE, SIZE);
 const pngFile = "assets/bonsai/textures.png";
 await writeFile(path.join(assetsDir, "textures.png"), png);
 
+const maskPng = encodePng(SIZE, SIZE, maskPixels);
+await writeFile(path.join(assetsDir, "texture-masks.png"), maskPng);
+
 const manifest = {
-  schema: "ai-system-6-bonsai-textures-v1",
-  version: 1,
+  schema: "ai-system-6-bonsai-textures-v2",
+  version: 2,
   tileSize: TILE,
   atlas: { width: SIZE, height: SIZE, columns: GRID, rows: GRID },
   png: { url: "/assets/bonsai/textures.png", file: pngFile, sha256: digest(png) },
+  masks: { url: "/assets/bonsai/texture-masks.png", file: "assets/bonsai/texture-masks.png", sha256: digest(maskPng), channels: { r: "glass", g: "emission", b: "reserved", a: "opaque" } },
+  artwork: { file: "assets/bonsai/source-art/city-materials-v1.png", sha256: digest(artBytes), promptFile: "assets/bonsai/source-art/city-materials-v1.prompt.txt", tool: "image_gen.imagegen", model: "unknown (not exposed by tool)", assignments: artAssignments, operation: "resample generated material cells into palette-calibrated surfaces, retain semantic markings and masks" },
+  sampling: { mipmaps: false, insetPixels: 0.5 },
   tiles: rects,
   materials: source.textureMaterials,
   license: "MIT",
@@ -738,9 +811,9 @@ const manifest = {
   author: source.author,
   notes: [
     "Original micro-voxel texture art painted from project-owned recipes with deterministic hash noise; no pixels copied, traced, sampled, or converted from any external game or artwork.",
-    "The generator has no network path and reads only the checked-in source recipe.",
-    "The atlas is a 512x512 power of two of 64px tiles so the three.js renderer can mipmap it for Retina and mobile GPUs.",
-    "Wall tiles are tint-neutral greys the renderer multiplies an instance colour into; alpha 0 marks glass, which a shader uniform lights, so .night wall tiles equal their .day twins.",
+    "The generator has no network path and reads only checked-in original recipes and the reviewed generated material plate.",
+    "The atlas is a 512x512 power of two of 64px tiles; half-texel UV insets and no cross-tile mipmaps prevent neighbouring materials bleeding.",
+    "Wall tiles are tint-neutral greys the renderer multiplies an instance colour into; the independent linear mask marks glass and night emission, which shader uniforms light, so .night wall tiles equal their .day twins.",
   ],
 };
 await writeFile(path.join(assetsDir, "textures.json"), `${JSON.stringify(manifest, null, 2)}\n`);
@@ -748,7 +821,7 @@ await writeFile(path.join(assetsDir, "textures.json"), `${JSON.stringify(manifes
 const generated = `// Generated by tooling/build-bonsai-texture-atlas.mjs. Do not edit by hand.\n` +
   `// Original MIT-clean micro-voxel texture manifest; source lives in atlas-source.json.\n` +
   `(function installBonsaiTextures(){\"use strict\";const data=${JSON.stringify(manifest)};` +
-  `Object.freeze(data.atlas);Object.freeze(data.png);Object.freeze(data.tiles);Object.freeze(data.materials);` +
+  `Object.freeze(data.masks);Object.freeze(data.sampling);Object.freeze(data.atlas);Object.freeze(data.png);Object.freeze(data.tiles);Object.freeze(data.materials);` +
   `window.AISystem6BonsaiTextures=Object.freeze(data);})();\n`;
 await writeFile(path.join(generatedDir, "bonsai-textures.js"), generated);
 

@@ -149,6 +149,57 @@ ok(sharedRuntime.localChatDefaults("qwen3.5-4b", { taskKind: "draft" }).enable_t
 ok(sharedRuntime.scrubVisibleModelOutput("<|channel>final answer<channel|>") === "answer", "shares visible-output cleanup");
 ok(sharedRuntime.findHumanizerOutputHits("此外，这很重要").length === 1, "shares humanizer output detection");
 
+const embedSource = read("app/core/embed-in-browser.js");
+ok(
+  embedSource.includes("import(VENDOR_URL)") && embedSource.includes("transformers.min.js"),
+  "lazy in-browser embed imports the vendored transformers build"
+);
+ok(
+  embedSource.includes('"query: "') && embedSource.includes('"passage: "')
+    && embedSource.includes("pooling: \"mean\"") && embedSource.includes("normalize: true"),
+  "in-browser embed uses the e5 query/passage recipe with mean-pooled normalized vectors"
+);
+ok(
+  embedSource.includes("AISystem6EmbedInBrowserLoaded = true"),
+  "lazy in-browser embed installs its loaded flag"
+);
+ok(
+  embedSource.includes("async function preload") && embedSource.includes("sameOriginAssetsAvailable()"),
+  "in-browser embed exposes a warm-up preload and probes for same-origin assets"
+);
+ok(
+  embedSource.includes("localModelPath") && embedSource.includes("allowRemoteModels"),
+  "same-origin staged assets win; remote Hugging Face remains the desktop fallback"
+);
+ok(
+  context.includes("attempts.push(embedWithBrowser)")
+    && context.includes('ensureLazySystemModule("app/core/embed-in-browser.js"'),
+  "embedTexts makes the in-browser backend its final, unconditional fallback rung"
+);
+ok(
+  context.includes("function preloadBrowserEmbeddingFallback")
+    && context.includes("window.AISystem6EmbedInBrowser.preload()"),
+  "a background warm-up preloads the browser model before the first search"
+);
+const derivedIndexSource = read("app/core/derived-index-queue.js");
+ok(
+  derivedIndexSource.includes("preloadBrowserEmbeddingFallback()"),
+  "the derived-index background timer drives the seamless warm-up"
+);
+ok(
+  context.includes("asQuery") && context.includes("embedQuery(text)"),
+  "query embeddings use the e5 query side while passage embeddings use the passage side"
+);
+ok(
+  manifest.includes('"app/core/embed-in-browser.js"'),
+  "in-browser embed is registered as a lazy module"
+);
+const retrievalRuntimeSource = read("app/shared/retrieval-runtime.js");
+ok(
+  retrievalRuntimeSource.includes("a.length !== b.length") && retrievalRuntimeSource.includes("return 0"),
+  "cosine similarity stays dimension-safe when the embedding backend changes"
+);
+
 const modelPayload = {
   models: [
     {
@@ -199,6 +250,57 @@ const modelPayload = {
   const unload = requests.find((request) => request.url.endsWith("/api/v1/models/unload"));
   ok(JSON.parse(load.options.body).context_length === 16384, "loads a v1 model with the selected context length");
   ok(JSON.parse(unload.options.body).instance_id === "gemma-live", "unloads a v1 loaded instance by instance_id");
+}
+
+{
+  // LM Studio reports a model loaded more than once as `key`, `key:2`, `key:3`.
+  // The client's loadModel must unload every live instance of the family
+  // BEFORE posting /load, or repeated loads stack duplicates (`key:2`, ...).
+  const stackedPayload = {
+    models: [
+      {
+        type: "llm",
+        key: "google/gemma-4-4b",
+        display_name: "Gemma 4 4B",
+        max_context_length: 131072,
+        loaded_instances: [{ id: "google/gemma-4-4b", config: { context_length: 16384 } }],
+      },
+      {
+        type: "embedding",
+        key: "nomic/embed-text",
+        display_name: "Nomic Embed",
+        max_context_length: 8192,
+        loaded_instances: [
+          { id: "nomic/embed-text", config: { context_length: 2048 } },
+          { id: "nomic/embed-text:2", config: { context_length: 2048 } },
+        ],
+      },
+    ],
+  };
+  const requests = [];
+  const client = makeClient(async (url, options) => {
+    requests.push({ url, options });
+    if (url.endsWith("/api/v1/models/unload")) return Response.json({ instance_id: JSON.parse(options.body).instance_id });
+    if (url.endsWith("/api/v1/models/load")) return Response.json({ status: "loaded", instance_id: "nomic/embed-text" });
+    return Response.json(stackedPayload);
+  });
+  await client.loadModel("nomic/embed-text", {});
+  const unloads = requests
+    .filter((request) => request.url.endsWith("/api/v1/models/unload"))
+    .map((request) => JSON.parse(request.options.body).instance_id);
+  const loadIndex = requests.findIndex((request) => request.url.endsWith("/api/v1/models/load"));
+  const unloadIndexes = requests
+    .map((request, index) => ({ index, request }))
+    .filter((entry) => entry.request.url.endsWith("/api/v1/models/unload"))
+    .map((entry) => entry.index);
+  ok(
+    unloads.includes("nomic/embed-text") && unloads.includes("nomic/embed-text:2"),
+    "clears every live instance of the model family before loading"
+  );
+  ok(
+    unloadIndexes.length > 0 && unloadIndexes.every((index) => index < loadIndex),
+    "unloads the model family before posting /load (no :2 stacking)"
+  );
 }
 
 {

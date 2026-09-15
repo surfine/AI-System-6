@@ -16,6 +16,8 @@ internal/archive/runtime-legacy/
 /apps/desktop/styles.image-prompt-studio.css
 /apps/desktop/styles.clio-paint.css
 apps/desktop/app/vendor/markmap/*.js
+apps/desktop/app/vendor/embed-model/
+apps/desktop/app/vendor/embed/ort-wasm-simd-threaded*
 .venv-markitdown/
 .venv-markitdown-trim/
 marked/

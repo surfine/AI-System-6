@@ -659,6 +659,65 @@ window.AISystem6ProjectDiskBackup = (() => {
     selectedProjectCdItemIds: "projectCdItem",
   });
 
+  // A document tab names project records that the generic project pass cannot
+  // see. `relationFields` is keyed by field NAME, and a tab keeps its file
+  // under `backing.id` and `state.activeTextFileId` -- neither of those is a
+  // name in that table, so both crossed an import untouched and went on
+  // pointing at the exporting machine. The tab then opened blank, and the
+  // quiet half was worse: TeachText copies the dead id into the live
+  // `activeTextFileId`, so the next save found no such file and minted a
+  // second one. A writer editing an imported manuscript was splitting it in
+  // two without being told.
+  //
+  // What `backing.id` MEANS depends on `backing.type`, so the mapping is
+  // dispatched, never guessed. A backing type with no project-side referent
+  // (webNavigation, docmapPending) mints its own uuid and is left alone.
+  const documentTabBackingTypes = Object.freeze({
+    manuscript: "file",
+    projectText: "file",
+    scratch: "file",
+    projectReference: "reference",
+    projectCd: "projectCdItem",
+  });
+
+  // An id with no counterpart is cleared, which is the rule the working
+  // session already follows: an empty id is a tab that has to be re-pointed,
+  // while a foreign id is a tab that looks healthy and resolves to nothing.
+  // Everything else on the tab -- above all `state.body`, which is the
+  // writer's own text and not a cache -- is carried through unchanged.
+  function remapDocumentTabs(project, idMaps) {
+    if (!Array.isArray(project?.documentTabs)) return;
+    const mapId = (type, id) => (id ? idMaps[type]?.get(recordId(id)) || "" : "");
+    project.documentTabs = project.documentTabs.map((tab) => {
+      if (!isPlainObject(tab)) return tab;
+      const copy = { ...tab };
+      if (isPlainObject(copy.backing) && typeof copy.backing.id === "string") {
+        const relationType = documentTabBackingTypes[String(copy.backing.type || "")];
+        copy.backing = relationType
+          ? { ...copy.backing, id: mapId(relationType, copy.backing.id) }
+          : { ...copy.backing };
+      }
+      if (isPlainObject(copy.state)) {
+        const state = { ...copy.state };
+        if (typeof state.activeTextFileId === "string") {
+          state.activeTextFileId = mapId("file", state.activeTextFileId);
+        }
+        if (isPlainObject(state.origin) && typeof state.origin.documentId === "string") {
+          state.origin = { ...state.origin, documentId: mapId("file", state.origin.documentId) };
+        }
+        if (isPlainObject(state.map) && isPlainObject(state.map.sourceMeta)
+          && typeof state.map.sourceMeta.fileId === "string") {
+          state.map = {
+            ...state.map,
+            sourceMeta: { ...state.map.sourceMeta, fileId: mapId("file", state.map.sourceMeta.fileId) },
+          };
+        }
+        copy.state = state;
+      }
+      return copy;
+    });
+  }
+
   function remapWorkingSession(session, idMaps, newProjectId, sourceFormatVersion) {
     if (!isPlainObject(session)) return null;
     const remapped = remapRelations(
@@ -930,6 +989,7 @@ window.AISystem6ProjectDiskBackup = (() => {
       const mappedDocumentId = idMaps.file.get(importedProject.quickDraft.workspace.projectDocId);
       if (mappedDocumentId) importedProject.quickDraft.workspace.projectDocId = mappedDocumentId;
     }
+    remapDocumentTabs(importedProject, idMaps);
 
     const importedDocumentRevisions = (bundle.documentRevisions || []).map((revision, index) => {
       const oldId = recordId(revision?.id) || `revision:${index}`;

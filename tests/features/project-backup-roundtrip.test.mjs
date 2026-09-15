@@ -38,6 +38,43 @@ const test = createFeatureTest("project-backup-roundtrip");
   );
   test.assert((remapped.documentRevisions || []).every((revision) => fileIds.has(revision.documentId)), "revisions point at remapped documents");
   test.assert(remapped.project.quickDraft.workspace.projectDocId === remapped.files[0].id || remapped.files.some((file) => file.id === remapped.project.quickDraft.workspace.projectDocId), "Quick Draft workspace points at a remapped document");
+
+  // Document tabs name project records under keys the generic relation table
+  // does not know, so they crossed an import untouched and went on pointing at
+  // the exporting machine. A tab that opened blank was the visible half; the
+  // quiet half was a save that found no such file and minted a second one,
+  // splitting the writer's manuscript. Every id a tab carries is now either a
+  // record that exists here, or empty.
+  const importedFileIds = new Set(remapped.files.map((file) => file.id));
+  const tabs = remapped.project.documentTabs;
+  test.assert(Array.isArray(tabs) && tabs.length === 4, "document tabs survive the import");
+  const resolvable = (id) => id === "" || importedFileIds.has(id);
+  const manuscriptTab = tabs.find((tab) => tab.role === "manuscript");
+  test.assert(
+    resolvable(manuscriptTab.backing.id) && resolvable(manuscriptTab.state.activeTextFileId),
+    "the manuscript tab's two file ids are remapped or cleared, never foreign",
+  );
+  test.assert(
+    manuscriptTab.backing.id !== "file-1" && manuscriptTab.state.activeTextFileId !== "file-1",
+    "no tab keeps the exporting machine's file id",
+  );
+  test.assert(manuscriptTab.state.body === "正文", "remapping ids does not disturb the writer's own tab text");
+  const scratchTab = tabs.find((tab) => tab.role === "scratch_file");
+  test.assert(
+    resolvable(scratchTab.backing.id) && resolvable(scratchTab.state.activeTextFileId),
+    "a projectText-backed tab is remapped too",
+  );
+  const docMapTab = tabs.find((tab) => tab.app === "docMap");
+  test.assert(
+    resolvable(docMapTab.state.origin.documentId) && resolvable(docMapTab.state.map.sourceMeta.fileId),
+    "a DocMap tab's nested document ids are remapped",
+  );
+  const webTab = tabs.find((tab) => tab.role === "web_navigation");
+  test.assert(
+    webTab.backing.id === "not-a-record-id" && webTab.backing.url === "https://example.invalid/",
+    "a backing type with no project-side referent is left alone",
+  );
+
 }
 
 // v6: the pictures travel, and the figures stay attached to them.

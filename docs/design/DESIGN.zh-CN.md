@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/design/DESIGN.md -->
-<!-- source-sha256: f96a77c6191cdfe86e950a9e54d1eb4c4a9173ddb1ea427db1e1a454400aa7e0 -->
+<!-- source-sha256: 341a30ade640542b10f3e8a05b765c95a36f704274cdd7818e46350641040e7e -->
 
 # AI System 6 设计合约
 
@@ -94,6 +94,31 @@ Classic Mac OS 思想，只要能改善产品，就可以被引进、消化和�
 
 例外必须写进 feature contract。`Cover Glass` 玻璃封面（文件名 `liquid-cover.js`）、`CMF Studio`、`ClioStage` 和媒体创作工具可以有更宽的视觉范围，但仍要复用同一套窗口、控件、状态和主题合约。
 
+## 共享控件：把预防放在视觉评审之前
+
+新功能复用已有窗口、按钮、输入框、下拉框和面板原语。功能 CSS 负责排列，
+共享原语负责控件绘制，外观块负责材质参数。同类问题在真正的归属层修复，
+核对对应主题，并覆盖初始化后才插入的控件。
+
+| 不变量 | 实现纪律 |
+| --- | --- |
+| 一个可见指示符和标签 | 下拉箭头只由原生选择器、控件背景或外层伪元素之一绘制。自绘接管后的原生控件在禁用状态下也必须不可见。状态变化只改填充颜色时用 `background-color`，避免 `background` 简写清掉指示图。共享箭头资源周围保持透明。 |
+| 主题字体 | 控件和选项使用 `--ui-font`、`--system-control-size` 及共享字重角色。正文和编辑字体只用于相应内容表面。用中英文检查原生和自绘两条路径，功能不得另造一套控件字体或字重。 |
+| 主题形状 | 按钮和有框表面使用语义圆角参数。Liquid Glass 保持非零圆角和同心嵌套，历史外观的几何由各自主题拥有。像素美术、分隔线和圆形控件保留各自语义，不能豁免整个窗口来掩盖失败控件。 |
+| 状态连续性 | 默认、悬停、键盘聚焦和禁用状态保持同一套标签与指示符归属。打开、选择和动态挂载遵循共享下拉控件的生命周期。 |
+
+`verify:css`（包括带 `--css-file` 的 `verify:quick`）自动运行
+`node tooling/verify-liquid-shapes.mjs --primitives`。这个轻量浏览器夹具直接加载
+生产源样式（含延迟样式）、主题注册表和真实下拉控件函数，检查六种外观、控件字体、
+箭头唯一性与透明底、原生控件隐藏，以及 Liquid Glass 控件和面板的圆角。
+不需要应用服务或构建；报告分别存入 `dist/verification/liquid-shapes/`。
+失败会阻断 CSS 门禁。`visual-primitives` 功能测试会故意放回已知错误，证明检查能发现它们。
+
+引入新原语，或现有夹具未覆盖的功能控件上下文时，补充对应夹具。
+复用未改动的共享原语，不新增截图矩阵。新布局、溢出、业务交互和移动端行为仍需
+各自的定向证据；夹具通过不代表所有应用画面都正确。大范围 Liquid Glass 几何改动
+使用已有的完整 `--url` 窗口审计；需要对照运行中的构建时用 `--url ... --select-only`。
+
 ## 六套 Appearance，一套对象语法
 
 System 6、Platinum、Aqua、Snow Leopard、Yosemite 和 Liquid Glass 是同一桌面
@@ -136,6 +161,32 @@ Appearance 工作应优先走 token：
 5. 避免应用专属主题 selector 和新增 Liquid Glass twin。
 
 如果 Liquid Glass twin 在结构上确实必要，写一条短注释说明为什么 token 不能承载这个差异。
+
+### Liquid Glass 圆角体系
+
+Liquid Glass 的可见界面表面全部采用圆角：按钮（含选中、禁用和焦点状态）、输入框、
+标签、列表高亮、卡片、菜单、弹窗和窗口外框。后加载的应用样式也使用同一套形状
+token，不得重新引入直角控件或带框面板的直角。画作、文档字形、画布像素和不可见
+的布局盒不添加装饰性裁切。
+
+`70-liquid-glass.css` 中的圆角梯度为：微型细节 4px、紧凑控件 8px、常规控件与内层
+表面 12px、面板 16px、窗口 24px；胶囊和圆形分别使用独立 token。这些是本产品的
+校准值，并非 Apple 规定的尺寸。组件 token 映射到这套梯度，共享的直角默认值留在
+`00-foundation.css`，使其他外观保留原有几何。小复选框使用 4px 圆角，以保持与单选
+圆钮的形状区别。
+
+嵌套表面在实际使用圆角的元素上，以父圆角减去内边距计算，并保留 4px 下限。
+密集桌面控件用紧凑圆角矩形，突出操作用胶囊形；焦点环沿用控件轮廓。
+内容框的圆角不会在正文后面额外添加玻璃或模糊。
+
+构建并启动应用后，运行
+`node tooling/verify-liquid-shapes.mjs --url http://127.0.0.1:4173`，检查注册窗口、
+后加载样式、菜单与弹窗、控件状态、原生及自定义下拉箭头，以及手机横竖屏控件。
+
+依据 Apple [HIG 的层级、和谐与一致性原则](https://developer.apple.com/design/human-interface-guidelines/)、
+[Get to know the new design system](https://developer.apple.com/videos/play/wwdc2025/356/)
+中的固定圆角、胶囊与同心嵌套形状，以及
+[Meet Liquid Glass](https://developer.apple.com/videos/play/wwdc2025/219/) 对控件层与内容层的区分。
 
 ### Appearance 证据账本
 
@@ -312,18 +363,10 @@ UI 文案应该直接，并且绑定对象：
 
 ## Agent 预检
 
-修改 UI 表面前，在工作记录或 PR 中回答：
-
-1. 这是哪种产品对象角色？
-2. 它属于核心写作路线，还是被召唤的工具？
-3. 复用了哪些现有 primitives？
-4. 哪些 tokens 定义它的几何、材质和状态？
-5. 它相对注册表 `recipeBase` 改变了什么？
-6. 存在哪些状态：default、hover、focus、active、selected、disabled、loading、empty、error？
-7. 哪个验证覆盖了六时代 Theme Lab，以及 HIG 要求的手机／平板 × 横屏／竖屏矩阵，并同时
-   覆盖 Classic 与 Liquid Glass？
-
-如果答案是“新模式”，先说明理由，再编辑 CSS。
+修改 UI 表面前，确定对象角色、复用原语、参数归属和受影响状态。
+新增或修改控件都要遵守上面的共享控件不变量。新原语说明必要性并补充夹具；
+普通复用不要求填写固定问卷或报告。证据按行为选择：局部控件修正不重跑
+六时代应用或手机／平板矩阵，布局变化仍检查相应主题和方向下的受影响表面。
 
 ## 禁止的默认做法
 
@@ -347,24 +390,22 @@ UI 文案应该直接，并且绑定对象：
 
 ## 评审闸门
 
-视觉工作运行：
+沿用现有定向开发命令，检查本次负责的 CSS 和行为：
 
 ```sh
-npm run build:app
-npm run verify:css
-npm run verify:design
-npm run verify:theme-lab
-npm run smoke:release
+npm run verify:quick -- --feature <affected-contract> --css-file apps/desktop/styles/<owned-file>.css
 ```
 
-主题敏感 CSS 工作还要运行：
+每个负责的样式文件各带一个 `--css-file`，其中的 CSS 检查已自动包含基于源文件的
+共享控件浏览器验证。没有对应行为合约时省略 `--feature`；只有应用源文件已构建，
+或本次只改文档／工具时，才用 `--no-build`。纯文档改动运行 `npm run verify:docs`
+和 `git diff --check`。
 
-```sh
-npm run audit:liquid-twins
-npm run visual:eval
-```
-
-把 `npm run visual:eval` 的输出配合 `CLAUDE.md` 中的浏览器快照流程使用，然后运行 `npm run visual:diff -- <snapshot-file>`。
+布局或材质改动，按 CSS 技能的定向截图命令，在本批改动前后各检查一次受影响表面。
+只因行为变化、已复现失败或未决疑点扩大覆盖，未变化的证据继续复用。
+大范围外观改动及发布／打包沿用 `CLAUDE.md` 定义的完整门禁；不因每次视觉小修
+自动跑 Theme Lab、全局视觉差异、smoke 和发布套件。确需对照时，仍可使用
+`npm run visual:eval` 和 `npm run visual:diff -- <snapshot-file>` 诊断。
 
 可选设计反模式扫描：
 
@@ -378,7 +419,7 @@ node external/impeccable/skill/tooling/detect.mjs --json apps/desktop/index.html
 
 ## 迁移优先级
 
-1. 触碰附近 selector 时，把 easy Liquid Glass twins 迁成 token swap。
+1. 行为变化时修复所属原语或参数；只有存在层叠证据才迁移主题重复规则，不因位置相邻顺手改动。
 2. 从现有 primitives 中长出一套小型 System 6 component kit。
 3. 为任何新增的重复窗口或控件模式添加 visual snapshot 覆盖。
 4. 把稳定几何移入 tokens 或 classes，减少 JS inline layout decisions。

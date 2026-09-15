@@ -18,7 +18,7 @@
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { publicPrebuildApp, publicScriptNames } from "./lib/public-package.mjs";
 
@@ -198,11 +198,47 @@ function referencedPaths(scriptValue) {
   return found;
 }
 
-function collectFiles(directory, files = []) {
+/**
+ * The literal paths this tree's own `.gitignore` names.
+ *
+ * Build output is not published source, and it appears or not depending on
+ * whether the reader has run `npm run build`: the same snapshot measured 4885
+ * files before a build and 4895 after one — ten generated bundles, 2.8 MB
+ * (measured 2026-09-15) — so the budget used to say different things about the
+ * same tree.
+ *
+ * Only literal entries count. A glob such as
+ * `apps/desktop/app/vendor/markmap/*.js` covers files the public branch
+ * deliberately tracks, and a negation re-includes one, so neither can be
+ * treated as "not published".
+ */
+function ignoredLiteralPaths(root) {
+  const names = new Set();
+  let text = "";
+  try {
+    text = readFileSync(join(root, ".gitignore"), "utf8");
+  } catch {
+    return names;
+  }
+  for (const raw of text.split("\n")) {
+    const line = raw.trim();
+    if (!line || line.startsWith("#") || line.startsWith("!")) continue;
+    if (/[*?[\]]/.test(line)) continue;
+    names.add(line.replace(/^\//, "").replace(/\/$/, ""));
+  }
+  return names;
+}
+
+function collectFiles(directory, files = [], ignored = ignoredLiteralPaths(root)) {
   if (!existsSync(directory)) return files;
   for (const entry of readdirSync(directory, { withFileTypes: true })) {
-    if (entry.name === ".git" || entry.name === "node_modules") continue;
+    // Ignored build and run output is not part of the published tree: `.git`
+    // is history, `node_modules` is installed, and `dist/` is where a build and
+    // a test run put their bytes.
+    if (entry.name === ".git" || entry.name === "node_modules" || entry.name === "dist") continue;
     const absolute = join(directory, entry.name);
+    const relativePath = relative(root, absolute).split("\\").join("/");
+    if (ignored.has(relativePath) || [...ignored].some((name) => relativePath.startsWith(`${name}/`))) continue;
     if (entry.isDirectory()) collectFiles(absolute, files);
     else files.push(absolute);
   }

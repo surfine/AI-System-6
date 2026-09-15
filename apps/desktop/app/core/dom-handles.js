@@ -329,6 +329,7 @@ function getElements() {
   const liquidTintLevelOutput = document.querySelector("#liquid-tint-level-output");
   const soundEffectsInput = document.querySelector("#sound-effects");
   const menuClockInput = document.querySelector("#menu-clock");
+  const showUnmountedDisksInput = document.querySelector("#show-unmounted-disks");
   const classicLineIconsInput = document.querySelector("#classic-line-icons");
   const controlStripShowInput = document.querySelector("#control-strip-show");
   const controlStripHotkeyInput = document.querySelector("#control-strip-hotkey");
@@ -731,6 +732,7 @@ function getElements() {
     liquidTintLevelOutput,
     soundEffectsInput,
     menuClockInput,
+    showUnmountedDisksInput,
     classicLineIconsInput,
     controlStripShowInput,
     controlStripHotkeyInput,

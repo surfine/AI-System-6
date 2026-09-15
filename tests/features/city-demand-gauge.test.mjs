@@ -60,6 +60,30 @@ test.assert(typeof loadGauge().draw === "function", "the core exposes draw()");
   test.assert(red.length > 0 && blue.length === 0 && yellow.length === 0, "only the R bar paints in colour r");
 }
 
+// Every painted bar is outlined in ink. Two of the three measured demand
+// colours are invisible on paper without it -- #ffff00 measures 1.07:1 and
+// #00ff00 1.37:1 against #ffffff -- so this is a legibility contract, not a
+// styling preference, and it is also what the GPL original does. Removing the
+// outline must fail here rather than ship two bars nobody can see.
+{
+  const g = loadGauge();
+  for (const tier of ["micropolis-panel", "bonsai-panel", "gauge-bar"]) {
+    const canvas = makeCanvas();
+    g.draw(canvas, tier, { r: 0.8, c: -0.8, i: 0.5 }, { colors: { r: "#1f9d3a", c: "#2a55c7", i: "#d9a900" }, ink: "#000" });
+    const width = g.TIERS[tier].barWidth;
+    const ink = canvas._rects.filter((r) => r.style === "#000");
+    for (const [id, color] of [["R", "#1f9d3a"], ["C", "#2a55c7"], ["I", "#d9a900"]]) {
+      const fill = canvas._rects.find((r) => r.style === color);
+      test.assert(!!fill, `${tier}: the ${id} bar paints a colour fill`);
+      const top = ink.some((r) => r.x === fill.x && r.y === fill.y && r.w === width && r.h === 1);
+      const bottom = ink.some((r) => r.x === fill.x && r.y === fill.y + fill.h - 1 && r.w === width && r.h === 1);
+      const left = ink.some((r) => r.x === fill.x && r.y === fill.y && r.w === 1 && r.h === fill.h);
+      const right = ink.some((r) => r.x === fill.x + width - 1 && r.y === fill.y && r.w === 1 && r.h === fill.h);
+      test.assert(top && bottom && left && right, `${tier}: the ${id} bar carries a 1-px ink outline on all four sides`);
+    }
+  }
+}
+
 // Labels appear for panel tiers, not for gauge-bar.
 {
   const g = loadGauge();
@@ -91,6 +115,29 @@ test.assert(typeof loadGauge().draw === "function", "the core exposes draw()");
   // the frame/zero line.
   const inkRects = canvas._rects.filter((r) => r.style === "#000");
   test.assert(inkRects.length > 6, "a highlighted bar adds an ink outline");
+}
+
+// The three demand colours are measured, not chosen.
+//
+// Micropolis fills its own demand columns with unmixed primaries. The values
+// are read out of the GPL source rather than sampled from a screenshot, which
+// is both exact and citable; the file below carries the line numbers, the
+// geometry that came with them, and the sampled proof from the pixel cell.
+{
+  const foundation = read("styles/00-foundation.css");
+  const measured = [
+    ["--city-demand-r", "#00ff00", "Residential"],
+    ["--city-demand-c", "#0000ff", "Commercial"],
+    ["--city-demand-i", "#ffff00", "Industrial"],
+  ];
+  measured.forEach(([token, value, name]) => {
+    test.assertIncludes(foundation, `${token}: ${value};`, `${name} keeps the measured Micropolis fill ${value}`);
+  });
+  test.assertIncludes(
+    foundation,
+    "internal/evidence/MICROPOLIS-GPL-GAUGE.md",
+    "and the tokens name the evidence they were measured from",
+  );
 }
 
 test.finish();

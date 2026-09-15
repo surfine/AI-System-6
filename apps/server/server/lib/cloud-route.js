@@ -17,13 +17,12 @@ const {
   sharedCloudBudgetConfig,
 } = require("../shared-cloud-budget.js");
 const {
-  DEEPSEEK_CLOUD_MODELS,
   DEEPSEEK_PUBLIC_BASE_URL,
   cloudAuthHeaders,
+  isDeepSeekCloudModelId,
+  normalizeCloudModelId,
   resolveCloudTarget,
 } = require("../cloud.js");
-
-const PUBLIC_MODEL_IDS = new Set(DEEPSEEK_CLOUD_MODELS.map((item) => item.id));
 
 /**
  * Build a structured model-route error that carries the HTTP status, machine
@@ -85,7 +84,7 @@ async function preparePublicCloudCall({
   credentialId = "",
   suppliedApiKey = "",
   requestedBaseUrl: _requestedBaseUrl = "",
-  model = "deepseek-v4-flash",
+  model = "deepseek-flash",
   payload,
   req,
   reserve = true,
@@ -104,15 +103,15 @@ async function preparePublicCloudCall({
     suppliedApiKey: suppliedPublicApiKey,
     allowSupplied: true,
   })).trim();
-  const modelName = String(model || "deepseek-v4-flash").trim();
+  const modelName = normalizeCloudModelId(model || "deepseek-flash");
 
-  if (!PUBLIC_MODEL_IDS.has(modelName)) {
+  if (!isDeepSeekCloudModelId(modelName)) {
     throw cloudRouteError(
       400,
       "unsupported_model",
       0,
       "Unsupported public cloud model",
-      "该模型不在公网可用模型列表中，请在 Control Panel 选择 DeepSeek V4 系列模型。"
+      "该模型不在公网可用模型列表中，请在 Control Panel 选择 DeepSeek Flash 或 V4 Pro。"
     );
   }
 

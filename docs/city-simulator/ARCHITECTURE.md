@@ -23,7 +23,8 @@ with `createCity`, `advanceTicks`, `applyTool`, `tileInfo`, `ensureDerived`,
 ### Renderer and input
 
 Implemented first as the pure projection module `bonsai-renderer.js` and now
-owned visually by `bonsai-renderer-canvas.js`. The pure module keeps the 48x24
+rendered by `bonsai-renderer-canvas.js` (default) and the lazy 3D backend.
+The pure module keeps the 64x32
 2:1 projection, inverse picking, four quarter-turn transforms, visible-diagonal
 range, and deterministic multi-tile painter order as VM-testable view math.
 The Canvas renderer consumes `buildRenderSnapshot` and draws six same-size
@@ -32,7 +33,20 @@ selection/preview/errors; and day/night lighting. Static content uses 16x16
 offscreen chunk caches. The renderer reads snapshots only — pointer, keyboard,
 and touch produce previews or commands, never direct mutation. Camera and
 lighting are view state and never enter the city save; drawing never advances
-rules.
+rules. The altitude step is 10 pixels and default zoom is 0.7.
+
+`createAssetBlocks` and `blockFaces` define shared building identity, footprint,
+materials and shape faces, including gabled/hipped roofs and faceted tree crowns.
+The offline CPU orthographic renderer produces the four 2D sprite directions
+from those definitions; 3D builds instanced meshes from the same geometry.
+The texture builder reads checked-in original generated artwork and semantic
+recipes, producing 48 colour tiles plus a separate linear glass/emission mask.
+Colour alpha retains opacity; mask R is glass and G is night emission. UVs inset
+half a texel and atlas mipmaps are disabled to avoid cross-material sampling.
+The built-in image tool does not expose its exact model version. Runtime and
+ordinary builds never call image generation or require a model API key.
+This remaster leaves simulation, commands and save versions unchanged; browser
+acceptance and deployment are separate evidence, not implied by this document.
 
 ### AI System 6 shell
 

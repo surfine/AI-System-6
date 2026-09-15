@@ -7,6 +7,13 @@ window.AISystem6LaunchIntent = {
       reader: "open-reader",
       scrapbook: "open-scrapbook",
       soundscape: "open-soundscape",
+      // PWA Home Screen shortcuts (apps/desktop/assets/app-icon/manifest.json
+      // "shortcuts") arrive here: a long-press on the installed icon opens the
+      // one surface asked for instead of the desk. Keep these three in step
+      // with that file.
+      cliotalk: "open-assistant",
+      "quick-draft": "open-quick-draft",
+      lightroom: "open-lightroom",
     };
     // Standalone launch routes (1.0.52): human-readable route ids that are
     // safe to share in external links. Keep in sync with the server /go
@@ -19,6 +26,10 @@ window.AISystem6LaunchIntent = {
       doom: { command: "open-doom", window: "doom" },
       "time-machine": { command: "open-time-machine", window: "timeMachine" },
       "liquid-cover": { command: "open-liquid-cover", window: "liquidCover" },
+      "cmf-studio": { command: "open-cmf-studio", window: "cmfStudio" },
+      // A shared Project Hard Disk. The window it stops on is TeachText,
+      // because the manuscript is what such a link is shared for.
+      dtk: { command: "open-shared-disk-dtk", window: "teachText" },
     };
     const param = (name) => {
       const match = String(search || "").match(new RegExp(`[?&]${name}=([^&#]+)`, "i"));

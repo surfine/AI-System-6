@@ -465,4 +465,14 @@ test.assertIncludes(handoff, 'if (action === "lightroom-toggle-inspector") retur
 test.assertMatches(coordinator, /function toggleQuickDraftPanel\(panel = "shelf"\) \{\s*const target = panel === "inspector" \? "inspector" : "shelf";\s*if \(!quickDraftPanelActionable\(target\)\) return false;/, "the toggle's own guard is the same predicate the menu row asks");
 test.assertMatches(coordinator, /function quickDraftPanelActionable\(panel = "shelf"\) \{[\s\S]{0,200}?lightroomSubject[\s\S]{0,150}?is-empty-draft/, "the shared predicate is subject-aware for the inspector and live-draft-aware otherwise");
 
+// A panel that opens past the screen edge is a panel nobody can read. The
+// deliver menu sits at the left of its row, so anchoring its panel's right edge
+// to it hung 65px off the left of a 375px phone. Narrow, every panel here opens
+// from the left and is clamped to the sheet.
+test.assertMatches(
+  css,
+  /\.draft-desk-deliver-menu \.draft-desk-command-popover \{[\s\S]{0,320}?right: auto;\s*left: 0;\s*min-width: min\(236px, calc\(100cqw - 28px\)\);/,
+  "the narrow deliver menu opens from the left, clamped to the sheet",
+);
+
 test.finish();

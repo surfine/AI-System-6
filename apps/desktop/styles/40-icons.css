@@ -229,19 +229,17 @@
 
 /* Classic keeps smooth artwork and its System 6 selection silhouette separate.
    Selection reveals the black mask and reverses the same artwork to white; it
-   never swaps to an alternate icon. */
-.sys-icon-svg.has-classic-mask .sys-icon-classic-mask {
-  display: none;
-}
+   never swaps to an alternate icon.
 
-/* Warm the filter pipeline from boot. Chromium keeps a stale raster the first
-   time a CSS filter lands on an SVG <image>: the first invert(1) after boot
-   painted the art as an opaque white plate on a reversed menu title, and as
-   nothing at all on the active Control Panel tab — leaving only the bare black
-   mask silhouette. A no-op invert keeps the art on the filter path so the
-   later invert(1) states repaint from live vectors. */
-.sys-icon-svg.has-classic-mask .sys-icon-classic-art {
-  filter: invert(0);
+   The reversed art is its own layer, not a CSS filter over the black one.
+   WebKit ignores `filter` on an SVG <image>, so the art stayed black on the
+   black mask and every reversed surface — desktop, Finder, the menu bar, the
+   Control Panel chooser, strip modules — read as a solid blob. The painter
+   draws the same art file a third time through an SVG filter
+   (.sys-icon-classic-reverse) and the states below swap which layer paints. */
+.sys-icon-svg.has-classic-mask .sys-icon-classic-mask,
+.sys-icon-svg.has-classic-mask .sys-icon-classic-reverse {
+  display: none;
 }
 
 /* The Control Panel chooser selects the same way: the current tab shows its
@@ -253,27 +251,41 @@
   display: block;
 }
 
+/* Every surface that reverses the art. A selected icon also paints the black
+   field behind it (the mask above); a pulled-down menu title and a strip tile
+   leave the mask hidden, because their own chrome already paints that field. */
 .finder-item.is-selected .sys-icon-svg.has-classic-mask .sys-icon-classic-art,
 .desktop-icon.is-selected .sys-icon-svg.has-classic-mask .sys-icon-classic-art,
-.control-chooser .system-tab.is-active .sys-icon-svg.has-classic-mask .sys-icon-classic-art {
-  filter: invert(1);
-}
-
-/* A menu title reverses while its menu is pulled down, and System 6 reverses
-   everything the title contains. The classic menu-bar icons are black art on
-   transparency, so the reversed title swallows them: the model and project
-   icons went black-on-black and only the label stayed readable. The art is
-   1-bit, so inverting it is the reversal - the transparent ground keeps its
-   alpha, and the silhouette mask stays hidden because the title already
-   paints the black field the mask would draw. */
+.control-chooser .system-tab.is-active .sys-icon-svg.has-classic-mask .sys-icon-classic-art,
 .menu.is-open > button .sys-icon-svg.has-classic-mask .sys-icon-classic-art,
-.menu-bar > .menu > button:focus-visible .sys-icon-svg.has-classic-mask .sys-icon-classic-art {
-  filter: invert(1);
+.menu-bar > .menu > button:focus-visible .sys-icon-svg.has-classic-mask .sys-icon-classic-art,
+.menu-bar > .guest-indicator:focus-visible .sys-icon-svg.has-classic-mask .sys-icon-classic-art {
+  display: none;
 }
 
+.finder-item.is-selected .sys-icon-svg.has-classic-mask .sys-icon-classic-reverse,
+.desktop-icon.is-selected .sys-icon-svg.has-classic-mask .sys-icon-classic-reverse,
+.control-chooser .system-tab.is-active .sys-icon-svg.has-classic-mask .sys-icon-classic-reverse,
+.menu.is-open > button .sys-icon-svg.has-classic-mask .sys-icon-classic-reverse,
+.menu-bar > .menu > button:focus-visible .sys-icon-svg.has-classic-mask .sys-icon-classic-reverse,
+.menu-bar > .guest-indicator:focus-visible .sys-icon-svg.has-classic-mask .sys-icon-classic-reverse {
+  display: inline;
+}
+
+/* The guest indicator is the one icon button in the bar that is not a menu
+   title: it acts on the click (it opens Chooser) rather than pulling a menu
+   down, so it cannot live inside a .menu without the menu handler swallowing
+   its action. It still reverses on hover like its neighbours, which is why it
+   needs the rule spelled out here rather than inherited. */
 @media (hover: hover) {
-  .menu-bar > .menu > button:hover .sys-icon-svg.has-classic-mask .sys-icon-classic-art {
-    filter: invert(1);
+  .menu-bar > .menu > button:hover .sys-icon-svg.has-classic-mask .sys-icon-classic-art,
+  .menu-bar > .guest-indicator:hover .sys-icon-svg.has-classic-mask .sys-icon-classic-art {
+    display: none;
+  }
+
+  .menu-bar > .menu > button:hover .sys-icon-svg.has-classic-mask .sys-icon-classic-reverse,
+  .menu-bar > .guest-indicator:hover .sys-icon-svg.has-classic-mask .sys-icon-classic-reverse {
+    display: inline;
   }
 }
 
@@ -892,7 +904,7 @@
 
 }
 
-@media (max-width: 860px) {
+@media (max-width: 860px), (hover: none) and (pointer: coarse) and (max-height: 660px) {
   /* max-width stays on the low-specificity selector on purpose: the generic
      mobile work-area rule (.desktop .window.is-mobile-work-area...,
      60-responsive.css) already wins the `max-width` property here whenever

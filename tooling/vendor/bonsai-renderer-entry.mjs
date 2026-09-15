@@ -7,6 +7,8 @@
 export {
   AmbientLight,
   BoxGeometry,
+  BufferGeometry,
+  Float32BufferAttribute,
   CanvasTexture,
   Color,
   DirectionalLight,
@@ -18,6 +20,7 @@ export {
   MeshBasicMaterial,
   MeshLambertMaterial,
   NearestFilter,
+  NoColorSpace,
   NearestMipmapLinearFilter,
   OrthographicCamera,
   Raycaster,

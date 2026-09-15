@@ -1561,7 +1561,15 @@ function renderQuickDraft(record = activeProjectQuickDraft({ create: false })?.r
   syncQuickDraftAiAvailability();
   // A model pass rewrites the body under an open preview; the grain view is
   // the one that must not go stale, since it reports on that very rewrite.
-  if (refs.draft?.closest(".teachtext-editor-container")?.classList.contains("is-previewing")) {
+  //
+  // Ask the PAPER whether it is showing, not the editor. The two used to share
+  // a window, so reading the draft's own container answered for both; once the
+  // views moved into 文字亮室 that container never carried the class again and
+  // this repaint stopped happening. What it cost: coming back to the darkroom
+  // with a view already chosen showed the sentences from the previous visit --
+  // the writer edited a line, went to look at it, and looked at the line before
+  // it.
+  if (quickDraftPreviewIsOpen()) {
     renderQuickDraftPreviewPane();
   }
 }

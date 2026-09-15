@@ -8,12 +8,14 @@ import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { desktopRoot, repositoryRoot } from "./lib/paths.mjs";
+import { loadOrthographicAtlas } from "./lib/bonsai-orthographic-atlas.mjs";
 
 const assetsDir = path.join(desktopRoot, "assets", "bonsai");
 const generatedDir = path.join(desktopRoot, "app", "generated");
 const sourcePath = path.join(assetsDir, "atlas-source.json");
 const source = JSON.parse(await readFile(sourcePath, "utf8"));
 const geometry = source.geometry;
+const orthographic = await loadOrthographicAtlas(desktopRoot, source);
 const directions = ["north", "east", "south", "west"];
 
 // SC2K retune: the atlas is authored on a 64x32 diamond (SimCity 2000's
@@ -22,10 +24,10 @@ const directions = ["north", "east", "south", "west"];
 // at the SC2K proportion.
 const ISO_U = geometry.tileWidth / 2; // 32
 const ISO_V = geometry.tileHeight / 2; // 16
-const CELL_W = geometry.cellWidth; // 213
-const CELL_H = geometry.cellHeight; // 171
-const ANCHOR_Y = Math.round(104 * (CELL_H / 128)); // ground line scales with the cell (139)
-const ANCHOR_X = Math.floor(geometry.cellWidth / 2) + 12; // 118
+const CELL_W = 320; // generous offline canvas; final frames are trimmed
+const CELL_H = 320;
+const ANCHOR_Y = 240;
+const ANCHOR_X = 160;
 
 function invariant(condition, message) {
   if (!condition) throw new Error(`bonsai-atlas-invalid: ${message}`);
@@ -181,8 +183,8 @@ function expandSprites() {
 const sprites = expandSprites();
 const columns = geometry.columns;
 const rows = Math.ceil(sprites.length / columns);
-const atlasWidth = columns * CELL_W;
-const atlasHeight = rows * CELL_H;
+let atlasWidth = CELL_W;
+let atlasHeight = CELL_H;
 const anchor = { x: ANCHOR_X, y: ANCHOR_Y };
 
 function putPixel(buffer, width, height, x, y, color) {
@@ -267,10 +269,34 @@ function drawIsoBox(buffer, cx, cy, footprint, heightPx, top, left, right, direc
 // hillside read as coloured paper. Now the surface is ordered-dithered between
 // two shades of its own colour, the cliff faces fall away with a rock band at
 // the cut, and the shoreline gets foam where water meets land.
+function paintMaterialPolygon(buffer, points, material, directionIndex = 0, shadeFactor = 1, surface = "top") {
+  const coordinates = [[0,0],[1,0],[1,1],[0,1]];
+  for (let tri = 1; tri < points.length - 1; tri += 1) {
+    const ids = [0,tri,tri + 1];
+    const [a,b,c] = ids.map((id) => points[id]);
+    const det = (b[1]-c[1])*(a[0]-c[0])+(c[0]-b[0])*(a[1]-c[1]);
+    if (Math.abs(det) < 1e-8) continue;
+    const minX = Math.floor(Math.min(a[0],b[0],c[0])), maxX = Math.ceil(Math.max(a[0],b[0],c[0]));
+    const minY = Math.floor(Math.min(a[1],b[1],c[1])), maxY = Math.ceil(Math.max(a[1],b[1],c[1]));
+    for (let y = minY; y <= maxY; y += 1) for (let x = minX; x <= maxX; x += 1) {
+      const wa = ((b[1]-c[1])*(x+.5-c[0])+(c[0]-b[0])*(y+.5-c[1]))/det;
+      const wb = ((c[1]-a[1])*(x+.5-c[0])+(a[0]-c[0])*(y+.5-c[1]))/det;
+      const wc = 1-wa-wb;
+      if (Math.min(wa,wb,wc) < -1e-7) continue;
+      let u = coordinates[ids[0]][0]*wa+coordinates[ids[1]][0]*wb+coordinates[ids[2]][0]*wc;
+      let v = coordinates[ids[0]][1]*wa+coordinates[ids[1]][1]*wb+coordinates[ids[2]][1]*wc;
+      for (let turn = 0; turn < directionIndex; turn += 1) [u,v] = [v,1-u];
+      const color = orthographic.sampleMaterial(material, surface, u, v);
+      if (color) putPixel(buffer,atlasWidth,atlasHeight,x,y,color.map((value,i) => i === 3 ? value : Math.round(value * shadeFactor)));
+    }
+  }
+}
+
 function drawSlope(buffer, frame, cx, cy, directionIndex) {
   const colors = (source.slopes?.colors || ["grassLight", "grass", "grassDark"]).map(rgba);
   const step = source.slopes?.step || 8;
-  const mask = frame.slopeMask & 15;
+  const rawMask = frame.slopeMask & 15;
+  const mask = ((rawMask << directionIndex) | (rawMask >>> (4 - directionIndex))) & 15;
   // Corner order A(-,-) B(+,-) C(+,+) D(-,+); an edge toward a higher
   // neighbour lifts both of its corners.
   const lift = { A: 0, B: 0, C: 0, D: 0 };
@@ -293,10 +319,9 @@ function drawSlope(buffer, frame, cx, cy, directionIndex) {
   // Skirts first, so the tilted surface sits on solid ground.
   fillPolygon(buffer, atlasWidth, atlasHeight, [corners.B, corners.C, base.C, base.B], shade(colors[1], -22));
   fillPolygon(buffer, atlasWidth, atlasHeight, [corners.C, corners.D, base.D, base.C], shade(colors[2], -32));
-  ditherPolygon(buffer, [corners.A, corners.B, corners.C, corners.D],
-    shade(colors[1], -6), colors[0], mask ? 0.6 : 0.5);
+  paintMaterialPolygon(buffer, [corners.A, corners.B, corners.C, corners.D], "terrain.grass", directionIndex);
   // A lit crease along each raised edge reads as the break of slope.
-  const seam = shade(colors[0], 30);
+  const seam = shade(colors[0], 3);
   if (mask & 1) drawLine(buffer, atlasWidth, atlasHeight, corners.A[0], corners.A[1], corners.B[0], corners.B[1], seam, 1);
   if (mask & 2) drawLine(buffer, atlasWidth, atlasHeight, corners.B[0], corners.B[1], corners.C[0], corners.C[1], seam, 1);
   if (mask & 4) drawLine(buffer, atlasWidth, atlasHeight, corners.C[0], corners.C[1], corners.D[0], corners.D[1], shade(seam, -20), 1);
@@ -337,7 +362,7 @@ function drawTerrain(buffer, frame, cx, cy, directionIndex) {
   if (frame.kind === "water") {
     // Water is two dithered blues plus three ripple runs, so a lake stops
     // being one flat plate.
-    ditherPolygon(buffer, top, colors[1], colors[0], 0.45);
+    paintMaterialPolygon(buffer, top, "water", directionIndex);
     const crest = shade(colors[0], 26);
     for (let ripple = 0; ripple < 3; ripple += 1) {
       const rx = cx - 16 + ((seed >>> (ripple * 4)) % 22);
@@ -348,7 +373,9 @@ function drawTerrain(buffer, frame, cx, cy, directionIndex) {
     return;
   }
 
-  ditherPolygon(buffer, top, topA, topB, frame.kind === "snow" ? 0.62 : 0.5);
+  const material = frame.id === "terrain.lot" ? "terrain.soil" : frame.id === "terrain.coast" ? "terrain.sand"
+    : frame.id === "terrain.snow" ? "terrain.snow" : "terrain.grass";
+  paintMaterialPolygon(buffer, top, material, directionIndex);
 
   if (frame.kind === "coast") {
     // Sand grades into water, and the foam line sits where they meet.
@@ -361,24 +388,8 @@ function drawTerrain(buffer, frame, cx, cy, directionIndex) {
     return;
   }
 
-  // Surface litter: pebbles on rock and soil, tufts on anything that grows.
-  const accent = shade(colors[2], directionIndex % 2 === 0 ? 10 : -6);
-  for (let dot = 0; dot < 10; dot += 1) {
-    const px = cx + ((seed >>> (dot * 3)) % 33) - 16;
-    const py = cy + ((seed >>> (dot * 2 + 1)) % 11) - 5;
-    // Stay inside the diamond: |dx|/2 + |dy| < 12.
-    if (Math.abs(px - cx) / 2 + Math.abs(py - cy) > 10) continue;
-    fillRect(buffer, atlasWidth, atlasHeight, px, py, 2, 1, accent);
-  }
-  if (frame.kind !== "rock" && frame.id !== "terrain.rock" && frame.id !== "terrain.soil" && frame.id !== "terrain.lot") {
-    for (let blade = 0; blade < 5; blade += 1) {
-      const bx = cx + ((seed >>> (blade * 5 + 3)) % 31) - 15;
-      const by = cy + ((seed >>> (blade * 7 + 2)) % 10) - 5;
-      if (Math.abs(bx - cx) / 2 + Math.abs(by - cy) > 9) continue;
-      drawLine(buffer, atlasWidth, atlasHeight, bx, by, bx, by - 2, shade(colors[2], -16), 1);
-      putPixel(buffer, atlasWidth, atlasHeight, bx, by - 3, shade(colors[0], 14));
-    }
-  }
+  // Ground detail comes from the saved material plate; no random litter grid.
+
 }
 
 function rotatePort(port, directionIndex) {
@@ -1538,9 +1549,25 @@ function drawSprite(buffer, frame, slot, directionIndex) {
   const row = Math.floor(slot / columns);
   const cx = col * CELL_W + anchor.x;
   const cy = row * CELL_H + anchor.y;
+  const sharedPixels = orthographic.render(frame, directionIndex, CELL_W, CELL_H, anchor);
+  if (sharedPixels) {
+    for (let y = 0; y < CELL_H; y += 1) sharedPixels.copy(buffer, ((row * CELL_H + y) * atlasWidth + col * CELL_W) * 4, y * CELL_W * 4, (y + 1) * CELL_W * 4);
+    return;
+  }
   if (frame.category === "slope") drawSlope(buffer, frame, cx, cy, directionIndex);
   else if (frame.category === "terrain") drawTerrain(buffer, frame, cx, cy, directionIndex);
-  else if (frame.category === "connector") drawConnector(buffer, frame, cx, cy, directionIndex);
+  else if (frame.category === "connector") {
+    drawConnector(buffer, frame, cx, cy, directionIndex);
+    const material = frame.kind.includes("rail") ? "rail" : frame.kind.includes("wire") ? "wire" : frame.kind === "pipe" ? "pipe" : "road";
+    const base = rgba(frame.color);
+    for (let y = 0; y < CELL_H; y += 1) for (let x = 0; x < CELL_W; x += 1) {
+      const offset = (y * atlasWidth + x) * 4;
+      if (!buffer[offset+3] || Math.max(...base.slice(0,3).map((c,i) => Math.abs(buffer[offset+i]-c))) > 8) continue;
+      const texel = orthographic.sampleMaterial(material,"top",(x-cx)/64+.5,(y-cy)/32+.5);
+      if (!texel) continue;
+      for (let i = 0; i < 3; i += 1) buffer[offset+i] = Math.round(base[i] * .45 + texel[i] * .55);
+    }
+  }
   else if (frame.kind === "tree") drawTree(buffer, frame, cx, cy, directionIndex);
   else if (frame.kind === "pipe") drawConnector(buffer, { ...frame, shape: "cross", color: "pipe", accent: "waterLight" }, cx, cy, directionIndex);
   else if (frame.category === "building") drawBuilding(buffer, frame, cx, cy, directionIndex);
@@ -1594,12 +1621,46 @@ function digest(buffer) {
 await mkdir(assetsDir, { recursive: true });
 await mkdir(generatedDir, { recursive: true });
 
+// Trim against the union of all camera directions: one stable frame rectangle
+// and anchor serves every direction without wasting decoded GPU/Canvas memory.
+const packed = [];
+for (const frame of sprites) {
+  const cells = directions.map((_, direction) => {
+    const pixels = Buffer.alloc(CELL_W * CELL_H * 4);
+    drawSprite(pixels, frame, 0, direction);
+    return pixels;
+  });
+  let left = CELL_W, top = CELL_H, right = -1, bottom = -1;
+  for (const pixels of cells) for (let y = 0; y < CELL_H; y += 1) for (let x = 0; x < CELL_W; x += 1) {
+    if (!pixels[(y * CELL_W + x) * 4 + 3]) continue;
+    left = Math.min(left, x); top = Math.min(top, y); right = Math.max(right, x); bottom = Math.max(bottom, y);
+  }
+  invariant(right >= left, `empty shared frame ${frame.id}`);
+  invariant(left > 0 && top > 0 && right < CELL_W - 1 && bottom < CELL_H - 1, `clipped frame ${frame.id}`);
+  left = Math.max(0, left - 2); top = Math.max(0, top - 2);
+  right = Math.min(CELL_W - 1, right + 2); bottom = Math.min(CELL_H - 1, bottom + 2);
+  const w = right - left + 1, h = bottom - top + 1;
+  const cropped = cells.map((pixels) => {
+    const out = Buffer.alloc(w * h * 4);
+    for (let y = 0; y < h; y += 1) pixels.copy(out, y * w * 4, ((top + y) * CELL_W + left) * 4, ((top + y) * CELL_W + left + w) * 4);
+    return out;
+  });
+  packed.push({ left, top, w, h, pixels: cropped });
+}
+atlasWidth = 2048;
+let shelfX = 0, shelfY = 0, shelfHeight = 0;
+for (const rect of packed) {
+  if (shelfX + rect.w > atlasWidth) { shelfY += shelfHeight; shelfX = 0; shelfHeight = 0; }
+  rect.x = shelfX; rect.y = shelfY;
+  shelfX += rect.w; shelfHeight = Math.max(shelfHeight, rect.h);
+}
+atlasHeight = shelfY + shelfHeight;
 const files = {};
 let northPixelBuffer = null;
 for (let directionIndex = 0; directionIndex < directions.length; directionIndex += 1) {
   const direction = directions[directionIndex];
   const pixels = Buffer.alloc(atlasWidth * atlasHeight * 4);
-  sprites.forEach((frame, slot) => drawSprite(pixels, frame, slot, directionIndex));
+  for (const rect of packed) for (let y = 0; y < rect.h; y += 1) rect.pixels[directionIndex].copy(pixels, ((rect.y + y) * atlasWidth + rect.x) * 4, y * rect.w * 4, (y + 1) * rect.w * 4);
   if (direction === "north") northPixelBuffer = pixels;
   const png = encodePng(atlasWidth, atlasHeight, pixels);
   const filename = `atlas-${direction}.png`;
@@ -1610,13 +1671,11 @@ for (let directionIndex = 0; directionIndex < directions.length; directionIndex 
 
 const frames = {};
 sprites.forEach((frame, slot) => {
+  const rect = packed[slot];
   frames[frame.id] = {
-    x: (slot % columns) * CELL_W,
-    y: Math.floor(slot / columns) * CELL_H,
-    w: CELL_W,
-    h: CELL_H,
+    x: rect.x, y: rect.y, w: rect.w, h: rect.h,
     footprint: { w: frame.footprint[0], h: frame.footprint[1] },
-    anchor,
+    anchor: { x: anchor.x - rect.left, y: anchor.y - rect.top },
     height: frame.height,
     state: frame.state,
     animation: frame.animation,
@@ -1627,7 +1686,7 @@ sprites.forEach((frame, slot) => {
     density: frame.density || null,
     license: frame.license,
     source: frame.source,
-    ...(frame.state === "night" ? { windows: nightWindowRects(frame) } : {}),
+    ...(frame.state === "night" ? { windows: [], lighting: "baked-emission-mask" } : {}),
   };
 });
 
@@ -1639,7 +1698,7 @@ const metadata = {
     tileHeight: geometry.tileHeight,
     heightStep: geometry.heightStep,
   },
-  atlas: { width: atlasWidth, height: atlasHeight, cellWidth: CELL_W, cellHeight: CELL_H, columns, rows },
+  atlas: { width: atlasWidth, height: atlasHeight, cellWidth: CELL_W, cellHeight: CELL_H, packing: "direction-union-shelf-v1" },
   directions: files,
   frames,
   completeness: {
@@ -1669,17 +1728,19 @@ const provenance = {
   files: Object.values(files).map(({ file, sha256 }) => ({ file, sha256 })),
   metadata: "assets/bonsai/atlas-metadata.json",
   sourceFile: "assets/bonsai/atlas-source.json",
+  materialManifest: "assets/bonsai/textures.json",
+  sourceArtwork: { file: "assets/bonsai/source-art/city-materials-v1.png", prompt: "assets/bonsai/source-art/city-materials-v1.prompt.txt", tool: "image_gen.imagegen", model: "unknown (not exposed by tool)", requestedModel: "GPT Image 2.5", sha256: digest(await readFile(path.join(assetsDir, "source-art/city-materials-v1.png"))) },
   author: "AI System 6 (original, agent-authored)",
   date: source.authoredAt,
-  tool: "tooling/build-bonsai-atlas.mjs (JSON micro-voxel recipes + deterministic PNG encoder)",
+  tool: "tooling/build-bonsai-atlas.mjs (shared runtime geometry + saved image textures + deterministic orthographic rasterizer)",
   license: "MIT",
   source: "original",
   notes: [
-    "Original isometric pixel art composed from project-owned grammar: massing (single, setback, twin, wing, courtyard, podium, stepped, gable), roof form (flat deck with parapet, pitched, hipped, sawtooth, stepped), roof furniture (tank, stair bulkhead, vents, chimney, stack, sign, antenna), facade treatment (punched or ribbon windows, floor banding, shopfront, loading bay, door) and ordered-dither shading.",
+    "Original city art from shared runtime building, roof, facility and tree geometry, rendered orthographically with saved generated materials; directional transport markings remain deterministic geometry.",
     "No pixels copied, traced, sampled, measured from, or converted from any external game or artwork; the reference authorized by the 2026-08-24 amendment was not consulted for this build.",
-    "Massing, roof form, wall colour and window rhythm are indexed by different primes of the variant number, so twenty-four variants per stage sample the combinations instead of repeating a handful of silhouettes.",
-    "The generator has no network path and no wall clock, and reads only the checked-in source recipe; a rebuild is byte-identical.",
-    "All four rotations share frame ids and dimensions; direction-specific light and small asymmetries are generated deliberately.",
+    "Building identity selects massing, roof and wall colour independently of position, light and camera; twenty-four authored variants per stage stay stable across backends.",
+    "The generator has no network path and no wall clock, and reads checked-in recipes, runtime geometry and saved texture/mask PNGs; a rebuild is byte-identical.",
+    "All four rotations share frame ids and dimensions; camera rotation changes visible faces without changing asset identity.",
   ],
 };
 await writeFile(path.join(assetsDir, "provenance.json"), `${JSON.stringify(provenance, null, 2)}\n`);
@@ -1710,15 +1771,13 @@ await writeFile(path.join(assetsDir, "provenance.json"), `${JSON.stringify(prove
   const blit = (frameId, sx, sy) => {
     const slot = slotOf.get(frameId);
     if (slot === undefined) return;
-    const col = slot % columns;
-    const row = Math.floor(slot / columns);
-    const ox = col * CELL_W;
-    const oy = row * CELL_H;
-    for (let y = 0; y < CELL_H; y += 1) {
-      const py = sy + y - 104;
+    const f = frames[frameId];
+    const ox = f.x, oy = f.y;
+    for (let y = 0; y < f.h; y += 1) {
+      const py = sy + y - f.anchor.y;
       if (py < 0 || py >= previewHeight) continue;
-      for (let x = 0; x < CELL_W; x += 1) {
-        const px = sx + x - 80;
+      for (let x = 0; x < f.w; x += 1) {
+        const px = sx + x - f.anchor.x;
         if (px < 0 || px >= previewWidth) continue;
         const from = ((oy + y) * atlasWidth + (ox + x)) * 4;
         if (northPixels[from + 3] === 0) continue;
@@ -1811,13 +1870,13 @@ await writeFile(path.join(assetsDir, "provenance.json"), `${JSON.stringify(prove
     const blitTo = (target, targetW, targetH, frameId, sx, sy) => {
       const slot = slotOf.get(frameId);
       if (slot === undefined) return false;
-      const ox = (slot % columns) * CELL_W;
-      const oy = Math.floor(slot / columns) * CELL_H;
-      for (let y = 0; y < CELL_H; y += 1) {
-        const py = sy + y - 104;
+      const f = frames[frameId];
+      const ox = f.x, oy = f.y;
+      for (let y = 0; y < f.h; y += 1) {
+        const py = sy + y - f.anchor.y;
         if (py < 0 || py >= targetH) continue;
-        for (let x = 0; x < CELL_W; x += 1) {
-          const px = sx + x - 80;
+        for (let x = 0; x < f.w; x += 1) {
+          const px = sx + x - f.anchor.x;
           if (px < 0 || px >= targetW) continue;
           const from = ((oy + y) * atlasWidth + (ox + x)) * 4;
           if (northPixels[from + 3] === 0) continue;

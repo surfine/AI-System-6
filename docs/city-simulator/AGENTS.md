@@ -5,14 +5,12 @@ officially named **Bonsai City / 盆景城市**. This file is the scoped rule se
 any agent touching that path. The GPL game engines (Micropolis, OpenTTD,
 DOOM) are separate products; rules here do not govern their vendor code.
 
-## Always read first
+## Read by task
 
 - CLAUDE.md — repo-wide authority.
-- [README.md](README.md) — what this project is and its current phase.
-- [ARCHITECTURE.md](ARCHITECTURE.md) — three-layer boundary and determinism
-  contract.
-- [LEGAL-AND-PROVENANCE.md](LEGAL-AND-PROVENANCE.md) — what may enter the
-  original path, and what never may.
+- For scope/current phase: [README.md](README.md).
+- For simulation/runtime changes: [ARCHITECTURE.md](ARCHITECTURE.md), the three-layer boundary and determinism contract.
+- For assets, codecs or external sources: [LEGAL-AND-PROVENANCE.md](LEGAL-AND-PROVENANCE.md).
 - `docs/city-simulator/foundation-contract.json` — the machine-readable Phase 0
   contract; the foundation feature test enforces it.
 
@@ -53,12 +51,12 @@ DOOM) are separate products; rules here do not govern their vendor code.
 
 ```sh
 npm run verify:quick -- --feature city-simulator-foundation --docs --no-build
-npm run verify:feature -- city-simulator-foundation
-npm run verify:docs
 ```
 
-Merge/closeout still requires the repo-wide gates (`verify:release`,
-`verify:ship`) in an environment with the canonical fidelity cache.
+Use the relevant named feature checks for implementation; the command above covers
+the foundation contract and documentation together. Code integration/release
+uses the repo-wide gates and canonical fidelity cache as applicable. A docs-only
+edit does not start browser, simulation playthrough or release gates.
 
 ## Status
 

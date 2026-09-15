@@ -70,6 +70,17 @@ async function installWebApp() {
   return false;
 }
 
+// The device-side shell and the browser chrome that follows the appearance both
+// live in app/core/web-app-shell.js. Neither is needed to paint the first
+// frame -- one registers a service worker, the other repaints a meta tag -- and
+// the boot bundle is measured against a two-floppy budget, so they load after
+// the window does. The module names itself through the flag below; nothing else
+// may reach into it.
+const ensureWebAppShellModule = createLazyModuleLoader(
+  "AISystem6WebAppShellLoaded",
+  ["app/core/web-app-shell.js"],
+);
+
 function formatStorageBytes(value = 0) {
   const bytes = Math.max(0, Number(value) || 0);
   if (bytes < 1024 * 1024) return `${Math.ceil(bytes / 1024)} KB`;
@@ -306,6 +317,7 @@ document.getElementById("keep-screen-awake")?.addEventListener("change", () => {
 
 window.AISystem6WebPlatform = Object.freeze({
   installWebApp,
+  ensureWebAppShellModule,
   isStandaloneWebApp,
   projectStorageSnapshot,
   renderProjectStorageStatus,
@@ -321,4 +333,15 @@ window.AISystem6WebPlatform = Object.freeze({
 });
 
 document.getElementById("keep-projects-on-device")?.addEventListener("click", requestPersistentProjectStorage);
-window.requestAnimationFrame(syncWebInstallUi);
+window.requestAnimationFrame(() => {
+  syncWebInstallUi();
+});
+
+// Registration waits for load so it never competes with first paint.
+// After the desk is on screen, never before it.
+// Keeping the shell is an improvement, never a precondition: a rejection here
+// (an offline first run, a blocked worker) must not reach the boot sequence,
+// which treats an uncaught error as a failed startup.
+const startWebAppShell = () => { ensureWebAppShellModule().catch(() => {}); };
+if (document.readyState === "complete") startWebAppShell();
+else window.addEventListener("load", startWebAppShell, { once: true });

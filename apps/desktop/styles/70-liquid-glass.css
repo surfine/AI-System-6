@@ -1,4 +1,20 @@
 body.use-liquid-glass {
+  /* HIG shape ladder: compact desktop controls, rounded surfaces, and capsules.
+     Nested surfaces subtract their inset from the parent, with a positive floor. */
+  --r-xs: 4px;
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 24px;
+  --r-pill: 999px;
+  --r-circle: 50%;
+  --control-shape-radius: var(--r-sm);
+  --surface-radius: var(--r-lg);
+  --item-radius: var(--r-sm);
+  --inset-radius: var(--r-md);
+  --micro-radius: var(--r-xs);
+  --tab-inner-radius: var(--r-md);
+  --tab-panel-radius: var(--r-lg);
   /* The tint level is NOT declared here. The slider writes it on the
      root element, and a value declared on the body would shadow that
      inherited value, so the chrome below never moved with the control.
@@ -19,9 +35,10 @@ body.use-liquid-glass {
      thirty-eight years out of period. */
   --theme-ui-font: "PingFang SC", "Helvetica Neue", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
   --theme-title-font: var(--theme-ui-font);
+  --system-select-control-font-weight: 400;
   --window-bg: var(--glass-surface);
-  --window-radius: var(--liquid-window-radius);
-  --container-radius: var(--liquid-window-radius);
+  --window-radius: var(--r-xl);
+  --container-radius: var(--r-xl);
   --window-shadow: var(--system-shadow);
   /* The whole appearance read flat because of this one number. 4px is a
      frosting, not a refraction: at that radius the desktop behind a window
@@ -38,7 +55,7 @@ body.use-liquid-glass {
   --sidebar-bg: var(--liquid-sidebar-tint);
   --tdi-rail-bg: var(--liquid-sidebar-tint);
   --tdi-rail-border: 0;
-  --tdi-rail-radius: 0;
+  --tdi-rail-radius: var(--r-sm);
   --tdi-rail-shadow: none;
   --theme-lab-sidebar-icon-size: 16px;
   --theme-lab-sidebar-icon-bg: transparent;
@@ -55,15 +72,15 @@ body.use-liquid-glass {
   --titlebar-title-fg: rgba(16, 17, 20, 0.82);
   --menu-panel-bg: var(--liquid-menu-panel);
   --menu-panel-border: 1px solid var(--glass-border);
-  --menu-panel-radius: var(--liquid-menu-radius);
+  --menu-panel-radius: var(--r-md);
   --menu-panel-backdrop-filter: blur(34px) saturate(160%) brightness(1.04);
   --surface-backdrop-filter: var(--menu-panel-backdrop-filter);
   /* The glass row is min-height-driven; the text line stays the shared
      16px menu cadence so the period token is answered, not inherited. */
   --menu-item-line-height: 16px;
   --field-border: 1px solid rgba(255, 255, 255, 0.62);
-  --field-radius: 12px;
-  --select-radius: 12px;
+  --field-radius: var(--r-md);
+  --select-radius: var(--r-md);
   /* One white line and a 6% drop is a printed edge, not a thickness. The
      field now carries what the slider's well carries: a lit top lip, a dark
      bottom lip under it, the paired side hairlines the window chrome draws,
@@ -79,7 +96,7 @@ body.use-liquid-glass {
   --field-focus-ring: 0 0 0 3px var(--glass-field-focus-ring);
   --choice-bg: rgba(255, 255, 255, 0.28);
   --choice-border: 1px solid rgba(16, 17, 20, 0.32);
-  --choice-radius: 6px;
+  --choice-radius: var(--r-xs);
   /* The same thickness on the checkbox and the radio, so the row of them
      under the slider reads as the same material and not as a different set
      of parts that happens to share a panel. */
@@ -111,7 +128,7 @@ body.use-liquid-glass {
   --image-manager-thumb-border: 1px solid rgba(255, 255, 255, 0.42);
   --review-desk-pane-bg: rgba(255, 255, 255, 0.2);
   --review-desk-results-border: 1px solid rgba(16, 17, 20, 0.16);
-  --review-desk-results-radius: 16px;
+  --review-desk-results-radius: var(--r-lg);
   --review-desk-results-bg:
     linear-gradient(180deg, rgba(255, 255, 255, 0.46), rgba(255, 255, 255, 0.2)),
     rgba(255, 255, 255, 0.2);
@@ -152,7 +169,7 @@ body.use-liquid-glass {
     inset 0 -1px 0 rgba(16, 17, 20, 0.08),
     0 12px 34px rgba(18, 28, 38, 0.09);
   --menu-button-height: 24px;
-  --menu-button-radius: 999px;
+  --menu-button-radius: var(--r-pill);
   --menu-button-transition: background 0.18s ease, box-shadow 0.18s ease, color 0.18s ease;
   --btn-default-bg:
     linear-gradient(180deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.04)),
@@ -170,15 +187,14 @@ body.use-liquid-glass {
   --outline-item-border: 1px solid rgba(16, 17, 20, 0.08);
   --outline-item-span-bg: transparent;
   --outline-item-span-border: 0;
-  --outline-item-span-radius: 8px;
+  --outline-item-span-radius: var(--r-sm);
   --outline-focus-border: transparent;
   --outline-focus-outline: 0;
   --outline-focus-outline-offset: 0;
   --outline-focus-bg: rgba(255, 255, 255, 0.34);
   --outline-focus-shadow: inset 0 0 0 1px rgba(0, 122, 255, 0.28);
-  --radio-radius: 50%;
   --section-label-fg: rgba(16, 17, 20, 0.92);
-  --section-label-radius: 999px;
+  --section-label-radius: var(--r-pill);
   --section-label-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78), 0 8px 24px rgba(18, 28, 38, 0.08);
   --draft-label-bg:
     linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.28)),
@@ -192,11 +208,13 @@ body.use-liquid-glass {
   --source-info-panel-border: 0;
   --teachtext-editor-bg: transparent;
   --teachtext-editor-border: 1px solid transparent;
-  --teachtext-editor-radius: 18px;
+  --teachtext-editor-radius: var(--r-lg);
   --teachtext-editor-shadow: none;
   --scrap-list-bg: rgba(255, 255, 255, 0.18);
   --scrap-list-border: 1px solid rgba(255, 255, 255, 0.44);
-  --scrap-list-radius: 20px;
+  --scrap-list-radius: var(--r-lg);
+  --scrap-list-item-radius: var(--r-sm);
+  --dictionary-form-label-radius: var(--r-sm);
   --scrap-list-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.68);
   --scrap-empty-card-border: 1px solid rgba(255, 255, 255, 0.42);
   --scrap-empty-card-bg: rgba(255, 255, 255, 0.18);
@@ -215,7 +233,7 @@ body.use-liquid-glass {
     linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.26)),
     rgba(255, 255, 255, 0.24);
   --import-preview-border: 1px solid rgba(16, 17, 20, 0.16);
-  --import-preview-radius: 16px;
+  --import-preview-radius: var(--r-lg);
   --import-preview-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.78),
     0 10px 30px rgba(18, 28, 38, 0.08);
@@ -223,7 +241,7 @@ body.use-liquid-glass {
     linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.26)),
     rgba(255, 255, 255, 0.24);
   --backup-preview-border: 1px solid rgba(16, 17, 20, 0.16);
-  --backup-preview-radius: 16px;
+  --backup-preview-radius: var(--r-lg);
   --backup-preview-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.78),
     0 10px 30px rgba(18, 28, 38, 0.08);
@@ -247,17 +265,17 @@ body.use-liquid-glass {
   --control-strip-active-bg: var(--liquid-menu-active);
   --control-strip-active-fg: #ffffff;
   --control-strip-active-shadow: var(--liquid-menu-active-shadow);
-  --control-strip-radius: var(--liquid-menu-radius);
+  --control-strip-radius: var(--r-md);
   --control-strip-shadow: var(--liquid-menu-panel-shadow);
   --control-strip-backdrop: blur(34px) saturate(160%) brightness(1.04);
   /* Glass-era refinements: the open module floats as a tinted pill, and the
      handle grip is a grabber bar instead of Classic's tick texture. */
-  --control-strip-tile-radius: 999px;
+  --control-strip-tile-radius: var(--r-pill);
   --control-strip-tile-margin: 3px 1px;
   --control-strip-tile-height: calc(var(--control-strip-thickness) - 6px);
   --control-strip-grip-inset: 8px 0;
   --control-strip-grip: linear-gradient(rgba(16, 17, 20, 0.28), rgba(16, 17, 20, 0.28)) 50% 50% / 4px 100% no-repeat;
-  --control-strip-grip-radius: 2px;
+  --control-strip-grip-radius: var(--r-xs);
   --control-strip-gauge-bg: rgba(255, 255, 255, 0.8);
   /* Control Panel section chooser — a glass segmented capsule: the active
      section is a porcelain pill on a shaded track. Same tablist DOM. */
@@ -265,7 +283,7 @@ body.use-liquid-glass {
   --control-settings-rows: none;
   --control-chooser-area: auto;
   --control-chooser-bg: rgba(16, 17, 20, 0.07);
-  --control-chooser-radius: 999px;
+  --control-chooser-radius: var(--r-pill);
   --control-chooser-padding: 3px;
   --control-chooser-width: max-content;
   --control-chooser-direction: row;
@@ -278,7 +296,7 @@ body.use-liquid-glass {
   --control-chooser-item-padding: 3px 8px;
   --control-chooser-item-offset: 0px;
   --control-chooser-item-border: 0;
-  --control-chooser-item-radius: 999px;
+  --control-chooser-item-radius: var(--r-pill);
   --control-chooser-item-bg: transparent;
   --control-chooser-item-fg: rgba(16, 17, 20, 0.66);
   --control-chooser-hover-bg: rgba(255, 255, 255, 0.5);
@@ -316,11 +334,14 @@ body.use-liquid-glass {
      wants exactly that, so the horizontal lane shares it unchanged. */
   --window-frame-thumb-bg-horizontal: var(--window-frame-thumb-bg);
   --window-frame-thumb-border: 2px solid rgba(255, 255, 255, 0.28);
-  --window-frame-thumb-radius: 999px;
+  --window-frame-thumb-radius: var(--r-pill);
   --ink: #101114;
   --paper: rgba(255, 255, 255, 0.5);
   --shade: rgba(255, 255, 255, 0.46);
   --shade-dark: rgba(16, 17, 20, 0.42);
+  /* This era's Writing Flow step badge is a 24px pill, so the row it reserves
+     above the icon is taller than the 19px the desk's other appearances use. */
+  --spine-step-badge-row: 1.75rem;
   --desktop: #dce2e6;
   --alarm-clock-title-bg: rgba(255, 255, 255, 0.18);
   --alarm-clock-surface-bg:
@@ -335,18 +356,18 @@ body.use-liquid-glass {
     rgba(16, 17, 20, 0.76);
   --alarm-clock-active-fg: #ffffff;
   --alarm-clock-frame-border: 1px solid rgba(16, 17, 20, 0.2);
-  --alarm-clock-frame-radius: 8px;
+  --alarm-clock-frame-radius: var(--r-sm);
   --alarm-clock-frame-shadow:
     0 14px 34px rgba(30, 43, 62, 0.16),
     inset 0 1px 0 rgba(255, 255, 255, 0.72);
   --alarm-clock-close-border: 1px solid rgba(16, 17, 20, 0.48);
-  --alarm-clock-close-radius: 2px;
+  --alarm-clock-close-radius: var(--r-xs);
   --alarm-clock-close-bg: rgba(255, 255, 255, 0.34);
   --alarm-clock-close-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58);
   --alarm-clock-lever-bg: transparent;
   --alarm-clock-lever-hover-bg: rgba(255, 255, 255, 0.22);
   --alarm-clock-lever-border: 0;
-  --alarm-clock-lever-radius: 3px;
+  --alarm-clock-lever-radius: var(--r-xs);
   --alarm-clock-lever-fg: rgba(16, 17, 20, 0.78);
   --alarm-clock-lever-shadow: none;
   --alarm-clock-lever-focus-outline: 1px solid rgba(16, 17, 20, 0.42);
@@ -354,7 +375,7 @@ body.use-liquid-glass {
   --alarm-clock-selection-bg: rgba(0, 122, 255, 0.82);
   --alarm-clock-selection-fg: #ffffff;
   --alarm-clock-mode-divider: 0;
-  --alarm-clock-mode-radius: 6px;
+  --alarm-clock-mode-radius: var(--r-sm);
   --alarm-clock-mode-bg: transparent;
   --alarm-clock-mode-hover-bg: rgba(255, 255, 255, 0.22);
   --alarm-clock-mode-active-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
@@ -366,7 +387,7 @@ body.use-liquid-glass {
      you can see through it); a kept one has (opaque reading surface, rim
      light, a real shadow). Same semantics as Classic's paper edge. */
   --clio-said-rule: 3px solid rgba(16, 17, 20, 0.42);
-  --clio-slip-radius: 12px;
+  --clio-slip-radius: var(--r-md);
   --clio-slip-surface: transparent;
   --clio-slip-border: 1px dashed rgba(16, 17, 20, 0.16);
   --clio-slip-shadow: none;
@@ -377,14 +398,14 @@ body.use-liquid-glass {
     inset 0 1px 0 rgba(255, 255, 255, 0.9);
   --clio-slip-mark-border: 1px dashed rgba(16, 17, 20, 0.34);
   --clio-slip-mark-kept: rgba(16, 17, 20, 0.7);
-  --clio-basis-chip-radius: 8px;
+  --clio-basis-chip-radius: var(--r-sm);
   --clio-basis-chip-border: 1px solid rgba(16, 17, 20, 0.06);
   --clio-basis-chip-bg: rgba(255, 255, 255, 0.6);
   --clio-entry-bg:
     linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.28));
   --clio-entry-divider: 1px solid rgba(16, 17, 20, 0.08);
   --clio-entry-field-border: 1px solid rgba(255, 255, 255, 0.76);
-  --clio-entry-field-radius: 14px;
+  --clio-entry-field-radius: var(--r-md);
   --clio-entry-field-bg: rgba(255, 255, 255, 0.55);
   --clio-entry-field-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
   --clio-user-message-shadow:
@@ -404,7 +425,7 @@ body.use-liquid-glass {
     linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(247, 251, 255, 0.46)),
     rgba(246, 250, 255, 0.52);
   --clio-composer-border: 1px solid rgba(255, 255, 255, 0.76);
-  --clio-composer-radius: 14px;
+  --clio-composer-radius: var(--r-md);
   --clio-composer-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.88),
     0 12px 34px rgba(30, 43, 62, 0.12);
@@ -412,22 +433,22 @@ body.use-liquid-glass {
     inset 0 1px 0 rgba(255, 255, 255, 0.9),
     0 0 0 2px rgba(16, 17, 20, 0.12),
     0 14px 38px rgba(30, 43, 62, 0.14);
-  --clio-composer-control-radius: 50%;
+  --clio-composer-control-radius: var(--r-circle);
   --clio-composer-tool-border: transparent;
   --clio-action-surface: rgba(247, 250, 255, 0.94);
   --clio-action-border: 1px solid rgba(255, 255, 255, 0.74);
-  --clio-action-radius: 13px;
-  --clio-action-item-radius: 9px;
+  --clio-action-radius: var(--r-md);
+  --clio-action-item-radius: var(--r-sm);
   --clio-action-shadow:
     0 14px 36px rgba(30, 43, 62, 0.18),
     inset 0 1px 0 rgba(255, 255, 255, 0.86);
-  --clio-context-control-radius: 10px;
+  --clio-context-control-radius: var(--r-md);
   --clio-assembly-shadow:
     0 18px 46px rgba(30, 43, 62, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.86);
   --clio-file-chip-bg: rgba(255, 255, 255, 0.2);
   --clio-file-chip-border: 1px solid rgba(16, 17, 20, 0.06);
-  --clio-file-chip-radius: 8px;
+  --clio-file-chip-radius: var(--r-sm);
   --system-border: 1px solid rgba(255, 255, 255, 0.72);
   --window-border: var(--system-border);
   --menu-bar-border-color: rgba(16, 17, 20, 0.1);
@@ -453,16 +474,6 @@ body.use-liquid-glass {
   /* One press response for every interactive glass control, so reduced motion
      can drop the movement in one place and keep the colour change. */
   --liquid-press-transform: translateY(calc(1px * var(--liquid-motion-scale)));
-  --liquid-window-radius: 18px;
-  --liquid-menu-radius: 12px;
-  --liquid-card-radius-lg: 18px;
-  --liquid-card-radius-md: 16px;
-  --liquid-card-radius-sm: 12px;
-  --liquid-card-radius-xs: 14px;
-  --liquid-pill-radius: 999px;
-  --liquid-surface-radius-lg: 18px;
-  --liquid-surface-radius-sm: 12px;
-  --liquid-tab-radius: var(--liquid-window-radius);
   --tdi-tab-close-size: 30px;
   --tdi-tab-close-gutter: 8px;
   --tdi-tab-close-mark-opacity: 0;
@@ -476,7 +487,7 @@ body.use-liquid-glass {
   --tdi-tabs-after-flex: 1 1 auto;
   --tdi-tabs-after-min-width: 10px;
   --tdi-stack-popover-border: 1px solid rgba(255, 255, 255, 0.62);
-  --tdi-stack-popover-radius: 14px;
+  --tdi-stack-popover-radius: var(--r-md);
   --tdi-stack-popover-bg:
     linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(244, 249, 252, 0.78)),
     rgba(246, 251, 253, 0.82);
@@ -495,7 +506,7 @@ body.use-liquid-glass {
   --tdi-grabber-mark-left: 50%;
   --tdi-grabber-mark-width: 3px;
   --tdi-grabber-mark-height: 22px;
-  --tdi-grabber-mark-radius: 999px;
+  --tdi-grabber-mark-radius: var(--r-pill);
   --tdi-grabber-mark-bg: rgba(16, 17, 20, 0.16);
   --tdi-grabber-mark-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.42),
@@ -516,7 +527,7 @@ body.use-liquid-glass {
   --tdi-tab-padding: 7px 48px 7px 16px;
   --tdi-tab-border: 1px solid rgba(255, 255, 255, 0.58);
   --tdi-tab-border-bottom: var(--tdi-tab-border);
-  --tdi-tab-radius: var(--liquid-tab-radius);
+  --tdi-tab-radius: var(--r-lg);
   --tdi-tab-bg:
     linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.22)),
     rgba(255, 255, 255, 0.26);
@@ -580,7 +591,7 @@ body.use-liquid-glass {
   --tdi-tab-close-height: 30px;
   --tdi-tab-close-min-height: 30px;
   --tdi-tab-close-border: 1px solid rgba(255, 255, 255, 0.48);
-  --tdi-tab-close-radius: 50%;
+  --tdi-tab-close-radius: var(--r-circle);
   --tdi-tab-close-bg:
     linear-gradient(180deg, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0.18)),
     rgba(255, 255, 255, 0.22);
@@ -598,7 +609,7 @@ body.use-liquid-glass {
   --tdi-tab-close-hover-fg: rgba(16, 17, 20, 0.92);
   --tdi-tab-close-hover-shadow: var(--tdi-tab-close-shadow);
   --tdi-tab-close-hover-transform: translateY(-50%);
-  --control-radius: 12px;
+  --control-radius: var(--r-md);
   /* Same track and segment geometry as Classic; only the material changes.
      The thumb keeps its square block shape and never becomes a round knob.
      The travelled region is a lighter trough, not an accent bar: Classic fills
@@ -611,16 +622,16 @@ body.use-liquid-glass {
     repeating-linear-gradient(90deg, rgba(16, 17, 20, 0.13) 0 1px, transparent 1px 3px),
     rgba(16, 17, 20, 0.07);
   --system-track-border: 0;
-  --system-track-radius: 3px;
+  --system-track-radius: var(--r-xs);
   --system-track-shadow: inset 0 1px 2px rgba(16, 17, 20, 0.14);
   --system-track-fill: transparent;
   --system-track-thumb-bg: rgba(255, 255, 255, 0.94);
   --system-track-thumb-border: 1px solid rgba(16, 17, 20, 0.22);
-  --system-track-thumb-radius: 2px;
+  --system-track-thumb-radius: var(--r-xs);
   --system-track-thumb-shadow: 0 1px 2px rgba(18, 28, 38, 0.18);
   --system-segment-bg: rgba(16, 17, 20, 0.14);
   --system-segment-border: 0;
-  --system-segment-radius: 3px;
+  --system-segment-radius: var(--r-xs);
   --system-segment-on-bg: linear-gradient(180deg, #5ac8fa, #0a84ff);
   --system-segment-on-shadow: 0 1px 2px rgba(10, 132, 255, 0.32);
   /* Glass carries colour better than bitmap paper, so the same reach is
@@ -630,7 +641,7 @@ body.use-liquid-glass {
   --ss-rule: rgba(16, 17, 20, 0.12);
   --ss-rule-strong: rgba(16, 17, 20, 0.18);
   --soundscape-search-input-border: 1px solid rgba(255, 255, 255, 0.62);
-  --soundscape-search-input-radius: 12px;
+  --soundscape-search-input-radius: var(--r-md);
   --icon-bg:
     linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.24)),
     rgba(255, 255, 255, 0.26);
@@ -846,6 +857,8 @@ body.use-liquid-glass {
   /* Shared progress-meter recipe tokens (see 00-foundation.css :root); the
      rebuild meter's own twin below still owns the glass blur/backdrop, which
      is not a plain value swap, but these three period tokens are. */
+  --progress-radius: var(--r-pill);
+  --progress-fill-radius: var(--r-pill);
   --progress-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78);
   --progress-fill-active-bg: linear-gradient(90deg, var(--glass-progress-blue-soft), var(--glass-progress-accent-soft), var(--glass-progress-blue-soft));
   --progress-fill-active-size: 50% 100%;
@@ -900,7 +913,7 @@ body.use-liquid-glass {
   --clio-chart-material-filter: blur(7px) saturate(125%);
   --clio-chart-typeface: var(--preview-font);
   --clio-chart-type-size: 12px;
-  --clio-chart-radius: 10px;
+  --clio-chart-radius: var(--r-md);
   --clio-chart-cell-radius: var(--clio-chart-radius);
   --clio-chart-pane-bg:
     radial-gradient(110% 130% at 10% 0%, rgba(255, 255, 255, 0.52), transparent 44%),
@@ -951,7 +964,7 @@ body.use-liquid-glass {
      base .desktop-icon span:last-child rule needs no glass twin. */
   --desktop-label-bg: rgba(255, 255, 255, 0.54);
   --desktop-label-fg: var(--ink);
-  --desktop-label-radius: 8px;
+  --desktop-label-radius: var(--r-sm);
   --desktop-label-box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
   --desktop-label-max-width: 92px;
   --liquid-desktop-icon-padding: 2px 2px;
@@ -998,14 +1011,14 @@ body.use-liquid-glass {
   --docmap-node-circle-fill: rgba(255, 255, 255, 0.88);
   --docmap-node-circle-stroke-width: 2.2px;
   --video-chip-border: 1px solid rgba(47, 157, 179, 0.2);
-  --video-chip-radius: 999px;
+  --video-chip-radius: var(--r-pill);
   --video-chip-bg:
     linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.24)),
     rgba(0, 122, 255, 0.1);
   --video-chip-fg: rgba(16, 17, 20, 0.72);
   --video-timeline-min-height: 38px;
   --video-timeline-border: 1px solid rgba(16, 17, 20, 0.11);
-  --video-timeline-radius: 12px;
+  --video-timeline-radius: var(--r-md);
   --video-timeline-bg:
     linear-gradient(180deg, rgba(255, 255, 255, 0.56), rgba(255, 255, 255, 0.22)),
     rgba(255, 255, 255, 0.22);
@@ -1023,7 +1036,7 @@ body.use-liquid-glass {
     0 8px 20px rgba(18, 28, 38, 0.12);
   --video-timeline-selected-span-fg: rgba(255, 255, 255, 0.76);
   --empty-note-border: 1px solid rgba(255, 255, 255, 0.42);
-  --empty-note-radius: 16px;
+  --empty-note-radius: var(--r-lg);
   --empty-note-bg:
     linear-gradient(180deg, rgba(255, 255, 255, 0.48), rgba(255, 255, 255, 0.18)),
     rgba(255, 255, 255, 0.2);
@@ -1042,14 +1055,14 @@ body.use-liquid-glass {
   --card-caption-color: rgba(16, 17, 20, 0.58);
   --finder-navigation-border: 1px solid rgba(16, 17, 20, 0.1);
   --finder-navigation-bg: rgba(255, 255, 255, 0.24);
-  --finder-breadcrumb-radius: 9px;
+  --finder-breadcrumb-radius: var(--r-sm);
   --finder-breadcrumb-text-decoration: none;
   --finder-breadcrumb-hover-bg: rgba(16, 17, 20, 0.84);
   --finder-breadcrumb-hover-fg: #ffffff;
   --finder-breadcrumb-current-color: rgba(16, 17, 20, 0.82);
   --finder-continuation-display: inline-flex;
   --finder-continuation-border: 1px solid rgba(255, 255, 255, 0.62);
-  --finder-continuation-radius: 999px;
+  --finder-continuation-radius: var(--r-pill);
   --finder-continuation-bg:
     linear-gradient(180deg, rgba(255, 255, 255, 0.56), rgba(255, 255, 255, 0.2)),
     rgba(255, 255, 255, 0.2);
@@ -1061,7 +1074,7 @@ body.use-liquid-glass {
   --menu-bar-height: 30px;
   /* Glass popovers tuck 3px under the bar's lip. */
   --menu-popover-top: calc(var(--menu-bar-height) + var(--safe-area-top) - 3px);
-  --tab-radius: 10px;
+  --tab-radius: var(--r-md);
   --tab-overlap: 0px;
   --tab-bg: rgba(16, 17, 20, 0.06);
   --tab-hover-bg: rgba(255, 255, 255, 0.42);
@@ -1079,13 +1092,13 @@ body.use-liquid-glass {
   --memory-cards-details-border: 1px solid rgba(16, 17, 20, 0.1);
   --memory-cards-board-bg: rgba(255, 255, 255, 0.12);
   --memory-cards-board-border: 1px solid rgba(255, 255, 255, 0.38);
-  --memory-cards-board-radius: 18px;
+  --memory-cards-board-radius: var(--r-lg);
   --memory-cards-board-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58);
   --memory-card-bg:
     linear-gradient(145deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.42)),
     rgba(255, 255, 255, 0.4);
   --memory-card-border: 1px solid rgba(16, 17, 20, 0.18);
-  --memory-card-radius: 14px;
+  --memory-card-radius: var(--r-md);
   --memory-card-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.82),
     0 7px 16px rgba(18, 28, 38, 0.13);
@@ -1107,7 +1120,7 @@ body.use-liquid-glass {
   --startup-settings-disk-icon-width: 48px;
   --startup-settings-disk-icon-height: 48px;
   --startup-settings-disk-icon-border: 1px solid rgba(16, 17, 20, 0.2);
-  --startup-settings-disk-icon-radius: 14px;
+  --startup-settings-disk-icon-radius: var(--r-md);
   --startup-settings-disk-icon-bg:
     linear-gradient(rgba(16, 17, 20, 0.74), rgba(16, 17, 20, 0.74)) 13px 25px / 22px 3px no-repeat,
     linear-gradient(rgba(16, 17, 20, 0.5), rgba(16, 17, 20, 0.5)) 32px 10px / 2px 9px no-repeat,
@@ -1117,7 +1130,7 @@ body.use-liquid-glass {
     inset 0 1px 0 rgba(255, 255, 255, 0.82),
     0 10px 24px rgba(18, 28, 38, 0.12);
   --startup-settings-option-gap: 10px;
-  --startup-settings-option-radius: 999px;
+  --startup-settings-option-radius: var(--r-pill);
   --startup-settings-hr-border: 0;
   --startup-settings-hr-border-top: 1px solid rgba(16, 17, 20, 0.16);
   --startup-settings-hr-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
@@ -1134,14 +1147,14 @@ body.use-liquid-glass {
     linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.54)),
     rgba(238, 246, 252, 0.74);
   --balloon-help-border: 1px solid rgba(255, 255, 255, 0.82);
-  --balloon-help-radius: 18px;
+  --balloon-help-radius: var(--r-lg);
   --balloon-help-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.9),
     0 12px 28px rgba(18, 28, 38, 0.18);
   --balloon-help-padding: 11px 14px;
   --balloon-help-backdrop: blur(18px) saturate(1.2);
   --status-panel-border: 1px solid rgba(255, 255, 255, 0.48);
-  --status-panel-radius: 16px;
+  --status-panel-radius: var(--r-lg);
   --status-panel-bg:
     linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.16)),
     rgba(255, 255, 255, 0.18);
@@ -1166,7 +1179,7 @@ body.use-liquid-glass {
   --model-state-list-gap: 6px;
   --model-state-row-padding: 5px 8px;
   --model-state-row-border-left: 0;
-  --model-state-row-radius: 10px;
+  --model-state-row-radius: var(--r-md);
   --model-state-row-bg: rgba(255, 255, 255, 0.18);
   --model-state-row-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.52);
   --model-state-row-current-bg:
@@ -1204,7 +1217,7 @@ body.use-liquid-glass {
     linear-gradient(135deg, rgba(232, 238, 242, 0.14), rgba(235, 241, 247, 0.12)),
     rgba(255, 255, 255, 0.14);
   --writing-bell-time-border: 1px solid rgba(16, 17, 20, 0.16);
-  --writing-bell-time-radius: 8px;
+  --writing-bell-time-radius: var(--r-sm);
   --writing-bell-time-bg:
     linear-gradient(180deg, rgba(255, 255, 255, 0.52), rgba(255, 255, 255, 0.18)),
     rgba(255, 255, 255, 0.24);
@@ -1217,14 +1230,14 @@ body.use-liquid-glass {
   --writing-bell-mode-gap: 3px;
   --writing-bell-mode-padding: 3px;
   --writing-bell-mode-border: 1px solid rgba(16, 17, 20, 0.14);
-  --writing-bell-mode-radius: 10px;
+  --writing-bell-mode-radius: var(--r-md);
   --writing-bell-mode-bg: rgba(255, 255, 255, 0.34);
   --writing-bell-mode-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
   --writing-bell-mode-button-min-height: 30px;
   --writing-bell-mode-button-border: 1px solid transparent;
   --writing-bell-mode-button-border-right: 1px solid transparent;
   --writing-bell-mode-button-last-border-right: 1px solid transparent;
-  --writing-bell-mode-button-radius: 7px;
+  --writing-bell-mode-button-radius: var(--r-sm);
   --writing-bell-mode-button-bg: transparent;
   --writing-bell-mode-button-fg: rgba(16, 17, 20, 0.82);
   --writing-bell-mode-active-border-top-color: rgba(16, 17, 20, 0.66);
@@ -1239,14 +1252,14 @@ body.use-liquid-glass {
   --dictation-capture-gap: 3px;
   --dictation-capture-padding: 3px;
   --dictation-capture-border: 1px solid rgba(16, 17, 20, 0.14);
-  --dictation-capture-radius: 10px;
+  --dictation-capture-radius: var(--r-md);
   --dictation-capture-bg: rgba(255, 255, 255, 0.34);
   --dictation-capture-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
   --dictation-capture-button-min-height: 30px;
   --dictation-capture-button-border: 1px solid transparent;
   --dictation-capture-button-border-right: 1px solid transparent;
   --dictation-capture-button-last-border-right: 1px solid transparent;
-  --dictation-capture-button-radius: 7px;
+  --dictation-capture-button-radius: var(--r-sm);
   --dictation-capture-button-bg: transparent;
   --dictation-capture-button-fg: rgba(16, 17, 20, 0.82);
   --writing-bell-preset-border-color: rgba(255, 255, 255, 0.64);
@@ -1290,7 +1303,7 @@ body.use-liquid-glass {
     rgba(16, 17, 20, 0.78);
   --writing-bell-preset-active-pressed-fg: #ffffff;
   --dictionary-result-border: 1px solid rgba(16, 17, 20, 0.16);
-  --dictionary-result-radius: 16px;
+  --dictionary-result-radius: var(--r-lg);
   --dictionary-result-bg:
     linear-gradient(180deg, rgba(255, 255, 255, 0.48), rgba(255, 255, 255, 0.2)),
     rgba(255, 255, 255, 0.22);
@@ -1300,7 +1313,7 @@ body.use-liquid-glass {
   --dictionary-empty-note-max-width: none;
   --dictionary-empty-note-margin: 14px auto;
   --dictionary-empty-note-border: 1px solid rgba(16, 17, 20, 0.14);
-  --dictionary-empty-note-radius: 16px;
+  --dictionary-empty-note-radius: var(--r-lg);
   --dictionary-empty-note-bg:
     linear-gradient(180deg, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0.24)),
     rgba(255, 255, 255, 0.26);
@@ -1314,7 +1327,7 @@ body.use-liquid-glass {
   --dictionary-recent-border-top: 1px solid rgba(16, 17, 20, 0.14);
   --dictionary-recent-color: rgba(16, 17, 20, 0.78);
   --dictionary-recent-button-border: 1px solid rgba(255, 255, 255, 0.56);
-  --dictionary-recent-button-radius: 999px;
+  --dictionary-recent-button-radius: var(--r-pill);
   --dictionary-recent-button-bg: rgba(255, 255, 255, 0.34);
   --dictionary-recent-button-fg: rgba(16, 17, 20, 0.86);
   --find-file-pane-gap: 12px;
@@ -1326,7 +1339,7 @@ body.use-liquid-glass {
   --find-file-label-color: rgba(16, 17, 20, 0.9);
   --find-file-results-padding: 10px;
   --find-file-results-border: 1px solid rgba(16, 17, 20, 0.16);
-  --find-file-results-radius: 16px;
+  --find-file-results-radius: var(--r-lg);
   --find-file-results-bg:
     linear-gradient(180deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.16)),
     rgba(255, 255, 255, 0.2);
@@ -1337,7 +1350,7 @@ body.use-liquid-glass {
   --find-file-empty-note-margin: 4px auto;
   --find-file-empty-note-padding: 14px 16px;
   --find-file-empty-note-border: 1px solid rgba(16, 17, 20, 0.12);
-  --find-file-empty-note-radius: 14px;
+  --find-file-empty-note-radius: var(--r-md);
   --find-file-empty-note-bg:
     linear-gradient(135deg, rgba(255, 255, 255, 0.64), rgba(255, 255, 255, 0.24)),
     rgba(255, 255, 255, 0.24);
@@ -1346,7 +1359,7 @@ body.use-liquid-glass {
   --find-file-result-margin-bottom: 6px;
   --find-file-result-border: 1px solid rgba(255, 255, 255, 0.44);
   --find-file-result-border-bottom: var(--find-file-result-border);
-  --find-file-result-radius: 12px;
+  --find-file-result-radius: var(--r-md);
   --find-file-result-bg: rgba(255, 255, 255, 0.2);
   --find-file-result-fg: var(--ink);
   --find-file-result-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.54);
@@ -1366,7 +1379,7 @@ body.use-liquid-glass {
   --find-path-results-gap: 8px;
   --find-path-results-padding: 10px;
   --find-path-results-border: 1px solid rgba(16, 17, 20, 0.16);
-  --find-path-results-radius: 16px;
+  --find-path-results-radius: var(--r-lg);
   --find-path-results-bg:
     linear-gradient(180deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.16)),
     rgba(255, 255, 255, 0.2);
@@ -1377,7 +1390,7 @@ body.use-liquid-glass {
   --find-path-empty-note-margin: 4px;
   --find-path-empty-note-padding: 16px 18px;
   --find-path-empty-note-border: 1px solid rgba(16, 17, 20, 0.12);
-  --find-path-empty-note-radius: 14px;
+  --find-path-empty-note-radius: var(--r-md);
   --find-path-empty-note-bg:
     linear-gradient(135deg, rgba(255, 255, 255, 0.68), rgba(255, 255, 255, 0.26)),
     rgba(255, 255, 255, 0.24);
@@ -1388,7 +1401,7 @@ body.use-liquid-glass {
   --find-path-result-border-bottom: var(--find-path-result-border);
   --find-path-result-last-border-bottom: var(--find-path-result-border);
   --find-path-result-last-hover-border-bottom: var(--find-path-result-hover-border-bottom);
-  --find-path-result-radius: 14px;
+  --find-path-result-radius: var(--r-md);
   --find-path-result-bg: rgba(255, 255, 255, 0.24);
   --find-path-result-fg: rgba(16, 17, 20, 0.94);
   --find-path-result-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
@@ -1421,7 +1434,7 @@ body.use-liquid-glass {
   --find-path-result-selected-hover-fg: #ffffff;
   --find-path-result-selected-hover-shadow: var(--find-path-result-selected-shadow);
   --find-path-translation-border: 1px solid rgba(255, 255, 255, 0.38);
-  --find-path-translation-radius: 12px;
+  --find-path-translation-radius: var(--r-md);
   --find-path-translation-bg: rgba(255, 255, 255, 0.16);
   --find-path-translation-shadow: none;
   --finder-op-caption-color: rgba(16, 17, 20, 0.52);
@@ -1431,7 +1444,7 @@ body.use-liquid-glass {
   --system-select-option-margin: 2px 0;
   --system-select-option-min-height: 32px;
   --system-select-option-border: 0;
-  --system-select-option-radius: 10px;
+  --system-select-option-radius: var(--r-md);
   --system-select-option-bg: rgba(255, 255, 255, 0.08);
   --system-select-option-fg: rgba(16, 17, 20, 0.92);
   --system-select-option-shadow: none;
@@ -1450,7 +1463,7 @@ body.use-liquid-glass {
   --reader-content-border: 1px solid rgba(16, 17, 20, 0.14);
   /* Inset 11px inside the window corner; stay concentric with it. */
   --reader-content-inset: 11px;
-  --reader-content-radius: max(0px, calc(var(--liquid-window-radius) - var(--reader-content-inset)));
+  --reader-content-radius: max(var(--r-xs), calc(var(--r-xl) - var(--reader-content-inset)));
   --reader-content-bg:
     linear-gradient(135deg, rgba(232, 238, 242, 0.045), rgba(235, 241, 247, 0.035)),
     rgba(255, 255, 255, 0.12);
@@ -1462,7 +1475,7 @@ body.use-liquid-glass {
   --reader-section-marker: 3px solid rgba(16, 17, 20, 0.18);
   --drop-target-inset: 12px;
   --drop-target-border: 1px solid rgba(0, 122, 255, 0.42);
-  --drop-target-radius: 16px;
+  --drop-target-radius: var(--r-lg);
   --drop-target-bg:
     linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.16)),
     rgba(0, 122, 255, 0.08);
@@ -1480,7 +1493,7 @@ body.use-liquid-glass {
   --reader-transcript-view-gap: 14px;
   --reader-transcript-list-gap: 12px;
   --reader-transcript-card-border: 1px solid rgba(16, 17, 20, 0.12);
-  --reader-transcript-card-radius: 14px;
+  --reader-transcript-card-radius: var(--r-md);
   --reader-transcript-card-bg:
     linear-gradient(180deg, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0.24)),
     rgba(255, 255, 255, 0.2);
@@ -1489,7 +1502,7 @@ body.use-liquid-glass {
     0 10px 24px rgba(18, 28, 38, 0.07);
   --reader-transcript-block-header-color: rgba(16, 17, 20, 0.58);
   --reader-transcript-button-border: 1px solid rgba(255, 255, 255, 0.58);
-  --reader-transcript-button-radius: 999px;
+  --reader-transcript-button-radius: var(--r-pill);
   --reader-transcript-button-bg: rgba(255, 255, 255, 0.42);
   --reader-transcript-button-fg: rgba(16, 17, 20, 0.9);
   --reader-transcript-button-shadow:
@@ -1518,7 +1531,7 @@ body.use-liquid-glass {
     rgba(255, 255, 255, 0.28);
   --time-machine-time-border: 1px solid rgba(0, 122, 255, 0.42);
   --time-machine-frame-border: 1px solid rgba(16, 17, 20, 0.14);
-  --time-machine-frame-radius: 16px;
+  --time-machine-frame-radius: var(--r-lg);
   --time-machine-frame-bg: rgba(255, 255, 255, 0.16);
   --time-machine-frame-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.74),
@@ -1528,10 +1541,10 @@ body.use-liquid-glass {
   --scrap-selection-actions-border: 1px solid rgba(16, 17, 20, 0.1);
   --notification-item-divider: 1px solid rgba(16, 17, 20, 0.08);
   --view-switch-border: 1px solid rgba(255, 255, 255, 0.62);
-  --view-switch-radius: 999px;
+  --view-switch-radius: var(--r-pill);
   --view-switch-bg: rgba(255, 255, 255, 0.36);
   --view-switch-shadow: inset 0 1px 0 var(--glass-highlight), 0 8px 22px rgba(18, 28, 38, 0.08);
-  --view-switch-thumb-radius: 999px;
+  --view-switch-thumb-radius: var(--r-pill);
   --view-switch-thumb-bg: linear-gradient(180deg, rgba(16, 17, 20, 0.88), rgba(16, 17, 20, 0.68)), rgba(16, 17, 20, 0.82);
   --view-switch-thumb-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 8px 18px rgba(18, 28, 38, 0.14);
   --view-switch-fg: rgba(16, 17, 20, 0.68);
@@ -1544,9 +1557,9 @@ body.use-liquid-glass {
   --help-row-hover-fg: var(--ink);
   --help-row-selected-bg: rgba(16, 17, 20, 0.82);
   --help-row-selected-fg: #ffffff;
-  --help-row-active-radius: 10px;
+  --help-row-active-radius: var(--r-md);
   --system-help-panel-border: 1px solid rgba(255, 255, 255, 0.44);
-  --system-help-panel-radius: 16px;
+  --system-help-panel-radius: var(--r-lg);
   /* Both panes are scrollers now, so they take the solid reading surface: a
      transparent scroller under the window backdrop filter reads the window
      behind it and clips its own text while scrolling. */
@@ -1555,7 +1568,7 @@ body.use-liquid-glass {
     inset 0 1px 0 rgba(255, 255, 255, 0.68),
     0 10px 28px rgba(18, 28, 38, 0.07);
   --system-help-search-input-border: 1px solid rgba(16, 17, 20, 0.14);
-  --system-help-search-input-radius: 14px;
+  --system-help-search-input-radius: var(--r-md);
   --system-help-list-button-border-bottom: 1px solid rgba(16, 17, 20, 0.1);
   /* A sticky group heading is a scroller surface: it must stay solid so rows
      do not read through it while the list moves. */
@@ -1572,7 +1585,7 @@ body.use-liquid-glass {
     rgba(255, 255, 255, 0.1);
   --context-panel-list-bg-color: rgba(255, 255, 255, 0.1);
   --context-item-border: 1px solid rgba(16, 17, 20, 0.14);
-  --context-item-radius: 10px;
+  --context-item-radius: var(--r-md);
   --context-item-bg:
     linear-gradient(180deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.12)),
     rgba(255, 255, 255, 0.12);
@@ -1591,13 +1604,13 @@ body.use-liquid-glass {
   --key-caps-pane-bg-color: rgba(255, 255, 255, 0.2);
   --key-caps-note-width: fit-content;
   --key-caps-note-padding: 3px 10px;
-  --key-caps-note-radius: 999px;
+  --key-caps-note-radius: var(--r-pill);
   --key-caps-note-bg: rgba(255, 255, 255, 0.38);
   --key-caps-note-fg: rgba(16, 17, 20, 0.86);
   --key-caps-note-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.64);
   --shortcut-grid-overflow: hidden;
   --shortcut-grid-border: 1px solid rgba(16, 17, 20, 0.16);
-  --shortcut-grid-radius: 16px;
+  --shortcut-grid-radius: var(--r-lg);
   --shortcut-grid-bg:
     linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.22)),
     rgba(255, 255, 255, 0.22);
@@ -1610,7 +1623,7 @@ body.use-liquid-glass {
   --character-map-gap: 8px;
   --character-map-button-min-height: 32px;
   --character-map-button-border: 1px solid rgba(255, 255, 255, 0.56);
-  --character-map-button-radius: 10px;
+  --character-map-button-radius: var(--r-md);
   --character-map-button-bg:
     linear-gradient(180deg, rgba(255, 255, 255, 0.68), rgba(255, 255, 255, 0.3)),
     rgba(255, 255, 255, 0.28);
@@ -1628,7 +1641,7 @@ body.use-liquid-glass {
   --calculator-pane-bg: rgba(255, 255, 255, 0.2);
   --calculator-pane-bg-color: rgba(255, 255, 255, 0.2);
   --calculator-display-border: 1px solid rgba(16, 17, 20, 0.18);
-  --calculator-display-radius: 14px;
+  --calculator-display-radius: var(--r-md);
   --calculator-display-bg:
     linear-gradient(180deg, rgba(255, 255, 255, 0.36), rgba(255, 255, 255, 0.2)),
     rgba(255, 255, 255, 0.28);
@@ -1639,7 +1652,7 @@ body.use-liquid-glass {
   --calculator-keys-row-height: 34px;
   --calculator-key-height: 34px;
   --calculator-key-border: 1px solid rgba(255, 255, 255, 0.56);
-  --calculator-key-radius: 10px;
+  --calculator-key-radius: var(--r-md);
   --calculator-key-bg:
     linear-gradient(180deg, rgba(255, 255, 255, 0.68), rgba(255, 255, 255, 0.28)),
     rgba(255, 255, 255, 0.28);
@@ -1671,7 +1684,7 @@ body.use-liquid-glass {
   --puzzle-board-height: 176px;
   --puzzle-board-padding: 8px;
   --puzzle-board-border: 1px solid rgba(16, 17, 20, 0.16);
-  --puzzle-board-radius: 16px;
+  --puzzle-board-radius: var(--r-lg);
   --puzzle-board-bg:
     linear-gradient(180deg, rgba(255, 255, 255, 0.48), rgba(255, 255, 255, 0.2)),
     rgba(255, 255, 255, 0.22);
@@ -1683,7 +1696,7 @@ body.use-liquid-glass {
   --puzzle-tile-border: 1px solid rgba(255, 255, 255, 0.56);
   --puzzle-tile-border-right: var(--puzzle-tile-border);
   --puzzle-tile-border-bottom: var(--puzzle-tile-border);
-  --puzzle-tile-radius: 10px;
+  --puzzle-tile-radius: var(--r-md);
   --puzzle-tile-bg:
     linear-gradient(180deg, rgba(255, 255, 255, 0.68), rgba(255, 255, 255, 0.3)),
     rgba(255, 255, 255, 0.3);
@@ -1707,11 +1720,11 @@ body.use-liquid-glass {
   --puzzle-footer-badge-display: inline-flex;
   --puzzle-footer-badge-min-height: 26px;
   --puzzle-footer-badge-padding: 2px 10px;
-  --puzzle-footer-badge-radius: 999px;
+  --puzzle-footer-badge-radius: var(--r-pill);
   --puzzle-footer-badge-bg: rgba(255, 255, 255, 0.34);
   --puzzle-footer-badge-fg: rgba(16, 17, 20, 0.82);
   --btn-border-color: rgba(255, 255, 255, 0.66);
-  --btn-radius: 10px;
+  --btn-radius: var(--r-md);
   --btn-bg: rgba(255, 255, 255, 0.3);
   --btn-fg: rgba(16, 17, 20, 0.94);
   --btn-shadow:
@@ -1776,7 +1789,7 @@ body.use-liquid-glass {
   --clio-stage-details-bar-gap: 14px;
   --clio-stage-viewport-min-height: 280px;
   --clio-stage-viewport-border: 1px solid rgba(16, 17, 20, 0.14);
-  --clio-stage-viewport-radius: 16px;
+  --clio-stage-viewport-radius: var(--r-lg);
   --clio-stage-viewport-bg:
     linear-gradient(135deg, rgba(232, 238, 242, 0.18), rgba(235, 241, 247, 0.18)),
     rgba(255, 255, 255, 0.22);
@@ -1794,7 +1807,7 @@ body.use-liquid-glass {
     linear-gradient(135deg, rgba(232, 238, 242, 0.18), rgba(235, 241, 247, 0.16)),
     rgba(255, 255, 255, 0.2);
   --clio-stage-slide-frame-border: 1px solid rgba(16, 17, 20, 0.52);
-  --clio-stage-slide-frame-radius: 8px;
+  --clio-stage-slide-frame-radius: var(--r-sm);
   --clio-stage-slide-frame-shadow: 0 18px 42px rgba(18, 28, 38, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.74);
   --clio-stage-cue-mode-min-height: 320px;
   --clio-stage-cue-mode-border-color: rgba(16, 17, 20, 0.58);
@@ -1812,45 +1825,45 @@ body.use-liquid-glass {
     rgba(255, 255, 255, 0.18);
   --attached-context-border: 1px solid rgba(255, 255, 255, 0.46);
   --attached-context-label-color: rgba(16, 17, 20, 0.72);
-  --attached-context-pill-radius: 999px;
+  --attached-context-pill-radius: var(--r-pill);
   --attached-context-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58);
   --print-directory-preview-border: 1px solid rgba(255, 255, 255, 0.58);
   --print-directory-preview-bg: var(--glass-reading-surface);
-  --print-directory-preview-radius: 16px;
+  --print-directory-preview-radius: var(--r-lg);
   --print-directory-preview-shadow: inset 0 1px 0 var(--glass-highlight), 0 12px 32px rgba(18, 28, 38, 0.08);
   --print-directory-heading-border: 1px solid rgba(16, 17, 20, 0.16);
   --print-directory-table-border: 1px solid rgba(16, 17, 20, 0.16);
   --print-directory-table-heading-bg: rgba(255, 255, 255, 0.34);
   --file-preview-border: 1px solid rgba(255, 255, 255, 0.58);
   --file-preview-bg: var(--glass-reading-surface);
-  --file-preview-radius: 16px;
+  --file-preview-radius: var(--r-lg);
   --file-preview-shadow: inset 0 1px 0 var(--glass-highlight), 0 12px 32px rgba(18, 28, 38, 0.08);
   --project-cd-grid-bg:
     linear-gradient(180deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.12)),
     rgba(255, 255, 255, 0.14);
   --project-cd-grid-border: 1px solid rgba(255, 255, 255, 0.5);
-  --project-cd-grid-radius: 16px;
+  --project-cd-grid-radius: var(--r-lg);
   --project-cd-grid-shadow: inset 0 1px 0 var(--glass-highlight), 0 10px 28px rgba(18, 28, 38, 0.07);
   --note-pad-pane-bg: rgba(255, 255, 255, 0.08);
   --note-pad-pane-border: 1px solid rgba(255, 255, 255, 0.42);
-  --note-pad-pane-radius: 16px;
+  --note-pad-pane-radius: var(--r-lg);
   --note-pad-pane-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.48);
   --note-pad-details-bg: rgba(255, 255, 255, 0.18);
   --note-pad-details-border: 1px solid rgba(16, 17, 20, 0.1);
-  --note-pad-details-radius: 12px;
+  --note-pad-details-radius: var(--r-md);
   --clipboard-pane-bg: rgba(255, 255, 255, 0.08);
   --clipboard-pane-border: 1px solid rgba(255, 255, 255, 0.42);
-  --clipboard-pane-radius: 16px;
+  --clipboard-pane-radius: var(--r-lg);
   --clipboard-pane-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.48);
   --cmf-panel-border: 1px solid rgba(255, 255, 255, 0.58);
   --cmf-panel-bg:
     linear-gradient(180deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.12)),
     rgba(255, 255, 255, 0.14);
-  --cmf-panel-radius: 16px;
+  --cmf-panel-radius: var(--r-lg);
   --cmf-panel-shadow: inset 0 1px 0 var(--glass-highlight), 0 12px 32px rgba(18, 28, 38, 0.08);
   --cmf-toolbar-bg: rgba(255, 255, 255, 0.2);
   --cmf-toolbar-border: 1px solid rgba(255, 255, 255, 0.5);
-  --cmf-toolbar-radius: 14px;
+  --cmf-toolbar-radius: var(--r-md);
   --cmf-toolbar-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.62);
   --cmf-preview-head-bg: rgba(255, 255, 255, 0.18);
   --cmf-muted: rgba(16, 17, 20, 0.62);
@@ -1885,7 +1898,7 @@ body.use-liquid-glass {
     linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.07) 42%, rgba(0, 0, 0, 0.24)),
     rgba(28, 30, 29, 0.86);
   --bureaucracy-surface-border: 1px solid rgba(255, 255, 255, 0.26);
-  --bureaucracy-surface-radius: 9px;
+  --bureaucracy-surface-radius: var(--r-sm);
   --bureaucracy-surface-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.34), 0 14px 28px rgba(0, 0, 0, 0.24);
   --bureaucracy-ink: #f5f2e8;
   --bureaucracy-muted: rgba(245, 242, 232, 0.68);
@@ -1912,7 +1925,7 @@ body.use-liquid-glass {
   --endfield-sidebar-bg: rgba(249, 250, 244, 0.76);
   --endfield-surface-bg: rgba(250, 251, 245, 0.82);
   --endfield-surface-border: 1px solid rgba(255, 255, 255, 0.62);
-  --endfield-surface-radius: 14px;
+  --endfield-surface-radius: var(--r-md);
   --endfield-surface-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 14px 30px rgba(18, 28, 38, 0.12);
   --endfield-muted: rgba(16, 17, 20, 0.62);
   --endfield-hover-bg: rgba(255, 255, 255, 0.46);
@@ -1921,17 +1934,17 @@ body.use-liquid-glass {
   --endfield-evidence-divider: 1px solid rgba(16, 17, 20, 0.14);
   --endfield-index-bg: rgba(255, 255, 255, 0.48);
   --endfield-index-border: 1px solid rgba(16, 17, 20, 0.34);
-  --endfield-index-radius: 6px;
+  --endfield-index-radius: var(--r-sm);
   --endfield-context-rule: 1px solid rgba(16, 17, 20, 0.16);
   --endfield-context-bg: rgba(255, 255, 255, 0.4);
-  --endfield-context-radius: 0 8px 8px 0;
+  --endfield-context-radius: var(--r-sm);
   --endfield-quote-rule: 2px solid rgba(16, 17, 20, 0.3);
-  --endfield-quote-radius: 0 10px 10px 0;
+  --endfield-quote-radius: var(--r-md);
   --demo-caption-bg:
     linear-gradient(135deg, rgba(255, 255, 255, 0.72), rgba(232, 238, 242, 0.42)),
     rgba(255, 255, 255, 0.58);
   --demo-caption-border: 1px solid var(--glass-border);
-  --demo-caption-radius: 16px;
+  --demo-caption-radius: var(--r-lg);
   --demo-caption-shadow: inset 0 1px 0 var(--glass-highlight), 0 16px 44px rgba(18, 28, 38, 0.18);
   --demo-caption-fg: rgba(16, 17, 20, 0.94);
   --demo-highlight-border: #ff3b30;
@@ -1941,7 +1954,7 @@ body.use-liquid-glass {
   --demo-highlight-label-fg: rgba(16, 17, 20, 0.94);
   --quick-draft-panel-bg: var(--glass-surface);
   --quick-draft-panel-border: 1px solid rgba(255, 255, 255, 0.46);
-  --quick-draft-panel-radius: 12px;
+  --quick-draft-panel-radius: var(--r-md);
   --quick-draft-panel-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.58),
     0 8px 20px rgba(18, 28, 38, 0.06);
@@ -2020,7 +2033,7 @@ body.use-liquid-glass .menu-submenu-popover,
 body.use-liquid-glass .menu-sub-popover,
 body.use-liquid-glass .system-select-menu {
   border: 1px solid var(--glass-border);
-  border-radius: var(--liquid-menu-radius);
+  border-radius: var(--r-md);
   background: var(--liquid-menu-panel);
   box-shadow: var(--menu-panel-shadow);
   backdrop-filter: blur(34px) saturate(160%) brightness(1.04);
@@ -2053,7 +2066,7 @@ body.use-liquid-glass .menu-sub-popover button {
   --liquid-disabled-control-shadow: none;
   width: calc(100% - 10px);
   margin: 1px 5px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   padding-top: 5px;
   padding-bottom: 5px;
   line-height: 1.15;
@@ -2076,7 +2089,7 @@ body.use-liquid-glass .startup-settings-modal,
 body.use-liquid-glass .finder-operation-modal {
   isolation: isolate;
   border: 0;
-  border-radius: var(--liquid-window-radius);
+  border-radius: var(--r-xl);
   background: var(--glass-surface);
   box-shadow: var(--system-shadow);
   /* The literal used to live here twice while --window-backdrop-filter held
@@ -2151,7 +2164,7 @@ body.use-liquid-glass .system-modal p::before {
   width: 54px;
   height: 54px;
   border: 1px solid rgba(16, 17, 20, 0.16);
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.76), rgba(255, 255, 255, 0.28)),
     rgba(255, 255, 255, 0.3);
@@ -2188,7 +2201,7 @@ body.use-liquid-glass .finder-operation-layout {
 body.use-liquid-glass .finder-operation-subject {
   padding: 16px 12px;
   border: 1px solid rgba(255, 255, 255, 0.42);
-  border-radius: var(--liquid-card-radius-lg);
+  border-radius: var(--r-xl);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.38), rgba(255, 255, 255, 0.12)),
     rgba(255, 255, 255, 0.14);
@@ -2205,7 +2218,7 @@ body.use-liquid-glass .finder-operation-list {
   gap: 6px;
   padding: 8px;
   border: 1px solid rgba(255, 255, 255, 0.42);
-  border-radius: var(--liquid-card-radius-md);
+  border-radius: var(--r-lg);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.38), rgba(255, 255, 255, 0.14)),
     rgba(255, 255, 255, 0.16);
@@ -2217,7 +2230,7 @@ body.use-liquid-glass .finder-operation-list {
 body.use-liquid-glass .finder-operation-item {
   padding: 7px 10px;
   border: 1px solid rgba(255, 255, 255, 0.42);
-  border-radius: var(--liquid-card-radius-sm);
+  border-radius: var(--r-md);
   background: rgba(255, 255, 255, 0.18);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.54);
 }
@@ -2236,7 +2249,7 @@ body.use-liquid-glass .finder-operation-result {
   margin-top: 14px;
   padding: 12px 14px;
   border: 1px solid rgba(255, 255, 255, 0.36);
-  border-radius: var(--liquid-card-radius-xs);
+  border-radius: var(--r-sm);
   background: rgba(255, 255, 255, 0.18);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.56);
 }
@@ -2263,7 +2276,7 @@ body.use-liquid-glass .docmap-markmap-svg .markmap-link {
   --empty-note-max-width: 760px;
   --empty-note-margin: 32px auto 0;
   --empty-note-padding: 16px 22px;
-  --empty-note-radius: 18px;
+  --empty-note-radius: var(--r-lg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2356,7 +2369,7 @@ body.use-liquid-glass .resize-box {
   align-self: center;
   margin: 0;
   border: 1px solid rgba(16, 17, 20, 0.28);
-  border-radius: 50%;
+  border-radius: var(--r-circle);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.5),
     0 1px 2px rgba(18, 28, 38, 0.08);
@@ -2387,7 +2400,7 @@ body.use-liquid-glass .resize-box::after {
   width: 8px;
   height: 2px;
   border: 0;
-  border-radius: var(--liquid-pill-radius);
+  border-radius: var(--r-pill);
   background: rgba(16, 17, 20, 0.58);
   opacity: var(--glass-lamp-mark-opacity);
   transform: translate(-50%, -50%);
@@ -2420,7 +2433,7 @@ body.use-liquid-glass .grow-box {
      overrides paint. */
   width: 28px;
   height: 28px;
-  border-radius: 0;
+  border-radius: var(--r-sm);
   background: transparent;
   box-shadow: none;
   backdrop-filter: none;
@@ -2463,7 +2476,7 @@ body.use-liquid-glass input[type="number"],
 body.use-liquid-glass input[type="date"],
 body.use-liquid-glass .system-select-button {
   border: 1px solid rgba(255, 255, 255, 0.62);
-  border-radius: var(--liquid-surface-radius-sm);
+  border-radius: var(--r-md);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.16)),
     rgba(255, 255, 255, 0.16);
@@ -2482,9 +2495,9 @@ body.use-liquid-glass .system-select-button {
    after this shorthand; now it lives here and the override is gone). */
 body.use-liquid-glass select {
   border: 1px solid rgba(255, 255, 255, 0.62);
-  border-radius: var(--liquid-surface-radius-sm);
+  border-radius: var(--r-md);
   background:
-    url("./system.css-reference/icon/select-button.svg") right 6px center / 17px 17px no-repeat,
+    url("./assets/select-arrow.svg") right 6px center / 17px 17px no-repeat,
     rgba(255, 255, 255, 0.16);
   color: var(--ink);
   box-shadow:
@@ -2530,7 +2543,7 @@ body.use-liquid-glass input[type="radio"] {
   height: 18px;
   min-height: 18px;
   border: 1px solid rgba(16, 17, 20, 0.32);
-  border-radius: 6px;
+  border-radius: var(--choice-radius);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.68), rgba(255, 255, 255, 0.24)),
     rgba(255, 255, 255, 0.28);
@@ -2539,8 +2552,7 @@ body.use-liquid-glass input[type="radio"] {
     0 6px 14px rgba(18, 28, 38, 0.08);
 }
 
-/* Order-specific twin: the MIXED rule above paints the glass square with a 6px
-   radius, but the radio has always rendered as a circle — the base rule's 50%
+/* Order-specific twin: the mixed rule above paints the rounded checkbox shape, but the radio has always rendered as a circle — the base rule's 50%
    must win here. Kept as a later same-selector rule with the value tokenized. */
 body.use-liquid-glass input[type="radio"] {
   border-radius: var(--radio-radius);
@@ -2564,7 +2576,7 @@ body.use-liquid-glass input[type="checkbox"]::before {
 body.use-liquid-glass input[type="radio"]::before {
   width: 8px;
   height: 8px;
-  border-radius: 50%;
+  border-radius: var(--r-circle);
   background: rgba(16, 17, 20, 0.86);
 }
 
@@ -2641,7 +2653,7 @@ body.use-liquid-glass .liquid-tint-row input[type="range"]:active {
 
 body.use-liquid-glass .liquid-tint-row input[type="range"]::-webkit-slider-runnable-track {
   height: var(--glass-slider-thickness);
-  border-radius: var(--liquid-pill-radius);
+  border-radius: var(--r-pill);
   background: var(--glass-slider-track-bg);
   box-shadow: var(--glass-slider-track-shadow);
 }
@@ -2654,7 +2666,7 @@ body.use-liquid-glass .liquid-tint-row input[type="range"]::-webkit-slider-thumb
   /* Centres the lens on the well. Both terms are the tokens above, so the
      two never drift out of register when either one is retuned. */
   margin-top: calc((var(--glass-slider-thickness) - var(--glass-slider-lens-size)) / 2);
-  border-radius: var(--liquid-pill-radius);
+  border-radius: var(--r-pill);
   background: var(--glass-slider-lens-bg);
   box-shadow: var(--glass-slider-lens-shadow);
   backdrop-filter: var(--glass-slider-lens-filter);
@@ -2667,7 +2679,7 @@ body.use-liquid-glass .liquid-tint-row input[type="range"]::-webkit-slider-thumb
 
 body.use-liquid-glass .liquid-tint-row input[type="range"]::-moz-range-track {
   height: var(--glass-slider-thickness);
-  border-radius: var(--liquid-pill-radius);
+  border-radius: var(--r-pill);
   background: var(--glass-slider-track-bg);
   box-shadow: var(--glass-slider-track-shadow);
 }
@@ -2676,7 +2688,7 @@ body.use-liquid-glass .liquid-tint-row input[type="range"]::-moz-range-thumb {
   width: var(--glass-slider-lens-size);
   height: var(--glass-slider-lens-size);
   border: 0;
-  border-radius: var(--liquid-pill-radius);
+  border-radius: var(--r-pill);
   background: var(--glass-slider-lens-bg);
   box-shadow: var(--glass-slider-lens-shadow);
   transform: scale(var(--glass-slider-lens-scale));
@@ -2780,14 +2792,9 @@ body.use-liquid-glass .btn.default.is-disabled:active {
 }
 
 body.use-liquid-glass .composer {
-  /* Liquid Glass changes the entry pane's material, not its attachment. The
-     bar is docked, so its left and right sides ARE the window edges: a side
-     border and a top corner draw a card inside the window and cut a notch of
-     transcript out of each top corner. The base rule already leaves only the
-     entry divider on top, so this declares no border at all. The bottom
-     corners still follow the window curve, because the window clips its
-     children. The glass keeps its lift. */
-  border-radius: 0 0 var(--container-radius) var(--container-radius);
+  /* The composer keeps its docked layout while its visible surface follows
+     the same rounded panel role as the rest of Liquid Glass. */
+  border-radius: var(--r-lg);
   background: var(--clio-composer-bg);
   box-shadow: var(--clio-composer-shadow);
   backdrop-filter: blur(22px) saturate(150%);
@@ -2818,7 +2825,7 @@ body.use-liquid-glass .assistant-window .composer label {
 
 body.use-liquid-glass .assistant-window .composer textarea {
   border: 0;
-  border-radius: 0;
+  border-radius: var(--r-md);
   background: transparent;
 }
 
@@ -2836,7 +2843,7 @@ body.use-liquid-glass .mde-surface::before {
   width: min(100%, var(--mde-paper-width));
   transform: translateX(-50%);
   border: 1px solid rgba(255, 255, 255, 0.44);
-  border-radius: var(--liquid-surface-radius-lg);
+  border-radius: var(--r-lg);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.18)),
     rgba(255, 255, 255, 0.22);
@@ -2857,7 +2864,7 @@ body.use-liquid-glass .mde-surface > .mde-input {
 body.use-liquid-glass .teachtext-pane textarea {
   /* Concentric with the window corner, not a second window inside it. */
   --container-inset: 12px;
-  border-radius: max(0px, calc(var(--container-radius) - var(--container-inset)));
+  border-radius: max(var(--r-xs), calc(var(--container-radius) - var(--container-inset)));
   /* Transparent so the highlight overlay shows; the container holds the glass. */
   background: transparent;
   background-image: none;
@@ -2904,7 +2911,7 @@ body.use-liquid-glass .review-desk-preview {
 body.use-liquid-glass .dictation-field-button {
   min-width: 52px;
   border: 1px solid rgba(255, 255, 255, 0.56);
-  border-radius: var(--liquid-pill-radius);
+  border-radius: var(--r-pill);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.3)),
     rgba(255, 255, 255, 0.34);
@@ -2932,7 +2939,7 @@ body.use-liquid-glass .chooser-panel .control-section {
   gap: 12px;
   padding: 14px;
   border: 1px solid rgba(255, 255, 255, 0.48);
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.16)),
     rgba(255, 255, 255, 0.16);
@@ -2945,7 +2952,7 @@ body.use-liquid-glass .chooser-panel .control-section h3 {
   margin: 0;
   padding: 0 10px;
   border: 1px solid rgba(255, 255, 255, 0.44);
-  border-radius: var(--liquid-pill-radius);
+  border-radius: var(--r-pill);
   background: rgba(255, 255, 255, 0.34);
   color: rgba(16, 17, 20, 0.92);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
@@ -2971,7 +2978,7 @@ body.use-liquid-glass .chooser-panel .system-select-button {
 body.use-liquid-glass .chooser-panel .system-select-button,
 body.use-liquid-glass .chooser-panel select {
   min-height: 34px;
-  border-radius: var(--liquid-pill-radius);
+  border-radius: var(--r-pill);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.3)),
     rgba(255, 255, 255, 0.28);
@@ -3000,7 +3007,7 @@ body.use-liquid-glass .control-panel .control-footer {
   padding: 10px 12px;
   border: 1px solid rgba(255, 255, 255, 0.48);
   --container-inset: 9px;
-  border-radius: max(0px, calc(var(--container-radius) - var(--container-inset)));
+  border-radius: max(var(--r-xs), calc(var(--container-radius) - var(--container-inset)));
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.16)),
     rgba(255, 255, 255, 0.18);
@@ -3023,7 +3030,7 @@ body.use-liquid-glass .memory-card.is-matched {
 body.use-liquid-glass #memory-cards-status {
   padding: 6px 10px;
   border: 1px solid rgba(255, 255, 255, 0.36);
-  border-radius: var(--liquid-pill-radius);
+  border-radius: var(--r-pill);
   background: rgba(255, 255, 255, 0.22);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58);
   color: rgba(16, 17, 20, 0.86);
@@ -3034,7 +3041,7 @@ body.use-liquid-glass .compose-tools-menu {
   padding: 6px;
   gap: 3px;
   border: 1px solid var(--glass-border);
-  border-radius: 14px;
+  border-radius: var(--r-md);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(246, 251, 253, 0.84)),
     rgba(246, 251, 253, 0.92);
@@ -3046,7 +3053,7 @@ body.use-liquid-glass .compose-tools-menu {
 
 body.use-liquid-glass .compose-tools-menu button {
   padding: 7px 9px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   background: transparent;
   box-shadow: none;
 }
@@ -3074,7 +3081,7 @@ body.use-liquid-glass .compose-tool-icon {
   width: 32px;
   height: 32px;
   border: 1px solid rgba(16, 17, 20, 0.62);
-  border-radius: 9px;
+  border-radius: var(--r-sm);
   background-color: rgba(255, 255, 255, 0.55);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.76), 0 5px 14px rgba(18, 28, 38, 0.1);
 }
@@ -3122,7 +3129,7 @@ body.use-liquid-glass .file-picker .file-picker-button {
 
 body.use-liquid-glass .file-picker-name {
   border: 1px solid rgba(16, 17, 20, 0.18);
-  border-radius: var(--liquid-surface-radius-sm);
+  border-radius: var(--r-md);
   background: rgba(255, 255, 255, 0.42);
   color: rgba(16, 17, 20, 0.88);
   box-shadow: inset 0 1px 0 var(--glass-highlight), 0 6px 18px rgba(18, 28, 38, 0.06);
@@ -3145,7 +3152,7 @@ body.use-liquid-glass .import-preview > .empty-folder-note,
 body.use-liquid-glass .backup-preview > .empty-folder-note {
   --empty-note-max-width: none;
   --empty-note-margin: 10px;
-  --empty-note-radius: 14px;
+  --empty-note-radius: var(--r-md);
 }
 
 body.use-liquid-glass .backup-preview-section {
@@ -3153,7 +3160,7 @@ body.use-liquid-glass .backup-preview-section {
   margin-top: 8px;
   padding: 14px 16px;
   border: 1px solid rgba(16, 17, 20, 0.12);
-  border-radius: var(--liquid-surface-radius-lg);
+  border-radius: var(--r-lg);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.08)),
     rgba(255, 255, 255, 0.1);
@@ -3221,7 +3228,7 @@ body.use-liquid-glass .teachtext-desk-strip {
   gap: 4px;
   border: 1px solid rgba(16, 17, 20, 0.14);
   --container-inset: 11px;
-  border-radius: max(0px, calc(var(--container-radius) - var(--container-inset)));
+  border-radius: max(var(--r-xs), calc(var(--container-radius) - var(--container-inset)));
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.56), rgba(255, 255, 255, 0.22)),
     rgba(255, 255, 255, 0.22);
@@ -3232,7 +3239,7 @@ body.use-liquid-glass .teachtext-desk-strip {
 
 body.use-liquid-glass .teachtext-desk-strip span {
   border-right: 0;
-  border-radius: 9px;
+  border-radius: var(--r-sm);
   background: rgba(255, 255, 255, 0.28);
   color: rgba(16, 17, 20, 0.86);
 }
@@ -3243,7 +3250,7 @@ body.use-liquid-glass .teachtext-desk-strip span {
 body.use-liquid-glass .window-status-strip.has-message {
   border: 1px solid rgba(16, 17, 20, 0.14);
   --container-inset: 11px;
-  border-radius: max(0px, calc(var(--container-radius) - var(--container-inset)));
+  border-radius: max(var(--r-xs), calc(var(--container-radius) - var(--container-inset)));
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.56), rgba(255, 255, 255, 0.22)),
     rgba(255, 255, 255, 0.22);
@@ -3254,7 +3261,7 @@ body.use-liquid-glass .window-status-strip.has-message {
 
 body.use-liquid-glass .spine-toolbox-panel {
   border: 1px solid var(--glass-border);
-  border-radius: 22px;
+  border-radius: var(--r-lg);
   box-shadow: 0 18px 52px rgba(18, 28, 38, 0.18), 0 2px 8px rgba(18, 28, 38, 0.1);
 }
 
@@ -3270,7 +3277,7 @@ body.use-liquid-glass .writing-spine-panel.is-shaded .spine-toolbox-panel::befor
 
 body.use-liquid-glass .writing-spine-panel.is-shaded .spine-title-row {
   border: 1px solid var(--glass-border);
-  border-radius: var(--liquid-pill-radius);
+  border-radius: var(--r-pill);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.76), 0 1px 3px rgba(18, 28, 38, 0.06);
 }
 
@@ -3309,7 +3316,7 @@ body.use-liquid-glass .review-desk-window.is-review-locked .review-desk-empty-no
   margin: 0;
   padding: 30px 36px;
   border: 1px solid rgba(16, 17, 20, 0.12);
-  border-radius: 20px;
+  border-radius: var(--r-lg);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.18)),
     rgba(255, 255, 255, 0.22);
@@ -3331,7 +3338,7 @@ body.use-liquid-glass .boot-screen {
 }
 
 body.use-liquid-glass .happy-mac {
-  border-radius: var(--liquid-surface-radius-sm);
+  border-radius: var(--r-md);
   background:
     linear-gradient(rgba(16, 17, 20, 0.92), rgba(16, 17, 20, 0.92)) 16px 84px / 11px 4px no-repeat,
     linear-gradient(rgba(16, 17, 20, 0.92), rgba(16, 17, 20, 0.92)) 57px 84px / 40px 4px no-repeat,
@@ -3356,7 +3363,7 @@ body.use-liquid-glass .happy-mac-face {
 body.use-liquid-glass .shutdown-ledger,
 body.use-liquid-glass .boot-ledger {
   border: 1px solid rgba(16, 17, 20, 0.16);
-  border-radius: var(--liquid-surface-radius-lg);
+  border-radius: var(--r-lg);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.26)),
     rgba(255, 255, 255, 0.24);
@@ -3373,20 +3380,20 @@ body.use-liquid-glass .shutdown-ledger .btn {
 
 body.use-liquid-glass .boot-progress {
   border: 1px solid rgba(16, 17, 20, 0.18);
-  border-radius: var(--liquid-pill-radius);
+  border-radius: var(--r-pill);
   background: rgba(255, 255, 255, 0.38);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78);
 }
 
 body.use-liquid-glass .boot-progress span {
-  border-radius: var(--liquid-pill-radius);
+  border-radius: var(--r-pill);
   background: linear-gradient(90deg, var(--glass-progress-blue), var(--glass-progress-accent));
 }
 
 body.use-liquid-glass .progress-track {
   height: 14px;
   border: 1px solid rgba(16, 17, 20, 0.18);
-  border-radius: var(--liquid-pill-radius);
+  border-radius: var(--r-pill);
   background: rgba(255, 255, 255, 0.44);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.72),
@@ -3404,7 +3411,7 @@ body.use-liquid-glass .progress-bar {
 
 body.use-liquid-glass .rebuild-progress {
   border: 1px solid rgba(255, 255, 255, 0.5);
-  border-radius: var(--liquid-surface-radius-lg);
+  border-radius: var(--r-lg);
   background: rgba(255, 255, 255, 0.24);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.72),
@@ -3414,7 +3421,7 @@ body.use-liquid-glass .rebuild-progress {
 body.use-liquid-glass .rebuild-progress-meter {
   height: 12px;
   border: 1px solid rgba(16, 17, 20, 0.14);
-  border-radius: var(--liquid-pill-radius);
+  border-radius: var(--r-pill);
   background: rgba(255, 255, 255, 0.42);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78);
 }
@@ -3434,7 +3441,7 @@ body.use-liquid-glass .rebuild-progress-steps li::before {
   width: 14px;
   height: 14px;
   border: 1px solid rgba(16, 17, 20, 0.24);
-  border-radius: 50%;
+  border-radius: var(--r-circle);
   background: rgba(255, 255, 255, 0.38);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78);
 }
@@ -3461,7 +3468,7 @@ body.use-liquid-glass .scrap-editor {
 
 body.use-liquid-glass .scrap-editor {
   border: 1px solid rgba(255, 255, 255, 0.44);
-  border-radius: 20px;
+  border-radius: var(--r-lg);
   background: rgba(255, 255, 255, 0.18);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.68);
 }
@@ -3496,7 +3503,7 @@ body.use-liquid-glass .scrap-list button,
 body.use-liquid-glass .trash-list button,
 body.use-liquid-glass .finder-list-row:not(:hover):not(.is-selected) {
   border-color: rgba(255, 255, 255, 0.48);
-  border-radius: 14px;
+  border-radius: var(--r-md);
   background: rgba(255, 255, 255, 0.24);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
@@ -3511,7 +3518,7 @@ body.use-liquid-glass .scrap-empty-card {
 }
 
 body.use-liquid-glass .message {
-  border-radius: 6px;
+  border-radius: var(--r-sm);
 }
 
 body.use-liquid-glass .message-content h1,
@@ -3535,7 +3542,7 @@ body.use-liquid-glass .message-content blockquote,
 body.use-liquid-glass .message-content pre,
 body.use-liquid-glass .message-translation {
   border: 1px solid rgba(255, 255, 255, 0.46);
-  border-radius: 14px;
+  border-radius: var(--r-md);
   background: rgba(255, 255, 255, 0.22);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58);
 }
@@ -3546,7 +3553,7 @@ body.use-liquid-glass .message-content blockquote {
 
 body.use-liquid-glass .message-content :not(pre) > code {
   border: 1px solid rgba(16, 17, 20, 0.12);
-  border-radius: 6px;
+  border-radius: var(--r-sm);
   background: rgba(255, 255, 255, 0.28);
 }
 body.use-liquid-glass .finder-list-header {
@@ -3554,7 +3561,7 @@ body.use-liquid-glass .finder-list-header {
   padding: 7px 10px;
   border: 1px solid rgba(255, 255, 255, 0.36);
   border-bottom: 1px solid rgba(16, 17, 20, 0.12);
-  border-radius: var(--liquid-surface-radius-sm);
+  border-radius: var(--r-md);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.46), rgba(255, 255, 255, 0.16)),
     rgba(255, 255, 255, 0.18);
@@ -3563,7 +3570,7 @@ body.use-liquid-glass .finder-list-header {
 
 body.use-liquid-glass .finder-list-group {
   margin: 6px 0 4px;
-  border-radius: var(--liquid-pill-radius);
+  border-radius: var(--r-pill);
   background: rgba(255, 255, 255, 0.28);
   color: rgba(16, 17, 20, 0.72);
 }
@@ -3614,7 +3621,7 @@ body.use-liquid-glass .finder-item {
   gap: 5px;
   padding: 8px 7px;
   border: 1px solid transparent;
-  border-radius: var(--liquid-surface-radius-lg);
+  border-radius: var(--r-lg);
   overflow: hidden;
 }
 
@@ -3632,7 +3639,7 @@ body.use-liquid-glass .finder-item small {
   width: 100%;
   max-width: 100%;
   display: block;
-  border-radius: 9px;
+  border-radius: var(--r-sm);
   background: rgba(255, 255, 255, 0.5);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -3686,7 +3693,7 @@ body.use-liquid-glass .trash-list button.is-selected {
 
 body.use-liquid-glass .finder-marquee {
   border: 1px solid rgba(0, 122, 255, 0.38);
-  border-radius: 6px;
+  border-radius: var(--r-sm);
   background: rgba(255, 255, 255, 0.08);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.42),
@@ -3696,7 +3703,7 @@ body.use-liquid-glass .finder-marquee {
 }
 
 body.use-liquid-glass .desktop-icon {
-  border-radius: var(--liquid-surface-radius-lg);
+  border-radius: var(--r-lg);
   padding: var(--liquid-desktop-icon-padding);
   width: var(--desktop-icon-width);
 }
@@ -3708,7 +3715,7 @@ body.use-liquid-glass .spine-actions button:hover,
 body.use-liquid-glass .spine-actions button:focus-visible,
 body.use-liquid-glass .spine-actions button.is-selected {
   background: rgba(255, 255, 255, 0.2);
-  border-radius: var(--liquid-surface-radius-lg);
+  border-radius: var(--r-lg);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.54), 0 8px 26px rgba(18, 28, 38, 0.12);
   backdrop-filter: blur(8px) saturate(140%);
   -webkit-backdrop-filter: blur(8px) saturate(140%);
@@ -3716,7 +3723,7 @@ body.use-liquid-glass .spine-actions button.is-selected {
 }
 
 body.use-liquid-glass .spine-actions b {
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   background: rgba(255, 255, 255, 0.54);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
@@ -3729,12 +3736,14 @@ body.use-liquid-glass .spine-actions button.holds-pen .spine-step-number {
 }
 
 body.use-liquid-glass .spine-actions .spine-step-number {
-  top: -0.18rem;
-  left: calc(50% - 2.35rem);
+  /* Above the icon, like every other appearance: this era's badge is a 24px
+     pill, so it centres on the icon rather than sitting off its corner. */
+  top: 0;
+  left: calc(50% - 0.75rem);
   width: 1.5rem;
   height: 1.5rem;
   border: 0;
-  border-radius: var(--liquid-pill-radius);
+  border-radius: var(--r-pill);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.34)),
     rgba(255, 255, 255, 0.22);
@@ -3913,14 +3922,13 @@ body.use-liquid-glass .docmap-map-toolbar {
   padding: 0 2px 2px;
 }
 
-body.use-liquid-glass .docmap-drop-zone,
 body.use-liquid-glass .docmap-tree,
 body.use-liquid-glass .docmap-markmap-frame,
 body.use-liquid-glass .video-docmap-map,
 body.use-liquid-glass .video-docmap-inspector,
 body.use-liquid-glass .video-docmap-node {
   border: 1px solid rgba(16, 17, 20, 0.12);
-  border-radius: var(--liquid-surface-radius-lg);
+  border-radius: var(--r-lg);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.48), rgba(255, 255, 255, 0.16)),
     rgba(255, 255, 255, 0.2);
@@ -3951,7 +3959,7 @@ body.use-liquid-glass .docmap-tree {
 }
 
 body.use-liquid-glass .docmap-markmap-frame {
-  border-radius: 0;
+  border-radius: var(--r-lg);
   background: transparent;
   box-shadow: none;
   overflow: hidden;
@@ -3981,7 +3989,7 @@ body.use-liquid-glass .video-docmap-inspector {
   gap: 12px;
   padding: 0 0 0 10px;
   border-left: 1px solid rgba(16, 17, 20, 0.1);
-  border-radius: 0;
+  border-radius: var(--r-lg);
   background: transparent;
   box-shadow: none;
 }
@@ -4002,7 +4010,7 @@ body.use-liquid-glass .video-docmap-timeline button:focus-visible {
 body.use-liquid-glass .video-docmap-node {
   padding: 16px 18px;
   border-color: rgba(16, 17, 20, 0.1);
-  border-radius: var(--liquid-surface-radius-lg);
+  border-radius: var(--r-lg);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.52), rgba(255, 255, 255, 0.2)),
     rgba(255, 255, 255, 0.2);
@@ -4031,7 +4039,7 @@ body.use-liquid-glass .video-docmap-node blockquote {
   border-left-color: rgba(47, 157, 179, 0.48);
   color: rgba(16, 17, 20, 0.82);
   background: rgba(255, 255, 255, 0.22);
-  border-radius: 0 10px 10px 0;
+  border-radius: var(--r-md);
 }
 
 body.use-liquid-glass .teachtext-command-popover,
@@ -4039,7 +4047,7 @@ body.use-liquid-glass .docmap-command-popover {
   gap: 3px;
   padding: 6px;
   border: 1px solid var(--glass-border);
-  border-radius: 14px;
+  border-radius: var(--r-md);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(246, 251, 253, 0.76)),
     rgba(246, 251, 253, 0.82);
@@ -4076,7 +4084,7 @@ body.use-liquid-glass .teachtext-command-subpopover .btn {
   min-width: 0;
   padding: 4px 12px;
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   background: transparent;
   color: rgba(16, 17, 20, 0.96);
   box-shadow: none;
@@ -4193,7 +4201,7 @@ body.use-liquid-glass .view-controls {
   height: 28px;
   padding: 3px;
   border: 1px solid rgba(255, 255, 255, 0.7);
-  border-radius: 13px;
+  border-radius: var(--r-md);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.42)),
     rgba(255, 255, 255, 0.3);
@@ -4208,7 +4216,7 @@ body.use-liquid-glass .view-btn {
   width: 30px;
   height: 22px;
   border: 1px solid transparent;
-  border-radius: 9px;
+  border-radius: var(--r-sm);
   background: transparent;
   box-shadow: none;
   transition: background 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
@@ -4250,7 +4258,7 @@ body.use-liquid-glass .view-btn[data-view="icon"].is-active::before {
 
 body.use-liquid-glass .view-btn[data-view="list"]::before {
   width: 13px;
-  border-radius: var(--liquid-pill-radius);
+  border-radius: var(--r-pill);
   background: rgba(16, 17, 20, 0.84);
   box-shadow: 0 -5px 0 rgba(16, 17, 20, 0.84), 0 5px 0 rgba(16, 17, 20, 0.84);
 }
@@ -4286,7 +4294,7 @@ html:has(body.use-liquid-glass)::-webkit-scrollbar-thumb,
 body.use-liquid-glass::-webkit-scrollbar-thumb,
 body.use-liquid-glass *::-webkit-scrollbar-thumb {
   border: 2px solid rgba(255, 255, 255, 0.28);
-  border-radius: var(--liquid-pill-radius);
+  border-radius: var(--r-pill);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.56), rgba(16, 17, 20, 0.24)), rgba(16, 17, 20, 0.22);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.66), 0 2px 7px rgba(18, 28, 38, 0.12);
 }
@@ -4442,7 +4450,21 @@ body.use-liquid-glass .btn.default.is-disabled:is(:hover, :focus-visible, :activ
   body.use-liquid-glass .system-modal,
   body.use-liquid-glass .startup-settings-modal {
     background: transparent;
+    /* Where the system has its own glass material, that material IS the
+       material: stacking the CSS blur on top of it blurred the surface twice.
+       The menu bar showed it worst — the system's material is strongest once
+       the desk runs standalone from the Home Screen, and a second blur over a
+       strip of 13px labels is what the owner saw as "the menu bar went
+       blurry". The CSS approximation stays for engines that have no system
+       material, which is what the rest of this stylesheet paints. */
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
     -apple-visual-effect: -apple-system-glass-material;
+  }
+
+  body.use-liquid-glass .menu-bar::before {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
 }
 

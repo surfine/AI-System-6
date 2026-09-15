@@ -149,6 +149,13 @@ test.assertMatches(
   /function receiptProjectCdBurn\(item\)[\s\S]*?project_cd_burn_receipt[\s\S]*?windowName: "projectCd",/,
   "every burn leaves a durable System Messages receipt with a way back"
 );
+// The receipt is durable, so it can sit in Notification Center across a
+// language switch. It carries its key + args and is re-rendered at draw time.
+test.assertMatches(
+  flowActions,
+  /messageKey: "project_cd_burn_receipt",\s*\n\s*messageArgs: \[item\.title\],/,
+  "the receipt carries its own key, so a later language switch redraws it"
+);
 for (const key of ["project_cd_burn_receipt", "balloon_project_cd_stop_locked", "balloon_project_cd_stop_ready", "balloon_project_cd_stop_burned"]) {
   test.assertIncludes(flowEn, `${key}:`, `English copy exists for ${key}`);
   test.assertIncludes(flowZh, `${key}:`, `Chinese copy exists for ${key}`);

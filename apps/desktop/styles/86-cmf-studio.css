@@ -110,6 +110,7 @@
 }
 
 .cmf-setup-actions,
+.cmf-compare-actions,
 .cmf-button-stack {
   display: flex;
   flex: 0 0 auto;
@@ -139,8 +140,123 @@
 .cmf-preview-panel {
   display: grid;
   grid-area: preview;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
   overflow: hidden;
+}
+
+.cmf-duo-frame {
+  grid-area: 1 / 1;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  border: 0;
+}
+
+/* One band: what poses the device and what it produces. The fold's own
+   controls, Play, and the fold video sit on one line, and so do the pose
+   chooser and the opening slider when the device has them. A second band of
+   screen-image buttons lived here until 2026-09-14; it was removed with the
+   capability it served (see cmf-studio.js), and with it the wall of buttons
+   this row had become.
+
+   This element had no class until 2026-09-12 -- the markup wrote the id alone
+   -- so none of this applied and the controls fell back to block layout: the
+   chooser stretched the full width of the pane and the labels sat flush
+   against the frame with no padding to hold them off it. */
+.cmf-motion-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 10px;
+  row-gap: 8px;
+  padding: 8px 10px;
+  border-top: var(--cmf-strip-border);
+  background: var(--cmf-preview-head-bg);
+  font-size: 11px;
+}
+
+/* The chooser is a chooser, not a banner: it takes the width its longest
+   option needs and stops. */
+.cmf-motion-controls .cmf-control-pose {
+  flex: 0 0 auto;
+}
+
+.cmf-motion-controls > label[for="cmf-fold"] {
+  flex: 0 0 auto;
+}
+
+.cmf-motion-controls[hidden],
+.cmf-view-strip[hidden],
+.cmf-preview-stage canvas[hidden] {
+  display: none;
+}
+
+/* The opening slider is the only one in this window, and it may shrink to a
+   usable minimum but never swell to fill a wide pane -- a 600px-long slider
+   for a 0-100% value is a fairground lever, not a control. */
+.cmf-motion-controls input[type="range"] {
+  flex: 1 1 150px;
+  min-width: 110px;
+  max-width: 260px;
+  height: 18px;
+  margin: 0;
+  padding: 0;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+/* The stock control paints a blue iOS/Aqua track that belongs to no theme in
+   this product. Same recipe as the Theme Lab era slider. */
+.cmf-motion-controls input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  border: 1px solid var(--rule);
+  border-radius: var(--control-radius);
+  background: var(--surface-inset);
+}
+
+.cmf-motion-controls input[type="range"]::-moz-range-track {
+  height: 4px;
+  border: 1px solid var(--rule);
+  border-radius: var(--control-radius);
+  background: var(--surface-inset);
+}
+
+.cmf-motion-controls input[type="range"]::-webkit-slider-thumb {
+  width: 13px;
+  height: 13px;
+  margin-top: -5px;
+  appearance: none;
+  border: 1px solid var(--ink);
+  border-radius: 50%;
+  background: var(--paper);
+  box-shadow: var(--system-inset);
+}
+
+.cmf-motion-controls input[type="range"]::-moz-range-thumb {
+  width: 13px;
+  height: 13px;
+  border: 1px solid var(--ink);
+  border-radius: 50%;
+  background: var(--paper);
+  box-shadow: var(--system-inset);
+}
+
+.cmf-motion-controls input[type="range"]:disabled {
+  cursor: default;
+  opacity: var(--control-disabled-opacity);
+}
+
+.cmf-motion-controls output {
+  flex: 0 0 auto;
+  min-width: 4ch;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.cmf-motion-controls #cmf-motion-play {
+  flex: 0 0 auto;
 }
 
 .cmf-preview-head {
@@ -168,6 +284,7 @@
 }
 
 .cmf-live-indicator {
+  border-radius: var(--item-radius);
   flex: 0 0 auto;
   padding: 3px 6px;
   border: var(--cmf-live-border);
@@ -188,6 +305,61 @@
   background: var(--cmf-stage-bg);
   background-position: 0 0, 0 10px, 10px -10px, -10px 0;
   background-size: 20px 20px;
+}
+
+/* A static A/B lives in the preview's own box, at the preview's own size. The
+   point of the comparison is the finish, so the two stills must not also
+   change how large the device reads on screen: same frame, same light, same
+   scale, two colours. It covers the live canvas rather than resizing the
+   window, and the plain attribute has to win over `display: grid` on its own.
+   It shares the canvas's grid cell and is appended after it, so paint order
+   puts it on top without a stacking layer of its own. */
+.cmf-compare-stage {
+  grid-area: 1 / 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 100%;
+  padding: 8px;
+  background: var(--paper);
+  overflow: auto;
+}
+
+.cmf-compare-stage[hidden] {
+  display: none;
+}
+
+.cmf-compare-shot {
+  display: grid;
+  gap: 4px;
+  justify-items: center;
+  min-width: 0;
+  margin: 0;
+}
+
+.cmf-compare-shot img {
+  max-width: 100%;
+  max-height: 100%;
+  min-height: 0;
+  object-fit: contain;
+}
+
+.cmf-compare-shot figcaption {
+  font-size: 11px;
+  text-align: center;
+}
+
+.cmf-compare-close {
+  grid-column: 1 / -1;
+  justify-self: center;
+}
+
+/* Which of the two slots is already holding something is the only state this
+   row has, and it is read before every comparison. */
+.cmf-compare-actions .btn.is-held::after {
+  content: " \2713";
 }
 
 .cmf-preview-stage canvas {
@@ -384,7 +556,7 @@
   padding: 6px 8px;
   border: 0;
   border-bottom: var(--cmf-row-divider);
-  border-radius: 0;
+  border-radius: var(--item-radius);
   background: transparent;
   color: var(--ink);
   font: inherit;
@@ -395,7 +567,12 @@
     color var(--control-motion-fast-out) var(--control-motion-ease);
 }
 
-.cmf-part-row:hover:not(:disabled) {
+/* A selected row is a filled plate whose text is the selection foreground.
+   Hovering it used to repaint only the background — the hover rule carried
+   three class-levels to the selected rule's two — so white text landed on the
+   light hover field and the row read as an empty outline. The hover field is
+   for rows that are not already selected. */
+.cmf-part-row:hover:not(:disabled):not(.is-selected) {
   background: var(--cmf-hover-bg);
 }
 
@@ -565,6 +742,36 @@
 /* The caption only earns its place once the choosers, both command groups and
    one unwrapped line of it all fit on the same row; below that the toolbar is
    controls only. */
+.cmf-part-swatch[data-cmf-color="silver18Pro"],
+.cmf-color-chip-swatch[data-cmf-color="silver18Pro"] {
+  background: #c4c4c4;
+}
+
+.cmf-part-swatch[data-cmf-color="burgundy18Pro"],
+.cmf-color-chip-swatch[data-cmf-color="burgundy18Pro"] {
+  background: #2e0f14;
+}
+
+.cmf-part-swatch[data-cmf-color="glacier18Pro"],
+.cmf-color-chip-swatch[data-cmf-color="glacier18Pro"] {
+  background: #a3b1c4;
+}
+
+.cmf-part-swatch[data-cmf-color="black18Pro"],
+.cmf-color-chip-swatch[data-cmf-color="black18Pro"] {
+  background: #242424;
+}
+
+.cmf-part-swatch[data-cmf-color="starWhiteDuo"],
+.cmf-color-chip-swatch[data-cmf-color="starWhiteDuo"] {
+  background: #f7f6f5;
+}
+
+.cmf-part-swatch[data-cmf-color="nightSkyDuo"],
+.cmf-color-chip-swatch[data-cmf-color="nightSkyDuo"] {
+  background: #394452;
+}
+
 @container cmf-studio (max-width: 1040px) {
   .cmf-autosave-note {
     display: none;
@@ -583,6 +790,14 @@
   .cmf-setup-panel .cmf-autosave-note,
   .cmf-setup-panel .cmf-button-stack {
     margin-left: 0;
+  }
+
+  /* Three labelled commands do not fit half a phone toolbar: at 375px each
+     button came out 50px wide with its label clipped. The comparison is one
+     thought, so it takes a line of its own rather than a short label nobody
+     can read ("A", "B", "A/B"). */
+  .cmf-setup-panel .cmf-compare-actions {
+    grid-column: 1 / -1;
   }
 
   .cmf-studio-pane {
@@ -634,6 +849,7 @@
   }
 
   .cmf-setup-actions .btn,
+  .cmf-compare-actions .btn,
   .cmf-button-stack .btn {
     min-width: 0;
     min-height: 44px;
@@ -645,6 +861,23 @@
 
   .cmf-color-chip {
     min-height: 36px;
+  }
+
+  /* A phone cannot hold the chooser and the whole pose line at once. The
+     chooser keeps its own row -- a clipped device name is worse than a second
+     line -- the slider gives up its minimum, and Play and the screen-image
+     buttons stay thumb-sized. */
+  .cmf-motion-controls .cmf-control-pose {
+    flex: 1 1 100%;
+  }
+
+  .cmf-motion-controls input[type="range"] {
+    min-width: 72px;
+  }
+
+  .cmf-motion-controls #cmf-motion-play,
+  .cmf-motion-controls #cmf-duo-video {
+    min-height: 44px;
   }
 }
 

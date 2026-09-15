@@ -1246,3 +1246,79 @@ together in one reply, with the sources still one click away.
 The LM Studio path prefers the native v1 API — stateful chat, model load
 events, context length in the request — and falls back through the Responses
 API to OpenAI-compatible only when the model needs a shape v1 cannot carry.
+
+### 1.0.52 parade build — 2026-09-05
+
+The follow-up build is the release as a lane parade: it gathers the lanes and
+agents that kept working after the first 1.0.52 stamp and lands them as one
+version.
+
+- The demand gauge stopped waiting on screenshots. Micropolis is SimCity, open
+  under the GPL and already vendored, so the gauge's drawing code answered
+  M7/M8 exactly: pure green/blue/yellow columns with black keylines on the
+  `#e6e6ff` panel. The games' pixel cells also fixed a clip misread that had
+  been photographing terrain instead of the palette and gauge they promised.
+- The desk speaks MCP in both directions: a guest agent can read the open
+  project and return reviews as adoptable run receipts, and the desk can query
+  other MCP servers with answers landing on the File Floppy.
+- Writing Studio's darkroom repaints from the manuscript's real host instead
+  of whichever window happened to hold the page, and a new contract refuses
+  any gate that nothing runs unless a waiver says why.
+- Installed-app users gain Home Screen long-press shortcuts to ClioTalk,
+  Quick Draft, and Lightroom.
+- The Endfield archive rebuilt its mission corpus from the restored live
+  routes: 332 missions and 26,413 transcript lines now carry the v1.5 stamp
+  instead of a version label on older text.
+
+Contributions are recorded lane by lane in git history, including the
+co-authored measured-colour merge; the remaining carried items (SC2000 panel
+layout and its icons, the ClioTalk dual-mode live smoke, and the full phone
+landscape sweep) stay open and are tracked in the 1.0.52 closeout.
+
+## Public Beta 1.0.53 - 2026-09-05
+
+- Semantic retrieval no longer depends on the AI provider having an embedding
+  model. When DeepSeek is the chat model or no local model is connected, a
+  small multilingual embedding model runs quietly in the browser, so search
+  keeps ranking by meaning instead of silently dropping to keywords. Cloud and
+  local retrieval now behave the same way.
+- The local LM Studio integration stops piling up duplicate loaded instances.
+  Reloading a model unloads its old copies first, so the server no longer
+  reports the same embedding model loaded ten times.
+- Pages served through the server can force the cloud or local route
+  explicitly, so model repair and payload routing stay honest on the public
+  site.
+
+## Public Beta 1.0.54 - 2026-09-11
+
+- CMF Studio adds iPhone 18 Pro and iPhone Duo models with Apple-authored
+  interactive assets.
+- iPhone Duo supports continuous folding, separate inner and outer screen
+  images, and local WebM fold-video export.
+- MacBook Neo uses the same continuous hinge interaction for its open pose.
+
+## Public Beta 1.0.55 - 2026-09-12
+
+- CMF Studio's interactive colorways are lit by the official product scene's
+  own environment, so the material you dial in is the material the object
+  holds. iPhone 17 Pro and Pro Max share one model entry with two poses, and
+  iPhone Air, iPhone 17e, MacBook Neo and the Duo carry the same per-part
+  color matching and USDZ export.
+- The iPhone Duo folds continuously: separate inner and outer screen images,
+  the original wallpaper one button away, and a local export — PNG, JPEG, WebP
+  or a rendered fold video.
+- The Duo is also four mixable finishes (frame, back glass, hinge, camera
+  plateau) with Front / Back / Left / Right views and a free turn of the
+  scene's own camera, so the side you painted is the side you can see.
+- Every standalone app now has exactly one shareable address, `/go/<app-id>`.
+  The bare app directories, the published redirect files and the server's own
+  direct routes are gone, and the installer retires the old published paths
+  inside the same transaction that installs the release, so nobody can share
+  an address the site no longer serves.
+- The public site can carry the MCP guest bridge: Pages serves the same tool
+  contract as the desktop, mints an invitation that names one desk, and keeps
+  the guest executor behind a Durable Object.
+- The release gates were reconciled with what actually ships: the prompt
+  contracts follow the 70 records the app carries, the README gauge quotes the
+  payload the gate measured, and the integration ledger records this release
+  branch as merged.

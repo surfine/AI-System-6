@@ -1,6 +1,6 @@
 {
-  "schema": "ai-system-6-bonsai-textures-v1",
-  "version": 1,
+  "schema": "ai-system-6-bonsai-textures-v2",
+  "version": 2,
   "tileSize": 64,
   "atlas": {
     "width": 512,
@@ -11,296 +11,609 @@
   "png": {
     "url": "/assets/bonsai/textures.png",
     "file": "assets/bonsai/textures.png",
-    "sha256": "6701d19cce36b674becbda9b86c59f9882176eb28a83238336cfa5bfe9a0c59e"
+    "sha256": "1985bb424cb67d11bd0c9d032689695e8f70fdabf3965bd51915cd2e8ef914ab"
+  },
+  "masks": {
+    "url": "/assets/bonsai/texture-masks.png",
+    "file": "assets/bonsai/texture-masks.png",
+    "sha256": "4b994e36ed045fc7ea098238261c240ab1456563caec4a2da1762683bb32bc66",
+    "channels": {
+      "r": "glass",
+      "g": "emission",
+      "b": "reserved",
+      "a": "opaque"
+    }
+  },
+  "artwork": {
+    "file": "assets/bonsai/source-art/city-materials-v1.png",
+    "sha256": "bfdc023937446080c6b98aec39a34462073ba13a8abb1ceb1905e8e3bd1027f0",
+    "promptFile": "assets/bonsai/source-art/city-materials-v1.prompt.txt",
+    "tool": "image_gen.imagegen",
+    "model": "unknown (not exposed by tool)",
+    "assignments": {
+      "tunnel": 9,
+      "terrain.grass.top": 8,
+      "terrain.grass.side": 8,
+      "terrain.soil": 10,
+      "terrain.rock": 9,
+      "terrain.sand": 10,
+      "terrain.snow": 7,
+      "water": 11,
+      "road": 12,
+      "road.side": 9,
+      "rail": 15,
+      "rail.side": 7,
+      "wire": 15,
+      "pipe": 15,
+      "park": 13,
+      "park.side": 8,
+      "wall.r.day": 0,
+      "wall.r.night": 0,
+      "wall.c.day": 1,
+      "wall.c.night": 1,
+      "wall.i.day": 3,
+      "wall.i.night": 3,
+      "roof": 6,
+      "roof.dark": 5,
+      "trunk": 0,
+      "canopy": 14,
+      "canopy.maple": 14,
+      "construction": 15,
+      "abandoned": 3,
+      "concrete": 3,
+      "metal": 15,
+      "zone.military": 3,
+      "zone.airport": 12,
+      "zone.seaport": 13,
+      "facility.police": 2,
+      "facility.fire": 0,
+      "facility.school": 1,
+      "facility.clinic": 1,
+      "facility.coal": 3,
+      "facility.wind": 15,
+      "facility.nuclear": 3,
+      "facility.solar": 4,
+      "facility.tower": 15,
+      "facility.pump": 15,
+      "facility.station": 13,
+      "canopy.blossom": 14,
+      "canopy.winter": 14,
+      "roof.deck": 7
+    },
+    "operation": "resample generated material cells into palette-calibrated surfaces, retain semantic markings and masks"
+  },
+  "sampling": {
+    "mipmaps": false,
+    "insetPixels": 0.5
   },
   "tiles": {
     "tunnel": {
       "x": 0,
       "y": 0,
       "w": 64,
-      "h": 64
+      "h": 64,
+      "meanColor": [
+        30.003,
+        32.003,
+        30.003
+      ]
     },
     "terrain.grass.top": {
       "x": 64,
       "y": 0,
       "w": 64,
-      "h": 64
+      "h": 64,
+      "meanColor": [
+        120.995,
+        147.995,
+        97.995
+      ]
     },
     "terrain.grass.side": {
       "x": 128,
       "y": 0,
       "w": 64,
-      "h": 64
+      "h": 64,
+      "meanColor": [
+        107.995,
+        138.995,
+        86.995
+      ]
     },
     "terrain.soil": {
       "x": 192,
       "y": 0,
       "w": 64,
-      "h": 64
+      "h": 64,
+      "meanColor": [
+        136.004,
+        108.004,
+        78.004
+      ]
     },
     "terrain.rock": {
       "x": 256,
       "y": 0,
       "w": 64,
-      "h": 64
+      "h": 64,
+      "meanColor": [
+        122.003,
+        124.003,
+        120.003
+      ]
     },
     "terrain.sand": {
       "x": 320,
       "y": 0,
       "w": 64,
-      "h": 64
+      "h": 64,
+      "meanColor": [
+        198.004,
+        178.004,
+        134.004
+      ]
     },
     "terrain.snow": {
       "x": 384,
       "y": 0,
       "w": 64,
-      "h": 64
+      "h": 64,
+      "meanColor": [
+        225.122,
+        230.174,
+        232.525
+      ]
     },
     "water": {
       "x": 448,
       "y": 0,
       "w": 64,
-      "h": 64
+      "h": 64,
+      "meanColor": [
+        74.017,
+        132.017,
+        153.017
+      ]
     },
     "road": {
       "x": 0,
       "y": 64,
       "w": 64,
-      "h": 64
+      "h": 64,
+      "meanColor": [
+        80.996,
+        86.996,
+        86.996
+      ]
     },
     "road.side": {
       "x": 64,
       "y": 64,
       "w": 64,
-      "h": 64
+      "h": 64,
+      "meanColor": [
+        81.003,
+        87.003,
+        87.003
+      ]
     },
     "rail": {
       "x": 128,
       "y": 64,
       "w": 64,
-      "h": 64
+      "h": 64,
+      "meanColor": [
+        89.015,
+        77.456,
+        63.897
+      ]
     },
     "rail.side": {
       "x": 192,
       "y": 64,
       "w": 64,
-      "h": 64
+      "h": 64,
+      "meanColor": [
+        71.989,
+        65.989,
+        57.989
+      ]
     },
     "wire": {
       "x": 256,
       "y": 64,
       "w": 64,
-      "h": 64
+      "h": 64,
+      "meanColor": [
+        71.865,
+        75.036,
+        72.536
+      ]
     },
     "pipe": {
       "x": 320,
       "y": 64,
       "w": 64,
-      "h": 64
+      "h": 64,
+      "meanColor": [
+        79.2,
+        131.422,
+        147.552
+      ]
     },
     "park": {
       "x": 384,
       "y": 64,
       "w": 64,
-      "h": 64
+      "h": 64,
+      "meanColor": [
+        120.721,
+        147.8,
+        97.645
+      ]
     },
     "park.side": {
       "x": 448,
       "y": 64,
       "w": 64,
-      "h": 64
+      "h": 64,
+      "meanColor": [
+        77.995,
+        105.995,
+        64.995
+      ]
     },
     "wall.r.day": {
       "x": 0,
       "y": 128,
       "w": 64,
-      "h": 64
+      "h": 64,
+      "meanColor": [
+        200.92,
+        200.639,
+        200.076
+      ]
     },
     "wall.r.night": {
       "x": 64,
       "y": 128,
       "w": 64,
-      "h": 64
+      "h": 64,
+      "meanColor": [
+        200.92,
+        200.639,
+        200.076
+      ]
     },
     "wall.c.day": {
       "x": 128,
       "y": 128,
       "w": 64,
-      "h": 64
+      "h": 64,
+      "meanColor": [
+        202.715,
+        202.443,
+        201.898
+      ]
     },
     "wall.c.night": {
       "x": 192,
       "y": 128,
       "w": 64,
-      "h": 64
+      "h": 64,
+      "meanColor": [
+        202.715,
+        202.443,
+        201.898
+      ]
     },
     "wall.i.day": {
       "x": 256,
       "y": 128,
       "w": 64,
-      "h": 64
+      "h": 64,
+      "meanColor": [
+        204.536,
+        204.395,
+        204.114
+      ]
     },
     "wall.i.night": {
       "x": 320,
       "y": 128,
       "w": 64,
-      "h": 64
+      "h": 64,
+      "meanColor": [
+        204.536,
+        204.395,
+        204.114
+      ]
     },
     "roof": {
       "x": 384,
       "y": 128,
       "w": 64,
-      "h": 64
+      "h": 64,
+      "meanColor": [
+        149.989,
+        77.989,
+        61.989
+      ]
     },
     "roof.dark": {
       "x": 448,
       "y": 128,
       "w": 64,
-      "h": 64
+      "h": 64,
+      "meanColor": [
+        94.008,
+        68.008,
+        50.008
+      ]
     },
     "trunk": {
       "x": 0,
       "y": 192,
       "w": 64,
-      "h": 64
+      "h": 64,
+      "meanColor": [
+        105.982,
+        79.982,
+        55.982
+      ]
     },
     "canopy": {
       "x": 64,
       "y": 192,
       "w": 64,
-      "h": 64
+      "h": 64,
+      "meanColor": [
+        67.977,
+        108.977,
+        62.977
+      ]
     },
     "canopy.maple": {
       "x": 128,
       "y": 192,
       "w": 64,
-      "h": 64
+      "h": 64,
+      "meanColor": [
+        187.977,
+        63.977,
+        53.977
+      ]
     },
     "construction": {
       "x": 192,
       "y": 192,
       "w": 64,
-      "h": 64
+      "h": 64,
+      "meanColor": [
+        163.885,
+        141.4,
+        94.463
+      ]
     },
     "abandoned": {
       "x": 256,
       "y": 192,
       "w": 64,
-      "h": 64
+      "h": 64,
+      "meanColor": [
+        104.216,
+        103.155,
+        95.994
+      ]
     },
     "concrete": {
       "x": 320,
       "y": 192,
       "w": 64,
-      "h": 64
+      "h": 64,
+      "meanColor": [
+        178.014,
+        176.014,
+        164.014
+      ]
     },
     "metal": {
       "x": 384,
       "y": 192,
       "w": 64,
-      "h": 64
+      "h": 64,
+      "meanColor": [
+        159.993,
+        161.993,
+        157.993
+      ]
     },
     "zone.military": {
       "x": 448,
       "y": 192,
       "w": 64,
-      "h": 64
+      "h": 64,
+      "meanColor": [
+        111.408,
+        123.698,
+        79.208
+      ]
     },
     "zone.airport": {
       "x": 0,
       "y": 256,
       "w": 64,
-      "h": 64
+      "h": 64,
+      "meanColor": [
+        99.856,
+        104.448,
+        101.203
+      ]
     },
     "zone.seaport": {
       "x": 64,
       "y": 256,
       "w": 64,
-      "h": 64
+      "h": 64,
+      "meanColor": [
+        164.953,
+        171.835,
+        163.16
+      ]
     },
     "facility.police": {
       "x": 128,
       "y": 256,
       "w": 64,
-      "h": 64
+      "h": 64,
+      "meanColor": [
+        95.417,
+        117.091,
+        160.333
+      ]
     },
     "facility.fire": {
       "x": 192,
       "y": 256,
       "w": 64,
-      "h": 64
+      "h": 64,
+      "meanColor": [
+        187.017,
+        103.164,
+        89.113
+      ]
     },
     "facility.school": {
       "x": 256,
       "y": 256,
       "w": 64,
-      "h": 64
+      "h": 64,
+      "meanColor": [
+        204.428,
+        204.288,
+        204.007
+      ]
     },
     "facility.clinic": {
       "x": 320,
       "y": 256,
       "w": 64,
-      "h": 64
+      "h": 64,
+      "meanColor": [
+        200.53,
+        201.411,
+        194.939
+      ]
     },
     "facility.coal": {
       "x": 384,
       "y": 256,
       "w": 64,
-      "h": 64
+      "h": 64,
+      "meanColor": [
+        111.366,
+        109.998,
+        103.522
+      ]
     },
     "facility.wind": {
       "x": 448,
       "y": 256,
       "w": 64,
-      "h": 64
+      "h": 64,
+      "meanColor": [
+        225.442,
+        225.689,
+        216.432
+      ]
     },
     "facility.nuclear": {
       "x": 0,
       "y": 320,
       "w": 64,
-      "h": 64
+      "h": 64,
+      "meanColor": [
+        182.553,
+        181.31,
+        167.383
+      ]
     },
     "facility.solar": {
       "x": 64,
       "y": 320,
       "w": 64,
-      "h": 64
+      "h": 64,
+      "meanColor": [
+        135.293,
+        166.613,
+        186.691
+      ]
     },
     "facility.tower": {
       "x": 128,
       "y": 320,
       "w": 64,
-      "h": 64
+      "h": 64,
+      "meanColor": [
+        86.862,
+        131.26,
+        144.553
+      ]
     },
     "facility.pump": {
       "x": 192,
       "y": 320,
       "w": 64,
-      "h": 64
+      "h": 64,
+      "meanColor": [
+        83.013,
+        134.752,
+        150.616
+      ]
     },
     "facility.station": {
       "x": 256,
       "y": 320,
       "w": 64,
-      "h": 64
+      "h": 64,
+      "meanColor": [
+        92.158,
+        86.613,
+        74.528
+      ]
     },
     "canopy.blossom": {
       "x": 320,
       "y": 320,
       "w": 64,
-      "h": 64
+      "h": 64,
+      "meanColor": [
+        239.763,
+        197.977,
+        197.977
+      ]
     },
     "canopy.winter": {
       "x": 384,
       "y": 320,
       "w": 64,
-      "h": 64
+      "h": 64,
+      "meanColor": [
+        174.955,
+        178.358,
+        175.138
+      ]
     },
     "roof.deck": {
       "x": 448,
       "y": 320,
       "w": 64,
-      "h": 64
+      "h": 64,
+      "meanColor": [
+        85.989,
+        83.989,
+        81.989
+      ]
     }
   },
   "materials": {
@@ -471,16 +784,20 @@
     "tree.winter": {
       "top": "canopy.winter",
       "side": "canopy.winter"
+    },
+    "roof.dark": {
+      "top": "roof.dark",
+      "side": "roof.dark"
     }
   },
   "license": "MIT",
   "source": "original",
-  "authoredAt": "2026-08-24T00:00:00.000Z",
+  "authoredAt": "2026-09-11T00:00:00.000Z",
   "author": "AI System 6",
   "notes": [
     "Original micro-voxel texture art painted from project-owned recipes with deterministic hash noise; no pixels copied, traced, sampled, or converted from any external game or artwork.",
-    "The generator has no network path and reads only the checked-in source recipe.",
-    "The atlas is a 512x512 power of two of 64px tiles so the three.js renderer can mipmap it for Retina and mobile GPUs.",
-    "Wall tiles are tint-neutral greys the renderer multiplies an instance colour into; alpha 0 marks glass, which a shader uniform lights, so .night wall tiles equal their .day twins."
+    "The generator has no network path and reads only checked-in original recipes and the reviewed generated material plate.",
+    "The atlas is a 512x512 power of two of 64px tiles; half-texel UV insets and no cross-tile mipmaps prevent neighbouring materials bleeding.",
+    "Wall tiles are tint-neutral greys the renderer multiplies an instance colour into; the independent linear mask marks glass and night emission, which shader uniforms light, so .night wall tiles equal their .day twins."
   ]
 }

@@ -151,4 +151,43 @@ test.assertMatches(
   "restoring a notification is tolerant of an older record with no key (it keeps its frozen rendered text)"
 );
 
+// --- The button beside the message froze the same way ------------------------
+//
+// The message redrew from its key while `actionLabel` still held the string
+// rendered at push time: a writing-bell notification pushed in English and
+// then read in Chinese drew the Chinese sentence beside an English "Back".
+// The label follows the message exactly -- a key drawn at DRAW time, the
+// stored rendered label kept only as the fallback for a record that predates
+// the field, and t("open") as the last resort for a message naming no label.
+test.assertIncludes(
+  persistenceSource,
+  "function renderSystemNotificationActionLabel(item)",
+  "the Notification Center owns one function that decides how a notification's button is labelled"
+);
+test.assertMatches(
+  persistenceSource,
+  /button\.textContent = renderSystemNotificationActionLabel\(item\);/,
+  "the rendered list labels the button through that function rather than reading the stored snapshot directly"
+);
+test.assertMatches(
+  persistenceSource,
+  /if \(item\?\.actionLabelKey && typeof t === "function"\) \{\s*\n\s*return t\(item\.actionLabelKey, \.\.\.\(item\.actionLabelArgs \|\| \[\]\)\);/,
+  "a label with a key is rendered in the language current at draw time"
+);
+test.assertMatches(
+  persistenceSource,
+  /actionLabelKey: item\.actionLabelKey \|\| "",\s*\n\s*actionLabelArgs: item\.actionLabelKey \? \(item\.actionLabelArgs \|\| \[\]\) : \[\],/,
+  "the durable record carries the label key + args, not only the rendered snapshot"
+);
+test.assertMatches(
+  persistenceSource,
+  /actionLabelKey: String\(item\?\.actionLabelKey \|\| ""\),\s*\n\s*actionLabelArgs: Array\.isArray\(item\?\.actionLabelArgs\) \? item\.actionLabelArgs : \[\],/,
+  "restoring is tolerant of an older record with no label key (it keeps its frozen rendered label)"
+);
+test.assertNotMatches(
+  persistenceSource,
+  /actionLabel: t\(/,
+  "no call site inside the Notification Center pre-renders a button label"
+);
+
 test.finish();

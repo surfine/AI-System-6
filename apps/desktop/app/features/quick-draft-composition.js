@@ -258,8 +258,13 @@ async function moveAdjustmentLayer(kind = "", direction = -1) {
   return next;
 }
 
+// Every darkroom verb ends here: a layer toggled or moved, a scope set, a
+// selection protected, an adjustment run. All six asked the draft's container
+// whether the paper was showing, and it stopped carrying that class when the
+// views moved windows -- so turning on Reader's Eye changed the stack and left
+// the page in front of the writer exactly as it was.
 function refreshQuickDraftPreviewIfOpen() {
-  if (refs.draft?.closest(".teachtext-editor-container")?.classList.contains("is-previewing")) {
+  if (quickDraftPreviewIsOpen()) {
     renderQuickDraftPreviewPane();
   }
 }
@@ -637,7 +642,7 @@ function buildCompositionPrompt({ sourceText = "", sentinels = [], layers = [] }
       ].filter(Boolean).join("\n\n");
 }
 
-async function compositionModelCall({ key, source, protectedText, sentinels, layers }) {
+async function compositionModelCall({ key, source, protectedText, sentinels, layers, signal }) {
   const prompt = buildCompositionPrompt({ sourceText: protectedText, sentinels, layers });
   const response = await fetchModelPayload({
     model: typeof getLocalModelRequestName === "function" ? getLocalModelRequestName() : (modelInput?.value?.trim() || ""),
@@ -646,7 +651,7 @@ async function compositionModelCall({ key, source, protectedText, sentinels, lay
     max_tokens: 5200,
     ai_system6_task_kind: "mingming_rewrite",
     stream: false,
-  }, requestController?.signal);
+  }, signal);
   if (!response.ok) {
     throw new Error(serviceErrorDetail(response.status, await response.text()));
   }
@@ -686,8 +691,7 @@ async function applyAdjustmentLayers() {
     refs.draft?.focus();
     return false;
   }
-  if (requestController) requestController.abort();
-  requestController = new AbortController();
+  const requestGuard = beginQuickDraftRequest();
   setBusy(true);
   setQuickDraftStatus(t("quick_draft_applying"));
   try {
@@ -707,7 +711,7 @@ async function applyAdjustmentLayers() {
       protectedRanges,
       cache: quickDraftCompositeCache,
       cacheContext,
-      runModel: compositionModelCall,
+      runModel: (args) => compositionModelCall({ ...args, signal: requestGuard.signal }),
     });
     quickDraftLastComposite = composed.text;
     quickDraftLastCompositeKey = composeCacheKey({
@@ -751,16 +755,17 @@ async function applyAdjustmentLayers() {
     window.AISystem6ModelUserErrors?.clearRetryable?.("quickDraft-adjustment");
     return true;
   } catch (error) {
-    if (error?.name !== "AbortError") {
+    const timedOut = quickDraftRequestTimedOut(error, requestGuard);
+    if (error?.name !== "AbortError" || timedOut) {
       if (error?.code === "PROTECTED_RANGE_VIOLATION") {
         setQuickDraftStatus(t("quick_draft_protect_failed", quickDraftFailureMessage(error)));
       } else {
-        presentQuickDraftModelFailure(error);
+        presentQuickDraftModelFailure(error, timedOut ? { timeout: true } : {});
       }
     }
     return false;
   } finally {
-    requestController = null;
+    settleQuickDraftRequest(requestGuard);
     setBusy(false);
   }
 }
@@ -1503,6 +1508,7 @@ window.AISystem6QuickDraftComposition = Object.freeze({
   developAdjustmentLayers,
   grainVersionChain,
   hasRecordedNegative,
+  modelProtectedRanges,
   notePasteLineShift,
   protectSelectionFromTextarea,
   protectedRangesSnapshot,

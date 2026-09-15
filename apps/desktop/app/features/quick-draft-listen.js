@@ -783,8 +783,7 @@ async function requestEli5FixOne(index) {
   const problem = finding.kind === "review"
     ? `${quickDraftFindingTypeLabel(finding.type)}：${finding.why || finding.change || ""}`
     : t("quick_draft_finding_lost_label");
-  if (requestController) requestController.abort();
-  requestController = new AbortController();
+  const requestGuard = beginQuickDraftRequest();
   setBusy(true);
   setQuickDraftStatus(t("quick_draft_finding_fixing"));
   try {
@@ -806,7 +805,7 @@ async function requestEli5FixOne(index) {
       max_tokens: 800,
       ai_system6_task_kind: "writing.eli5-rewrite",
       stream: false,
-    }, requestController.signal);
+    }, requestGuard.signal);
     if (!response.ok) throw new Error(serviceErrorDetail(response.status, await response.text()));
     const result = await response.json().catch(() => ({}));
     const candidate = cleanMingmingQuickDraftBody(String(result?.choices?.[0]?.message?.content || "").trim());
@@ -845,10 +844,13 @@ async function requestEli5FixOne(index) {
     setQuickDraftStatus(t("quick_draft_finding_fix_ready"));
     return true;
   } catch (error) {
-    if (error?.name !== "AbortError") presentQuickDraftModelFailure(error);
+    const timedOut = quickDraftRequestTimedOut(error, requestGuard);
+    if (error?.name !== "AbortError" || timedOut) {
+      presentQuickDraftModelFailure(error, timedOut ? { timeout: true } : {});
+    }
     return false;
   } finally {
-    requestController = null;
+    settleQuickDraftRequest(requestGuard);
     setBusy(false);
   }
 }

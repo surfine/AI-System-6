@@ -25,6 +25,18 @@ written from public, non-copyrightable ideas and first principles.
 
 ## Decisions
 
+- **2026-09-11 — Original generated material remaster authorized (owner directive).**
+  Original artwork made with the subscription's built-in `image_gen.imagegen`
+  tool is permitted as checked-in authoring input. The tool does not expose an
+  exact model version; GPT Image 2.5 was requested but is not claimed as verified.
+  Keep the original image, prompt, tool identification, unknown model status and
+  SHA-256 with the provenance record. Offline deterministic builds combine that
+  artwork with project-owned semantic recipes and shared geometry to produce
+  four-direction sprites, 48 colour texture tiles and independent material masks.
+  Ordinary builds have no image-generation network dependency. This supplements
+  the earlier hand-authored workflow; all existing prohibitions on copied,
+  traced or extracted game expression remain in force.
+
 - **2026-09-03 — Two-way save interop authorized (owner directive).** The
   owner chose bidirectional lossy conversion between Bonsai City and the
   separate Micropolis game, with a "what was lost" report on every
@@ -51,7 +63,7 @@ written from public, non-copyrightable ideas and first principles.
   values and measurements carry no copyrightable expression; what does —
   sprites, tiles, pixel art, traced outlines, screenshots shipped as
   assets, sounds, copy, brand assets, converted data — remains fully
-  prohibited, and every finished piece stays our own hand-made work
+  prohibited, and every finished piece stays our own original work (hand-authored at that stage)
   registered in the provenance manifest. Reading a player's installed copy
   at runtime (the DOOM local-IWAD pattern applied to art) is *not* part of
   this decision and would need its own amendment.
@@ -86,8 +98,10 @@ written from public, non-copyrightable ideas and first principles.
 - The four-direction Canvas sprite atlases are registered at
   `assets/bonsai/provenance.json` (author, date, tool, MIT license,
   `source: original`); `tooling/build-bonsai-atlas.mjs` regenerates them from
-  the hand-authored project JSON description and never reads an external art
-  source. Generated PNGs are outputs, not authoring sources.
+  project-owned JSON descriptions, shared geometry and registered original
+  generated material artwork. Rendered atlas PNGs are build outputs; the saved
+  generated material plate is an authoring source with its own provenance.
+  Neither generator reads or extracts art from an external game.
 
 ## Naming
 

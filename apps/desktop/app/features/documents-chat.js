@@ -1361,7 +1361,7 @@ function activeChatArtifactContext() {
   return { file, lineage };
 }
 
-function saveClioTalkArtifact(kind, name, body) {
+async function saveClioTalkArtifact(kind, name, body) {
   if (!getActiveProject()) return null;
   const folder = ensureFolder(t("clio_records_folder"));
   const now = new Date().toISOString();
@@ -1379,14 +1379,18 @@ function saveClioTalkArtifact(kind, name, body) {
   };
   chatFiles.unshift(file);
   selectedChatFileId = file.id;
-  saveDeskState();
+  const saved = await saveDeskState();
   renderDocuments();
   openTextFile(file.id);
-  setStatus(t("clio_artifact_saved", file.name));
+  // The record exists in this window either way, so it stays selected and
+  // open. What must not be said either way is "saved": a refused desk write
+  // -- no lease, desk never loaded -- is exactly what System Integrity
+  // forbids reporting as a save.
+  setStatus(saved ? t("clio_artifact_saved", file.name) : t("clio_artifact_saved_unsaved", file.name));
   return file;
 }
 
-function saveClioTalkHarness() {
+async function saveClioTalkHarness() {
   const context = activeChatArtifactContext();
   if (!context) return null;
   const { file } = context;
@@ -1413,7 +1417,7 @@ function saveClioTalkHarness() {
       "",
     ]),
   ].join("\n").trim();
-  const draft = saveClioTalkArtifact("task-config-draft", `${file.name} Task Config Draft`, body);
+  const draft = await saveClioTalkArtifact("task-config-draft", `${file.name} Task Config Draft`, body);
   if (draft) draft.taskConfigStatus = "draft";
   return draft;
 }
@@ -1554,7 +1558,7 @@ async function acceptSelectedTeachTextModificationSuggestion() {
   if (suggestion.runRecordId) {
     window.AISystem6RunReceipts?.recordUserAction?.(suggestion.runRecordId, { action: "accept", finalBodyHash: newHash });
   }
-  const receipt = saveClioTalkArtifact("teachtext-modification-acceptance-receipt", `${target.name} ${currentLanguage === "zh" ? "修改接受记录" : "Modification Acceptance Receipt"}`, `Target file ID: ${target.id}\nOld hash: ${oldHash}\nNew hash: ${newHash}\nSuggestion ID: ${file.id}\nRun record ID: ${suggestion.runRecordId || ""}`);
+  const receipt = await saveClioTalkArtifact("teachtext-modification-acceptance-receipt", `${target.name} ${currentLanguage === "zh" ? "修改接受记录" : "Modification Acceptance Receipt"}`, `Target file ID: ${target.id}\nOld hash: ${oldHash}\nNew hash: ${newHash}\nSuggestion ID: ${file.id}\nRun record ID: ${suggestion.runRecordId || ""}`);
   if (receipt) suggestion.acceptanceRunRecordId = receipt.id;
   saveDeskState(); renderDocuments(); renderProjectDisks(); return true;
 }
@@ -1654,7 +1658,7 @@ function createTaskConfigFromSelectedDraft() {
   chatFiles.unshift(file); saveDeskState(); renderDocuments(); renderProjectDisks(); return file;
 }
 
-function saveClioTalkSkillDraft() {
+async function saveClioTalkSkillDraft() {
   const context = activeChatArtifactContext();
   if (!context) return null;
   const { file } = context;
@@ -1934,7 +1938,7 @@ function toggleSelectedProjectSkill() {
   saveDeskState(); renderDocuments(); renderProjectDisks(); return true;
 }
 
-function saveClioTalkRetrospective() {
+async function saveClioTalkRetrospective() {
   const context = activeChatArtifactContext();
   if (!context) return null;
   const { file, lineage } = context;
@@ -1964,7 +1968,7 @@ function saveClioTalkRetrospective() {
     "- What should become a reusable Skill:",
     "- Next action:",
   ].join("\n").trim();
-  const retrospective = saveClioTalkArtifact("retrospective", `${file.name} ${t("clio_retrospective")}`, body);
+  const retrospective = await saveClioTalkArtifact("retrospective", `${file.name} ${t("clio_retrospective")}`, body);
   if (retrospective) {
     retrospective.sourceChatId = file.id;
     retrospective.sourceMessageIds = file.messages.map((item) => item.id).filter(Boolean);
@@ -1989,7 +1993,7 @@ async function createSkillDraftFromSelectedRetrospective() {
     ? `根据“${file.name}”制作 Skill 草稿？不会自动安装或启用。`
     : `Create a Skill draft from “${file.name}”? It will not be installed or enabled automatically.`, "confirm");
   if (confirmed !== "yes") return null;
-  const draft = saveClioTalkArtifact("skill-draft", `${file.name} Skill Draft`, [
+  const draft = await saveClioTalkArtifact("skill-draft", `${file.name} Skill Draft`, [
     `# ${file.name} Skill Draft`, "", "## Source retrospective", `- ${file.id}`, "", "## Reusable workflow", file.body || "",
   ].join("\n"));
   if (draft) {

@@ -462,6 +462,7 @@ function ensureInfoRunReceiptBlock() {
 }
 
 function runReceiptInfoAppLabel(sourceAppId, record) {
+  if (String(sourceAppId || "").startsWith("guest:")) return t("guest_receipt_label", String(sourceAppId).slice("guest:".length));
   if (sourceAppId) return String(sourceAppId);
   if (record?.sourceChatId || record?.sourceMessageId) return "ClioTalk";
   return "—";

@@ -47,10 +47,18 @@ export const WORKING_THEMES = ["classic", "liquid-glass"];
 // The city games' HUD promise: the palette column plus gauge bar, at desktop
 // size, in the two appearances with pixel-reproducible surfaces. The map
 // itself is not the promise (not reproducible across GPUs), so the frame is
-// clipped to the left 220px and top 60px. Fixed seed, paused.
+// clipped to the left 140px, down the whole window: that column is the
+// palette and the gauge sits at its foot, and 140 is narrow enough that no
+// map pixel enters either game's cell. Fixed seed, paused.
+//
+// The two numbers are the SIZE of that corner, measured from the window's
+// top-left. They were once named left/top, and the capture read them as an
+// offset -- so both cells photographed a 220x60 rectangle of the map, the one
+// thing the sentence above says is not reproducible. Named for what they are,
+// the mistake cannot be repeated.
 export const GAME_THEMES = ["classic", "liquid-glass"];
 export const GAME_WINDOWS = ["micropolis", "bonsaiCity"];
-export const GAME_CLIP = { left: 220, top: 60 };
+export const GAME_CLIP = { width: 140, height: null };
 
 export const WIDTHS = [
   { id: "phone", width: 375, height: 812 },
@@ -103,7 +111,7 @@ const EXCLUDED_WORKING_CELLS = new Set([
 // the material itself stays unverified by design), while the working tier's
 // phone/tablet route cells and the showcase keep pixel coverage of the glass.
 export const CONTROL_THEMES = ["classic"];
-export const CONTROL_WINDOWS = ["control", "themeLab"];
+export const CONTROL_WINDOWS = ["control", "themeLab", "chooser"];
 
 // The appearances the pixel net no longer renders in the controls tier; the
 // token-table check owns their per-appearance layout and token material. The
@@ -114,7 +122,7 @@ export const TOKEN_COMPARED_THEMES = [
   "liquid-glass",
 ];
 
-/** Every cell in the promised matrix: 5 showcase + 25 working + 2 controls + 4 games = 36. */
+/** Every cell in the promised matrix: 5 showcase + 25 working + 3 controls + 4 games = 37. */
 export function snapshotCells() {
   const cells = [];
   for (const theme of SHOWCASE_PIXEL_THEMES) {

@@ -190,6 +190,45 @@ const spriteSoundRelayFix = {
   },
 };
 
+// Two ports left their callers behind, and each one silently zeroes a number
+// the game is meant to be played against.
+//
+// position.ts dropped the copy constructor `new Position(otherPosition)`, but
+// traffic.js still calls it, so the driving position becomes {x: a Position,
+// y: undefined}: every neighbour lookup falls back to DIRT, no direction is
+// ever driveable, no route is ever found, and the traffic density map stays
+// empty for the life of the city. The same function then drives from `pos`,
+// an identifier that exists in no scope there — harmless only because the
+// line above it already guaranteed the loop gives up first.
+const trafficPositionFix = {
+  name: "traffic-position-fix",
+  setup(buildContext) {
+    buildContext.onLoad({ filter: /[\\/]src[\\/]traffic\.js$/ }, async (args) => {
+      let source = await readFile(args.path, "utf8");
+      source = exactReplace("traffic.js", source, "var drivePos = new Position(startPos);", "var drivePos = new Position(startPos.x, startPos.y);");
+      source = exactReplace("traffic.js", source, "drivePos = Position.move(pos, dir);", "drivePos = Position.move(drivePos, dir);");
+      source = exactReplace("traffic.js", source, "this._stack.push(new Position(drivePos));", "this._stack.push(new Position(drivePos.x, drivePos.y));");
+      return { contents: source, loader: "js" };
+    });
+  },
+};
+
+// blockMap.ts names the town's own dimensions gameMapWidth/gameMapHeight, but
+// crimeScan still reads mapWidth/mapHeight. Both are undefined, so the scan's
+// loop bound is undefined, the loop body never runs, and census.crimeAverage
+// is zero in every city ever simulated — police stations included.
+const crimeScanBoundsFix = {
+  name: "crime-scan-bounds-fix",
+  setup(buildContext) {
+    buildContext.onLoad({ filter: /[\\/]src[\\/]blockMapUtils\.js$/ }, async (args) => {
+      let source = await readFile(args.path, "utf8");
+      source = exactReplace("blockMapUtils.js", source, "width = crimeRateMap.mapWidth,", "width = crimeRateMap.gameMapWidth,");
+      source = exactReplace("blockMapUtils.js", source, "height = crimeRateMap.mapHeight,", "height = crimeRateMap.gameMapHeight,");
+      return { contents: source, loader: "js" };
+    });
+  },
+};
+
 mkdirSync(outputDir, { recursive: true });
 const result = await build({
   entryPoints: [join(toolingRoot, "vendor", "micropolis-engine-entry.mjs")],
@@ -211,6 +250,8 @@ const result = await build({
     censusBudgetScopeFix,
     seedableRandomFix,
     spriteSoundRelayFix,
+    trafficPositionFix,
+    crimeScanBoundsFix,
   ],
   metafile: true,
 });
@@ -261,6 +302,16 @@ writeFileSync(
 - Sound relay (AI System 6): spriteManager.js relays the sprite sound cues
   (explosion, honk, monster, heavy traffic) to the manager's listeners, so
   the shell's synthesized audio can hear them.
+- Bug fix (AI System 6): traffic.js calls the copy constructor
+  \`new Position(otherPosition)\` that position.ts no longer has, and drives
+  from an undeclared \`pos\`; the driving position was never a real position,
+  so no route was ever found and the traffic density map stayed empty for the
+  life of every city. Patched to copy by coordinate and to drive from
+  \`drivePos\` at bundle time.
+- Bug fix (AI System 6): blockMapUtils.js crimeScan reads \`mapWidth\`/
+  \`mapHeight\` off a BlockMap, which names them \`gameMapWidth\`/
+  \`gameMapHeight\`; the loop bound was undefined, so the scan never ran and
+  \`census.crimeAverage\` was zero in every city. Patched at bundle time.
 - License: GNU GPL v3 with additional terms — see LICENSE and COPYING here.
 - The name/term "MICROPOLIS" is a registered trademark of Micropolis GmbH,
   licensed to the Micropolis project as a courtesy of the owner.

@@ -192,7 +192,7 @@ test.assertMatches(foundation, /\.balloon-help\[data-side="left"\]::before[\s\S]
 test.assertMatches(foundation, /\.menu-sub-popover \{\s*z-index: var\(--z-system-menu-subpopover\)/, "menu sub-popovers keep their own system layer");
 test.assertMatches(foundation, /\.balloon-help \{\s*z-index: var\(--z-balloon-help\)/, "balloons use a dedicated layer above modal dialogs");
 test.assertIncludes(foundation, "body.is-balloon-help [data-balloon-help]", "help mode gives eligible objects a visible pointer affordance");
-test.assertIncludes(liquid, "--balloon-help-radius: 18px", "Liquid Glass changes balloon material through tokens");
+test.assertIncludes(liquid, "--balloon-help-radius: var(--r-lg)", "Liquid Glass changes balloon material through tokens");
 test.assertNotIncludes(liquid, "body.use-liquid-glass .balloon-help", "Liquid Glass does not fork the Balloon Help DOM or selector");
 
 test.finish();

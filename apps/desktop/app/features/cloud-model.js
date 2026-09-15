@@ -35,14 +35,13 @@
     deepseek: DEEPSEEK_BASE_URL,
   };
   // Sentinel the server resolves per task: heavy analysis runs on V4 Pro,
-  // everything else on V4 Flash. Kept out of the model list itself so
+  // everything else on Flash. Kept out of the model list itself so
   // /api/cloud/models keeps describing real models.
   const AUTO_CLOUD_MODEL_ID = "auto";
   const BUILTIN_PROVIDER_MODELS = {
     deepseek: [
-      { id: "deepseek-v4-flash", name: "DeepSeek V4 Flash", context_length: 1000000 },
+      { id: "deepseek-flash", name: "DeepSeek Flash", context_length: 1000000, vision: true },
       { id: "deepseek-v4-pro", name: "DeepSeek V4 Pro", context_length: 1000000 },
-      { id: "deepseek-v4-flash-vision-exp", name: "DeepSeek V4 Flash Vision (experimental)", context_length: 1000000, vision: true },
     ],
   };
 
@@ -71,7 +70,10 @@
   }
 
   function setCloudModelControlValue(value) {
-    const nextValue = String(value || "");
+    const saved = String(value || "");
+    // A Control Panel saved before the rename shows the id DeepSeek publishes.
+    const nextValue = /^(?:deepseek-)?v4-flash(?:-vision-exp)?$/i.test(saved) ? "deepseek-flash" : saved;
+    if (cloudConfig && nextValue && cloudConfig.model !== nextValue) cloudConfig.model = nextValue;
     if (cloudModelEl) cloudModelEl.value = nextValue;
     if (cloudModelSelectEl) {
       if (nextValue && ![...cloudModelSelectEl.options].some((option) => option.value === nextValue)) {
@@ -753,6 +755,10 @@
 
   async function connectWebsiteAi() {
     if (!publicSharedCloudAvailable) {
+      // The Mac app reaches the same allowance through the website instead of
+      // serving it itself, so "this host has no shared allowance" is the one
+      // case that still has a next step rather than a dead end.
+      if (await connectSharedWebsiteFallback()) return true;
       setSimpleAiStatus("website_ai_unavailable", "Website AI is unavailable.");
       if (ownKeyDetails) ownKeyDetails.open = true;
       return false;
@@ -964,15 +970,38 @@
     return true;
   }
 
+  // A fresh desk connects itself to the site's shared allowance over the bridge
+  // the Control Panel already offers as "Use Website AI" — the session, the
+  // one-time verification and the shared-remote mode all existed; nothing used
+  // them until somebody found the button, so a new install met "Model not
+  // connected" on its first screen. Anything the writer chose wins over this.
+  let sharedDefaultAttempted = false;
+
+  function connectSharedAiOnFirstRun(capabilities) {
+    const target = String(capabilities?.deployment_target || document.documentElement.dataset.deploymentTarget || "static");
+    // Only the macOS shell: /api/mac-shared/session belongs to it, and asking
+    // from a browser leaves a 404 in a console the release walk requires clean.
+    if (sharedDefaultAttempted || target !== "mac") return false;
+    if ((clioProviderPreference && clioProviderPreference !== "auto")
+      || cloudRuntimeApiKey || cloudConfig?.credentialId || cloudConfig?.active
+      || localModelState?.ready || localModelState?.loaded) return false;
+    sharedDefaultAttempted = true;
+    connectSharedWebsiteFallback().then(function (ready) {
+      if (!ready) setSimpleAiStatus("website_ai_unavailable", "Website AI is unavailable. Use your own API key or a local model.");
+    }).catch(function () {
+      setSimpleAiStatus("website_ai_unavailable", "Website AI is unavailable. Use your own API key or a local model.");
+    });
+    return true;
+  }
+
   window.AISystem6PublicAccess?.getCapabilities?.().then(function (capabilities) {
     setPublicSharedCloudAvailable(capabilities?.features?.cloud_shared === true);
-    enableWebsiteAiByDefault();
+    const connected = enableWebsiteAiByDefault();
     updateCheckButtonState();
     window.syncCloudCredentialUi();
+    if (!connected) connectSharedAiOnFirstRun(capabilities);
   });
 
-  // Named entry points for the rest of the desk. Start Here connects and reads
-  // the settled result here instead of clicking a Control Panel control.
   window.AISystem6CloudModel = Object.freeze({
     connectWebsiteAi,
     connectSharedWebsiteFallback,

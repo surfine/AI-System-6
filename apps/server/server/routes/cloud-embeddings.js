@@ -30,9 +30,9 @@ const { postJsonWithFallback } = require("../lib/fetch.js");
 const { getLocalUrls } = require("../lib/local-urls.js");
 const {
   cloudAuthHeaders,
-  DEEPSEEK_CLOUD_MODELS,
   DEEPSEEK_BASE_URL_DEFAULT,
   DEEPSEEK_PUBLIC_BASE_URL,
+  isDeepSeekCloudModelId,
   resolveCloudTarget,
 } = require("../cloud.js");
 const { isPublicDeployment } = require("../runtime-profile.js");
@@ -85,7 +85,7 @@ async function handleCloudEmbeddings(req, res) {
     }
     if (
       isPublicDeployment
-      && !new Set(DEEPSEEK_CLOUD_MODELS.map((item) => item.id)).has(payload.model)
+      && !isDeepSeekCloudModelId(payload.model)
     ) {
       send(res, 400, JSON.stringify({
         error: "Unsupported public cloud model",

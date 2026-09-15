@@ -11,6 +11,7 @@ const {
   deploymentProfile,
   deploymentTarget,
   isPublicDeployment,
+  publicGuestBridgeEnabled,
 } = require("../runtime-profile.js");
 const {
   publicReadiness,
@@ -50,6 +51,14 @@ function handleCapabilities(_req, res) {
     deployment_profile: deploymentProfile,
     deployment_target: deploymentTarget,
     public_deployment: isPublicDeployment,
+    // Where an agent connects. The page shows this in Chooser as the exact
+    // line to paste, so the port is never a guess.
+    mcp: {
+      served: !isPublicDeployment || publicGuestBridgeEnabled,
+      endpoint: "/mcp",
+      transport: "streamable-http",
+      invitation_required: isPublicDeployment,
+    },
     public_access: {
       turnstile_required: isPublicDeployment,
       turnstile_site_key: isPublicDeployment
@@ -86,6 +95,9 @@ function handleCapabilities(_req, res) {
       endfield_search: true,
       endfield_ask: true,
       bureaucracy_captions: true,
+      // The guest bridge: always on this Mac, opt-in on the public
+      // deployment. The page reads this before it subscribes as an executor.
+      guest_bridge: !isPublicDeployment || publicGuestBridgeEnabled,
       local_models: !isPublicDeployment,
       local_vision: !isPublicDeployment,
       // Cloud vision rides the same BYOK / shared-allowance path as chat, so

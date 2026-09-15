@@ -2425,6 +2425,91 @@ so the base is where the state
   }
 }
 
+/* Touch. The Lab's own chrome has to clear a finger; its specimens must not.
+   Every rule below names an operating attribute or a lab-furniture class --
+   the elements the window's own click and input delegation actually reads --
+   so no rule can catch a specimen by accident. A checkbox drawn at 13px, the
+   size ladder's mini button, the menu and dialog fixtures, and the Finder
+   cells inside an object card are exhibits: growing one would falsify the
+   measurement the Lab exists to make, and the four-state cells are already
+   `cursor: default` because nothing listens to them.
+
+   Touch, not narrow, is the right test here. An iPad in landscape is
+   1180x820, which no width rule calls a phone, and it is still run with a
+   finger. A Mac never matches -- nothing Apple ships for one reports a coarse
+   primary pointer -- so the desk, and with it every Theme Lab snapshot and
+   fidelity capture, is left exactly as it was. */
+@media (hover: none) and (pointer: coarse) {
+  .theme-lab-era-switch {
+    /* The narrowest gap on the axis. At the smallest supported width the six
+       era marks land 93, 26, 60, 42 and 103 apart, so 26 is the widest a
+       target can be and still belong to one era: anything wider would cover
+       1999 with 2002 and make Platinum unreachable. It clears WCAG 2.2's
+       24px minimum; the 44px rail above is the finger-sized way in. */
+    --theme-lab-era-hit: 26px;
+  }
+
+  /* The rail is the primary era control -- a tap anywhere along it travels to
+     the nearest era. Only the box grows; the 4px track and the 13px thumb
+     keep the metrics the axis comment reasons about, which is the same rule
+     the title-bar controls follow. */
+  .theme-lab-era-range {
+    height: 44px;
+  }
+
+  .theme-lab-era-ticks {
+    height: 44px;
+    /* 18px is the rail on the desk, and the track stays centred in whatever
+       box the input is given, so half of the 26px of growth lands underneath
+       it. Pull that half back and the marks keep exactly the distance from
+       the track they have on a Mac -- the rail and its scale still read as
+       one object rather than two stacked rows. */
+    margin-top: calc((18px - 44px) / 2);
+  }
+
+  /* The mark stays 1x5 at its true year. `align-content: start` holds it and
+     its label at the top of the taller box, so the axis is drawn exactly as
+     it is on the desk and only the invisible target around it changes. */
+  .theme-lab-era-tick {
+    min-width: var(--theme-lab-era-hit);
+    min-height: 44px;
+    align-content: start;
+  }
+
+  /* The rail's own metrics are already a token API, so the finger size is one
+     value rather than a rule that fights the shipping tab. */
+  .theme-lab-panel-tabs {
+    --tab-min-height: 44px;
+  }
+
+  .theme-lab-object-inspect {
+    min-height: 44px;
+  }
+
+  /* Each of these carries its section, not just its own name. The shared
+     field rule reaches the search box as `input[type="search"]`, which
+     out-ranks a lone class however late this sheet loads; naming the desk it
+     sits in settles it without borrowing weight it has not earned. */
+  .theme-lab-token-filters .system-select-button,
+  .theme-lab-token-filters .theme-lab-token-search,
+  .theme-lab-token-editor input,
+  .theme-lab-desk-actions .btn {
+    min-height: 44px;
+  }
+}
+
+/* Narrow. The object inspector's appearance rows are grid items, so they kept
+   `min-width: auto` and were sized by the widest zoom figure instead of by
+   their track: 510px of ladder inside a 355px pane, running off the right of
+   a page that must never scroll sideways. The ladder already declares
+   `overflow-x: auto`; it could not use it until the row above agreed to
+   shrink. Same figure as the Finder fixture's own lane a few rules up. */
+@media (max-width: 860px), (hover: none) and (pointer: coarse) and (max-height: 660px) {
+  .theme-lab-object-appearance {
+    min-width: 0;
+  }
+}
+
 /* Snow Leopard era-specific Finder specimens (dev-only Theme Lab fixtures).
    The blocks stay hidden outside the snow-leopard research appearance so the
    shared fixture DOM remains the single object grammar for every other era.

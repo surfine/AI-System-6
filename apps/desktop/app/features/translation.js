@@ -555,7 +555,7 @@ ${body}`;
         sourceAppId: "reviewDesk",
         intent: sectionOnly ? "style-check-section" : "style-check",
         provider: (typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudConfig.provider && typeof cloudCredentialReady === "function" && cloudCredentialReady()) ? "cloud" : "local",
-        model: typeof getLocalModelRequestName === "function" ? getLocalModelRequestName() : "",
+        model: window.AISystem6RunReceipts?.servedModelFromResponse?.(data) || "",
         answerText: content,
       });
       if (recorded?.receiptId) window.AISystem6RunReceipts?.recordUserAction?.(recorded.receiptId, { action: "accept" });

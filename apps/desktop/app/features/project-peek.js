@@ -40,6 +40,7 @@ function installProjectPeekWindow() {
           <p class="hint project-peek-provenance" id="project-peek-provenance" hidden></p>
           <textarea id="project-peek-body" class="project-peek-body" rows="8" readonly hidden></textarea>
           <div class="button-row">
+            <button class="btn" type="button" id="project-peek-all">All Projects</button>
             <span class="spacer"></span>
             <button class="btn default" type="button" id="project-peek-mount" data-action="project-peek-mount">Mount</button>
           </div>`,
@@ -69,6 +70,7 @@ function projectPeekFields() {
     body: root.querySelector("#project-peek-body"),
     provenance: root.querySelector("#project-peek-provenance"),
     mount: root.querySelector("#project-peek-mount"),
+    all: root.querySelector("#project-peek-all"),
   };
   return projectPeekParts.pane ? projectPeekParts : null;
 }
@@ -131,9 +133,47 @@ function selectedPeekFile() {
   return files.find((entry) => entry.id === peekedFileId) || files[0] || null;
 }
 
+// The overview counts what is filed where, and it is the same four arrays the
+// disk list reads, so the two can never disagree. Counted on every render rather
+// than kept anywhere: a number stored beside the arrays would be a second copy
+// of the statistics, and a second copy is one that can be wrong. Each array is
+// guarded the way peekedProjectFiles() guards them — they are optional globals.
+function projectOverviewItemCount(projectId) {
+  let count = 0;
+  for (const file of chatFiles) {
+    if (file.projectId === projectId) count += 1;
+  }
+  for (const scrap of typeof scraps !== "undefined" ? scraps : []) {
+    if (scrap.projectId === projectId) count += 1;
+  }
+  for (const reference of typeof projectReferences !== "undefined" ? projectReferences : []) {
+    if (reference.projectId === projectId) count += 1;
+  }
+  for (const item of typeof projectCdItems !== "undefined" ? projectCdItems : []) {
+    if (item.projectId === projectId) count += 1;
+  }
+  return count;
+}
+
+// A project's tasks are a plain object of records hanging off the project. The
+// only thing the overview says about them is how many are done, so no schedule,
+// no percentage and no next step is derived from them here — or anywhere.
+function projectOverviewTaskCounts(project) {
+  const tasks = project?.clioProject?.tasks;
+  if (!tasks || typeof tasks !== "object") return null;
+  const records = Object.values(tasks);
+  if (!records.length) return null;
+  return { done: records.filter((task) => task?.done === true).length, total: records.length };
+}
+
 function renderProjectPeek() {
   const parts = projectPeekFields();
   if (!parts) return;
+  // Mode follows the same variable the click handlers set: no peeked project
+  // means there is nothing to look inside, so the window lists the projects
+  // themselves. One render, one function — the two modes differ in what they
+  // draw, never in who owns the window.
+  if (!peekedProjectId) return renderProjectOverview(parts);
   const project = peekedProject();
   const files = peekedProjectFiles();
   const file = selectedPeekFile();
@@ -192,6 +232,80 @@ function renderProjectPeek() {
     parts.provenance.hidden = !note;
   }
   parts.mount.textContent = project ? t("project_peek_mount", projectDisplayName(project)) : t("mount");
+  // The overview hides Mount because nothing is chosen there; coming back to a
+  // disk has to hand it over again, or the one door out of read-only stays shut.
+  parts.mount.hidden = false;
+  // The way back is offered only when there is somewhere to go back to: a
+  // one-project portfolio has no overview worth a button.
+  parts.all.textContent = t("project_peek_all_projects");
+  parts.all.hidden = projects.length <= 1;
+}
+
+// The overview: every project in the order the portfolio already has them, and
+// nothing about any of them but what is filed and what is done. No dates, no
+// percentages, no "next step" — those are judgements this window would have to
+// invent, and the read-only promise is easier to keep than to explain.
+function renderProjectOverview(parts) {
+  parts.title.textContent = t("project_overview");
+  parts.count.textContent = t("project_overview_count", projects.length);
+
+  parts.list.replaceChildren();
+  projects.forEach((project) => {
+    const row = document.createElement("li");
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "project-peek-row";
+    button.dataset.peekProject = project.id;
+    const name = document.createElement("b");
+    name.textContent = projectDisplayName(project);
+    const items = document.createElement("small");
+    items.textContent = t("project_overview_items", projectOverviewItemCount(project.id));
+    button.append(name, items);
+    const tasks = projectOverviewTaskCounts(project);
+    if (tasks) {
+      const done = document.createElement("small");
+      done.textContent = t("project_overview_tasks", tasks.done, tasks.total);
+      button.append(done);
+    }
+    if (project.id === activeProjectId && isProjectMounted) {
+      const mounted = document.createElement("small");
+      mounted.className = "project-peek-mounted";
+      mounted.textContent = t("project_overview_mounted");
+      button.append(mounted);
+    }
+    row.append(button);
+    parts.list.append(row);
+  });
+  parts.list.hidden = !projects.length;
+
+  // The text area, the provenance line and the Mount button belong to looking
+  // inside one disk. In the overview there is no disk chosen, so all three are
+  // hidden rather than emptied — an empty box would still be a surface.
+  parts.body.value = "";
+  parts.body.hidden = true;
+  if (parts.provenance) {
+    parts.provenance.textContent = "";
+    parts.provenance.hidden = true;
+  }
+  parts.mount.hidden = true;
+  parts.all.hidden = true;
+  parts.all.textContent = t("project_peek_all_projects");
+}
+
+async function openProjectOverview() {
+  peekedProjectId = "";
+  peekedFileId = "";
+  peekDarkroomVersions.clear();
+  await openWindow("projectPeek");
+  renderProjectPeek();
+}
+
+// Back to the overview. It writes no state beyond which of the two modes the
+// window is showing, which is the same state openProjectPeek() writes.
+function showProjectOverview() {
+  peekedProjectId = "";
+  peekedFileId = "";
+  renderProjectPeek();
 }
 
 async function openProjectPeek(projectId) {
@@ -241,6 +355,19 @@ function selectPeekFile(fileId) {
   renderProjectPeek();
 }
 
+// Choosing a project in the overview looks inside it — read-only, the same
+// thing openProjectPeek() does after its render. It does not mount and does not
+// switch: looking is not a decision, and mounting keeps its one door.
+async function selectOverviewProject(projectId) {
+  const project = projects.find((item) => item.id === projectId);
+  if (!project) return;
+  peekedProjectId = project.id;
+  peekedFileId = "";
+  peekDarkroomVersions.clear();
+  renderProjectPeek();
+  await collectPeekDarkroomMarks(project.id);
+}
+
 // The one door out of read-only, and it is explicit: mounting is a decision,
 // never a side effect of having looked.
 async function mountPeekedProject() {
@@ -261,8 +388,20 @@ function mountProjectPeekRuntime() {
   if (parts.root.dataset.projectPeekWired !== "true") {
     parts.root.dataset.projectPeekWired = "true";
     parts.list.addEventListener("click", (event) => {
+      // Project rows and file rows share the one list element, so the project
+      // check comes first: a row carries exactly one of the two data-attributes.
+      const projectRow = event.target.closest("[data-peek-project]");
+      if (projectRow) {
+        selectOverviewProject(projectRow.dataset.peekProject);
+        return;
+      }
       const row = event.target.closest("[data-peek-file]");
       if (row) selectPeekFile(row.dataset.peekFile);
+    });
+    // The All Projects button lives in the button row, outside the list, so it
+    // needs its own listener — inside the same guard, so it is wired once.
+    parts.root.addEventListener("click", (event) => {
+      if (event.target.closest("#project-peek-all")) showProjectOverview();
     });
   }
   renderProjectPeek();

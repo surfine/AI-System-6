@@ -1,12 +1,5 @@
-// Bonsai City micro-voxel texture atlas contract: one deterministic,
-// power-of-two, MIT-clean 512x512 PNG of 64px Minecraft-style tiles, a JSON
-// manifest mapping block materials to per-face tile rects, and a generated
-// runtime manifest the voxel renderer reads.
-//
-// Wall tiles are tint-neutral with a glass mask in alpha: the renderer
-// multiplies a per-building instance colour into the wall and lights the
-// alpha-0 glass cells with a shader uniform, so a wall tile may carry pattern
-// and shading but no hue, and `.night` walls equal their `.day` twins.
+// Bonsai colour and independently encoded material masks: deterministic offline
+// artwork coverage, decode integrity, semantic windows and safe UV sampling.
 
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
@@ -19,6 +12,7 @@ import { createFeatureTest, read, resolveProjectPath } from "../helpers/feature-
 const test = createFeatureTest("bonsai-textures");
 const trackedArtifacts = [
   resolveProjectPath("assets/bonsai/textures.png"),
+  resolveProjectPath("assets/bonsai/texture-masks.png"),
   resolveProjectPath("assets/bonsai/textures.json"),
   resolveProjectPath("app/generated/bonsai-textures.js"),
 ];
@@ -38,10 +32,10 @@ const manifest = context.window.AISystem6BonsaiTextures;
 const json = JSON.parse(read("assets/bonsai/textures.json"));
 const source = JSON.parse(read("assets/bonsai/atlas-source.json"));
 
-test.assert(manifest.schema === "ai-system-6-bonsai-textures-v1" && manifest.version === 1, "runtime manifest uses the textures v1 schema");
+test.assert(manifest.schema === "ai-system-6-bonsai-textures-v2" && manifest.version === 2, "runtime manifest uses the textures v2 schema");
 test.assert(JSON.stringify(manifest) === JSON.stringify(json), "generated runtime manifest exactly matches the reviewable JSON");
 test.assert(manifest.tileSize === 64, "texture tiles are 64px so details survive Retina close-ups");
-test.assert(manifest.atlas.width === manifest.atlas.height && manifest.atlas.width >= 256 && (manifest.atlas.width & (manifest.atlas.width - 1)) === 0, "the atlas is a power-of-two square for mipmapped mobile GPUs");
+test.assert(manifest.atlas.width === manifest.atlas.height && manifest.atlas.width >= 256 && (manifest.atlas.width & (manifest.atlas.width - 1)) === 0, "the atlas retains power-of-two dimensions for mobile GPUs");
 test.assert(Object.keys(manifest.tiles).length >= 30 && Object.keys(manifest.tiles).length <= manifest.atlas.columns * manifest.atlas.rows, "the tile family is a full batch within the atlas grid");
 test.assert(manifest.license === "MIT" && manifest.source === "original", "the texture family carries the MIT original-art boundary");
 test.assert(Array.isArray(source.textures) && Array.isArray(source.textureMaterials) === false, "texture recipes live in the checked-in atlas source");
@@ -90,7 +84,7 @@ function decodeAtlasPng(bytes) {
     if (type === "IHDR") {
       width = data.readUInt32BE(0);
       height = data.readUInt32BE(4);
-      test.assert(data[8] === 8 && data[9] === 6, "the atlas is 8-bit RGBA so the alpha channel can carry the glass mask");
+      test.assert(data[8] === 8 && data[9] === 6, "the atlas is 8-bit RGBA");
     } else if (type === "IDAT") {
       idat.push(data);
     }
@@ -111,12 +105,25 @@ function decodeAtlasPng(bytes) {
 const atlas = decodeAtlasPng(readFileSync(resolveProjectPath(manifest.png.file)));
 test.assert(atlas.width === manifest.atlas.width && atlas.height === manifest.atlas.height, "the PNG header matches the manifest atlas size");
 
+const maskAtlas = decodeAtlasPng(readFileSync(resolveProjectPath(manifest.masks.file)));
+test.assert(atlas.width === maskAtlas.width && atlas.height === maskAtlas.height, "colour and mask atlas dimensions match");
+test.assert(countAlphaZero(atlas.pixels) === 0, "colour atlas preserves every glass pixel through opaque PNG decoding");
+test.assert(digest(readFileSync(resolveProjectPath(manifest.masks.file))) === manifest.masks.sha256, "material mask digest matches shipped bytes");
+
+// Reconstruct the recipe coverage for the existing band and ink checks.
+// Runtime colour remains opaque; coverage is independently stored in mask R.
 function tilePixels(id) {
   const rect = manifest.tiles[id];
   const out = Buffer.alloc(rect.w * rect.h * 4);
   for (let y = 0; y < rect.h; y += 1) {
     const from = ((rect.y + y) * atlas.width + rect.x) * 4;
     atlas.pixels.copy(out, y * rect.w * 4, from, from + rect.w * 4);
+  }
+  for (let y = 0; y < rect.h; y += 1) {
+    for (let x = 0; x < rect.w; x += 1) {
+      const offset = ((rect.y + y) * atlas.width + rect.x + x) * 4;
+      out[(y * rect.w + x) * 4 + 3] = 255 - maskAtlas.pixels[offset];
+    }
   }
   return out;
 }
@@ -245,5 +252,39 @@ test.assertIncludes(read("tooling/build-bonsai-texture-atlas.mjs"), "snow(buffer
 test.assertIncludes(read("tooling/build-bonsai-texture-atlas.mjs"), "Zen garden corner", "the park tile carries a quiet zen garden detail");
 test.assertIncludes(read("tooling/build-bonsai-texture-atlas.mjs"), "deck(buffer, ox, oy)", "the texture atlas paints the roof deck tile");
 test.assert(digest(readFileSync(resolveProjectPath(manifest.png.file))) === manifest.png.sha256, "the PNG digest in the manifest matches the shipped file");
+
+// Exercise the compiled shader hooks for new and legacy manifests.
+{
+  const renderer = read("app/features/bonsai-renderer-voxel.js");
+  const start = renderer.indexOf("  function createWallMaterial(");
+  const end = renderer.indexOf("  function createMaterials(", start);
+  const makeWall = vm.runInNewContext(`(${renderer.slice(start, end).trim()})`);
+  class Material { constructor() { this.userData = {}; } }
+  class Color { constructor(...rgb) { this.rgb = rgb; } }
+  for (const mask of [null, { isTexture: true }]) {
+    const material = makeWall({ MeshLambertMaterial: Material, Color }, {}, mask);
+    const shader = { uniforms: {}, fragmentShader: ["common", "map_fragment", "color_fragment", "emissivemap_fragment"].map((chunk) => `#include <${chunk}>`).join("\n") };
+    material.onBeforeCompile(shader);
+    test.assert(shader.uniforms.uMaterialMask.value === mask, "shader binds the supplied independent mask texture");
+    test.assertIncludes(shader.fragmentShader, mask ? "texture2D( uMaterialMask, vMapUv ).rg" : "vec2( 1.0 - bonsaiWallTexel.a )", "new and legacy glass coverage compile independently");
+    test.assertIncludes(shader.fragmentShader, "uGlassGlow * bonsaiWallTexel.rgb * bonsaiMaterialMask.g", "night lighting uses emission coverage rather than colour opacity");
+  }
+  test.assert(Object.keys(manifest.artwork.assignments).length === source.textures.length, "every current material uses a reviewed generated art cell");
+  test.assert(digest(readFileSync(resolveProjectPath(manifest.artwork.file))) === manifest.artwork.sha256, "generated source-art digest is reproducible");
+}
+
+// Material data must not silently change opacity or be colour-managed.
+{
+  let invalid = 0;
+  for (let offset = 0; offset < maskAtlas.pixels.length; offset += 4) {
+    const [glass, emission, reserved, alpha] = maskAtlas.pixels.subarray(offset, offset + 4);
+    if (emission > glass || reserved !== 0 || alpha !== 255) invalid += 1;
+  }
+  test.assert(invalid === 0, "emission is confined to glass and material mask stays opaque linear data");
+  const renderer = read("app/features/bonsai-renderer-voxel.js");
+  test.assertIncludes(renderer, "maskTexture.colorSpace = THREE.NoColorSpace", "mask values bypass sRGB conversion");
+  test.assertIncludes(renderer, "texture.generateMipmaps = false", "atlas sampling cannot blend neighbouring materials at distant zoom");
+  test.assertIncludes(renderer, "(rect.x + 0.5) / atlasWidth", "UVs inset to texel centres at tile edges");
+}
 
 test.finish();

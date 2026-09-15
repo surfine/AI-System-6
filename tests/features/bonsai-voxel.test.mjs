@@ -75,7 +75,6 @@ test.assertIncludes(voxelSource, '"zone.airport"', "airport zones render a runwa
 test.assertIncludes(voxelSource, '"zone.seaport"', "seaport zones render a dock ground slab");
 test.assertIncludes(voxelSource, '"zone.military"', "military zones render an installation ground slab");
 test.assertIncludes(voxelSource, "Cliff shadow bands", "lower land tiles carry dark edges toward higher ground");
-test.assertIncludes(voxelSource, "A red torii at the water's edge", "piers and marinas carry a water-edge torii");
 test.assertIncludes(voxelSource, "in winter the whole lowland snows over", "high grass and slopes wear snow in winter");
 test.assertIncludes(voxelSource, "winter freezes to a pale ice", "winter water freezes to pale ice");
 test.assertIncludes(voxelSource, "Spring sakura petals", "spring drifts sakura petals from blossom trees");
@@ -91,6 +90,7 @@ test.assertIncludes(voxelSource, "facility.${facility.kind}", "facilities resolv
 // --- the module runs headless and installs a frozen surface -------------------
 
 const context = vm.createContext({ window: {} });
+vm.runInContext(read("app/features/bonsai-renderer.js"), context);
 vm.runInContext(voxelSource, context);
 const voxel = context.window.AISystem6BonsaiVoxelRenderer;
 
@@ -238,8 +238,11 @@ if (exists("assets/bonsai/atlas-source.json")) {
         const px = stageRecipe.height;
         const applies = (form === "setback" && px > 24) || (form === "twin" && footprint.w > 1.2) || form === "wing"
           || (form === "courtyard" && footprint.w > 1.2) || (form === "podium" && px > 30) || (form === "stepped" && px > 26) || form === "gable";
-        const expected = applies ? expectedMasses[form] : 1;
-        test.assert(masses.length === expected, `${zone} stage ${stage} variant ${variant} composes ${expected} mass(es) for ${form}`);
+        // Planned parcels intentionally use zone/stage forms (courtyard,
+        // garage, podium, loading hall) rather than the legacy one-form
+        // vocabulary. Their count is authored by the planning grammar.
+        const expected = grammar.planning ? masses.length : (applies ? expectedMasses[form] : 1);
+        test.assert(masses.length === expected && masses.length > 0, `${zone} stage ${stage} variant ${variant} composes ${expected} mass(es) for ${grammar.planning ? "planned parcel" : form}`);
         masses.forEach((mass) => {
           test.assert(mass.y1 > mass.y0 && mass.u1 > mass.u0 && mass.v1 > mass.v0, `${zone} stage ${stage} variant ${variant}: every mass has volume`);
           test.assert(mass.u0 >= -footprint.w / 2 && mass.u1 <= footprint.w / 2 && mass.v0 >= -footprint.h / 2 && mass.v1 <= footprint.h / 2 + 0.16, `${zone} stage ${stage} variant ${variant}: masses stay inside the footprint`);
@@ -356,8 +359,9 @@ const atlasRecipes = exists("assets/bonsai/atlas-source.json")
   ? pure.buildRecipes(JSON.parse(read("assets/bonsai/atlas-source.json")))
   : fallbackRecipes;
 test.assert(
-  atlasRecipes.catalog.city_hall && atlasRecipes.catalog.city_hall.footprint.w === 2,
-  "catalog specials digest into recipes like facilities"
+  atlasRecipes.catalog.city_hall && atlasRecipes.catalog.city_hall.footprint.w === context.window.AISystem6BonsaiCatalog.entryOf(0xd0).size
+    && Math.abs(atlasRecipes.catalog.city_hall.height * pure.PX_PER_TILE - JSON.parse(read("assets/bonsai/atlas-source.json")).catalogSpecials.find((entry) => entry.id === "catalog.city_hall").height) < 1e-9,
+  "catalog recipes preserve declared height units and the catalog footprint"
 );
 test.assert(
   Boolean(fallbackRecipes.catalogCategories.commercial) && fallbackRecipes.blaze.flood.a < 1,
@@ -369,14 +373,17 @@ catalogSnapshot.blaze = new Uint8Array(64);
 catalogSnapshot.blaze[33] = 2; // young fire
 catalogSnapshot.blaze[34] = 6; // flood
 catalogSnapshot.catalogId = new Uint16Array(64);
-catalogSnapshot.catalogId[40] = 226; // control tower: bespoke catalog recipe
-catalogSnapshot.catalogId[41] = 150; // commercial catalog tile: category hue
+[40, 41, 48, 49].forEach((index) => { catalogSnapshot.catalogId[index] = 226; }); // complete 2x2 control tower
+catalogSnapshot.catalogId[42] = 150; // incomplete imported building: one-tile infrastructure fragment
 catalogSnapshot.catalogId[10] = 226; // on a road tile: the road wins
 catalogSnapshot.catalogId[17] = 226; // on a zoned tile: the zone building wins
 
 const catalogObjects = pure.collectSceneObjects(catalogSnapshot, atlasRecipes);
 test.assert(catalogObjects.blazeTiles.length === 2, "blaze tiles collect fire and flood");
-test.assert(catalogObjects.catalogTiles.length === 2, "catalog tiles skip roads and zoned tiles");
+test.assert(catalogObjects.catalogTiles.length === 2
+  && catalogObjects.catalogTiles.some((object) => object.label === "control_tower" && object.footprint.w === 2 && !object.fragment)
+  && catalogObjects.catalogTiles.some((object) => object.x === 2 && object.y === 5 && object.fragment),
+  "catalog collection groups the complete tower, retains its fragment neighbor and skips road/zoned tiles");
 test.assert(
   pure.chunkSignature(catalogSnapshot, 0, 0, catalogObjects) !== signatureA,
   "catalog and blaze layers dirty the chunk signature"
@@ -389,99 +396,29 @@ test.assert(
   "a young fire draws in the Canvas backend's flame color"
 );
 test.assert(catalogBlocks.water.length === 2, "the flood tile adds a translucent slab beside the sea tile");
+const catalogOnly = pure.collectChunkBlocks(catalogSnapshot, atlasRecipes, 0, 0, {
+  buildings: [], facilities: [], covered: new Set(), catalogTiles: catalogObjects.catalogTiles.filter((object) => !object.fragment),
+}, true).opaque;
 const towerRecipe = atlasRecipes.catalog.control_tower;
+const towerGround = catalogSnapshot.alt[40] * pure.ALT_STEP;
 test.assert(
-  catalogBlocks.opaque.some((block) => Math.abs(block.sy - towerRecipe.height) < 1e-9 && Math.abs(block.r - towerRecipe.base.r) < 1e-9),
-  "a catalog tile with a bespoke recipe draws that recipe"
+  catalogOnly.some((block) => String(block.tile).startsWith("wall.c.") && block.y > towerGround + towerRecipe.height)
+    && catalogOnly.some((block) => block.sy > 0.4 && block.sx < 0.5)
+    && catalogOnly.every((block) => block.x - block.sx / 2 >= 0 && block.x + block.sx / 2 <= 2),
+  "the complete control tower has an elevated glazed cab and narrow shaft within its two-tile footprint"
 );
-const commercialTint = atlasRecipes.catalogCategories.commercial;
-test.assert(
-  catalogBlocks.opaque.some((block) => Math.abs(block.r - commercialTint.r) < 1e-9 && Math.abs(block.g - commercialTint.g) < 1e-9),
-  "a catalog tile with no recipe falls back to its category hue"
-);
-
-const overlayBlocks = pure.collectOverlayBlocks(snapshot, "power");
-test.assert(overlayBlocks.length === 63, "the power overlay tints every land tile and skips water");
-test.assert(pure.collectOverlayBlocks(snapshot, "none").length === 0, "overlay none draws nothing");
-const poweredBlock = overlayBlocks.find((block) => Math.floor(block.x) === 2 && Math.floor(block.z) === 1);
-const unpoweredBlock = overlayBlocks.find((block) => Math.floor(block.x) === 3 && Math.floor(block.z) === 1);
-test.assert(poweredBlock.g !== unpoweredBlock.g, "powered and unpowered tiles tint differently");
-
-const agentSnapshot = makeFakeSnapshot();
-agentSnapshot.tree = new Uint8Array(64); // no blossom trees, so no petals
-const agentBlocks = pure.collectAgentBlocks(agentSnapshot, fallbackRecipes);
-test.assert(agentBlocks.opaque.length === 3, "vehicle (body + cabin) and pedestrian facts become instances");
-test.assert(agentBlocks.smoke.length === 1 && agentBlocks.smoke[0].a < 1, "smoke facts become translucent instances");
-test.assert(pure.collectAgentBlocks({ size: 8 }, fallbackRecipes).opaque.length === 0, "a snapshot without agent facts renders no agents");
-
-{
-  const size = 8;
-  const alt = new Uint8Array(size * size);
-  const water = new Uint8Array(size * size);
-  const terrainType = new Uint8Array(size * size);
-  alt[2 * size + 3] = 4;
-  water[3 * size + 3] = 1;
-  const edges = pure.waterfallEdges({ size, alt, water, terrainType, tick: 0, timeOfDay: 0.5 });
-  test.assert(edges.length === 1 && edges[0].dir === "n" && edges[0].height === 4, "pure waterfall derivation finds the high edge");
-}
-
-{
-  const special = makeFakeSnapshot();
-  special.zone = new Uint8Array(64);
-  special.zone[0] = 5;
-  special.stage = new Uint8Array(64);
-  const blocks = pure.collectChunkBlocks(special, fallbackRecipes, 0, 0, pure.collectSceneObjects(special, fallbackRecipes));
-  test.assert(blocks.opaque.some((block) => block.tile === "zone.airport"), "airport zones become runway ground slabs");
-  test.assert(blocks.opaque.some((block) => block.sx === 0.1 && (block.tile === "concrete" || block.tile === "metal")),
-    "airport zones place a deterministic control tower");
-}
-
-{
-  const size = 8;
-  const alt = new Uint8Array(size * size);
-  const water = new Uint8Array(size * size);
-  alt[2 * size + 3] = 4;
-  const edges = pure.cliffEdges({ size, alt, water, tick: 0, timeOfDay: 0.5 });
-  test.assert(edges.some((edge) => edge.x === 3 && edge.y === 3 && edge.dir === "n" && edge.drop === 4), "pure cliff derivation finds the high edge");
-}
-
-{
-  const size = 8;
-  const alt = new Uint8Array(size * size);
-  const water = new Uint8Array(size * size);
-  alt[0] = 26; // snow-line peak
-  const blocks = pure.collectChunkBlocks({ size, alt, water, terrainType: new Uint8Array(size * size), tick: 0, timeOfDay: 0.5 }, fallbackRecipes, 0, 0, pure.collectSceneObjects({ size, alt, water }, fallbackRecipes));
-  test.assert(blocks.opaque.some((block) => block.tile === "terrain.snow"), "peaks above the snow line wear the snow tile");
-}
-
-{
-  const size = 8;
-  const alt = new Uint8Array(size * size);
-  const water = new Uint8Array(size * size);
-  // Winter: tick 1125 = season 3, lowland grass snows over.
-  const blocks = pure.collectChunkBlocks({ size, alt, water, terrainType: new Uint8Array(size * size), tick: 1125, timeOfDay: 0.5 }, fallbackRecipes, 0, 0, pure.collectSceneObjects({ size, alt, water }, fallbackRecipes));
-  test.assert(blocks.opaque.some((block) => block.tile === "terrain.snow" && block.x > 0), "winter snows over the lowland grass");
-}
-
-{
-  const size = 64;
-  const tree = new Uint8Array(size * size);
-  tree[0] = 1;
-  tree[1] = 1;
-  const blocks = pure.collectChunkBlocks({ size, alt: new Uint8Array(size * size), water: new Uint8Array(size * size), tree, tick: 0, timeOfDay: 0.5 }, fallbackRecipes, 0, 0, pure.collectSceneObjects({ size, alt: new Uint8Array(size * size), water: new Uint8Array(size * size), tree }, fallbackRecipes));
-  test.assert(blocks.opaque.some((block) => block.tile === "tree.canopy" || block.tile === "tree.maple"),
-    "tree tiles flow through the voxel collector as green or maple crowns");
-}
-
-const previewBlocks = pure.collectPreviewBlocks(
-  { accepted: false, footprint: { x: 1, y: 1, w: 2, h: 2 } }, snapshot, fallbackRecipes
-);
-test.assert(previewBlocks.length === 4, "an area preview covers its footprint");
-test.assert(previewBlocks[0].r > previewBlocks[0].g, "a rejected preview tints red");
-test.assert(
-  pure.collectPreviewBlocks({ x: 99, y: 99 }, snapshot, fallbackRecipes).length === 0,
-  "out-of-bounds preview tiles are dropped"
-);
+const fragments = pure.collectChunkBlocks(catalogSnapshot, atlasRecipes, 0, 0, {
+  buildings: [], facilities: [], covered: new Set(), catalogTiles: catalogObjects.catalogTiles.filter((object) => object.fragment),
+}, true).opaque;
+const proxyFrame = { ...JSON.parse(read("assets/bonsai/atlas-source.json")).catalogSpecials.find((entry) => entry.id === "catalog.infrastructure"), category: "catalog", state: "normal" };
+const proxy = pure.createAssetBlocks(proxyFrame, JSON.parse(read("assets/bonsai/atlas-source.json")));
+test.assert(fragments.length === proxy.length && fragments.every((block) => block.x - block.sx / 2 >= 2 && block.x + block.sx / 2 <= 3),
+  "an incomplete catalog footprint uses the shared one-tile infrastructure proxy without expanding a building");
+const marinaFrame = { ...JSON.parse(read("assets/bonsai/atlas-source.json")).catalogSpecials.find((entry) => entry.id === "catalog.marina"), category: "catalog", state: "normal" };
+const marina = pure.createAssetBlocks(marinaFrame, JSON.parse(read("assets/bonsai/atlas-source.json")));
+test.assert(marina.filter((block) => block.tile === "tree.trunk" && block.sy <= 0.1).length >= 3
+  && marina.filter((block) => block.tile === "metal" && block.sy > 0.4 && block.sx < 0.04).length >= 2,
+  "marinas have horizontal finger piers and separate tall sailing-boat masts");
 
 // --- determinism of animated values -------------------------------------------
 

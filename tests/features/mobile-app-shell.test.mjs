@@ -46,8 +46,17 @@ test.assertIncludes(
 );
 test.assertIncludes(
   responsive,
-  ".window.is-mobile-fullscreen:not(.assistant-window) {\n    padding-bottom: var(--safe-area-bottom);",
-  "the shared shell protects every non-ClioTalk app's bottom interaction area"
+  ".window.is-mobile-fullscreen:not(.assistant-window) {",
+  "the shared shell has a rule of its own for every non-ClioTalk app"
+);
+// One shorthand, all three edges. The sides were added for iPhone Duo, whose
+// outer display keeps the system's controls and camera down one SIDE, so
+// portrait reports a horizontal inset that this flow used to ignore. The
+// window material still reaches the true edge; only its content moves.
+const shellInset = "padding: 0 var(--safe-area-right) var(--safe-area-bottom) var(--safe-area-left);";
+test.assert(
+  responsive.split(shellInset).length - 1 >= 2,
+  "the shell and the composer both protect their interaction area on all three edges"
 );
 test.assertIncludes(
   windowManager,
@@ -76,10 +85,12 @@ test.assertIncludes(
   '.window:not(.is-mobile-fullscreen):not(.is-mobile-dialog):not(.is-mobile-system-page):not([data-app="accessories"]):not([data-app="system"])',
   "background MultiFinder apps leave portrait layout without being marked hidden"
 );
+// Every label an indicator carries collapses to its icon on a narrow bar,
+// rather than any of them pushing MultiFinder off the end.
 test.assertIncludes(
   responsive,
-  "#cloud-model-label {\n    display: none;",
-  "the narrow menu bar collapses the redundant model label before clipping MultiFinder"
+  "#cloud-model-label,\n  #guest-indicator-label {\n    display: none;",
+  "the narrow menu bar collapses the redundant indicator labels before clipping MultiFinder"
 );
 test.assertIncludes(
   responsive,
@@ -349,7 +360,7 @@ test.assertIncludes(
 // the shared non-assistant shell protects every other app's lowest controls.
 test.assertIncludes(
   responsive,
-  "padding-bottom: var(--safe-area-bottom);",
+  shellInset,
   "the composer insets its own content instead of the window stopping short of the edge"
 );
 test.assertIncludes(
@@ -417,9 +428,13 @@ test.assertIncludes(
   "the keyboard inset update also re-fits the floating window that owns the focused field"
 );
 
-// Landscape is its own design, not a fallback to a cramped desktop. The three
-// games are the immersive class: their content is the screen, so a sideways
-// phone hands them the whole of it. Every other app stays a window there.
+// Landscape is its own design, not a fallback to a cramped desktop. It used to
+// admit only the immersive class -- the games, whose content is the screen --
+// but a 912x420 display has no room for a floating window plus a desktop
+// either, so every app page takes the shell there too (2026-09-05). The zoom
+// box still restores the window down, which is what keeps this a maximize.
+// The immersive class survives with a smaller job: its artifact reaches the
+// safe-area edge instead of sitting inside the pane's reading padding.
 const windowManagerSource = read("app/core/window-manager.js");
 test.assertIncludes(
   windowManagerSource,
@@ -428,13 +443,18 @@ test.assertIncludes(
 );
 test.assertIncludes(
   windowManagerSource,
-  "!immersiveLandscape || isMobileImmersiveWindow(win)",
-  "a landscape phone offers the full-screen shell only to an immersive app"
+  "if (!isPortraitDocumentFlow() && !isLandscapeDocumentFlow()) return null;",
+  "both orientations of a phone hand the screen to one app page"
+);
+test.assertIncludes(
+  windowManagerSource,
+  '"mobile-immersive-app",',
+  "the immersive class still marks the apps whose artifact is the screen"
 );
 test.assertIncludes(
   responsive,
-  "@media (max-width: 860px) and (orientation: landscape)",
-  "landscape phones own a full-screen block of their own"
+  "@media (orientation: landscape) and (max-width: 860px), (orientation: landscape) and (hover: none) and (pointer: coarse) and (max-height: 660px)",
+  "landscape phones own a full-screen block of their own, and a phone is a device class rather than a width"
 );
 test.assertIncludes(
   responsive,
@@ -493,6 +513,10 @@ test.assertMatches(
   /@media \(max-width: 860px\)[\s\S]*?\.menu-bar \{[^}]*--menu-bar-inline-padding: 3px/,
   "a narrow screen tightens the bar through the token, not through a second copy of the rule"
 );
+// The launcher still clears the sensor housing and the home indicator. It
+// measures those insets from the display's own edge: the composition that once
+// inset both rails toward the middle was overturned on 2026-09-14, and the room
+// a wide display buys is the room between the rails.
 test.assertMatches(
   apps,
   /\.icon-column \{[^}]*right: max\(22px, var\(--safe-area-right\)\);[^}]*bottom: max\(22px, var\(--safe-area-bottom\)\)/,

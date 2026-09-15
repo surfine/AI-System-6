@@ -14,6 +14,12 @@ window.AISystem6LocalLMStudio = (() => {
   const INFERENCE_TIMEOUT_MS = 45000;
   let connected = false;
   let lastModels = [];
+  // In-flight LM Studio loads keyed by model id. POST /api/v1/models/load is
+  // not idempotent (see loadModel): it always spawns a fresh instance
+  // (`model`, `model:2`, `model:3`, ...). Coalescing keeps concurrent callers
+  // (parallel embed autoloads, retries) from each stacking a duplicate beside
+  // the others.
+  const loadModelInFlight = new Map();
 
   function currentProvider() {
     const value = document.getElementById("local-provider")?.value || "lm-studio";
@@ -445,6 +451,39 @@ window.AISystem6LocalLMStudio = (() => {
     return response.json().catch(() => ({ instance_id: id }));
   }
 
+  /**
+   * Unload every live instance that belongs to `model` — the base id and any
+   * `:2`, `:3`, ... siblings LM Studio reports under `loaded_instances`.
+   *
+   * LM Studio's `/api/v1/models/load` never reuses a resident instance, so a
+   * load without this pre-pass stacks duplicates (`model:2`, `model:3`, ...);
+   * the server-side `loadLmStudioAuxModel` already does this before loading.
+   *
+   * @param {string} model
+   * @param {AbortSignal | null | undefined} signal
+   * @returns {Promise<void>}
+   */
+  async function unloadModelFamily(model, signal) {
+    const family = String(model || "").trim();
+    if (!family) return;
+    const catalog = await listModels({ signal });
+    const ids = new Set();
+    for (const entry of catalog.models) {
+      const rawInstances = Array.isArray(entry.raw?.loaded_instances)
+        ? entry.raw.loaded_instances
+        : [];
+      for (const instance of rawInstances) {
+        const id = String(instance?.id || "").trim();
+        if (id === family || id.startsWith(`${family}:`)) ids.add(id);
+      }
+      const instanceId = String(entry.loaded ? entry.instance_id || "" : "").trim();
+      if (instanceId === family || instanceId.startsWith(`${family}:`)) ids.add(instanceId);
+    }
+    for (const id of ids) {
+      await unloadInstance(id, signal);
+    }
+  }
+
   async function loadModel(model, options = {}) {
     const modelId = String(model || "").trim();
     if (!modelId) throw new Error("lmstudio_model_missing");
@@ -455,32 +494,49 @@ window.AISystem6LocalLMStudio = (() => {
       }
       return { loaded: false, autoLoad: true, model: modelId, context_length: 0 };
     }
-    const payload = { model: modelId };
-    const contextLength = Number(options.contextLength || 0);
-    if (Number.isFinite(contextLength) && contextLength > 0) payload.context_length = Math.round(contextLength);
-    const response = await localModelFetch("/api/v1/models/load", {
-      method: "POST",
-      signal: requestSignal(options.signal, options.timeoutMs || 120000),
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
-    if (!response.ok) await readErrorResponse(response);
-    const data = await response.json().catch(() => ({}));
-    const refreshed = await listModels({ signal: options.signal });
-    const loaded = refreshed.models.find((item) => item.id === modelId && item.loaded)
-      || refreshed.models.find((item) => item.loaded && item.name === modelId)
-      || null;
-    return {
-      loaded: true,
-      model: loaded?.id || data.model || modelId,
-      context_length: loaded?.loaded_context_length || contextLength || 0,
-      max_context_length: loaded?.max_context_length || 0,
-      max_context_source: "lmstudio-v1",
-      raw: data,
-    };
+    // Coalesce concurrent loads for the same model id so a burst of callers
+    // (e.g. the embed autoload firing for several chunks at once) shares one
+    // load instead of spawning `model:2`, `model:3`, ... beside each other.
+    const inFlight = loadModelInFlight.get(modelId);
+    if (inFlight) return inFlight;
+    const pending = (async () => {
+      // LM Studio's load endpoint is not idempotent, so clear this model's
+      // existing instances first. This is what the server's
+      // loadLmStudioAuxModel does and is why it never produces duplicates.
+      await unloadModelFamily(modelId, options.signal);
+      const payload = { model: modelId };
+      const contextLength = Number(options.contextLength || 0);
+      if (Number.isFinite(contextLength) && contextLength > 0) payload.context_length = Math.round(contextLength);
+      const response = await localModelFetch("/api/v1/models/load", {
+        method: "POST",
+        signal: requestSignal(options.signal, options.timeoutMs || 120000),
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) await readErrorResponse(response);
+      const data = await response.json().catch(() => ({}));
+      const refreshed = await listModels({ signal: options.signal });
+      const loaded = refreshed.models.find((item) => item.id === modelId && item.loaded)
+        || refreshed.models.find((item) => item.loaded && item.name === modelId)
+        || null;
+      return {
+        loaded: true,
+        model: loaded?.id || data.model || modelId,
+        context_length: loaded?.loaded_context_length || contextLength || 0,
+        max_context_length: loaded?.max_context_length || 0,
+        max_context_source: "lmstudio-v1",
+        raw: data,
+      };
+    })();
+    loadModelInFlight.set(modelId, pending);
+    try {
+      return await pending;
+    } finally {
+      loadModelInFlight.delete(modelId);
+    }
   }
 
   function stripClientOnlyFields(payload = {}) {

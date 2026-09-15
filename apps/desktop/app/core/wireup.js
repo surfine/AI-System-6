@@ -1011,7 +1011,23 @@ function wireAppEvents() {
 
   document.addEventListener("pointerdown", startFinderMarquee);
 
+  // Opening is the second act: the first click selects, the second opens. A
+  // gesture that wandered between the two clicks is not that gesture.
+  const DOUBLE_CLICK_SLOP_PX = 8;
+  let lastPointerDown = null;
+  document.addEventListener("pointerdown", (event) => {
+    lastPointerDown = { x: event.clientX, y: event.clientY };
+  }, true);
+  const steadyDoubleClick = (event) => {
+    if (!lastPointerDown) return true;
+    const drift = Math.hypot(event.clientX - lastPointerDown.x, event.clientY - lastPointerDown.y);
+    if (drift <= DOUBLE_CLICK_SLOP_PX) return true;
+    lastPointerDown = null;
+    return false;
+  };
+
   document.addEventListener("dblclick", (event) => {
+    if (!steadyDoubleClick(event)) return;
     const desktopIconTarget = event.target.closest(".icon-column .desktop-icon");
     if (desktopIconTarget) {
       event.preventDefault();
@@ -1300,7 +1316,7 @@ function wireAppEvents() {
       // Portrait is a presentation system: mobile roles own window placement
       // and the phone screen has no room for free title-bar dragging.
       if (isPortraitDocumentFlow()) return;
-      const compactViewport = window.matchMedia("(max-width: 860px)").matches;
+      const compactViewport = isNarrowViewport();
       const allowCompactDrag = typeof isDeskAccessoryPlacementWindow === "function"
         ? isDeskAccessoryPlacementWindow(win)
         : getWindowAppId(win) === "accessories";
@@ -1487,7 +1503,12 @@ function wireAppEvents() {
     });
   });
 
-  importProjectBackupButton?.addEventListener("click", importProjectBackupAsNewProject);
+  // Called through a wrapper: the handler takes the backup to import as its
+  // first parameter, so passing it to addEventListener directly handed it the
+  // click event instead — and every press of Import reported "Choose a valid
+  // Project Hard Disk backup first." while the preview beside it showed a
+  // perfectly valid one.
+  importProjectBackupButton?.addEventListener("click", () => importProjectBackupAsNewProject());
 
   modernFontsInput.addEventListener("change", applyModernFonts);
 
@@ -1523,6 +1544,7 @@ function wireAppEvents() {
   });
 
   menuClockInput.addEventListener("change", applyMenuClock);
+  showUnmountedDisksInput?.addEventListener("change", () => applyShowUnmountedDisks());
 
   // One switch, in the Control Strip's own control panel — the way Mac OS 8/9
   // shipped it. General used to carry a second checkbox writing the same

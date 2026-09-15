@@ -1,6 +1,6 @@
 // A machine-local store for release steps that development already paid for.
 //
-// tooling/lib/gate-receipts.mjs does this for the seven browser gates: a gate
+// tooling/lib/gate-receipts.mjs does this for the ship gates: a gate
 // banks a receipt keyed to a content hash of everything it reads, and a release
 // spends the receipt instead of running the gate again. This module applies the
 // same discipline to the rest of the release — the deterministic gate, the

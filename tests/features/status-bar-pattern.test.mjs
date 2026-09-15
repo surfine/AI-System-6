@@ -96,4 +96,31 @@ shippedSources.forEach((path) => {
   test.assertNotIncludes(read("app/data/translations-en.js"), `${key}:`, `${key} is retired: the surface already shows it`);
 });
 
+// A window is mute if it sends receipts down the shared channel and has no
+// `[data-status-host]` of its own: with ClioTalk closed the single #status
+// element falls back to a zero-sized box there. Reader, DocMap and Scrapbook
+// were the three heaviest such windows, so each one now hosts the line. The
+// count is the evidence: a window that shadows setStatus (Soundscape writes
+// into #soundscape-status) never touched the shared channel and needs nothing.
+[
+  ["reader-status-actions", "Reader"],
+  ["docmap-status-actions", "DocMap"],
+].forEach(([cell, role]) => {
+  test.assertMatches(
+    index,
+    new RegExp(`class="status-bar-trailing ${cell}">\\s*<div class="window-status-strip" aria-live="polite"><span class="window-status-slot" data-status-host>`),
+    `${role} hosts the shared status line in its own bar`,
+  );
+});
+test.assertMatches(
+  index,
+  /scrapbook-details-bar[\s\S]*?<div class="window-status-strip" aria-live="polite"><span class="window-status-slot" data-status-host><\/span><\/div>\s*<\/div>/,
+  "Scrapbook hosts the shared status line at the end of its plain bar",
+);
+test.assertIncludes(readerStyles, ".reader-status-actions,\n.docmap-status-actions {\n  justify-self: stretch;", "the trailing cell stretches so a long receipt ellipsizes instead of displacing Commands");
+test.assertIncludes(readerStyles, ".scrapbook-details-bar > .window-status-strip {\n  box-sizing: border-box;\n  flex: 1 1 auto;\n  padding-block: 1px;", "a strip inside an existing bar measures its frame, so a receipt never shoves the row");
+
+const soundscapeSource = read("app/features/soundscape.js");
+test.assertIncludes(soundscapeSource, "function setStatus(message)", "Soundscape prints into its own bar, which is why it needs no host");
+
 test.finish();

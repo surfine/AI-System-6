@@ -234,6 +234,10 @@ window.AISystem6BonsaiCityLoaded = true;
     fallbackRedo: [],
     clientSequence: 0,
     inspectorMode: "",
+    // The region a city leaves by: which 120x100 window of a larger Bonsai map
+    // becomes the classic map. Session state only, and only while the picker is
+    // open -- the choice belongs to one departure, not to the city.
+    micropolisDeparture: null,
     selectedTile: null,
     overlay: "none",
     // M4 display toggles: the four 选项 view switches (buildings /
@@ -313,7 +317,13 @@ window.AISystem6BonsaiCityLoaded = true;
     maybeDemandBlink(key);
     const target = query("[data-bonsai-status-message]");
     if (!target) return;
-    target.textContent = t(key, ...args);
+    // The ticker repeats its last line while the city keeps asking for the
+    // same thing, and rewriting text plus restarting an animation on every
+    // tick is layout and paint the frame budget pays for nothing. Write when
+    // the message actually changes.
+    const next = t(key, ...args);
+    if (target.textContent === next) return;
+    target.textContent = next;
     // On phones the same element is a transient toast; restarting its CSS
     // animation is the only way a new message shows again without replacing
     // the element or touching its aria-live contract.
@@ -1719,8 +1729,14 @@ window.AISystem6BonsaiCityLoaded = true;
   }
 
   function closeInspector() {
+    // The departure picker is a question the caller is awaiting. Closing the
+    // panel is an answer -- "no" -- and if it were not, the send would sit on a
+    // promise nobody ever settles.
+    const pendingDeparture = state.micropolisDeparture;
+    state.micropolisDeparture = null;
     state.inspectorMode = "";
     state.selectedTile = null;
+    if (pendingDeparture) pendingDeparture.resolve(null);
     const inspector = query("[data-bonsai-inspector]");
     if (inspector) inspector.hidden = true;
     query(".bonsai-pane")?.classList.remove("has-inspector");
@@ -2102,6 +2118,192 @@ window.AISystem6BonsaiCityLoaded = true;
     }
   }
 
+  // --- choosing which region leaves ------------------------------------------
+  //
+  // A Bonsai map can be larger than the classic 120x100 one, and until now the
+  // difference was resolved for the player: the window sat on the spawn centre
+  // and whatever fell outside was reported afterwards as a number. That is the
+  // right default and a poor only-option, because the part of a city worth
+  // taking is not always in the middle of it.
+  //
+  // The picker is only offered when there is a choice to make -- a map no
+  // larger than the classic one embeds whole -- and it answers in the units the
+  // conversion uses: the rectangle is in Bonsai tiles, its origin is the origin
+  // the exporter receives, and the count under it comes from the exporter's own
+  // countCroppedOutside, so the preview cannot disagree with the result.
+  function isInt(value) {
+    return Number.isInteger(value);
+  }
+
+  function micropolisExporter() {
+    return window.AISystem6BonsaiMicropolisExport || null;
+  }
+
+  function departureNeedsChoice(payload) {
+    const exporter = micropolisExporter();
+    if (!exporter || !payload || !isInt(payload.size)) return false;
+    return payload.size > exporter.CLASSIC_WIDTH || payload.size > exporter.CLASSIC_HEIGHT;
+  }
+
+  function clampDepartureOrigin(payload, x, y) {
+    const exporter = micropolisExporter();
+    const size = payload.size;
+    const maxX = Math.max(0, size - exporter.CLASSIC_WIDTH);
+    const maxY = Math.max(0, size - exporter.CLASSIC_HEIGHT);
+    return { x: clampNumber(Math.round(x), 0, maxX), y: clampNumber(Math.round(y), 0, maxY) };
+  }
+
+  function clampNumber(value, low, high) {
+    if (!Number.isFinite(value)) return low;
+    return Math.min(high, Math.max(low, value));
+  }
+
+  // Resolve on the player's answer, so the caller reads as one step.
+  function openMicropolisDeparturePicker(payload, meta, kind) {
+    const exporter = micropolisExporter();
+    const start = exporter.cropWindowFor(payload);
+    return new Promise((resolve) => {
+      state.micropolisDeparture = {
+        payload, meta, kind,
+        origin: { x: start.x, y: start.y },
+        cropped: exporter.countCroppedOutside(payload, { window: { x: start.x, y: start.y } }),
+        resolve,
+      };
+      state.inspectorMode = "micropolisDeparture";
+      renderInspector();
+    });
+  }
+
+  function closeMicropolisDeparturePicker(answer) {
+    const pending = state.micropolisDeparture;
+    state.micropolisDeparture = null;
+    if (state.inspectorMode === "micropolisDeparture") {
+      state.inspectorMode = "";
+      renderInspector();
+    }
+    if (pending) pending.resolve(answer);
+  }
+
+  function moveMicropolisDeparture(x, y) {
+    const pending = state.micropolisDeparture;
+    if (!pending) return;
+    const next = clampDepartureOrigin(pending.payload, x, y);
+    if (next.x === pending.origin.x && next.y === pending.origin.y) return;
+    pending.origin = next;
+    pending.cropped = micropolisExporter().countCroppedOutside(pending.payload, { window: { x: next.x, y: next.y } });
+    drawMicropolisDeparturePreview(query("[data-bonsai-departure-canvas]"));
+    const readout = query("[data-bonsai-departure-readout]");
+    if (readout) readout.textContent = departureReadoutText(pending);
+  }
+
+  function departureReadoutText(pending) {
+    const exporter = micropolisExporter();
+    return t(
+      "bonsai_micropolis_departure_readout",
+      pending.origin.x, pending.origin.y,
+      exporter.CLASSIC_WIDTH, exporter.CLASSIC_HEIGHT,
+      pending.cropped,
+    );
+  }
+
+  // A 1-bit plan of the whole map: water, planting, built. Enough to recognise
+  // where the city is, which is the only question the rectangle asks.
+  function drawMicropolisDeparturePreview(canvas) {
+    const pending = state.micropolisDeparture;
+    if (!canvas || !pending) return;
+    const exporter = micropolisExporter();
+    const payload = pending.payload;
+    const size = payload.size;
+    const scale = Math.max(1, Math.floor(canvas.width / size));
+    const inset = Math.floor((canvas.width - size * scale) / 2);
+    const insetY = Math.floor((canvas.height - size * scale) / 2);
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const styles = getComputedStyle(canvas);
+    const paper = styles.getPropertyValue("--paper").trim() || "#ffffff";
+    const ink = styles.getPropertyValue("--ink").trim() || "#000000";
+    const shade = styles.getPropertyValue("--shade").trim() || "#808080";
+    ctx.fillStyle = paper;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    const built = (i) => payload.zone[i] || payload.road[i] || payload.rail[i] || payload.wire[i] || payload.catalogId[i];
+    const planted = (i) => payload.tree[i] || payload.park[i];
+    for (let by = 0; by < size; by += 1) {
+      for (let bx = 0; bx < size; bx += 1) {
+        const i = by * size + bx;
+        let fill = "";
+        if (built(i)) fill = ink;
+        else if (payload.water[i]) fill = shade;
+        else if (planted(i)) fill = shade;
+        if (!fill) continue;
+        ctx.fillStyle = fill;
+        ctx.fillRect(inset + bx * scale, insetY + by * scale, scale, scale);
+      }
+    }
+    // The rectangle is drawn twice so it reads on both ink and paper.
+    const rx = inset + pending.origin.x * scale;
+    const ry = insetY + pending.origin.y * scale;
+    const rw = exporter.CLASSIC_WIDTH * scale;
+    const rh = exporter.CLASSIC_HEIGHT * scale;
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = paper;
+    ctx.strokeRect(rx + 0.5, ry + 0.5, rw - 1, rh - 1);
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = ink;
+    ctx.strokeRect(rx + 0.5, ry + 0.5, rw - 1, rh - 1);
+    canvas.dataset.bonsaiDepartureScale = String(scale);
+    canvas.dataset.bonsaiDepartureInsetX = String(inset);
+    canvas.dataset.bonsaiDepartureInsetY = String(insetY);
+  }
+
+  function bindMicropolisDeparturePreview(canvas) {
+    const pending = state.micropolisDeparture;
+    if (!canvas || !pending) return;
+    const exporter = micropolisExporter();
+    const toOrigin = (event) => {
+      const rect = canvas.getBoundingClientRect();
+      const scale = Number(canvas.dataset.bonsaiDepartureScale) || 1;
+      const insetX = Number(canvas.dataset.bonsaiDepartureInsetX) || 0;
+      const insetY = Number(canvas.dataset.bonsaiDepartureInsetY) || 0;
+      // Pointer coordinates are CSS pixels; the canvas has its own backing size.
+      const px = (event.clientX - rect.left) * (canvas.width / rect.width);
+      const py = (event.clientY - rect.top) * (canvas.height / rect.height);
+      // The rectangle centres on the finger, which is what a drag means here.
+      return {
+        x: (px - insetX) / scale - exporter.CLASSIC_WIDTH / 2,
+        y: (py - insetY) / scale - exporter.CLASSIC_HEIGHT / 2,
+      };
+    };
+    const move = (event) => {
+      const next = toOrigin(event);
+      moveMicropolisDeparture(next.x, next.y);
+    };
+    canvas.addEventListener("pointerdown", (event) => {
+      canvas.setPointerCapture?.(event.pointerId);
+      canvas.focus({ preventScroll: true });
+      event.preventDefault();
+      move(event);
+    });
+    canvas.addEventListener("pointermove", (event) => {
+      if (event.buttons === 0) return;
+      event.preventDefault();
+      move(event);
+    });
+    canvas.addEventListener("keydown", (event) => {
+      const step = event.shiftKey ? 10 : 1;
+      const current = state.micropolisDeparture?.origin;
+      if (!current) return;
+      let dx = 0;
+      let dy = 0;
+      if (event.key === "ArrowLeft") dx = -step;
+      else if (event.key === "ArrowRight") dx = step;
+      else if (event.key === "ArrowUp") dy = -step;
+      else if (event.key === "ArrowDown") dy = step;
+      else return;
+      event.preventDefault();
+      moveMicropolisDeparture(current.x + dx, current.y + dy);
+    });
+  }
+
   function renderInspector() {
     const inspector = query("[data-bonsai-inspector]");
     if (!inspector || !state.current || !state.inspectorMode) {
@@ -2223,6 +2425,19 @@ window.AISystem6BonsaiCityLoaded = true;
           return `<li class="${met ? "is-complete" : ""}">${met ? "\u2713" : "\u25a1"} ${t(`bonsai_goal_${goal.id}`)}</li>`;
         }).join("")}</ol>
         <p class="bonsai-goals-note">${t("bonsai_goals_progress", done, GOALS.length)}</p>`;
+    } else if (state.inspectorMode === "micropolisDeparture") {
+      const pending = state.micropolisDeparture;
+      titleKey = pending?.kind === "cty" ? "bonsai_micropolis_departure_title_cty" : "bonsai_micropolis_departure_title";
+      rows = {};
+      controls = pending ? `
+        <p class="bonsai-goals-note">${t("bonsai_micropolis_departure_note")}</p>
+        <canvas class="bonsai-departure-canvas" data-bonsai-departure-canvas width="264" height="264"
+          tabindex="0" role="application" aria-label="${t("bonsai_micropolis_departure_canvas_label")}"></canvas>
+        <p class="bonsai-goals-note" data-bonsai-departure-readout>${departureReadoutText(pending)}</p>
+        <div class="bonsai-departure-actions">
+          <button class="btn" type="button" data-bonsai-departure-cancel>${t("cancel")}</button>
+          <button class="btn default" type="button" data-bonsai-departure-confirm>${t(pending.kind === "cty" ? "bonsai_micropolis_departure_export" : "bonsai_micropolis_departure_send")}</button>
+        </div>` : "";
     } else if (state.inspectorMode === "neighbors") {
       titleKey = "bonsai_neighbors";
       const report = sim().neighborsReport?.(state.current) || null;
@@ -2255,6 +2470,16 @@ window.AISystem6BonsaiCityLoaded = true;
       drawIndustryChart(query("[data-bonsai-industry-canvas]"));
     } else if (state.inspectorMode === "neighbors") {
       drawNeighborsMap(query("[data-bonsai-neighbors-canvas]"));
+    } else if (state.inspectorMode === "micropolisDeparture") {
+      const canvas = query("[data-bonsai-departure-canvas]");
+      drawMicropolisDeparturePreview(canvas);
+      bindMicropolisDeparturePreview(canvas);
+      canvas?.focus({ preventScroll: true });
+      query("[data-bonsai-departure-cancel]")?.addEventListener("click", () => closeMicropolisDeparturePicker(null));
+      query("[data-bonsai-departure-confirm]")?.addEventListener("click", () => {
+        const pending = state.micropolisDeparture;
+        closeMicropolisDeparturePicker(pending ? { x: pending.origin.x, y: pending.origin.y } : null);
+      });
     }
   }
 
@@ -2323,18 +2548,27 @@ window.AISystem6BonsaiCityLoaded = true;
   async function sendPayloadToMicropolis(payload, meta) {
     const exporter = window.AISystem6BonsaiMicropolisExport;
     if (!exporter || !payload) return false;
-    const window_ = exporter.cropWindowFor(payload);
-    const answer = await showSystemModal(
-      t("bonsai_micropolis_send_confirm", meta.name || t("bonsai_city_unnamed"), window_.width, window_.height),
-      "confirm",
-    );
-    if (answer !== "yes" && answer !== "ok") return false;
+    let chosenWindow = null;
+    if (departureNeedsChoice(payload)) {
+      // There is a real choice here, so it is the player's. The picker is the
+      // confirm for this path: its own button sends, and closing it does not.
+      chosenWindow = await openMicropolisDeparturePicker(payload, meta, "send");
+      if (!chosenWindow) return false;
+    } else {
+      const window_ = exporter.cropWindowFor(payload);
+      const answer = await showSystemModal(
+        t("bonsai_micropolis_send_confirm", meta.name || t("bonsai_city_unnamed"), window_.width, window_.height),
+        "confirm",
+      );
+      if (answer !== "yes" && answer !== "ok") return false;
+    }
     setMessage("bonsai_status_sending_micropolis");
     try {
       const exportedAt = new Date().toISOString();
       const exported = await saveCodec().exportMicropolis(payload, {
         name: meta.name, cityId: meta.id || null, exportedAt,
         powered: meta.powered ? Array.from(meta.powered) : null, population: meta.population | 0,
+        ...(chosenWindow ? { window: chosenWindow } : {}),
       });
       const record = {
         id: crypto.randomUUID ? crypto.randomUUID() : `city-${Date.now()}`,
@@ -2386,12 +2620,18 @@ window.AISystem6BonsaiCityLoaded = true;
     const exporter = window.AISystem6BonsaiMicropolisExport;
     const codec = window.AISystem6MicropolisCtyCodec;
     if (!exporter || !codec || !payload) return false;
+    let chosenWindow = null;
+    if (departureNeedsChoice(payload)) {
+      chosenWindow = await openMicropolisDeparturePicker(payload, meta, "cty");
+      if (!chosenWindow) return false;
+    }
     setMessage("bonsai_status_exporting_cty");
     try {
       const exportedAt = new Date().toISOString();
       const exported = await saveCodec().exportMicropolis(payload, {
         name: meta.name || t("bonsai_city_unnamed"), cityId: meta.id || null, exportedAt,
         powered: meta.powered ? Array.from(meta.powered) : null, population: meta.population | 0,
+        ...(chosenWindow ? { window: chosenWindow } : {}),
       });
       const bytes = codec.encodeCty(exported.saveData);
       const fileName = `${String(exported.name || meta.name || t("bonsai_city_unnamed")).replace(/[^a-z0-9_-]+/gi, "-")}.cty`;

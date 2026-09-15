@@ -1,6 +1,6 @@
 // Receipts that let a ship gate be paid during development and spent at release.
 //
-// The seven browser gates cost about eleven minutes together. Most of that work
+// The ship gates cost about ten minutes together. Most of that work
 // is done again at release time although nothing the gate reads has changed.
 // A receipt records that one gate passed, and it records a hash of everything
 // that gate reads. At release time a gate whose hash is the same as a green

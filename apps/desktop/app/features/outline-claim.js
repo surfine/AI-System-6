@@ -11,6 +11,15 @@ window.AISystem6OutlineClaimLoaded = true;
 let currentClaimCheckScope = { type: "manuscript", label: "" };
 let currentClaimCheckFileId = "";
 
+// The stream names the model that served it; the desk's current selection is
+// only what it would ask next, and on the cloud route it is not even the right
+// name. Every request in this file records what actually answered.
+let lastServedWritingModel = "";
+
+function noteServedWritingModel(name) {
+  lastServedWritingModel = String(name || "");
+}
+
 // fetchModelPayload picks cloud vs local transparently; this mirrors that
 // same decision so a receipt's "Provider / model" line says which one
 // actually answered, without touching fetchModelPayload itself.
@@ -28,12 +37,16 @@ function writingRouteReceiptProvider() {
 // the landing decision is known so the receipt says the honest outcome.
 async function recordWritingRouteAnswer({ projectId, intent, model, answerText }) {
   if (!answerText) return "";
+  // Spent once. A run that never reported a served model must not inherit the
+  // last one: an empty model line is honest, a borrowed one is not.
+  const served = lastServedWritingModel;
+  lastServedWritingModel = "";
   const recorded = await window.AISystem6RunReceipts?.recordModelAnswer?.({
     projectId,
     sourceAppId: "outline",
     intent,
     provider: writingRouteReceiptProvider(),
-    model: model || (typeof getLocalModelRequestName === "function" ? getLocalModelRequestName() : ""),
+    model: model || served,
     answerText,
   });
   return recorded?.receiptId || "";
@@ -125,6 +138,7 @@ ${badSummary || "No failed output captured."}`;
 
 async function readRebuildMarkdownPackStream(response, onProgress = null) {
   const markdown = await readModelTextStream(response, {
+    onModel: noteServedWritingModel,
     signal: getLongTaskSignal(),
     throttleMs: 80,
     onSnapshot: onProgress,
@@ -208,6 +222,7 @@ async function generateOutlineFromQuestionSheetCore(options = {}) {
       }, getLongTaskSignal());
 
       const streamedContent = await readModelTextStream(response, {
+        onModel: noteServedWritingModel,
         signal: getLongTaskSignal(),
         throttleMs: 120,
         onSnapshot: (markdown) => showStreamingSurfacePreview("outline", stripRebuildMarkdownFence(markdown)),
@@ -515,6 +530,7 @@ async function organizeQuestionSheetCore(options = {}) {
         if (longTaskSignal) longTaskSignal.removeEventListener("abort", abortFromLongTask);
       }
       const data = await readChatJson(response);
+      noteServedWritingModel(window.AISystem6RunReceipts?.servedModelFromResponse?.(data) || "");
       const finishReason = data?.choices?.[0]?.finish_reason || data?.stop_reason || "";
       const organized = stripRebuildMarkdownFence(data?.choices?.[0]?.message?.content || "").trim();
       try {
@@ -659,6 +675,7 @@ ${outline}`;
     }, getLongTaskSignal());
 
     const streamedContent = await readModelTextStream(response, {
+      onModel: noteServedWritingModel,
       signal: getLongTaskSignal(),
       throttleMs: 120,
       onSnapshot: (markdown) => showStreamingSurfacePreview("outline", stripRebuildMarkdownFence(markdown)),
@@ -755,6 +772,7 @@ ${outline}`;
     }, getLongTaskSignal());
 
     const streamedContent = await readModelTextStream(response, {
+      onModel: noteServedWritingModel,
       signal: getLongTaskSignal(),
       throttleMs: 120,
       onSnapshot: (markdown) => showStreamingSurfacePreview("outline", stripRebuildMarkdownFence(markdown)),
@@ -880,6 +898,7 @@ ${body}${eli5Block ? `\n\n${eli5Block}` : ""}`;
     }, getLongTaskSignal());
 
     const streamedContent = await readModelTextStream(response, {
+      onModel: noteServedWritingModel,
       signal: getLongTaskSignal(),
       throttleMs: 120,
       onSnapshot: (markdown) => showStreamingSurfacePreview("sectionDrafts", stripRebuildMarkdownFence(markdown)),
@@ -944,6 +963,7 @@ ${currentDraft || "No draft yet. Give planning suggestions for starting this sec
     }, getLongTaskSignal());
 
     const streamedContent = await readModelTextStream(response, {
+      onModel: noteServedWritingModel,
       signal: getLongTaskSignal(),
       throttleMs: 120,
       onSnapshot: (markdown) => showStreamingSurfacePreview("sectionDrafts", stripRebuildMarkdownFence(markdown)),
@@ -1152,12 +1172,16 @@ function openOnlineCitationInReader(url) {
   return openClioWebCitationInReader(url);
 }
 
+// Answers whether a report was produced. The caller that records the run — the
+// application registry's review intent — used to report success whatever
+// happened in here, so a check that never reached a model still wrote a receipt
+// saying the run completed.
 async function runClaimCheck(options = {}) {
-  if (!ensureTeachTextReviewState({ promoteSavedFinal: true })) return;
+  if (!ensureTeachTextReviewState({ promoteSavedFinal: true })) return false;
   const fullBody = teachTextBodyInput.value.trim();
   if (!fullBody) {
     setStatus(t("teachtext_empty"));
-    return;
+    return false;
   }
 
   const sectionOnly = options.sectionOnly === true;
@@ -1165,7 +1189,7 @@ async function runClaimCheck(options = {}) {
   if (sectionOnly && !section?.text) {
     setStatus(t("claim_section_empty"));
     renderClaimCheckSections();
-    return;
+    return false;
   }
   const body = sectionOnly ? section.text : fullBody;
   const scope = sectionOnly
@@ -1176,7 +1200,7 @@ async function runClaimCheck(options = {}) {
   const runningLabel = sectionOnly ? t("running_section_check", section.title) : t("running_check");
   currentClaimCheckFileId = activeTextFileId || "";
 
-  if (!beginLongTask(taskKey, runningLabel)) return;
+  if (!beginLongTask(taskKey, runningLabel)) return false;
   openReviewDesk("facts");
   setClaimCheckWaiting(sectionOnly ? t("claim_check_scanning_section", section.title) : t("claim_check_scanning"));
 
@@ -1186,7 +1210,7 @@ async function runClaimCheck(options = {}) {
       if (!claims.length) {
         claimResultsEl.innerHTML = `<div class="empty-folder-note">${escapeHtml(t("claim_check_online_none"))}</div>`;
         setStatus(t("claim_check_online_none"));
-        return;
+        return false;
       }
       const results = [];
       for (let index = 0; index < claims.length; index += 1) {
@@ -1210,7 +1234,7 @@ async function runClaimCheck(options = {}) {
       setClaimCheckWaiting(t("claim_check_online_rendering"));
       renderOnlineClaimResults(results, currentClaimCheckScope);
       setStatus(t("claim_check_online_done"));
-      return;
+      return true;
     }
 
     setClaimCheckWaiting(sectionOnly ? t("claim_check_retrieving_section", section.title) : t("claim_check_retrieving"));
@@ -1304,6 +1328,7 @@ ${body}`;
       answerText: claimReportText,
     });
     settleWritingRouteAnswer(claimReceiptId, true, claimReportText);
+    return true;
   } catch (error) {
     if (!isAbortError(error)) {
       console.error("Claim check failed", error);
@@ -1311,6 +1336,7 @@ ${body}`;
       claimResultsEl.innerHTML = `<div class="empty-folder-note">${message}</div>`;
       setStatus(message);
     }
+    return false;
   } finally {
     endLongTask(taskKey);
   }

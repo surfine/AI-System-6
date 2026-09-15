@@ -56,7 +56,7 @@ const securityHeaders = Object.freeze([
   "X-Frame-Options: DENY",
   "Cross-Origin-Resource-Policy: same-origin",
   "Permissions-Policy: camera=(), geolocation=(), microphone=(self), payment=(), usb=()",
-  "Content-Security-Policy: default-src 'self'; script-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; worker-src 'self' blob:; frame-src 'self' https://challenges.cloudflare.com; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
+  "Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; worker-src 'self' blob:; frame-src 'self' https://challenges.cloudflare.com; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
 ]);
 
 /** The full `_headers` file contents. */

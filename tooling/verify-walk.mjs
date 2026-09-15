@@ -652,10 +652,14 @@ async function runDemoDiskWalk(browser, serverUrl) {
   });
 
   const routeStops = [
-    { spine: "open-question-sheet", windowName: "questionSheet", label: "Question Sheet", selector: "#question-sheet-body", marker: "Developer Transition Kit" },
+    // The corner click is where the Dictation Pad's floating mic button
+    // parks when a field has no toolbar row of its own, so clicking there
+    // summons the pad instead of the paper. The walk stays honest by clicking
+    // the middle of these two papers, which is what a person would do.
+    { spine: "open-question-sheet", windowName: "questionSheet", label: "Question Sheet", selector: "#question-sheet-body", marker: "Developer Transition Kit", clickPoint: "center" },
     { spine: "open-outline", windowName: "outline", label: "Outline", selector: "#outline-content", marker: "试车" },
     { spine: "open-section-drafts", windowName: "sectionDrafts", label: "Section Drafts", selector: "#draft-body", marker: "Developer Transition Kit" },
-    { spine: "open-teachtext", windowName: "teachText", label: "Manuscript", selector: "#teachtext-body", marker: "未来通车之后" },
+    { spine: "open-teachtext", windowName: "teachText", label: "Manuscript", selector: "#teachtext-body", marker: "未来通车之后", clickPoint: "center" },
   ];
 
   await runStop(page, passId, "writing-route-content", "every restored writing-route stop shows its real content", async () => {
@@ -668,7 +672,7 @@ async function runDemoDiskWalk(browser, serverUrl) {
       const value = await page.inputValue(stop.selector);
       assert(value.includes(stop.marker), `${stop.label} did not render the demo disk's real content (expected to find "${stop.marker}")`);
       if (stop.windowName === "outline") await ensureOutlineTextViewVisible(page);
-      await clickIntoPaper(page, stop.windowName, stop.selector, stop.label);
+      await clickIntoPaper(page, stop.windowName, stop.selector, stop.label, stop.clickPoint ? { point: stop.clickPoint } : {});
     }
   });
 

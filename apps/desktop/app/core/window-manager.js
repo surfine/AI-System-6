@@ -1009,12 +1009,43 @@ function focusWindow(win, reveal=false) {
   scheduleWorkingSessionSave?.();
 }
 
-function isPortraitDocumentFlow() {
-  return window.matchMedia("(max-width:860px) and (orientation:portrait)").matches;
-}
+// A phone is a device class, not a width, and both halves of this query are
+// load-bearing.
+//
+// The width half is the portrait screen the mobile layout was written for. The
+// height half is the SAME phone turned sideways, which is WIDER than the old
+// 860px line -- an iPhone Air is 912 CSS px in landscape, an iPhone 16 Pro Max
+// 956 -- so rotating the device switched every mobile rule off and laid all 76
+// windows out as a desktop Mac. Measured 2026-09-05; the phone matrix gate
+// (tooling/verify-device-matrix.mjs) is what keeps it measured.
+//
+// The coarse-pointer condition is what keeps a short DESKTOP window out: a
+// laptop browser resized to 900x480 has a mouse, a keyboard, and no reason to
+// lose its windows. The width half deliberately carries no such condition,
+// because a narrow desktop window does want the compact layout.
+//
+// 660px, not 500px, because iPhone Duo unfolded is 890x626 sideways: past the
+// width line, taller than 500, so opening a phone turned it into a desk. 660
+// clears it and stays under the shortest tablet landscape, 1024x768.
+//
+// This string is repeated verbatim by the CSS blocks that key on it.
+// tests/features/device-matrix.test.mjs holds the two definitions equal, so the
+// engine and the stylesheet can never disagree about what a phone is.
+const phoneViewportQuery = "(max-width: 860px), (hover: none) and (pointer: coarse) and (max-height: 660px)";
 
 function isNarrowViewport() {
-  return window.matchMedia("(max-width: 860px)").matches;
+  return window.matchMedia(phoneViewportQuery).matches;
+}
+
+function isPortraitDocumentFlow() {
+  return isNarrowViewport() && window.matchMedia("(orientation: portrait)").matches;
+}
+
+// The landscape half of the phone matrix. It is a separate design from
+// portrait -- a 912x420 screen wants one wide page, not a tall column -- but
+// it is the same task model, so it shares every role and every escape path.
+function isLandscapeDocumentFlow() {
+  return isNarrowViewport() && window.matchMedia("(orientation: landscape)").matches;
 }
 
 // Mobile is a presentation system, not a collection of one-off app patches.
@@ -1039,6 +1070,10 @@ const mobileFullScreenAppIds = new Set([
   "clioPaint",
   "liquidCover",
   "cmfStudio",
+  // The Image Prompt Studio built its window but never declared a phone role,
+  // so it stayed a 348px floating panel sitting on top of the desktop icons
+  // while every sibling lab took the shell.
+  "imagePromptStudio",
   "soundscape",
   "themeLab",
   "scrapbook",
@@ -1264,6 +1299,33 @@ function syncFinderVolumeSemantics(winOrName) {
   win.dataset.finderRemovable = String(volume.removable);
 }
 
+// Does this frame leave a Finder page room to show anything?
+//
+// The strips a window wears above its content — the title bar, the details
+// strip, the Finder navigation bar — are chrome; what is left under them is
+// the content area, which is the whole reason a Finder page opens. A frame
+// with no content area has nothing to hand over: the target inherits the
+// strip, and openWindow skips fitFinderWindowToContents whenever a frame is
+// reused, so nothing measures the target again. The strip then lays its own
+// frame lane over its Zoom and close boxes, and no control inside the window
+// can get it back.
+//
+// One title bar's worth of content is the floor, and it separates the two
+// cases by a wide margin in both directions. Measured on the running app at
+// 1280x860: the shortest real Finder page is Control Strip Modules at 116px
+// over 80px of chrome, and the tallest is Project Hard Disk at 514px over
+// the same 80px; a WindowShade stub is a ~20px title bar with a 1px seam
+// under it, which is why "taller than its chrome" was not enough.
+function finderFrameHasContentRoom(win, frame) {
+  const height = Number.parseFloat(frame?.height);
+  if (!win || !Number.isFinite(height)) return false;
+  const chrome = [...win.children]
+    .filter((el) => el.matches(".title-bar, .details-bar, .finder-navigation-bar"))
+    .reduce((total, el) => total + el.offsetHeight, 0);
+  const titleBar = win.querySelector(":scope > .title-bar")?.offsetHeight || 0;
+  return height - chrome >= titleBar;
+}
+
 function replaceVisibleFinderLocation(targetWindowName) {
   if (!mobileFinderPageWindowNames.has(targetWindowName)) return null;
   // A WindowShade-collapsed source is a title bar, not a place to continue
@@ -1292,9 +1354,14 @@ function replaceVisibleFinderLocation(targetWindowName) {
   const source = narrowPageFlow
     ? candidates[0] || null
     : candidates.find((win) => isFinderLocationStep(win.dataset.window, targetWindowName)) || null;
-  const frame = source && !narrowPageFlow
+  // WindowShade is checked by class above because that is the case the code
+  // reads for; the class is not the invariant. Judge the frame itself, so a
+  // source left short by anything else -- a restored session that saved a
+  // strip, a window measured before its content painted -- cannot pass one on.
+  const candidateFrame = source && !narrowPageFlow
     ? windowFrame(source)
     : null;
+  const frame = finderFrameHasContentRoom(source, candidateFrame) ? candidateFrame : null;
 
   document.querySelectorAll(".window").forEach((win) => {
     if (!mobileFinderPageWindowNames.has(win.dataset.window) || win.dataset.window === targetWindowName) return;
@@ -1640,7 +1707,10 @@ function syncMobileWindowPresentationClasses() {
         win.classList.add("is-mobile-work-area");
       }
     }
-    if (!portrait) return;
+    // Roles belong to the device, not to the orientation. They used to be
+    // applied only in portrait, which is why a phone turned sideways carried
+    // no role on any of its 76 windows and fell back to desktop geometry.
+    if (!narrow) return;
     const role = mobileWindowPresentation(win);
     if (role) win.classList.add(`is-mobile-${role}`);
   });
@@ -1659,15 +1729,16 @@ function mobileWindowCanFillScreen(win) {
 }
 
 function mobileFullScreenTarget() {
-  const immersiveLandscape = !isPortraitDocumentFlow()
-    && isNarrowViewport()
-    && window.matchMedia("(orientation:landscape)").matches;
-  if (!isPortraitDocumentFlow() && !immersiveLandscape) return null;
+  // Both orientations of a phone hand the screen to one app page. Landscape
+  // used to admit only the three games, on the reasoning that their content IS
+  // the screen; but a 912x420 display has no room for a floating window plus a
+  // desktop either, and the restore path (zoom box / grow box) is what keeps
+  // this a maximize rather than a lock. So every app page takes it.
+  if (!isPortraitDocumentFlow() && !isLandscapeDocumentFlow()) return null;
   const wins = Array.from(
     document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden):not(.is-collapsed)")
   ).filter((win) => (
     mobileWindowCanFillScreen(win)
-    && (!immersiveLandscape || isMobileImmersiveWindow(win))
     // Zooming or dragging the grow box restores a window down; it then stays a
     // normal floating window (so several can share the screen) until the zoom
     // box maximizes it again.
@@ -1697,8 +1768,15 @@ function syncMobileAppForeground() {
   // Landscape geometry is a separate design, so the CSS keys on the state the
   // shell already computed instead of re-deriving it from a media query.
   document.body.classList.toggle(
-    "mobile-immersive-landscape",
-    !!target && isMobileImmersiveWindow(target) && !isPortraitDocumentFlow()
+    "mobile-landscape-shell",
+    !!target && isLandscapeDocumentFlow()
+  );
+  // Immersive apps -- the games -- keep one distinction of their own: their
+  // artifact is the screen, so the landscape shell drops the window pane's
+  // reading padding for them and lets the canvas reach the safe-area edges.
+  document.body.classList.toggle(
+    "mobile-immersive-app",
+    !!target && isMobileImmersiveWindow(target)
   );
   repairPortraitDeskAccessoryGeometry();
 }
@@ -2024,12 +2102,16 @@ function clearFinderContentFit(win, options = {}) {
 // scroll. Start at the authored width, then add one icon column at a time only
 // when the current desktop height cannot hold the full grid. The desktop bounds
 // remain the hard ceiling; oversized folders keep scrolling normally.
+// A fitted Finder window may not go below two columns of icons by two rows.
+const FINDER_FIT_FLOOR_WIDTH = 560;
+const FINDER_FIT_FLOOR_HEIGHT = 420;
+
 function fitFinderWindowToContents(win, options = {}) {
   if (
     !win
     || !isFinderContentWindow(win)
     || isPortraitDocumentFlow()
-    || window.matchMedia("(max-width: 860px)").matches
+    || isNarrowViewport()
   ) return false;
 
   const scroller = win.querySelector(".window-frame-scroller");
@@ -2088,6 +2170,13 @@ function fitFinderWindowToContents(win, options = {}) {
     if (desiredHeight <= maxHeight + 1 || width >= maxWidth || !iconMode) break;
     width = Math.min(maxWidth, width + columnStep);
   }
+
+  // A folder holding one row of icons must not open as a letterbox: the floor
+  // is the room a folder window is expected to have, the ceiling is the desk.
+  const comfortableWidth = Math.min(maxWidth, FINDER_FIT_FLOOR_WIDTH);
+  const comfortableHeight = Math.min(maxHeight, FINDER_FIT_FLOOR_HEIGHT);
+  width = Math.min(maxWidth, Math.max(width, comfortableWidth));
+  desiredHeight = Math.max(desiredHeight, comfortableHeight);
 
   win.style.setProperty("--finder-fit-width", `${Math.round(width)}px`);
   win.style.setProperty("--finder-fit-height", `${Math.round(Math.min(maxHeight, desiredHeight))}px`);
@@ -2566,6 +2655,9 @@ function getActionAvailability() {
     "open-system-concepts-clio-stage": true,
     "open-about-multifinder": isMultiFinderMode(),
     "open-applications": true,
+    // Reading every project at once needs projects to read. A desk with none
+    // would open a window that can only say so.
+    "open-project-overview": Array.isArray(projects) && projects.length > 0,
     "open-dictionary": true,
     "open-docmap": true,
     "open-claim-check": true,
@@ -2814,7 +2906,7 @@ function updateMenuState() {
       btn.classList.toggle("is-checked", quickDraftSideAskActive);
     }
     if (action === "tile-windows") {
-      btn.classList.toggle("is-hidden", matchMedia("(max-width:860px) and (orientation:portrait)").matches);
+      btn.classList.toggle("is-hidden", isPortraitDocumentFlow());
     }
     // Preview/Edit toggles for the three writing surfaces: same shape as
     // toggle-outline-tree above, so the menu shows which mode is on instead
@@ -2942,6 +3034,13 @@ async function loadLazyWindowModule(name) {
   if (!entry || typeof entry.ensure !== "function") return;
   await entry.ensure();
   entry.attach?.();
+  // A lazy window is placed and clamped while it is still empty, and some of
+  // them grow when their module arrives -- an aspect-locked canvas asks for the
+  // size its content needs. Bonsai City measured 1000px wide at x=182 on an
+  // iPad in landscape, two pixels past the right edge, because the clamp had
+  // already run against a window that had not yet decided how big it was.
+  const win = document.querySelector(`.window[data-window="${name}"]`);
+  if (win && !win.classList.contains("is-hidden")) clampWindowToViewport(win);
 }
 
 // Appearance verification needs the real lazy window shell, not an active
@@ -3091,6 +3190,17 @@ async function openWindow(name, options = {}) {
     && win.dataset.userPositioned !== "true";
 
   if (shouldPlaceWindow && isFinderContentWindow(win)) {
+    fitFinderWindowToContents(win);
+  } else if (
+    isFinderContentWindow(win)
+    && !finderFrameHasContentRoom(win, windowFrame(win))
+  ) {
+    // Opening the window again is the way back from a frame with no content
+    // area. Nothing inside such a window can recover it — the frame lane
+    // covers its own Zoom and close boxes — and the paths that skip placement
+    // (an already-open window, a restored session) are exactly the ones that
+    // can be carrying one, including a session saved before the frame check
+    // above existed. The open the user just performed is the recovery.
     fitFinderWindowToContents(win);
   }
 
@@ -3775,7 +3885,7 @@ function arrangePortraitDeskAccessories(frontWin = null) {
 
 function getTileCandidateWindows() {
   if (writerMode) return [];
-  if (window.matchMedia("(max-width: 860px)").matches) return [];
+  if (isNarrowViewport()) return [];
   return Array.from(document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden)"))
     .filter((win) => {
       if (["about", "saveChat"].includes(win.dataset.window)) return false;
@@ -4031,7 +4141,7 @@ function getPreferredAssistantSidecarSource(name) {
 function placeAssistantSidecarWindow(name, win) {
   const margin = 16;
   const gap = 12;
-  const mobile = window.matchMedia("(max-width: 860px)").matches;
+  const mobile = isNarrowViewport();
   const desktop = document.querySelector(".desktop");
   const desktopRect = desktop?.getBoundingClientRect();
   const avoidance = getDesktopAvoidanceInsets({ margin, spineGap: 18, iconGap: 48 });
@@ -4185,7 +4295,7 @@ async function openAssistantAvoidingWindow(sourceName = "teachText") {
   const gap = 12;
   const viewportWidth = window.innerWidth;
   const viewportHeight = window.innerHeight;
-  const mobile = window.matchMedia("(max-width: 860px)").matches;
+  const mobile = isNarrowViewport();
   const sourceRect = sourceWindow.getBoundingClientRect();
   const topMin = menuHeight + margin;
   const maxHeight = Math.max(240, viewportHeight - topMin - margin);
@@ -4322,7 +4432,7 @@ async function arrangeWindowAssistantSplit(sourceWindowName, options = {}) {
   const avoidance = getDesktopAvoidanceInsets({ margin });
   const left = avoidance.left;
   const top = margin;
-  const isStacked = window.matchMedia("(orientation: portrait), (max-width: 860px)").matches;
+  const isStacked = window.matchMedia("(orientation: portrait)").matches || isNarrowViewport();
   const totalWidth = Math.max(340, desktopRect.width - avoidance.left - avoidance.right - margin);
   const menuBarBottom = document.querySelector(".menu-bar")?.getBoundingClientRect().bottom || 0;
   const desktopTop = Math.max(desktopRect.top, menuBarBottom);
@@ -4812,7 +4922,14 @@ function getDesktopAvoidanceInsets({ margin = 18, spineGap = 18, iconGap = 34 } 
     left: spineVisible
       ? Math.max(margin, Math.ceil(spineRect.right - (desktopRect?.left || 0) + spineGap))
       : margin,
-    right: iconsVisible ? Math.ceil(iconRect.width + iconGap) : 0,
+    // Measured from where the column IS, not from how wide it is. The two were
+    // the same number while the column was glued to the display's right edge;
+    // once it follows the composition inset (2026-09-05) a width-based figure
+    // left the work area running underneath it, and a zoomed window covered
+    // the launcher on a 27-inch display.
+    right: iconsVisible
+      ? Math.max(margin, Math.ceil((desktopRect?.right || 0) - iconRect.left + iconGap))
+      : 0,
   };
 }
 
@@ -4856,6 +4973,43 @@ function avoidWritingSpineOverlap(win, { gap = 18 } = {}) {
   return true;
 }
 
+// A command panel is anchored to the button that opens it, so a button near a
+// screen edge opens the panel past it. Three separate menus have been
+// re-anchored by hand for this — the writing route's Cmds, Quick Draft's
+// deliver menu, TeachText's Commands — and each fix only moved the problem to
+// whichever menu sat at the other end of its row. One nudge, applied to
+// whatever opens, ends the family: the panel still belongs to its button, it
+// just stops crossing the edge.
+function clampCommandPopoverIntoView(panel, margin = 8) {
+  if (!panel) return;
+  panel.style.removeProperty("transform");
+  const box = panel.getBoundingClientRect();
+  if (box.width <= 4 || box.height <= 4) return;
+  const pastRight = Math.round(box.right - window.innerWidth + margin);
+  const pastLeft = Math.round(margin - box.left);
+  const shiftX = pastRight > 0 ? -pastRight : (pastLeft > 0 ? pastLeft : 0);
+  // Sideways, a phone is shorter than these panels are tall: the route's own
+  // Cmds panel ended 8px under the screen even after it was capped, because
+  // the cap changes its height and the anchor decides where its bottom sits.
+  // Lift it by whatever hangs over, never past the top.
+  const pastBottom = Math.round(box.bottom - window.innerHeight + margin);
+  const headroom = Math.max(0, Math.round(box.top - margin));
+  const shiftY = pastBottom > 0 ? -Math.min(pastBottom, headroom) : 0;
+  if (shiftX || shiftY) panel.style.transform = `translate(${shiftX}px, ${shiftY}px)`;
+}
+
+// `toggle` does not bubble, so the desk listens for it in the capture phase.
+document.addEventListener("toggle", (event) => {
+  const menu = event.target;
+  if (!(menu instanceof HTMLElement) || !menu.classList?.contains("teachtext-command-menu")) return;
+  const panels = menu.querySelectorAll(".teachtext-command-popover, .teachtext-command-subpopover");
+  if (!menu.open) {
+    panels.forEach((panel) => panel.style.removeProperty("transform"));
+    return;
+  }
+  panels.forEach((panel) => clampCommandPopoverIntoView(panel));
+}, true);
+
 function reflowWindowsAroundWritingSpine() {
   let changed = false;
   document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden)").forEach((win) => {
@@ -4874,7 +5028,7 @@ function zoomWindow(win) {
   if (!isZoomableWindow(win)) return;
   playSystemSound("zoom");
 
-  if(matchMedia("(max-width:860px)").matches){
+  if (isNarrowViewport()) {
     win.classList.remove("is-collapsed");
     // For an app that can take the full-screen shell, the zoom box is the
     // maximize/restore control: it toggles between filling the screen and
@@ -4962,7 +5116,7 @@ function zoomWindow(win) {
 
 function maximizeWindow(win, options = {}) {
   if (!isResizableWindow(win)) return;
-  if(matchMedia("(max-width:860px)").matches){
+  if (isNarrowViewport()) {
     win.classList.remove("is-collapsed");
     win.dataset.zoomed="true";
     focusWindow(win,1);
@@ -4970,7 +5124,7 @@ function maximizeWindow(win, options = {}) {
     return;
   }
   if (writerMode && writerModeCssOwnedWindows.has(win.dataset.window)) return;
-  if (window.matchMedia("(max-width: 860px)").matches) return;
+  if (isNarrowViewport()) return;
 
   const desktop = document.querySelector(".desktop");
   const desktopRect = desktop.getBoundingClientRect();
@@ -5030,7 +5184,7 @@ function createWindowOutline(rect, win = null) {
 
 function startWindowResize(event, win) {
   const portraitFlow = isPortraitDocumentFlow() && !writerMode && getWindowAppId(win) !== "accessories";
-  if (!isResizableWindow(win) || (!portraitFlow && window.matchMedia("(max-width: 860px)").matches)) return;
+  if (!isResizableWindow(win) || (!portraitFlow && isNarrowViewport())) return;
   // Writing-mode split panes are CSS-owned fixed columns; a live resize would
   // write inline width/height that beats the non-!important split rules.
   if (writerMode && writerModeCssOwnedWindows.has(win.dataset.window)) return;
@@ -5201,14 +5355,17 @@ function tileWindows(candidateWindows = null) {
   if (openWindows.length === 0) return;
 
   const desktop = document.querySelector(".desktop");
-  const iconColumn = document.querySelector(".icon-column");
   const padding = 18;
   const topPadding = 28;
   const bottomPadding = 18;
-  const iconRect = iconColumn?.getBoundingClientRect();
   const avoidance = getDesktopAvoidanceInsets({ margin: padding, iconGap: 48 });
-  const iconGutter = iconRect && iconRect.width > 0 ? iconRect.width + 48 : 0;
-  const desktopWidth = desktop.clientWidth - avoidance.left - iconGutter - padding;
+  // Measured from where the launcher IS, not from how wide it is — the same
+  // correction getDesktopAvoidanceInsets() already carries. The two numbers
+  // agreed while the column was glued to the display's right edge; once it
+  // follows the composition inset, a width-derived gutter reserved 132px on a
+  // 2560pt desk where the column starts 470px from the edge, and Tile Windows
+  // laid the last column straight under the launcher.
+  const desktopWidth = desktop.clientWidth - avoidance.left - avoidance.right - padding;
   const desktopHeight = desktop.clientHeight;
   const tileableWindows = openWindows.filter((win) => tileableWindowNames.has(win.dataset.window));
   const fixedWindows = openWindows.filter((win) => !tileableWindowNames.has(win.dataset.window));
@@ -5230,7 +5387,19 @@ function tileWindows(candidateWindows = null) {
     ? desktopWidth - fixedColumnWidth - fixedGap - padding
     : desktopWidth - padding;
   const count = tileableWindows.length;
-  const cols = Math.ceil(Math.sqrt(count));
+  // A window that cannot shrink past its paper floor turns an over-ambitious
+  // column count into a window under the launcher: four writing surfaces hold
+  // 540px each, so two columns need 1098px of a 1024pt desk that has 612 to
+  // give, and the right-hand column landed on the icons. Ask the windows what
+  // width they can actually take before choosing the grid.
+  const minTileWidth = tileableWindows.reduce((widest, win) => {
+    const declared = Number.parseFloat(getComputedStyle(win).minWidth);
+    return Number.isFinite(declared) ? Math.max(widest, declared) : widest;
+  }, 0);
+  const maxCols = minTileWidth > 0
+    ? Math.max(1, Math.floor((tileAreaWidth + padding) / (minTileWidth + padding)))
+    : count;
+  const cols = Math.max(1, Math.min(Math.ceil(Math.sqrt(count)), maxCols));
   const rows = Math.ceil(count / cols);
 
   const winWidth = Math.floor((tileAreaWidth - (padding * (cols - 1))) / cols);

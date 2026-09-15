@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { existsSync, readdirSync } from "node:fs";
+import { appendFileSync, closeSync, existsSync, mkdirSync, mkdtempSync, openSync, readFileSync, readSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { availableParallelism } from "node:os";
 import { dirname, join } from "node:path";
 import { performance } from "node:perf_hooks";
@@ -11,6 +11,7 @@ const featureDir = join(root, "tests/features");
 const args = process.argv.slice(2).filter((arg) => arg !== "--");
 const requested = [];
 let requestedJobs = process.env.AI_SYSTEM6_TEST_JOBS;
+let verbose = false;
 
 for (let index = 0; index < args.length; index += 1) {
   const arg = args[index];
@@ -22,6 +23,8 @@ for (let index = 0; index < args.length; index += 1) {
     }
     requestedJobs = value;
     index += 1;
+  } else if (arg === "--verbose") {
+    verbose = true;
   } else if (arg === "--help") {
     console.log(`Usage:
   npm run verify:features
@@ -29,7 +32,8 @@ for (let index = 0; index < args.length; index += 1) {
   npm run verify:features -- --jobs <1-16> [feature...]
 
 AI_SYSTEM6_TEST_JOBS sets the same bounded worker count. The default uses up
-to eight logical CPUs.`);
+to eight logical CPUs. Successful assertion logs stay in dist/verification/;
+--verbose replays all logs. Failures print a bounded tail and the full log path.`);
     process.exit(0);
   } else {
     requested.push(arg);
@@ -76,6 +80,12 @@ if (!allTests.length) {
   process.exit(1);
 }
 
+const unknown = requested.filter((name) => !allTests.some((file) => name === file || name === featureName(file)));
+if (unknown.length) {
+  console.error(`NO  unknown feature selector(s): ${unknown.join(", ")}. No tests ran.`);
+  process.exit(2);
+}
+
 const selectedTests = requested.length
   ? allTests.filter((name) => requested.includes(featureName(name)) || requested.includes(name))
   : allTests;
@@ -86,58 +96,83 @@ if (!selectedTests.length) {
   process.exit(1);
 }
 
-// The daily feature suite is the slowest feedback loop in the repo (well over
-// a hundred isolated Node processes). The tests are independent — each spawns
-// its own VM with its own state — so they run concurrently with a bounded
-// worker pool and their output is replayed in the original order afterwards.
-// The concurrency bound keeps port-0 servers and shared evidence files from
-// colliding. Contract output order and pass/fail semantics stay the same as a
-// serial run; only the timing summary and worker count vary. CI and constrained
-// development machines can lower the pool explicitly with --jobs or
-// AI_SYSTEM6_TEST_JOBS.
+// Keep complete diagnostics on disk; passing assertions do not need to occupy
+// every subsequent model call. Each run owns its directory, including parallel runs.
+const evidenceRoot = join(root, "dist", "verification");
+mkdirSync(evidenceRoot, { recursive: true });
+const logDir = mkdtempSync(join(evidenceRoot, "features-"));
+const suiteStarted = performance.now();
 
-function runFeature(fileName) {
+function runFeature(fileName, index) {
   return new Promise((resolve) => {
     const started = performance.now();
-    const child = spawn(process.execPath, [join(featureDir, fileName)], {
-      cwd: root,
-      encoding: "utf8",
-    });
-    let stdout = "";
-    let stderr = "";
-    child.stdout.on("data", (chunk) => { stdout += chunk; });
-    child.stderr.on("data", (chunk) => { stderr += chunk; });
-    child.on("close", (status) => resolve({
-      durationMs: performance.now() - started,
-      stdout,
-      stderr,
-      status,
+    const logPath = join(logDir, `${index}-${featureName(fileName).replace(/[^a-zA-Z0-9_-]/g, "_")}.log`);
+    writeFileSync(logPath, "");
+    const child = spawn(process.execPath, [join(featureDir, fileName)], { cwd: root });
+    let outputBytes = 0;
+    const record = (chunk) => {
+      appendFileSync(logPath, chunk);
+      outputBytes += Buffer.byteLength(chunk);
+    };
+    child.stdout.on("data", record);
+    child.stderr.on("data", record);
+    child.on("error", (error) => record(String(error) + "\n"));
+    child.on("close", (status, signal) => resolve({
+      durationMs: performance.now() - started, logPath, outputBytes, status, signal,
     }));
   });
 }
 
 const results = new Array(selectedTests.length);
 let nextIndex = 0;
+let completed = 0;
 async function worker() {
   while (nextIndex < selectedTests.length) {
-    const index = nextIndex;
-    nextIndex += 1;
-    results[index] = await runFeature(selectedTests[index]);
+    const index = nextIndex++;
+    results[index] = await runFeature(selectedTests[index], index);
+    completed += 1;
+    if (selectedTests.length > 25 && completed % 25 === 0) {
+      console.log(`Features completed: ${completed}/${selectedTests.length}`);
+    }
   }
 }
 await Promise.all(
   Array.from({ length: Math.min(concurrency, selectedTests.length) }, () => worker())
 );
 
+function logTail(file, limit = 6000) {
+  const size = statSync(file).size;
+  const buffer = Buffer.alloc(Math.min(size, limit));
+  const fd = openSync(file, "r");
+  try { readSync(fd, buffer, 0, buffer.length, Math.max(0, size - limit)); }
+  finally { closeSync(fd); }
+  return (size > limit ? "[earlier output retained in log]\n" : "") + buffer.toString("utf8");
+}
+
 const failures = [];
+let remainingFailurePreview = 24000;
 selectedTests.forEach((fileName, index) => {
-  const label = featureName(fileName);
-  console.log(`\n# ${label}`);
   const result = results[index];
-  if (result.stdout) process.stdout.write(result.stdout);
-  if (result.stderr) process.stderr.write(result.stderr);
-  if (result.status !== 0) failures.push(label);
+  const label = featureName(fileName);
+  if (verbose) {
+    console.log(`\n# ${label}`);
+    process.stdout.write(readFileSync(result.logPath, "utf8"));
+  }
+  if (result.status !== 0) {
+    failures.push(label);
+    console.error(`NO  ${label} (exit ${result.status}, signal ${result.signal || "none"}) — ${result.logPath}`);
+    if (!verbose && remainingFailurePreview > 0) {
+      const limit = Math.min(6000, remainingFailurePreview);
+      process.stderr.write(logTail(result.logPath, limit));
+      remainingFailurePreview -= limit;
+    }
+  }
 });
+writeFileSync(join(logDir, "summary.json"), JSON.stringify({
+  durationMs: performance.now() - suiteStarted,
+  tests: selectedTests.map((file, index) => ({ file, ...results[index] })),
+}, null, 2) + "\n");
+console.log(`Full feature logs: ${logDir}`);
 
 const slowest = selectedTests
   .map((fileName, index) => ({
@@ -159,11 +194,11 @@ if (failures.length) {
 // Public coverage summary: every public product feature must keep at least one
 // public-safe contract test, or the summary prints ✗ and the gate fails.
 const missingContracts = publicContractFiles().filter((file) => !existsSync(join(featureDir, file)));
-console.log("\nPublic product contracts:");
+if (verbose) console.log("\nPublic product contracts:");
 let publicCoverageFailures = 0;
 for (const entry of publicProductContracts) {
   const covered = entry.tests.every((file) => existsSync(join(featureDir, file)));
-  console.log(`${covered ? "✓" : "✗"} ${entry.feature}`);
+  if (verbose || !covered) console.log(`${covered ? "✓" : "✗"} ${entry.feature}`);
   if (!covered) publicCoverageFailures += 1;
 }
 if (missingContracts.length) {
@@ -174,4 +209,4 @@ if (publicCoverageFailures || missingContracts.length) {
   process.exit(1);
 }
 
-console.log(`\nFeature verification passed: ${selectedTests.length} feature test(s) with ${Math.min(concurrency, selectedTests.length)} worker(s).`);
+console.log(`\nFeature verification passed: ${selectedTests.length} feature test(s) with ${Math.min(concurrency, selectedTests.length)} worker(s) in ${((performance.now() - suiteStarted) / 1000).toFixed(2)}s.`);

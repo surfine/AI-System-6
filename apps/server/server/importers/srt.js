@@ -477,7 +477,7 @@ function buildSubtitleTranslationParagraphs(blocks) {
  */
 function requestParagraphBatchTranslation(paragraphs, mode, options) {
   const cloudActive = !!(options.cloudActive && options.cloudApiKey);
-  const model = cloudActive ? (options.cloudModel || "deepseek-v4-flash") : visionOcrModel;
+  const model = cloudActive ? (options.cloudModel || "deepseek-flash") : visionOcrModel;
   const structured = cloudActive && isResponsesEligible({ baseUrl: options.cloudBaseUrl, model });
   const systemPrompt = mode === "en"
     ? "你是 AI System 6 的字幕翻译助手。请把中文视频字幕段落翻译成自然、简洁的英文。"
@@ -556,7 +556,7 @@ function englishSubtitleTooLong(sourceText, translatedText) {
  */
 async function requestSubtitleBatchTranslation(texts, mode, options, attemptLabel = "") {
   const cloudActive = !!(options.cloudActive && options.cloudApiKey);
-  const model = cloudActive ? (options.cloudModel || "deepseek-v4-flash") : visionOcrModel;
+  const model = cloudActive ? (options.cloudModel || "deepseek-flash") : visionOcrModel;
   const structured = cloudActive && isResponsesEligible({ baseUrl: options.cloudBaseUrl, model });
   const systemPrompt = mode === "en"
     ? "你是 AI System 6 的字幕翻译助手。请把简体中文字幕行翻译成适合屏幕阅读的自然英文字幕。"

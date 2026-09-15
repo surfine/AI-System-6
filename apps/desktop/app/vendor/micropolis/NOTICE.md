@@ -23,6 +23,16 @@
 - Sound relay (AI System 6): spriteManager.js relays the sprite sound cues
   (explosion, honk, monster, heavy traffic) to the manager's listeners, so
   the shell's synthesized audio can hear them.
+- Bug fix (AI System 6): traffic.js calls the copy constructor
+  `new Position(otherPosition)` that position.ts no longer has, and drives
+  from an undeclared `pos`; the driving position was never a real position,
+  so no route was ever found and the traffic density map stayed empty for the
+  life of every city. Patched to copy by coordinate and to drive from
+  `drivePos` at bundle time.
+- Bug fix (AI System 6): blockMapUtils.js crimeScan reads `mapWidth`/
+  `mapHeight` off a BlockMap, which names them `gameMapWidth`/
+  `gameMapHeight`; the loop bound was undefined, so the scan never ran and
+  `census.crimeAverage` was zero in every city. Patched at bundle time.
 - License: GNU GPL v3 with additional terms — see LICENSE and COPYING here.
 - The name/term "MICROPOLIS" is a registered trademark of Micropolis GmbH,
   licensed to the Micropolis project as a courtesy of the owner.

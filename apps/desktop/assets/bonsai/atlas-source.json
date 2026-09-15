@@ -1,6 +1,6 @@
 {
   "schema": "ai-system-6-bonsai-micro-voxel-source-v2",
-  "authoredAt": "2026-08-24T00:00:00.000Z",
+  "authoredAt": "2026-09-11T00:00:00.000Z",
   "author": "AI System 6",
   "license": "MIT",
   "source": "original",
@@ -14,21 +14,21 @@
   },
   "palette": {
     "grass": [
-      86,
-      124,
-      72,
+      108,
+      139,
+      87,
       255
     ],
     "grassLight": [
-      112,
-      150,
-      88,
+      121,
+      148,
+      98,
       255
     ],
     "grassDark": [
-      56,
-      86,
-      50,
+      78,
+      106,
+      65,
       255
     ],
     "soil": [
@@ -56,16 +56,16 @@
       255
     ],
     "water": [
-      64,
-      112,
-      140,
-      224
+      74,
+      132,
+      153,
+      235
     ],
     "waterLight": [
-      96,
-      148,
-      172,
-      236
+      114,
+      166,
+      180,
+      240
     ],
     "sand": [
       198,
@@ -74,15 +74,15 @@
       255
     ],
     "road": [
-      84,
-      84,
-      80,
+      81,
+      87,
+      87,
       255
     ],
     "roadLight": [
-      128,
-      128,
-      120,
+      166,
+      166,
+      151,
       255
     ],
     "rail": [
@@ -110,15 +110,15 @@
       255
     ],
     "tree": [
-      52,
-      102,
-      56,
+      68,
+      109,
+      63,
       255
     ],
     "treeLight": [
-      90,
-      136,
-      74,
+      109,
+      145,
+      85,
       255
     ],
     "trunk": [
@@ -374,105 +374,105 @@
       255
     ],
     "resBrick": [
-      152,
-      92,
-      78,
+      159,
+      119,
+      99,
       255
     ],
     "resCream": [
-      196,
-      176,
-      142,
+      193,
+      186,
+      166,
       255
     ],
     "resOlive": [
-      126,
-      130,
-      96,
+      170,
+      175,
+      157,
       255
     ],
     "resSlate": [
-      128,
-      132,
-      142,
+      164,
+      172,
+      172,
       255
     ],
     "comBlue": [
-      92,
-      122,
-      158,
+      169,
+      184,
+      186,
       255
     ],
     "comTeal": [
-      84,
-      140,
-      138,
+      159,
+      177,
+      172,
       255
     ],
     "comSand": [
-      186,
-      166,
-      124,
+      191,
+      183,
+      161,
       255
     ],
     "comGrey": [
-      142,
-      146,
-      152,
+      175,
+      180,
+      175,
       255
     ],
     "indTan": [
       176,
-      150,
-      96,
+      168,
+      147,
       255
     ],
     "indRust": [
-      158,
-      104,
-      70,
+      157,
+      140,
+      125,
       255
     ],
     "indOlive": [
-      132,
-      128,
-      88,
+      161,
+      168,
+      151,
       255
     ],
     "indSteel": [
-      140,
-      146,
-      150,
+      163,
+      175,
+      173,
       255
     ],
     "roofClay": [
-      150,
-      78,
-      62,
+      143,
+      95,
+      77,
       255
     ],
     "roofSlate": [
-      96,
-      100,
-      110,
+      93,
+      107,
+      112,
       255
     ],
     "roofGreen": [
-      92,
-      110,
-      88,
+      104,
+      120,
+      109,
       255
     ],
     "roofRust": [
-      132,
-      88,
-      58,
+      137,
+      107,
+      86,
       255
     ],
     "roofLead": [
-      118,
-      118,
-      122,
+      130,
+      137,
+      133,
       255
     ],
     "subway": [
@@ -503,7 +503,7 @@
         "grass",
         "grassDark"
       ],
-      "height": 8
+      "height": 10
     },
     {
       "id": "terrain.soil",
@@ -513,7 +513,7 @@
         "soil",
         "grassDark"
       ],
-      "height": 8
+      "height": 10
     },
     {
       "id": "terrain.rock",
@@ -523,7 +523,7 @@
         "rock",
         "grassDark"
       ],
-      "height": 8
+      "height": 10
     },
     {
       "id": "terrain.water",
@@ -574,7 +574,7 @@
         "snowDark",
         "rockLight"
       ],
-      "height": 8
+      "height": 10
     }
   ],
   "connectors": [
@@ -929,6 +929,10 @@
     "tree.winter": {
       "top": "canopy.winter",
       "side": "canopy.winter"
+    },
+    "roof.dark": {
+      "top": "roof.dark",
+      "side": "roof.dark"
     }
   },
   "textures": [
@@ -1099,7 +1103,8 @@
       "window": "glass",
       "cols": 3,
       "rows": 2,
-      "brick": true
+      "brick": false,
+      "clerestory": true
     },
     {
       "id": "wall.i.night",
@@ -1110,7 +1115,8 @@
       "window": "windowNight",
       "cols": 3,
       "rows": 2,
-      "brick": true
+      "brick": false,
+      "clerestory": true
     },
     {
       "id": "roof",
@@ -1630,8 +1636,8 @@
       "id": "catalog.city_hall",
       "kind": "facility",
       "footprint": [
-        2,
-        2
+        3,
+        3
       ],
       "height": 52,
       "base": "concrete",
@@ -1642,8 +1648,8 @@
       "id": "catalog.hospital",
       "kind": "facility",
       "footprint": [
-        2,
-        2
+        3,
+        3
       ],
       "height": 44,
       "base": "clinic",
@@ -1654,8 +1660,8 @@
       "id": "catalog.museum",
       "kind": "facility",
       "footprint": [
-        2,
-        2
+        3,
+        3
       ],
       "height": 36,
       "base": "concrete",
@@ -1678,8 +1684,8 @@
       "id": "catalog.prison",
       "kind": "facility",
       "footprint": [
-        2,
-        2
+        3,
+        3
       ],
       "height": 28,
       "base": "abandoned",
@@ -1690,8 +1696,8 @@
       "id": "catalog.college",
       "kind": "facility",
       "footprint": [
-        2,
-        2
+        3,
+        3
       ],
       "height": 40,
       "base": "school",
@@ -1702,8 +1708,8 @@
       "id": "catalog.zoo",
       "kind": "facility",
       "footprint": [
-        2,
-        2
+        3,
+        3
       ],
       "height": 24,
       "base": "grassDark",
@@ -1726,8 +1732,8 @@
       "id": "catalog.park_big",
       "kind": "facility",
       "footprint": [
-        2,
-        2
+        3,
+        3
       ],
       "height": 20,
       "base": "grassLight",
@@ -1870,8 +1876,8 @@
       "id": "catalog.control_tower",
       "kind": "facility",
       "footprint": [
-        1,
-        1
+        2,
+        2
       ],
       "height": 50,
       "base": "concrete",
@@ -1954,8 +1960,8 @@
       "id": "catalog.arcology",
       "kind": "facility",
       "footprint": [
-        3,
-        3
+        4,
+        4
       ],
       "height": 96,
       "base": "commercial",
@@ -1966,8 +1972,8 @@
       "id": "catalog.dome",
       "kind": "facility",
       "footprint": [
-        3,
-        3
+        4,
+        4
       ],
       "height": 72,
       "base": "commercial",
@@ -2002,8 +2008,8 @@
       "id": "catalog.power_plant",
       "kind": "facility",
       "footprint": [
-        2,
-        2
+        4,
+        4
       ],
       "height": 48,
       "base": "metal",
@@ -2015,9 +2021,8 @@
     "residential": {
       "1": {
         "walls": [
-          "resBrick",
           "resCream",
-          "resOlive",
+          "resBrick",
           "resSlate"
         ],
         "massing": [
@@ -2027,15 +2032,14 @@
           "gable"
         ],
         "roof": [
-          "pitched",
-          "hipped"
+          "pitched"
         ],
         "clutter": [
           "chimney"
         ],
         "groundFloor": {
           "kind": "door",
-          "height": 6
+          "height": 5
         },
         "floorHeight": 9,
         "rhythms": [
@@ -2064,19 +2068,40 @@
         "sparseWindows": true,
         "banding": false,
         "roofColors": [
-          "roofClay",
           "roofSlate",
-          "roofGreen",
-          "roofRust",
-          "roofLead"
+          "roofClay"
         ],
-        "inset": 0.2
+        "inset": 0.18,
+        "heightScale": 1,
+        "planning": {
+          "zone": "residential",
+          "stage": 1,
+          "tileMeters": 16,
+          "coverageRange": [
+            0.28,
+            0.4
+          ],
+          "farRange": [
+            0.28,
+            0.8
+          ],
+          "forms": [
+            "detached",
+            "house-garage",
+            "l-house"
+          ],
+          "stories": [
+            1,
+            1
+          ],
+          "storeyMeters": 3.2
+        },
+        "roofRise": 5
       },
       "2": {
         "walls": [
-          "resBrick",
           "resCream",
-          "resOlive",
+          "resBrick",
           "resSlate"
         ],
         "massing": [
@@ -2088,19 +2113,14 @@
           "stepped"
         ],
         "roof": [
-          "flat",
-          "pitched",
-          "stepped"
+          "flat"
         ],
         "clutter": [
-          "tank",
-          "bulkhead",
-          "vents",
-          "chimney"
+          "vents"
         ],
         "groundFloor": {
           "kind": "door",
-          "height": 7
+          "height": 5
         },
         "floorHeight": 10,
         "rhythms": [
@@ -2129,19 +2149,40 @@
         "sparseWindows": true,
         "banding": true,
         "roofColors": [
-          "roofClay",
-          "roofSlate",
-          "roofGreen",
-          "roofRust",
-          "roofLead"
+          "roofLead",
+          "roofSlate"
         ],
-        "inset": 0.07
+        "inset": 0.07,
+        "heightScale": 1,
+        "planning": {
+          "zone": "residential",
+          "stage": 2,
+          "tileMeters": 16,
+          "coverageRange": [
+            0.3,
+            0.4
+          ],
+          "farRange": [
+            0.9,
+            2.0
+          ],
+          "forms": [
+            "bar",
+            "l-block",
+            "open-court"
+          ],
+          "stories": [
+            3,
+            5
+          ],
+          "storeyMeters": 3.2
+        },
+        "roofRise": 3
       },
       "3": {
         "walls": [
-          "resBrick",
           "resCream",
-          "resOlive",
+          "resBrick",
           "resSlate"
         ],
         "massing": [
@@ -2153,18 +2194,14 @@
           "wing"
         ],
         "roof": [
-          "flat",
-          "stepped"
+          "flat"
         ],
         "clutter": [
-          "tank",
-          "antenna",
-          "bulkhead",
           "vents"
         ],
         "groundFloor": {
           "kind": "door",
-          "height": 8
+          "height": 5
         },
         "floorHeight": 10,
         "rhythms": [
@@ -2193,13 +2230,38 @@
         "sparseWindows": true,
         "banding": true,
         "roofColors": [
-          "roofClay",
-          "roofSlate",
-          "roofGreen",
-          "roofRust",
-          "roofLead"
+          "roofLead",
+          "roofSlate"
         ],
-        "inset": 0.07
+        "inset": 0.07,
+        "heightScale": 1,
+        "planning": {
+          "zone": "residential",
+          "stage": 3,
+          "tileMeters": 16,
+          "coverageRange": [
+            0.27,
+            0.36
+          ],
+          "farRange": [
+            1.7,
+            3.0
+          ],
+          "forms": [
+            "slab",
+            "twin-bars",
+            "open-court",
+            "slab",
+            "slab",
+            "twin-bars"
+          ],
+          "stories": [
+            6,
+            8
+          ],
+          "storeyMeters": 3.2
+        },
+        "roofRise": 3
       }
     },
     "commercial": {
@@ -2217,15 +2279,14 @@
           "single"
         ],
         "roof": [
-          "flat",
-          "pitched"
+          "flat"
         ],
         "clutter": [
-          "sign"
+          "vents"
         ],
         "groundFloor": {
           "kind": "shopfront",
-          "height": 8
+          "height": 7
         },
         "floorHeight": 9,
         "rhythms": [
@@ -2254,13 +2315,36 @@
         "sparseWindows": false,
         "banding": true,
         "roofColors": [
-          "roofClay",
-          "roofSlate",
-          "roofGreen",
-          "roofRust",
-          "roofLead"
+          "roofLead",
+          "roofSlate"
         ],
-        "inset": 0.2
+        "inset": 0.2,
+        "heightScale": 1,
+        "planning": {
+          "zone": "commercial",
+          "stage": 1,
+          "tileMeters": 16,
+          "coverageRange": [
+            0.4,
+            0.52
+          ],
+          "farRange": [
+            0.4,
+            1.05
+          ],
+          "forms": [
+            "shop",
+            "corner-shop",
+            "shop-terrace",
+            "small-court"
+          ],
+          "stories": [
+            1,
+            2
+          ],
+          "storeyMeters": 3.6
+        },
+        "roofRise": 3
       },
       "2": {
         "walls": [
@@ -2278,18 +2362,15 @@
           "podium"
         ],
         "roof": [
-          "flat",
-          "stepped"
+          "flat"
         ],
         "clutter": [
-          "sign",
-          "bulkhead",
           "vents",
-          "antenna"
+          "bulkhead"
         ],
         "groundFloor": {
           "kind": "shopfront",
-          "height": 9
+          "height": 7
         },
         "floorHeight": 9,
         "rhythms": [
@@ -2318,13 +2399,35 @@
         "sparseWindows": false,
         "banding": true,
         "roofColors": [
-          "roofClay",
-          "roofSlate",
-          "roofGreen",
-          "roofRust",
-          "roofLead"
+          "roofLead",
+          "roofSlate"
         ],
-        "inset": 0.07
+        "inset": 0.07,
+        "heightScale": 1,
+        "planning": {
+          "zone": "commercial",
+          "stage": 2,
+          "tileMeters": 16,
+          "coverageRange": [
+            0.38,
+            0.52
+          ],
+          "farRange": [
+            1.1,
+            2.6
+          ],
+          "forms": [
+            "main-street",
+            "corner-block",
+            "open-court"
+          ],
+          "stories": [
+            3,
+            5
+          ],
+          "storeyMeters": 3.6
+        },
+        "roofRise": 3
       },
       "3": {
         "walls": [
@@ -2342,18 +2445,15 @@
           "courtyard"
         ],
         "roof": [
-          "flat",
-          "stepped"
+          "flat"
         ],
         "clutter": [
-          "sign",
-          "antenna",
-          "bulkhead",
-          "tank"
+          "vents",
+          "bulkhead"
         ],
         "groundFloor": {
           "kind": "shopfront",
-          "height": 9
+          "height": 7
         },
         "floorHeight": 9,
         "rhythms": [
@@ -2382,22 +2482,46 @@
         "sparseWindows": false,
         "banding": true,
         "roofColors": [
-          "roofClay",
-          "roofSlate",
-          "roofGreen",
-          "roofRust",
-          "roofLead"
+          "roofLead",
+          "roofSlate"
         ],
-        "inset": 0.07
+        "inset": 0.07,
+        "heightScale": 1,
+        "planning": {
+          "zone": "commercial",
+          "stage": 3,
+          "tileMeters": 16,
+          "coverageRange": [
+            0.4,
+            0.56
+          ],
+          "farRange": [
+            2.0,
+            3.5
+          ],
+          "forms": [
+            "office-block",
+            "corner-block",
+            "office-block",
+            "podium-tower",
+            "office-block",
+            "corner-block"
+          ],
+          "stories": [
+            6,
+            8
+          ],
+          "storeyMeters": 3.6
+        },
+        "roofRise": 3
       }
     },
     "industrial": {
       "1": {
         "walls": [
           "indTan",
-          "indRust",
-          "indOlive",
-          "indSteel"
+          "indSteel",
+          "indRust"
         ],
         "massing": [
           "single",
@@ -2410,8 +2534,7 @@
           "flat"
         ],
         "clutter": [
-          "vents",
-          "stack"
+          "vents"
         ],
         "groundFloor": {
           "kind": "loading",
@@ -2444,20 +2567,39 @@
         "sparseWindows": true,
         "banding": false,
         "roofColors": [
-          "roofClay",
-          "roofSlate",
-          "roofGreen",
-          "roofRust",
-          "roofLead"
+          "roofLead",
+          "roofSlate"
         ],
-        "inset": 0.2
+        "inset": 0.2,
+        "heightScale": 1,
+        "planning": {
+          "zone": "industrial",
+          "stage": 1,
+          "tileMeters": 16,
+          "coverageRange": [
+            0.34,
+            0.46
+          ],
+          "farRange": [
+            0.34,
+            0.6
+          ],
+          "forms": [
+            "workshop"
+          ],
+          "stories": [
+            1,
+            2
+          ],
+          "storeyMeters": 4.8
+        },
+        "roofRise": 3
       },
       "2": {
         "walls": [
           "indTan",
-          "indRust",
-          "indOlive",
-          "indSteel"
+          "indSteel",
+          "indRust"
         ],
         "massing": [
           "wing",
@@ -2472,13 +2614,11 @@
           "flat"
         ],
         "clutter": [
-          "stack",
-          "tank",
           "vents"
         ],
         "groundFloor": {
           "kind": "loading",
-          "height": 9
+          "height": 8
         },
         "floorHeight": 12,
         "rhythms": [
@@ -2507,20 +2647,39 @@
         "sparseWindows": true,
         "banding": false,
         "roofColors": [
-          "roofClay",
-          "roofSlate",
-          "roofGreen",
-          "roofRust",
-          "roofLead"
+          "roofLead",
+          "roofSlate"
         ],
-        "inset": 0.07
+        "inset": 0.07,
+        "heightScale": 1,
+        "planning": {
+          "zone": "industrial",
+          "stage": 2,
+          "tileMeters": 16,
+          "coverageRange": [
+            0.4,
+            0.5
+          ],
+          "farRange": [
+            0.4,
+            0.7
+          ],
+          "forms": [
+            "warehouse"
+          ],
+          "stories": [
+            1,
+            2
+          ],
+          "storeyMeters": 6.4
+        },
+        "roofRise": 3
       },
       "3": {
         "walls": [
           "indTan",
-          "indRust",
-          "indOlive",
-          "indSteel"
+          "indSteel",
+          "indRust"
         ],
         "massing": [
           "twin",
@@ -2531,18 +2690,15 @@
           "courtyard"
         ],
         "roof": [
-          "flat",
-          "sawtooth"
+          "sawtooth",
+          "flat"
         ],
         "clutter": [
-          "stack",
-          "tank",
-          "vents",
-          "antenna"
+          "vents"
         ],
         "groundFloor": {
           "kind": "loading",
-          "height": 10
+          "height": 8
         },
         "floorHeight": 12,
         "rhythms": [
@@ -2571,13 +2727,38 @@
         "sparseWindows": true,
         "banding": false,
         "roofColors": [
-          "roofClay",
-          "roofSlate",
-          "roofGreen",
-          "roofRust",
-          "roofLead"
+          "roofLead",
+          "roofSlate"
         ],
-        "inset": 0.07
+        "inset": 0.07,
+        "heightScale": 1,
+        "planning": {
+          "zone": "industrial",
+          "stage": 3,
+          "tileMeters": 16,
+          "coverageRange": [
+            0.35,
+            0.47
+          ],
+          "farRange": [
+            0.4,
+            0.7
+          ],
+          "forms": [
+            "factory",
+            "factory",
+            "factory",
+            "factory",
+            "factory",
+            "factory"
+          ],
+          "stories": [
+            1,
+            2
+          ],
+          "storeyMeters": 6.4
+        },
+        "roofRise": 3
       }
     }
   },
@@ -3440,6 +3621,18 @@
       "grass",
       "grassDark"
     ],
-    "step": 8
+    "step": 10
+  },
+  "urbanPlanning": {
+    "schema": "bonsai-parcel-planning-v1",
+    "tileMeters": 16,
+    "purpose": "Visual parcel design ranges, not zoning law or simulation capacity. Streets, setbacks and open space precede building mass.",
+    "floorHeightMeters": {
+      "residential": 3.2,
+      "commercial": 3.6,
+      "industrial": 6.4
+    },
+    "coverageDefinition": "Union of building footprints divided by parcel area, excluding paths, yards and equipment.",
+    "farDefinition": "Union of each occupied floor plate divided by parcel area."
   }
 }

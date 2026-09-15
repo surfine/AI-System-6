@@ -182,6 +182,9 @@ function settingsSnapshotPayload() {
       : "auto",
     importerMode: importerModeInput?.value || "auto",
     ocrEngine: ocrEngineInput?.value || "auto",
+    guestAgents: window.AISystem6GuestExecutor?.getApprovals?.() || {},
+    mcpServers: window.AISystem6GuestExecutor?.getServers?.() || {},
+    mcpDeskId: window.AISystem6GuestExecutor?.getDeskId?.() || "",
     contextLength: contextLengthInput.value,
     contextLengthByModel,
     contextLengthUserOverrides,
@@ -195,6 +198,9 @@ function settingsSnapshotPayload() {
     liquidTintLevel: liquidTintLevelInput ? Number(liquidTintLevelInput.value) : 0.5,
     soundEffects: soundEffectsInput.checked,
     menuClock: menuClockInput.checked,
+    // The Finder's own default: unmounted disks stay off the desk until asked
+    // for, and the menu-bar switcher is how they come back.
+    showUnmountedDisks: showUnmountedDisksInput?.checked === true,
     keepScreenAwake: document.getElementById("keep-screen-awake")?.checked || false,
     pauseAudioInBackground: document.getElementById("pause-audio-in-background")?.checked || false,
     controlStrip: controlStripState.enabled,
@@ -1354,6 +1360,16 @@ function friendlyLocalModelError(message = "") {
   if (/ECONNREFUSED|Failed to fetch|fetch failed|NetworkError|ENOTFOUND|EHOSTUNREACH|ETIMEDOUT/i.test(text)) {
     return t("lm_studio_unavailable_short");
   }
+  // The commonest local failure by far, and the one that reached a reader raw:
+  // the server is up and answering, but the model this desk has selected is not
+  // among the ones downloaded into it. The name is the useful part, so it is
+  // kept; the upstream code is not a sentence and was never meant to be read.
+  const missingModel = text.match(/(?:Failed to load LLM|not found in downloaded models)[^'"“]*['"“]([^'"”]+)['"”]/i)
+    || text.match(/model_not_found[^'"“]*['"“]([^'"”]+)['"”]/i);
+  if (missingModel) return t("local_model_not_downloaded", missingModel[1]);
+  if (/model_not_found|not found in downloaded models|Failed to load LLM/i.test(text)) {
+    return t("local_model_not_downloaded", "");
+  }
   return text || t("lm_studio_unavailable_short");
 }
 
@@ -2317,8 +2333,27 @@ function applySettings(settings) {
       || settings.localModelInputMode === "manual";
   }
   activeChatModelIdentifier = settings.chatModel || "";
-  if (searchProviderInput && ["auto", "duckduckgo", "bing", "deepseek"].includes(settings.searchProvider)) {
-    searchProviderInput.value = settings.searchProvider;
+  // The external MCP servers must be known before the saved search provider
+  // is applied: one of them may BE that provider, and its option does not
+  // exist until syncMcpSearchProviderOptions has run.
+  window.AISystem6GuestExecutor?.setServers?.(settings.mcpServers || {});
+  const savedSearchProvider = String(settings.searchProvider || "");
+  // A saved server provider must survive this pass even though the module that
+  // draws its menu entry is lazy: without a placeholder the value would fall
+  // back to Automatic and the next save would write that back, losing the
+  // writer's choice to a load order they never see. The lazy module relabels
+  // this entry when it arrives, or removes it if the server is gone.
+  if (savedSearchProvider.startsWith("mcp:") && searchProviderInput
+    && ![...searchProviderInput.options].some((option) => option.value === savedSearchProvider)) {
+    const placeholder = document.createElement("option");
+    placeholder.value = savedSearchProvider;
+    placeholder.textContent = savedSearchProvider.slice(4);
+    searchProviderInput.append(placeholder);
+  }
+  const searchProviderIsKnown = ["auto", "duckduckgo", "bing", "deepseek"].includes(savedSearchProvider)
+    || (savedSearchProvider.startsWith("mcp:") && [...(searchProviderInput?.options || [])].some((option) => option.value === savedSearchProvider));
+  if (searchProviderInput && searchProviderIsKnown) {
+    searchProviderInput.value = savedSearchProvider;
   } else if (searchProviderInput) {
     searchProviderInput.value = "auto";
   }
@@ -2330,6 +2365,8 @@ function applySettings(settings) {
   if (importerModeInput && ["auto", "markitdown"].includes(settings.importerMode)) {
     importerModeInput.value = settings.importerMode;
   }
+  window.AISystem6GuestExecutor?.setApprovals?.(settings.guestAgents || {});
+  window.AISystem6GuestExecutor?.setDeskId?.(settings.mcpDeskId || "");
   if (ocrEngineInput && ["auto", "tesseract", "paddle"].includes(settings.ocrEngine)) {
     ocrEngineInput.value = settings.ocrEngine;
   } else if (ocrEngineInput) {
@@ -2417,6 +2454,9 @@ function applySettings(settings) {
     menuClockInput.checked = settings.menuClock;
   } else {
     menuClockInput.checked = false;
+  }
+  if (showUnmountedDisksInput) {
+    showUnmountedDisksInput.checked = settings.showUnmountedDisks === true;
   }
   // Both default off: holding the screen on and silencing a player are things
   // the user asks for, never things a restored desk decides for them.
@@ -2720,8 +2760,12 @@ const runReceiptAppLabelKeys = {
 };
 
 function runReceiptAppLabel(sourceAppId) {
-  const key = runReceiptAppLabelKeys[String(sourceAppId || "")];
-  return key ? t(key) : (String(sourceAppId || "—"));
+  const id = String(sourceAppId || "");
+  // A guest agent signs its receipts guest:<name>; the list shows the name
+  // under the desk's own word for it so it never reads as a built-in app.
+  if (id.startsWith("guest:")) return t("guest_receipt_label", id.slice("guest:".length));
+  const key = runReceiptAppLabelKeys[id];
+  return key ? t(key) : (id || "—");
 }
 
 function ensureSystemStatusPanelContainer(id) {
@@ -2877,7 +2921,7 @@ function renderNotificationCenter() {
       const button = document.createElement("button");
       button.className = "btn mini-btn notification-open-button";
       button.type = "button";
-      button.textContent = item.actionLabel || t("open");
+      button.textContent = renderSystemNotificationActionLabel(item);
       button.addEventListener("click", () => openSystemNotification(item.id));
       row.append(button);
     }
@@ -2907,6 +2951,8 @@ function serializeSystemNotifications() {
     windowName: item.windowName || "",
     actionId: item.actionId || "",
     actionLabel: item.actionLabel || "",
+    actionLabelKey: item.actionLabelKey || "",
+    actionLabelArgs: item.actionLabelKey ? (item.actionLabelArgs || []) : [],
   }));
 }
 
@@ -2928,6 +2974,11 @@ function restoreSystemNotifications(saved) {
       windowName: String(item?.windowName || ""),
       actionId: String(item?.actionId || ""),
       actionLabel: String(item?.actionLabel || ""),
+      // Same tolerance as the message key, for the same reason: a record
+      // written before this field existed keeps drawing its stored rendered
+      // label, and only a newly pushed notification redraws its button.
+      actionLabelKey: String(item?.actionLabelKey || ""),
+      actionLabelArgs: Array.isArray(item?.actionLabelArgs) ? item.actionLabelArgs : [],
     }))
     .filter((item) => item.message
       && !Number.isNaN(item.createdAt.getTime())
@@ -2957,11 +3008,39 @@ function renderSystemNotificationText(item) {
   return item?.message || "";
 }
 
+// The button beside the message is a translation as well, and it froze the way
+// the message used to: `actionLabel` held whatever t() returned at push time,
+// so a notification pushed in English kept an English "Back" button beside a
+// Chinese sentence after a language switch. A caller with a clean key passes
+// `actionLabelKey` (+ optional `actionLabelArgs`) and the button is drawn from
+// it at DRAW time. The stored rendered label stays the fallback -- for a caller
+// holding no key, and for an older persisted record that predates this field --
+// and the live t("open") stays the last resort for a message naming no label.
+function renderSystemNotificationActionLabel(item) {
+  if (item?.actionLabelKey && typeof t === "function") {
+    return t(item.actionLabelKey, ...(item.actionLabelArgs || []));
+  }
+  if (item?.actionLabel) return item.actionLabel;
+  return typeof t === "function" ? t("open") : "";
+}
+
+// A push that names either half of the button label replaces both halves, so a
+// stored key can never outlive the label pushed beside it; a push naming
+// neither leaves the label the notification already carries alone.
+function applySystemNotificationActionLabel(item, options, actionLabelKey, actionLabelArgs) {
+  if (options.actionLabel === undefined && options.actionLabelKey === undefined) return;
+  item.actionLabel = options.actionLabel || "";
+  item.actionLabelKey = actionLabelKey;
+  item.actionLabelArgs = actionLabelArgs;
+}
+
 function pushSystemNotification(message, options = {}) {
   const text = String(message || "").trim();
   if (!text) return "";
   const messageKey = options.messageKey || "";
   const messageArgs = messageKey ? (options.messageArgs || []) : [];
+  const actionLabelKey = options.actionLabelKey || "";
+  const actionLabelArgs = actionLabelKey ? (options.actionLabelArgs || []) : [];
 
   const now = new Date();
   let item = options.replaceId
@@ -2978,7 +3057,7 @@ function pushSystemNotification(message, options = {}) {
     item.state = options.state || item.state || "";
     item.windowName = options.windowName ?? item.windowName;
     item.actionId = options.actionId ?? item.actionId;
-    item.actionLabel = options.actionLabel ?? item.actionLabel;
+    applySystemNotificationActionLabel(item, options, actionLabelKey, actionLabelArgs);
   } else {
     item = null;
   }
@@ -2995,7 +3074,7 @@ function pushSystemNotification(message, options = {}) {
     last.state = options.state || last.state || "";
     last.windowName = options.windowName ?? last.windowName;
     last.actionId = options.actionId ?? last.actionId;
-    last.actionLabel = options.actionLabel ?? last.actionLabel;
+    applySystemNotificationActionLabel(last, options, actionLabelKey, actionLabelArgs);
     item = last;
   } else {
     item = item || {
@@ -3008,6 +3087,8 @@ function pushSystemNotification(message, options = {}) {
       windowName: options.windowName || "",
       actionId: options.actionId || "",
       actionLabel: options.actionLabel || "",
+      actionLabelKey,
+      actionLabelArgs,
     };
     if (!wasExisting) {
       systemNotifications.unshift(item);
@@ -3071,7 +3152,7 @@ function markActiveLongTaskFailed(message) {
     replaceId: task.notificationId,
     state: "failed",
     windowName: task.windowName,
-    actionLabel: t("open"),
+    actionLabelKey: "open",
   });
 }
 
@@ -3128,7 +3209,8 @@ function setStatus(text, options = {}) {
     pushSystemNotification(message, {
       state: options.state || "",
       windowName: options.windowName || "",
-      actionLabel: options.actionLabel || t("open"),
+      actionLabel: options.actionLabel || "",
+      actionLabelKey: options.actionLabelKey || (options.actionLabel ? "" : "open"),
     });
   }
 }
@@ -3255,7 +3337,7 @@ function beginLongTask(key, statusText = "") {
         messageArgs: [receipt.label],
         state: "running",
         windowName: receipt.windowName,
-        actionLabel: t("open"),
+        actionLabelKey: "open",
       })
     : "";
   activeLongTaskDetails.set(key, {
@@ -3287,7 +3369,7 @@ function endLongTask(key) {
         replaceId: task.notificationId,
         state: "stopped",
         windowName: task.windowName,
-        actionLabel: t("open"),
+        actionLabelKey: "open",
       });
     }
     setStatus(t("stopped"), { notify: false });
@@ -3297,7 +3379,7 @@ function endLongTask(key) {
         replaceId: task.notificationId,
         state: "failed",
         windowName: task.windowName,
-        actionLabel: t("open"),
+        actionLabelKey: "open",
       });
     }
   } else {
@@ -3308,7 +3390,7 @@ function endLongTask(key) {
         replaceId: task.notificationId,
         state: "done",
         windowName: task.windowName,
-        actionLabel: t("open"),
+        actionLabelKey: "open",
       });
     }
     playSystemSound("done");

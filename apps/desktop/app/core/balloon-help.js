@@ -326,6 +326,13 @@ function balloonHelpOpenSurfaces(target) {
     target.closest(".menu.is-open")?.querySelector(":scope > .menu-popover"),
     target.closest(".menu-item-with-sub.is-open")?.querySelector(":scope > .menu-sub-popover"),
     target.closest(".menu-submenu")?.querySelector(":scope > .menu-submenu-popover"),
+    // The desk's own select harness. Its menu is a div inside the wrap, not a
+    // .menu-popover, so a balloon explaining the control treated the open list
+    // as a neighbour and settled on top of the choices.
+    target.closest(".select-wrap.is-system-select-open")?.querySelector(":scope > .system-select-menu"),
+    // A field label owns its control, so the balloon's subject is often the
+    // label rather than the button: look inside the subject too.
+    target.querySelector?.(".select-wrap.is-system-select-open > .system-select-menu"),
     target.closest("details[open]")?.querySelector(":scope > .teachtext-command-popover, :scope > .teachtext-command-subpopover"),
     target.closest(".menu-popover, .menu-sub-popover, .menu-submenu-popover, .teachtext-command-popover, .teachtext-command-subpopover"),
   ].filter(Boolean);
@@ -337,6 +344,18 @@ function balloonHelpOwnedPanel(target) {
   if (menu && menu.querySelector(":scope > button") === target) {
     return menu.querySelector(":scope > .menu-popover");
   }
+  // The select harness: the button owns the listbox in the same wrap. Without
+  // this the panel was in no keepClear rectangle at all, and the balloon
+  // landed on the commands — the next thing the person has to operate.
+  // The select harness: a button owns the listbox in its wrap. The balloon's
+  // subject is usually the field label around that wrap, so the wrap is looked
+  // for both around and inside the subject. Without this the panel was in no
+  // keepClear rectangle at all, and the balloon landed on the commands — the
+  // next thing the person has to operate.
+  const selectWrap = target.matches?.(".system-select-button")
+    ? target.closest(".select-wrap.has-system-select")
+    : target.querySelector?.(".select-wrap.has-system-select");
+  if (selectWrap) return selectWrap.querySelector(":scope > .system-select-menu");
   const withSub = target.closest(".menu-item-with-sub");
   if (withSub && withSub.querySelector(":scope > button") === target) {
     return withSub.querySelector(":scope > .menu-sub-popover");
@@ -361,6 +380,7 @@ function rememberBalloonHelpPanelSizes() {
   document.querySelectorAll([
     ".menu.is-open > .menu-popover",
     ".menu-item-with-sub.is-open > .menu-sub-popover",
+    ".select-wrap.is-system-select-open > .system-select-menu",
     "details[open] > .teachtext-command-popover",
     "details[open] > .teachtext-command-subpopover",
   ].join(",")).forEach((panel) => {
@@ -423,7 +443,7 @@ function balloonHelpPeerElements(target) {
 }
 
 function balloonHelpIsPeer(element) {
-  if (element.id === "balloon-help" || element.matches(".menu-popover, .menu-sub-popover, .menu-submenu-popover")) return false;
+  if (element.id === "balloon-help" || element.matches(".menu-popover, .menu-sub-popover, .menu-submenu-popover, .system-select-menu")) return false;
   const rect = element.getBoundingClientRect();
   if (!rect.width || !rect.height) return false;
   return element.matches("button, a, input, select, .desktop-icon, .menu, [data-action], [data-open], [role='button']")

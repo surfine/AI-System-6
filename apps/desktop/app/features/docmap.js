@@ -2249,16 +2249,16 @@ async function makeDocMapFromCurrentSource(preferredContext = null, options = {}
     setStatus(t("docmap_no_text"));
     openWindow("docMap");
     renderDocMap();
-    return;
+    return false;
   }
   if (!readiness.ready) {
     const message = t("docmap_too_short");
     setDocMapSourceStatus(source, message);
-    return;
+    return false;
   }
 
   const handoffMessage = docMapHandoffStatus(readiness);
-  if (!beginLongTask("docmap", handoffMessage)) return;
+  if (!beginLongTask("docmap", handoffMessage)) return false;
   setDocMapSourceStatus(source, handoffMessage);
   const pendingTabId = beginPendingDocMap(source, options.pendingTabId || "");
   let map = null;
@@ -2276,7 +2276,7 @@ async function makeDocMapFromCurrentSource(preferredContext = null, options = {}
       setDocMapSourceStatus(source, t("stopped"));
       failPendingDocMap(pendingTabId, source, t("stopped"));
       endLongTask("docmap");
-      return;
+      return false;
     }
     console.warn("DocMap model pass failed", error);
     const message = docMapModelFailureStatus(error);
@@ -2285,7 +2285,7 @@ async function makeDocMapFromCurrentSource(preferredContext = null, options = {}
     setStatus(message);
     endLongTask("docmap");
     failPendingDocMap(pendingTabId, source, message);
-    return;
+    return false;
   }
   const project = getActiveProject();
   if (project && map.kind !== "videoDocMap") {
@@ -2296,6 +2296,11 @@ async function makeDocMapFromCurrentSource(preferredContext = null, options = {}
   if (map.kind !== "videoDocMap") await ensureDocMapMarkmap();
   setDocMapSourceStatus(source, t("docmap_handoff_complete", docMapRangeLabel(source.rangeMode)));
   showDocMap(map, { statusMessage, tabId: pendingTabId });
+  // Say whether a map was actually drawn. The caller that reports a run — the
+  // application registry's map intent — used to answer "ok" whatever happened
+  // here, so a request that never reached a model still wrote a receipt saying
+  // the run completed.
+  return true;
 }
 
 

@@ -332,9 +332,9 @@ registerApplication({
     const file = items[0];
     if (!file) return { ok: false, reason: "missing" };
     if (context.intent === "export") {
-      if (typeof downloadMarkdown === "function") {
-        downloadMarkdown(String(file.body || ""), file.name);
-      }
+      if (typeof downloadMarkdown !== "function") return { ok: false, reason: "no-handler" };
+      const downloaded = downloadMarkdown(String(file.body || ""), file.name);
+      if (!downloaded) return { ok: false, reason: "download-failed" };
       // A download is not a Project durable object; the source document is
       // only affected (read + exported), never produced by this run.
       return { ok: true, affectedObjectIds: [file.id], destination: "download" };
@@ -360,15 +360,20 @@ registerApplication({
         return { ok: false, reason: "empty", publicErrorReason: t("docmap_no_text") };
       }
       if (typeof ensureDocMapModule === "function") await ensureDocMapModule();
-      if (typeof makeDocMapFromCurrentSource === "function") {
-        await makeDocMapFromCurrentSource({
-          text: file.body.trim(),
-          label: file.name,
-          scope: "documents",
-          meta: { fileId: file.id, fileType: file.type },
-          threshold: typeof docMapMinDocumentChars === "number" ? docMapMinDocumentChars : 1,
-        });
+      if (typeof makeDocMapFromCurrentSource !== "function") {
+        return { ok: false, reason: "docmap-unavailable" };
       }
+      const mapped = await makeDocMapFromCurrentSource({
+        text: file.body.trim(),
+        label: file.name,
+        scope: "documents",
+        meta: { fileId: file.id, fileType: file.type },
+        threshold: typeof docMapMinDocumentChars === "number" ? docMapMinDocumentChars : 1,
+      });
+      // Whether a map was drawn is the builder's answer, not this function's
+      // hope. Reporting "ok" regardless wrote a receipt saying the run
+      // completed for a request that never reached a model.
+      if (!mapped) return { ok: false, reason: "not-mapped" };
       // DocMap renders a temporary UI map; it creates no durable Project
       // file here, so nothing was produced. The source is the affected object.
       return { ok: true, affectedObjectIds: [file.id] };
@@ -407,7 +412,11 @@ registerApplication({
     }
     if (typeof openTextFile === "function") openTextFile(file.id);
     if (typeof openWindow === "function") openWindow("teachText");
-    if (typeof runClaimCheck === "function") await runClaimCheck();
+    if (typeof runClaimCheck !== "function") return { ok: false, reason: "no-handler" };
+    // Whether a report was produced is the checker's answer, not this
+    // function's hope — the same correction the map intent needed.
+    const checked = await runClaimCheck();
+    if (!checked) return { ok: false, reason: "not-checked" };
     // Review Desk shows its results in the window; the manuscript is
     // inspected (affected) but not produced by this run.
     return { ok: true, affectedObjectIds: [file.id] };

@@ -250,8 +250,14 @@ function renderClioTalkWelcome() {
             : (clioTalkTemporaryMode ? "temporary_welcome_message" : "welcome_message"));
   body.innerHTML = `<p>${t(welcomeKey)}</p>`;
   const introducingWelcome = welcomeKey === "clio_first_welcome_message";
+  // The website's own AI is what a visitor gets by default, so the honest
+  // reason they cannot send is usually not "connect a model" -- it is that the
+  // shared budget for today is spent. The resolver already knows which it is;
+  // until now nothing read it, and everyone got the same generic line.
+  const sharedQuotaSpent = providerState.quota?.state === "exhausted";
   if (introducingWelcome && !modelReady && !providerResolving) {
-    body.insertAdjacentHTML("beforeend", `<p><span>${t("clio_first_welcome_no_model")}</span></p>`);
+    const line = sharedQuotaSpent ? "clio_shared_quota_spent" : "clio_first_welcome_no_model";
+    body.insertAdjacentHTML("beforeend", `<p><span>${t(line)}</span></p>`);
   }
 
   if (introducingWelcome) {
@@ -3821,11 +3827,11 @@ function qwen35AppMaxTokens(taskKind = "chat") {
   return 1600;
 }
 
-function isDeepSeekV4ModelName(value = "") {
-  return /^(?:deepseek-)?v4-(?:pro|flash)(?:-vision-exp)?$/i.test(String(value || ""));
+function isDeepSeekCloudModelName(value = "") {
+  return /^(?:deepseek-)?(?:flash|v4-(?:pro|flash)(?:-vision-exp)?)$/i.test(String(value || ""));
 }
 
-const CLOUD_VISION_MODEL_ID = "deepseek-v4-flash-vision-exp";
+const CLOUD_VISION_MODEL_ID = "deepseek-flash";
 
 /**
  * The DeepSeek text models drop image blocks without an error, so a payload
@@ -3837,7 +3843,7 @@ function cloudPayloadCarriesImage(messages) {
   return messages.some((message) => Array.isArray(message?.content)
     && message.content.some((block) => block && (
       (block.type === "image_url" && block.image_url?.url)
-      || (block.type === "file" && block.file_id)
+      || (block.type === "file" && (block.file_id || block.file_data))
     )));
 }
 
@@ -3852,19 +3858,18 @@ function cloudTaskMaxTokens(taskKind = "chat") {
   return 1800;
 }
 
-function deepSeekV4CloudDefaults(modelName, taskKind = "chat") {
-  if (!isDeepSeekV4ModelName(modelName)) return {};
+function deepSeekCloudDefaults(modelName, taskKind = "chat") {
+  if (!isDeepSeekCloudModelName(modelName)) return {};
   const kind = String(taskKind || "chat").toLowerCase();
   const structuredTask = /mingming|docmap|outline|draft|rebuild|writing_object|hkrr|slides|marp|critique|review|claim|dictionary|translation|reader|scrapbook|bureaucracy|meme|caption/.test(kind);
   return {
-    thinking: { type: "disabled" },
     max_tokens: structuredTask ? cloudTaskMaxTokens(kind) : cloudTaskMaxTokens("chat"),
   };
 }
 
-function sanitizeDeepSeekV4CloudPayload(payload) {
+function sanitizeDeepSeekCloudPayload(payload) {
   if (!payload || typeof payload !== "object") return payload;
-  if (!isDeepSeekV4ModelName(payload.model)) return payload;
+  if (!isDeepSeekCloudModelName(payload.model)) return payload;
   const nextPayload = { ...payload, thinking: { type: "disabled" } };
   delete nextPayload.reasoning_effort;
   delete nextPayload.enable_thinking;
@@ -4199,7 +4204,13 @@ function fitChatPayloadToContext(payload, options = {}) {
   const atomicTokens = structured
     ? userMessage.content.reduce((sum, block) => block?.type === "text" ? sum : sum + estimateTokenCount([block]), 0)
     : 0;
-  const charBudget = Math.max(0, Math.floor(Math.max(0, userBudget - atomicTokens) * contextCharsPerToken));
+  // The clip is measured in characters, so it has to use the same ratio the
+  // token estimate does or Chinese text is trimmed to a quarter of the cut.
+  const charBudget = Math.max(0, Math.floor(Math.max(0, userBudget - atomicTokens) / tokensPerChar(
+    structured
+      ? userMessage.content.map((block) => block?.type === "text" ? block.text || "" : "").join("")
+      : userMessage.content
+  )));
   const notice = currentLanguage === "zh"
     ? "\n\n[已裁剪]\n\n"
     : "\n\n[Clipped]\n\n";
@@ -4307,12 +4318,20 @@ function stopRunningTaskFromKeyboard() {
 // budget never fits, and the compressor below throws the image away. Count the
 // text blocks normally and charge each image a flat estimate instead.
 //
-// 384 is the provider's own published ceiling: every image is resized toward a
-// ~800x800 equivalence and costs at most 384 tokens, whatever it started as.
-// This was 1600, which charged every photo about four times what it costs --
-// and IMAGE_ATTACHMENT_MODEL_LIMIT, which decides how many pictures reach the
-// model at all, is a judgement made against this number.
-const IMAGE_BLOCK_TOKEN_ESTIMATE = 384;
+// 1024 is the provider's own published ceiling: every image is resized toward
+// a ~1300x1300 equivalence and costs at most that much. It read 384 before
+// DeepSeek published this table, and the picture limit judges against it.
+const IMAGE_BLOCK_TOKEN_ESTIMATE = 1024;
+
+// DeepSeek publishes the ratio: about 0.6 tokens per Chinese character and
+// 0.3 per other character. Reading every character as a quarter of a token
+// under-counted Chinese by 2.4x, so a payload could pass the browser's own
+// budget check and still overflow the window it was measured against.
+function tokensPerChar(text) {
+  const value = String(text || "");
+  const wide = (value.match(/[^\x00-\x7f]/g) || []).length;
+  return value.length ? 0.3 + (wide * 0.3) / value.length : 1 / contextCharsPerToken;
+}
 
 function estimateTokenCount(text) {
   if (Array.isArray(text)) {
@@ -4324,7 +4343,7 @@ function estimateTokenCount(text) {
   }
   const normalized = typeof text === "string" ? text.trim() : JSON.stringify(text || "");
   if (!normalized) return 0;
-  return Math.max(1, Math.round(normalized.length / 4));
+  return Math.max(1, Math.ceil(normalized.length * tokensPerChar(normalized)));
 }
 
 function normalizeStopReason(value) {
@@ -4372,39 +4391,35 @@ function updateModelMeter(metrics) {
 }
 
 
-// DeepSeek prices per million tokens, in CNY. The flat promotional rate runs
-// until 2026-08-17 00:00 Beijing time; after that the rate depends on the
-// hour — peak is 09:00-12:00 and 14:00-18:00 Beijing time, off-peak is every
-// other hour and costs half of peak.
-const CLOUD_PRICING_PROMO_END_MS = Date.UTC(2026, 7, 16, 16, 0, 0);
+// DeepSeek prices per million tokens, in CNY, by the hour: peak is
+// 09:00-12:00 and 14:00-18:00 Beijing time, and every other hour is off-peak
+// at half of peak. Flash reads images at this same rate: the guide bills
+// image tokens like text tokens.
 const CLOUD_PRICING_CNY_PER_1M = {
-  "deepseek-v4-flash": {
-    promo: { inputCacheHit: 0.02, inputCacheMiss: 1.0, output: 2.0 },
-    peak: { inputCacheHit: 0.1, inputCacheMiss: 3.0, output: 9.0 },
-    offPeak: { inputCacheHit: 0.05, inputCacheMiss: 1.5, output: 4.5 },
+  "deepseek-flash": {
+    peak: { inputCacheHit: 0.04, inputCacheMiss: 2.0, output: 8.0 },
+    offPeak: { inputCacheHit: 0.02, inputCacheMiss: 1.0, output: 4.0 },
   },
   "deepseek-v4-pro": {
-    promo: { inputCacheHit: 0.025, inputCacheMiss: 3.0, output: 6.0 },
     peak: { inputCacheHit: 0.3, inputCacheMiss: 9.0, output: 27.0 },
     offPeak: { inputCacheHit: 0.15, inputCacheMiss: 4.5, output: 13.5 },
   },
 };
-// DeepSeek publishes the experimental Vision model at the same token rate as
-// Flash. Keep the alias explicit so the meter follows that provider contract
-// without duplicating a second price table that could drift.
-CLOUD_PRICING_CNY_PER_1M["deepseek-v4-flash-vision-exp"] = CLOUD_PRICING_CNY_PER_1M["deepseek-v4-flash"];
-CLOUD_PRICING_CNY_PER_1M["v4-flash"] = CLOUD_PRICING_CNY_PER_1M["deepseek-v4-flash"];
-CLOUD_PRICING_CNY_PER_1M["v4-pro"] = CLOUD_PRICING_CNY_PER_1M["deepseek-v4-pro"];
-
 function cloudPricingBand(when) {
-  if (when.getTime() < CLOUD_PRICING_PROMO_END_MS) return "promo";
   const beijingHour = new Date(when.getTime() + 8 * 60 * 60 * 1000).getUTCHours();
   const peak = (beijingHour >= 9 && beijingHour < 12) || (beijingHour >= 14 && beijingHour < 18);
   return peak ? "peak" : "offPeak";
 }
 
 function cloudPricingFor(modelName, when) {
-  const table = CLOUD_PRICING_CNY_PER_1M[String(modelName || "").trim()];
+  const id = String(modelName || "").trim().toLowerCase();
+  // Retired DeepSeek ids bill at the one table row they resolve to: both
+  // `deepseek-v4-flash` and its retired vision name are Flash, and `v4-pro`
+  // is the short name of V4 Pro. One table, one lookup.
+  const key = /^(?:deepseek-)?v4-flash(?:-vision-exp)?$/.test(id)
+    ? "deepseek-flash"
+    : id === "v4-pro" ? "deepseek-v4-pro" : id;
+  const table = CLOUD_PRICING_CNY_PER_1M[key];
   return table ? table[cloudPricingBand(when || new Date())] : null;
 }
 
@@ -4711,8 +4726,10 @@ function withBrowserLocalSafetyMessages(messages = [], taskKind = "") {
   return [...additions, ...normalized];
 }
 
-async function maybeRepairBrowserLocalResult(result, requestPayload, taskKind, streamPreference, signal) {
-  const isCloud = typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudCredentialReady();
+async function maybeRepairBrowserLocalResult(result, requestPayload, taskKind, streamPreference, signal, servedRoute = "") {
+  const isCloud = servedRoute
+    ? servedRoute === "cloud"
+    : (typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudCredentialReady());
   const runtime = window.AISystem6ModelTaskRuntime;
   if (isCloud || streamPreference === "json" || !runtime?.shouldRepairHumanizerOutput?.(taskKind)) return result;
   const originalHits = runtime.findHumanizerOutputHits(result?.text);
@@ -4771,8 +4788,13 @@ function clioTalkPreviousNativeResponseId(taskKind = "") {
   };
 }
 
-function fetchModelPayload(payload, signal) {
-  const isCloud = typeof cloudConfig !== "undefined" && cloudConfig && cloudConfig.active && cloudConfig.provider && cloudCredentialReady();
+function fetchModelPayload(payload, signal, options = {}) {
+  const forcedRoute = options && (options.route === "cloud" || options.route === "local") ? options.route : "";
+  const isCloud = forcedRoute === "cloud"
+    ? true
+    : forcedRoute === "local"
+      ? false
+      : (typeof cloudConfig !== "undefined" && cloudConfig && cloudConfig.active && cloudConfig.provider && cloudCredentialReady());
   let nextPayload = { ...payload };
   const shouldRecordLoadout = nextPayload.ai_system6_record_loadout === true;
 
@@ -4782,12 +4804,12 @@ function fetchModelPayload(payload, signal) {
       ? CLOUD_VISION_MODEL_ID
       : (cloudConfig.model || nextPayload.model);
     nextPayload = {
-      ...deepSeekV4CloudDefaults(cloudModel, nextPayload.ai_system6_task_kind || "chat"),
+      ...deepSeekCloudDefaults(cloudModel, nextPayload.ai_system6_task_kind || "chat"),
       ...nextPayload,
     };
-    if (isDeepSeekV4ModelName(cloudModel)) {
+    if (isDeepSeekCloudModelName(cloudModel)) {
       nextPayload.thinking = { type: "disabled" };
-      nextPayload = sanitizeDeepSeekV4CloudPayload(nextPayload);
+      nextPayload = sanitizeDeepSeekCloudPayload(nextPayload);
     }
     nextPayload = sanitizeCloudChatPayload(nextPayload);
     Object.assign(nextPayload, cloudCredentialTransportFields());
@@ -4869,6 +4891,91 @@ async function throwModelResponseError(response, endPerf) {
   throw error;
 }
 
+// ---- Request-time provider backup ------------------------------------------
+//
+// The resolver chooses a *route* at health-check time. That answer can go
+// stale the moment a live request runs — the shared Website AI allowance can
+// be exhausted, the public relay can 5xx, or the network can drop. The product
+// promise is that AI is always available, so when the route that was picked
+// fails with a *recoverable* transport error the same turn is retried once on
+// a genuinely ready backup route before giving up. Only transport-style
+// failures fail over: an invalid key, a missing model, or a too-long prompt
+// needs the writer, not a different provider.
+
+function clioCloudRouteActive() {
+  return !!(typeof cloudConfig !== "undefined"
+    && cloudConfig
+    && cloudConfig.active
+    && cloudConfig.provider
+    && typeof cloudCredentialReady === "function"
+    && cloudCredentialReady());
+}
+
+function clioBackupAvailable(route) {
+  if (route === "local") {
+    return typeof localModelState !== "undefined"
+      && (localModelState?.ready || localModelState?.loaded)
+      && localLmStudioConnectionEnabled;
+  }
+  return false;
+}
+
+function clioBackupRecoverable(error, context) {
+  if (!error) return false;
+  const kind = typeof window.AISystem6ModelUserErrors?.classify === "function"
+    ? window.AISystem6ModelUserErrors.classify(error, context || {})
+    : "";
+  if (["invalidCredentials", "modelUnavailable"].includes(kind)) return false;
+  const code = typeof classifyLmStudioError === "function" ? classifyLmStudioError(error) : "";
+  if ([
+    "lmstudio_context_length",
+    "cloud_invalid_key",
+    "cloud_insufficient_balance",
+    "cloud_invalid_request",
+    "lmstudio_model_not_loaded",
+    "lmstudio_bad_response",
+    "lmstudio_endpoint_missing",
+    "missing_byok_key",
+  ].includes(code)) return false;
+  return true;
+}
+
+async function requestModelResponse(finalPayload, signal, { taskKind, endPerf } = {}) {
+  const currentRoute = clioCloudRouteActive() ? "cloud" : "local";
+  const attempt = async (route) => {
+    const response = await fetchModelPayload(finalPayload, signal, { route });
+    if (!response.ok) await throwModelResponseError(response, endPerf);
+    return response;
+  };
+  try {
+    const response = await attempt(currentRoute);
+    return { response, route: currentRoute, fallbackTaken: false };
+  } catch (error) {
+    // The only automatic backup the product may take is cloud -> local. It is
+    // the real "connected AI silently failed" case (shared allowance / relay
+    // 5xx / network). Turning local -> cloud would re-activate a provider the
+    // writer chose to leave off, so that stays a manual choice.
+    // Image messages are shipped as cloud file tokens / a vision model, so a
+    // cloud -> local switch changes what the turn actually sends — leave those
+    // to the writer rather than silently changing the model that reads them.
+    if (currentRoute !== "cloud"
+        || cloudPayloadCarriesImage(finalPayload?.messages)
+        || !clioBackupRecoverable(error, { kind: "cloud" })) throw error;
+    if (!clioBackupAvailable("local")) throw error;
+    try {
+      const response = await attempt("local");
+      if (window.lastTaskRunManifest) {
+        window.lastTaskRunManifest.aiBackupRoute = "local";
+        window.lastTaskRunManifest.aiBackupReason = String(error?.code || error?.message || "");
+      }
+      return { response, route: "local", fallbackTaken: true };
+    } catch (backupError) {
+      window.lastClioBackupError = backupError;
+      throw error;
+    }
+  }
+}
+
 async function sendLocalModelTask(options = {}) {
   // Prompt files are lazy-loaded; boot preloads them, and the task entry
   // awaits them so no payload is ever assembled without its system prompts.
@@ -4896,12 +5003,14 @@ async function sendLocalModelTask(options = {}) {
   const shouldStream = streamPreference === "stream" || (streamPreference === "auto" && normalizedTaskKind === "chat" && !localNeedsVisibleRepair);
   const finalPayload = { ...budgetedPayload, stream: shouldStream };
 
-  let response = await fetchModelPayload(finalPayload, signal);
+  const requestOutcome = await requestModelResponse(finalPayload, signal, { taskKind, endPerf });
+  let response = requestOutcome.response;
+  const servedRoute = requestOutcome.route;
   response = await retryCloudFilePayloadInline(response, finalPayload, signal);
   if (!response.ok) await throwModelResponseError(response, endPerf);
 
   const contentType = response.headers.get("content-type") || "";
-  const isCloud = typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudCredentialReady();
+  const isCloud = servedRoute === "cloud" && typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudCredentialReady();
   if (shouldStream && response.body && /event-stream|text\/plain|octet-stream/i.test(contentType)) {
     try {
       const {
@@ -4931,7 +5040,9 @@ async function sendLocalModelTask(options = {}) {
       if (window.lastTaskRunManifest && servedModel) {
         window.lastTaskRunManifest.servedModel = servedModel;
         window.lastTaskRunManifest.model = servedModel;
+        window.lastTaskRunManifest.servedProvider = servedRoute;
       }
+      noteClioTalkModelAttempt({ model: servedModel, provider: servedRoute });
       endPerf?.({ streamed: true, tokens: metrics.tokens });
       return {
         text,
@@ -4949,16 +5060,29 @@ async function sendLocalModelTask(options = {}) {
       if (signal?.aborted) throw streamError;
       if (String(streamError?.partialContent || "").trim()) throw streamError;
       window.AISystem6Perf?.record("model_request", performance.now() - startedAt, { streamFallback: true });
+      // The stream never produced an answer. It is still an attempt, and a
+      // receipt that hid it would make the buffered retry look like the only
+      // thing that ever ran.
+      noteClioTalkModelAttempt({
+        model: String(budgetedPayload?.model || ""),
+        provider: servedRoute,
+        outcome: "stream-failed",
+      });
       const retryPayload = { ...budgetedPayload, stream: false };
-      let retryResponse = await fetchModelPayload(retryPayload, signal);
+      let retryResponse = await fetchModelPayload(retryPayload, signal, { route: servedRoute });
       retryResponse = await retryCloudFilePayloadInline(retryResponse, retryPayload, signal);
       if (!retryResponse.ok) await throwModelResponseError(retryResponse);
       const fallbackResult = await readJsonModelResult(retryResponse, startedAt, endPerf, true);
-      const repairedResult = await maybeRepairBrowserLocalResult(fallbackResult, budgetedPayload, taskKind, streamPreference, signal);
+      const repairedResult = await maybeRepairBrowserLocalResult(fallbackResult, budgetedPayload, taskKind, streamPreference, signal, servedRoute);
       if (window.lastTaskRunManifest && repairedResult?.model) {
         window.lastTaskRunManifest.servedModel = String(repairedResult.model);
         window.lastTaskRunManifest.model = String(repairedResult.model);
+        window.lastTaskRunManifest.servedProvider = servedRoute;
       }
+      if (fallbackResult?.model && fallbackResult.model !== repairedResult?.model) {
+        noteClioTalkModelAttempt({ model: fallbackResult.model, provider: servedRoute, outcome: "repaired" });
+      }
+      noteClioTalkModelAttempt({ model: String(repairedResult?.model || ""), provider: servedRoute });
       window.lastLocalModelResponseId = String(repairedResult?.responseId || fallbackResult.responseId || "");
       window.lastLocalModelResponseApi = String(repairedResult?.responseApi || fallbackResult.responseApi || "");
       return repairedResult;
@@ -4969,11 +5093,16 @@ async function sendLocalModelTask(options = {}) {
     window.fetchCloudBalanceSilent().catch(() => {});
   }
   const jsonResult = await readJsonModelResult(response, startedAt, endPerf);
-  const finalResult = await maybeRepairBrowserLocalResult(jsonResult, budgetedPayload, taskKind, streamPreference, signal);
+  const finalResult = await maybeRepairBrowserLocalResult(jsonResult, budgetedPayload, taskKind, streamPreference, signal, servedRoute);
   if (window.lastTaskRunManifest && finalResult?.model) {
     window.lastTaskRunManifest.servedModel = String(finalResult.model);
     window.lastTaskRunManifest.model = String(finalResult.model);
+    window.lastTaskRunManifest.servedProvider = servedRoute;
   }
+  if (jsonResult?.model && jsonResult.model !== finalResult?.model) {
+    noteClioTalkModelAttempt({ model: jsonResult.model, provider: servedRoute, outcome: "repaired" });
+  }
+  noteClioTalkModelAttempt({ model: String(finalResult?.model || ""), provider: servedRoute });
   window.lastLocalModelResponseId = String(finalResult?.responseId || jsonResult.responseId || "");
   window.lastLocalModelResponseApi = String(finalResult?.responseApi || jsonResult.responseApi || "");
   return finalResult;
@@ -5017,6 +5146,24 @@ function quickDraftActionFromText(text = "") {
   if (/^(hkrr|hkrr 提亮|提亮|快速提亮|lift)$/.test(value)) return "hkrr";
   if (/^(夸夸我|夸我|praise|encourage me)$/.test(value)) return "praise";
   return "";
+}
+
+// One run can ask more than one model: a streamed request that falls back to a
+// buffered retry, or a local reply a repair pass answers again. The manifest
+// keeps every attempt in the order it happened, so a receipt can name the model
+// that actually answered without losing the ones tried before it.
+function noteClioTalkModelAttempt({ model = "", provider = "", outcome = "served" } = {}) {
+  const manifest = window.lastTaskRunManifest;
+  if (!manifest) return;
+  const entry = {
+    model: String(model || ""),
+    provider: String(provider || ""),
+    outcome: String(outcome || ""),
+    at: new Date().toISOString(),
+  };
+  if (!entry.model && !entry.provider) return;
+  if (!Array.isArray(manifest.attempts)) manifest.attempts = [];
+  manifest.attempts.push(entry);
 }
 
 function createClioTalkPreflightRunManifest(taskKind = "chat", error = "", options = {}) {
@@ -5105,6 +5252,20 @@ function createClioTalkAssistantRecord({
   const nativeResponseId = String(providerResponseId || "");
   const nativeResponseApi = String(providerResponseApi || "");
   const nativeScope = currentClioTalkNativeResponseScope();
+  // Which model answered is a fact the transport already brought back; the
+  // global model selection is only what the desk would ask NEXT. They differ
+  // whenever the request fell back, was repaired, or ran on the cloud route
+  // while the local selection sat unchanged — and a receipt naming the
+  // selection would be naming a model that never saw the question. When the
+  // transport did not say, the receipt says nothing rather than guessing.
+  const runManifest = window.lastTaskRunManifest;
+  const servedModelName = String(runManifest?.servedModel || "");
+  const modelAttempts = Array.isArray(runManifest?.attempts)
+    ? runManifest.attempts.map((attempt) => ({ ...attempt }))
+    : [];
+  const servedProviderName = String(
+    runManifest?.servedProvider || modelAttempts[modelAttempts.length - 1]?.provider || "",
+  );
   const record = {
     id: crypto.randomUUID(),
     role: "assistant",
@@ -5135,7 +5296,7 @@ function createClioTalkAssistantRecord({
     } : null,
     harness: {
       taskKind: String(taskKind || "chat"),
-      model: currentTranslationModel(),
+      model: servedModelName,
       contextSources: grounding?.sources || [],
       projectMemoryIds: grounding?.projectMemoryIds || [],
     },
@@ -5157,8 +5318,9 @@ function createClioTalkAssistantRecord({
       projectId: activeProjectId,
       sourceAppId: "clioTalk",
       intent: String(taskKind || "chat"),
-      provider: (typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudConfig.provider && typeof cloudCredentialReady === "function" && cloudCredentialReady()) ? "cloud" : "local",
-      model: currentTranslationModel(),
+      provider: servedProviderName,
+      model: servedModelName,
+      attempts: modelAttempts,
       answerText: receiptAnswerText,
     }).then((recorded) => {
       if (recorded?.receiptId) record.aiSystem6ReceiptId = recorded.receiptId;
@@ -5488,6 +5650,7 @@ async function submitUserTextCore(userText, options = {}) {
   window.lastTaskExplicitInputFiles = [];
   window.lastTaskImageInputs = [];
   window.lastWritingAgentRun = null;
+  window.lastClioBackupError = null;
   runtimeOptions.imageInputIds = requestedImageIds;
   const replayOptions = clioTalkReplayOptions(runtimeOptions, messageTaskKind);
   const submittedUserRecord = {
@@ -5647,7 +5810,8 @@ async function submitUserTextCore(userText, options = {}) {
       appendClioTalkWebSearchCitations(pendingMessage, clioWebResult.citations);
     }
     updateLocalModelState({ server: true, selected: true, ready: true, running: false, task: "" });
-    if (finalization.warnings.length) setStatus(t("clio_reply_preserved_record_warning"));
+    if (window.lastTaskRunManifest?.aiBackupRoute) setStatus(t("clio_backup_served"));
+    else if (finalization.warnings.length) setStatus(t("clio_reply_preserved_record_warning"));
     else clearStatus();
   } catch (error) {
     const interruptedPartial = error?.name !== "AbortError"
@@ -5773,11 +5937,20 @@ async function submitUserTextCore(userText, options = {}) {
       // Ordinary UI shows a localized message + next step, never a raw HTTP
       // code or fetch failure. The original error stays in the run record and
       // console for Advanced diagnostics / System Status.
-      const userMessage = cloudErrorKey || code === "lmstudio_context_length"
-        ? prefix
-        : modelRecovery
-          ? `${t(modelRecovery.messageKey)} ${t(modelRecovery.actionKey)}`
-          : `${prefix} ${t("ai_error_unknown")} ${t("ai_action_view_connection")}`;
+      // A live cloud request that failed with an unclassified transport error
+      // must not read as a bare "The AI request failed." — it names the real
+      // situation: whether a backup was tried and also failed, or there was no
+      // backup ready to take over at all.
+      const backupFailed = isCloudActive
+        && modelRecovery?.messageKey === "ai_error_unknown"
+        && (window.lastClioBackupError || !clioBackupAvailable("local"));
+      const userMessage = backupFailed
+        ? t(window.lastClioBackupError ? "clio_ai_backup_failed" : "clio_ai_no_backup")
+        : cloudErrorKey || code === "lmstudio_context_length"
+          ? prefix
+          : modelRecovery
+            ? `${t(modelRecovery.messageKey)} ${t(modelRecovery.actionKey)}`
+            : `${prefix} ${t("ai_error_unknown")} ${t("ai_action_view_connection")}`;
       if (modelRecovery?.actionId && typeof window.AISystem6ModelUserErrors?.notify === "function") {
         window.AISystem6ModelUserErrors.notify(error, {
           provider: isCloudActive ? (cloudConfig?.provider || "deepseek") : "lm-studio",

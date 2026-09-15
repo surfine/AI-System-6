@@ -96,7 +96,7 @@
      primary divider so it is an ink hairline in System 6 and the era's own
      rule everywhere after. */
   border-bottom: var(--system-primary-divider);
-  border-radius: 0;
+  border-radius: var(--item-radius);
   outline: 0;
   background: transparent;
   box-shadow: none;
@@ -160,7 +160,13 @@
 .draft-desk-intake {
   position: relative;
   display: grid;
-  grid-template-rows: minmax(0, 1fr) minmax(108px, auto) auto;
+  /* The first row's floor used to be 0, so in landscape on a phone -- 212px
+     for the whole intake -- it was handed 50px while the field inside it is a
+     label plus a textarea with a 72px minimum. Grid rows do not clip, so "What
+     I want to say" was drawn underneath Materials: two textareas in one cell,
+     56px of overlap, the primary one unreachable. A min-content floor makes the
+     rows ask for the height they need, and this box already scrolls. */
+  grid-template-rows: minmax(min-content, 1fr) minmax(108px, auto) auto;
   gap: 0;
   padding: 12px 16px;
   overflow: auto;
@@ -188,7 +194,7 @@
   padding: 8px 0 4px;
   resize: vertical;
   border: 0;
-  border-radius: 0;
+  border-radius: var(--inset-radius);
   outline: 0;
   background: transparent;
   box-shadow: none;
@@ -234,7 +240,7 @@
   display: flex;
   overflow: hidden;
   border: 0;
-  border-radius: 0;
+  border-radius: var(--inset-radius);
   background: var(--paper);
   box-shadow: none;
 }
@@ -344,7 +350,7 @@
   padding: 4px 8px;
   border: 0;
   border-bottom: var(--quick-draft-divider-border);
-  border-radius: 0;
+  border-radius: var(--item-radius);
   background: transparent;
   box-shadow: none;
   text-align: left;
@@ -1220,8 +1226,13 @@
   }
 
   .draft-desk-deliver-menu .draft-desk-command-popover {
-    right: 0;
-    left: auto;
+    /* Narrow, this menu sits at the left of its row, so anchoring the panel's
+       right edge to it hung 65px of the panel off the left of a 375px phone.
+       Everything opens from the left here, clamped to the container the way
+       the panel above it already is. */
+    right: auto;
+    left: 0;
+    min-width: min(236px, calc(100cqw - 28px));
   }
 }
 

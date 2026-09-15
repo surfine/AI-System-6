@@ -39,6 +39,35 @@ test.assertIncludes(saveSource, "if (conflicts.length) throw deskRecordConflictE
 test.assertIncludes(persistence, 'error.code = "DESK_RECORD_CONFLICT"', "a refusal is distinguishable from a broken write");
 test.assertIncludes(saveSource, 'setStatus(t("desk_record_conflict_status"))', "the refusal reaches the writer in words");
 
+// The base the fence checks must describe what the DISK holds. A plan is built
+// before the transaction opens, and store.put() writes the LIVE object, so any
+// touch of the record in that gap (project.updatedAt = ... is the common one)
+// leaves the stored copy newer than the fingerprint the plan recorded. Found
+// live by the eight-stop walk gate: one such drift during the Writing Studio
+// profile switch put the cache permanently behind disk, and from then on every
+// save of that project was refused -- on ONE tab, with no other window in
+// sight, and it never recovered. The fingerprint is therefore taken in the same
+// synchronous step as the write.
+// Two lanes reached this guarantee independently and named it differently. The
+// assertions follow the shipped mechanism: one definition of what a record's
+// content is, and the fingerprint read off `item` in the same synchronous step
+// that hands `item` to put() -- not a value carried over from the plan.
+test.assertIncludes(
+  persistence,
+  "function deskRecordFingerprint(item) {",
+  "the cache is written from the bytes that were actually stored"
+);
+test.assertIncludes(
+  persistence,
+  "const fingerprint = deskRecordFingerprint(item);\n      const write =",
+  "the fingerprint is taken immediately before the put, not when the plan was built"
+);
+test.assertIncludes(
+  persistence,
+  "resolve({ key: plan.key, cacheKey: String(id), id, fingerprint })",
+  "the cache entry the write resolves with is that same fingerprint, not a re-read"
+);
+
 // A refusal has two edges, and every saved-ness surface follows both. While
 // the conflict stands, the TeachText capsule and the desk cells may not claim
 // "saved" against the bar's own conflict message; when a later commit

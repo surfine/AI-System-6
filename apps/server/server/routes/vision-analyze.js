@@ -5,7 +5,7 @@
 // and known local VLM fallbacks without binding the product to one concrete
 // model id.
 //
-// Cloud vision (DeepSeek `deepseek-v4-flash-vision-exp`) is a second route,
+// Cloud vision (DeepSeek `deepseek-flash`) is a second route,
 // never a silent one. An image leaves the machine only when the caller sets
 // `modelRoute.cloud.active`, or asks for a fallback with `allowCloudFallback`,
 // or the deployment has no local model at all. Local stays the default so the

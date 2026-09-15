@@ -111,6 +111,7 @@
 }
 
 .ips-history {
+  border-radius: var(--surface-radius);
   margin: 0;
   padding: 4px;
   max-height: var(--ips-history-max-height);

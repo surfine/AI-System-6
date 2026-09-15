@@ -39,10 +39,11 @@ const {
 } = require("../humanizer.js");
 const {
   cloudAuthHeaders,
-  DEEPSEEK_CLOUD_MODELS,
   DEEPSEEK_BASE_URL_DEFAULT,
   DEEPSEEK_PUBLIC_BASE_URL,
+  isDeepSeekCloudModelId,
   isTrustedDeepSeekCredentialTarget,
+  normalizeCloudModelId,
   resolveCloudTarget,
   resolveCloudVisionModel,
 } = require("../cloud.js");
@@ -65,14 +66,12 @@ const {
   resolveTaskPolicy,
 } = require("../task-policy.js");
 
-const DEEPSEEK_V4_MODELS = new Set(["deepseek-v4-pro", "deepseek-v4-flash", "v4-pro", "v4-flash"]);
-
 /**
  * @param {any} payload
  * @returns {boolean}
  */
 function shouldStripDeepseekV4Sampling(payload) {
-  if (!DEEPSEEK_V4_MODELS.has(payload.model)) return false;
+  if (!isDeepSeekCloudModelId(payload.model)) return false;
   return !payload.thinking || payload.thinking.type !== "disabled";
 }
 
@@ -302,7 +301,7 @@ async function handleCloudChat(req, res) {
       pinnedFamily: cloudTarget.family,
     };
 
-    if (raw._cloud_model) raw.model = raw._cloud_model;
+    if (raw._cloud_model) raw.model = normalizeCloudModelId(raw._cloud_model);
     delete raw._cloud_api_key;
     delete raw._cloud_credential_id;
     delete raw._cloud_model;
@@ -362,7 +361,7 @@ async function handleCloudChat(req, res) {
     }
     if (
       isPublicDeployment
-      && !new Set(DEEPSEEK_CLOUD_MODELS.map((item) => item.id)).has(payload.model)
+      && !isDeepSeekCloudModelId(payload.model)
     ) {
       send(res, 400, JSON.stringify({
         error: "Unsupported public cloud model",
@@ -379,7 +378,7 @@ async function handleCloudChat(req, res) {
     const answerBudget = Number.isFinite(Number(payload.max_tokens))
       ? Math.max(1, Math.floor(Number(payload.max_tokens)))
       : policy.answerBudget;
-    const reasoningAllowance = DEEPSEEK_V4_MODELS.has(payload.model)
+    const reasoningAllowance = isDeepSeekCloudModelId(payload.model)
       ? policy.reasoningAllowance
       : 0;
 
@@ -427,7 +426,7 @@ async function handleCloudChat(req, res) {
       }
     }
     stripCloudLocalOnlyFields(payload);
-    if (DEEPSEEK_V4_MODELS.has(payload.model)) {
+    if (isDeepSeekCloudModelId(payload.model)) {
       payload.thinking = policy.thinking
         ? { type: "enabled" }
         : { type: "disabled" };
@@ -435,6 +434,15 @@ async function handleCloudChat(req, res) {
       // `reasoning_effort` stays a top-level field: measured 2026-08-14, the
       // nested `thinking.reasoning_effort` form has no effect on the spend.
       if (policy.thinking) payload.reasoning_effort = policy.effort;
+      // A tool-carrying request has to echo every round's reasoning_content
+      // back or DeepSeek answers 400, and thinking mode rejects a forced tool
+      // choice. Tool rounds therefore run non-thinking with an automatic
+      // choice; see the thinking-mode and tool-call guides.
+      if (Array.isArray(payload.tools) && payload.tools.length) {
+        payload.thinking = { type: "disabled" };
+        delete payload.reasoning_effort;
+        if (payload.tool_choice && payload.tool_choice !== "auto") delete payload.tool_choice;
+      }
       if (!isPublicDeployment) {
         payload.max_tokens = answerBudget + reasoningAllowance;
       }

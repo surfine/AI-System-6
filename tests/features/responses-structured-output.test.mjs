@@ -14,7 +14,7 @@ const draftThesis = read("apps/server/server/routes/draft-thesis.js");
 
 test.assertIncludes(responses, "DEEPSEEK_RESPONSES_URL", "the transport targets the official Responses endpoint");
 test.assertIncludes(responses, "function isResponsesEligible", "Responses eligibility is explicit");
-test.assertIncludes(responses, "deepseek-v4-flash", "the transport pins the Responses-capable model");
+test.assertIncludes(responses, 'CANONICAL_RESPONSES_MODEL = "deepseek-flash"', "the transport pins the Responses-capable model");
 test.assertIncludes(responses, 'textFormat || { type: "text" }', "the transport forwards the caller's text format");
 test.assertIncludes(responses, "function callResponsesJson", "the transport normalizes upstream errors");
 test.assertIncludes(responses, "function extractResponsesText", "the transport reads output_text");

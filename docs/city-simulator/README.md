@@ -13,7 +13,28 @@ grids, altitude and isometric terrain, RCI demand feedback, power grids, and
 growth milestones. Only public ideas are borrowed; nothing from Maxis or EA
 enters the code, data, art, sound, or copy.
 
-## Phase 0 scope
+## Current visual pipeline (2026-09-11)
+
+The visual remaster keeps Canvas 2D as the default view, with optional lazy
+three.js 3D and Canvas fallback when WebGL is unavailable. Both use shared
+`createAssetBlocks` / `blockFaces` building definitions, including gabled and
+hipped roofs and faceted broadleaf/conifer crowns. Four-direction 2D sprites
+are rendered offline by deterministic CPU orthographic rasterization of those
+same shapes; simulation and save formats are unchanged.
+
+The reviewed, original material plate was made with the subscription's built-in
+`image_gen.imagegen` tool. Its exact model version is not exposed; the requested
+GPT Image 2.5 version is not asserted. Checked-in source art and prompts feed
+an offline build of 48 colour texture tiles and a separate glass/emission mask.
+Road markings, windows and seasonal colours retain their semantic recipes.
+Half-texel UV insets and disabling cross-tile mipmaps prevent atlas bleeding;
+independent water textures retain mipmaps. Source hashes and per-material
+assignments make the generated outputs reviewable and reproducible.
+
+This describes the implementation, not a browser acceptance receipt. The
+remaster does not change simulation rules or saves and does not include deployment.
+
+## Phase 0 scope (historical)
 
 Phase 0 establishes the foundation and construction rules only:
 
@@ -30,7 +51,11 @@ Phase 0 establishes the foundation and construction rules only:
 Phase 0 does **not** implement gameplay, map rendering, a window, a
 persistence store, or dependencies.
 
-## Current state
+## Implementation milestones
+
+These entries record earlier phase deliveries. Current rendering and asset
+choices are stated above; superseded dimensions and authoring methods remain
+here only as history.
 
 - A headless simulation core exists at
   `apps/desktop/app/features/bonsai-city-sim.js` (64/96/128 tile grids, seeded
@@ -66,7 +91,7 @@ persistence store, or dependencies.
   funding-scaled coverage, traffic and congestion that stalls growth, land
   value, a deterministic economy cycle, and a city report with a mayor
   rating. Pinned by `tests/features/bonsai-systems.test.mjs`.
-- Phase 8 replaces the rejected voxel showcase with the single production
+- Historically, Phase 8 replaced the rejected voxel showcase with the single production
   Canvas 2D renderer: 48x24 isometric tiles, four quarter-turn views, six
   composited layers, visible-diagonal culling, 16x16 static chunk caches, and
   deterministic original sprite atlases. The renderer consumes a pure
@@ -80,7 +105,7 @@ persistence store, or dependencies.
   with the recorded window rects drawn bright on the lighting layer — the
   SimCity 2000 night signature, generated entirely from the original
   project recipes.
-- The voxel backend gains an original micro-voxel texture atlas (M5-2d):
+- Historically, the voxel backend gained its first micro-voxel texture atlas (M5-2d):
   a power-of-two 512px sheet of 40 procedural 64px tiles, loaded lazily
   with nearest magnification and mipmaps for Retina and mobile. Paths
   (road, rail, pipe, wire, highway, bridge, tunnel) draw direction-aware
@@ -100,24 +125,12 @@ persistence store, or dependencies.
 
 ### Tile scale
 
-Both backends share one 48-pixel isometric tile and one default zoom (0.82),
-so the tile-scale review has a single fact to argue from. At default zoom a
-1024×640 viewport shows about 26.0 tile diamonds across and 32.5 diamond rows
-down — measured by `measureFrame` in `app/features/bonsai-renderer.js` and in
-the voxel backend's pure toolkit, which report the same numbers. A SimCity
-2000 proportion retune remains an owner proposal pending reference captures,
-never a silent change.
+Both backends use 64×32-pixel diamonds, a 10-pixel altitude step and default
+zoom 0.7. These are the current source constants, superseding the earlier
+48×24 / 8-pixel / 0.82 baseline and the pending-retune proposal. Projection,
+pointer math, atlas output and acceptance checks must use the current values;
+the historical phase descriptions below do not override them.
 
-Reference constants for that proposal (verified 2026-09-04 against the
-disc copy and the SC2k-docs / sc2k-city-viewer renderer notes): SimCity 2000
-draws 64-pixel-wide, 32-pixel-high diamond tiles with a 24-pixel layer
-offset (2:1 ratio, the same 30-degree elevation). At the same 1024×640
-viewport and the same on-screen diamond pitch as our default zoom, a 64px
-tile shows about 19.5 diamonds across and 24.4 rows down — roughly 25%
-closer framing with the same tile-edge pixel length as our canvas at zoom
-1.05. The retune (48 → 64 px with a matching zoom retarget) touches the
-atlas, voxel wall tiling, pointer math, and acceptance pins together, which
-is why it stays an owner call, not a silent change.
 - The Canvas 2D view gains SC2000-style 2.5D depth (M5-2h): lit roof
   parapets, facade floor lines, front doors, two-tone trees with shadows,
   richer terrain (speckle, blades, water sheen, coast foam), and soft

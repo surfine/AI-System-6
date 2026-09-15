@@ -22,6 +22,8 @@ const {
   cloudAuthHeaders,
   DEEPSEEK_API_KEY_DEFAULT,
   DEEPSEEK_BASE_URL_DEFAULT,
+  isDeepSeekCloudModelId,
+  normalizeCloudModelId,
   resolveCloudTarget,
   resolveCloudVisionModel,
 } = require("../cloud.js");
@@ -39,7 +41,6 @@ const {
   shouldLintHumanizerOutput,
 } = require("../humanizer.js");
 
-const DEEPSEEK_V4_MODELS = new Set(["deepseek-v4-pro", "deepseek-v4-flash", "v4-pro", "v4-flash"]);
 const FIRST_DAY_FORMAT = "first-day-hands-on";
 const HANDS_ON_REVIEW_FORMAT = "hands-on-review";
 
@@ -1362,9 +1363,9 @@ async function callModel(body, messages, signal, req) {
     // carries a picture must go to the vision model whatever was picked.
     const carriesPicture = messages.some((message) => Array.isArray(message?.content)
       && message.content.some((block) => block?.type === "image_url"));
-    const model = carriesPicture
+    const model = normalizeCloudModelId(carriesPicture
       ? resolveCloudVisionModel(body._cloud_model || body.model || "")
-      : (body._cloud_model || body.model || "");
+      : (body._cloud_model || body.model || ""));
     /** @type {any} */
     const payload = { model, messages, stream: false, temperature, max_tokens: cloudDraftMaxTokens(body) };
     let apiKey;
@@ -1378,7 +1379,7 @@ async function callModel(body, messages, signal, req) {
         credentialId: body._cloud_credential_id,
         suppliedApiKey: body._cloud_api_key,
         requestedBaseUrl: body._cloud_base_url,
-        model: String(model || "deepseek-v4-flash"),
+        model: normalizeCloudModelId(model || "deepseek-flash"),
         payload,
         req,
       });
@@ -1402,7 +1403,7 @@ async function callModel(body, messages, signal, req) {
       });
     }
     const targetUrl = `${baseUrl}/v1/chat/completions`;
-    if (DEEPSEEK_V4_MODELS.has(model)) {
+    if (isDeepSeekCloudModelId(model)) {
       finalPayload.thinking = { type: "disabled" };
       delete finalPayload.temperature;
     }

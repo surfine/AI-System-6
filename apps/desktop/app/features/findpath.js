@@ -24,6 +24,9 @@ async function fetchMoreResults() {
   const query = findPathQueryInput.value.trim();
   if (!query) return;
   if (searchProviderInput?.value === "deepseek") return;
+  // An MCP server answers one call with everything it has; there is no
+  // second page to ask for.
+  if (String(searchProviderInput?.value || "").startsWith("mcp:")) return;
 
   const currentCount = findPathResults.length;
   const targetCount = getFindPathResultLimit();
@@ -465,9 +468,36 @@ function clipSelectedFindPath() {
   }
 }
 
+// Anything a search result carries can be put on the File Floppy, the desk's
+// one shelf for temporary material. This is the only landing place for what an
+// external MCP server answers, and it works for web results too.
+async function putFindPathOnFileFloppy() {
+  const result = getSelectedFindPath();
+  if (!result) {
+    setStatus(t("select_find_path_first"));
+    return;
+  }
+  await ensureMcpServersModule();
+  const name = `${(result.title || t("find_path")).slice(0, 60)}.md`;
+  const outcome = await window.AISystem6McpServers.putOnFileFloppy(name, formatFindPathMarkdown(result), {
+    source: result.site ? `search:${result.site}` : "search",
+  });
+  setStatus(outcome.ok
+    ? t("find_path_on_floppy", outcome.mountedFileNames[0])
+    : t("find_path_floppy_failed", outcome.reason));
+}
+
 async function searchFindPath(query, start = 0) {
   const limit = getFindPathResultLimit();
   const provider = searchProviderInput?.value || "auto";
+  // An external MCP server the writer added in Chooser is one more provider
+  // here: same results list, same buttons, its own transport.
+  if (provider.startsWith("mcp:")) {
+    await ensureMcpServersModule();
+    const serverName = window.AISystem6McpServers.serverNameFromProvider(provider);
+    if (findPathProviderEl) findPathProviderEl.textContent = serverName;
+    return window.AISystem6McpServers.searchWithServer(serverName, query, limit);
+  }
   const response = await window.AISystem6Capabilities.requestService("search.remote", {
     query,
     limit,

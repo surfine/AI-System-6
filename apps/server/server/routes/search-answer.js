@@ -78,14 +78,14 @@ async function handleSearchAnswer(req, res) {
       // Representative payload so the shared allowance can meter the whole
       // call before we know how many search-result tokens arrive.
       const payload = {
-        model: "deepseek-v4-flash",
+        model: "deepseek-flash",
         max_tokens: maxOutputTokens,
         input: query,
       };
       const cloud = await preparePublicCloudCall({
         credentialId: body._cloud_credential_id,
         suppliedApiKey: body._cloud_api_key,
-        model: "deepseek-v4-flash",
+        model: "deepseek-flash",
         payload,
         req,
       });
@@ -129,7 +129,7 @@ async function handleSearchAnswer(req, res) {
       usage: result.usage,
       ai_system6_metrics: {
         elapsed_ms: Date.now() - startedAt,
-        model: "deepseek-v4-flash",
+        model: "deepseek-flash",
         usage: result.usage,
       },
     });
@@ -161,11 +161,15 @@ async function handleSearchAnswer(req, res) {
           onDelta: (content) => writeSse({ choices: [{ delta: { content } }] }),
           onDone: (result) => writeSse({ ai_system6_result: envelope(result) }),
         });
-        if (signal.aborted) return;
+        // An abort here means either the client left or this route's own
+        // 120-second timeout fired. Only the first is a reason to say nothing.
+        if (signal.aborted && !timeoutHandle.timedOut()) return;
         if (finalResult?.usage) sharedReservation?.addUsage(finalResult.usage);
       } catch (error) {
-        if (signal.aborted) return;
-        streamError = /** @type {any} */ (error);
+        if (signal.aborted && !timeoutHandle.timedOut()) return;
+        streamError = timeoutHandle.timedOut()
+          ? { message: "The web search timed out.", code: "web_search_timeout" }
+          : /** @type {any} */ (error);
       }
       if (streamError) {
         writeSse({
@@ -192,12 +196,22 @@ async function handleSearchAnswer(req, res) {
       searchCalls,
       onRequest: () => sharedReservation?.markUpstreamStarted(),
     });
-    if (signal.aborted) return;
+    if (signal.aborted && !timeoutHandle.timedOut()) return;
     sharedReservation?.addUsage(result.usage);
 
     send(res, 200, JSON.stringify(envelope(result)), { "Content-Type": "application/json" });
   } catch (error) {
-    if (signal.aborted) return;
+    if (signal.aborted && !timeoutHandle.timedOut()) return;
+    if (timeoutHandle.timedOut()) {
+      send(res, 504, JSON.stringify({
+        error: "The web search timed out.",
+        code: "web_search_timeout",
+        detail: /** @type {any} */ (error)?.message
+          ? String(/** @type {any} */ (error).message)
+          : "timeout",
+      }), { "Content-Type": "application/json" });
+      return;
+    }
     const declaredStatus = Number(/** @type {any} */ (error)?.statusCode);
     const status = Number.isInteger(declaredStatus) && declaredStatus >= 400 ? declaredStatus : 502;
     const message = String(/** @type {Error} */ (error).message);

@@ -7,7 +7,11 @@
 
 const { httpError, readJsonBody, requestSignal, send } = require("../lib/http.js");
 const { postJsonWithFallback } = require("../lib/fetch.js");
-const { DEEPSEEK_BASE_URL_DEFAULT, resolveCloudTarget } = require("../cloud.js");
+const {
+  DEEPSEEK_BASE_URL_DEFAULT,
+  normalizeCloudModelId,
+  resolveCloudTarget,
+} = require("../cloud.js");
 const { resolveCloudCredential } = require("../credential-vault.js");
 const {
   buildImportRepairMessages,
@@ -215,7 +219,7 @@ async function repairTextWithCloudModel(text, options) {
   const apiKey = options.cloudApiKey;
   const baseUrl = (options.cloudBaseUrl || "").replace(/\/$/, "");
   const targetUrl = `${baseUrl}/v1/chat/completions`;
-  const model = options.cloudModel || "deepseek-v4-flash";
+  const model = normalizeCloudModelId(options.cloudModel || "deepseek-flash");
   const payload = {
     model,
     messages: buildImportRepairMessages(text),

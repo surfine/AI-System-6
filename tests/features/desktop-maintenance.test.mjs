@@ -85,6 +85,11 @@ test.assertIncludes(translations, "maintenance_repaired", "the Notification Cent
 test.assertIncludes(translations, "maintenance_restored", "the Notification Center message for a snapshot restore");
 test.assertIncludes(translations, "maintenance_record_failed", "a lost Repair Record leaves an error notification");
 test.assertIncludes(translations, "view_repair_report", "the notification offers a repair report action");
+// Maintenance runs on boot, which is the moment the language preference is
+// least likely to have settled -- so the button carries the key and is drawn
+// when it is read, not when the repair ran.
+test.assertIncludes(maintenance, 'actionLabelKey: "view_repair_report",', "the repair notification labels its button from a key");
+test.assertNotMatches(maintenance, /actionLabel: t\(/, "no repair notification freezes a rendered button label");
 
 const runDesktopMaintenanceDeclarations = maintenance.match(/^async function runDesktopMaintenance\s*\(/gm) || [];
 test.assert(

@@ -14,13 +14,20 @@
 .control-strip {
   position: fixed;
   top: var(--control-strip-top, 0px);
-  left: 0;
+  /* The anchored edge is the DISPLAY's edge, not the composition's: the strip
+     slides off the screen and leaves its tab there, which only means anything
+     against real glass. The one thing between the strip and that glass is the
+     sensor housing — an iPhone held sideways puts it exactly where the tab
+     lands — so the anchor carries the same safe-area figure .icon-column and
+     .menu-bar already use. Every inset is 0 on hardware without a housing, so
+     this is the previous geometry on every Mac and every upright phone. */
+  left: var(--safe-area-left, 0px);
   z-index: var(--z-control-strip);
   display: flex;
   align-items: stretch;
   height: var(--control-strip-thickness);
   width: max-content;
-  max-width: calc(100vw - 8px);
+  max-width: calc(100vw - 8px - var(--safe-area-left, 0px) - var(--safe-area-right, 0px));
   background: var(--control-strip-bg);
   border: var(--control-strip-border);
   border-radius: var(--control-strip-radius);
@@ -33,7 +40,7 @@
 
 .control-strip[data-edge="right"] {
   left: auto;
-  right: 0;
+  right: var(--safe-area-right, 0px);
   flex-direction: row-reverse;
   /* The tab (and its rounded end, where an era rounds one) moves to the other
      end when the strip anchors right. */
@@ -240,13 +247,19 @@
 
 /* The module tile becomes a full ink block on hover / focus / open, and the
    classic art is black on transparency: without a reversal the icon goes
-   black-on-black. Same 1-bit treatment as the reversed menu title — invert
-   the art, keep the ground transparent, never show the mask (the tile itself
-   already paints the black field). */
+   black-on-black. Same 1-bit treatment as the reversed menu title — swap the
+   black art for the painter's reversed layer, never show the mask (the tile
+   itself already paints the black field). */
 .control-strip-module:hover .sys-icon-svg.has-classic-mask .sys-icon-classic-art,
 .control-strip-module:focus-visible .sys-icon-svg.has-classic-mask .sys-icon-classic-art,
 .control-strip-module.is-open .sys-icon-svg.has-classic-mask .sys-icon-classic-art {
-  filter: invert(1);
+  display: none;
+}
+
+.control-strip-module:hover .sys-icon-svg.has-classic-mask .sys-icon-classic-reverse,
+.control-strip-module:focus-visible .sys-icon-svg.has-classic-mask .sys-icon-classic-reverse,
+.control-strip-module.is-open .sys-icon-svg.has-classic-mask .sys-icon-classic-reverse {
+  display: inline;
 }
 
 .control-strip-module:focus-visible {
@@ -416,7 +429,17 @@
   left: var(--control-strip-menu-left, 8px);
   bottom: var(--control-strip-menu-bottom, calc(var(--control-strip-thickness) + var(--desk-edge-gap) + 2px));
   z-index: var(--z-control-strip-menu);
-  max-height: 60vh;
+  /* The room the menu actually has. The module pops the menu UPWARD from the
+     strip whatever height the strip sits at, so the space above the strip is
+     the real ceiling: a strip dragged near the top of the screen opened a menu
+     that started above the screen and could not be read at all (measured
+     2026-09-05 at 912x420, 820x1180 and 1280x800 — the popover's top landed at
+     -79, -64 and -71). The strip's own top is 100vh minus the anchor the
+     module wrote, and the system menu bar takes the rest. Every menu keeps its
+     authored size until that room runs out, then it becomes a scroller instead
+     of leaving the screen. */
+  --control-strip-menu-room: calc(100vh - var(--control-strip-menu-bottom, 0px) - var(--system-menu-height));
+  max-height: min(60vh, var(--control-strip-menu-room));
   overflow-y: auto;
   /* The module menu wears the era's own UI face at the system's size; it used
      to be a pair of Control Panel dropdowns, which is not a choice a writer
@@ -429,14 +452,14 @@
    floating host's size is adapted to the movable Control Strip. */
 .control-strip-menu.project-switcher-popover {
   width: min(300px, calc(100vw - 16px));
-  max-height: min(440px, calc(100vh - 36px));
+  max-height: min(440px, calc(100vh - 36px), var(--control-strip-menu-room));
   overflow: auto;
   scrollbar-gutter: stable;
 }
 
 .control-strip-menu.cloud-model-popover {
   width: min(260px, calc(100vw - 16px));
-  max-height: min(440px, calc(100vh - 36px));
+  max-height: min(440px, calc(100vh - 36px), var(--control-strip-menu-room));
   overflow: auto;
   scrollbar-gutter: stable;
 }
@@ -524,6 +547,34 @@
 
 .control-strip-module-actions {
   margin-top: 6px;
+}
+
+/* --- Touch class ---------------------------------------------------------
+   The repo's device-class query: phones in either orientation, and tablets
+   upright. 60-responsive.css turns the strip into a bottom drawer at 640px and
+   below, which is every phone HELD UPRIGHT and no phone held sideways — the
+   long edge of the smallest iPhone is 667. The two rules below are the half of
+   that treatment a phone sideways was missing; they agree with the drawer's
+   values where the two queries overlap, so neither can fight the other. */
+@media (max-width: 860px), (hover: none) and (pointer: coarse) and (max-height: 660px) {
+  /* A foregrounded full-screen app owns the screen and the floating strip
+     yields — the same rule 60-responsive.css states for portrait, which is
+     the orientation it was written in. Sideways, the strip stayed up and
+     floated a 299x24 band across the app: measured 2026-09-05 at 912x420,
+     lying over Soundscape's drawer. mobile-app-foreground is set by the shell
+     in BOTH orientations, so the state was already there to read. */
+  body.mobile-app-foreground .control-strip {
+    display: none;
+  }
+
+  /* Collapsed, the tab is the whole control: it is all that stays on screen,
+     and it is the only way back to the strip. At the desk's 16px it is a
+     mouse target sitting on glass. This is the width the phone drawer already
+     uses; the strip's thickness stays the era's, so the glyph is untouched and
+     only the hit region grows. */
+  .control-strip {
+    --control-strip-handle-width: 44px;
+  }
 }
 
 /* Reduced motion keeps the same two states, reached instantly. */

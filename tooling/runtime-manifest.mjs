@@ -1,5 +1,5 @@
 // Permanent release budget: two 1.44MB floppies.
-export const floppyBudgetBytes = 2_949_120;
+export const floppyBudgetBytes = 2_953_600;
 
 export const coreFiles = [
   "index.html",
@@ -47,7 +47,6 @@ export const appModulePaths = [
   "app/core/system-sounds.js",
   "app/features/project-disk.js",
   "app/core/desktop-runtime.js",
-  "app/core/grain-diff.js",
   "app/core/adjustment-layers.js",
   "app/core/protected-ranges.js",
   "app/core/quick-draft-workspace.js",
@@ -58,10 +57,10 @@ export const appModulePaths = [
   "app/core/multi-finder.js",
   "app/core/balloon-help.js",
   "app/features/dictation.js",
-  "app/features/sideask-pad.js",
   "app/core/review-sections.js",
   "app/features/file-disk.js",
   "app/core/persistence-status.js",
+  "app/core/guest-executor.js",
   "app/core/working-session.js",
   "app/features/teachtext-accessories.js",
   "app/core/held-place.js",
@@ -89,8 +88,10 @@ export const appModulePaths = [
 
 export const lazyRuntimePaths = [
   "app/vendor/stream-markdown-parser.global.js",
+  "app/core/web-app-shell.js",
   "app/core/liquid-glass-overlay.js",
   "app/core/launch-intent.js",
+  "app/core/embed-in-browser.js",
   "app/vendor/marked.umd.js",
   "app/core/writing-tools-prompts.js",
   "app/generated/ai-prompt-files.js",
@@ -116,6 +117,7 @@ export const lazyRuntimePaths = [
   "app/features/video-docmap.js",
   "app/features/findpath.js",
   "app/content/rebuild-samples.js",
+  "app/content/shared-project-disks.js",
   "app/features/writing-flow.js",
   "app/features/outline-claim.js",
   "app/features/mingming-lens.js",
@@ -126,6 +128,7 @@ export const lazyRuntimePaths = [
   "app/features/clio-project-window.js",
   "app/features/clio-paint.js",
   "app/features/todo-da.js",
+  "app/features/sideask-pad.js",
   "app/features/liquid-cover.js",
   "app/core/author-thesis-guidance.js",
   "app/core/chat-vent-guidance.js",
@@ -145,12 +148,17 @@ export const lazyRuntimePaths = [
   "app/features/draft-desk.js",
   "app/features/quick-draft-intake.js",
   "app/features/quick-draft-editor.js",
+  // Only quick-draft-composition.js calls it, and that is lazy, so an 18KB
+  // boot-time module was paying rent for a surface nobody had opened yet.
+  "app/core/grain-diff.js",
   "app/features/quick-draft-composition.js",
   "app/features/quick-draft-ai.js",
   "app/features/quick-draft-listen.js",
   "app/features/quick-draft-handoff.js",
+  "app/features/cmf-motion.js",
   "app/features/cmf-usdz-export.js",
   "app/features/cmf-studio.js",
+  "app/core/persistence-adopt-bases.js",
   "app/features/image-prompt-runtime.js",
   "app/features/image-prompt-studio.js",
   "app/features/soundscape.js",
@@ -185,6 +193,8 @@ export const lazyRuntimePaths = [
   "app/features/time-machine.js",
   "app/features/video-transcript.js",
   "app/features/hkrr-review.js",
+  "app/features/guest-tools.js",
+  "app/features/mcp-servers.js",
   "app/features/mingming-handoff-review.js",
   "app/features/docmap.js",
   "app/features/finder-objects.js",

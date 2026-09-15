@@ -161,6 +161,13 @@ window.AISystem6Config = (() => {
     // Chinese desktop; getDefaultProjectName() localizes it once translations
     // are loaded.
     defaultProjectName: "New Project",
+    // The names the APP has ever chosen for the first project, in every
+    // language it could have chosen one in. A desk that first opened in
+    // Chinese stored 新项目; switching to English then showed a Chinese name
+    // the writer never typed. These are the only names projectDisplayName
+    // re-reads through the current language -- a name the writer typed is
+    // their own and is never rewritten.
+    appAuthoredDefaultProjectNames: Object.freeze(["New Project", "新项目"]),
     displayNameRewrites: Object.freeze([
       Object.freeze({
         pattern: new RegExp(`^${["示范", "项目"].join("")}\\s*-\\s*本地\\s*AI\\s*写作(\\s+\\d+)?$`, "u"),
@@ -523,6 +530,13 @@ const ensureFindPathModule = createLazyModuleLoader("AISystem6FindPathLoaded", [
 const ensureEndfieldTerminalModule = createLazyModuleLoader("AISystem6EndfieldTerminalLoaded", ["app/features/endfield-terminal.js"], false, ["styles.endfield-terminal.css"]);
 const ensureTimeMachineModule = createLazyModuleLoader("AISystem6TimeMachineLoaded", ["app/features/time-machine.js"], false, ["styles.time-machine.css"]);
 const ensureHkrrReviewModule = createLazyModuleLoader("", ["app/features/hkrr-review.js"]);
+// The guest bridge: tool handlers, the approval dialog and the Chooser guest
+// list load together on the first guest call or when Chooser opens.
+const ensureGuestToolsModule = createLazyModuleLoader("AISystem6GuestTools", ["app/features/guest-tools.js"]);
+// The outbound half: the servers this desk asks, and the File Floppy landing
+// every answer takes. Chooser loads it; so does Searcher when the chosen
+// provider is one of those servers.
+const ensureMcpServersModule = createLazyModuleLoader("AISystem6McpServers", ["app/features/mcp-servers.js"]);
 const ensureMingmingHandoffReviewModule = createLazyModuleLoader("", ["app/features/mingming-handoff-review.js"]);
 const ensureSlidesExportModule = createLazyModuleLoader("AISystem6SlidesExportLoaded", ["app/features/slides-export.js"]);
 const ensureClioStageModule = createLazyModuleLoader("AISystem6ClioStageLoaded", ["app/features/clio-stage.js"], false, ["styles.clio-chart.css"]);
@@ -532,6 +546,7 @@ const ensureClioChartModule = createLazyModuleLoader("AISystem6ClioChartLoaded",
 const ensureClioProjectModule = createLazyModuleLoader("AISystem6ClioProjectWindowLoaded", ["app/core/application-shell.js", "app/core/clio-project.js", "app/features/clio-project-window.js"]);
 const ensureClioPaintModule = createLazyModuleLoader("AISystem6ClioPaintLoaded", ["app/core/application-shell.js", "app/features/clio-paint.js"], false, ["styles.clio-paint.css"]);
 const ensureTodoDaModule = createLazyModuleLoader("AISystem6TodoDaLoaded", ["app/core/application-shell.js", "app/features/todo-da.js"]);
+const ensureSideAskPadModule = createLazyModuleLoader("AISystem6SideAskPadLoaded", ["app/core/application-shell.js", "app/features/sideask-pad.js"]);
 const ensureLiquidCoverModule = createLazyModuleLoader("AISystem6LiquidCoverLoaded", ["app/core/application-shell.js", "app/features/image-prompt-runtime.js", "app/features/liquid-cover.js"], false, ["styles.liquid-cover.css"]);
 const ensureImagePromptStudioModule = createLazyModuleLoader("AISystem6ImagePromptStudioLoaded", ["app/core/application-shell.js", "app/features/image-prompt-runtime.js", "app/features/image-prompt-studio.js"], false, ["styles.image-prompt-studio.css"]);
 const ensureQuickDraftModule = createLazyModuleLoader("AISystem6QuickDraftLoaded", [
@@ -547,12 +562,14 @@ const ensureQuickDraftModule = createLazyModuleLoader("AISystem6QuickDraftLoaded
   "app/features/draft-desk.js",
   "app/features/quick-draft-intake.js",
   "app/features/quick-draft-editor.js",
+  "app/core/grain-diff.js",
   "app/features/quick-draft-composition.js",
   "app/features/quick-draft-ai.js",
   "app/features/quick-draft-listen.js",
   "app/features/quick-draft-handoff.js",
 ], false, ["styles.draft-desk.css"]);
 const ensureCmfStudioModule = createLazyModuleLoader("AISystem6CMFStudioLoaded", [
+  "app/features/cmf-motion.js",
   "app/features/cmf-usdz-export.js",
   "app/features/cmf-studio.js?cmf=exterior-ao-sanitized",
 ], false, ["styles.cmf-studio.css"]);
@@ -607,6 +624,12 @@ const ensureDoomModule = createLazyModuleLoader("AISystem6DoomLoaded", [
 const ensureWritingDemoModule = createLazyModuleLoader("AISystem6WritingDemoLoaded", [
   "app/data/evergreen-demo-corpus.js",
   "app/features/writing-demo.js",
+]);
+// A shared launch link mounts a whole Project Hard Disk. The backups are
+// large and only a visitor who followed such a link ever needs them, so they
+// travel as their own lazy content module rather than in the boot bundle.
+const ensureSharedProjectDisksModule = createLazyModuleLoader("AISystem6SharedProjectDisksLoaded", [
+  "app/content/shared-project-disks.js",
 ]);
 
 // A lazy window/command whose module failed to load this session: keyed by

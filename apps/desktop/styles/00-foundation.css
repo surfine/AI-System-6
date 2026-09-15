@@ -13,11 +13,14 @@
   --ink: #000000;
   --paper: #ffffff;
   /* RCI demand gauge colours — declared ONCE here; every appearance (Classic
-     included) uses them via the city-demand-gauge draw callback. M8 replaces
-     these with measured values from the owner's emulator captures. */
-  --city-demand-r: #1f9d3a;
-  --city-demand-c: #2a55c7;
-  --city-demand-i: #d9a900;
+     included) uses them via the city-demand-gauge draw callback. Measured, not
+     approximated: these are the values Micropolis itself fills its demand
+     columns with, read from the GPL source rather than sampled from a
+     screenshot. Provenance and the geometry that came with them:
+     internal/evidence/MICROPOLIS-GPL-GAUGE.md */
+  --city-demand-r: #00ff00;
+  --city-demand-c: #0000ff;
+  --city-demand-i: #ffff00;
   --pane-bg: transparent;
   --messages-bg: var(--paper);
   --details-bar-bg: var(--paper);
@@ -165,6 +168,15 @@
   --field-border: var(--system-border);
   --field-radius: 0;
   --select-radius: var(--system-select-radius);
+  --select-wrapper-arrow-display: none;
+  --system-select-control-font-weight: 700;
+  /* Surface roles stay square in historical painters; Liquid owns their curve. */
+  --control-shape-radius: initial;
+  --surface-radius: 0px;
+  --item-radius: 0px;
+  --inset-radius: 0px;
+  --micro-radius: 0px;
+  --tab-inner-radius: 0px;
   --field-shadow: none;
   --field-focus-border: var(--field-border);
   --field-focus-ring: 0 0 0 2px var(--shade-dark);
@@ -947,6 +959,23 @@
   --window-status-padding: 4px 8px;
   --content-reading-padding-x: 16px;
   --content-reading-padding-y: 12px;
+  /* The desk's rails stand at the edges they name: the writing route on the
+     left, the launcher on the right. From 2026-09-05 to 2026-09-14 both rails
+     were inset toward a centred composition so that a 27-inch desk would not
+     hold them 2318px apart; the owner overturned that on 2026-09-14. The room a
+     large display buys is the room between the rails, and the rails belong to
+     the edges. Nothing here is a width: the work area between them is measured
+     from where they actually are (getDesktopAvoidanceInsets), so moving a rail
+     moves the work area with it.
+     Reading measure: a column of body text stops at a readable width whatever
+     the window does. The writing route has always had this (its editable column
+     is capped in px); the reading route had `max-width: none` and drew a
+     2236px line on the same display. */
+  --reading-measure: 72ch;
+  /* The row a Writing Flow step number reserves above its icon. Liquid Glass
+     draws a 24px pill instead of a 17px square and declares its own value;
+     every other appearance uses this one. */
+  --spine-step-badge-row: 19px;
   --touch-safe-inset: env(safe-area-inset-bottom, 0px);
 
   /* Writing editor */
@@ -2086,6 +2115,12 @@ textarea {
   font: inherit;
 }
 
+/* Unclassified controls inherit the current painter's shape. Revert preserves
+   native defaults in appearances that do not opt into this fallback. */
+:where(button, input, textarea, select, summary, [role="button"]) {
+  border-radius: var(--control-shape-radius, revert);
+}
+
 /* Desk furniture is not text. A drag that starts on a control (the marquee
    bows out of those, see finderMarqueeContext) or any touch long-press used to
    paint a text selection across the menu bar, the Writing Flow strip, control
@@ -2369,7 +2404,7 @@ body.has-system-modal .menu-bar {
 .menu-popover::-webkit-scrollbar-thumb,
 .menu-sub-popover::-webkit-scrollbar-thumb {
   border: var(--system-border);
-  border-radius: 0;
+  border-radius: var(--item-radius);
   background: var(--paper);
   box-shadow: inset 1px 1px 0 var(--shade);
 }
@@ -2387,7 +2422,13 @@ body.has-system-modal .menu-bar {
 .menu-sub-popover button {
   width: 100%;
   border: 0;
-  background: transparent;
+  /* Through the menu tokens, exactly as a menu's own rows are: an era's
+     selection plate is its own thing, and so is the foreground that sits on
+     it. Painting this rule with raw --ink/--paper made the two disagree the
+     moment an era's paper was not opaque white — Liquid Glass's translucent
+     paper put grey text on a black plate while the row above it stayed white. */
+  background: var(--menu-item-bg, transparent);
+  color: var(--menu-item-fg);
   padding: 4px 12px;
   text-align: left;
   display: flex;
@@ -2401,8 +2442,9 @@ body.has-system-modal .menu-bar {
 }
 
 .menu-sub-popover button:hover:not(:disabled):not(.is-disabled) {
-  background: var(--ink);
-  color: var(--paper);
+  --menu-item-bg: var(--menu-item-active-bg);
+  --menu-item-fg: var(--menu-item-active-fg);
+  --menu-item-shadow: var(--menu-item-active-shadow);
 }
 
 .menu-popover button.is-disabled,

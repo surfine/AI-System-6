@@ -20,7 +20,11 @@ const desktopKey = "workingSession:v3:desktop";
 const projectKey = (id) => `workingSession:v3:project:${id}`;
 const legacyV2ProjectKey = (id) => `workingSession:v2:project:${id}`;
 
-function createWorkingSessionVm({ failWrites = false } = {}) {
+// `booted: false` keeps the module in the state it actually starts in: locked
+// until boot has read the record on disk. Every other block wants a desk that
+// is already past that point, which is what boot() does one line after
+// restoreWorkingSession() returns.
+function createWorkingSessionVm({ failWrites = false, booted = true } = {}) {
   const snapshots = new Map();
   const store = {
     get: async (key) => snapshots.get(key),
@@ -71,6 +75,7 @@ function createWorkingSessionVm({ failWrites = false } = {}) {
     updateMenuState: () => {},
   });
   vm.runInContext(source, context);
+  if (booted) context.settleWorkingSessionRestore();
   return {
     context,
     snapshots,
@@ -549,3 +554,48 @@ test.assertMatches(
 );
 
 test.finish();
+
+
+// --- the scene is not written before the saved one has been read ------------
+//
+// Boot moves windows long before restoreWorkingSession() runs: applySettings()
+// reflows them around the writing spine, and every move asks for a save. When
+// boot ran slower than the 350 ms autosave debounce, that save landed first —
+// capturing the un-booted markup as a scene, overwriting the real record, and
+// leaving restore to read back the markup it had just written. The desk came
+// up with three collapsed Desk Accessories in front of an inactive ClioTalk
+// whose close box a person could not click, and no saved scene ever survived a
+// reload. Timing must not decide this, so the module writes nothing at all
+// until boot says the restore attempt is over.
+{
+  const runtime = createWorkingSessionVm({ booted: false });
+  registerSceneAdapter(runtime);
+
+  runtime.context.__scene = "pre-restore-markup";
+  await runtime.context.flushWorkingSessionCommit();
+  test.assert(
+    !runtime.snapshots.has(desktopKey),
+    "a scene captured before the restore attempt is never written"
+  );
+
+  runtime.context.scheduleWorkingSessionSave(0);
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  test.assert(
+    !runtime.snapshots.has(desktopKey),
+    "a save queued before the restore attempt never lands, debounce or not"
+  );
+
+  runtime.context.settleWorkingSessionRestore();
+  runtime.context.__scene = "real-work";
+  await runtime.context.flushWorkingSessionCommit();
+  test.assert(
+    runtime.snapshots.get(desktopKey)?.adapters.scene.scene === "real-work",
+    "once boot settles the restore attempt, the desk saves normally again"
+  );
+}
+
+// boot() must actually open that gate, and only after it has read the record.
+test.assert(
+  /restoreWorkingSession\(\), "restoreWorkingSession"[\s\S]{0,600}?settleWorkingSessionRestore\(\)/.test(bootSource),
+  "boot() settles the restore attempt after restoreWorkingSession(), not before"
+);

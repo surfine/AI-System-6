@@ -325,4 +325,26 @@ test.assert(
 test.assert(kindMismatchCalls === 0, "the handler never runs on an unsupported kind");
 test.assert(eighth.receiptCalls.length === 0, "no receipt is created on an unsupported kind");
 
+// An intent reports what happened, not what it hoped. Both of these awaited a
+// worker and then answered "ok" regardless, so a map or a check that never
+// reached a model still told the dispatcher it had run — and the run receipt
+// recorded a completed run to match.
+test.assertIncludes(registrySource, "if (!mapped) return { ok: false, reason: \"not-mapped\" };", "the map intent passes the builder's answer through");
+test.assertIncludes(registrySource, "if (!checked) return { ok: false, reason: \"not-checked\" };", "the review intent passes the checker's answer through");
+test.assertNotIncludes(registrySource, "if (typeof runClaimCheck === \"function\") await runClaimCheck();", "and neither discards it any more");
+test.assertIncludes(registrySource, "if (!downloaded) return { ok: false, reason: \"download-failed\" };", "an export that saved nothing is not reported as an export");
+
+// The mirror of the three intents above: there the worker said it had done
+// something it had not, here it knew it had failed and told nobody. In the
+// desktop profile the Review Desk window does not exist, so the dispatch
+// answers not-ok and the desk used to return silently -- a command that looks
+// dead. Both handoffs answer on every exit now.
+test.assertIncludes(quickDraftHandoff, 'setQuickDraftStatus(t("quick_draft_review_failed"));', "a refused Review Desk handoff says so");
+test.assertIncludes(quickDraftHandoff, 'setQuickDraftStatus(t("quick_draft_teachtext_failed"));', "a refused TeachText handoff says so");
+test.assertNotIncludes(quickDraftHandoff, "if (!result?.ok) return false;", "neither swallows the dispatcher's answer");
+for (const key of ["quick_draft_review_failed", "quick_draft_teachtext_failed"]) {
+  test.assertIncludes(read("app/data/translations-en.js"), `${key}:`, `English string exists for ${key}`);
+  test.assertIncludes(read("app/data/translations-zh.js"), `${key}:`, `Chinese string exists for ${key}`);
+}
+
 test.finish();

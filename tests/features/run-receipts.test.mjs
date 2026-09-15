@@ -198,6 +198,84 @@ const noModelRun = await modelApi.createReceipt({ sourceAppId: "clioStage", inte
 const noModelRecord = modelCtx.chatFiles.find((file) => file.id === noModelRun.receiptId).runReceipt;
 test.assert(noModelRecord.model === "" && noModelRecord.provider === "", "an operation that never resolves a model stays unclaimed");
 
+// Attempts: a run can spend several tries before a model answer lands (a
+// streamed call that failed and was retried, a local reply repaired by a
+// second call). The receipt keeps the model that finally answered AND the
+// earlier tries, so "which model wrote this" and "what else was tried" are
+// both answerable from one record \u2014 still only verifiable routing facts.
+const attemptsCtx = createReceiptsContext();
+const attemptsApi = attemptsCtx.context.window.AISystem6RunReceipts;
+const twoAttempts = await attemptsApi.createReceipt({
+  sourceAppId: "clioTalk",
+  intent: "chat",
+  provider: "cloud",
+  model: "final-model",
+  attempts: [
+    { model: "stream-model", provider: "cloud", outcome: "stream-failed", at: "2026-01-01T10:00:00.000Z" },
+    { model: "final-model", provider: "cloud", outcome: "answered", at: "2026-01-01T10:00:05.000Z" },
+  ],
+});
+let attemptsRecord = attemptsCtx.chatFiles.find((file) => file.id === twoAttempts.receiptId).runReceipt;
+test.assert(
+  attemptsRecord.attempts.length === 2 && attemptsRecord.attempts[0].model === "stream-model" && attemptsRecord.attempts[1].model === "final-model",
+  "a receipt keeps every attempt, in the order they happened"
+);
+test.assert(
+  attemptsRecord.model === "final-model" && attemptsRecord.attempts[1].model === "final-model",
+  "the receipt keeps both the model that finally answered and the earlier tries"
+);
+test.assert(
+  attemptsRecord.attempts[0].outcome === "stream-failed" && attemptsRecord.attempts[0].at === "2026-01-01T10:00:00.000Z",
+  "an attempt carries its outcome word and timestamp"
+);
+test.assert(attemptsRecord.attempts[0].prompt === undefined, "an attempt carries no prompt or reasoning text");
+
+// An attempt with no model and no provider says nothing verifiable: drop it.
+await attemptsApi.updateReceipt(twoAttempts.receiptId, {
+  attempts: [
+    { model: "stream-model", provider: "cloud", outcome: "stream-failed" },
+    { model: "", provider: "", outcome: "answered" },
+    { model: "repair-model", provider: "local", outcome: "answered" },
+  ],
+});
+attemptsRecord = attemptsCtx.chatFiles.find((file) => file.id === twoAttempts.receiptId).runReceipt;
+test.assert(
+  attemptsRecord.attempts.length === 2 && attemptsRecord.attempts.every((attempt) => attempt.model || attempt.provider),
+  "updateReceipt normalizes the attempts patch and drops empty attempts"
+);
+test.assert(attemptsRecord.attempts[1].model === "repair-model", "the surviving attempts keep their order after normalization");
+
+const attemptsBody = attemptsCtx.chatFiles.find((file) => file.id === twoAttempts.receiptId).body;
+test.assertIncludes(attemptsBody, "- Attempts: stream-model [cloud] stream-failed; repair-model [local] answered", "the body prints each attempt as model [provider] outcome");
+test.assert(!attemptsBody.includes("- Attempts: stream-model [cloud] stream-failed (2026"), "the Attempts line stays readable and carries no timestamp");
+
+// Back-compat: a record without attempts \u2014 or a caller passing a non-array \u2014
+// normalizes to an empty array, never null or undefined, so an old record
+// still loads and still prints a readable Attempts line.
+const bareRun = await attemptsApi.createReceipt({ sourceAppId: "docMap", intent: "map", attempts: null });
+const bareRecord = attemptsCtx.chatFiles.find((file) => file.id === bareRun.receiptId).runReceipt;
+test.assert(Array.isArray(bareRecord.attempts) && bareRecord.attempts.length === 0, "a receipt without attempts loads with an empty attempts array");
+test.assert(bareRecord.attempts !== null && bareRecord.attempts !== undefined, "a missing attempts value normalizes to an empty array, never null or undefined");
+const legacyRecord = attemptsApi.buildRunReceiptRecord({ sourceAppId: "docMap", intent: "map" });
+test.assert(Array.isArray(legacyRecord.attempts) && legacyRecord.attempts.length === 0, "an old record built without attempts stays loadable");
+const bareBody = attemptsCtx.chatFiles.find((file) => file.id === bareRun.receiptId).body;
+test.assertIncludes(bareBody, "- Attempts: \u2014", "the Attempts line shows an em dash when there are no attempts");
+
+const answeredWithAttempts = await attemptsApi.recordModelAnswer({
+  projectId: "project-1",
+  sourceAppId: "quickDraft",
+  intent: "draft",
+  provider: "cloud",
+  model: "final-model",
+  answerText: "A draft that took two tries to arrive.",
+  attempts: [{ model: "stream-model", provider: "cloud", outcome: "stream-failed", at: "2026-01-01T10:00:00.000Z" }],
+});
+const answeredWithAttemptsRecord = attemptsCtx.chatFiles.find((file) => file.id === answeredWithAttempts.receiptId).runReceipt;
+test.assert(
+  answeredWithAttemptsRecord.attempts.length === 1 && answeredWithAttemptsRecord.attempts[0].model === "stream-model",
+  "recordModelAnswer passes the attempts it was given to the receipt"
+);
+
 // Reload recovery: a fresh module instance over the same backing store can
 // still read receipts written before the reload.
 const reloaded = createReceiptsContext({ chatFiles: second.chatFiles });
@@ -345,5 +423,104 @@ const chatMessages = read("app/core/chat-messages.js");
 ].forEach(([label, source]) => {
   test.assertIncludes(source, "recordModelAnswer", `${label} routes its model answer through the shared receipt helper`);
 });
+
+// A receipt names the model that ANSWERED, not the one the desk happens to
+// have selected. The ClioTalk reply used to write currentTranslationModel() —
+// the local model display name — onto every receipt, so a cloud run, a
+// fallback and a repaired run all reported a model that never saw the
+// question. The served model comes off the run manifest the transport fills
+// in, and when the transport did not say, the receipt says nothing.
+test.assertIncludes(chatMessages, "const servedModelName = String(runManifest?.servedModel", "the receipt reads the served model off the run manifest");
+test.assertNotIncludes(
+  chatMessages.slice(chatMessages.indexOf("function createClioTalkAssistantRecord")),
+  "model: currentTranslationModel()",
+  "and never substitutes the desk's current model selection",
+);
+test.assertIncludes(chatMessages, "function noteClioTalkModelAttempt", "each attempt in a run is recorded as it happens");
+test.assertIncludes(chatMessages, 'outcome: "stream-failed"', "a stream that produced no answer stays visible as an attempt");
+test.assertIncludes(chatMessages, "attempts: modelAttempts", "and the attempts travel with the receipt the answer creates");
+
+// One obvious way to name the served model. The helper prefers what the
+// transport actually stamped (ai_system6_metrics.model), falls back to a bare
+// data.model, and stays empty for a reply that says neither rather than
+// borrowing the desk's current selection.
+test.assertIncludes(receiptsSource, "function servedModelFromResponse(data)", "run receipts define a single served-model helper");
+test.assertIncludes(receiptsSource, "servedModelFromResponse,", "servedModelFromResponse is exported on the shared receipts API");
+const servedModelContext = createReceiptsContext();
+const servedModelApi = servedModelContext.context.window.AISystem6RunReceipts;
+test.assert(typeof servedModelApi.servedModelFromResponse === "function", "the served-model helper is callable on the frozen API");
+test.assert(
+  servedModelApi.servedModelFromResponse({ ai_system6_metrics: { model: "deepseek-v4" } }) === "deepseek-v4",
+  "the helper prefers the model the transport stamped on ai_system6_metrics"
+);
+test.assert(
+  servedModelApi.servedModelFromResponse({ ai_system6_metrics: { model: "deepseek-v4" }, model: "ignored-fallback" }) === "deepseek-v4",
+  "a stamped metric wins over a bare data.model"
+);
+test.assert(
+  servedModelApi.servedModelFromResponse({ model: "gpt-local" }) === "gpt-local",
+  "the helper falls back to a bare data.model when no metric is stamped"
+);
+test.assert(
+  servedModelApi.servedModelFromResponse({}) === "" && servedModelApi.servedModelFromResponse(null) === "",
+  "a reply that names no model stays empty rather than borrowing a name"
+);
+
+// Both Review Desk receipt sites take the model from the reply that arrived,
+// never from the desk's current local selection. The request payloads in these
+// files keep naming the local model — that one is the model being ASKED, and
+// it is correct there; only the receipt's answer is at stake.
+const receiptModelFromReply = 'model: window.AISystem6RunReceipts?.servedModelFromResponse?.(data) || "",';
+const receiptModelFromSelection = 'model: typeof getLocalModelRequestName === "function" ? getLocalModelRequestName() : "",';
+test.assertIncludes(hkrrReview, receiptModelFromReply, "the HKRR receipt names the model that answered");
+test.assertNotIncludes(hkrrReview, receiptModelFromSelection, "and no longer the desk's local selection");
+test.assertIncludes(translation, receiptModelFromReply, "the style-check receipt names the model that answered");
+test.assertNotIncludes(translation, receiptModelFromSelection, "and no longer the desk's local selection");
+
+// outline-claim.js is the streaming route: its answers arrive as a stream, so
+// the served model comes off the stream callback rather than a parsed reply.
+// The module records what the stream named, every stream in the file reports
+// it, and the receipt no longer falls back to the desk's local selection.
+test.assertIncludes(outlineClaim, "function noteServedWritingModel", "outline-claim records the model the stream served");
+const servedModelStreamReports = outlineClaim.split("onModel: noteServedWritingModel").length - 1;
+test.assert(
+  servedModelStreamReports >= 6,
+  "every writing-route stream in outline-claim reports the served model"
+);
+test.assertNotIncludes(
+  outlineClaim,
+  "model: model || (typeof getLocalModelRequestName",
+  "the outline-claim receipt no longer falls back to the desk's local selection"
+);
+test.assertIncludes(outlineClaim, "lastServedWritingModel = \"\";\n  const record", "a served model is spent once, so a later run cannot inherit it") ;
+
+// The class gate. A receipt's model is a fact about the answer, so no call site
+// may fill it from the desk's current selection: getLocalModelRequestName() and
+// currentTranslationModel() both read what would be asked NEXT, and on the
+// cloud route the local name is not even the right one. Quick Draft's
+// quickDraftConnectedModelName() is allowed — it follows the route and returns
+// "" when nothing is connected, which is a claim about this run.
+const forbiddenReceiptModelSources = ["getLocalModelRequestName", "currentTranslationModel"];
+for (const [label, source] of [
+  ["quick-draft-ai.js", quickDraftAi],
+  ["quick-draft-composition.js", quickDraftComposition],
+  ["quick-draft-listen.js", quickDraftListen],
+  ["outline-claim.js", outlineClaim],
+  ["translation.js", translation],
+  ["hkrr-review.js", hkrrReview],
+  ["chat-messages.js", chatMessages],
+]) {
+  const blocks = [];
+  let cursor = source.indexOf("recordModelAnswer");
+  while (cursor >= 0) {
+    blocks.push(source.slice(cursor, source.indexOf("answerText", cursor) + 40));
+    cursor = source.indexOf("recordModelAnswer", cursor + 1);
+  }
+  const offenders = blocks.filter((block) => forbiddenReceiptModelSources.some((name) => block.includes(name)));
+  test.assert(
+    offenders.length === 0,
+    `${label} never fills a receipt's model from the desk's current selection`,
+  );
+}
 
 test.finish();

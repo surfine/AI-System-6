@@ -73,6 +73,7 @@
     return {
       model: modelId,
       pose: raw.pose || null,
+      fold: modelId === "macbook-neo" && Number.isFinite(raw.fold) ? Math.max(0, Math.min(1, raw.fold)) : null,
       parts,
       palette,
       exactMeshParts,
@@ -341,6 +342,27 @@
     };
   }
 
+  function applyHingeToUsda(text, recipe) {
+    if (recipe.model !== "macbook-neo" || recipe.fold === null) return text;
+    const motion = window.AISystem6CMFMotion;
+    if (!motion) throw new Error("CMF motion exporter is unavailable.");
+    const marker = `def Xform "${motion.NEO_HINGE.group}"`;
+    const start = text.indexOf(marker);
+    if (start < 0) throw new Error("MacBook Neo hinge group is missing.");
+    const open = text.indexOf("{", start);
+    if (open < 0) throw new Error("MacBook Neo hinge group is invalid.");
+    const { degrees, translation } = motion.neoTransform(recipe.fold);
+    // The prepared open asset has identity group transforms and baked points.
+    // Writing the same rigid transform as the preview preserves the exact
+    // current angle, including positions between the two pose presets.
+    const transform = `
+        double3 xformOp:translate = (${translation.join(", ")})
+        float3 xformOp:rotateXYZ = (${degrees}, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+`;
+    return text.slice(0, open + 1) + transform + text.slice(open + 1);
+  }
+
   function repackageUsdzBuffer(buffer, recipeInput, fflate) {
     const recipe = normalizeRecipe(recipeInput);
     const { unzipSync, zipSync } = fflate;
@@ -361,8 +383,15 @@
     }
 
     const result = recolorUsdaText(source, recipe);
-    entries[rootName] = new TextEncoder().encode(result.text);
-    const zipped = zipSync(entries, { level: 6 });
+    entries[rootName] = new TextEncoder().encode(applyHingeToUsda(result.text, recipe));
+    // Level 0 is store, and that is the format, not a size preference: USDZ is
+    // a zip whose entries must be uncompressed. A deflated archive is refused
+    // by Apple's USD runtime outright ("compressed files are not supported"),
+    // so every file this exporter handed the writer at level 6 was one Quick
+    // Look and AR would not open. Measured 2026-09-14: the same archive stored
+    // renders 9,290 opaque samples in SceneKit where the deflated one renders
+    // an empty scene. The in-app three.js loader reads either.
+    const zipped = zipSync(entries, { level: 0 });
     return { buffer: zipped, stats: result.stats };
   }
 
@@ -384,6 +413,7 @@
     normalizeRecipe,
     recolorUsdaText,
     repackageUsdzBuffer,
+    applyHingeToUsda,
     exportUsdzBuffer,
     exportUsdz,
   });

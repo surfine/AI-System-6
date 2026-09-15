@@ -1574,8 +1574,16 @@ function renderProjectDiskDesktopIcons() {
   if (!column || !mountedIcon) return;
 
   const mountedId = isProjectMounted ? activeProjectId : "";
-  // Archived disks are put away: off the desk, still in the switcher.
-  const ejected = projects.filter((project) => !project.archived && project.id !== mountedId);
+  // Archived disks are put away: off the desk, still in the switcher. So are
+  // the unmounted ones unless the writer asked for them — the Finder's own
+  // default, and the reason the desk stops being a wall of "Untitled project"
+  // ghosts the moment somebody keeps more than two projects. The menu-bar
+  // switcher is the way back to every disk either way.
+  const showUnmounted = typeof showUnmountedDisksInput !== "undefined"
+    && showUnmountedDisksInput?.checked === true;
+  const ejected = showUnmounted
+    ? projects.filter((project) => !project.archived && project.id !== mountedId)
+    : [];
   const drawn = new Map(
     [...column.querySelectorAll("[data-ejected-project-id]")].map((icon) => [icon.dataset.ejectedProjectId, icon]),
   );

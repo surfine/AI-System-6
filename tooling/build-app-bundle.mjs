@@ -104,9 +104,9 @@ const minifiedBody = transformSync(body, {
   minifyWhitespace: true,
   target: "esnext",
 }).code.trim();
-const sourceSectionManifest = appRuntimePaths
-  .map((path) => `// Source section: ${path}`)
-  .join("\n");
+// Keep the source inventory for debugging without paying one repeated comment
+// prefix per module in the public boot bundle.
+const sourceSectionManifest = `// Sources: ${appRuntimePaths.join(",")}`;
 writeFileSync(appBundlePath, `${banner}${sourceSectionManifest}\n${minifiedBody}\n`, "utf8");
 
 const syntaxCheck = spawnSync(process.execPath, ["--check", appBundlePath], {

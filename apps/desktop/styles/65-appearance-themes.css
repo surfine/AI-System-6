@@ -28,6 +28,8 @@ body[data-theme="platinum"] {
      Language Kit. PingFang did not exist until El Capitan in 2015. */
   --theme-ui-font: Charcoal, "Charcoal CY", "Platinum Asap", Geneva, "ChicagoFLF", Chicago, "STSong", "Songti SC", "SimSun", serif;
   --theme-title-font: var(--theme-ui-font);
+  /* Platinum paints its native popup arrow in the wrapper well. */
+  --select-wrapper-arrow-display: block;
   --system-readable-min: 12px;
   --system-title-size: 12px;
   --system-control-size: 12px;
@@ -1372,6 +1374,17 @@ body[data-theme="yosemite"] {
   --desktop-surface:
     radial-gradient(circle at 50% 6%, rgba(255, 214, 200, 0.55), transparent 28%),
     linear-gradient(180deg, #e8a79e 0%, #d4a294 12%, #b98b74 26%, #8c756f 46%, #5e5961 68%, #464955 86%, #515765 100%);
+  /* Endfield terminal: warm-paper survey, contour lines (等高线) and a
+     chartreuse glow over the 10.10 peach. */
+  --endfield-pane-bg:
+    linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+    url("assets/endfield-background.svg"),
+    radial-gradient(circle at 88% 8%, rgba(234, 253, 79, 0.24), transparent 34%),
+    linear-gradient(168deg, #f6e3da 0%, #e7c4b2 40%, #f0ded2 72%, #f8eeea 100%);
+  --endfield-pane-bg-size: 34px 34px, 34px 34px, max(1200px, 118vw) auto, auto, auto;
+  --endfield-pane-bg-position: center, center, 45% 20%, center, center;
+  --endfield-pane-bg-repeat: repeat, repeat, no-repeat, no-repeat, no-repeat;
   --window-bg: rgba(245, 245, 245, 0.99);
   --window-border: 1px solid rgba(0, 0, 0, 0.16);
   /* Real 10.10 windows: ~5px corner radius at 1x (measured 10px at 2x). */
@@ -1832,9 +1845,46 @@ body[data-theme="platinum"] :is(.close-box, .resize-box, .shade-box) {
   filter: none;
 }
 
-body[data-theme="platinum"] .title-bar .close-box::before,
-body[data-theme="platinum"] .title-bar .resize-box::before,
-body[data-theme="platinum"] .title-bar .shade-box::before {
+/* A finger gets the same 40px title-bar control Classic already ships, and the
+   Mac OS 9 art does not move by one pixel to pay for it.
+   Platinum is the only historical era where this is possible, because it is
+   the only one that keeps the drawn glyph SEPARATE from the box: the art is a
+   `::before` positioned by --system-titlebar-control-art-offset-*, exactly the
+   way Classic centres an 11px glyph inside its 40px box. The traffic-light
+   eras paint the lamp AS the box (a round clip plus a centred sprite), so
+   growing their box moves or scales the lamp — measured 2026-09-05, the Aqua,
+   Snow Leopard and Yosemite lamps slide 13-14px and the Aqua hover glyph
+   scales from 14px to 40px. Those eras are deliberately not changed here.
+   The two compensations are the box's own centring arithmetic, not tuning.
+   Close is justify-self: start, so only its vertical centre moves, by half the
+   growth. Zoom is justify-self: end, so its leading edge moves by the whole
+   growth. Both verified pixel-identical against the pre-change crop.
+   The WindowShade box stays at its drawn 11px on purpose: it sits at the
+   trailing edge with 5px of bar behind it, so a 40px box could only grow
+   leftward, over the Zoom glyph — and being later in the DOM it would swallow
+   Zoom's taps. A bigger WindowShade needs a wider title-bar slot, which is a
+   layout change, not a token one. */
+@media (hover: none) and (pointer: coarse) {
+  body[data-theme="platinum"] .title-bar :is(.close-box, .resize-box) {
+    --system-titlebar-control-size: 40px;
+    /* -2px is the era's drawn offset and 11px its drawn box, both stated in
+       the token table above. Close is justify-self: start, so it grows about
+       its own centre and the art comes back up by half the growth. Zoom is
+       justify-self: end, so its leading edge moves by the whole growth and the
+       art comes back right by all of it. The WindowShade box reads
+       --system-titlebar-resize-art-offset-x too, but it is not in this
+       selector and a custom property inherits from the parent, so it keeps the
+       era's 0px and stays where it is drawn. */
+    --system-titlebar-resize-art-offset-x: calc(0px + (40px - 11px));
+    --system-titlebar-control-art-offset-y: calc(-2px + (40px - 11px) / 2);
+  }
+}
+
+/* One list, written the way the era already writes it two rules above:
+   `:is()` takes the specificity of its most specific branch, so all three
+   still resolve at (0, 3, 0) in the same source position — the same three
+   controls, two selectors fewer on the appearance wall. */
+body[data-theme="platinum"] .title-bar :is(.close-box, .resize-box, .shade-box)::before {
   box-sizing: border-box;
   width: var(--system-titlebar-control-art-size);
   height: var(--system-titlebar-control-art-size);
@@ -2169,7 +2219,8 @@ body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) :is(inpu
 
   border: var(--field-focus-border);
   outline: 0;
-  background: var(--field-focus-bg);
+  /* Preserve the arrow and other control images while changing the fill. */
+  background-color: var(--field-focus-bg);
   box-shadow: var(--field-focus-ring);
 
 }
@@ -2354,7 +2405,8 @@ body[data-theme="yosemite"] .theme-lab-form-grid :where(
 ):is(:focus, .theme-lab-focus-demo) {
   border: var(--field-focus-border);
   outline: 0;
-  background: var(--field-focus-bg);
+  /* Preserve the arrow and other control images while changing the fill. */
+  background-color: var(--field-focus-bg);
   box-shadow: var(--field-focus-ring);
 }
 

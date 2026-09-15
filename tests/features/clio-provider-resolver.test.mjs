@@ -110,6 +110,38 @@ test.assertMatches(
   "the runtime snapshot joins the context only for product questions"
 );
 
+// --- A fresh desk connects itself ---------------------------------------------
+//
+// The local desk can reach the site's shared allowance over the bridge the
+// Control Panel already offered as "Use Website AI": the session, the one-time
+// verification and the shared-remote credential mode all existed, and a new
+// install still met "Model not connected" on its first screen because nothing
+// used them until somebody went looking for the button. The desk now makes that
+// connection on its own, and anything the writer chose wins over it.
+test.assertIncludes(cloudModel, "function connectSharedAiOnFirstRun", "a fresh desk has one first-run connection path");
+test.assertIncludes(
+  cloudModel,
+  "if (!connected) connectSharedAiOnFirstRun(capabilities);",
+  "and it runs once the deployment's capabilities are known",
+);
+test.assertIncludes(
+  cloudModel,
+  'target !== "mac"',
+  "it is for the desk the bridge serves, not for a public deployment that already shares its own allowance",
+);
+for (const guard of [
+  'clioProviderPreference !== "auto"',
+  "cloudRuntimeApiKey || cloudConfig?.credentialId || cloudConfig?.active",
+  "localModelState?.ready || localModelState?.loaded",
+]) {
+  test.assertIncludes(cloudModel, guard, `a stored choice wins over the first-run connection (${guard})`);
+}
+test.assertIncludes(
+  cloudModel,
+  "connectSharedWebsiteFallback().then(function (ready)",
+  "the first-run path uses the existing bridge rather than a second one",
+);
+
 // --- Help actions stay deterministic ------------------------------------------
 
 test.assertIncludes(chatMessages, "!getApplicationCommandRegistry()?.has(action)", "help actions must exist in the central command registry");

@@ -1,0 +1,82 @@
+{
+  "note": "Every (viewport, window, check) that fails today. New failures are refused; an entry that starts passing is also refused until it is deleted, so an improvement cannot hide behind a stale exemption. Regenerate with --update-baseline only when the change is a deliberate, explained shrink.",
+  "checks": [
+    "opens",
+    "role",
+    "on-screen",
+    "no-overflow",
+    "fields-16px",
+    "close-reachable",
+    "chrome-hit-44"
+  ],
+  "viewports": {
+    "swept": [
+      "iphone-se-portrait 375x667",
+      "iphone-14pro-portrait 393x852",
+      "iphone-air-portrait 420x912",
+      "iphone-air-landscape 912x420",
+      "iphone-duo-outer-portrait 466x678",
+      "iphone-duo-inner-landscape 890x626",
+      "ipad-portrait 820x1180",
+      "ipad-landscape 1180x820",
+      "mac-13-inch 1280x800"
+    ],
+    "deskOnly": [
+      "iphone-duo-outer-landscape 678x466",
+      "iphone-duo-inner-portrait 626x890",
+      "ipad-mini-portrait 744x1133",
+      "ipad-13-landscape 1366x1024",
+      "mac-14-inch 1512x982",
+      "mac-24-4k 1920x1080",
+      "mac-27-5k 2560x1440",
+      "mac-32-6k 3008x1692"
+    ]
+  },
+  "failures": {
+    "iphone-se-portrait": {
+      "alarmClock": [
+        "chrome-hit-44"
+      ]
+    },
+    "iphone-14pro-portrait": {
+      "alarmClock": [
+        "chrome-hit-44"
+      ]
+    },
+    "iphone-air-portrait": {
+      "alarmClock": [
+        "chrome-hit-44"
+      ]
+    },
+    "iphone-air-landscape": {
+      "alarmClock": [
+        "chrome-hit-44"
+      ]
+    },
+    "iphone-duo-outer-portrait": {
+      "alarmClock": [
+        "chrome-hit-44"
+      ]
+    },
+    "iphone-duo-inner-landscape": {
+      "alarmClock": [
+        "chrome-hit-44"
+      ]
+    },
+    "ipad-portrait": {
+      "alarmClock": [
+        "chrome-hit-44"
+      ]
+    },
+    "ipad-landscape": {
+      "alarmClock": [
+        "chrome-hit-44"
+      ]
+    },
+    "mac-13-inch": {},
+    "ipad-mini-portrait": {},
+    "iphone-duo-outer-landscape": {},
+    "iphone-duo-inner-portrait": {}
+  },
+  "pageErrors": []
+}

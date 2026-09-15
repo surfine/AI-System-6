@@ -29,12 +29,38 @@ function runReceiptUuid(prefix = "receipt") {
   return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
+// Which model actually answered. The transport stamps every reply with
+// ai_system6_metrics.model; the desk's current selection is only what it would
+// ask NEXT, and on the cloud route it is not even the right name. An answer
+// that does not say stays empty rather than borrowing a name.
+function servedModelFromResponse(data) {
+  return String(data?.ai_system6_metrics?.model || data?.model || "");
+}
+
 function normalizeRunReceiptScope(scope) {
   if (!scope || typeof scope !== "object") return { sourceIds: [], citationIds: [] };
   return {
     sourceIds: [...new Set((scope.sourceIds || []).map(String).filter(Boolean))],
     citationIds: [...new Set((scope.citationIds || []).map(String).filter(Boolean))],
   };
+}
+
+// A run can spend several attempts before an answer lands (a streamed call
+// that failed and was retried, a local reply that was repaired by a second
+// call). Each attempt carries only verifiable routing facts — never prompts
+// or reasoning. The list is capped at the FIRST 12 because the order is the
+// order they happened; later retries are the least informative to keep.
+function normalizeRunReceiptAttempts(value) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((attempt) => ({
+      model: String(attempt?.model || ""),
+      provider: String(attempt?.provider || ""),
+      outcome: String(attempt?.outcome || ""),
+      at: String(attempt?.at || ""),
+    }))
+    .filter((attempt) => attempt.model || attempt.provider)
+    .slice(0, 12);
 }
 
 function ensureRunReceiptsFolder() {
@@ -58,6 +84,7 @@ function buildRunReceiptRecord(input = {}, now = runReceiptNow()) {
     affectedObjectIds: [...new Set((input.affectedObjectIds || []).map(String).filter(Boolean))],
     provider: String(input.provider || ""),
     model: String(input.model || ""),
+    attempts: normalizeRunReceiptAttempts(input.attempts),
     allowedTools: [],
     toolInvocations: [],
     proposal: "",
@@ -102,6 +129,7 @@ function formatRunReceiptBody(record = {}) {
     `- Inputs: ${(record.inputObjectIds || []).join(", ") || "—"}`,
     `- Affected: ${(record.affectedObjectIds || []).join(", ") || "—"}`,
     `- Provider / model: ${record.provider || "—"} / ${record.model || "—"}`,
+    `- Attempts: ${(record.attempts || []).length ? record.attempts.map((attempt) => `${attempt.model} [${attempt.provider}] ${attempt.outcome}`).join("; ") : "—"}`,
     `- Allowed tools: ${(record.allowedTools || []).join(", ") || "—"}`,
     `- Tool calls: ${tools.length ? tools.map((tool) => `${tool.name} [${tool.effect || ""}] ${tool.ok ? "ok" : "failed"}`).join("; ") : "—"}`,
     `- Proposal: ${record.proposal || "—"}`,
@@ -246,8 +274,13 @@ async function updateReceipt(receiptId, patch = {}) {
     record.allowedTools = patch.allowedTools.map(String);
   }
   if (Object.prototype.hasOwnProperty.call(patch, "proposal")) record.proposal = String(patch.proposal || "");
+  // A guest may park an intent that would change the project as a receipt
+  // the writer commits later; the checkpoint says so until recordUserAction
+  // overwrites it with the writer's own decision.
+  if (patch.checkpointState === "awaitingCommit" || patch.checkpointState === "none") record.checkpointState = patch.checkpointState;
   if (Object.prototype.hasOwnProperty.call(patch, "provider")) record.provider = String(patch.provider || "");
   if (Object.prototype.hasOwnProperty.call(patch, "model")) record.model = String(patch.model || "");
+  if (Object.prototype.hasOwnProperty.call(patch, "attempts")) record.attempts = normalizeRunReceiptAttempts(patch.attempts);
   if (Object.prototype.hasOwnProperty.call(patch, "affectedObjectIds") && Array.isArray(patch.affectedObjectIds)) {
     record.affectedObjectIds = [...new Set(patch.affectedObjectIds.map(String).filter(Boolean))];
   }
@@ -334,6 +367,7 @@ async function recordModelAnswer({
   intent = "",
   provider = "",
   model = "",
+  attempts = [],
   inputObjectIds = [],
   sourceScope = null,
   answerText = "",
@@ -343,7 +377,7 @@ async function recordModelAnswer({
   const text = String(answerText || "");
   if (!text.trim()) return { ok: false, reason: "empty" };
   const created = await createReceipt({
-    projectId, sourceAppId, intent, provider, model, inputObjectIds, sourceScope,
+    projectId, sourceAppId, intent, provider, model, attempts, inputObjectIds, sourceScope,
   });
   if (!created.ok) return created;
   await updateReceipt(created.receiptId, { proposal: text });
@@ -387,6 +421,7 @@ window.AISystem6RunReceipts = Object.freeze({
   artifactKind: runReceiptArtifactKind,
   buildRunReceiptRecord,
   formatRunReceiptBody,
+  servedModelFromResponse,
   ensureRunReceiptsFolder,
   persistReceiptFile,
   persistReceiptFileSync,

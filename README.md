@@ -27,8 +27,17 @@ THERE ARE FOUR MORE INSIDE. NO MODEL REQUIRED TO LOOK AROUND.</sub>
 
 </div>
 
+<div align="center">
+
+**OPEN A SINGLE WINDOW:** [CMF Studio](https://system6.aaronlau.me/go/cmf-studio) · [Bonsai City](https://system6.aaronlau.me/go/bonsai-city) · [Endfield Terminal](https://system6.aaronlau.me/go/endfield-terminal) · [Time Machine](https://system6.aaronlau.me/go/time-machine) · [OpenTTD](https://system6.aaronlau.me/go/openttd) · [DOOM](https://system6.aaronlau.me/go/doom)
+
+<sub>EVERY APP HAS ONE SHAREABLE ADDRESS, <code>/go/&lt;app-id&gt;</code>. THE DESK OPENS AROUND IT.</sub>
+
+</div>
+
 ## Contents
 
+- [What's new in 1.0.55](#whats-new-in-1055)
 - [What this protects](#what-this-protects)
 - [Run it in 60 seconds](#run-it-in-60-seconds)
 - [The route is the product](#the-route-is-the-product)
@@ -41,6 +50,25 @@ THERE ARE FOUR MORE INSIDE. NO MODEL REQUIRED TO LOOK AROUND.</sub>
 - [How this repository keeps itself honest](#how-this-repository-keeps-itself-honest)
 - [How the repository is laid out](#how-the-repository-is-laid-out)
 - [Contributing](#contributing)
+
+## What's new in 1.0.55
+
+- **CMF Studio lights its colorways the way the product photographs them.**
+  iPhone 17 Pro / Max (one entry, two poses), iPhone Air, iPhone 17e, MacBook
+  Neo and the folding iPhone Duo, rendered under the official scene's own
+  environment, matched part by part, and exported as USDZ for AR.
+- **The Duo folds, and you choose what it wears.** A continuous hinge instead
+  of a pose switch, inner and outer screen images kept apart, the original
+  wallpapers one button away, and a fold video rendered on your own machine.
+- **Every app has one address.** `/go/cmf-studio`, `/go/bonsai-city`,
+  `/go/doom` and the rest are the single way to hand somebody one window; the
+  old bare directories are retired on the server by the installer itself.
+- **The public site can host a guest.** Turn the bridge on and another agent
+  connects to your desk over the internet, through an invitation that names
+  it, under the same tool contract, permissions and Review Desk approvals as
+  on your Mac.
+
+Every beta has [its own release notes](https://github.com/surfine/AI-System-6/releases).
 
 ## What this protects
 
@@ -245,7 +273,7 @@ is a mockup, because a script re-shoots all of it from the running app.
 ## Built under a 1988 constraint
 
 ```text
-boot-critical payload   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,927,224 bytes
+boot-critical payload   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,953,017 bytes
 two 1.44 MB floppies    ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  2,949,120 bytes
 heavy tools             load lazily, from a third disk
 ```

@@ -3076,15 +3076,21 @@ installLiquidCoverWindow();
   async function copyBgPrompt() {
     const out = $("lc-t2i-out");
     if (!out || !out.value) return;
+    // Both paths can fail silently (a denied clipboard, an unsupported
+    // execCommand). The prompt stays on screen either way, so say which
+    // happened instead of claiming a copy that never occurred.
+    let copied = false;
     try {
       await navigator.clipboard.writeText(out.value);
+      copied = true;
     } catch (e) {
       out.removeAttribute("readonly");
       out.select();
-      try { document.execCommand("copy"); } catch (e2) { /* noop */ }
+      try { copied = document.execCommand("copy") === true; } catch (e2) { /* noop */ }
       out.setAttribute("readonly", "");
     }
-    aiStatus("t2i_copied", "Copied");
+    if (copied) aiStatus("t2i_copied", "Copied");
+    else aiStatus("t2i_copy_failed", "The clipboard is unavailable — select the prompt and copy it by hand.");
   }
 
   // The bottom ask bar is the primary control: the user only describes a mood,

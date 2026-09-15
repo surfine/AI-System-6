@@ -15,10 +15,12 @@ const DEFAULT_DAILY_REQUEST_LIMIT = 100;
 const DEFAULT_SESSION_REQUEST_LIMIT = 28;
 const DEFAULT_MAX_INPUT_TOKENS = 32000;
 const DEFAULT_MAX_OUTPUT_TOKENS = 4000;
-// DeepSeek's published ceiling after vision resizing. Counting a data URL as
-// JSON text makes a modest image look like tens of thousands of text tokens
-// and blocks the shared vision route before the provider can meter it.
-const IMAGE_BLOCK_TOKEN_ESTIMATE = 384;
+// DeepSeek's published ceiling after vision resizing: every image is scaled
+// toward a ~1300x1300 equivalence and costs at most this many tokens.
+// Counting a data URL as JSON text makes a modest image look like tens of
+// thousands of text tokens and blocks the shared vision route before the
+// provider can meter it.
+const IMAGE_BLOCK_TOKEN_ESTIMATE = 1024;
 
 let cachedStatePath = "";
 let cachedState = null;
@@ -210,7 +212,8 @@ function estimatedInputTokens(payload) {
         imageBlocks += 1;
         return { type: "image_url" };
       }
-      if (value.type === "file" && typeof value.file_id === "string") {
+      if (value.type === "file"
+        && (typeof value.file_id === "string" || typeof value.file_data === "string")) {
         imageBlocks += 1;
         return { type: "file" };
       }
@@ -290,8 +293,8 @@ function quotaFailure(code, retryAfter, detail) {
  * `reasoningAllowance` is the thinking headroom the caller added on top of the
  * answer budget: DeepSeek counts reasoning inside `max_tokens`, so the daily
  * limit on answer length must not swallow it. `modelWeight` prices a request
- * against the allowance — v4-pro costs three times v4-flash, so one pro
- * request must consume three times the budget of a flash one.
+ * against the allowance — V4 Pro costs 4.5 times Flash, so one pro request
+ * must consume 4.5 times the budget of a flash one.
  *
  * @param {{
  *   sessionNonce: string,
@@ -403,7 +406,7 @@ function createReservation({ reservationId, inputTokens, outputTokens, reservedT
       if (tokens === null) return false;
       usageKnown = true;
       // Settlement stays in the same weighted unit as the reservation, so a
-      // v4-pro request keeps costing the allowance three flash-equivalents.
+      // v4-pro request keeps costing the allowance 4.5 flash-equivalents.
       actualTokens += Math.ceil(tokens * weight);
       return true;
     },

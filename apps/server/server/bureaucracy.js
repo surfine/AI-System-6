@@ -19,6 +19,8 @@ const { getLocalUrls } = require("./lib/local-urls.js");
 const {
   DEEPSEEK_API_KEY_DEFAULT,
   DEEPSEEK_BASE_URL_DEFAULT,
+  isDeepSeekCloudModelId,
+  normalizeCloudModelId,
   resolveCloudTarget,
 } = require("./cloud.js");
 const { preparePublicCloudCall } = require("./lib/cloud-route.js");
@@ -353,11 +355,11 @@ async function postBureaucracyChatPayload(payload, route, signal, req) {
       credentialId: cloudRoute.credentialId || cloudRoute.credential_id,
       suppliedApiKey: cloudRoute.apiKey || cloudRoute.api_key,
       requestedBaseUrl: cloudRoute.baseUrl,
-      model: String(cloudRoute.model || payload.model || "deepseek-v4-flash"),
+      model: normalizeCloudModelId(cloudRoute.model || payload.model || "deepseek-flash"),
       payload,
       req,
     });
-    if (/^(?:deepseek-)?v4-(?:pro|flash)$/i.test(cloud.model)) {
+    if (isDeepSeekCloudModelId(cloud.model)) {
       // Same v4 hidden-reasoning fix as the non-public path below.
       cloud.payload.thinking = { type: "disabled" };
       delete cloud.payload.temperature;
@@ -392,10 +394,10 @@ async function postBureaucracyChatPayload(payload, route, signal, req) {
   const canUseCloud = !!(cloudApiKey && (cloudRoute.active || (!localRoute.model && !localRoute.provider)));
 
   if (canUseCloud) {
-    const model = String(cloudRoute.model || "deepseek-v4-flash").trim();
+    const model = normalizeCloudModelId(cloudRoute.model || "deepseek-flash");
     const baseUrl = cloudTarget.baseUrl;
     const cloudPayload = { ...payload, model };
-    if (/^(?:deepseek-)?v4-(?:pro|flash)$/i.test(model)) {
+    if (isDeepSeekCloudModelId(model)) {
       // v4 defaults to hidden reasoning, which consumes the output budget and
       // returns empty content for caption generation. Force it off, matching
       // endfield.js and the cloud-chat route.

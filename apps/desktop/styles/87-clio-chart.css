@@ -93,12 +93,12 @@ body.is-resizing-tdi .clio-chart-view-pane {
 
 .clio-chart-grid th:first-child,
 .clio-chart-grid td:first-child {
-  border-radius: var(--clio-chart-radius) 0 0 var(--clio-chart-radius);
+  border-radius: var(--clio-chart-radius) var(--surface-radius) var(--surface-radius) var(--clio-chart-radius);
 }
 
 .clio-chart-grid th:last-child,
 .clio-chart-grid td:last-child {
-  border-radius: 0 var(--clio-chart-radius) var(--clio-chart-radius) 0;
+  border-radius: var(--surface-radius) var(--clio-chart-radius) var(--clio-chart-radius) var(--surface-radius);
 }
 
 .clio-chart-grid th {
@@ -726,6 +726,18 @@ body.is-resizing-tdi .clio-chart-view-pane {
 }
 
 @container (max-width: 759px) {
+  /* The shared TDI figure hides a rail on a narrow window because its content
+     is a tab strip that moves into .tdi-stack-host there. ClioChart's rail is
+     not a tab strip: it is the data grid, this window's only editable surface,
+     and it has no stack host to move into. Measured 2026-09-05 at 375x667,
+     420x912 and 744x1133 -- the grid computed to display: none, so the card
+     layout below, the 45% band above it and the ordered stack at 430 were all
+     written for something that never painted. The window keeps its grid and
+     stacks it, which is what the comment above already promised. */
+  .clio-chart-window .clio-chart-split > .clio-chart-grid-pane {
+    display: flex;
+  }
+
   .clio-chart-grid {
     display: block;
     width: 100%;
@@ -857,7 +869,7 @@ body.is-resizing-tdi .clio-chart-view-pane {
   }
 }
 
-@media (max-width: 860px) {
+@media (max-width: 860px), (hover: none) and (pointer: coarse) and (max-height: 660px) {
   .clio-chart-row {
     grid-template-columns: minmax(64px, 96px) minmax(0, 1fr) max-content;
   }

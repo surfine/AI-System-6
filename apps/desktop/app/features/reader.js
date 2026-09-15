@@ -1721,6 +1721,13 @@ function setReaderQueueSize(size, options = {}) {
   }
 }
 
+// The axis is a container query answer, and a container that is `display: none`
+// has no size -- so this run at boot reads the media fallback and writes an
+// inline `--reader-tabs-size` that outranks every stylesheet for the rest of
+// the session. Measured on an iPad in portrait: the rail stayed 150px where its
+// TDI siblings are 200px, and titles truncated to "1. Pr …". The window must
+// re-answer the question once it is on screen, which is what readerOnReveal is
+// for below.
 function applyReaderQueueSize() {
   const axis = readerSplitAxis();
   const sizes = getReaderSplitSizes();
@@ -1869,3 +1876,9 @@ function rwin(){return document.querySelector(".window.is-active")?.dataset.wind
 const rav={"open-reader":()=>!0,"reader-open-source":()=>!0,"reader-clip":()=>rctrl("#reader-clip-button"),"reader-clip-translate":()=>rctrl("#reader-clip-translate-button"),"reader-send-manuscript":()=>rctrl("#reader-send-manuscript"),"reader-make-docmap":()=>rctrl("#reader-docmap-button"),"reader-docmap-selection":()=>!!rready()?.selectionReady,"reader-docmap-source":()=>!!rready()?.wholeReady,"reader-open-clio-stage":()=>rctrl("#reader-open-clio-stage"),"reader-find-sources":()=>rctrl("#reader-find-sources"),"focus-reader-question":()=>!!currentReaderPage?.text};
 const rlist=[["open-reader",()=>{if(typeof openReaderWindowWithTabs=="function"){openReaderWindowWithTabs();return}openWindow("reader");readerUrlInput?.focus()}],["reader-open-source",handleReaderOpenButton],["reader-clip",clipReaderSelection],["reader-clip-translate",clipReaderSelectionWithTranslation],["reader-send-manuscript",sendReaderCopyToManuscript],["reader-make-docmap",()=>makeDocMapForRange("auto")],["reader-docmap-selection",()=>{const c=readerSelectionContext();if(!c)return setStatus(t("select_text_first"));return makeDocMapForRange("selection",c)}],["reader-docmap-source",()=>makeDocMapForRange("source")],["reader-find-sources",runReaderFindSources],["reader-open-clio-stage",openCurrentReaderInClioStage],["focus-reader-question",()=>readerQuestionInput?.focus()]];
 window.AISystem6Runtime?.registerApplication({id:"reader",windowName:"reader",mount:mountReaderRuntime,restore:()=>mountReaderRuntime(),commands:Object.fromEntries(rlist.map(([a,h])=>[a,{handler:h,isAvailable:()=>a==="open-reader"?!0:rwin()&&(rav[a]||(()=>!0))()}]))});
+
+// Called from the window registry's onReveal phase -- the only moment a window
+// can be measured, because onOpen still runs while it is hidden.
+function readerOnReveal() {
+  applyReaderQueueSize();
+}

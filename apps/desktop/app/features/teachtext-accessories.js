@@ -66,9 +66,39 @@ function isTeachTextManuscriptRole(role = teachTextDocumentRole) {
     : role === "manuscript";
 }
 
+// The tab the editor is currently showing. Capturing writes what is on screen
+// INTO a tab record, so it is only ever truthful about the tab the editor was
+// loaded from. A tab that is active but was never loaded -- the state right
+// after a project is imported, mounted or restored -- has an editor that holds
+// someone else's text, or nothing at all. Capturing then overwrote a freshly
+// imported manuscript with an empty string: the disk arrived with 4,319
+// characters, the window opened blank, and the next save made the blank
+// permanent. Measured 2026-09-06 on the DTK disk.
+let teachTextLoadedTabId = "";
+
+// Declared for every surface that fills the editor for the active tab by a
+// route of its own (the working-session restore is the one such caller today).
+function markTeachTextTabLoaded(tabId = "") {
+  const id = tabId || getActiveTeachTextDocumentTab()?.id || "";
+  if (id) teachTextLoadedTabId = id;
+}
+
 function captureActiveTeachTextTabState() {
   const tab = getActiveTeachTextDocumentTab();
   if (!tab || !teachTextBodyInput) return;
+  // Capturing writes what is on screen INTO a tab record, so it is truthful
+  // only about a tab the editor is actually showing. A project that is
+  // imported or restored makes its manuscript tab active while the editor is
+  // still empty, and that first capture wrote the emptiness over 4,319
+  // characters of finished article, which the next save made permanent.
+  //
+  // Emptiness is the only value that destroys, so it is the only one refused,
+  // and only when the editor was never loaded from this tab. A writer who
+  // clears a document they are looking at still clears it; a tab the editor
+  // has loaded still captures whatever it now holds. Measured 2026-09-06.
+  const editorIsEmpty = !(teachTextBodyInput.value || "").trim();
+  const tabHasText = !!String(tab.state?.body || "").trim();
+  if (editorIsEmpty && tabHasText && tab.id !== teachTextLoadedTabId) return;
   tab.title = getTeachTextDocumentName({ fallback: teachTextNameInput?.value?.trim() || tab.title || t("untitled") });
   tab.role = teachTextDocumentRole || tab.role;
   tab.backing = tab.role === "manuscript"
@@ -173,13 +203,26 @@ function ensureTeachTextManuscriptTab(project = getActiveProject()) {
 
 function loadTeachTextTabState(tab) {
   if (!tab) return;
+  teachTextLoadedTabId = tab.id || "";
   const role = tab.role === "manuscript" ? "manuscript" : "scratch_file";
   const file = role === "scratch_file" && tab.backing?.id
     ? chatFiles.find((item) => item.id === tab.backing.id && item.type === "text" && isInActiveProject(item))
     : null;
   const state = tab.state || {};
   teachTextDocumentRole = role;
-  activeTextFileId = file?.id || (role === "scratch_file" ? state.activeTextFileId || null : null);
+  // A tab's remembered file id is only usable if a file still answers to it.
+  // An imported disk used to carry the exporting machine's ids, and this line
+  // handed one of them to the live editor: the next save looked for a file
+  // that was never here, found none, and minted a second document -- the
+  // writer's manuscript quietly split in two. An id that resolves to nothing
+  // is no id. The backup importer now remaps these (see remapDocumentTabs in
+  // project-disk-backup.js); this is the guard for every other way a stale id
+  // can reach a tab.
+  const rememberedFileId = role === "scratch_file" ? state.activeTextFileId || null : null;
+  const rememberedFile = rememberedFileId && !file
+    ? chatFiles.find((item) => item.id === rememberedFileId && item.type === "text" && isInActiveProject(item))
+    : null;
+  activeTextFileId = file?.id || rememberedFile?.id || null;
   teachTextFileLabel = role === "manuscript"
     ? normalizeTeachTextWorkflowState(file?.label || state.label || teachTextFileLabel)
     : normalizeFileLabel(file?.label || state.label || "");
@@ -1047,7 +1090,12 @@ function sendNotePadPage(dest = notePadDestination) {
     assistant: t("assistant"),
   };
   sendTextToDestination(text, dest);
-  setStatus(t("note_sent", labels[dest] || dest));
+  // A Desk Accessory has no status strip of its own, so this receipt lands in
+  // ClioTalk's info bar -- invisible whenever ClioTalk is closed, which is most
+  // of the time someone is using the Note Pad. Handing a slip to another window
+  // is exactly the kind of thing a writer must be able to confirm happened, so
+  // it is escalated to the Notification Center rather than dropped.
+  setStatus(t("note_sent", labels[dest] || dest), { notify: true, windowName: dest });
   playSystemSound("save");
 }
 
@@ -1207,7 +1255,7 @@ function insertCharacter(character) {
   target.setRangeText(character, start, end, "end");
   target.dispatchEvent(new Event("input", { bubbles: true }));
 
-  setStatus(t("character_inserted"));
+  setStatus(t("character_inserted"), { notify: true });
 }
 
 let npmounted=!1;function mountNotePadRuntime(){if(npmounted)return!0;npmounted=!0;notePadTextInput.addEventListener("input",()=>{syncCurrentNotePadPage();saveDeskState()});notePadPrevButton.addEventListener("click",()=>goToNotePadPage(notePadPageIndex-1));notePadNextButton.addEventListener("click",goToNextNotePadPage);return!0}

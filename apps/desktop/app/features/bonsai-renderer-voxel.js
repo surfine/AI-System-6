@@ -43,7 +43,7 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
   const COS_ELEVATION = Math.sqrt(3) / 2;
   // World height of one altitude level. Chunky on purpose: terraces must read
   // as stacked blocks, not as the flat 8px lift of the 2D sprites.
-  const ALT_STEP = 0.4;
+  const ALT_STEP = 10 / ((64 / Math.SQRT2) * COS_ELEVATION);
   // Shadow map texels and the sun's stand-off from the camera target. The
   // map follows the visible ground, so 2048 texels cover the widest zoom
   // at about 14 texels per tile and the default zoom at about 28.
@@ -716,27 +716,11 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
       }
     }
     const catalog = typeof window !== "undefined" ? window.AISystem6BonsaiCatalog : null;
-    const catalogTiles = [];
-    if (catalog && snapshot?.catalogId) {
-      for (let index = 0; index < size * size; index += 1) {
-        const id = Number(snapshot.catalogId[index]) || 0;
-        if (!id) continue;
-        if (gridValue(snapshot, ["zone", "zoneType"], index, 0)) continue;
-        if (snapshot.facilityAt && snapshot.facilityAt[index] >= 0) continue;
-        if (isRoad(snapshot, index) || isRail(snapshot, index) || isWire(snapshot, index)) continue;
-        if (gridValue(snapshot, ["highway"], index, false) || gridValue(snapshot, ["onramp"], index, false)) continue;
-        if (isTree(snapshot, index) || isPark(snapshot, index)) continue;
-        const entry = catalog.entryOf(id);
-        if (!entry || entry.category === "clear" || entry.category === "trees") continue;
-        catalogTiles.push({
-          x: index % size,
-          y: Math.floor(index / size),
-          category: entry.category,
-          size: entry.size,
-          label: entry.labelKey.replace("bonsai_catalog_", ""),
-        });
-      }
-    }
+    const catalogObjects = window.AISystem6BonsaiRenderer?.collectCatalogObjects(snapshot, catalog) || [];
+    const catalogTiles = catalogObjects.filter((object) => !object.spriteId);
+    catalogObjects.filter((object) => object.spriteId).forEach((object) => {
+      facilities.push({ x: object.x, y: object.y, kind: object.spriteId.split(".")[1], footprint: object.footprint });
+    });
 
     return { buildings, facilities, covered, blazeTiles, catalogTiles };
   }
@@ -797,8 +781,75 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
 
   // --- block collectors: snapshot in, instance descriptors out ---------------
 
-  function pushBlock(list, x, y, z, sx, sy, sz, color, tile = null) {
-    list.push({ x, y, z, sx, sy, sz, r: color.r, g: color.g, b: color.b, a: color.a === undefined ? 1 : color.a, tile });
+  function pushBlock(list, x, y, z, sx, sy, sz, color, tile = null, shape = "box") {
+    list.push({ x, y, z, sx, sy, sz, r: color.r, g: color.g, b: color.b, a: color.a === undefined ? 1 : color.a, tile, shape });
+  }
+
+  // One geometry definition serves GPU instances and the offline 2D atlas.
+  // Faces have outward winding, world-space vertices and top-origin UVs.
+  function blockFaces(block) {
+    const shape = block.shape || "box";
+    let polygons;
+    if (shape.startsWith("slope-")) {
+      const mask = Number(shape.slice(6)) & 15;
+      const points = [[-.5,.5 + ((mask & 9) ? 1 : 0),-.5], [.5,.5 + ((mask & 3) ? 1 : 0),-.5], [.5,.5 + ((mask & 6) ? 1 : 0),.5], [-.5,.5 + ((mask & 12) ? 1 : 0),.5]];
+      polygons = [[points[0],points[1],points[2]], [points[0],points[2],points[3]]];
+      for (let i = 0; i < 4; i += 1) {
+        const a = points[i], b = points[(i + 1) % 4];
+        polygons.push([[a[0],-.5,a[2]],[b[0],-.5,b[2]],b,a]);
+      }
+      polygons.push([[-.5,-.5,-.5],[.5,-.5,-.5],[.5,-.5,.5],[-.5,-.5,.5]]);
+    } else if (shape === "roof-x" || shape === "roof-z") {
+      polygons = [
+        [[-.5,-.5,-.5],[.5,-.5,-.5],[.5,.5,0],[-.5,.5,0]],
+        [[-.5,.5,0],[.5,.5,0],[.5,-.5,.5],[-.5,-.5,.5]],
+        [[-.5,-.5,.5],[.5,-.5,.5],[.5,-.5,-.5],[-.5,-.5,-.5]],
+        [[-.5,-.5,-.5],[-.5,.5,0],[-.5,-.5,.5]],
+        [[.5,-.5,.5],[.5,.5,0],[.5,-.5,-.5]],
+      ];
+      if (shape === "roof-z") polygons = polygons.map((face) => face.map(([x,y,z]) => [-z,y,x]));
+    } else if (shape === "hip") {
+      const base = [[-.5,-.5,-.5],[.5,-.5,-.5],[.5,-.5,.5],[-.5,-.5,.5]];
+      polygons = base.map((point, i) => [point, base[(i + 1) % 4], [0,.5,0]]);
+      polygons.push([...base].reverse());
+    } else if (shape === "canopy" || shape === "conifer") {
+      const ring = (y, r) => Array.from({ length: 8 }, (_, i) => [Math.cos(i * Math.PI / 4) * r, y, Math.sin(i * Math.PI / 4) * r]);
+      const rings = shape === "canopy" ? [ring(-.5,.22), ring(-.18,.5), ring(.23,.43), ring(.5,.16)] : [ring(-.5,.5), ring(.5,.015)];
+      polygons = [];
+      for (let j = 0; j < rings.length - 1; j += 1) {
+        for (let i = 0; i < 8; i += 1) polygons.push([rings[j][i], rings[j][(i + 1) % 8], rings[j + 1][(i + 1) % 8], rings[j + 1][i]]);
+      }
+      polygons.push([...rings[0]].reverse(), rings[rings.length - 1]);
+    } else {
+      polygons = [
+        [[.5,-.5,-.5],[.5,.5,-.5],[.5,.5,.5],[.5,-.5,.5]],
+        [[-.5,-.5,.5],[-.5,.5,.5],[-.5,.5,-.5],[-.5,-.5,-.5]],
+        [[-.5,.5,-.5],[-.5,.5,.5],[.5,.5,.5],[.5,.5,-.5]],
+        [[-.5,-.5,.5],[-.5,-.5,-.5],[.5,-.5,-.5],[.5,-.5,.5]],
+        [[.5,-.5,.5],[.5,.5,.5],[-.5,.5,.5],[-.5,-.5,.5]],
+        [[-.5,-.5,-.5],[-.5,.5,-.5],[.5,.5,-.5],[.5,-.5,-.5]],
+      ];
+    }
+    return polygons.map((points) => {
+      const centroid = points.reduce((sum, p) => sum.map((v, i) => v + p[i] / points.length), [0,0,0]);
+      const cross = (p) => {
+        const a = p[1].map((v,i) => v - p[0][i]), b = p[2].map((v,i) => v - p[0][i]);
+        return [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]];
+      };
+      let normal = cross(points);
+      if (normal.reduce((sum,v,i) => sum + v * centroid[i], 0) < 0) { points = [...points].reverse(); normal = cross(points); }
+      normal = normal.map((v,i) => v / [block.sx,block.sy,block.sz][i]);
+      const length = Math.hypot(...normal) || 1;
+      normal = normal.map((v) => v / length);
+      const top = normal[1] > .35;
+      const xFace = Math.abs(normal[0]) > Math.abs(normal[2]);
+      return {
+        vertices: points.map(([x,y,z]) => [block.x + x * block.sx, block.y + y * block.sy, block.z + z * block.sz]),
+        normal,
+        uv: points.map(([x,y,z]) => top ? [x + .5,z + .5] : [xFace ? z + .5 : x + .5,.5 - y]),
+        surface: top ? "top" : "side",
+      };
+    });
   }
 
   // Continuous path decorations: a center strip (road divider), twin rails,
@@ -806,12 +857,14 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
   // straight runs meet at tile edges, corners join at the tile centre, and
   // T/cross junctions overlap into a pad. Nothing here depends on the tile's
   // own texture, which stays a seamless base.
-  function pushPathStrip(list, cx, topY, cz, mask, color, halfWidth, height, tile = null) {
-    if (mask & (1 | 4)) {
-      pushBlock(list, cx, topY, cz - 0.25, halfWidth, height, 0.5, color, tile);
-    }
-    if (mask & (2 | 8)) {
-      pushBlock(list, cx - 0.25, topY, cz, 0.5, height, halfWidth, color, tile);
+  function pushPathStrip(list, cx, topY, cz, mask, color, width, height, tile = null) {
+    const reach = 0.5 - width / 2;
+    pushBlock(list, cx, topY, cz, width, height, width, color, tile);
+    for (const [bit, dx, dz] of [[1,0,-1],[2,1,0],[4,0,1],[8,-1,0]]) {
+      if (!(mask & bit)) continue;
+      const offset = width / 2 + reach / 2;
+      pushBlock(list, cx + dx * offset, topY, cz + dz * offset,
+        dx ? reach : width, height, dz ? reach : width, color, tile);
     }
   }
 
@@ -918,93 +971,492 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
   // Roads read as paved corridors: a low curb along each edge of every
   // connected arm, continuous across tile boundaries like the center strip.
   function pushRoadCurbs(list, cx, topY, cz, mask) {
-    const curbColor = { r: 0.62, g: 0.62, b: 0.58, a: 1 };
-    if (mask & (1 | 4)) {
-      pushBlock(list, cx - 0.47, topY + 0.038, cz - 0.25, 0.04, 0.025, 0.5, curbColor, "concrete");
-      pushBlock(list, cx + 0.47, topY + 0.038, cz - 0.25, 0.04, 0.025, 0.5, curbColor, "concrete");
-    }
-    if (mask & (2 | 8)) {
-      pushBlock(list, cx - 0.25, topY + 0.038, cz - 0.47, 0.5, 0.025, 0.04, curbColor, "concrete");
-      pushBlock(list, cx - 0.25, topY + 0.038, cz + 0.47, 0.5, 0.025, 0.04, curbColor, "concrete");
+    const color = { r: 0.62, g: 0.62, b: 0.58, a: 1 };
+    for (const [bit, dx, dz] of [[1,0,-1],[2,1,0],[4,0,1],[8,-1,0]]) {
+      if (!(mask & bit)) continue;
+      for (const side of [-1,1]) pushBlock(list,
+        cx + dx * 0.39 + dz * side * 0.3, topY + 0.038,
+        cz + dz * 0.39 + dx * side * 0.3,
+        dx ? 0.22 : 0.035, 0.025, dz ? 0.22 : 0.035, color, "concrete");
     }
   }
 
   // Civic landmarks get real voxel silhouettes instead of generic boxes:
   // domes, towers, chimneys, stadium tiers, cranes, and shoreline slabs —
   // the SimCity 2000 habit of making every landmark readable at a glance.
+  // Utility plants have equipment silhouettes rather than generic wall masses.
+  // All dimensions are footprint-relative; night changes paint, never geometry.
+  function pushUtilityFacility(opaque, facility, cx, cz, topY, footprint, recipe, recipes, night) {
+    const kind = facility.kind;
+    if (!["wind", "solar", "hydro", "tower", "pump", "microwave", "fusion"].includes(kind)) return false;
+    const w = footprint.w;
+    const d = footprint.h;
+    const unit = Math.min(w, d);
+    const paint = (hex) => shade(hexColor(hex), night ? 0.68 : 1);
+    const concrete = paint("#9b9b8d");
+    const metal = paint("#89979a");
+    const pale = paint("#b6b8a8");
+    const dark = paint("#47595b");
+    const blue = paint("#3e6271");
+    const brick = paint("#98705b");
+    const block = (x, y, z, sx, sy, sz, color, tile = "metal", shape = "box") => {
+      pushBlock(opaque, cx + x * w, topY + y * unit, cz + z * d,
+        sx * w, sy * unit, sz * d, color, tile, shape);
+    };
+    block(0, 0.025, 0, 0.94, 0.05, 0.94, concrete, "concrete");
+    if (kind === "solar") {
+      // Sixteen individually supported modules, not a solid blue building.
+      for (let row = 0; row < 4; row += 1) for (let column = 0; column < 4; column += 1) {
+        const x = -0.33 + column * 0.22;
+        const z = -0.33 + row * 0.22;
+        block(x, 0.075, z, 0.045, 0.05, 0.045, dark);
+        block(x, 0.115, z, 0.19, 0.05, 0.18, blue, "facility.solar", "roof-z");
+      }
+      return true;
+    }
+    if (kind === "wind") {
+      block(0, 0.49, 0, 0.075, 0.88, 0.075, pale);
+      block(0, 0.96, 0, 0.17, 0.13, 0.24, metal);
+      // Three fixed blades in the vertical XY plane; the short segments
+      // preserve the three-arm silhouette without new rotation attributes.
+      for (let blade = 0; blade < 3; blade += 1) {
+        const angle = -Math.PI / 2 + blade * Math.PI * 2 / 3;
+        for (let segment = 0; segment < 7; segment += 1) {
+          const radius = 0.08 + segment * 0.048;
+          block(Math.cos(angle) * radius, 0.96 + Math.sin(angle) * radius, -0.15,
+            0.065 - segment * 0.003, 0.065 - segment * 0.003, 0.034, pale);
+        }
+      }
+      block(0, 0.96, -0.16, 0.11, 0.11, 0.07, dark, "metal", "canopy");
+      return true;
+    }
+    if (kind === "tower") {
+      for (const x of [-0.22, 0.22]) for (const z of [-0.22, 0.22]) block(x, 0.37, z, 0.06, 0.64, 0.06, metal);
+      block(0, 0.5, 0, 0.53, 0.045, 0.53, dark);
+      block(0, 0.79, 0, 0.71, 0.5, 0.71, pale, "metal", "canopy");
+      block(0, 1.045, 0, 0.14, 0.05, 0.14, dark);
+      // Exterior riser reaches the tank from the slab.
+      block(0.16, 0.37, 0.12, 0.035, 0.64, 0.035, blue, "pipe");
+      return true;
+    }
+    if (kind === "pump") {
+      block(-0.14, 0.19, 0.02, 0.48, 0.28, 0.54, brick, "concrete");
+      block(-0.14, 0.35, 0.02, 0.52, 0.08, 0.58, dark, "roof.dark", "roof-x");
+      block(-0.14, 0.14, -0.256, 0.15, 0.18, 0.025, dark);
+      for (const z of [-0.23, 0.23]) {
+        block(0.26, 0.09, z, 0.13, 0.08, 0.13, concrete, "concrete");
+        block(0.26, 0.19, z, 0.075, 0.18, 0.075, blue, "pipe");
+        block(0.13, 0.265, z, 0.3, 0.07, 0.07, blue, "pipe");
+        block(0.26, 0.25, z, 0.13, 0.035, 0.13, dark, "metal", "canopy");
+      }
+      return true;
+    }
+    if (kind === "hydro") {
+      block(0, 0.31, 0.06, 0.86, 0.52, 0.3, concrete, "concrete");
+      block(0, 0.595, 0.06, 0.9, 0.05, 0.34, pale, "concrete");
+      for (const x of [-0.3, 0, 0.3]) {
+        block(x, 0.3, 0.28, 0.09, 0.5, 0.21, concrete, "concrete", "roof-z");
+        block(x, 0.3, -0.099, 0.16, 0.36, 0.025, dark);
+        block(x, 0.51, -0.12, 0.21, 0.07, 0.08, metal);
+      }
+      block(0.3, 0.68, 0.08, 0.18, 0.12, 0.19, brick, "concrete");
+      return true;
+    }
+    if (kind === "microwave") {
+      block(-0.15, 0.18, 0.19, 0.43, 0.26, 0.35, concrete, "concrete");
+      block(-0.15, 0.325, 0.19, 0.47, 0.03, 0.39, dark, "roof.deck");
+      block(0.11, 0.48, -0.08, 0.075, 0.86, 0.075, metal);
+      block(0.11, 0.8, -0.11, 0.55, 0.55, 0.18, pale, "metal", "canopy");
+      block(0.11, 0.8, -0.205, 0.43, 0.43, 0.025, dark, "metal", "canopy");
+      block(0.11, 0.8, -0.245, 0.04, 0.04, 0.075, metal);
+      return true;
+    }
+    // A faceted circular reactor hall surrounded by an equipment ring.
+    for (let segment = 0; segment < 12; segment += 1) {
+      const angle = segment * Math.PI * 2 / 12;
+      const x = Math.cos(angle) * 0.29;
+      const z = Math.sin(angle) * 0.29;
+      block(x, 0.21, z, 0.15, 0.32, 0.15, concrete, "concrete");
+      block(x, 0.385, z, 0.17, 0.03, 0.17, dark);
+    }
+    block(0, 0.31, 0, 0.52, 0.5, 0.52, pale, "metal", "canopy");
+    block(0, 0.58, 0, 0.09, 0.06, 0.09, blue);
+    block(-0.27, 0.14, 0.35, 0.28, 0.18, 0.16, brick, "concrete");
+    return true;
+  }
+
+  // Civic/service facilities retain windows and equipment-specific silhouettes.
+  function pushServiceFacility(opaque, facility, cx, cz, topY, footprint, recipe, recipes, night) {
+    const kind = facility.kind;
+    if (!["coal", "oil", "gas", "nuclear", "treatment", "desal", "police", "fire", "school", "clinic", "station", "bus", "subway-station"].includes(kind)) return false;
+    const w = footprint.w;
+    const d = footprint.h;
+    const unit = Math.min(w, d);
+    const ink = (hex) => shade(hexColor(hex), night ? 0.7 : 1);
+    const stone = ink("#a49b86"); const metal = ink("#8b9899");
+    const dark = ink("#495d62"); const red = ink("#aa5949");
+    const blue = ink("#527888"); const concrete = ink("#92968a");
+    const wall = `wall.${["fire", "school"].includes(kind) ? "r" : "c"}.${night ? "night" : "day"}`;
+    const block = (x, y, z, sx, sy, sz, color, tile = "metal", shape = "box") =>
+      pushBlock(opaque, cx + x * w, topY + y * unit, cz + z * d,
+        sx * w, sy * unit, sz * d, color, tile, shape);
+    const room = (x, z, sx, sz, height = 0.32, color = stone) => {
+      block(x, 0.05 + height / 2, z, sx, height, sz, color, wall);
+      block(x, 0.065 + height, z, sx + 0.025, 0.03, sz + 0.025, dark, "roof.deck");
+    };
+    const chimney = (x, z, height = 0.68) => {
+      block(x, 0.05 + height / 2, z, 0.085, height, 0.085, stone, "concrete");
+      block(x, height, z, 0.095, 0.04, 0.095, red);
+      block(x, height + 0.045, z, 0.09, 0.045, 0.09, dark);
+    };
+    const tank = (x, z, radius = 0.14, height = 0.25) => {
+      block(x, 0.05 + height / 2, z, radius * 2, height, radius * 2, metal, "metal", "canopy");
+      block(x, 0.06 + height, z, radius * 0.45, 0.025, radius * 0.45, dark);
+    };
+    block(0, 0.025, 0, 0.94, 0.05, 0.94, concrete, "concrete");
+    if (kind === "police") {
+      room(-0.19, 0.06, 0.33, 0.64, 0.42);
+      room(0.16, 0.26, 0.33, 0.23, 0.3);
+      block(0.19, 0.058, -0.12, 0.34, 0.016, 0.35, concrete, "park");
+      block(-0.19, 0.63, 0.22, 0.022, 0.3, 0.022, metal);
+      block(-0.19, 0.7, 0.22, 0.13, 0.018, 0.018, metal);
+      block(-0.19, 0.22, -0.272, 0.13, 0.13, 0.025, blue, "metal", "canopy");
+      return true;
+    }
+    if (kind === "fire") {
+      room(-0.25, 0.07, 0.28, 0.58, 0.45, red);
+      room(0.13, 0.07, 0.43, 0.58, 0.28, red);
+      for (const x of [-0.015, 0.135, 0.285]) {
+        block(x, 0.155, -0.232, 0.115, 0.21, 0.022, dark);
+        block(x, 0.21, -0.249, 0.09, 0.06, 0.012, blue);
+      }
+      block(-0.25, 0.62, 0.19, 0.12, 0.18, 0.12, stone, wall);
+      block(-0.25, 0.73, 0.19, 0.15, 0.04, 0.15, dark, "roof.dark", "hip");
+      return true;
+    }
+    if (kind === "school") {
+      room(-0.28, 0, 0.22, 0.7, 0.29);
+      room(0.28, 0, 0.22, 0.7, 0.29);
+      room(0, 0.25, 0.36, 0.2, 0.35);
+      block(0, 0.06, -0.08, 0.3, 0.02, 0.38, blue, "park");
+      block(0, 0.075, -0.08, 0.28, 0.01, 0.018, stone);
+      block(-0.1, 0.12, -0.24, 0.013, 0.12, 0.013, metal);
+      block(0.1, 0.12, 0.06, 0.013, 0.12, 0.013, metal);
+      return true;
+    }
+    if (kind === "clinic") {
+      room(0, 0.11, 0.67, 0.51, 0.43);
+      room(0, -0.23, 0.3, 0.17, 0.22);
+      block(0, 0.518, 0.11, 0.22, 0.018, 0.07, red);
+      block(0, 0.518, 0.11, 0.07, 0.018, 0.22, red);
+      block(0, 0.17, -0.324, 0.15, 0.14, 0.015, blue);
+      return true;
+    }
+    if (["station", "bus", "subway-station"].includes(kind)) {
+      if (kind === "subway-station") {
+        room(0.19, 0.16, 0.28, 0.33, 0.23);
+        for (let n = 0; n < 5; n += 1) block(-0.13, 0.07 + n * 0.012, -0.29 + n * 0.055, 0.23, 0.04, 0.05, dark, "concrete");
+        for (const x of [-0.3, 0.035]) block(x, 0.16, -0.18, 0.018, 0.22, 0.33, metal);
+        block(-0.13, 0.36, -0.035, 0.37, 0.08, 0.15, blue, "roof.dark", "roof-x");
+        return true;
+      }
+      block(0, 0.085, 0.07, 0.86, 0.07, 0.35, stone, "concrete");
+      for (const x of [-0.33, 0, 0.33]) for (const z of [-0.05, 0.19]) block(x, 0.24, z, 0.025, 0.27, 0.025, metal);
+      block(0, 0.4, 0.07, 0.86, 0.07, 0.41, dark, "roof.dark", "roof-x");
+      if (kind === "station") {
+        for (const z of [-0.28, -0.39]) block(0, 0.07, z, 0.88, 0.035, 0.023, metal, "rail");
+        for (let n = 0; n < 8; n += 1) block(-0.39 + n * 0.11, 0.055, -0.335, 0.04, 0.01, 0.19, dark);
+      } else {
+        for (const x of [-0.23, 0.23]) {
+          block(x, 0.13, -0.29, 0.32, 0.12, 0.16, red);
+          block(x, 0.21, -0.29, 0.28, 0.07, 0.14, blue);
+          for (const dx of [-0.1, 0.1]) block(x + dx, 0.065, -0.29, 0.06, 0.04, 0.18, dark);
+        }
+      }
+      return true;
+    }
+    if (kind === "treatment") {
+      room(0, 0.31, 0.73, 0.16, 0.2);
+      for (const x of [-0.22, 0.22]) for (const z of [-0.23, 0.09]) {
+        block(x, 0.1, z, 0.3, 0.1, 0.25, stone, "concrete");
+        block(x, 0.157, z, 0.25, 0.015, 0.2, blue, "metal");
+        block(x, 0.18, z, 0.018, 0.028, 0.25, metal);
+      }
+      return true;
+    }
+    if (kind === "desal") {
+      room(-0.24, 0.08, 0.26, 0.63, 0.24);
+      for (const x of [0.07, 0.28]) for (const z of [-0.2, 0.17]) tank(x, z, 0.085, 0.25);
+      for (const z of [-0.2, 0.17]) block(0.085, 0.11, z, 0.45, 0.055, 0.045, blue, "pipe");
+      block(0.32, 0.11, -0.015, 0.045, 0.055, 0.42, blue, "pipe");
+      return true;
+    }
+    room(-0.18, 0.05, 0.4, 0.65, kind === "gas" ? 0.29 : 0.43);
+    if (kind === "nuclear") {
+      for (const z of [-0.22, 0.21]) {
+        block(0.23, 0.12, z, 0.31, 0.14, 0.3, stone, "concrete", "canopy");
+        block(0.23, 0.3, z, 0.18, 0.28, 0.18, stone, "concrete");
+        block(0.23, 0.45, z, 0.32, 0.12, 0.3, stone, "concrete", "canopy");
+        block(0.23, 0.514, z, 0.17, 0.012, 0.16, dark);
+      }
+    } else if (kind === "oil") {
+      for (const z of [-0.22, 0.2]) tank(0.2, z, 0.16, 0.32);
+      chimney(-0.25, 0.19, 0.73);
+    } else if (kind === "gas") {
+      for (const z of [-0.2, 0.19]) {
+        block(0.22, 0.18, z, 0.29, 0.25, 0.22, metal, "metal", "canopy");
+        block(0.21, 0.35, z, 0.25, 0.07, 0.09, blue, "pipe");
+      }
+      chimney(-0.26, 0.2, 0.57);
+    } else {
+      chimney(0.15, 0.22, 0.8);
+      chimney(0.32, 0.22, 0.67);
+      block(0.23, 0.12, -0.18, 0.32, 0.14, 0.3, dark, "terrain.rock", "canopy");
+      block(-0.18, 0.52, 0.05, 0.26, 0.08, 0.46, metal, "roof.dark", "roof-x");
+    }
+    return true;
+  }
+
   function pushCatalogObject(opaque, tile, cx, cz, topY, recipe, fallbackColor) {
     const label = tile.label;
-    const base = recipe ? recipe.base : fallbackColor;
-    const light = recipe ? recipe.light : shade(fallbackColor, 1.1);
-    const h = recipe
-      ? recipe.height
-      : Math.max(0.2, (10 + 8 * Math.max(1, Number(tile.size) || 1)) / PX_PER_TILE);
-    const wall = "concrete";
-    if (label === "arcology" || label === "dome" || label === "missile_silo") {
-      const tiers = [[0.94, 0.2], [0.78, 0.18], [0.6, 0.16], [0.4, 0.14], [0.18, 0.12]];
-      tiers.forEach(([width, thick], tier) => {
-        pushBlock(opaque, cx, topY + h * (tier / tiers.length) + thick / 2, cz, width * h, thick, width * h, tier % 2 ? shade(base, 1.06) : base, wall);
-      });
-      return;
-    }
-    if (label === "city_hall" || label === "mayors_house") {
-      pushBlock(opaque, cx, topY + h * 0.5, cz, 0.92 * h, h, 0.92 * h, base, wall);
-      pushBlock(opaque, cx, topY + h + 0.08, cz, 0.3 * h, 0.22, 0.3 * h, light, "metal");
-      return;
-    }
-    if (label === "crane") {
-      pushBlock(opaque, cx, topY + h * 0.5, cz, 0.14, h, 0.14, base, "metal");
-      pushBlock(opaque, cx, topY + h + 0.02, cz, 0.9, 0.07, 0.14, light, "metal");
-      return;
-    }
-    if (label === "power_plant" || label === "water_treatment" || label === "desalination") {
-      pushBlock(opaque, cx, topY + h * 0.4, cz, 0.9 * h, h * 0.8, 0.9 * h, base, wall);
-      pushBlock(opaque, cx + 0.18 * h, topY + h * 1.02, cz, 0.14, h * 0.5, 0.14, light, "metal");
-      return;
-    }
+    const footprint = normalizeFootprint(tile.footprint || [1, 1]);
+    const w = footprint.w, d = footprint.h;
+    const h = Math.max(0.22, recipe ? pxToWorld(recipe.height * PX_PER_TILE) : 0.55);
+    const night = Boolean(tile.night);
+    const original = recipe ? recipe.base : fallbackColor;
+    const stone = { r: 0.83, g: 0.8, b: 0.72, a: 1 };
+    const base = { r: original.r * 0.45 + stone.r * 0.55, g: original.g * 0.45 + stone.g * 0.55, b: original.b * 0.45 + stone.b * 0.55, a: 1 };
+    const white = { r: 0.9, g: 0.91, b: 0.87, a: 1 };
+    const steel = { r: 0.5, g: 0.55, b: 0.57, a: 1 };
+    const roof = { r: 0.4, g: 0.43, b: 0.43, a: 1 };
+    const grass = { r: 0.6, g: 0.73, b: 0.48, a: 1 };
+    const water = { r: 0.42, g: 0.65, b: 0.78, a: 1 };
+    const wall = `wall.c.${night ? "night" : "day"}`;
+    const residential = `wall.r.${night ? "night" : "day"}`;
+    // x/z and width/depth are footprint fractions; y/height are world units.
+    const box = (x, y, z, sx, sy, sz, color = base, material = "concrete", shape = "box") => {
+      pushBlock(opaque, cx + x * w, topY + y, cz + z * d, sx * w, sy, sz * d, color, material, shape);
+    };
+    const building = (x, z, sx, sz, height = h * 0.55, material = wall) => {
+      box(x, height / 2 + 0.04, z, sx, height, sz, night ? shade(base, 0.65) : base, material);
+      box(x, height + 0.065, z, sx + 0.018, 0.05, sz + 0.018, roof, "roof.deck");
+    };
+    const tree = (x, z, scale = 1) => {
+      box(x, 0.13 * scale, z, 0.025, 0.26 * scale, 0.025, base, "tree.trunk");
+      box(x, 0.36 * scale, z, 0.15, 0.38 * scale, 0.15, grass, "tree.canopy", "canopy");
+    };
+    const lamp = (x, z, height = 0.6) => {
+      box(x, height / 2, z, 0.016, height, 0.016, steel, "metal");
+      box(x, height, z, 0.055, 0.035, 0.04, white, night ? "wall.c.night" : "metal");
+    };
+    const ground = (material = "concrete", color = stone) => box(0, 0.02, 0, 0.96, 0.04, 0.96, color, material);
+
     if (label === "stadium") {
-      pushBlock(opaque, cx, topY + h * 0.32, cz, h, h * 0.5, 0.9 * h, base, wall);
-      pushBlock(opaque, cx, topY + h * 0.52, cz, 1.06 * h, 0.08, 0.96 * h, light, wall);
-      pushBlock(opaque, cx, topY + h * 0.6, cz, 0.9 * h, 0.08, 0.82 * h, shade(base, 1.05), wall);
+      ground("park", grass);
+      box(0, 0.046, 0, 0.46, 0.012, 0.62, grass, "park");
+      // Four independent banks leave the playing field open to the sky.
+      for (let tier = 0; tier < 4; tier += 1) {
+        const offset = 0.27 + tier * 0.047, rise = 0.075 + tier * 0.065;
+        box(-offset, rise, 0, 0.048, 0.09, 0.78, stone, "concrete");
+        box(offset, rise, 0, 0.048, 0.09, 0.78, stone, "concrete");
+        box(0, rise, -offset, 0.54, 0.09, 0.048, base, "concrete");
+        box(0, rise, offset, 0.54, 0.09, 0.048, base, "concrete");
+      }
+      box(0, 0.058, 0, 0.006, 0.01, 0.6, white, "concrete");
+      for (const z of [-0.29, 0.29]) {
+        box(0, 0.059, z, 0.44, 0.012, 0.006, white, "concrete");
+        box(0, 0.11, z, 0.12, 0.1, 0.014, white, "metal");
+      }
+      for (const x of [-0.43, 0.43]) for (const z of [-0.43, 0.43]) lamp(x, z, 0.75);
       return;
     }
-    if (label === "church") {
-      // Zen temple: a tiered pagoda — three stacked roofs narrowing to a
-      // spire, the Japanese Minecraft reading of the landmark.
-      const tiers = [[0.72, 0.24], [0.5, 0.2], [0.3, 0.16]];
-      let roofBase = topY + h * 0.25;
-      tiers.forEach(([width, thick], tier) => {
-        const bodyTop = roofBase - h * (0.16 - tier * 0.03);
-        pushBlock(opaque, cx, bodyTop + (roofBase - bodyTop) / 2, cz, width * 0.62, roofBase - bodyTop, width * 0.62, tier % 2 ? shade(base, 1.05) : base, wall);
-        pushBlock(opaque, cx, bodyTop - thick / 2, cz, width, thick, width, tier === 2 ? shade(light, 0.95) : light, "roof");
-        roofBase = bodyTop - thick;
-      });
-      pushBlock(opaque, cx, roofBase - h * 0.1, cz, 0.06, h * 0.2, 0.06, light, "metal");
-      return;
-    }
-    if (label === "statue") {
-      pushBlock(opaque, cx, topY + h * 0.4, cz, 0.26, h * 0.7, 0.26, base, wall);
-      pushBlock(opaque, cx, topY + h * 0.82, cz, 0.16, h * 0.3, 0.16, light, "metal");
-      return;
-    }
-    if (label === "marina" || label === "pier" || label === "runway" || label === "tarmac") {
-      pushBlock(opaque, cx, topY + 0.04, cz, Math.max(0.9, h), 0.08, Math.max(0.9, h), base, wall);
-      if (label === "marina" || label === "pier") {
-        // A red torii at the water's edge: two pillars, kasagi and nuki beams.
-        const torii = { r: 0.72, g: 0.25, b: 0.2, a: 1 };
-        pushBlock(opaque, cx - 0.13, topY + 0.38, cz + 0.32, 0.05, 0.7, 0.05, torii);
-        pushBlock(opaque, cx + 0.13, topY + 0.38, cz + 0.32, 0.05, 0.7, 0.05, torii);
-        pushBlock(opaque, cx, topY + 0.78, cz + 0.32, 0.42, 0.06, 0.05, torii);
-        pushBlock(opaque, cx, topY + 0.54, cz + 0.32, 0.28, 0.05, 0.05, { r: 0.12, g: 0.12, b: 0.12, a: 1 });
+    if (label === "park_big" || label === "zoo") {
+      ground("park", grass);
+      box(0, 0.048, 0, 0.08, 0.015, 0.9, stone, "terrain.sand");
+      box(0, 0.05, 0, 0.9, 0.016, 0.065, stone, "terrain.sand");
+      for (const [x,z] of [[-.3,-.3],[-.29,.28],[.31,-.27],[.32,.3]]) tree(x,z);
+      if (label === "zoo") {
+        building(-.22, .3, .2, .2, .24, residential);
+        for (const z of [-.4,.06]) box(.22,.11,z,.36,.13,.014,steel,"metal");
+        for (const x of [.04,.4]) box(x,.11,-.17,.014,.13,.46,steel,"metal");
+        box(.24,.055,-.2,.18,.02,.23,water,"water");
+      } else {
+        box(0,.09,0,.22,.13,.22,stone,"concrete");
+        box(0,.17,0,.17,.035,.17,water,"water");
+        box(0,.25,0,.025,.17,.025,white,"metal");
       }
       return;
     }
-    if (label === "construction" || label === "rubble" || label === "abandoned" || label === "radioactive") {
-      pushBlock(opaque, cx, topY + h * 0.3, cz, 0.9 * h, h * 0.5, 0.9 * h, base, "construction");
+    if (label === "marina" || label === "pier") {
+      // Actual finger piers, mooring poles and two compact sailing boats.
+      box(0,.08,0,.13,.1,.94,base,"tree.trunk");
+      for (const z of [-.31,.26]) {
+        box(.14,.08,z,.5,.1,.1,base,"tree.trunk");
+        for (const x of [-.04,.34]) box(x,.07,z,.035,.13,.035,steel,"metal");
+        box(-.23,.08,z,.15,.13,.29,white,"metal","hip");
+        box(-.23,.18,z,.07,.08,.13,base,"roof.deck");
+        box(-.23,.36,z,.012,.48,.012,steel,"metal");
+        box(-.2,.41,z,.07,.24,.015,white,"concrete","roof-z");
+      }
+      if (label === "marina") building(.28,-.32,.22,.2,.25,residential);
       return;
     }
-    pushBlock(opaque, cx, topY + h / 2, cz, 0.92 * h, h, 0.92 * h, base, wall);
-    pushBlock(opaque, cx, topY + h + 0.02, cz, 0.8 * h, 0.04, 0.8 * h, light, "metal");
+    if (label === "runway" || label === "tarmac") {
+      ground(label === "runway" ? "road" : "concrete", label === "runway" ? roof : stone);
+      for (const z of [-.35,0,.35]) box(0,.046,z,.035,.012,.15,white,"concrete");
+      if (label === "tarmac") box(.2,.047,0,.014,.012,.65,white,"concrete");
+      return;
+    }
+    if (label === "church") {
+      ground();
+      building(0,.08,.43,.7,h*.45,residential);
+      box(0,h*.45+.17,.08,.49,.27,.75,roof,"roof","roof-z");
+      building(0,-.27,.28,.23,h*.88,residential);
+      box(0,h*.88+.19,-.27,.33,.28,.29,roof,"roof.deck","hip");
+      box(0,h*.88+.39,-.27,.018,.22,.018,white,"metal");
+      box(0,h*.88+.43,-.27,.14,.022,.018,white,"metal");
+      return;
+    }
+    if (label === "city_hall" || label === "museum" || label === "library") {
+      ground();
+      building(0,-.09,.77,.51,h*.54,residential);
+      box(0,.1,.28,.58,.14,.23,stone,"concrete");
+      for (const x of [-.24,-.12,0,.12,.24]) box(x,h*.25,.31,.035,h*.4,.035,white,"concrete");
+      box(0,h*.47,.3,.62,.07,.22,stone,"concrete");
+      box(0,h*.56,.3,.65,.14,.23,roof,"roof","roof-x");
+      if (label === "city_hall") {
+        building(0,-.08,.19,.2,h*.92,residential);
+        box(0,h*.97,-.08,.25,.15,.25,roof,"roof.deck","hip");
+        box(0,h*.81,.025,.07,.08,.014,white,"metal");
+      } else if (label === "museum") box(0,h*.64,-.1,.23,.25,.23,stone,"concrete","canopy");
+      else box(.28,h*.59,-.08,.13,.09,.34,white,"roof.deck");
+      return;
+    }
+    if (label === "mayors_house") {
+      ground("park",grass);
+      building(-.06,-.08,.53,.51,h*.56,residential);
+      box(-.06,h*.56+.17,-.08,.59,.25,.57,roof,"roof","hip");
+      building(.31,.02,.18,.31,h*.3,residential);
+      box(-.06,.052,.34,.12,.015,.25,stone,"concrete");
+      tree(-.35,.3); tree(.34,-.33);
+      return;
+    }
+    if (label === "hospital" || label === "college" || label === "service" || label === "prison") {
+      ground();
+      building(0,-.25,.77,.25,h*.73);
+      building(-.28,.03,.23,.46,h*.57);
+      building(.28,.03,.23,.46,h*.57);
+      if (label === "hospital") {
+        box(0,h*.8,-.25,.1,.07,.22,white,"concrete");
+        box(0,h*.8,-.25,.23,.07,.08,white,"concrete");
+        box(0,.05,.3,.45,.018,.24,roof,"road");
+      } else if (label === "prison") {
+        for (const z of [-.45,.45]) box(0,.22,z,.92,.36,.025,stone,"concrete");
+        for (const x of [-.45,.45]) { box(x,.22,0,.025,.36,.92,stone,"concrete"); building(x*.97,.4,.1,.1,h*.87); }
+      } else { box(0,.049,.1,.23,.016,.28,grass,"park"); tree(0,.2,.8); }
+      return;
+    }
+    if (label === "dome") {
+      ground();
+      box(0,h*.18,0,.85,h*.32,.85,base,wall);
+      box(0,h*.53,0,.86,h*.56,.86,white,wall,"canopy");
+      building(0,.38,.22,.17,.25);
+      return;
+    }
+    if (label === "arcology") {
+      ground("park",grass);
+      building(0,0,.8,.8,h*.18);
+      for (const x of [-.24,.24]) for (const z of [-.24,.24]) building(x,z,.25,.25,h*.82);
+      box(0,h*.61,0,.7,.14,.2,base,wall);
+      box(0,h*.76,0,.2,.14,.7,base,wall);
+      box(0,h*.23,0,.19,.12,.19,grass,"tree.canopy","canopy");
+      return;
+    }
+    if (label === "control_tower") {
+      ground();
+      building(0,0,.18,.2,h*.76,residential);
+      box(0,h*.85,0,.45,h*.22,.44,white,wall);
+      box(0,h*.99,0,.49,.055,.48,roof,"roof.deck");
+      box(0,h*1.1,0,.018,.2,.018,steel,"metal");
+      return;
+    }
+    if (label === "crane") {
+      for (const x of [-.27,.27]) box(x,h*.36,0,.07,h*.7,.1,steel,"metal");
+      box(0,h*.72,0,.75,.095,.13,base,"metal");
+      box(.15,h*.49,0,.02,h*.44,.02,steel,"wire");
+      box(.15,h*.25,0,.09,.09,.08,steel,"metal");
+      box(-.23,h*.75,0,.14,.2,.19,white,wall);
+      return;
+    }
+    if (label === "water_treatment" || label === "desalination") {
+      ground();
+      building(-.29,0,.26,.67,h*.5,`wall.i.${night ? "night" : "day"}`);
+      for (const z of [-.23,.23]) {
+        box(.16,.14,z,.43,.2,.34,stone,"concrete");
+        box(.16,.255,z,.36,.025,.27,water,"water");
+        box(.16,.28,z,.025,.025,.33,steel,"pipe");
+      }
+      return;
+    }
+    if (label === "power_plant" || label === "solar") {
+      ground();
+      if (label === "solar") {
+        for (const x of [-.3,0,.3]) for (const z of [-.3,0,.3]) {
+          box(x,.09,z,.045,.13,.035,steel,"metal");
+          box(x,.18,z,.25,.025,.24,water,"wall.c.day");
+        }
+      } else {
+        building(-.12,0,.57,.76,h*.5,`wall.i.${night ? "night" : "day"}`);
+        for (const z of [-.23,.2]) {
+          box(.31,h*.55,z,.1,h*1.02,.1,stone,"concrete");
+          box(.31,h*.97,z,.105,.08,.105,base,"metal");
+        }
+        box(-.12,h*.59,0,.59,.13,.8,roof,"roof","roof-z");
+      }
+      return;
+    }
+    if (label === "bus_depot" || label === "subway_station") {
+      ground();
+      building(-.19,-.03,.38,.71,h*.63);
+      for (const z of [-.23,.18]) {
+        box(.2,.12,z,.37,.17,.14,white,"metal");
+        box(.21,.22,z,.25,.065,.11,water,wall);
+      }
+      if (label === "subway_station") box(.2,.055,0,.23,.025,.48,roof,"tunnel");
+      return;
+    }
+    if (label === "missile_silo") {
+      ground("terrain.grass",grass);
+      box(0,.09,0,.64,.14,.64,stone,"concrete");
+      box(0,.17,0,.53,.035,.53,steel,"metal","canopy");
+      building(.32,-.32,.18,.18,.22,residential);
+      return;
+    }
+    if (label === "statue") {
+      ground();
+      box(0,.13,0,.42,.22,.42,stone,"concrete");
+      box(0,h*.44,0,.15,h*.48,.14,base,"metal");
+      box(0,h*.75,0,.13,.14,.13,base,"metal","canopy");
+      box(-.08,h*.49,0,.28,.08,.075,base,"metal");
+      return;
+    }
+    if (["rubble","radioactive","construction","abandoned"].includes(label)) {
+      ground("terrain.soil",base);
+      if (label === "abandoned") { building(-.12,0,.55,.67,h*.72,"abandoned"); box(.28,h*.25,-.2,.12,h*.5,.14,base,"abandoned"); }
+      else if (label === "construction") {
+        for (const x of [-.31,.31]) for (const z of [-.3,.3]) box(x,h*.55,z,.045,h,.045,steel,"metal");
+        box(0,h*.6,0,.68,.055,.65,base,"construction");
+        box(0,h*.95,0,.68,.045,.65,steel,"metal");
+      } else for (let i=0;i<6;i+=1) box((i%3-.9)*.23,.075+(i%2)*.025,(Math.floor(i/3)-.5)*.37,.17,.12+(i%2)*.05,.21,label === "radioactive" ? grass : base,"terrain.rock","hip");
+      return;
+    }
+    // Infrastructure switchyard: transformers, fenced pad and two gantries.
+    ground();
+    for (const x of [-.24,.24]) {
+      box(x,.2,0,.21,.31,.42,steel,"metal");
+      box(x,.45,0,.04,.18,.035,stone,"concrete");
+    }
+    for (const z of [-.35,.35]) box(0,.56,z,.78,.035,.035,steel,"wire");
   }
 
   // --- building grammar: the 2D composer's vocabulary as blocks -------------
@@ -1058,7 +1510,153 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
   // massesFor() from the 2D composer in tile units around the footprint
   // centre: u runs along x, v along z, y is world height. A variant picks
   // one form, so buildings of one stage do not share an outline.
+  // Visual parcels use one physical scale. A lot is not a building envelope:
+  // floor plates, front access, yards and setbacks are separate decisions.
+  const TILE_METERS = 16;
+
+  function rectangleUnionArea(rectangles) {
+    const xs = [...new Set(rectangles.flatMap((r) => [r.u0, r.u1]))].sort((a,b) => a-b);
+    let area = 0;
+    for (let n = 1; n < xs.length; n += 1) {
+      const x = (xs[n-1] + xs[n]) / 2;
+      const spans = rectangles.filter((r) => r.u0 < x && r.u1 > x).map((r) => [r.v0,r.v1]).sort((a,b) => a[0]-b[0]);
+      let start = null, end = null, length = 0;
+      for (const [a,b] of spans) {
+        if (start === null) { start = a; end = b; }
+        else if (a <= end) end = Math.max(end,b);
+        else { length += end-start; start=a; end=b; }
+      }
+      if (start !== null) length += end-start;
+      area += (xs[n]-xs[n-1])*length;
+    }
+    return area;
+  }
+
+  function measureParcelPlan(masses, footprint) {
+    const lotArea = footprint.w * footprint.h;
+    const floors = new Map();
+    for (const mass of masses) for (let floor = 0; floor < mass.stories; floor += 1) {
+      const key = Math.round((mass.y0 + floor * mass.storeyHeight) * 1e6);
+      if (!floors.has(key)) floors.set(key,[]);
+      floors.get(key).push(mass);
+    }
+    const coveredArea = rectangleUnionArea(masses);
+    const floorArea = [...floors.values()].reduce((sum,plates) => sum + rectangleUnionArea(plates),0);
+    return { lotAreaM2: lotArea*TILE_METERS*TILE_METERS, footprintM2: coveredArea*TILE_METERS*TILE_METERS,
+      floorAreaM2: floorArea*TILE_METERS*TILE_METERS, coverage: coveredArea/lotArea, far: floorArea/lotArea,
+      heightMeters: Math.max(...masses.map((m) => m.y1))*TILE_METERS,
+      storeys: Math.max(...masses.map((m) => Math.round(m.y0/m.storeyHeight)+m.stories)) };
+  }
+
+  function plannedBuildingMasses(footprint, planning, variant) {
+    const zone = planning.zone, stage = planning.stage;
+    const forms = planning.forms;
+    const form = forms[(variant-1)%forms.length];
+    const count = planning.stories[0] + (Math.floor((variant-1)/forms.length)% (planning.stories[1]-planning.stories[0]+1));
+    const masses = [];
+    const add = (u0,v0,u1,v1,stories=count,usage="main",base=0,storeyMeters=planning.storeyMeters) => {
+      const storeyHeight = storeyMeters/TILE_METERS;
+      const mass = { u0:u0*footprint.w, v0:v0*footprint.h, u1:u1*footprint.w, v1:v1*footprint.h,
+        y0:base*storeyHeight,y1:(base+stories)*storeyHeight,stories,storeyHeight,usage,
+        roof: zone === "residential" && stage === 1 && usage === "main" ? "pitched" : usage === "hall" && variant%2 ? "sawtooth" : "flat" };
+      masses.push(mass); return mass;
+    };
+    if (zone === "residential" && stage === 1) {
+      if (form === "house-garage") {
+        add(-.23,-.30,.34,.23); add(-.44,-.19,-.23,.18,1,"garage",0,2.8);
+      } else if (form === "l-house") {
+        add(-.32,-.31,.31,.09); add(-.32,.09,-.08,.32,Math.min(count,1));
+      } else add(-.28,-.29,.28,.27);
+    } else if (zone === "residential") {
+      if (form === "twin-bars") {
+        add(-.40,-.34,-.16,.34); add(.16,-.34,.40,.34);
+      } else if (form === "open-court") {
+        add(-.39,-.34,.39,-.12); add(-.39,-.12,-.19,.34); add(.19,-.12,.39,.34);
+      } else if (form === "l-block") {
+        add(-.38,-.34,.38,-.10); add(-.38,-.10,-.14,.40);
+      } else if (form === "slab") add(-.32,-.25,.32,.25);
+      else add(-.38,-.25,.38,.20);
+    } else if (zone === "commercial") {
+      if (form === "shop") add(-.39,-.26,.39,.38);
+      else if (form === "corner-shop") { add(-.39,.00,.39,.38); add(-.39,-.34,-.03,.00); }
+      else if (form === "shop-terrace") { add(-.40,-.27,-.04,.38, count, "shop", 0, planning.storeyMeters); add(-.01,-.27,.40,.38, Math.max(1,count-1), "shop", 0, planning.storeyMeters); }
+      else if (form === "small-court") { add(-.39,-.35,.39,-.12); add(-.39,-.12,-.15,.38); add(.15,-.12,.39,.38); }
+      else if (form === "main-street") add(-.38,-.24,.38,.39);
+      else if (form === "open-court") {
+        add(-.40,-.35,.40,-.11); add(-.40,-.11,-.17,.40); add(.17,-.11,.40,.40);
+      } else if (form === "corner-block") {
+        add(-.40,.04,.40,.40); add(-.40,-.36,-.14,.04);
+      } else if (form === "podium-tower") {
+        add(-.38,-.31,.38,.38,Math.min(2,count)); add(-.18,-.25,.18,.20,Math.max(1,count-2),"upper",2);
+      } else { add(-.37,-.30,.37,.37,Math.min(3,count)); add(-.30,-.24,.27,.30,Math.max(1,count-3),"upper",3); }
+    } else if (stage === 1) {
+      add(-.33,-.35,.32,.17,1,"hall"); add(-.33,.17,-.10,.38,1,"office",0,3.2);
+    } else if (stage === 2) {
+      add(-.36,-.38,.35,.20,1,"hall"); add(.15,.20,.35,.42,2,"office",0,3.2);
+    } else {
+      add(-.37,-.38,.31,.12,1,"hall"); add(-.37,.12,-.17,.40,2,"office",0,3.2);
+    }
+    return masses;
+  }
+
+  function pushParcelGround(list, cx, cz, topY, footprint, masses, planning, palette, variant, night, stateName) {
+    const w=footprint.w,d=footprint.h;
+    const pave = {r:.64,g:.65,b:.60,a:1}, hedge = {r:.37,g:.46,b:.29,a:1};
+    const block=(x,z,sx,sz,color=pave,height=.012,y=.006,tile="concrete",shape="box") =>
+      pushBlock(list,cx+x,topY+y,cz+z,sx,height,sz,night?shade(color,.65):color,tile,shape);
+    const open=(x,z,sx,sz) => !masses.some((m)=>x+sx/2>m.u0-.025 && x-sx/2<m.u1+.025 && z+sz/2>m.v0-.025 && z-sz/2<m.v1+.025);
+    const tree=(x,z) => {
+      if (!open(x,z,.18,.18)) return;
+      block(x,z,.028,.028,palette.brick,.18,.09,"tree.trunk");
+      block(x,z,.17,.17,hedge,.24,.28,"tree.canopy","canopy");
+    };
+    // Every entrance reaches the canonical street front (+z). Back gardens
+    // remain private; the renderer rotates this whole parcel toward a road.
+    for (const mass of masses.filter((m)=>m.y0===0 && !["hall","garage"].includes(m.usage))) {
+      const x=(mass.u0+mass.u1)/2, front=mass.v1;
+      const length=d/2-front;
+      if(length>0) block(x,front+length/2,.065,length);
+    }
+    if (planning.zone === "residential") {
+      for (const side of [-1,1]) block(side*(w/2-.025),0,.024,d*.94,hedge,.055,.027,"park");
+      block(0,-d/2+.025,w*.94,.024,hedge,.055,.027,"park");
+      tree(w*.37,-d*.39);
+      if (planning.stage>1) { tree(-w*.32,d*.39); tree(w*.32,d*.39); }
+      for (const garage of masses.filter((m)=>m.usage==="garage")) {
+        const length=d/2-garage.v1;
+        block((garage.u0+garage.u1)/2,garage.v1+length/2,garage.u1-garage.u0,length);
+      }
+      if (planning.stage>1) {
+        const x=0,z=d*.30;
+        if(open(x,z,.34,.18)) { block(x,z,.34,.18,pave); block(x-.1,z,.02,.11,palette.brick,.06,.04,"tree.trunk"); block(x+.1,z,.02,.11,palette.brick,.06,.04,"tree.trunk"); }
+      }
+    } else if (planning.zone === "commercial") {
+      block(0,d*.45,w*.96,d*.10);
+      for (const side of [-1,1]) tree(side*w*.43,-d*.38);
+    } else {
+      const hall=masses.find((m)=>m.usage==="hall");
+      const front=hall?.v1||0;
+      block(0,(front+d/2)/2,w*.9,d/2-front,{r:.53,g:.55,b:.51,a:1});
+      // Loading positions and a turning apron are reserved before equipment.
+      for(const x of [-w*.06,w*.16]) if(open(x,d*.37,.20,.28)) {
+        for(const side of [-1,1]) block(x+side*.10,d*.37,.006,.28,{r:.78,g:.76,b:.64,a:1},.008,.016,"metal");
+      }
+      tree(w*.42,-d*.40);
+    }
+    if (stateName!=="normal" && stateName!=="recovering") return;
+    // A correctly scaled parked car occupies a real bay, never a random lawn.
+    const x=planning.zone==="residential" ? -w*.34 : w*.30;
+    const z=d*.36;
+    if(variant%3===0 && planning.stage>1 && open(x,z,.14,.30)) {
+      block(x,z,.16,.32,pave);
+      block(x,z,.112,.26,{r:.36,g:.41,b:.43,a:1},.065,.055,"metal");
+      block(x,z-.015,.088,.135,{r:.24,g:.31,b:.34,a:1},.04,.107,"metal");
+    }
+  }
+
+
   function buildingMasses(footprint, heightPx, grammar, variant, seed) {
+    if (grammar.planning) return plannedBuildingMasses(footprint, grammar.planning, Math.max(1, variant|0));
     const fw = Math.max(0.4, Number(footprint.w) || 1);
     const fd = Math.max(0.4, Number(footprint.h) || 1);
     const inset = Number.isFinite(grammar.inset) ? grammar.inset : 0.07;
@@ -1067,7 +1665,7 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     const u1 = fw / 2 - inset;
     const v1 = fd / 2 - inset;
     const px = Math.max(6, Number(heightPx) || 24);
-    const height = pxToWorld(px);
+    const height = pxToWorld(px * (Number(grammar.heightScale) || 1));
     const forms = Array.isArray(grammar.massing) && grammar.massing.length ? grammar.massing : ["single"];
     const form = forms[(Math.max(1, variant | 0) - 1) % forms.length];
     const wobble = ((seed >>> 6) & 7) / 40;
@@ -1138,7 +1736,7 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
       ? recipes.paletteColor(walls[((Math.max(1, variant | 0) - 1) * 5) % walls.length], "concrete")
       : fallback;
     // The 2D composer drifts each wall by up to 14/255 per building.
-    const drift = (((seed >>> 9) & 15) - 7) * 2;
+    const drift = (((seed >>> 9) & 15) - 7) * 0.6;
     // The neutral wall tile sits at 208/255, so the tint compensates by
     // 255/208 and the palette colour lands on the wall surface itself.
     return shade(chosen, (1 + drift / 160) * (255 / 208));
@@ -1151,6 +1749,21 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
   function pushWallMass(opaque, cx, cz, topY, mass, color, tile, rows) {
     const width = Math.max(0.05, mass.u1 - mass.u0);
     const depth = Math.max(0.05, mass.v1 - mass.v0);
+    if (Number.isFinite(mass.storeyHeight) && Number.isInteger(mass.stories)) {
+      const cols = Math.max(1, Math.ceil(width - 1e-6));
+      const deps = Math.max(1, Math.ceil(depth - 1e-6));
+      const cw = width / cols, cd = depth / deps;
+      for (let level = 0; level < mass.stories; level += 1) {
+        for (let i = 0; i < cols; i += 1) for (let j = 0; j < deps; j += 1) {
+          const bx = cx + mass.u0 + cw * (i + 0.5);
+          const bz = cz + mass.v0 + cd * (j + 0.5);
+          const y0 = topY + mass.y0 + level * mass.storeyHeight;
+          pushBlock(opaque, bx, y0 + mass.storeyHeight / 2, bz, cw - 0.012, mass.storeyHeight, cd - 0.012,
+            color, `${tile}#1/${rows}`);
+        }
+      }
+      return mass.y1;
+    }
     const cols = Math.max(1, Math.ceil(width - 1e-6));
     const deps = Math.max(1, Math.ceil(depth - 1e-6));
     const cw = width / cols;
@@ -1159,7 +1772,7 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     const total = Math.max(1 / bands, mass.y1 - mass.y0);
     const full = Math.floor(total + 1e-6);
     const remainder = total - full;
-    const partRows = remainder > 1e-3 ? Math.min(bands, Math.max(1, Math.ceil(remainder * bands - 1e-6))) : 0;
+    const partRows = remainder > 1e-3 ? remainder * bands : 0;
     for (let i = 0; i < cols; i += 1) {
       for (let j = 0; j < deps; j += 1) {
         const bx = cx + mass.u0 + cw * (i + 0.5);
@@ -1204,16 +1817,8 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     const mx = cx + (mass.u0 + mass.u1) / 2;
     const mz = cz + (mass.v0 + mass.v1) / 2;
     const rise = Math.max(0.12, pxToWorld(risePx));
-    const tiers = 4;
-    const th = rise / tiers;
     const ridgeAlongX = w >= d;
-    for (let i = 0; i < tiers; i += 1) {
-      const across = 1.06 - (i / (tiers - 1)) * 0.84;
-      const along = hipped ? 1.04 - (i / (tiers - 1)) * 0.54 : 1.04;
-      const sx = ridgeAlongX ? w * along : w * across;
-      const sz = ridgeAlongX ? d * across : d * along;
-      pushBlock(opaque, mx, y + th * (i + 0.5), mz, sx, th, sz, shade(roofColor, 1 - i * 0.05), "roof.deck");
-    }
+    pushBlock(opaque, mx, y + rise / 2, mz, w * 1.06, rise, d * 1.06, roofColor, "roof", hipped ? "hip" : ridgeAlongX ? "roof-x" : "roof-z");
   }
 
   function pushSawtoothRoof(opaque, cx, cz, y, mass, roofColor, glassColor) {
@@ -1254,13 +1859,13 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
       const jitterB = ((seed >>> (index * 5 + 2)) & 7) / 16;
       if (item === "tank") {
         const c = at(0.24 + jitterA, 0.26 + jitterB);
-        const s = Math.min(0.16, Math.max(0.08, w * 0.1));
+        const s = Math.min(0.075, Math.max(0.04, w * 0.045));
         const drum = pxToWorld(Math.max(5, Math.min(11, Math.round(massHeightPx * 0.16))));
         pushBlock(opaque, c.x, y + 0.05, c.z, s * 2, 0.1, s * 2, palette.steel, "metal");
         pushBlock(opaque, c.x, y + 0.1 + drum / 2, c.z, s * 2, drum, s * 2, shade(palette.steel, 1.12), "metal");
       } else if (item === "bulkhead") {
         const c = at(0.26 + jitterA, 0.6);
-        pushBlock(opaque, c.x, y + 0.15, c.z, 0.4, 0.3, 0.4, wallColor, "concrete");
+        pushBlock(opaque, c.x, y + 0.08, c.z, 0.18, 0.16, 0.18, wallColor, "concrete");
       } else if (item === "vents") {
         for (let i = 0; i < 3; i += 1) {
           const c = at(0.2 + i * 0.26, 0.3 + (i % 2) * 0.32);
@@ -1268,8 +1873,8 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
         }
       } else if (item === "chimney") {
         const c = at(0.7, 0.28);
-        const h = pxToWorld(11);
-        pushBlock(opaque, c.x, y + h / 2 - 0.05, c.z, 0.24, h, 0.24, palette.brick, "concrete");
+        const h = pxToWorld(9);
+        pushBlock(opaque, c.x, y + h / 2 - 0.03, c.z, 0.075, h, 0.075, palette.brick, "concrete");
       } else if (item === "stack") {
         const c = at(0.22 + jitterA + index * 0.18, 0.3 + jitterB * 0.5);
         const tallPx = Math.max(20, Math.round(massHeightPx * 0.62)) + (((seed >>> (index * 4)) & 3) * 3);
@@ -1355,6 +1960,7 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     const masses = buildingMasses(footprint, heightPx, grammar, variant, seed);
     const built = masses.map((mass) => ({ mass, top: pushWallMass(opaque, cx, cz, topY, mass, wallColor, wallTile, rows) }));
     const tallest = Math.max(...built.map((entry) => entry.top));
+    if (grammar.planning) pushParcelGround(opaque, cx, cz, topY, footprint, masses, grammar.planning, palette, variant, night, stateName);
     const construction = stateName === "construction";
     if (construction) {
       // Two scaffold poles past the corners, the 2D composer's diagonal
@@ -1365,7 +1971,7 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
       pushBlock(opaque, cx + outer.u1 + 0.03, topY + poleH / 2, cz + outer.v0 - 0.03, 0.04, poleH, 0.04, palette.construction, "metal");
     }
     const roofForms = Array.isArray(grammar.roof) && grammar.roof.length ? grammar.roof : ["flat"];
-    const roofForm = roofForms[((Math.max(1, variant | 0) - 1) * 3) % roofForms.length];
+    const roofForm = roofForms[(Math.max(1, variant | 0) - 1 + Math.floor((variant - 1) / 4)) % roofForms.length];
     const roofSet = Array.isArray(grammar.roofColors) ? grammar.roofColors : [];
     const roofColor = night
       ? palette.roofDark
@@ -1413,7 +2019,7 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     return altitudeAt(snapshot, index) * ALT_STEP;
   }
 
-  function collectChunkBlocks(snapshot, recipes, chunkX, chunkY, sceneObjects) {
+  function collectChunkBlocks(snapshot, recipes, chunkX, chunkY, sceneObjects, objectsOnly = false) {
     const size = mapSize(snapshot);
     const startX = chunkX * CHUNK_SIZE;
     const startY = chunkY * CHUNK_SIZE;
@@ -1436,7 +2042,7 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
       return Number.isFinite(value) ? value : fallback;
     };
 
-    for (let y = startY; y < endY; y += 1) {
+    for (let y = objectsOnly ? endY : startY; y < endY; y += 1) {
       for (let x = startX; x < endX; x += 1) {
         const index = y * size + x;
         const alt = altitudeAt(snapshot, index);
@@ -1444,7 +2050,7 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
         const topY = alt * ALT_STEP;
         // Kept gentle: instance colors now convert through sRGB, which
         // widens multiplicative steps, so ±6% here read as a checkerboard.
-        const jitter = 0.985 + (hashTile(index) % 4) * 0.01;
+        const jitter = 0.995 + Math.sin(x * 0.21 + y * 0.13) * 0.005;
 
         if (kind === "water") {
           // Bed column below, translucent surface on top. A future v3
@@ -1471,7 +2077,7 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
             tile: "water",
           });
         } else {
-          const style = recipes.terrain[kind] || recipes.terrain.grass;
+          const style = (alt < 24 && (kind === "soil" || kind === "rock")) ? recipes.terrain.grass : recipes.terrain[kind] || recipes.terrain.grass;
           const minNeighbor = Math.min(
             altOf(x - 1, y, alt), altOf(x + 1, y, alt), altOf(x, y - 1, alt), altOf(x, y + 1, alt), alt
           );
@@ -1494,7 +2100,11 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
                 : kind === "coast" ? "terrain.sand"
                   : (kind === "soil" || kind === "rock") && alt < 24 ? "terrain.grass"
                     : `terrain.${kind}`;
-            pushBlock(opaque, x + 0.5, level * ALT_STEP - ALT_STEP / 2, y + 0.5, 1, ALT_STEP, 1, color, top ? terrainTile : (kind === "grass" || kind === "slope" ? "terrain.grass" : `terrain.${kind}`));
+            const slopeMask = (altOf(x, y - 1, alt) > alt ? 1 : 0) | (altOf(x + 1, y, alt) > alt ? 2 : 0)
+              | (altOf(x, y + 1, alt) > alt ? 4 : 0) | (altOf(x - 1, y, alt) > alt ? 8 : 0);
+            const slopeShape = top && slopeMask && gridValue(snapshot, ["slope"], index, false)
+              && !isRoad(snapshot, index) && !sceneObjects.covered.has(`${x}:${y}`) ? `slope-${slopeMask}` : "box";
+            pushBlock(opaque, x + 0.5, level * ALT_STEP - ALT_STEP / 2, y + 0.5, 1, ALT_STEP, 1, color, top ? terrainTile : (kind === "grass" || kind === "slope" ? "terrain.grass" : `terrain.${kind}`), slopeShape);
           }
           // Cliff shadow bands: the lower tile carries a dark edge toward
           // every higher neighbour, so plateaus read as stacked ground.
@@ -1502,22 +2112,22 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
           if (tileCliffs) {
             const shadow = { r: 0.07, g: 0.09, b: 0.08, a: 0.4 };
             tileCliffs.forEach((edge) => {
-              if (edge.dir === "n") pushBlock(tint, x + 0.5, topY + 0.012, y - 0.47, 1, 0.02, 0.07, shadow);
-              if (edge.dir === "s") pushBlock(tint, x + 0.5, topY + 0.012, y + 0.47, 1, 0.02, 0.07, shadow);
-              if (edge.dir === "e") pushBlock(tint, x + 0.47, topY + 0.012, y + 0.5, 0.07, 0.02, 1, shadow);
-              if (edge.dir === "w") pushBlock(tint, x - 0.47, topY + 0.012, y + 0.5, 0.07, 0.02, 1, shadow);
+              if (edge.dir === "n") pushBlock(tint, x + 0.5, topY + 0.012, y + 0.03, 1, 0.02, 0.07, shadow);
+              if (edge.dir === "s") pushBlock(tint, x + 0.5, topY + 0.012, y + 0.97, 1, 0.02, 0.07, shadow);
+              if (edge.dir === "e") pushBlock(tint, x + 0.97, topY + 0.012, y + 0.5, 0.07, 0.02, 1, shadow);
+              if (edge.dir === "w") pushBlock(tint, x + 0.03, topY + 0.012, y + 0.5, 0.07, 0.02, 1, shadow);
             });
           }
           // Beach ring: where low land meets water, a sand lip follows the
           // shoreline so coasts read like SimCity 2000 beaches rather than a
           // hard grass-to-water step.
-          if (kind !== "water" && alt <= 0) {
+          if (kind !== "water" && alt <= 1) {
             const shoreMask = networkMask(snapshot, x, y, size, isWater);
             const sand = recipes.terrain.coast.top;
-            if (shoreMask & 1) pushBlock(opaque, x + 0.5, topY + 0.012, y - 0.44, 1, 0.026, 0.12, sand, "terrain.sand");
-            if (shoreMask & 4) pushBlock(opaque, x + 0.5, topY + 0.012, y + 0.44, 1, 0.026, 0.12, sand, "terrain.sand");
-            if (shoreMask & 2) pushBlock(opaque, x + 0.44, topY + 0.012, y + 0.5, 0.12, 0.026, 1, sand, "terrain.sand");
-          if (shoreMask & 8) pushBlock(opaque, x - 0.44, topY + 0.012, y + 0.5, 0.12, 0.026, 1, sand, "terrain.sand");
+            if (shoreMask & 1) pushBlock(opaque, x + 0.5, topY + 0.012, y + 0.06, 1, 0.026, 0.12, sand, "terrain.sand");
+            if (shoreMask & 4) pushBlock(opaque, x + 0.5, topY + 0.012, y + 0.94, 1, 0.026, 0.12, sand, "terrain.sand");
+            if (shoreMask & 2) pushBlock(opaque, x + 0.94, topY + 0.012, y + 0.5, 0.12, 0.026, 1, sand, "terrain.sand");
+          if (shoreMask & 8) pushBlock(opaque, x + 0.06, topY + 0.012, y + 0.5, 0.12, 0.026, 1, sand, "terrain.sand");
         }
         }
 
@@ -1543,12 +2153,16 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
           pushTwinRails(opaque, cx, topY + 0.1, cz, masks.rail, recipes.connectors.railAccent, "metal");
         }
         if (masks.road) {
-          pushBlock(opaque, cx, topY + 0.03, cz, 0.98, 0.06, 0.98, recipes.connectors.road, tunnel ? "tunnel" : "road");
+          if (isWater(snapshot, index) || tunnel) {
+            pushBlock(opaque, cx, topY + 0.03, cz, 1, 0.06, 1, recipes.connectors.road, tunnel ? "tunnel" : "road");
+          } else {
+            pushPathStrip(opaque, cx, topY + 0.03, cz, masks.road, recipes.connectors.road, 0.56, 0.06, "road");
+          }
           if (tunnel) {
             const tunnelMask = networkMask(snapshot, x, y, size, (snap, i) => isTunnel(snap, i));
             pushTunnelPortals(opaque, cx, topY, cz, tunnelMask, snapshot, x, y, size);
           }
-          pushPathStrip(opaque, cx, topY + 0.062, cz, masks.road, recipes.connectors.roadAccent, 0.08, 0.02, "metal");
+          pushPathStrip(opaque, cx, topY + 0.062, cz, masks.road, recipes.connectors.roadAccent, 0.025, 0.02, "metal");
           if (isWater(snapshot, index)) pushBridgeGuards(opaque, cx, topY, cz, masks.road);
           else if (!tunnel) pushRoadCurbs(opaque, cx, topY, cz, masks.road);
         }
@@ -1646,18 +2260,17 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
             pushBlock(opaque, cx, topY + 0.1, cz, 0.1, 0.22, 0.1, recipes.tree.trunk, "tree.trunk");
             for (let tier = 0; tier < 3; tier += 1) {
               const width = 0.56 - tier * 0.14;
-              pushBlock(opaque, cx, topY + 0.26 + tier * 0.2, cz, width, 0.22, width, shade(canopy, shadeV), canopyTile);
+              pushBlock(opaque, cx, topY + 0.28 + tier * 0.2, cz, width, 0.36, width, shade(canopy, shadeV), canopyTile, "conifer");
             }
           } else if (treeKind === 3) {
             // Young sapling: short trunk, one small crown.
             pushBlock(opaque, cx, topY + 0.08, cz, 0.08, 0.16, 0.08, recipes.tree.trunk, "tree.trunk");
-            pushBlock(opaque, cx, topY + 0.27, cz, 0.34, 0.26, 0.34, shade(canopy, shadeV + 0.04), canopyTile);
+            pushBlock(opaque, cx, topY + 0.27, cz, 0.34, 0.3, 0.34, shade(canopy, shadeV + 0.04), canopyTile, "canopy");
           } else {
             // Broadleaf: trunk under a wide lower crown and a narrow upper
             // crown, so the tree reads as a crown and not as a cube.
             pushBlock(opaque, cx, topY + 0.175, cz, 0.12, 0.35, 0.12, recipes.tree.trunk, "tree.trunk");
-            pushBlock(opaque, cx, topY + 0.5, cz, 0.5, 0.3, 0.5, shade(canopy, shadeV), canopyTile);
-            pushBlock(opaque, cx, topY + 0.78, cz, 0.34, 0.26, 0.34, shade(canopy, shadeV + 0.08), canopyTile);
+            pushBlock(opaque, cx, topY + 0.55, cz, 0.62, 0.62, 0.56, shade(canopy, shadeV), canopyTile, "canopy");
           }
         }
 
@@ -1714,7 +2327,7 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
       const variant = Math.max(1, Number(building.variant) || 1);
       const cx = building.x + footprint.w / 2;
       const cz = building.y + footprint.h / 2;
-      const decorSeed = hashTile(((building.x * 7919 + building.y * 104729 + variant * 31) >>> 0) ^ (footprint.w * 7 + footprint.h));
+      const decorSeed = assetSeed({ category: "building", zone: prefix, stage, variant });
       const grammar = grammarForZone(recipes, prefix, stage);
       if (grammar) {
         let wallColor = grammarWallColor(recipes, grammar, variant, decorSeed, family.base);
@@ -1765,6 +2378,12 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
       const baseX = Math.max(0, Math.min(size - 1, Math.floor(facility.x)));
       const baseY = Math.max(0, Math.min(size - 1, Math.floor(facility.y)));
       const topY = terrainTopY(snapshot, baseY * size + baseX);
+      if (pushUtilityFacility(opaque, facility,
+        facility.x + footprint.w / 2, facility.y + footprint.h / 2,
+        topY, footprint, recipe, recipes, night)) return;
+      if (pushServiceFacility(opaque, facility,
+        facility.x + footprint.w / 2, facility.y + footprint.h / 2,
+        topY, footprint, recipe, recipes, night)) return;
       const w = footprint.w * 0.9;
       const d = footprint.h * 0.9;
       const facilityTile = state.textures && state.textures.materials[`facility.${facility.kind}`] ? `facility.${facility.kind}` : "concrete";
@@ -1773,7 +2392,7 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
         // Plants and services read by silhouette: the same composer, the
         // facility's own tile as the wall, stacks and towers from its
         // clutter list.
-        const seed = hashTile(((facility.x * 7919 + facility.y * 104729) >>> 0) ^ 97);
+        const seed = assetSeed({ category: "facility", kind: facility.kind });
         pushGrammarBuilding(opaque, recipes, clutterPalette, {
           cx: facility.x + footprint.w / 2, cz: facility.y + footprint.h / 2, topY, footprint, grammar,
           variant: 1, night, stateName: "normal", seed,
@@ -1820,11 +2439,11 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
         || (shared ? recipes.facilities[shared] : null)
         || recipes.catalog[categoryKey];
       if (recipe) {
-        pushCatalogObject(opaque, tile, tile.x + 0.5, tile.y + 0.5, topY, recipe, recipes.catalogCategories[tile.category] || recipes.catalogCategories.infrastructure);
+        pushCatalogObject(opaque, { ...tile, night }, tile.x + (tile.footprint?.w || 1) / 2, tile.y + (tile.footprint?.h || 1) / 2, topY, recipe, recipes.catalogCategories[tile.category] || recipes.catalogCategories.infrastructure);
         return;
       }
       const color = recipes.catalogCategories[tile.category] || recipes.catalogCategories.infrastructure;
-      pushCatalogObject(opaque, tile, tile.x + 0.5, tile.y + 0.5, topY, null, color);
+      pushCatalogObject(opaque, { ...tile, night }, tile.x + (tile.footprint?.w || 1) / 2, tile.y + (tile.footprint?.h || 1) / 2, topY, null, color);
     });
 
     return { opaque, water, tint };
@@ -1861,7 +2480,8 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
         );
       });
     };
-    place(agents.vehicles, recipes.agents.car, 0.34, 0.16, 0.5, 0.05);
+    // A car is roughly 1.8×4.3 m on the 16 m tile, with a low body and cabin.
+    place(agents.vehicles, recipes.agents.car, 0.112, 0.065, 0.27, 0.035);
     // A darker cabin block on top of each car body makes vehicles read as
     // cars from above, the way SC2000's two-tone sprites do.
     (Array.isArray(agents.vehicles) ? agents.vehicles : []).forEach((agent, index) => {
@@ -1871,10 +2491,11 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
       pushBlock(
         opaque,
         agent.x + 0.5 + phase * 0.5, topAt(agent) + 0.24, agent.y + 0.5 + phase * 0.18,
-        0.16, 0.09, 0.26, shade(cabin, 0.82), "metal"
+        0.075, 0.04, 0.13, shade(cabin, 0.82), "metal"
       );
     });
-    place(agents.pedestrians, recipes.agents.pedestrian, 0.12, 0.28, 0.12, 0.03);
+    // Pedestrians are about 1.7 m tall, never tower over a house.
+    place(agents.pedestrians, recipes.agents.pedestrian, 0.028, 0.105, 0.028, 0.02);
     place(agents.trains, recipes.agents.train, 0.4, 0.3, 0.88, 0.08);
     place(agents.serviceVehicles, recipes.agents.service, 0.34, 0.18, 0.52, 0.06);
     (Array.isArray(agents.smoke) ? agents.smoke : []).forEach((agent, index) => {
@@ -2061,7 +2682,72 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     };
   }
 
+  // Asset identity, independent of placement, camera direction and light.
+  // Runtime instances and offline sprites therefore share one silhouette.
+  function assetSeed(frame) {
+    const key = frame.category === "building"
+      ? `building:${zonePrefix(frame.zone) || "r"}:${frame.stage || 1}:${frame.variant || 1}`
+      : `${frame.category}:${frame.kind || String(frame.id || "").replace(/\.night$/, "").split(".").pop()}`;
+    let value = 2166136261;
+    for (let index = 0; index < key.length; index += 1) value = Math.imul(value ^ key.charCodeAt(index), 16777619);
+    return hashTile(value >>> 0);
+  }
+
+  function createAssetBlocks(frame, source) {
+    const recipes = buildRecipes(source);
+    const footprint = normalizeFootprint(frame.footprint || [1, 1]);
+    const snapshot = { size: 16, tick: 500, timeOfDay: frame.state === "night" ? 0 : 0.5 };
+    const scene = { buildings: [], facilities: [], catalogTiles: [], covered: new Set() };
+    let centerX = footprint.w / 2;
+    let centerZ = footprint.h / 2;
+    let blocks;
+    if (frame.category === "building") {
+      scene.buildings.push({ ...frame, x: 0, y: 0, footprint, state: frame.state === "night" ? "normal" : frame.state });
+    } else if (frame.category === "facility") {
+      scene.facilities.push({ x: 0, y: 0, footprint, kind: frame.id.replace(/\.night$/, "").split(".").pop() });
+    } else if (frame.category === "catalog") {
+      scene.catalogTiles.push({ x: 0, y: 0, label: frame.id.replace(/\.night$/, "").split(".").pop(), category: frame.kind, footprint });
+    } else if (frame.category === "agent") {
+      const key = { car: "vehicles", pedestrian: "pedestrians", train: "trains", service: "serviceVehicles", smoke: "smoke" }[frame.kind];
+      if (!key) return null;
+      const palettes = { car: "car", pedestrian: "pedestrian", train: "train", service: "service", smoke: "smoke" };
+      const colors = recipes.agents[palettes[frame.kind]];
+      if (colors) recipes.agents[palettes[frame.kind]] = [colors[((frame.variant || 1) - 1) % colors.length]];
+      snapshot.agents = { [key]: [{ x: 0, y: 0, phase: frame.kind === "smoke" ? ((frame.variant || 1) - 1) / 3 : 0.5 }] };
+      const result = collectAgentBlocks(snapshot, recipes);
+      blocks = [...result.opaque, ...result.smoke];
+      centerX = centerZ = 0.5;
+    } else if (frame.kind === "tree") {
+      const desiredKind = frame.variant <= 3 ? frame.variant : 1;
+      let index = 0;
+      for (; index < 256; index += 1) {
+        if (1 + hashTile(index) % 3 !== desiredKind) continue;
+        if (frame.id === "tree.blossom" && hashTile(index * 29) % 8 !== 0) continue;
+        if (frame.id === "tree.maple" && hashTile(index * 13) % 2 !== 0) continue;
+        break;
+      }
+      snapshot.tick = frame.id === "tree.winter" ? 1200 : frame.id === "tree.maple" ? 800 : frame.id === "tree.blossom" ? 100 : 500;
+      snapshot.tree = { [index]: true };
+      const result = collectChunkBlocks(snapshot, recipes, 0, 0, scene);
+      blocks = result.opaque.filter((block) => String(block.tile).startsWith("tree."));
+      centerX = index % 16 + 0.5;
+      centerZ = Math.floor(index / 16) + 0.5;
+    } else return null;
+    if (!blocks) {
+      const result = collectChunkBlocks(snapshot, recipes, 0, 0, scene, true);
+      blocks = [...result.opaque, ...result.water, ...result.tint];
+    }
+    return blocks.map((block) => ({ ...block, x: block.x - centerX, z: block.z - centerZ }));
+  }
+
+
   const PURE = Object.freeze({
+    TILE_METERS,
+    measureParcelPlan,
+    plannedBuildingMasses,
+    assetSeed,
+    createAssetBlocks,
+    blockFaces,
     PX_PER_WORLD_Y,
     measureFrame,
     shadowMapSizeFor,
@@ -2250,48 +2936,58 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
       if (!response.ok) return null;
       const manifest = await response.json();
       if (!manifest || !manifest.png || !manifest.tiles || !manifest.materials || !manifest.atlas) return null;
-      const image = await new Promise((resolve) => {
+      const loadImage = (url) => new Promise((resolve) => {
         const img = new Image();
         img.onload = () => resolve(img);
         img.onerror = () => resolve(null);
-        img.src = manifest.png.url || TEXTURES_IMAGE_URL;
+        img.src = url;
       });
-      if (!image) return null;
-      return { manifest, image };
+      const [image, maskImage] = await Promise.all([
+        loadImage(manifest.png.url || TEXTURES_IMAGE_URL),
+        manifest.masks ? loadImage(manifest.masks.url) : Promise.resolve(null),
+      ]);
+      if (!image || (manifest.masks && !maskImage)) return null;
+      return { manifest, image, maskImage };
     } catch {
       return null;
     }
   }
 
-  // Wall tiles are tint-neutral with a glass mask in alpha (alpha 0 = glass).
+  // V2 walls keep colour opacity separate from linear glass/emission masks.
+  // A missing mask texture supports existing v1 atlases during migration.
   // This material multiplies the instance colour into wall pixels only and
   // paints the glass from a uniform, so one tile serves every wall colour,
   // and at night the glass glows from the same uniform pair.
-  function createWallMaterial(THREE, texture) {
+  function createWallMaterial(THREE, texture, maskTexture = null) {
     const material = new THREE.MeshLambertMaterial({ map: texture, color: 0xffffff });
     const uniforms = {
+      uMaterialMask: { value: maskTexture },
       uGlassColor: { value: new THREE.Color(0.48, 0.62, 0.71) },
       uGlassGlow: { value: new THREE.Color(0, 0, 0) },
     };
     material.onBeforeCompile = (shader) => {
+      shader.uniforms.uMaterialMask = uniforms.uMaterialMask;
       shader.uniforms.uGlassColor = uniforms.uGlassColor;
       shader.uniforms.uGlassGlow = uniforms.uGlassGlow;
       shader.fragmentShader = shader.fragmentShader
-        .replace("#include <common>", "#include <common>\nuniform vec3 uGlassColor;\nuniform vec3 uGlassGlow;\nvec4 bonsaiWallTexel;")
+        .replace("#include <common>", "#include <common>\nuniform vec3 uGlassColor;\nuniform vec3 uGlassGlow;\nuniform sampler2D uMaterialMask;\nvec4 bonsaiWallTexel;\nvec2 bonsaiMaterialMask;")
         .replace("#include <map_fragment>", [
           "bonsaiWallTexel = texture2D( map, vMapUv );",
-          "#ifdef USE_INSTANCING_COLOR",
-          "vec3 bonsaiWall = bonsaiWallTexel.rgb * vColor;",
+          maskTexture ? "bonsaiMaterialMask = texture2D( uMaterialMask, vMapUv ).rg;" : "bonsaiMaterialMask = vec2( 1.0 - bonsaiWallTexel.a );",
+          // Three defines USE_INSTANCING_COLOR only in the vertex shader;
+          // its fragment stage exposes the interpolated tint as USE_COLOR.
+          "#if defined( USE_COLOR ) || defined( USE_COLOR_ALPHA )",
+          "vec3 bonsaiWall = bonsaiWallTexel.rgb * vColor.rgb;",
           "#else",
           "vec3 bonsaiWall = bonsaiWallTexel.rgb;",
           "#endif",
-          "diffuseColor.rgb *= mix( bonsaiWallTexel.rgb * uGlassColor, bonsaiWall, bonsaiWallTexel.a );",
+          "diffuseColor.rgb *= mix( bonsaiWallTexel.rgb * uGlassColor, bonsaiWall, 1.0 - bonsaiMaterialMask.r );",
           "diffuseColor.a = 1.0;",
         ].join("\n"))
         .replace("#include <color_fragment>", "")
-        .replace("#include <emissivemap_fragment>", "#include <emissivemap_fragment>\ntotalEmissiveRadiance += uGlassGlow * bonsaiWallTexel.rgb * ( 1.0 - bonsaiWallTexel.a );");
+        .replace("#include <emissivemap_fragment>", "#include <emissivemap_fragment>\ntotalEmissiveRadiance += uGlassGlow * bonsaiWallTexel.rgb * bonsaiMaterialMask.g;");
     };
-    material.customProgramCacheKey = () => "bonsai-wall-v1";
+    material.customProgramCacheKey = () => maskTexture ? "bonsai-wall-v2" : "bonsai-wall-v1";
     material.userData.uniforms = uniforms;
     return material;
   }
@@ -2310,7 +3006,7 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     const preview = state.ledger.track(new THREE.MeshBasicMaterial({
       color: 0xffffff, transparent: true, opacity: 0.42, depthWrite: false,
     }));
-    return { opaque, water, tint, smoke, preview };
+    return { opaque, water, tint, smoke, preview, textured: state.texturedMaterial || opaque };
   }
 
   // shadows: "both" for solid blocks (cast and receive), "receive" for the
@@ -2331,6 +3027,17 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
       // components in the linear working space, so feeding them unconverted
       // re-encoded every block brighter and the whole city washed to pastel.
       color.setRGB(block.r, block.g, block.b, THREE.SRGBColorSpace);
+      const tileId = tileMaterialId(block.tile || "");
+      const materialDefinition = state.textures?.materials[tileId];
+      const mean = state.textures?.tiles[materialDefinition?.top || tileId]?.meanColor;
+      if (mean && !tileId.startsWith("wall.") && tileId !== "facility.school") {
+        // The descriptor already carries the chosen surface colour. Remove
+        // the atlas base tint before multiplying, retaining its actual detail.
+        const linear = (value) => value <= .04045 ? value / 12.92 : ((value + .055) / 1.055) ** 2.4;
+        color.r /= Math.max(.015, linear(mean[0] / 255));
+        color.g /= Math.max(.015, linear(mean[1] / 255));
+        color.b /= Math.max(.015, linear(mean[2] / 255));
+      }
       mesh.setColorAt(index, color);
     });
     mesh.instanceMatrix.needsUpdate = true;
@@ -2361,24 +3068,47 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     return k / rows;
   }
 
-  function tileGeometry(THREE, key) {
-    if (!state.textures) return state.sharedGeometry;
-    const material = state.textures.materials[tileMaterialId(key)];
-    if (!material) return state.sharedGeometry;
-    const topRect = state.textures.tiles[material.top];
-    const sideRect = state.textures.tiles[material.side];
-    if (!topRect || !sideRect) return state.sharedGeometry;
-    const cached = state.tileGeometries.get(key);
+  function tileGeometry(THREE, key, shape = "box") {
+    const material = state.textures?.materials[tileMaterialId(key)];
+    const topRect = material && state.textures.tiles[material.top];
+    const sideRect = material && state.textures.tiles[material.side];
+    const cacheKey = `${key || "flat"}:${shape}`;
+    if (shape === "box" && (!topRect || !sideRect)) return state.sharedGeometry;
+    const cached = state.tileGeometries.get(cacheKey);
     if (cached) return cached;
     const fraction = tileCropFraction(key);
+    if (shape !== "box") {
+      const geometry = new THREE.BufferGeometry();
+      const positions = [], normals = [], coordinates = [];
+      const faces = blockFaces({ x: 0, y: 0, z: 0, sx: 1, sy: 1, sz: 1, shape });
+      faces.forEach((face) => {
+        const rect = face.surface === "top" ? topRect : sideRect;
+        for (let i = 1; i < face.vertices.length - 1; i += 1) {
+          for (const j of [0, i, i + 1]) {
+            positions.push(...face.vertices[j]);
+            normals.push(...face.normal);
+            const [u,v] = face.uv[j];
+            coordinates.push(rect ? (rect.x + .5 + u * (rect.w - 1)) / state.textures.atlas.width : u,
+              rect ? (rect.y + .5 + v * (rect.h - 1)) / state.textures.atlas.height : v);
+          }
+        }
+      });
+      geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+      geometry.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
+      geometry.setAttribute("uv", new THREE.Float32BufferAttribute(coordinates, 2));
+      state.tileGeometries.set(cacheKey, geometry);
+      state.ledger.track(geometry);
+      return geometry;
+    }
     const geometry = new THREE.BoxGeometry(1, 1, 1);
-    const size = state.textures.atlas.height;
+    const atlasWidth = state.textures.atlas.width;
+    const atlasHeight = state.textures.atlas.height;
     const uv = geometry.attributes.uv.array;
     const setFace = (face, rect, crop = 1) => {
-      const u0 = rect.x / size;
-      const u1 = (rect.x + rect.w) / size;
-      const vt = rect.y / size;
-      const vb = (rect.y + rect.h * crop) / size;
+      const u0 = (rect.x + 0.5) / atlasWidth;
+      const u1 = (rect.x + rect.w - 0.5) / atlasWidth;
+      const vt = (rect.y + 0.5) / atlasHeight;
+      const vb = (rect.y + Math.max(1, rect.h * crop) - 0.5) / atlasHeight;
       const o = face * 8;
       uv[o] = u0; uv[o + 1] = vb;
       uv[o + 2] = u1; uv[o + 3] = vb;
@@ -2392,7 +3122,7 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     setFace(4, sideRect, fraction);
     setFace(5, sideRect, fraction);
     geometry.attributes.uv.needsUpdate = true;
-    state.tileGeometries.set(key, geometry);
+    state.tileGeometries.set(cacheKey, geometry);
     state.ledger.track(geometry);
     return geometry;
   }
@@ -2405,22 +3135,26 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     const flat = [];
     const byTile = new Map();
     blocks.forEach((block) => {
-      if (!block.tile || !state.textures || !state.textures.materials[tileMaterialId(block.tile)]) {
+      if ((!block.tile || !state.textures || !state.textures.materials[tileMaterialId(block.tile)]) && (!block.shape || block.shape === "box")) {
         flat.push(block);
         return;
       }
-      let group = byTile.get(block.tile);
+      const key = `${block.tile || "flat"}:${block.shape || "box"}`;
+      let group = byTile.get(key);
       if (!group) {
         group = [];
-        byTile.set(block.tile, group);
+        byTile.set(key, group);
       }
       group.push(block);
     });
     const flatMesh = buildInstancedMesh(flat, state.materials.opaque, 0, state.sharedGeometry, "both");
     if (flatMesh) meshes.push(flatMesh);
-    byTile.forEach((group, tile) => {
-      const material = state.wallMaterial && tileMaterialId(tile).startsWith("wall.") ? state.wallMaterial : state.materials.textured;
-      const mesh = buildInstancedMesh(group, material, 0, tileGeometry(state.THREE, tile), "both");
+    byTile.forEach((group) => {
+      const tile = group[0].tile;
+      const shape = group[0].shape || "box";
+      const textured = tile && state.textures?.materials[tileMaterialId(tile)];
+      const material = !textured ? state.materials.opaque : state.wallMaterial && (tileMaterialId(tile).startsWith("wall.") || tileMaterialId(tile) === "facility.school") ? state.wallMaterial : state.materials.textured;
+      const mesh = buildInstancedMesh(group, material, 0, tileGeometry(state.THREE, tile, shape), "both");
       if (mesh) {
         mesh.userData.tileKey = tile;
         meshes.push(mesh);
@@ -2644,18 +3378,30 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     if (textureAssets) {
       state.textures = textureAssets.manifest;
       const texture = new THREE.CanvasTexture(textureAssets.image);
-      // Power-of-two 512px atlas: mipmaps keep zoomed-out mobile GPUs cheap
-      // while nearest magnification keeps the Minecraft-style pixels crisp on
-      // Retina displays.
-      texture.generateMipmaps = true;
-      texture.minFilter = THREE.NearestMipmapLinearFilter;
+      // Atlas rectangles use top-origin image coordinates in both backends.
+      // The default upload flip would sample a different row of the atlas.
+      texture.flipY = false;
+      // Full-atlas mip levels mix unrelated materials. Keep pixel sampling
+      // within half-texel-inset rects; the separate water tile can mipmap.
+      texture.generateMipmaps = false;
+      texture.minFilter = THREE.NearestFilter;
       texture.magFilter = THREE.NearestFilter;
       texture.colorSpace = THREE.SRGBColorSpace;
       texture.needsUpdate = true;
       state.texture = texture;
       state.ledger.track(texture);
       state.texturedMaterial = state.ledger.track(new THREE.MeshLambertMaterial({ map: texture, color: 0xffffff }));
-      state.wallMaterial = state.ledger.track(createWallMaterial(THREE, texture));
+      let maskTexture = null;
+      if (textureAssets.maskImage) {
+        maskTexture = state.ledger.track(new THREE.CanvasTexture(textureAssets.maskImage));
+        maskTexture.flipY = false;
+        maskTexture.generateMipmaps = false;
+        maskTexture.minFilter = THREE.NearestFilter;
+        maskTexture.magFilter = THREE.NearestFilter;
+        maskTexture.colorSpace = THREE.NoColorSpace;
+        maskTexture.needsUpdate = true;
+      }
+      state.wallMaterial = state.ledger.track(createWallMaterial(THREE, texture, maskTexture));
       const waterRect = state.textures.tiles.water;
       if (waterRect && typeof document !== "undefined") {
         const tileCanvas = document.createElement("canvas");

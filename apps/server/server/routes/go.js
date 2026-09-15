@@ -14,6 +14,8 @@ const LAUNCH_ROUTES = new Map([
   ["doom", "open-doom"],
   ["time-machine", "open-time-machine"],
   ["liquid-cover", "open-liquid-cover"],
+  ["cmf-studio", "open-cmf-studio"],
+  ["dtk", "open-shared-disk-dtk"],
 ]);
 
 /**

@@ -54,6 +54,9 @@ const mimeTypes = Object.freeze({
 
 const exactPublicFiles = new Set([
   "index.html",
+  // The application shell worker. Its scope is the path it is served from, so
+  // it has to be a root file rather than live under app/.
+  "sw.js",
   "app.bundle.js",
   "styles.bundle.css",
   "styles.theme-lab.css",
@@ -91,6 +94,7 @@ const publicFileAliases = new Map([
 
 const desktopPublicPrefixes = [
   "app/",
+  "go/",
   "assets/",
   "data/",
 ];
@@ -152,6 +156,9 @@ function cacheHeaders(relative, ext, url) {
  */
 async function handleStatic(req, res) {
   const url = new URL(req.url || "/", `http://${req.headers.host}`);
+  // Only the root serves the shell. `/cmf-studio` served it too until
+  // 2026-09-11, which opened the desk with no idea which app was asked for;
+  // /go/cmf-studio is the entry, and it carries the launch in the query.
   const pathname = url.pathname === "/" ? "/index.html" : url.pathname;
   const relative = publicRelativePath(pathname);
   if (!relative) {

@@ -118,19 +118,19 @@ for (const id of nightFrameIds) {
 const nightMetadataFailures = [];
 for (const [name, frame] of frames) {
   if (frame.state !== "night") continue;
-  if (!Array.isArray(frame.windows) || frame.windows.length === 0) {
-    nightMetadataFailures.push(`${name}:no-windows`);
+  if (!Array.isArray(frame.windows) || frame.lighting !== "baked-emission-mask") {
+    nightMetadataFailures.push(`${name}:missing-baked-lighting`);
     continue;
   }
   for (const win of frame.windows) {
     const valid = Number.isInteger(win.x) && Number.isInteger(win.y)
       && Number.isInteger(win.w) && Number.isInteger(win.h)
-      && win.x >= 0 && win.y >= 0 && win.x + win.w <= atlas.atlas.cellWidth
-      && win.y + win.h <= atlas.atlas.cellHeight;
+      && win.x >= 0 && win.y >= 0 && win.x + win.w <= frame.w
+      && win.y + win.h <= frame.h;
     if (!valid) nightMetadataFailures.push(`${name}:bad-window`);
   }
 }
-test.assert(nightMetadataFailures.length === 0, "every night frame records in-bounds lit-window rects for the runtime glow pass");
+test.assert(nightMetadataFailures.length === 0, "night frames declare baked mask lighting without synthetic floating windows");
 for (const id of [
   "terrain.grass", "terrain.water", "terrain.coast", "terrain.slope",
   "road.mask-15", "rail.mask-15", "wire.mask-15", "utility.pipe",
@@ -185,11 +185,13 @@ test.assertIncludes(notes, "no network path", "provenance states the offline gen
 {
   const image = await loadImage(readFileSync(resolveProjectPath(atlas.directions.north.file)));
   // bit 0 = y-1, bit 1 = x+1, bit 2 = y+1, bit 3 = x-1 — the renderer's order.
+  const edgeX = atlas.geometry.tileWidth / 4;
+  const edgeY = atlas.geometry.tileHeight / 4;
   const edges = [
-    { bit: 1, dx: 12, dy: -6, name: "y-1" },
-    { bit: 2, dx: 12, dy: 6, name: "x+1" },
-    { bit: 4, dx: -12, dy: 6, name: "y+1" },
-    { bit: 8, dx: -12, dy: -6, name: "x-1" },
+    { bit: 1, dx: edgeX, dy: -edgeY, name: "y-1" },
+    { bit: 2, dx: edgeX, dy: edgeY, name: "x+1" },
+    { bit: 4, dx: -edgeX, dy: edgeY, name: "y+1" },
+    { bit: 8, dx: -edgeX, dy: -edgeY, name: "x-1" },
   ];
   const families = ["road", "rail", "wire", "highway", "pipe", "subway", "bridge-road", "bridge-rail", "bridge-highway"];
   for (const family of families) {
@@ -204,8 +206,10 @@ test.assertIncludes(notes, "no network path", "provenance states the offline gen
       const opaqueNear = (dx, dy, radius = 1) => {
         for (let oy = -radius; oy <= radius; oy += 1) {
           for (let ox = -radius; ox <= radius; ox += 1) {
-            const x = frame.anchor.x + dx + ox;
-            const y = frame.anchor.y + dy + oy;
+            // Round axes before indexing; fractional coordinates can alias
+            // another pixel when multiplied by a trimmed frame width.
+            const x = Math.round(frame.anchor.x + dx + ox);
+            const y = Math.round(frame.anchor.y + dy + oy);
             if (x < 0 || y < 0 || x >= frame.w || y >= frame.h) continue;
             if (pixels[(y * frame.w + x) * 4 + 3] > 0) return true;
           }
@@ -228,7 +232,7 @@ test.assertIncludes(notes, "no network path", "provenance states the offline gen
   }
   const isolated = atlas.frames["road.mask-0"];
   const straight = atlas.frames["road.mask-2"];
-  test.assert(isolated.w === straight.w && isolated.h === straight.h,
+  test.assert(isolated.footprint.w === straight.footprint.w && isolated.footprint.h === straight.footprint.h,
     "an unconnected road still occupies a full connector cell");
 }
 

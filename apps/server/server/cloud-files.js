@@ -279,6 +279,11 @@ function handleCloudFileTokenMessages(messages, options) {
       if (message.role !== "user") {
         throw cloudFileError(400, "invalid_cloud_file_token", "Cloud file blocks are allowed only in user messages.");
       }
+      // An inline `file_data` block carries its own bytes and needs no provider
+      // lookup; only a signed token is resolved here.
+      if (typeof block.file_data === "string" && block.file_data) {
+        return block;
+      }
       fileCount += 1;
       if (fileCount > CLOUD_FILE_LIMITS.maxFilesPerRequest) {
         throw cloudFileError(

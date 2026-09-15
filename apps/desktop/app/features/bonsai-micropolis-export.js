@@ -122,6 +122,44 @@ window.AISystem6BonsaiMicropolisExportLoaded = true;
     return { x: x.origin, y: y.origin, width: x.span, height: y.span, embedX: x.embed, embedY: y.embed };
   }
 
+  // What a window leaves behind, counted by the same rule the conversion uses.
+  // The picker needs this number while the player is still choosing, and a
+  // second implementation of "is this tile worth keeping" would be a second
+  // answer: the export's own `counts.cropped` and the number under the
+  // player's rectangle have to be the same number or the preview is a lie.
+  const CONTENT_LAYERS = ["zone", "road", "rail", "wire", "tree", "park", "catalogId"];
+  function countCroppedOutside(payload, options = {}) {
+    if (!looksLikeBonsaiPayload(payload)) fail("payload-shape");
+    const size = payload.size;
+    const layers = CONTENT_LAYERS.map((name) => {
+      const raw = payload[name];
+      if (!Array.isArray(raw) || raw.length !== size * size) fail(`layer ${name}`);
+      return raw;
+    });
+    const win = cropWindowFor(payload, options);
+    const inWindow = (bx, by) => bx >= win.x && by >= win.y && bx < win.x + win.width && by < win.y + win.height;
+    let cropped = 0;
+    for (let by = 0; by < size; by += 1) {
+      for (let bx = 0; bx < size; bx += 1) {
+        if (inWindow(bx, by)) continue;
+        const i = by * size + bx;
+        for (let k = 0; k < layers.length; k += 1) {
+          if (layers[k][i]) { cropped += 1; break; }
+        }
+      }
+    }
+    // A facility outside the window is one more thing left behind, and the
+    // export counts it the same way: a facility this model has no equivalent
+    // for is reported under its own code instead, wherever it sits.
+    const facilities = Array.isArray(payload.facilities) ? payload.facilities : [];
+    for (const facility of facilities) {
+      if (!facility || !isInt(facility.x) || !isInt(facility.y)) continue;
+      if (!FACILITY_FAMILY[facility.kind]) continue;
+      if (!inWindow(facility.x, facility.y)) cropped += 1;
+    }
+    return cropped;
+  }
+
   // The level (family index) a zone tile wants. The variant layer remembers
   // the exact family an imported block arrived with; when it does not agree
   // with the tile's stage and density, the block was rebuilt by the sim and
@@ -173,7 +211,9 @@ window.AISystem6BonsaiMicropolisExportLoaded = true;
     const facilityKinds = {};
 
     // --- what lies outside the window is lost, and counted -----------------
-    const hasContent = (i) => !!(L.zone[i] || L.road[i] || L.rail[i] || L.wire[i] || L.tree[i] || L.park[i] || L.catalogId[i]);
+    // One rule, named once: the picker counts what a window leaves behind with
+    // countCroppedOutside, and this is the same list it reads.
+    const hasContent = (i) => CONTENT_LAYERS.some((name) => L[name][i]);
     for (let by = 0; by < size; by += 1) for (let bx = 0; bx < size; bx += 1) {
       if (!inWindow(bx, by) && hasContent(bonsaiIndex(bx, by))) counts.cropped += 1;
     }
@@ -420,6 +460,6 @@ window.AISystem6BonsaiMicropolisExportLoaded = true;
     FLAG_BITS: Object.freeze({ ZONEBIT, ANIMBIT, BULLBIT, BURNBIT, CONDBIT, POWERBIT }),
     ROAD_BY_MASK, RAIL_OFFSET, WIRE_OFFSET, WATER_EDGE_BY_MASK, TREE_EDGE_BY_MASK,
     FACILITY_FAMILY, CATALOG_FAMILY, PORT_FAMILY: Object.freeze(PORT_FAMILY), AIRPORT_FAMILY: Object.freeze(AIRPORT_FAMILY),
-    looksLikeBonsaiPayload, cropWindowFor, zoneLevel, exportMicropolis,
+    looksLikeBonsaiPayload, cropWindowFor, countCroppedOutside, zoneLevel, exportMicropolis,
   });
 })();

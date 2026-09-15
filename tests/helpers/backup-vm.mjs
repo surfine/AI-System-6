@@ -97,6 +97,54 @@ export function seedComplexProject() {
         intake: { setup: { scenario: "bili-dynamic", targetDuration: "280w" } },
       },
     },
+    // A tab keeps its file id twice -- under backing.id and under
+    // state.activeTextFileId -- and neither key is a name the generic
+    // relation table knows, so both once crossed an import untouched. The
+    // fixture carries them, and a DocMap tab's two nested ids, so the
+    // round-trip contract can see what it never saw before.
+    documentTabs: [
+      {
+        id: "tab-manuscript",
+        app: "teachText",
+        role: "manuscript",
+        title: "Integrity Article",
+        backing: { type: "manuscript", id: "file-1" },
+        state: { activeTextFileId: "file-1", documentRole: "manuscript", body: "正文" },
+        order: 0,
+      },
+      {
+        id: "tab-scratch",
+        app: "teachText",
+        role: "scratch_file",
+        title: "notes.md",
+        backing: { type: "projectText", id: "file-2" },
+        state: { activeTextFileId: "file-2", body: "笔记" },
+        order: 1,
+      },
+      {
+        id: "tab-docmap",
+        app: "docMap",
+        role: "docmap",
+        title: "map",
+        backing: { type: "scratch", id: "file-1" },
+        state: {
+          origin: { documentId: "file-1" },
+          map: { sourceMeta: { fileId: "file-1" } },
+        },
+        order: 2,
+      },
+      {
+        // A backing type with no project-side referent must be left alone.
+        id: "tab-web",
+        app: "reader",
+        role: "web_navigation",
+        title: "source",
+        backing: { type: "webNavigation", id: "not-a-record-id", url: "https://example.invalid/" },
+        state: {},
+        order: 3,
+      },
+    ],
+    activeDocumentTabIds: { reader: null, teachText: "tab-manuscript", docMap: null, timeMachine: null },
   };
   const folders = [
     { id: "folder-1", projectId: "p1", name: "Documents", parentId: "" },

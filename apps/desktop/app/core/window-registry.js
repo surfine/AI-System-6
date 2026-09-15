@@ -75,6 +75,11 @@ const windowRegistry = Object.freeze({
     app: "accessories",
     mobileOverlay: true,
     sidebar: true,
+    lazy: { ensure: () => Promise.all([ensureGuestToolsModule(), ensureMcpServersModule()]) },
+    onOpen: () => {
+      window.AISystem6GuestTools?.renderChooserGuests?.();
+      window.AISystem6McpServers?.renderChooserServers?.();
+    },
   },
   claimCheck: {
     app: "teachText",
@@ -419,6 +424,9 @@ const windowRegistry = Object.freeze({
   reader: {
     app: "reader",
     sidebar: true,
+    // onReveal, not onOpen: the rail's axis is a container query answer, and a
+    // hidden container has no size to answer with.
+    onReveal: () => readerOnReveal(),
   },
   rebuildFlow: {
     app: "teachText",
@@ -447,7 +455,15 @@ const windowRegistry = Object.freeze({
     app: "accessories",
     mobileOverlay: true,
     builtByModule: true,
-    lazy: { ensure: () => { sideAskPad(); } },
+    // Load, then build. The pad builds its own window, and while the module was
+    // eager the ensure could call straight into it; lazily, a loader that only
+    // loads leaves the desk with a registered window nobody ever built.
+    lazy: {
+      ensure: async () => {
+        await ensureSideAskPadModule();
+        if (typeof sideAskPad === "function") sideAskPad();
+      },
+    },
   },
   soundscape: {
     app: "soundscape",

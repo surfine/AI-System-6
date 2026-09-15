@@ -235,7 +235,7 @@ window.AISystem6MicropolisLoaded = true;
       `<div class="micropolis-layout" data-micropolis-root>
         <div class="micropolis-toolbar" role="toolbar" data-micropolis-toolbar></div>
         <div class="micropolis-map-area">
-          <div class="micropolis-viewport" data-micropolis-viewport>
+          <div class="micropolis-viewport" data-micropolis-viewport tabindex="0" role="application" data-i18n-aria-label="micropolis_map_label" aria-label="City map">
             <div class="micropolis-zoom-layer" data-micropolis-zoom-layer>
               <canvas class="micropolis-overlay" data-micropolis-overlay aria-hidden="true"></canvas>
             </div>
@@ -336,7 +336,9 @@ window.AISystem6MicropolisLoaded = true;
     const armed = win.querySelector("[data-micropolis-armed-tool]");
     if (armed) {
       const tool = MICROPOLIS_TOOLS.find((item) => item.id === micropolisState.toolId);
-      if (tool) armed.textContent = `${t(`micropolis_tool_${tool.id}`)} · ${tool.cost > 0 ? `$${tool.cost}` : ""}`;
+      // The separator belongs to the price, not to the name: Query and the
+      // other free tools were reading "Query ·" with nothing after the dot.
+      if (tool) armed.textContent = t(`micropolis_tool_${tool.id}`) + (tool.cost > 0 ? ` · $${tool.cost}` : "");
     }
     const canvas = win.querySelector("[data-micropolis-rci-panel]");
     if (!canvas) return;
@@ -611,6 +613,10 @@ window.AISystem6MicropolisLoaded = true;
         const sim = new engine.Simulation(map, scenario.level, engine.Simulation.SPEED_MED);
         sim._startingYear = scenario.year;
         const town = scenarios.seedTown(engine, map, sim, scenario.town);
+        // A jam, a crime wave and a pollution crisis are things a running city
+        // has, not things a freshly laid grid has: those scenarios grow their
+        // own town until the premise they announce is really there.
+        scenarios.growTown(engine, sim, scenario);
         sim.budget.setFunds(scenario.funds);
         finishMicropolisCitySetup(viewport, map, sim, engine.Simulation.SPEED_MED);
         // Open on the town, not on the map centre.
@@ -789,6 +795,10 @@ window.AISystem6MicropolisLoaded = true;
     setMicropolisStatus("micropolis_status_ready");
     renderMicropolisHud();
     micropolisState.starting = false;
+    // A city that is ready to play is ready to take a key. Without this the
+    // shortcuts only work after the map has been touched, which is the wrong
+    // way round for the player who reaches for "b" before the mouse.
+    viewport.focus({ preventScroll: true });
     startMicropolisLoop();
   }
 
@@ -1138,7 +1148,15 @@ window.AISystem6MicropolisLoaded = true;
   }
 
   function stepMicropolisZoom(direction) {
-    setMicropolisZoom(micropolisNextZoom(micropolisState.zoom, direction));
+    const next = micropolisNextZoom(micropolisState.zoom, direction);
+    // At either end of the ladder the step cannot move, and setMicropolisZoom
+    // returns without a word — so the menu row was black, did nothing, and said
+    // nothing. Say which end it is instead.
+    if (next === micropolisState.zoom) {
+      setMicropolisStatus(direction > 0 ? "micropolis_zoom_closest" : "micropolis_zoom_widest");
+      return;
+    }
+    setMicropolisZoom(next);
   }
 
   // Screen pixels per logical tile: the CSS tile width times the zoom.
@@ -1393,6 +1411,14 @@ window.AISystem6MicropolisLoaded = true;
 
   function handleMicropolisPointerDown(event) {
     const viewport = event.currentTarget;
+    // The keydown listener lives on the window element, so a key only reaches
+    // it while focus is inside. Nothing here ever took focus: the canvas is
+    // tabindex -1 and clicking the map left document.activeElement on <body>,
+    // which made all sixteen tool keys, pause, the pan keys, the zoom keys and
+    // Escape unreachable in normal play. Verified by hand: focus the window and
+    // "p" selects Park immediately. The map takes focus on touch now, and is a
+    // real tab stop so a keyboard-only player can reach it at all.
+    if (document.activeElement !== viewport) viewport.focus({ preventScroll: true });
     if (!micropolisState.sim) return;
     try {
       viewport.setPointerCapture(event.pointerId);

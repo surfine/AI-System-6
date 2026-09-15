@@ -1,5 +1,6 @@
 import { spawnSync } from "node:child_process";
-import { dirname } from "node:path";
+import { closeSync, mkdirSync, mkdtempSync, openSync, readSync, statSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
@@ -60,8 +61,9 @@ The quick gate never runs verify:release, global feature verification, visual
 snapshots, packaging, or deployment. Repeat --css-file to isolate CSS checks to
 the styles owned by the current task; plain --css keeps the all-styles gate.
 
---gate runs one browser ship gate whole and banks its receipt, so the release
-does not pay for it again. Ask for the names with: npm run verify:gate -- --list`);
+--gate runs one whole browser ship gate with development receipts. Release
+reuse requires the separate verify:gate -- --release-stamp workflow and exact
+receipt matching. List gates with: npm run verify:gate -- --list`);
     process.exit(0);
   } else {
     console.error(`NO  unknown quick-verification option: ${arg}`);
@@ -135,33 +137,49 @@ if (smoke) {
   });
 }
 
-// A ship gate is expensive and it is run whole, so the quick loop hands it to
-// the same runner the release uses. The receipt it banks is what turns this
-// minute of development into a minute the release does not spend.
+// The quick runner owns the build decision. Gate children use those built
+// bytes; --no-build explicitly opts out at both levels.
 if (gates.length) {
   checks.push({
     label: `ship gate${gates.length === 1 ? "" : "s"} (receipt banked)`,
     command: process.execPath,
-    commandArgs: ["tooling/verify-gate.mjs", ...gates, ...(build ? [] : ["--no-build"])],
+    commandArgs: ["tooling/verify-gate.mjs", ...gates, "--no-build"],
     live: true,
   });
 }
 
+const logRoot = join(root, "dist", "verification");
+mkdirSync(logRoot, { recursive: true });
+const logDir = mkdtempSync(join(logRoot, "quick-"));
+const started = performance.now();
 for (const check of checks) {
+  const checkStarted = performance.now();
   // A browser gate takes minutes; held output would look like a hung terminal,
   // so it prints as it goes while the fast checks stay quiet until they fail.
+  const logPath = join(logDir, `${checks.indexOf(check)}.log`);
+  const fd = check.live ? null : openSync(logPath, "w");
   const result = spawnSync(check.command, check.commandArgs, {
     cwd: root,
     encoding: "utf8",
-    stdio: check.live ? "inherit" : "pipe",
+    stdio: check.live ? "inherit" : ["ignore", fd, fd],
   });
+  if (fd !== null) closeSync(fd);
   if (result.status !== 0) {
-    if (result.stdout) process.stdout.write(result.stdout);
-    if (result.stderr) process.stderr.write(result.stderr);
+    if (!check.live) {
+      const size = statSync(logPath).size;
+      const tail = Buffer.alloc(Math.min(size, 8000));
+      const log = openSync(logPath, "r");
+      try { readSync(log, tail, 0, tail.length, Math.max(0, size - tail.length)); }
+      finally { closeSync(log); }
+      process.stderr.write(tail);
+      console.error(`Full check log: ${logPath}`);
+    }
+    if (result.error) console.error(result.error.message);
     console.error(`NO  quick verification stopped at ${check.label}.`);
     process.exit(result.status || 1);
   }
-  console.log(`OK  ${check.label}`);
+  console.log(`OK  ${check.label} (${((performance.now() - checkStarted) / 1000).toFixed(2)}s)`);
 }
 
-console.log("OK  quick verification passed.");
+console.log(`Quick logs: ${logDir}`);
+console.log(`OK  quick verification passed in ${((performance.now() - started) / 1000).toFixed(2)}s.`);

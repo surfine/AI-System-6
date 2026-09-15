@@ -1,7 +1,11 @@
 "use strict";
 
 const { readJsonBody, requestSignal, send } = require("../lib/http.js");
-const { DEEPSEEK_BASE_URL_DEFAULT, resolveCloudTarget } = require("../cloud.js");
+const {
+  DEEPSEEK_BASE_URL_DEFAULT,
+  normalizeCloudModelId,
+  resolveCloudTarget,
+} = require("../cloud.js");
 const { resolveCloudCredential } = require("../credential-vault.js");
 const { preparePublicCloudCall } = require("../lib/cloud-route.js");
 const { isPublicDeployment } = require("../runtime-profile.js");
@@ -88,7 +92,7 @@ async function handleSubtitlesTranslate(req, res) {
         // job; the per-batch calls reuse the resolved key / base URL / model.
         const texts = blocks.map((block) => block.textLines.join("\n").trim()).filter(Boolean);
         const payload = {
-          model: String(body._cloud_model || "deepseek-v4-flash"),
+          model: String(body._cloud_model || "deepseek-flash"),
           max_tokens: 1800,
           messages: [
             { role: "system", content: "subtitle" },
@@ -137,7 +141,7 @@ async function handleSubtitlesTranslate(req, res) {
           suppliedApiKey: body._cloud_api_key,
           allowSupplied: false,
         })).trim();
-        options.cloudModel = body._cloud_model;
+        options.cloudModel = normalizeCloudModelId(body._cloud_model);
       }
     }
     const translatedTexts = await translateSubtitleBlocks(blocks, mode, options);

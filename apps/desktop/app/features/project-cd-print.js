@@ -682,7 +682,7 @@ function renderFinishingReceipt(receipt) {
   const win = document.querySelector('[data-window="finishingReceipt"]');
   if (win
       && !win.classList.contains("is-hidden")
-      && !window.matchMedia("(max-width: 860px)").matches
+      && !isNarrowViewport()
       && typeof clampWindowToViewport === "function") {
     clampWindowToViewport(win);
   }

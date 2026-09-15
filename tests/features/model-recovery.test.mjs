@@ -95,6 +95,10 @@ function createRetryVm() {
   test.assert(runtime.notifications.length === 1, "exactly one recovery notification");
   test.assert(runtime.notifications[0].actionId === "open-cloud-ai-settings", "invalid cloud credentials open Cloud settings");
   test.assert(runtime.notifications[0].state === "error", "the recovery notification carries an error state");
+  // The next step is named by key, so the Notification Center draws it in the
+  // language being read rather than the one the failure happened in.
+  test.assert(runtime.notifications[0].actionLabelKey === "ai_action_view_connection", "the recovery notification names its button by key");
+  test.assert(runtime.notifications[0].actionLabel === undefined, "and hands over no pre-rendered label to freeze");
 }
 
 // Owner-aware retry: the global action re-runs the registered owner only, and

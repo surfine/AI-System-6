@@ -40,21 +40,26 @@ for (const forbidden of ["fileToken", "credentialScope", "objectUrl"]) {
 }
 
 const context = vm.createContext({
-  IMAGE_BLOCK_TOKEN_ESTIMATE: 384,
+  IMAGE_BLOCK_TOKEN_ESTIMATE: 1024,
   contextCharsPerToken: 4,
   reservedSafetyTokens: 256,
   currentLanguage: "en",
   contextLengthInput: { value: "2048" },
 });
 vm.runInContext([
+  declaration(chat, "tokensPerChar"),
   declaration(chat, "estimateTokenCount"),
   declaration(chat, "fitChatPayloadToContext"),
 ].join("\n"), context);
 
 const imageBlock = { type: "image_url", image_url: { url: "data:image/jpeg;base64,AA==" } };
 const fileBlock = { type: "file", file_id: "signed-file-token-sentinel" };
-test.assert(context.estimateTokenCount([imageBlock]) === 384, "inline image blocks estimate to 384 tokens");
-test.assert(context.estimateTokenCount([fileBlock]) === 384, "Files API blocks estimate to 384 tokens");
+test.assert(context.estimateTokenCount([imageBlock]) === 1024, "inline image blocks estimate to the published 1024 tokens");
+test.assert(context.estimateTokenCount([fileBlock]) === 1024, "Files API blocks estimate to the published 1024 tokens");
+// The published ratio is 0.6 tokens per Chinese character and 0.3 per other
+// character; a flat quarter per character let Chinese prompts overflow.
+test.assert(context.estimateTokenCount("中".repeat(100)) === 60, "Chinese text estimates at the published 0.6 tokens per character");
+test.assert(context.estimateTokenCount("a".repeat(100)) === 30, "Latin text estimates at the published 0.3 tokens per character");
 
 const fitted = context.fitChatPayloadToContext({
   messages: [

@@ -155,6 +155,10 @@ for (const api of ["navigator.storage.persisted", "navigator.storage.persist()",
 }
 test.assertIncludes(html, 'id="status-project-storage"', "persistent storage status is visible in System Status");
 test.assertMatches(handoff, /backupReminderShownAt[\s\S]*first_work_backup_reminder[\s\S]*actionId: "export-project-backup"/, "the first durable draft produces one actionable backup reminder");
+// Message and button are both keys: the reminder can be pushed before the
+// language preference settles and read after a switch, and neither half may
+// freeze in the language that happened to be current when the draft landed.
+test.assertMatches(handoff, /messageKey: "first_work_backup_reminder"[\s\S]*actionLabelKey: "export_project_backup"/, "the reminder carries a key for its message and a key for its button");
 test.assertIncludes(actions, '"export-project-backup": exportActiveProjectDisk', "the reminder exports the existing Project Hard Disk backup in one action");
 
 for (const surface of [quickDraft, html, html]) {

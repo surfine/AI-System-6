@@ -496,13 +496,22 @@ try {
           sampleClassName: sampleElement?.className || "",
           sampleModernDisplaySize: Number(sampleElement?.querySelector(".sys-icon-svg")?.dataset.modernDisplaySize || 0),
           sampleModernSourceSize: Number(sampleElement?.querySelector(".sys-icon-svg")?.dataset.modernSourceSize || 0),
-          // The invert feature's live proof: the active chooser tab's classic
-          // art must actually be inverted, and the warm filter path must have
-          // a target — otherwise the first invert(1) after boot painted a
-          // white plate instead of the art.
-          activeChooserArtFilter: [...document.querySelectorAll(
-            `.window[data-window="${id}"] .control-chooser .system-tab.is-active .sys-icon-svg.has-classic-mask .sys-icon-classic-art`
-          )].map((element) => getComputedStyle(element).filter),
+          // The reversal feature's live proof: the active chooser tab must
+          // swap layers — the black art gone, the painter's reversed layer
+          // painted in its place. Asking for a CSS filter here was the bug:
+          // WebKit ignores `filter` on an SVG <image>, so the art stayed black
+          // on the black mask and selection read as a solid blob.
+          activeChooserReversal: [...document.querySelectorAll(
+            `.window[data-window="${id}"] .control-chooser .system-tab.is-active .sys-icon-svg.has-classic-mask`
+          )].map((svg) => {
+            const art = svg.querySelector(".sys-icon-classic-art");
+            const reverse = svg.querySelector(".sys-icon-classic-reverse");
+            return {
+              art: art ? getComputedStyle(art).display : "",
+              reverse: reverse ? getComputedStyle(reverse).display : "",
+              reverseFilter: reverse ? reverse.getAttribute("filter") : "",
+            };
+          }),
         };
       }, contract);
       await page.evaluate(() => new Promise((resolvePaint) => requestAnimationFrame(() => requestAnimationFrame(resolvePaint))));
@@ -533,12 +542,16 @@ try {
         }
         if (contract.id === "control" && theme.id === "classic") {
           assert(
-            Array.isArray(snapshot.activeChooserArtFilter) && snapshot.activeChooserArtFilter.length > 0,
+            Array.isArray(snapshot.activeChooserReversal) && snapshot.activeChooserReversal.length > 0,
             `${theme.id}/control: the active chooser tab has no classic-mask art to invert`,
           );
           assert(
-            snapshot.activeChooserArtFilter.every((filter) => filter === "invert(1)"),
-            `${theme.id}/control: the active chooser tab's classic art is not inverted: ${snapshot.activeChooserArtFilter.join(", ")}`,
+            snapshot.activeChooserReversal.every((layers) => layers.art === "none" && layers.reverse === "inline"),
+            `${theme.id}/control: the active chooser tab does not swap to the reversed layer: ${JSON.stringify(snapshot.activeChooserReversal)}`,
+          );
+          assert(
+            snapshot.activeChooserReversal.every((layers) => layers.reverseFilter === `url(#sys-icon-classic-reverse)`),
+            `${theme.id}/control: the reversed layer is not the SVG-filtered copy of the same art: ${JSON.stringify(snapshot.activeChooserReversal)}`,
           );
         }
       }

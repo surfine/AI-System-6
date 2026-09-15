@@ -17,6 +17,7 @@
 //
 // Rationale and full skill: .claude/skills/css-no-pingpong/SKILL.md
 
+import { spawnSync } from "node:child_process";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -1024,4 +1025,8 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log("\nCSS budget verification passed.");
+// Shared controls are a behavior contract, not an optional screenshot ritual.
+// This uses source CSS and the production control functions; no app build/server.
+const primitives = spawnSync(process.execPath, ["tooling/verify-liquid-shapes.mjs", "--primitives"], { cwd: root, stdio: "inherit" });
+if (primitives.status !== 0) process.exit(primitives.status || 1);
+console.log("\nCSS budget and shared-control verification passed.");

@@ -17,6 +17,39 @@ const zh = read("app/data/translations-zh.js");
 test.assertIncludes(projectDisk, "function renderProjectDiskDesktopIcons", "the desktop draws a disk per project");
 test.assertIncludes(projectDisk, "renderProjectDiskDesktopIcons();", "and redraws them wherever the project labels are refreshed");
 
+// --- Unmounted disks follow the Finder's own setting --------------------------
+//
+// The Finder does not draw unmounted volumes on the desktop unless it is asked
+// to, and a desk with four projects should not be four "Untitled project"
+// ghosts. The switch defaults off, the menu-bar switcher keeps listing every
+// disk either way, and turning it on redraws the desk immediately.
+test.assertIncludes(read("index.html"), 'id="show-unmounted-disks"', "the Control Panel carries the switch");
+test.assertIncludes(read("index.html"), 'data-i18n="show_unmounted_disks"', "with a translated label");
+for (const [file, name] of [[en, "English"], [zh, "Chinese"]]) {
+  test.assertIncludes(file, "show_unmounted_disks:", `${name} names the switch`);
+  test.assertIncludes(file, "balloon_show_unmounted_disks:", `${name} explains it in Balloon Help`);
+  test.assertIncludes(file, "unmounted_disks_hidden:", `${name} has the receipt for the default`);
+}
+test.assertIncludes(
+  projectDisk,
+  "showUnmountedDisksInput?.checked === true",
+  "the desktop draws unmounted disks only when the switch is on",
+);
+test.assertIncludes(
+  read("app/core/persistence-status.js"),
+  "showUnmountedDisksInput.checked = settings.showUnmountedDisks === true;",
+  "a restored desk defaults the switch off, and remembers a desk that turned it on",
+);
+test.assertIncludes(
+  read("app/core/persistence-status.js"),
+  "showUnmountedDisks: showUnmountedDisksInput?.checked === true,",
+  "the preference is saved with the desk",
+);
+test.assertIncludes(read("app.js"), "function applyShowUnmountedDisks", "the switch has one apply path");
+test.assertIncludes(read("app.js"), "renderProjectDiskDesktopIcons()", "and that path redraws the desk");
+test.assertIncludes(read("app/core/wireup.js"), 'showUnmountedDisksInput?.addEventListener("change"', "the switch is wired");
+test.assertIncludes(projectDisk, "function renderProjectSwitcher", "the menu-bar switcher stays, switch or no switch");
+
 // The mounted disk keeps its static markup because it is also the drop target
 // for filing into the current project; only the ejected ones are drawn.
 test.assertIncludes(projectDisk, 'currentProjectLabelEl?.closest(".desktop-icon")', "the mounted disk is the existing icon, not a redrawn one");
@@ -137,9 +170,18 @@ const context = vm.createContext({
 });
 vm.runInContext(source, context);
 
+// The Finder's default, and the desk's: an unmounted disk is not drawn until
+// the writer asks for it. The switcher in the menu bar is where they live.
+context.renderProjectDiskDesktopIcons();
+test.assert(
+  column.order.filter((node) => node.dataset.ejectedProjectId).length === 0,
+  "with the switch off, no unmounted disk reaches the desk",
+);
+
+context.showUnmountedDisksInput = { checked: true };
 context.renderProjectDiskDesktopIcons();
 let drawn = column.order.filter((node) => node.dataset.ejectedProjectId);
-test.assert(drawn.length === 1 && drawn[0].dataset.ejectedProjectId === "p2", "every project that is not mounted gets a disk");
+test.assert(drawn.length === 1 && drawn[0].dataset.ejectedProjectId === "p2", "with the switch on, every project that is not mounted gets a disk");
 test.assert(!column.order.some((node) => node.dataset.ejectedProjectId === "p1"), "the mounted project is not drawn twice");
 test.assert(!column.order.some((node) => node.dataset.ejectedProjectId === "p3"), "an archived disk is put away, not dimmed on the desk");
 test.assert(drawn[0].className.includes("is-ejected-disk"), "the drawn disk carries the ejected state");
@@ -160,6 +202,15 @@ context.renderProjectDiskDesktopIcons();
 drawn = column.order.filter((node) => node.dataset.ejectedProjectId);
 test.assert(drawn.length === 1 && drawn[0].dataset.ejectedProjectId === "p1", "switching disks swaps which one is dimmed");
 test.assert(first.removed === true, "and the disk that mounted is taken off the ejected row");
+
+// Turning the switch back off clears the desk, without touching the mounted one.
+context.showUnmountedDisksInput = { checked: false };
+context.renderProjectDiskDesktopIcons();
+test.assert(
+  column.order.filter((node) => node.dataset.ejectedProjectId).length === 0,
+  "turning the switch off takes the unmounted disks off the desk again",
+);
+test.assert(column.order.includes(mountedIcon), "and leaves the disk you are working in right where it was");
 
 // --- Looking inside a disk you have not mounted ------------------------------
 //
@@ -266,5 +317,23 @@ test.assertIncludes(projectDisk, 'icon.dataset.balloonHelp = "balloon_project_di
 test.assertIncludes(read("styles/50-apps.css"), ".disk-risk-mark", "the diamond has its 1-bit dress");
 test.assertIncludes(en, "balloon_project_disk_risk:", "English says what the mark means");
 test.assertIncludes(zh, "balloon_project_disk_risk:", "Chinese says it too");
+
+// --- The overview is the same window, one level up ---------------------------
+//
+// The peek lists what a disk holds. With nothing peeked there is no disk, so it
+// lists the disks — read-only, and counting on every render rather than keeping
+// a total of its own, because a stored total is a second copy of statistics
+// that can drift from the arrays it describes. It reports no date, no
+// percentage and no next step: an overview that judged would be writing.
+test.assertIncludes(peek, "async function openProjectOverview", "the overview opens through one function of its own");
+test.assertIncludes(peek, "button.dataset.peekProject = project.id;", "each project row carries the id its click needs");
+test.assertIncludes(peek, "function projectOverviewItemCount", "what is filed is counted from the loaded arrays");
+test.assertIncludes(peek, "function projectOverviewTaskCounts", "and what is done comes from the project's own task records");
+test.assertNotIncludes(peek, "localStorage", "the overview is derived on render and never kept");
+test.assertNotIncludes(peek, "setItem", "so nothing at all is written");
+test.assert(
+  peek.split("switchProject(").length - 1 === 1,
+  "switchProject( still appears exactly once, inside mountPeekedProject() — looking is not mounting",
+);
 
 test.finish();

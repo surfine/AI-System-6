@@ -40,7 +40,7 @@ test.assertIncludes(wireup, 'searchProviderInput?.value === "deepseek"', "the Se
 test.assertIncludes(webSearch, 'tool_choice: { type: "web_search" }', "the Responses payload forces a server-side web search");
 test.assertIncludes(webSearch, '"url_citation"', "cited sources are parsed from output_text annotations");
 test.assertIncludes(webSearch, '"web_search_call"', "search results are parsed from web_search_call items");
-test.assertIncludes(webSearch, "deepseek-v4-flash", "the Responses client pins the currently supported model");
+test.assertIncludes(webSearch, '"deepseek-flash"', "the Responses client pins the currently supported model");
 test.assertIncludes(webSearch, "function extractInlineCitations", "citations are extracted from inline markdown links");
 test.assertIncludes(webSearch, "function callWebSearchAnswerStream", "the Responses client can stream web-search answers");
 test.assertIncludes(webSearch, "streamResponse: true", "the streaming call asks the transport for an unbuffered body");
@@ -103,5 +103,16 @@ for (const key of ["search_deepseek", "search_answer_label", "search_answer_note
   test.assertIncludes(en, `${key}:`, `English includes ${key}`);
   test.assertIncludes(zh, `${key}:`, `Chinese includes ${key}`);
 }
+
+// A search that runs out of time has to say so. The route's abort signal is the
+// client's disconnect OR its own 120-second timeout, and treating both as "the
+// listener left" answered a waiting browser with nothing at all: an SSE stream
+// with no error and no done, or a request with no status. The browser has no
+// timeout of its own, so that hung until the socket died.
+test.assertIncludes(searchAnswerRoute, "signal.aborted && !timeoutHandle.timedOut()", "silence is kept only for a client that actually left");
+test.assertNotIncludes(searchAnswerRoute, "if (signal.aborted) return;", "no abort path answers nothing while the writer is still waiting");
+test.assertIncludes(searchAnswerRoute, 'code: "web_search_timeout"', "a timed-out run names itself");
+test.assertIncludes(searchAnswerRoute, "send(res, 504", "and a timed-out request answers 504 rather than the generic cloud-settings sentence");
+test.assertIncludes(searchAnswerRoute, 'message: "The web search timed out."', "the streamed error carries the same sentence the JSON one does");
 
 test.finish();

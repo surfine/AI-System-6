@@ -36,12 +36,24 @@ if (deadNow > baseline.deadCount) {
 
 if (deadNow < baseline.deadCount) {
   if (update) {
-    // Keep every other key. The baseline file carries the notes that say what
-    // each earlier fall was made of, and rewriting the file from three fields
-    // would throw that record away on the first successful --update.
+    // Spread the committed baseline first: it carries the notes that record
+    // which lanes lowered the count, what was deliberately not credited, and
+    // what the census cannot observe. Only the measured fields are overwritten.
+    const distinctDeadNow = new Set(report.deadList.map((entry) => entry.action)).size;
     writeFileSync(
       baselinePath,
-      JSON.stringify({ ...baseline, deadCount: deadNow, controlSites: report.totals.controlSites, updatedAt: new Date().toISOString() }, null, 2) + "\n",
+      JSON.stringify(
+        {
+          ...baseline,
+          deadCount: deadNow,
+          controlSites: report.totals.controlSites,
+          distinctActions: report.totals.distinctActions,
+          distinctDeadActions: distinctDeadNow,
+          updatedAt: new Date().toISOString(),
+        },
+        null,
+        2
+      ) + "\n",
       "utf8"
     );
     console.log(`OK  Dead count improved (${baseline.deadCount} -> ${deadNow}); baseline lowered.`);

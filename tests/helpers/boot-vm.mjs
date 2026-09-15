@@ -126,6 +126,10 @@ export function createBootContext(overrides = {}) {
     refreshImporterStatus: syncNoop,
     initDragAndDrop: syncNoop,
     restoreWorkingSession: asyncNoop,
+    // Boot's own scene-save gate: until boot calls this, working-session.js
+    // drops every save, so that boot's window moves cannot capture the
+    // un-booted markup over the record restoreWorkingSession() just read.
+    settleWorkingSessionRestore: syncNoop,
     openStartupItems: syncNoop,
     enterWriterMode: asyncNoop,
     openWindow: syncNoop,

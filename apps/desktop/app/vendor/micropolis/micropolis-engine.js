@@ -1987,8 +1987,8 @@ var MicropolisEngine = (() => {
   GameMap.prototype._calculateIndex = function(x, y) {
     return x + y * this.width;
   };
-  GameMap.prototype.isPositionInBounds = function(pos2) {
-    return this.bounds.contains(pos2);
+  GameMap.prototype.isPositionInBounds = function(pos) {
+    return this.bounds.contains(pos);
   };
   GameMap.prototype.testBounds = function(x, y) {
     return this.isPositionInBounds(new Position(x, y));
@@ -2080,23 +2080,23 @@ var MicropolisEngine = (() => {
     }
     return result;
   };
-  GameMap.prototype.getTileFromMapOrDefault = function(pos2, dir, defaultTile) {
+  GameMap.prototype.getTileFromMapOrDefault = function(pos, dir, defaultTile) {
     switch (dir) {
       case NORTH:
-        if (pos2.y > 0)
-          return this.getTileValue(pos2.x, pos2.y - 1);
+        if (pos.y > 0)
+          return this.getTileValue(pos.x, pos.y - 1);
         return defaultTile;
       case EAST:
-        if (pos2.x < this.width - 1)
-          return this.getTileValue(pos2.x + 1, pos2.y);
+        if (pos.x < this.width - 1)
+          return this.getTileValue(pos.x + 1, pos.y);
         return defaultTile;
       case SOUTH:
-        if (pos2.y < this.height - 1)
-          return this.getTileValue(pos2.x, pos2.y + 1);
+        if (pos.y < this.height - 1)
+          return this.getTileValue(pos.x, pos.y + 1);
         return defaultTile;
       case WEST:
-        if (pos2.x > 0)
-          return this.getTileValue(pos2.x - 1, pos2.y);
+        if (pos.x > 0)
+          return this.getTileValue(pos.x - 1, pos.y);
         return defaultTile;
       default:
         return defaultTile;
@@ -2201,7 +2201,7 @@ var MicropolisEngine = (() => {
 
   // external/micropolisjs/src/mouseBox.js
   var MouseBox = {
-    draw: function(c, pos2, width2, height2, options) {
+    draw: function(c, pos, width2, height2, options) {
       var lineWidth = options.lineWidth || 3;
       var strokeStyle = options.colour || "yellow";
       var shouldOutline = "outline" in options && options.outline === true || false;
@@ -2211,9 +2211,9 @@ var MicropolisEngine = (() => {
         startModifier = 1;
         endModifier = -1;
       }
-      var startX = pos2.x + startModifier * lineWidth / 2;
+      var startX = pos.x + startModifier * lineWidth / 2;
       width2 = width2 + endModifier * lineWidth;
-      var startY = pos2.y + startModifier * lineWidth / 2;
+      var startY = pos.y + startModifier * lineWidth / 2;
       height2 = height2 + endModifier * lineWidth;
       var ctx = c.getContext("2d");
       ctx.lineWidth = lineWidth;
@@ -2590,10 +2590,10 @@ var MicropolisEngine = (() => {
         damage.y = damage.yBound = mouseY;
         return damage;
       }
-      var pos2 = { x: mouseX * this._tileSet.tileWidth, y: mouseY * this._tileSet.tileWidth };
+      var pos = { x: mouseX * this._tileSet.tileWidth, y: mouseY * this._tileSet.tileWidth };
       var width2 = mouseWidth * this._tileSet.tileWidth;
       var height2 = mouseHeight * this._tileSet.tileWidth;
-      MouseBox.draw(this._canvas, pos2, width2, height2, options);
+      MouseBox.draw(this._canvas, pos, width2, height2, options);
       damage.x = mouseX - 1;
       damage.xBound = mouseX + mouseWidth + 2;
       damage.y = mouseY - 1;
@@ -2807,10 +2807,10 @@ var MicropolisEngine = (() => {
       numLakes--;
     }
   };
-  var makeSingleLake = function(map, pos2) {
+  var makeSingleLake = function(map, pos) {
     var numPlops = Random.getRandom(12) + 2;
     while (numPlops > 0) {
-      var plopPos = new Position(pos2, Random.getRandom(12) - 6, Random.getRandom(12) - 6);
+      var plopPos = new Position(pos, Random.getRandom(12) - 6, Random.getRandom(12) - 6);
       if (Random.getRandom(4))
         plopSRiver(map, plopPos);
       else
@@ -2952,7 +2952,7 @@ var MicropolisEngine = (() => {
     riverDir = getRandomCardinalDirection();
     doSRiver(map, terrainPos, riverDir, terrainDir);
   };
-  var doBRiver = function(map, pos2, riverDir, terrainDir) {
+  var doBRiver = function(map, pos, riverDir, terrainDir) {
     var rate1, rate2;
     if (TERRAIN_CURVE_LEVEL < 0) {
       rate1 = 100;
@@ -2961,8 +2961,8 @@ var MicropolisEngine = (() => {
       rate1 = TERRAIN_CURVE_LEVEL + 10;
       rate2 = TERRAIN_CURVE_LEVEL + 100;
     }
-    while (map.testBounds(pos2.x + 4, pos2.y + 4)) {
-      plopBRiver(map, pos2);
+    while (map.testBounds(pos.x + 4, pos.y + 4)) {
+      plopBRiver(map, pos);
       if (Random.getRandom(rate1) < 10) {
         terrainDir = riverDir;
       } else {
@@ -2971,11 +2971,11 @@ var MicropolisEngine = (() => {
         if (Random.getRandom(rate2) > 90)
           terrainDir = terrainDir.rotateCounterClockwise();
       }
-      pos2 = Position.move(pos2, terrainDir);
+      pos = Position.move(pos, terrainDir);
     }
     return terrainDir;
   };
-  var doSRiver = function(map, pos2, riverDir, terrainDir) {
+  var doSRiver = function(map, pos, riverDir, terrainDir) {
     var rate1, rate2;
     if (TERRAIN_CURVE_LEVEL < 0) {
       rate1 = 100;
@@ -2984,8 +2984,8 @@ var MicropolisEngine = (() => {
       rate1 = TERRAIN_CURVE_LEVEL + 10;
       rate2 = TERRAIN_CURVE_LEVEL + 100;
     }
-    while (map.testBounds(pos2.x + 3, pos2.y + 3)) {
-      plopSRiver(map, pos2);
+    while (map.testBounds(pos.x + 3, pos.y + 3)) {
+      plopSRiver(map, pos);
       if (Random.getRandom(rate1) < 10) {
         terrainDir = riverDir;
       } else {
@@ -2994,7 +2994,7 @@ var MicropolisEngine = (() => {
         if (Random.getRandom(rate2) > 90)
           terrainDir = terrainDir.rotateCounterClockwise();
       }
-      pos2 = Position.move(pos2, terrainDir);
+      pos = Position.move(pos, terrainDir);
     }
     return terrainDir;
   };
@@ -3014,7 +3014,7 @@ var MicropolisEngine = (() => {
     }
     map.setTile(x, y, newVal, 0);
   };
-  var plopBRiver = function(map, pos2) {
+  var plopBRiver = function(map, pos) {
     var BRMatrix = [
       [0, 0, 0, REDGE, REDGE, REDGE, 0, 0, 0],
       [0, 0, REDGE, RIVER, RIVER, RIVER, REDGE, 0, 0],
@@ -3028,11 +3028,11 @@ var MicropolisEngine = (() => {
     ];
     for (var x = 0; x < 9; x++) {
       for (var y = 0; y < 9; y++) {
-        putOnMap(map, BRMatrix[y][x], pos2.x + x, pos2.y + y);
+        putOnMap(map, BRMatrix[y][x], pos.x + x, pos.y + y);
       }
     }
   };
-  var plopSRiver = function(map, pos2) {
+  var plopSRiver = function(map, pos) {
     var SRMatrix = [
       [0, 0, REDGE, REDGE, 0, 0],
       [0, REDGE, RIVER, RIVER, REDGE, 0],
@@ -3043,7 +3043,7 @@ var MicropolisEngine = (() => {
     ];
     for (var x = 0; x < 6; x++) {
       for (var y = 0; y < 6; y++) {
-        putOnMap(map, SRMatrix[y][x], pos2.x + x, pos2.y + y);
+        putOnMap(map, SRMatrix[y][x], pos.x + x, pos.y + y);
       }
     }
   };
@@ -3421,9 +3421,9 @@ var MicropolisEngine = (() => {
   }
   Traffic.prototype.makeTraffic = function(x, y, blockMaps, destFn) {
     this._stack = [];
-    var pos2 = new Position(x, y);
-    if (this.findPerimeterRoad(pos2)) {
-      if (this.tryDrive(pos2, destFn)) {
+    var pos = new Position(x, y);
+    if (this.findPerimeterRoad(pos)) {
+      if (this.tryDrive(pos, destFn)) {
         this.addToTrafficDensityMap(blockMaps);
         return Traffic.ROUTE_FOUND;
       }
@@ -3435,20 +3435,20 @@ var MicropolisEngine = (() => {
   Traffic.prototype.addToTrafficDensityMap = function(blockMaps) {
     var trafficDensityMap = blockMaps.trafficDensityMap;
     while (this._stack.length > 0) {
-      var pos2 = this._stack.pop();
-      if (!this._map.testBounds(pos2.x, pos2.y))
+      var pos = this._stack.pop();
+      if (!this._map.testBounds(pos.x, pos.y))
         continue;
-      var tileValue = this._map.getTileValue(pos2.x, pos2.y);
+      var tileValue = this._map.getTileValue(pos.x, pos.y);
       if (tileValue >= ROADBASE && tileValue < POWERBASE) {
-        var traffic = trafficDensityMap.worldGet(pos2.x, pos2.y);
+        var traffic = trafficDensityMap.worldGet(pos.x, pos.y);
         traffic += 50;
         traffic = Math.min(traffic, 240);
-        trafficDensityMap.worldSet(pos2.x, pos2.y, traffic);
+        trafficDensityMap.worldSet(pos.x, pos.y, traffic);
         if (traffic >= 240 && Random.getRandom(5) === 0) {
           var sprite = this._spriteManager.getSprite(SPRITE_HELICOPTER);
           if (sprite !== null) {
-            sprite.destX = SpriteUtils.worldToPix(pos2.x);
-            sprite.destY = SpriteUtils.worldToPix(pos2.y);
+            sprite.destX = SpriteUtils.worldToPix(pos.x);
+            sprite.destY = SpriteUtils.worldToPix(pos.y);
           }
         }
       }
@@ -3456,14 +3456,14 @@ var MicropolisEngine = (() => {
   };
   var perimX = [-1, 0, 1, 2, 2, 2, 1, 0, -1, -2, -2, -2];
   var perimY = [-2, -2, -2, -1, 0, 1, 2, 2, 2, 1, 0, -1];
-  Traffic.prototype.findPerimeterRoad = function(pos2) {
+  Traffic.prototype.findPerimeterRoad = function(pos) {
     for (var i = 0; i < 12; i++) {
-      var xx = pos2.x + perimX[i];
-      var yy = pos2.y + perimY[i];
+      var xx = pos.x + perimX[i];
+      var yy = pos.y + perimY[i];
       if (this._map.testBounds(xx, yy)) {
         if (TileUtils.isDriveable(this._map.getTileValue(xx, yy))) {
-          pos2.x = xx;
-          pos2.y = yy;
+          pos.x = xx;
+          pos.y = yy;
           return true;
         }
       }
@@ -3473,14 +3473,14 @@ var MicropolisEngine = (() => {
   var MAX_TRAFFIC_DISTANCE = 30;
   Traffic.prototype.tryDrive = function(startPos, destFn) {
     var dirLast;
-    var drivePos = new Position(startPos);
+    var drivePos = new Position(startPos.x, startPos.y);
     for (var dist = 0; dist < MAX_TRAFFIC_DISTANCE; dist++) {
       var dir = this.tryGo(drivePos, dirLast);
       if (dir) {
-        drivePos = Position.move(pos, dir);
+        drivePos = Position.move(drivePos, dir);
         dirLast = dir.oppositeDirection();
         if (dist & 1)
-          this._stack.push(new Position(drivePos));
+          this._stack.push(new Position(drivePos.x, drivePos.y));
         if (this.driveDone(drivePos, destFn))
           return true;
       } else {
@@ -3494,11 +3494,11 @@ var MicropolisEngine = (() => {
     }
     return false;
   };
-  Traffic.prototype.tryGo = function(pos2, dirLast) {
+  Traffic.prototype.tryGo = function(pos, dirLast) {
     var directions = [];
     var count = 0;
     forEachCardinalDirection((dir) => {
-      if (dir != dirLast && TileUtils.isDriveable(this._map.getTileFromMapOrDefault(pos2, dir, DIRT))) {
+      if (dir != dirLast && TileUtils.isDriveable(this._map.getTileFromMapOrDefault(pos, dir, DIRT))) {
         directions.push(dir);
         count++;
       }
@@ -3512,21 +3512,21 @@ var MicropolisEngine = (() => {
     const index = Random.getRandom(directions.length - 1);
     return directions[index];
   };
-  Traffic.prototype.driveDone = function(pos2, destFn) {
-    if (pos2.y > 0) {
-      if (destFn(this._map.getTileValue(pos2.x, pos2.y - 1)))
+  Traffic.prototype.driveDone = function(pos, destFn) {
+    if (pos.y > 0) {
+      if (destFn(this._map.getTileValue(pos.x, pos.y - 1)))
         return true;
     }
-    if (pos2.x < this._map.width - 1) {
-      if (destFn(this._map.getTileValue(pos2.x + 1, pos2.y)))
+    if (pos.x < this._map.width - 1) {
+      if (destFn(this._map.getTileValue(pos.x + 1, pos.y)))
         return true;
     }
-    if (pos2.y < this._map.height - 1) {
-      if (destFn(this._map.getTileValue(pos2.x, pos2.y + 1)))
+    if (pos.y < this._map.height - 1) {
+      if (destFn(this._map.getTileValue(pos.x, pos.y + 1)))
         return true;
     }
-    if (pos2.x > 0) {
-      if (destFn(this._map.getTileValue(pos2.x - 1, pos2.y)))
+    if (pos.x > 0) {
+      if (destFn(this._map.getTileValue(pos.x - 1, pos.y)))
         return true;
     }
     return false;
@@ -4057,8 +4057,8 @@ var MicropolisEngine = (() => {
     smoothMap(policeStationMap, policeStationEffectMap, SMOOTH_NEIGHBOURS_THEN_BLOCK);
     var totalCrime = 0;
     var crimeZoneCount = 0;
-    for (var x = 0, width2 = crimeRateMap.mapWidth, blockSize = crimeRateMap.blockSize; x < width2; x += blockSize) {
-      for (var y = 0, height2 = crimeRateMap.mapHeight, b; y < height2; y += blockSize) {
+    for (var x = 0, width2 = crimeRateMap.gameMapWidth, blockSize = crimeRateMap.blockSize; x < width2; x += blockSize) {
+      for (var y = 0, height2 = crimeRateMap.gameMapHeight, b; y < height2; y += blockSize) {
         var value = landValueMap.worldGet(x, y);
         if (value > 0) {
           crimeZoneCount += 1;
@@ -4668,8 +4668,8 @@ var MicropolisEngine = (() => {
       var isPowered = map.getTile(x, y).isPowered();
       if (!isPowered)
         effect = Math.floor(effect / 2);
-      var pos2 = new Position(x, y);
-      var connectedToRoads = simData.trafficManager.findPerimeterRoad(pos2);
+      var pos = new Position(x, y);
+      var connectedToRoads = simData.trafficManager.findPerimeterRoad(pos);
       if (!connectedToRoads)
         effect = Math.floor(effect / 2);
       var currentEffect = simData.blockMaps[blockMap].worldGet(x, y);
@@ -5041,8 +5041,8 @@ var MicropolisEngine = (() => {
     this._powerStackPointer = 0;
     this._powerStack = [];
   };
-  PowerManager.prototype.testForConductive = function(pos2, testDir) {
-    var movedPos = Position.move(pos2, testDir);
+  PowerManager.prototype.testForConductive = function(pos, testDir) {
+    var movedPos = Position.move(pos, testDir);
     if (this._map.isPositionInBounds(movedPos)) {
       if (this._map.getTile(movedPos.x, movedPos.y).isConductive()) {
         if (this.powerGridMap.worldGet(movedPos.x, movedPos.y) === 0)
@@ -5056,7 +5056,7 @@ var MicropolisEngine = (() => {
     var maxPower = census.coalPowerPop * COAL_POWER_STRENGTH + census.nuclearPowerPop * NUCLEAR_POWER_STRENGTH;
     var powerConsumption = 0;
     while (this._powerStack.length > 0) {
-      var pos2 = this._powerStack.pop();
+      var pos = this._powerStack.pop();
       var anyDir = void 0;
       var conNum;
       do {
@@ -5066,20 +5066,20 @@ var MicropolisEngine = (() => {
           return;
         }
         if (anyDir)
-          pos2 = Position.move(pos2, anyDir);
-        this.powerGridMap.worldSet(pos2.x, pos2.y, 1);
+          pos = Position.move(pos, anyDir);
+        this.powerGridMap.worldSet(pos.x, pos.y, 1);
         conNum = 0;
         forEachCardinalDirection((dir) => {
           if (conNum >= 2) {
             return;
           }
-          if (this.testForConductive(pos2, dir)) {
+          if (this.testForConductive(pos, dir)) {
             conNum++;
             anyDir = dir;
           }
         });
         if (conNum > 1)
-          this._powerStack.push(new Position(pos2.x, pos2.y));
+          this._powerStack.push(new Position(pos.x, pos.y));
       } while (conNum);
     }
   };

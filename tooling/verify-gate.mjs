@@ -16,7 +16,7 @@
  * anything when the gate fails, and it drops an older receipt in that case.
  */
 
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
@@ -29,6 +29,7 @@ import {
   writeGateReceipt,
 } from "./lib/gate-receipts.mjs";
 import { SHIP_GATES, shipGate, shipGateEntry } from "./lib/ship-gates.mjs";
+import { collectHeldOutput, describeLanes, lanePlan, lanesInOrder, runLanes } from "./lib/gate-lanes.mjs";
 import { applyReleaseStamp, describeStampRefusal } from "./lib/release-stamp.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -44,11 +45,12 @@ const names = wantsAll
 
 function usage() {
   console.log("Usage: npm run verify:gate -- <gate> [<gate> …] [--no-reuse] [--no-build] [--release-stamp]");
-  console.log("       npm run verify:gate -- --all --release-stamp   # bank all seven for the next release");
+  console.log("       npm run verify:gate -- --all --release-stamp   # bank every gate for the next release");
   console.log("       npm run verify:gate -- --list\n");
   console.log("Ship gates:");
   for (const gate of SHIP_GATES) {
-    console.log(`  ${gate.name.padEnd(24)} ~${Math.round(gate.costHintMs / 1000)}s  ${gate.args.join(" ")}`);
+    const lane = gate.quiet ? "alone" : "shares the machine";
+    console.log(`  ${gate.name.padEnd(24)} ~${String(Math.round(gate.costHintMs / 1000)).padStart(4)}s  ${lane.padEnd(18)} ${gate.args.join(" ")}`);
   }
   console.log("\n--release-stamp builds the tree as the release of HEAD will build it, so the");
   console.log("receipts describe the bytes the release tests. Without it a release refuses");
@@ -130,8 +132,28 @@ if (coverage.unmapped.length) {
   for (const unmapped of coverage.unmapped.slice(0, 10)) console.log(`  unmapped  ${unmapped}`);
 }
 
+const childEnv = { ...process.env, FORCE_COLOR: "1", AI_SYSTEM6_PREBUILT_BUNDLE: "1" };
+
+// One gate, run now. A quiet gate keeps this terminal; a shared one has its
+// output held so two failures never interleave — see tooling/lib/gate-lanes.mjs.
+function execute(gate, { holdOutput }) {
+  if (!holdOutput) {
+    const started = Date.now();
+    const result = spawnSync(process.execPath, gate.args, { cwd: repositoryRoot, stdio: "inherit", env: childEnv });
+    return Promise.resolve({ exitCode: result.status === null ? 1 : result.status, durationMs: Date.now() - started, output: "" });
+  }
+  const started = Date.now();
+  return new Promise((resolvePromise) => {
+    const child = spawn(process.execPath, gate.args, { cwd: repositoryRoot, env: childEnv, stdio: ["ignore", "pipe", "pipe"] });
+    collectHeldOutput(child).then((held) => {
+      resolvePromise({ exitCode: held.exitCode, durationMs: Date.now() - started, output: held.output });
+    });
+  });
+}
+
 const cache = new Map();
 let failed = 0;
+const runnable = [];
 for (const name of names) {
   const gate = shipGate(name);
   const current = currentGateState(repositoryRoot, name, cache);
@@ -148,29 +170,38 @@ for (const name of names) {
     );
     continue;
   }
-  console.log(`\n[verify:gate] ${name} → runs now (${decision.reason})`);
-  const started = Date.now();
-  const result = spawnSync(process.execPath, gate.args, {
-    cwd: repositoryRoot,
-    stdio: "inherit",
-    env: { ...process.env, FORCE_COLOR: "1", AI_SYSTEM6_PREBUILT_BUNDLE: "1" },
-  });
-  const durationMs = Date.now() - started;
-  const exitCode = result.status === null ? 1 : result.status;
+  console.log(`[verify:gate] ${name} → runs now (${decision.reason})`);
+  // The state is read before the gate runs and banked with it afterwards: a
+  // receipt is a claim about the inputs the gate was given, and hashing them
+  // again after a gate that writes into the tree would claim the wrong bytes.
+  runnable.push({ ...gate, current });
+}
+
+// The gates that must run go through the same scheduler a release uses, so a
+// banking run and the release it feeds spend the same wall clock on the same
+// work in the same order. A cheap gate is banked the moment it passes, and the
+// three that share the machine overlap rather than queue.
+const lanes = lanePlan(runnable);
+if (runnable.length > 1) {
+  console.log(`[verify:gate] run order, cheapest refusal first: ${describeLanes(lanes)}`);
+}
+const outcomes = await runLanes(lanes, { label: "verify:gate", execute });
+for (const gate of lanesInOrder(lanes)) {
+  const { exitCode, durationMs } = outcomes.get(gate.name);
   if (exitCode !== 0) {
     failed += 1;
-    dropGateReceipt(repositoryRoot, name);
-    console.error(`[verify:gate] ${name} → exit ${exitCode} (${durationMs}ms); no receipt banked.`);
+    dropGateReceipt(repositoryRoot, gate.name);
+    console.error(`[verify:gate] ${gate.name} → exit ${exitCode} (${durationMs}ms); no receipt banked.`);
     continue;
   }
-  const { destination } = writeGateReceipt(repositoryRoot, name, {
+  const { destination } = writeGateReceipt(repositoryRoot, gate.name, {
     command: `${process.execPath} ${gate.args.join(" ")}`,
     durationMs,
     sourceCommit: spawnSync("git", ["rev-parse", "HEAD"], { cwd: repositoryRoot, encoding: "utf8" }).stdout?.trim() || "",
-    current,
+    current: gate.current,
   });
   console.log(
-    `[verify:gate] ${name} → exit 0 (${durationMs}ms); receipt banked in`
+    `[verify:gate] ${gate.name} → exit 0 (${durationMs}ms); receipt banked in`
     + ` ${path.relative(repositoryRoot, destination)}`,
   );
 }

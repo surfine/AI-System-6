@@ -2,24 +2,23 @@
 // routes. The Responses API exists only on the official DeepSeek endpoint, so
 // every route that uses this module keeps its existing Chat Completions path
 // as the fallback: local deployments with custom endpoints are untouched.
-// Both v4 models are served here — v4-pro was verified against the live API
-// on 2026-08-14, where it ran three web searches for a question flash covered
-// with one.
+// Both DeepSeek cloud models are served here — V4 Pro was verified against the
+// live API on 2026-08-14, where it ran three web searches for a question
+// Flash covered with one.
 
 "use strict";
 
 const { postJsonWithFallback } = require("./lib/fetch.js");
-const { cloudAuthHeaders, DEEPSEEK_PUBLIC_BASE_URL, resolveCloudTarget } = require("./cloud.js");
+const {
+  cloudAuthHeaders,
+  isDeepSeekCloudModelId,
+  DEEPSEEK_PUBLIC_BASE_URL,
+  resolveCloudTarget,
+} = require("./cloud.js");
 const { taskReasoningEffort } = require("./task-policy.js");
 
 const DEEPSEEK_RESPONSES_URL = `${DEEPSEEK_PUBLIC_BASE_URL}/responses`;
-const CANONICAL_RESPONSES_MODEL = "deepseek-v4-flash";
-const RESPONSES_MODELS = new Set([
-  "deepseek-v4-flash",
-  "v4-flash",
-  "deepseek-v4-pro",
-  "v4-pro",
-]);
+const CANONICAL_RESPONSES_MODEL = "deepseek-flash";
 const RESPONSES_EFFORTS = new Set([
   "none",
   "minimal",
@@ -54,7 +53,7 @@ function responsesEffortForTask(taskKind) {
 function isResponsesEligible({ baseUrl = "", model = "" }) {
   const normalizedBase = String(baseUrl || "").replace(/\/+$/, "").toLowerCase();
   return normalizedBase === DEEPSEEK_PUBLIC_BASE_URL.toLowerCase()
-    && RESPONSES_MODELS.has(String(model || "").toLowerCase());
+    && isDeepSeekCloudModelId(String(model || ""));
 }
 
 function normalizeResponsesEffort(value) {
@@ -115,7 +114,7 @@ function buildResponsesPayload({
   userId = "",
 }) {
   const payload = {
-    model: RESPONSES_MODELS.has(String(model || "").toLowerCase())
+    model: isDeepSeekCloudModelId(String(model || ""))
       ? String(model)
       : CANONICAL_RESPONSES_MODEL,
     instructions,

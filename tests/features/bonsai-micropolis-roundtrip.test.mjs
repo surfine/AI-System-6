@@ -258,6 +258,34 @@ test.assert(
   test.assert(sent.warnings.some((code) => code.startsWith("layer-dropped-pipe:")), "the pipe layer is reported as dropped");
   test.assert(sent.warnings.includes("altitude-flattened"), "the hills are reported as flattened");
   test.assert(JSON.stringify(exporter.exportMicropolis(before, { name: "Cedar Flats", powered: town.powered }).warnings) === JSON.stringify(sent.warnings), "the loss report is deterministic");
+
+  // --- (D06) the player picks the region, and the preview cannot lie ---------
+  // The picker draws a rectangle and prints what it leaves behind. That number
+  // comes from countCroppedOutside, and the export's own map-cropped warning
+  // comes from the same content rule, so a chosen window has to produce the
+  // same count twice -- otherwise the preview is describing a different crop
+  // from the one that ships.
+  const croppedCount = (warnings) => {
+    const hit = warnings.find((code) => code.startsWith("map-cropped:"));
+    return hit ? Number(hit.split(":")[1]) : 0;
+  };
+  for (const origin of [{ x: 0, y: 0 }, { x: 4, y: 12 }, { x: 8, y: 28 }, { x: 999, y: 999 }]) {
+    const preview = exporter.countCroppedOutside(before, { window: origin });
+    const shipped = exporter.exportMicropolis(before, { name: "Cedar Flats", powered: town.powered, window: origin });
+    test.assert(
+      preview === croppedCount(shipped.warnings),
+      `the preview count matches the shipped crop at ${origin.x},${origin.y} (${preview} vs ${croppedCount(shipped.warnings)})`,
+    );
+  }
+  // An origin past the edge is clamped, not refused: dragging the rectangle off
+  // the map has to land it against the edge.
+  const clamped = exporter.cropWindowFor(before, { window: { x: 999, y: 999 } });
+  test.assert(clamped.x === before.size - exporter.CLASSIC_WIDTH && clamped.y === before.size - exporter.CLASSIC_HEIGHT, "an origin past the edge clamps to the edge");
+  // A different region is a different city: the two windows cannot agree by
+  // accident, or the choice would be decoration.
+  const cornerA = exporter.exportMicropolis(before, { name: "Cedar Flats", powered: town.powered, window: { x: 0, y: 0 } });
+  const cornerB = exporter.exportMicropolis(before, { name: "Cedar Flats", powered: town.powered, window: { x: 8, y: 28 } });
+  test.assert(JSON.stringify(cornerA.saveData.map) !== JSON.stringify(cornerB.saveData.map), "two different windows produce two different maps");
   const cropped = exporter.exportMicropolis(before, { name: "Cedar Flats", window: { x: 0, y: 0 } });
   test.assert(cropped.details.window.x === 0 && cropped.details.window.y === 0, "the caller may move the crop window");
   test.assert(cropped.warnings.some((code) => code.startsWith("map-cropped:")), "content outside the window is reported as cropped");
@@ -293,6 +321,23 @@ test.assert(
   for (const path of ["app/features/bonsai-micropolis-export.js", "app/features/micropolis-cty-codec.js"]) {
     test.assertIncludes(manifest, `"${path}"`, `${path} is a lazy module`);
     test.assertIncludes(config, `"${path}"`, `${path} is named by the Bonsai City loader`);
+  }
+}
+
+// --- (D06) the choice is offered only where there is one ----------------------
+// A map no larger than the classic one embeds whole: there is nothing to pick,
+// and asking would be a dialog that can only be answered one way. The shell
+// therefore gates the picker on the map being bigger, and keeps the old
+// confirm for everything else.
+{
+  const shell = read("app/features/bonsai-city.js");
+  test.assertIncludes(shell, "return payload.size > exporter.CLASSIC_WIDTH || payload.size > exporter.CLASSIC_HEIGHT;", "the picker is offered only when the map is larger than the classic one");
+  test.assertIncludes(shell, "if (departureNeedsChoice(payload)) {", "the send path asks before it crops");
+  test.assertIncludes(shell, "...(chosenWindow ? { window: chosenWindow } : {}),", "and the chosen window reaches the exporter");
+  test.assertIncludes(shell, "if (pendingDeparture) pendingDeparture.resolve(null);", "closing the panel answers the question instead of stranding it");
+  const en = read("app/features/bonsai-translations.js");
+  for (const key of ["bonsai_micropolis_departure_title", "bonsai_micropolis_departure_note", "bonsai_micropolis_departure_readout", "bonsai_micropolis_departure_send", "bonsai_micropolis_departure_export"]) {
+    test.assert((en.match(new RegExp(`\\b${key}:`, "g")) || []).length === 2, `${key} is written in both languages`);
   }
 }
 

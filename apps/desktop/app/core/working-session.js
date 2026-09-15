@@ -18,6 +18,18 @@ const workingSessionAdapters = new Map();
 let workingSessionSaveTimer = null;
 let workingSessionSavePromise = Promise.resolve();
 let workingSessionRestoreInProgress = false;
+// A scene may not be written before boot has read the one already on disk.
+// Boot moves windows long before restoreWorkingSession() runs — applySettings()
+// alone reflows them around the writing spine, and each move asks for a save —
+// so without this gate the desk races its own 350 ms autosave debounce: when
+// boot is slower than the debounce, the un-booted markup is captured as if it
+// were a saved scene, overwrites the real one, and is then "restored" over the
+// desk. Nothing before the restore attempt is the writer's work, so dropping
+// those saves loses nothing; boot opens the gate with
+// settleWorkingSessionRestore() once the attempt has been made (Writer Mode,
+// which skips restore entirely, included). A boot that never gets that far
+// leaves autosave off, which is what a failed boot should do to a saved scene.
+let workingSessionRestoreSettled = false;
 let workingSessionAutosaveInstalled = false;
 let workingSessionMigrationPromise = null;
 const workingSessionExcludedWindowNames = new Set(["about", "saveChat"]);
@@ -181,7 +193,7 @@ function captureWorkingSessionSnapshot() {
 }
 
 function scheduleWorkingSessionSave(delay = 350) {
-  if (workingSessionRestoreInProgress) return;
+  if (workingSessionRestoreInProgress || !workingSessionRestoreSettled) return;
   clearTimeout(workingSessionSaveTimer);
   workingSessionSaveTimer = setTimeout(() => {
     flushWorkingSessionSave();
@@ -189,7 +201,7 @@ function scheduleWorkingSessionSave(delay = 350) {
 }
 
 function flushWorkingSessionSave() {
-  if (workingSessionRestoreInProgress) return workingSessionSavePromise;
+  if (workingSessionRestoreInProgress || !workingSessionRestoreSettled) return workingSessionSavePromise;
   clearTimeout(workingSessionSaveTimer);
   workingSessionSaveTimer = null;
   const snapshot = captureWorkingSessionSnapshot();
@@ -220,6 +232,17 @@ async function flushWorkingSessionCommit() {
 function cancelWorkingSessionAutosave() {
   clearTimeout(workingSessionSaveTimer);
   workingSessionSaveTimer = null;
+}
+
+// Boot calls this once, after it has decided whether a saved scene comes back,
+// and it is the only thing that lets the desk write its scene again. A save
+// queued before this point is dropped along with its timer: it can only hold
+// the pre-restore desk, which is markup, not work.
+function settleWorkingSessionRestore() {
+  if (workingSessionRestoreSettled) return false;
+  cancelWorkingSessionAutosave();
+  workingSessionRestoreSettled = true;
+  return true;
 }
 
 // Scrub an erased project out of a scene that is not its own: an ejected disk
@@ -494,7 +517,7 @@ function captureWindowWorkingSession() {
 const intrinsicSessionSizeWindowNames = new Set(["alarmClock"]);
 
 function applyWindowSessionFrame(win, frame = {}) {
-  if (!win || window.matchMedia("(max-width: 860px)").matches) return;
+  if (!win || isNarrowViewport()) return;
   if (typeof writerMode !== "undefined" && writerMode && win.dataset.window === "systemHelp") return;
   if (typeof writerMode !== "undefined" && writerMode
       && typeof writerModeCssOwnedWindows !== "undefined"
@@ -785,6 +808,11 @@ function restoreTeachTextWorkingSession(state = {}) {
   teachTextNameInput.value = String(state.name || "");
   teachTextFolderInput.value = String(state.folder || "");
   teachTextBodyInput.value = String(state.body || "");
+  // Restoring a scene fills the editor for whichever tab is active, so the
+  // editor now speaks for that tab and capturing it is truthful. Without this
+  // the capture guard in teachtext-accessories.js would treat a restored
+  // session as "never loaded" and stop saving the writer's edits.
+  if (typeof markTeachTextTabLoaded === "function") markTeachTextTabLoaded();
   teachTextFileLabel = normalizeFileLabel(state.fileLabel || "");
   setTeachTextWorkflowState(state.workflowState || teachTextFileLabel || "draft");
   // The document tab records what its own text actually is, so ask it before

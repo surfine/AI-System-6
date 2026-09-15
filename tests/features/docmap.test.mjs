@@ -19,6 +19,7 @@ const css = read("styles/20-reader-docmap.css");
 const index = read("index.html");
 const bootstrap = read("app.js");
 const cloudRoute = read("apps/server/server/routes/cloud-chat.js");
+const cloud = read("apps/server/server/cloud.js");
 const taskPolicy = read("apps/server/server/task-policy.js");
 const localChat = read("apps/server/server/chat.js");
 const actions = read("app/core/actions.js");
@@ -140,7 +141,7 @@ test.assertIncludes(app, '"xMidYMid meet" : "xMinYMid meet"', "DocMap PDF center
 test.assertIncludes(app, "docMapSvgVisibleElementBox(svg, layout) || docMapSvgFallbackViewportBox(svg)", "DocMap PDF removes wasted viewport whitespace before printing");
 test.assertIncludes(app, "width=${printMetrics.popupWidth},height=${printMetrics.popupHeight}", "DocMap PDF export opens a print surface that matches the selected paper orientation");
 test.assertIncludes(app, "printWindow.print()", "DocMap PDF export invokes the browser print flow");
-test.assertIncludes(app, "/^(?:deepseek-)?v4-(?:pro|flash)(?:-vision-exp)?$/i", "DeepSeek v4 detection accepts provider short names and the Vision variant");
+test.assertIncludes(app, "/^(?:deepseek-)?(?:flash|v4-(?:pro|flash)(?:-vision-exp)?)$/i", "DeepSeek detection accepts the current Flash id, the provider short names, and the retired Vision variant");
 test.assertIncludes(app, "delete nextPayload.reasoning_effort", "DeepSeek v4 cloud requests do not send reasoning_effort=none");
 test.assertIncludes(app, "delete nextPayload.chat_template_kwargs", "DeepSeek v4 cloud requests do not leak local chat-template kwargs");
 test.assertIncludes(app, "delete nextPayload.top_k", "DeepSeek v4 cloud requests do not leak local top_k sampling");
@@ -148,7 +149,7 @@ test.assertIncludes(app, 'nextPayload.thinking = { type: "disabled" }', "DeepSee
 test.assertIncludes(cloudRoute, "payload.thinking = policy.thinking", "DeepSeek v4 cloud proxy decides thinking server-side by task type");
 test.assertIncludes(taskPolicy, 'chat: { tier: "fast", thinking: false', "only whitelisted writing tasks can run chain-of-thought");
 test.assertIncludes(cloudRoute, "function stripDeepseekV4LocalOnlyFields", "DeepSeek v4 cloud proxy strips local-only tuning fields server-side");
-test.assertIncludes(cloudRoute, "\"v4-flash\"", "DeepSeek v4 cloud proxy accepts short model names");
+test.assertIncludes(cloud, "\"v4-flash\": DEEPSEEK_FLASH_MODEL_ID", "DeepSeek cloud proxy accepts the short model names and the retired ids");
 test.assertIncludes(cloudRoute, "delete payload.reasoning_effort", "DeepSeek v4 cloud proxy removes invalid reasoning_effort=none");
 test.assertIncludes(cloudRoute, "delete payload.chat_template_kwargs", "DeepSeek v4 cloud proxy removes local chat-template kwargs");
 test.assertIncludes(app, 'max_tokens: structuredTask ? cloudTaskMaxTokens(kind) : cloudTaskMaxTokens("chat")', "DeepSeek v4 chat requests have a bounded default output");

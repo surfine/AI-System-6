@@ -109,63 +109,114 @@ function chunkText(text, source) {
   });
 }
 
-async function embedTexts(texts, signal) {
+async function embedTexts(texts, signal, options = {}) {
   const isCloud = typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudCredentialReady();
   const useCloudEmbeddings = isCloud && cloudConfig?.provider && cloudConfig.provider !== "deepseek";
   const modelForCloudEmbeddings = String(cloudConfig?.model || "").trim();
   const localModel = String(embeddingModelInput?.value?.trim() || "");
+  const localConnected = !!localLmStudioConnectionEnabled;
   const isDeepSeekEmbeddingUnsupported = isCloud && cloudConfig?.provider === "deepseek";
+  const asQuery = !!options.asQuery;
 
-  let bodyObj;
-  if (useCloudEmbeddings) {
-    bodyObj = {
-      model: modelForCloudEmbeddings,
-      input: texts,
-      ...cloudCredentialTransportFields(),
-      _cloud_base_url: cloudConfig.baseUrl,
-    };
-  } else {
-    if (isDeepSeekEmbeddingUnsupported && !hasShownDeepseekEmbeddingNotice) {
-      if (typeof setStatus === "function") {
-        setStatus(t("deepseek_embedding_local_fallback"), { notify: false });
+  const readVectors = async (response, source) => {
+    if (!response.ok) {
+      const detail = typeof response.text === "function"
+        ? serviceErrorDetail(response.status, await response.text())
+        : "";
+      throw new Error(`${source} embedding failed: ${response.status} ${detail}`.trim());
+    }
+    const data = await response.json();
+    return data.data.map((item) => item.embedding);
+  };
+
+  /** Load the lazy in-browser backend once, then embed (e5 query/passage sides). */
+  const embedWithBrowser = async () => {
+    if (!window.AISystem6EmbedInBrowser) {
+      if (typeof ensureLazySystemModule === "function") {
+        await ensureLazySystemModule("app/core/embed-in-browser.js", "AISystem6EmbedInBrowserLoaded");
       }
-      hasShownDeepseekEmbeddingNotice = true;
     }
-    const model = localModel;
-    if (!model) throw new Error(t("embedding_model_missing"));
-    path = "";
-    bodyObj = {
-      model,
-      input: texts,
-    };
-  }
+    if (!window.AISystem6EmbedInBrowser || typeof window.AISystem6EmbedInBrowser.embed !== "function") {
+      throw new Error(t("embedding_model_missing"));
+    }
+    if (asQuery) {
+      const out = [];
+      for (const text of texts) out.push(await window.AISystem6EmbedInBrowser.embedQuery(text));
+      return out;
+    }
+    return window.AISystem6EmbedInBrowser.embed(texts);
+  };
 
-  let response;
+  const attempts = [];
   if (useCloudEmbeddings) {
-    response = await window.AISystem6Capabilities.requestService("cloud.embeddings", {
-      init: {
-        method: "POST",
-        signal,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(bodyObj),
-      },
+    attempts.push(async () => {
+      const response = await window.AISystem6Capabilities.requestService("cloud.embeddings", {
+        init: {
+          method: "POST",
+          signal,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: modelForCloudEmbeddings,
+            input: texts,
+            ...cloudCredentialTransportFields(),
+            _cloud_base_url: cloudConfig.baseUrl,
+          }),
+        },
+      });
+      return readVectors(response, "cloud");
     });
-    if (!response.ok && localModel && localLmStudioConnectionEnabled) {
-      response = await window.AISystem6LocalLMStudio.embed({
-        model: localModel,
-        input: texts,
-      }, { signal });
+  }
+  if (localModel && localConnected) {
+    attempts.push(async () => {
+      const response = await window.AISystem6LocalLMStudio.embed({ model: localModel, input: texts }, { signal });
+      return readVectors(response, "local");
+    });
+  }
+  attempts.push(embedWithBrowser);
+
+  let lastError = null;
+  for (const attempt of attempts) {
+    try {
+      return await attempt();
+    } catch (error) {
+      lastError = error;
     }
-  } else {
-    if (!localLmStudioConnectionEnabled) throw new Error(t("local_connection_waiting"));
-    response = await window.AISystem6LocalLMStudio.embed(bodyObj, { signal });
   }
 
-  if (!response.ok) {
-    throw new Error(`Embedding request failed: ${response.status} ${serviceErrorDetail(response.status, await response.text())}`);
+  if (isDeepSeekEmbeddingUnsupported && !hasShownDeepseekEmbeddingNotice) {
+    if (typeof setStatus === "function") {
+      setStatus(t("deepseek_embedding_local_fallback"), { notify: false });
+    }
+    hasShownDeepseekEmbeddingNotice = true;
   }
-  const data = await response.json();
-  return data.data.map((item) => item.embedding);
+  throw lastError || new Error("Embedding request failed: no backend available");
+}
+
+/**
+ * Seamless first-use warm-up: when neither cloud nor local LM Studio can
+ * provide embeddings, quietly preload the in-browser model in the background
+ * so the first semantic search does not stall on the model download. Fires
+ * from the derived-index background timer; errors are swallowed on purpose.
+ */
+function preloadBrowserEmbeddingFallback() {
+  try {
+    const isCloud = typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudCredentialReady();
+    const cloudUsable = isCloud && cloudConfig?.provider !== "deepseek";
+    const localModel = String(embeddingModelInput?.value?.trim() || "");
+    const localUsable = !!localModel && !!localLmStudioConnectionEnabled;
+    if (cloudUsable || localUsable) return;
+    if (window.AISystem6EmbedInBrowser?.preload) {
+      window.AISystem6EmbedInBrowser.preload().catch(() => {});
+      return;
+    }
+    if (typeof ensureLazySystemModule === "function") {
+      ensureLazySystemModule("app/core/embed-in-browser.js", "AISystem6EmbedInBrowserLoaded")
+        .then(() => window.AISystem6EmbedInBrowser?.preload?.())
+        .catch(() => {});
+    }
+  } catch {
+    // Background warm-up must never break indexing.
+  }
 }
 
 function cosineSimilarity(a, b) {
@@ -816,7 +867,7 @@ function clampNumber(value, min, max) {
   return Math.max(min, Math.min(value, max));
 }
 
-var CLOUD_MODEL_CONTEXT_LENGTHS = { "auto": 1000000, "deepseek-v4-flash": 1000000, "deepseek-v4-pro": 1000000, "deepseek-v4-flash-vision-exp": 1000000, "v4-flash": 1000000, "v4-pro": 1000000 };
+var CLOUD_MODEL_CONTEXT_LENGTHS = { "auto": 1000000, "deepseek-flash": 1000000, "deepseek-v4-pro": 1000000, "deepseek-v4-flash": 1000000 };
 
 function currentModelMaxContextTokens() {
   if (typeof cloudConfig !== "undefined" && cloudConfig && cloudConfig.active && cloudConfig.model) {
@@ -1248,7 +1299,7 @@ async function rankChunksForQuery(userText, signal) {
   }
 
   try {
-    const [queryEmbedding] = await embedTexts([userText], signal);
+    const [queryEmbedding] = await embedTexts([userText], signal, { asQuery: true });
     const scores = new Map();
     projectChunks.forEach((chunk) => {
       const score = cosineSimilarity(queryEmbedding, chunk.embedding);

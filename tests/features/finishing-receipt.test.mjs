@@ -145,8 +145,11 @@ test.assertNotMatches(css, /\.finishing-receipt-window\s*\{[^}]*\bwidth\s*:/,
 
 test.assertIncludes(receiptSource, "clampWindowToViewport(win)",
   "a receipt rendered into an already-open window is pulled back onto the screen");
-test.assertIncludes(receiptSource, 'window.matchMedia("(max-width: 860px)").matches',
-  "below 860px the stylesheet owns the frame, so the clamp must not write an absolute left onto a centred window");
+// The width literal became the shared phone predicate on 2026-09-05: a phone
+// is a device class, not a width, and every inline copy of the old query
+// stopped applying the moment the device was turned sideways.
+test.assertIncludes(receiptSource, "isNarrowViewport()",
+  "on a phone the stylesheet owns the frame, so the clamp must not write an absolute left onto a centred window");
 test.assertMatches(receiptSource, /typeof clampWindowToViewport === "function"/,
   "the lazy module guards the eager helper by typeof, never by a bare reference");
 test.assertMatches(responsiveCss, /@media \(max-height: 700px\) \{\s*\.finishing-receipt-window \.info-pane \{\s*overflow-y: auto;/,

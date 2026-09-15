@@ -1,5 +1,5 @@
 <!-- canonical-source: apps/desktop/app/vendor/micropolis/NOTICE.md -->
-<!-- source-sha256: d74fff1ea27652727b2c2627134b641ff6d3ea4c7c6173a0f91488cb9746d36e -->
+<!-- source-sha256: cf0f6c280e4dddb9fff473441dac3980912caef23c714c6773e53d932eca9499 -->
 
 # Micropolis 引擎第三方声明
 
@@ -24,6 +24,14 @@
   恢复 Math.random。
 - 音效转发（AI System 6）：spriteManager.js 把精灵的音效提示（爆炸、鸣笛、
   怪兽、拥堵）转发给管理器的监听者，外壳的合成音效才听得到。
+- 缺陷修复（AI System 6）：traffic.js 仍在调用 position.ts 已经取消的复制
+  构造 `new Position(另一个位置)`，并从一个任何作用域都没有的 `pos` 起步；
+  行驶位置从来就不是真实坐标，于是任何城市都找不到一条通勤路线，交通密度图
+  永远为空。打包时改为按坐标复制，并从 `drivePos` 起步。
+- 缺陷修复（AI System 6）：blockMapUtils.js 的 crimeScan 读取 BlockMap 的
+  `mapWidth`／`mapHeight`，而 BlockMap 提供的是 `gameMapWidth`／
+  `gameMapHeight`；循环边界为 undefined，扫描从未执行，任何城市的
+  `census.crimeAverage` 都是 0。打包时修正字段名。
 - 许可：GNU GPL v3 及附加条款——详见本目录内 LICENSE 与 COPYING。
 - 名称／用语「MICROPOLIS」是 Micropolis GmbH 的注册商标；商标所有者出于善意，
   许可 Micropolis 项目使用。

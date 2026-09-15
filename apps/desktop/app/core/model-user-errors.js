@@ -37,10 +37,19 @@ const modelRecoveryKinds = Object.freeze({
     diagnosticCode: "timeout",
   }),
   unknown: Object.freeze({
-    messageKey: "ai_error_unknown",
+  messageKey: "ai_error_unknown",
     actionKey: "ai_action_view_connection",
     actionId: "open-cloud-ai-settings",
     diagnosticCode: "unknown",
+  }),
+  // The site allowance running out is not a failure to retry: it is the point
+  // where a writer who kept asking has shown they want more, and the next step
+  // is their own key or a local model. Both live behind the same settings.
+  quotaExhausted: Object.freeze({
+    messageKey: "cloud_shared_limit",
+    actionKey: "ai_action_bring_own_ai",
+    actionId: "open-cloud-ai-settings",
+    diagnosticCode: "allowance-exhausted",
   }),
 });
 
@@ -54,6 +63,7 @@ function classifyModelFailure(error, context = {}) {
   const combined = `${message} ${detail}`;
 
   if (status === 401 || status === 403) return "invalidCredentials";
+  if (/shared_cloud_(?:session_limit|daily_request_limit|daily_token_limit)/.test(combined)) return "quotaExhausted";
   if (status === 404 || /unknown model|no such model|model ["']?[\w.-]+["']? not found/.test(combined)) {
     return "modelUnavailable";
   }
@@ -144,7 +154,7 @@ function pushModelRecoveryNotification(error, context = {}) {
   if (typeof pushSystemNotification !== "function") return "";
   return pushSystemNotification(text, {
     actionId: recovery.actionId,
-    actionLabel: t(recovery.actionKey),
+    actionLabelKey: recovery.actionKey,
     state: "error",
   });
 }

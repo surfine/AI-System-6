@@ -324,11 +324,16 @@ body.is-writer-mode .context-panel-window {
   min-width: 0;
 }
 
-/* The glass material (backdrop blur) is structural, so it lives next to its
-   base rule instead of in the theme file; values are single-sourced above. */
+/* The glass material is structural, so it lives next to its base rule instead
+   of in the theme file. The bar keeps the era's translucent tint and gives up
+   the frosted blur: frost belongs to a surface with something behind it, and
+   this bar sits on the desk's own pattern. On a phone the blur read as a soft,
+   washed strip across the top of the screen — worst once the desk is added to
+   the Home Screen, where the bar runs under the status area and the material
+   covers three times the strip it covers in a browser tab. */
 body.use-liquid-glass .menu-bar {
-  backdrop-filter: blur(18px) saturate(155%) brightness(1.02);
-  -webkit-backdrop-filter: blur(18px) saturate(155%) brightness(1.02);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .menu-bar > .menu > button {
@@ -391,14 +396,14 @@ body.use-liquid-glass .menu-bar {
   white-space: nowrap;
 }
 
-.window {
-  border-radius: var(--window-radius);
-}
-
-.title-bar h1,
-.title-bar h2 {
-  color: var(--titlebar-title-fg);
-}
+/* `.window { border-radius }` and `.title-bar h1, h2 { color }` were dead
+   copies of 10-windows.css and were deleted here to pay for the portrait
+   safe-area insets below. Both were verified by hand first, not taken from
+   tooling/audit-css-duplicates.mjs on trust: that audit compares only against
+   the base files, so it cannot see an earlier rule in THIS file or the layer
+   order, and 9 of the 11 rules it called dead are not. Nothing else in this
+   file sets either property on either selector at top level, and the theme
+   layers that override them run after this one either way. */
 
 .window:not(.is-active) .close-box,
 .window:not(.is-active) .resize-box,
@@ -806,14 +811,40 @@ select:focus {
    any coarse-pointer/no-hover surface while the rest of the System 6 type
    scale is untouched. */
 @media (hover: none) and (pointer: coarse) {
-  body input:not([type="checkbox"]):not([type="radio"]),
-  body textarea,
-  body select {
+  /* The grow box is the scroll-bar corner cell, and at 16px it was the one
+     piece of window chrome a finger could not reliably hit. HIG.md's rule is
+     that the System 6 glyph keeps its drawn size and an OWNED invisible hit
+     region grows around it, so this expands the target without moving a pixel
+     of the art. It grows up and to the left, into the window's own corner,
+     where nothing else is: the pane's bottom-right corner is the grow box's
+     cell already. */
+  .grow-box::after {
+    content: "";
+    position: absolute;
+    inset: -28px 0 0 -28px;
+  }
+
+  /* One selector for all three, and it has to out-rank ordinary application
+     rules. The old form listed them separately, so `body textarea` and
+     `body select` carried only (0,0,2) — less than any `.some-window textarea`
+     in an app stylesheet, and less than every lazily loaded sheet, which
+     arrives after this file and wins ties on source order as well. Measured
+     2026-09-05: eleven surfaces still focused at 13–15px, so iOS still zoomed
+     the desk on the writing route's own fields.
+     `:is()` takes the specificity of its most specific branch, which gives all
+     three the same (0,3,2) as the input branch, and `body[data-theme]` is the
+     era attribute every boot sets — the same ladder the appearance layer uses
+     to reach past a plain `body`. */
+  body[data-theme] :is(
+    input:not([type="checkbox"]):not([type="radio"]),
+    textarea,
+    select
+  ) {
     font-size: max(16px, var(--system-text-size));
   }
 }
 
-@media (max-width: 860px) {
+@media (max-width: 860px), (hover: none) and (pointer: coarse) and (max-height: 660px) {
   /* A phone scrolls with a finger and cannot size a window at all, so the
      System 6 bars would be decoration with 16px tap targets. Values only —
      the frame structure itself is unchanged. */
@@ -868,7 +899,7 @@ select:focus {
     overflow: visible;
     border: 0;
     border-left: 1px solid var(--menu-divider-color);
-    border-radius: 0;
+    border-radius: var(--item-radius);
     background: transparent;
     box-shadow: none;
     backdrop-filter: none;
@@ -1084,11 +1115,6 @@ select:focus {
     text-align: center;
   }
 
-  .spine-step-number {
-    top: -1px;
-    left: calc(50% - 31px);
-  }
-
   .spine-flow-toolbox .spine-section {
     grid-template-columns: 1fr;
     gap: 3px;
@@ -1117,6 +1143,99 @@ select:focus {
   .teachtext-preview {
     padding: 22px 18px;
   }
+
+
+  /* Dialogs and system-owned pages are PHONE presentations, not portrait ones.
+     They lived in the portrait block, so a phone turned sideways placed them
+     with desktop geometry and hung Page Setup and the Import Utility off the
+     bottom of a 420px-high screen. One design, both orientations. */
+  body:not(.is-writer-mode) .window.is-mobile-dialog:not(.is-hidden):not(.is-collapsed) {
+    position: fixed;
+    left: 50%;
+    right: auto;
+    top: calc(var(--menu-bar-height) + var(--safe-area-top) + 12px);
+    width: min(430px, calc(100vw - 24px));
+    height: auto;
+    max-width: calc(100vw - 24px);
+    max-height: calc(
+      100vh
+      - var(--menu-bar-height)
+      - var(--safe-area-top)
+      - var(--safe-area-bottom)
+      - var(--keyboard-inset, 0px)
+      - 24px
+    );
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  body:not(.is-writer-mode) .window.is-mobile-dialog:not(.is-hidden):not(.is-collapsed) > .window-pane {
+    min-height: 0;
+    overflow: auto;
+  }
+
+  /* Help and the first-run Guide are system-owned pages, not Finder content
+     and not Desk Accessories. They use the named pinned-window layer and keep
+     their own internal panes scrollable above any foreground application. */
+  body:not(.is-writer-mode) .window.is-mobile-system-page:not(.is-hidden):not(.is-collapsed) {
+    position: fixed;
+    inset:
+      calc(var(--menu-bar-height) + var(--safe-area-top))
+      0
+      var(--keyboard-inset, 0px)
+      0;
+    width: 100%;
+    height: auto;
+    min-width: 0;
+    max-width: none;
+    max-height: none;
+    border-width: 0;
+    border-radius: var(--surface-radius);
+    transform: none;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  body:not(.is-writer-mode) .window.is-mobile-system-page:not(.is-hidden):not(.is-collapsed) > .window-pane {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+    scroll-padding-bottom: var(--safe-area-bottom);
+  }
+
+  body:not(.is-writer-mode) .system-help-window.is-mobile-system-page > .system-help-pane {
+    overflow: hidden;
+  }
+  /* Five buttons at a 88px floor, told never to wrap, make a 472px row inside
+     a 420px window -- so the whole scrap editor scrolled sideways to reach its
+     own Save. A phone wraps the row instead and lets the buttons share the
+     width they have. */
+  .scrap-editor .button-row {
+    flex-wrap: wrap;
+  }
+
+  .scrap-editor .button-row .btn {
+    min-width: min(88px, 100%);
+  }
+
+  /* An overlay window floats on a phone, but the screen is the limit. Desk
+     Accessories keep their own size until it exceeds the display;
+     then they clamp and scroll inside instead of hanging off the edge. This is
+     the safety net for both orientations — landscape is where it bites, since
+     Key Caps is 808px tall and a sideways phone is 420px high. */
+  body:not(.is-writer-mode) .window.is-mobile-accessory:not(.is-hidden):not(.is-collapsed) {
+    max-width: min(560px, calc(100vw - 16px));
+    max-height: calc(100vh - var(--menu-bar-height) - var(--safe-area-top) - var(--safe-area-bottom) - 16px);
+  }
+
+  body:not(.is-writer-mode) .window.is-mobile-accessory:not(.is-hidden):not(.is-collapsed) .window-pane {
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+
 }
 
 @media (max-width: 700px) {
@@ -1153,14 +1272,16 @@ select:focus {
   /* The menu bar must fit the SuperClock! clock on phones: collapse the
      cloud-model label to its icon so the full set of menus + model icon +
      clock stays on screen. */
-  .cloud-model-indicator {
+  .cloud-model-indicator,
+  .guest-indicator {
     min-width: 30px;
     max-width: 38px;
     padding-inline: 4px;
     justify-content: center;
   }
 
-  #cloud-model-label {
+  #cloud-model-label,
+  #guest-indicator-label {
     display: none;
   }
 
@@ -1272,9 +1393,6 @@ select:focus {
     min-height: 58px;
   }
 
-  .spine-step-number {
-    left: calc(50% - 31px);
-  }
 }
 
 /* WindowShade must win over writer-mode and responsive min-height rules. */
@@ -1366,7 +1484,26 @@ body.is-writer-mode .system-help-window .system-help-pane {
   overflow: hidden;
 }
 
-@media (max-width: 860px) {
+@media (max-width: 860px), (hover: none) and (pointer: coarse) and (max-height: 660px) {
+  /* The writing route's Cmds menu sits at the right end of a bottom action bar
+     that spans the whole window. Anchored by its left edge, a 210px panel on a
+     375px phone opened to x=473 and the window's own overflow ate all of it:
+     the menu answered the tap by showing nothing. Anchor it to the right edge,
+     where the room is, the way a Mac menu near a screen edge has always
+     flipped. Desktop keeps opening leftwards from the button. */
+  .teachtext-actions .teachtext-command-menu > .teachtext-command-popover,
+  .specialized-command-menu .teachtext-command-popover,
+  .specialized-command-menu .teachtext-command-subpopover {
+    right: 0;
+    left: auto;
+    /* Sideways, the screen is shorter than the panel: the same menu stood 367px
+       tall on a 375px-high phone and lost its last command off the bottom. Cap
+       it against the screen and let it scroll, the way the Review Desk panel
+       already does under Liquid Glass. The cap only bites on a short screen. */
+    max-height: calc(100vh - 96px);
+    overflow-y: auto;
+  }
+
   body.is-writer-mode .system-help-window {
     top: 36px;
     left: 16px;
@@ -1390,7 +1527,7 @@ body.is-writer-mode .system-help-window .system-help-pane {
   }
 }
 
-@media (max-width: 860px) {
+@media (max-width: 860px), (hover: none) and (pointer: coarse) and (max-height: 660px) {
   body:not(.is-writer-mode) .window.assistant-window:not(.about-window):not(.save-chat-window):not(.is-collapsed):not(.is-mobile-fullscreen),
   body:not(.is-writer-mode) .window.assistant-window.is-desklet:not(.about-window):not(.save-chat-window):not(.is-collapsed):not(.is-mobile-fullscreen) {
     min-height: 72vh;
@@ -1447,7 +1584,13 @@ body.is-writer-mode .system-help-window .system-help-pane {
     grid-template-columns: 1fr;
     align-items: start;
     gap: 16px;
-    padding: 18px;
+    /* The safe area raises the desk's 18px margin instead of adding to it, the
+       way 50-apps.css already treats its own corner. iPhone Duo is why this is
+       needed in PORTRAIT, the one axis this flow used to ignore: its outer
+       display keeps the system's controls and the front camera down one SIDE,
+       so a horizontal inset is nonzero while the device stands upright. Every
+       other phone reports 0 here and keeps exactly the margin it had. */
+    padding: 18px max(18px, var(--safe-area-right)) 18px max(18px, var(--safe-area-left));
     overflow: visible;
     --mobile-work-left: 0px;
     --mobile-work-right: 0px;
@@ -1515,11 +1658,6 @@ body.is-writer-mode .system-help-window .system-help-pane {
     text-align: center;
   }
 
-  body:not(.is-writer-mode) .spine-step-number {
-    top: -1px;
-    left: calc(50% - 31px);
-  }
-
   body:not(.is-writer-mode) .window.is-mobile-work-area:not(.is-mobile-fullscreen):not(.is-collapsed),
   body:not(.is-writer-mode) .window.is-mobile-work-area.assistant-window:not(.is-mobile-fullscreen):not(.is-collapsed),
   body:not(.is-writer-mode) .window.is-mobile-work-area.assistant-window.is-desklet:not(.is-mobile-fullscreen):not(.is-collapsed) {
@@ -1579,7 +1717,7 @@ body.is-writer-mode .system-help-window .system-help-pane {
     aspect-ratio: auto;
     margin: 0;
     border-width: 0;
-    border-radius: 0;
+    border-radius: var(--surface-radius);
     transform: none;
     display: flex;
     flex-direction: column;
@@ -1593,7 +1731,11 @@ body.is-writer-mode .system-help-window .system-help-pane {
      role and keeps its existing scroll-safe treatment. */
   body.mobile-app-foreground:not(.is-writer-mode)
     .window.is-mobile-fullscreen:not(.assistant-window) {
-    padding-bottom: var(--safe-area-bottom);
+    /* Horizontal insets for the same reason, written as one shorthand because
+       the boot budget is counted in bytes: the window material still reaches
+       the true edge, and no control inside it lands under a reserved side
+       region. The landscape shell has had this since the phone matrix. */
+    padding: 0 var(--safe-area-right) var(--safe-area-bottom) var(--safe-area-left);
   }
 
   /* Inside the full-screen shell the pane between title bar and composer takes
@@ -1610,8 +1752,11 @@ body.is-writer-mode .system-help-window .system-help-pane {
     /* The window's own background already reaches the true edge; this keeps
        the send button and text clear of the home indicator without pulling the
        window boundary up. env() reports 0 here once the keyboard covers the
-       indicator, so this never doubles up with --keyboard-inset. */
-    padding-bottom: var(--safe-area-bottom);
+       indicator, so this never doubles up with --keyboard-inset. ClioTalk is
+       excluded from the shell's inset rule above because it owns its bottom
+       edge here, so it takes the side region here too -- otherwise the one
+       app a phone spends most of its time in is the one left unprotected. */
+    padding: 0 var(--safe-area-right) var(--safe-area-bottom) var(--safe-area-left);
   }
 
   /* Finder has one phone browser: changing folders or volumes replaces its
@@ -1625,73 +1770,42 @@ body.is-writer-mode .system-help-window .system-help-pane {
      and independently scrollable so Save Chat, Page Setup, and Get Info never
      replace the content the user is acting on. Their normal window layer from
      the manager remains the owner; no parallel mobile z-index is introduced. */
-  body:not(.is-writer-mode) .window.is-mobile-dialog:not(.is-hidden):not(.is-collapsed) {
-    position: fixed;
-    left: 50%;
-    right: auto;
-    top: calc(var(--menu-bar-height) + var(--safe-area-top) + 12px);
-    width: min(430px, calc(100vw - 24px));
-    height: auto;
-    max-width: calc(100vw - 24px);
-    max-height: calc(
-      100vh
-      - var(--menu-bar-height)
-      - var(--safe-area-top)
-      - var(--safe-area-bottom)
-      - var(--keyboard-inset, 0px)
-      - 24px
-    );
-    transform: translateX(-50%);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  body:not(.is-writer-mode) .window.is-mobile-dialog:not(.is-hidden):not(.is-collapsed) > .window-pane {
-    min-height: 0;
-    overflow: auto;
-  }
-
-  /* Help and the first-run Guide are system-owned pages, not Finder content
-     and not Desk Accessories. They use the named pinned-window layer and keep
-     their own internal panes scrollable above any foreground application. */
-  body:not(.is-writer-mode) .window.is-mobile-system-page:not(.is-hidden):not(.is-collapsed) {
-    position: fixed;
-    inset:
-      calc(var(--menu-bar-height) + var(--safe-area-top))
-      0
-      var(--keyboard-inset, 0px)
-      0;
-    width: 100%;
-    height: auto;
-    min-width: 0;
-    max-width: none;
-    max-height: none;
-    border-width: 0;
-    border-radius: 0;
-    transform: none;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  body:not(.is-writer-mode) .window.is-mobile-system-page:not(.is-hidden):not(.is-collapsed) > .window-pane {
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow: auto;
-    scroll-padding-bottom: var(--safe-area-bottom);
-  }
-
-  body:not(.is-writer-mode) .system-help-window.is-mobile-system-page > .system-help-pane {
-    overflow: hidden;
-  }
 
   /* Home = clear this state; the desktop launcher underneath returns. While an
      app is foregrounded, the launcher column and writing spine stay out of the
-     way behind it. */
+     way behind it.
+
+     Folded to their own edges, not switched off. `display: none` leaves no box
+     at all, so everything that measures the desk reads the launcher as a zero
+     rect at the desktop's ORIGIN -- under the app's left edge, the one place
+     the launcher never is. The device matrix read exactly that on an iPad mini
+     in portrait (744x1133, below the phone line, so the full-screen shell is
+     correct there) and reported the Reader as covering the launcher it was in
+     fact hiding. Folded, each rail measures as what it is: no width, at the
+     side it lives on. Window placement is unchanged -- getDesktopAvoidanceInsets
+     already treats a zero-width column as absent, the same answer it gave for
+     the display:none one. */
   body.mobile-app-foreground:not(.is-writer-mode) .icon-column,
   body.mobile-app-foreground:not(.is-writer-mode) .writing-spine-panel {
-    display: none;
+    position: absolute;
+    top: 0;
+    bottom: auto;
+    width: 0;
+    min-width: 0;
+    height: 0;
+    padding: 0;
+    overflow: hidden;
+    visibility: hidden;
+  }
+
+  body.mobile-app-foreground:not(.is-writer-mode) .icon-column {
+    left: auto;
+    right: 0;
+  }
+
+  body.mobile-app-foreground:not(.is-writer-mode) .writing-spine-panel {
+    left: 0;
+    right: auto;
   }
 
   /* MultiFinder keeps background applications running, but a phone presents
@@ -1734,6 +1848,15 @@ body.is-writer-mode .system-help-window .system-help-pane {
 
   body:not(.is-writer-mode) .window:is(.find-file-window, .memory-cards-window):not(.is-hidden):not(.is-collapsed) {
     width: min(520px, 100%);
+  }
+
+  /* The import button's `auto` track takes what it needs and the picker lives
+     on the remainder: at 375px that was 208px against 139, for a line needing
+     143 -- "No backup selected" ellipsized at the word that says what is going
+     on. In portrait the two stack and each gets the whole row. Landscape is
+     not affected: there the remainder is over 400px. */
+  .backup-action-row {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   body:not(.is-writer-mode) .window:is(.note-pad-window):not(.is-hidden):not(.is-collapsed) {
@@ -1959,6 +2082,7 @@ body.use-modern-fonts {
   --system-check-size: 14px;
   --system-title-weight: 500;
   --system-emphasis-weight: 500;
+  --system-select-control-font-weight: 400;
   --system-strong-weight: 600;
   --writing-editor-font-size: 15px;
   --writing-editor-line-height: 1.58;
@@ -2180,7 +2304,7 @@ input[type="number"] {
   min-height: var(--system-control-min-height);
   padding: 6px 9px;
   border: var(--system-control-line) solid var(--ink);
-  border-radius: 0;
+  border-radius: var(--item-radius);
   background: var(--paper);
   box-shadow: var(--system-inset);
   color: var(--ink);
@@ -2202,13 +2326,13 @@ select {
   background: var(--paper);
   box-shadow: var(--system-inset);
   color: var(--ink);
-  font-family: var(--text-font);
+  font-family: var(--ui-font);
   font-size: var(--system-control-size);
   font-weight: 400;
   line-height: 1.35;
   padding-right: 30px;
   background-color: var(--paper);
-  background-image: url("./system.css-reference/icon/select-button.svg");
+  background-image: url("./assets/select-arrow.svg");
   background-position: right 6px center;
   background-repeat: no-repeat;
   background-size: 17px 17px;
@@ -2234,7 +2358,7 @@ optgroup {
   background: var(--paper);
   background-color: var(--paper);
   color: var(--ink);
-  font-family: var(--text-font);
+  font-family: var(--ui-font);
   font-size: var(--system-control-size);
 }
 
@@ -2282,7 +2406,7 @@ select:focus-visible {
     margin-top: 4px;
     padding: 3px;
     border: var(--system-control-line) solid var(--ink);
-    border-radius: 0;
+    border-radius: var(--surface-radius);
     background: var(--paper);
     box-shadow:
       2px 2px 0 var(--paper),
@@ -2367,12 +2491,12 @@ button.btn {
   box-shadow: var(--btn-hover-shadow);
 }
 
-.btn:active:not(:disabled):not(.is-disabled) {
-  background: var(--btn-active-bg);
-  color: var(--btn-active-fg);
-  transform: none;
-  box-shadow: var(--btn-active-shadow);
-}
+/* `.btn:active` was a byte-identical copy of 10-windows.css:3627 and is the
+   third rule deleted to pay for the insets. Nothing between the windows layer
+   and this one sets background, color, transform or box-shadow on anything
+   matching a pressed .btn (checked across 20/30/40/50), and Liquid Glass's own
+   pressed rules run after this file either way, so the base rule simply
+   becomes the winner it already agreed with. */
 
 .btn:disabled,
 .btn.is-disabled,
@@ -2384,6 +2508,13 @@ button:disabled {
     repeating-linear-gradient(45deg, var(--paper) 0, var(--paper) 4px, #eeeeee 4px, #eeeeee 8px)
   );
   box-shadow: none;
+  /* Being unavailable dims the whole control, and the border is part of the
+     control. Every era marks a live button with an outline of its own — the
+     default button's ring, Aqua's and Snow Leopard's blue stroke, Yosemite's
+     heavy ink — and leaving that on drew a confident outline around a grey
+     label, which reads as a button waiting to be pressed. The border dims
+     with the text; an era may name its own dim (Liquid Glass does). */
+  border-color: var(--control-disabled-border, var(--shade-dark));
 }
 
 /* .teachtext-preview is deliberately NOT in this list. It is the writer's
@@ -2950,18 +3081,22 @@ input[type="radio"] {
   }
 }
 
-/* A phone held sideways hands the whole screen to an immersive app — the three
-   games, whose content IS the screen. Portrait already does this; without the
-   landscape counterpart a game runs in a small floating window that spends
-   most of the display on desktop pattern and clips its own chrome. Every other
-   app keeps the portrait-only figure and stays a window here. The shell sets
-   the body class, so this rule never has to re-derive the state. */
-@media (max-width: 860px) and (orientation: landscape) {
-  body.mobile-immersive-landscape {
+/* A phone held sideways hands the whole screen to the foreground app page.
+   Portrait already does this; without the landscape counterpart an app ran in
+   a small floating window that spent most of a 912x420 display on desktop
+   pattern and clipped its own chrome. This used to admit only the three games,
+   on the reasoning that their content IS the screen — but a landscape phone
+   has no room for a window plus a desktop either, and the zoom box still
+   restores the window down, so this stays a maximize and never a lock.
+   The shell sets the body class, so this rule never re-derives the state.
+   Left and right take the safe-area insets because a notch or Dynamic Island
+   sits on the SIDE of a phone held sideways. */
+@media (orientation: landscape) and (max-width: 860px), (orientation: landscape) and (hover: none) and (pointer: coarse) and (max-height: 660px) {
+  body.mobile-landscape-shell {
     overflow: hidden;
   }
 
-  body.mobile-immersive-landscape .window.is-mobile-fullscreen:not(.is-collapsed) {
+  body.mobile-landscape-shell .window.is-mobile-fullscreen:not(.is-collapsed) {
     position: fixed;
     inset:
       calc(var(--menu-bar-height) + var(--safe-area-top))
@@ -2975,21 +3110,54 @@ input[type="radio"] {
     min-width: 0;
     margin: 0;
     border-width: 0;
-    border-radius: 0;
+    border-radius: var(--surface-radius);
     transform: none;
     aspect-ratio: auto;
   }
 
-  body.mobile-immersive-landscape .window.is-mobile-fullscreen .window-pane {
+  body.mobile-landscape-shell .window.is-mobile-fullscreen .window-pane {
     padding-bottom: var(--safe-area-bottom);
+  }
+
+  /* An immersive app's artifact is the screen: the canvas reaches the safe-area
+     edge instead of sitting inside the pane's reading padding. Every other app
+     keeps its padding, because its content is text and controls. */
+  body.mobile-landscape-shell.mobile-immersive-app .window.is-mobile-fullscreen .window-pane {
+    padding-inline: 0;
   }
 
   /* A foregrounded immersive app owns the landscape screen exactly as it owns
      portrait: the launcher column and writing spine yield behind it. Without
      this counterpart the spine's floating layer keeps intercepting the app's
      left toolbar in the writing workspace profile. */
-  body.mobile-immersive-landscape:not(.is-writer-mode) .icon-column,
-  body.mobile-immersive-landscape:not(.is-writer-mode) .writing-spine-panel {
-    display: none;
+  /* Folded to its own edge, not switched off. `display: none` leaves no box, so
+     `getBoundingClientRect()` reports (0,0,0,0) and every reader of the desk's
+     geometry -- window placement, the zoom box, the device matrix -- is told
+     the launcher sits at the desktop's ORIGIN, underneath the foreground app.
+     The portrait rule above was corrected first; this is the same lie in the
+     other orientation, and it is fixed here rather than left for whoever adds
+     a landscape desk cell to the matrix. `visibility: hidden` keeps the rail
+     unpainted and un-hittable, so nothing on screen changes. */
+  body.mobile-landscape-shell:not(.is-writer-mode) .icon-column,
+  body.mobile-landscape-shell:not(.is-writer-mode) .writing-spine-panel {
+    position: absolute;
+    top: 0;
+    bottom: auto;
+    width: 0;
+    min-width: 0;
+    height: 0;
+    padding: 0;
+    overflow: hidden;
+    visibility: hidden;
+  }
+
+  body.mobile-landscape-shell:not(.is-writer-mode) .icon-column {
+    left: auto;
+    right: 0;
+  }
+
+  body.mobile-landscape-shell:not(.is-writer-mode) .writing-spine-panel {
+    left: 0;
+    right: auto;
   }
 }

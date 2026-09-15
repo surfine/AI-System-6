@@ -1,0 +1,188 @@
+{
+  "note": "Fastest of 3 passes per cell. A NEW regression outside the tolerance band is a refusal; a value that has IMPROVED past the band is ALSO a refusal until the number here is corrected, so a win cannot hide behind a stale number. Regenerate with --update-baseline only when the change is deliberate and explained.",
+  "capturedBy": "tooling/verify-web-vitals.mjs",
+  "repeats": 3,
+  "cpuThrottle": {
+    "iphone-14pro": 4,
+    "mac-13-inch": 1
+  },
+  "tolerance": {
+    "timingPct": 0.35,
+    "timingFloorMs": 120,
+    "bytesPct": 0.03,
+    "countAbsolute": 3,
+    "clsAbsolute": 0.02
+  },
+  "budgets": {
+    "shellWarmStartMs": 2000,
+    "warmStartMs": 1000,
+    "lcpMs": 2500,
+    "cls": 0.1,
+    "bootTransferBytes": 2949120,
+    "keyEchoFirstMs": 200,
+    "keyEchoWorstMs": 200,
+    "keyEchoP75Ms": 50,
+    "scrollLongTasksOver50": 0
+  },
+  "unmeasurable": [
+    "scroll inside the shell holds 60 fps",
+    "the keyboard opening causes zero layout shift",
+    "the numbers are an iPhone 14 Pro"
+  ],
+  "cells": {
+    "iphone-14pro": {
+      "coldStartMs": 4556,
+      "shellWarmStartMs": 4212,
+      "warmStartMs": 2068,
+      "lcpMs": 2636,
+      "cls": 0.1353,
+      "totalBlockingTimeMs": 871,
+      "bootTransferBytes": 3418117,
+      "bootResourceCount": 393,
+      "longTasksOver50InFirst5s": 8,
+      "keyEchoFirstMs": 16,
+      "keyEchoWorstMs": 15,
+      "keyEchoP75Ms": 13,
+      "scrollLongTasksOver50": 0
+    },
+    "mac-13-inch": {
+      "coldStartMs": 2887,
+      "shellWarmStartMs": 2989,
+      "warmStartMs": 1017,
+      "lcpMs": 208,
+      "cls": 0.0777,
+      "totalBlockingTimeMs": 1,
+      "bootTransferBytes": 5188481,
+      "bootResourceCount": 630,
+      "longTasksOver50InFirst5s": 1,
+      "keyEchoFirstMs": 10,
+      "keyEchoWorstMs": 11,
+      "keyEchoP75Ms": 8,
+      "scrollLongTasksOver50": 0
+    }
+  },
+  "observedSpread": {
+    "iphone-14pro": {
+      "coldStartMs": {
+        "low": 4556,
+        "high": 6027
+      },
+      "shellWarmStartMs": {
+        "low": 4212,
+        "high": 5536
+      },
+      "warmStartMs": {
+        "low": 2068,
+        "high": 3321
+      },
+      "lcpMs": {
+        "low": 2636,
+        "high": 4156
+      },
+      "cls": {
+        "low": 0.1353,
+        "high": 0.1391
+      },
+      "totalBlockingTimeMs": {
+        "low": 871,
+        "high": 1327
+      },
+      "bootTransferBytes": {
+        "low": 3418117,
+        "high": 6180617
+      },
+      "bootResourceCount": {
+        "low": 393,
+        "high": 618
+      },
+      "longTasksOver50InFirst5s": {
+        "low": 8,
+        "high": 11
+      },
+      "keyEchoFirstMs": {
+        "low": 16,
+        "high": 160
+      },
+      "keyEchoWorstMs": {
+        "low": 15,
+        "high": 20
+      },
+      "keyEchoP75Ms": {
+        "low": 13,
+        "high": 18
+      },
+      "scrollLongTasksOver50": {
+        "low": 0,
+        "high": 0
+      }
+    },
+    "mac-13-inch": {
+      "coldStartMs": {
+        "low": 2887,
+        "high": 3613
+      },
+      "shellWarmStartMs": {
+        "low": 2989,
+        "high": 3493
+      },
+      "warmStartMs": {
+        "low": 1017,
+        "high": 1518
+      },
+      "lcpMs": {
+        "low": 208,
+        "high": 424
+      },
+      "cls": {
+        "low": 0.0777,
+        "high": 0.0818
+      },
+      "totalBlockingTimeMs": {
+        "low": 1,
+        "high": 62
+      },
+      "bootTransferBytes": {
+        "low": 5188481,
+        "high": 6205100
+      },
+      "bootResourceCount": {
+        "low": 630,
+        "high": 630
+      },
+      "longTasksOver50InFirst5s": {
+        "low": 1,
+        "high": 3
+      },
+      "keyEchoFirstMs": {
+        "low": 10,
+        "high": 13
+      },
+      "keyEchoWorstMs": {
+        "low": 11,
+        "high": 15
+      },
+      "keyEchoP75Ms": {
+        "low": 8,
+        "high": 10
+      },
+      "scrollLongTasksOver50": {
+        "low": 0,
+        "high": 0
+      }
+    }
+  },
+  "budgetDebt": {
+    "iphone-14pro": [
+      "shellWarmStartMs",
+      "warmStartMs",
+      "lcpMs",
+      "cls",
+      "bootTransferBytes"
+    ],
+    "mac-13-inch": [
+      "shellWarmStartMs",
+      "warmStartMs",
+      "bootTransferBytes"
+    ]
+  }
+}

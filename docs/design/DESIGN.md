@@ -120,6 +120,37 @@ Exceptions must be named in the feature contract. `Cover Glass` (file name
 carry more visual range, but they still reuse the same window, control, state,
 and theme contracts.
 
+## Shared Controls: Prevention Before Visual Review
+
+New features reuse the existing window, button, field, select and panel primitives.
+Feature CSS owns arrangement; shared primitives own control rendering; appearance
+blocks own material tokens. A repeated defect is fixed at that owner and checked
+across its theme counterparts, including controls inserted after initialization.
+
+| Invariant | Implementation discipline |
+| --- | --- |
+| One visible indicator and label | A select arrow has exactly one painter: native picker, control background or wrapper pseudo-element. A harness-owned native select stays invisible even when disabled. Preserve the indicator image when changing state fills: use `background-color`, not a clearing `background` shorthand. Shared arrow assets have transparent surroundings. |
+| Theme typography | Controls and options consume `--ui-font`, `--system-control-size` and their shared weight role. Content/editor fonts stay on content/editor surfaces. Check both native and harness paths with Chinese and Latin text; a feature must not invent a competing control font or weight. |
+| Theme shape | Buttons and framed surfaces consume semantic radius tokens. Liquid Glass keeps nonzero corners and concentric nesting; historical geometry remains theme-owned. Pixel artwork, separators and intentional circular controls retain their distinct roles. Do not exempt a whole window to hide a failing control. |
+| State continuity | Default, hover, keyboard focus and disabled controls keep the same label/indicator ownership. Opening, selecting and dynamically mounting a control must use the shared harness lifecycle. |
+
+`verify:css`, including scoped `verify:quick -- --css-file ...`, automatically runs
+`node tooling/verify-liquid-shapes.mjs --primitives`. This small browser fixture
+loads production source CSS (including lazy sheets), the theme registry and the
+actual select functions. It checks six appearances, control typography, arrow
+ownership/transparency, hidden native ink and Liquid Glass control/panel corners.
+It needs neither an application server nor a build, and writes an isolated report
+under `dist/verification/liquid-shapes/`. Failures stop the CSS gate. The
+`visual-primitives` feature test reintroduces known defects to prove detection.
+
+Add a fixture when introducing a new primitive or a feature-specific control
+context that existing fixtures do not exercise. Reusing an unchanged primitive
+needs no new screenshot matrix. New layout/overflow, business interactions and
+mobile behavior still need their own scoped evidence; passing this fixture is
+not a claim that every application screen is visually correct. Use the existing
+full `--url` window audit for broad Liquid Glass geometry changes, and the
+`--url ... --select-only` mode to compare controls in a running build.
+
 ## Six Appearances, One Object Grammar
 
 System 6, Platinum, Aqua, Snow Leopard, Yosemite, and Liquid Glass are material
@@ -166,6 +197,37 @@ Appearance work should be token-first:
 
 If a Liquid Glass twin is structurally necessary, add a short comment explaining
 why a token cannot carry the difference.
+
+### Liquid Glass shape system
+
+Liquid Glass uses rounded visible UI surfaces throughout: buttons (including
+selected, disabled, and focus states), fields, tabs, list highlights, cards,
+menus, dialogs, and window frames. Lazy application styles consume the same
+shape tokens. Do not reintroduce a square control or a square corner on a framed
+panel. Artwork, document glyphs, canvas pixels, and invisible layout boxes do
+not acquire decorative clipping.
+
+The shape ladder in `70-liquid-glass.css` is 4px for micro details, 8px for
+compact controls, 12px for regular controls/insets, 16px for panels, and 24px
+for windows. Capsules and circles have separate tokens. These are this
+product's calibrated values, not Apple-mandated measurements. Component tokens
+map to the ladder; shared square defaults live in `00-foundation.css` so other
+appearances retain their geometry. Small checkboxes keep a 4px curve so their
+shape remains distinct from radio buttons.
+
+Nested surfaces subtract their inset from the parent radius at the consuming
+element, with a 4px floor. Use compact rounded rectangles for dense desktop
+controls and capsules for prominent actions. Keep focus rings on the same
+outline. Rounded content frames do not add extra glass or blur behind text.
+
+After building and starting the app, run
+`node tooling/verify-liquid-shapes.mjs --url http://127.0.0.1:4173` to check
+registered windows, lazy styles, menu/dialog surfaces, control states, native
+and custom select arrows, and phone portrait/landscape controls.
+
+This follows Apple's [HIG hierarchy, harmony, and consistency principles](https://developer.apple.com/design/human-interface-guidelines/),
+the fixed/capsule/concentric shapes in [Get to know the new design system](https://developer.apple.com/videos/play/wwdc2025/356/),
+and the separation of controls from content in [Meet Liquid Glass](https://developer.apple.com/videos/play/wwdc2025/219/).
 
 ### Appearance evidence ledger
 
@@ -369,19 +431,13 @@ Chinese UI must preserve the naming rules in `CLAUDE.md`. `Scrapbook` and
 
 ## Agent Preflight
 
-Before changing a UI surface, answer these in the work notes or PR:
-
-1. Which product object role is this?
-2. Is it on the core writing route or a summoned utility?
-3. Which existing primitives does it reuse?
-4. Which tokens define its geometry, material, and state?
-5. What changes from this appearance's registry `recipeBase`?
-6. What states exist: default, hover, focus, active, selected, disabled,
-   loading, empty, error?
-7. What verification covers the six-era Theme Lab and the HIG phone/tablet ×
-   portrait/landscape matrix in Classic and Liquid Glass?
-
-If an answer is "new pattern", justify it before editing CSS.
+Before changing a UI surface, identify its object role, reused primitives,
+owning tokens and affected states. Apply the shared-control invariants above
+whenever a control is added or changed. Explain a new primitive's need and add
+its fixture; ordinary reuse does not require a fixed questionnaire or report.
+Choose evidence for the changed behavior. A local control correction does not
+restart the six-era application or phone/tablet matrix; layout changes still
+check the affected surface in the relevant themes and orientations.
 
 ## Forbidden Defaults
 
@@ -405,25 +461,26 @@ These patterns are rejected unless the feature contract explicitly needs them:
 
 ## Review Gates
 
-For visual work:
+Use the existing scoped development command for owned CSS and behavior:
 
 ```sh
-npm run build:app
-npm run verify:css
-npm run verify:design
-npm run verify:theme-lab
-npm run smoke:release
+npm run verify:quick -- --feature <affected-contract> --css-file apps/desktop/styles/<owned-file>.css
 ```
 
-For theme-sensitive CSS work, also run:
+Repeat `--css-file` for each owned sheet. Its CSS check automatically includes
+source-only shared-control browser checks. Omit `--feature` when no behavior
+contract applies; use `--no-build` only when the application sources are already
+built or the task changes documentation/tooling alone. A documentation-only
+change uses `npm run verify:docs` and `git diff --check`.
 
-```sh
-npm run audit:liquid-twins
-npm run visual:eval
-```
-
-Use the output from `npm run visual:eval` with the browser snapshot workflow in
-`CLAUDE.md`, then run `npm run visual:diff -- <snapshot-file>`.
+For a layout/material change, capture the affected surface once before and once
+after the batch using the CSS skill's scoped snapshot command. Expand coverage
+only for changed behavior, a reproduced failure or an unresolved concern.
+Reuse unchanged evidence. Broad appearance changes and release/packaging work
+use the full gates defined in `CLAUDE.md`; do not run Theme Lab, global visual
+diff, smoke and release suites automatically for every small visual correction.
+The existing `npm run visual:eval` and `npm run visual:diff -- <snapshot-file>`
+remain diagnostics when a comparison is needed.
 
 Optional design anti-pattern scan:
 
@@ -439,8 +496,8 @@ Local product rules win when they are more specific.
 
 ## Migration Priorities
 
-1. Migrate easy Liquid Glass twins to token swaps when touching nearby
-   selectors.
+1. Fix the owning primitive or token when its behavior changes; migrate a
+   theme twin only with cascade evidence, not merely because it is nearby.
 2. Grow a small System 6 component kit from existing primitives.
 3. Add visual snapshot coverage for any new recurring window/control pattern.
 4. Reduce inline JS layout decisions by moving stable geometry into tokens or

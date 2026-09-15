@@ -305,13 +305,19 @@ function knockAfterWritingBell() {
     || writingBellStartedFrom;
   if (typeof pushSystemNotification !== "function") return;
   if (!where) {
-    pushSystemNotification(t("bell_stopped"), { replaceId: writingBellNotificationId });
+    pushSystemNotification(t("bell_stopped"), {
+      replaceId: writingBellNotificationId,
+      messageKey: "bell_stopped",
+      messageArgs: [],
+    });
     return;
   }
   writingBellNotificationId = pushSystemNotification(t("bell_stopped_here", where.title), {
     windowName: where.window,
-    actionLabel: t("back"),
+    actionLabelKey: "back",
     replaceId: writingBellNotificationId,
+    messageKey: "bell_stopped_here",
+    messageArgs: [where.title],
   });
 }
 

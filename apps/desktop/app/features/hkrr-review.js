@@ -33,7 +33,7 @@ ${fullBody}`;
         sourceAppId: "reviewDesk",
         intent: "hkrr-review",
         provider: (typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudConfig.provider && typeof cloudCredentialReady === "function" && cloudCredentialReady()) ? "cloud" : "local",
-        model: typeof getLocalModelRequestName === "function" ? getLocalModelRequestName() : "",
+        model: window.AISystem6RunReceipts?.servedModelFromResponse?.(data) || "",
         answerText: reportText,
       });
       if (recorded?.receiptId) {

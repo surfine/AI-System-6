@@ -31,6 +31,10 @@
 
 .writing-spine-panel {
   position: absolute;
+  /* The route belongs to the left edge of the display. It was inset toward a
+     centred composition from 2026-09-05 to 2026-09-14; the owner overturned
+     that on 2026-09-14 — the rails stand at the edges they name, and the desk
+     between them is what grows. */
   left: 22px;
   top: 18px;
   width: 116px;
@@ -112,6 +116,11 @@ body.quick-draft-focus .writing-spine-panel {
   background: transparent;
   border: 0;
   padding: 0;
+  /* The row the step number occupies. A stop without a number — the File
+     Floppy intake — keeps a zero row, so its icon sits exactly where it always
+     did and the stops below it start one row lower. The height itself is the
+     era's (--spine-step-badge-row), because Liquid Glass badges are taller. */
+  --spine-step-row: 0px;
 }
 
 .spine-actions button[hidden] {
@@ -119,12 +128,12 @@ body.quick-draft-focus .writing-spine-panel {
 }
 
 .spine-step-number {
-  /* No stacking token needed here: an absolutely positioned descendant
-     already paints over the button's in-flow icon/label content by default,
-     and it never overlaps .spine-step-mark (opposite corners of the button). */
+  /* The number stands above its icon, centred on it: the number is the stop's
+     own label, not a tick on a corner of the artwork. The button reserves the
+     row below (.spine-step-badge-row), so nothing overlaps the icon. */
   position: absolute;
-  top: -1px;
-  left: calc(50% - 31px);
+  top: 0;
+  left: calc(50% - 9px);
   width: 17px;
   height: 17px;
   border: 1px solid var(--ink);
@@ -135,6 +144,32 @@ body.quick-draft-focus .writing-spine-panel {
   font-weight: var(--system-emphasis-weight);
   line-height: 15px;
   text-align: center;
+}
+
+/* Only the numbered stops carry the extra row. */
+.spine-actions button:has(> .spine-step-number) {
+  --spine-step-row: var(--spine-step-badge-row);
+  padding-top: var(--spine-step-row);
+}
+
+/* A stop that cannot be used yet is dimmed the same way in every appearance:
+   the route's own dither over paper, ink dimmed once. The generic disabled
+   button chrome is era-tinted — a gradient in Aqua, a flat grey in Platinum,
+   a translucent film in Liquid Glass — which is right for a button and wrong
+   for one fixed stop on the map. */
+.spine-actions button:disabled,
+.spine-actions button.is-disabled {
+  /* The route's terminus is dimmed by the desk's own recipe in every
+     appearance. Liquid Glass's disabled-control film is for buttons; giving
+     the stop the same values its own rule reads keeps six eras painting one
+     look without a second selector twin in that stylesheet. */
+  --liquid-disabled-control-bg: repeating-linear-gradient(45deg, var(--paper) 0 4px, var(--shade-dark) 4px 8px);
+  --liquid-disabled-control-fg: var(--shade-dark);
+  --liquid-disabled-control-border: transparent;
+  --liquid-disabled-control-shadow: none;
+  color: var(--shade-dark);
+  background: repeating-linear-gradient(45deg, var(--paper) 0 4px, var(--shade-dark) 4px 8px);
+  box-shadow: none;
 }
 
 .spine-actions .icon,
@@ -185,7 +220,9 @@ body.quick-draft-focus .writing-spine-panel {
 
 .spine-step-mark {
   position: absolute;
-  top: 1px;
+  /* The mark belongs to the icon's own corner, so it follows the icon down
+     when the stop carries a number above it. */
+  top: calc(var(--spine-step-row, 0px) + 1px);
   right: calc(50% - 29px);
   width: 7px;
   height: 7px;
@@ -434,7 +471,7 @@ body.quick-draft-focus .writing-spine-panel {
   width: 100%;
   padding: 2px 5px;
   border: 0;
-  border-radius: 0;
+  border-radius: var(--item-radius);
   background: transparent;
   color: var(--ink);
   font: inherit;
@@ -644,7 +681,7 @@ body.quick-draft-focus .writing-spine-panel {
   padding: 3px 2px;
   border: 0;
   border-right: 1px solid var(--shade-dark);
-  border-radius: 0;
+  border-radius: var(--item-radius);
   background: transparent;
   color: var(--ink);
   font: inherit;
@@ -689,7 +726,7 @@ body.quick-draft-focus .writing-spine-panel {
   width: 100%;
   padding: 2px 5px;
   border: 0;
-  border-radius: 0;
+  border-radius: var(--item-radius);
   background: transparent;
   color: var(--ink);
   font: inherit;
@@ -2315,7 +2352,7 @@ html:lang(zh-Hans) .title-bar h2 {
   margin: 0 auto 14px;
   padding: 2px 14px;
   border: 0;
-  border-radius: 0;
+  border-radius: var(--surface-radius);
   background: transparent;
   box-shadow: none;
 }
@@ -2354,7 +2391,7 @@ html:lang(zh-Hans) .title-bar h2 {
   padding: 1px 0 1px 11px;
   border: 0;
   border-left: var(--clio-said-rule);
-  border-radius: 0;
+  border-radius: var(--surface-radius);
   background: transparent;
   box-shadow: none;
   font-size: 14px;
@@ -2370,7 +2407,7 @@ html:lang(zh-Hans) .title-bar h2 {
   gap: 16px;
   padding: 32px clamp(24px, 7vw, 72px);
   border: 0;
-  border-radius: 0;
+  border-radius: var(--surface-radius);
   background: var(--clio-welcome-bg);
   box-shadow: var(--clio-welcome-shadow);
   text-align: left;
@@ -2984,7 +3021,7 @@ html:lang(zh-Hans) .title-bar h2 {
   padding: 8px clamp(12px, 3vw, 24px) 10px;
   border: 0;
   border-top: var(--clio-entry-divider);
-  border-radius: 0;
+  border-radius: var(--surface-radius);
   background: var(--clio-entry-bg);
   box-shadow: none;
 }
@@ -3075,7 +3112,7 @@ html:lang(zh-Hans) .title-bar h2 {
   padding: 5px 7px 8px;
   overflow-y: auto;
   border: 0;
-  border-radius: 0;
+  border-radius: var(--inset-radius);
   background: transparent;
   box-shadow: none;
   resize: none;
@@ -3764,7 +3801,7 @@ select:focus {
 .control-panel .settings::-webkit-scrollbar-thumb,
 .chooser-panel .settings::-webkit-scrollbar-thumb {
   border: var(--system-control-line) solid var(--ink);
-  border-radius: 0;
+  border-radius: var(--item-radius);
   background: var(--paper);
   box-shadow: inset 1px 1px 0 var(--shade);
 }
@@ -3797,6 +3834,7 @@ select:focus {
 }
 
 .control-section {
+  border-radius: var(--surface-radius);
   display: grid;
   /* The implicit column defaults to content-based sizing, so one unbreakable
      child (a long model id, an endpoint URL) could stretch this past its own
@@ -3878,7 +3916,7 @@ select:focus {
 .control-panel textarea,
 .control-panel .btn,
 .chooser-panel .btn {
-  border-radius: 0;
+  border-radius: var(--item-radius);
 }
 
 .control-panel input[type="text"],
@@ -3929,6 +3967,8 @@ select:focus {
 
 .select-wrap::after {
   content: "";
+  /* Themes with a select background arrow suppress the duplicate triangle. */
+  display: var(--select-wrapper-arrow-display);
   position: absolute;
   right: 8px;
   top: 50%;
@@ -3978,7 +4018,9 @@ select:focus {
   color: var(--ink);
   box-shadow: var(--system-inset);
   font: inherit;
-  font-weight: 700;
+  font-family: var(--ui-font);
+  font-size: var(--system-control-size);
+  font-weight: var(--system-select-control-font-weight);
   line-height: 1.2;
   text-align: left;
   white-space: nowrap;
@@ -4268,6 +4310,36 @@ body.is-cloud-configured .cloud-state-panel {
   display: none;
 }
 
+/* Guest indicator: an approved guest agent is at the desk. Same chrome as
+   the cloud model indicator; it opens Chooser. */
+.guest-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 9px;
+  color: var(--ink);
+  white-space: nowrap;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.guest-indicator.is-hidden {
+  display: none;
+}
+
+.guest-indicator .sys-icon {
+  flex: 0 0 auto;
+  width: 17px;
+  height: 17px;
+}
+
+#guest-indicator-label {
+  max-width: 16ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .cloud-icon {
   flex: 0 0 auto;
   position: relative;
@@ -4401,6 +4473,36 @@ body.is-cloud-configured .cloud-state-panel {
 
 .chooser-source select {
   width: 100%;
+}
+
+/* One row per guest agent or external server the writer has answered for.
+   Each row is a .chooser-source (same grid and Liquid Glass twin as the
+   provider rows above) so every section reads as one list; only the body and
+   its controls are new. */
+.chooser-guest-list,
+.chooser-server-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chooser-entry-body {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.chooser-entry-meta {
+  margin: 0;
+}
+
+.chooser-entry-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
 }
 
 .control-advanced {

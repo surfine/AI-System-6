@@ -165,6 +165,17 @@ async function settle(page, themeId, profile) {
     document.head.append(noMotion);
   }, themeId);
   await page.evaluate(() => document.fonts?.ready);
+  // The chooser carries a live line about the guest bridge, which connects to
+  // whatever loopback session this machine happens to have: the same commit
+  // photographed "listening on this Mac" in one run and "not connected (this
+  // Mac only)" in the next, and the controls-classic-chooser cell drifted 4428
+  // pixels between them (measured 2026-09-15). A baseline owns its service
+  // state, so the line is painted with the shipped offline copy — the same way
+  // the showcase pins the clock and the Finder mode.
+  await page.evaluate(() => {
+    const bridge = document.getElementById("chooser-guest-bridge");
+    if (bridge && typeof t === "function") bridge.textContent = t("guest_bridge_offline");
+  });
   // Liquid Glass pulls a lazy stylesheet, and until it lands the layout is a
   // different one — the Outline came out 540px wide in one run and 563px (540
   // plus a scrollbar) in the next. Wait for every link to actually own a sheet
@@ -226,6 +237,40 @@ async function settleSurface(page, selector, samples = 12) {
   return false;
 }
 
+/**
+ * Wait until every picture the surface paints from its stylesheet has decoded.
+ *
+ * The classic checkmark and the radio dot are CSS background images, not
+ * elements, and an image that has not decoded yet is invisible to the
+ * signature `settleSurface` watches: the box is the same size with the mark in
+ * it or without it, and the node count does not change either. Measured
+ * 2026-09-15 — the controls-classic cell came back with the marks in one run
+ * and without them in the next, on the same bytes, which is a verdict about the
+ * image decoder rather than about the product.
+ *
+ * The scan reads the computed `background-image` of the surface and its
+ * descendants, decodes each URL (served from the same cache the page already
+ * filled), and then waits two frames so the paint that carries them has
+ * happened before the shutter.
+ */
+async function settleImages(page, selector) {
+  await page.evaluate(async (sel) => {
+    const root = sel ? document.querySelector(sel) : document.body;
+    if (!root) return;
+    const urls = new Set();
+    for (const element of [root, ...root.querySelectorAll("*")]) {
+      const background = getComputedStyle(element).backgroundImage;
+      for (const match of background.matchAll(/url\(["']?(.+?)["']?\)/g)) urls.add(match[1]);
+    }
+    await Promise.all([...urls].map((url) => {
+      const image = new Image();
+      image.src = url;
+      return image.decode().catch(() => {});
+    }));
+    await new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)));
+  }, selector);
+}
+
 async function captureCell(page, cell, outDir) {
   const file = join(outDir, `${cell.id}.png`);
   if (cell.target === "desktop") {
@@ -261,6 +306,10 @@ async function captureCell(page, cell, outDir) {
         && !clioTalk.textContent?.includes("正在准备");
     }, null, { timeout: 10000 });
     await settleSurface(page, null);
+    // The desktop icons are pictures too, and a menu bar drawn from decoded
+    // ones is not a menu bar drawn from missing ones. Same reason as the window
+    // path below: geometry says nothing about whether an image has decoded.
+    await settleImages(page, null);
     await page.screenshot({ path: file, animations: "disabled", timeout: 30000 });
   } else {
     const contract = windowInterfaceRegistry[cell.target];
@@ -345,6 +394,9 @@ async function captureCell(page, cell, outDir) {
     // being slow.
     const selector = `.window[data-window="${cell.target}"]`;
     await settleSurface(page, selector);
+    // The marks a control paints are pictures; the geometry that says the
+    // surface has settled says nothing about whether they have decoded yet.
+    await settleImages(page, selector);
     // Games: open on a fixed seed, paused, so the palette column and gauge
     // bar are stable across runs (the map itself is not the pixel promise).
     if (cell.game) {
@@ -378,8 +430,11 @@ async function captureCell(page, cell, outDir) {
           && box.right <= window.innerWidth && box.bottom <= window.innerHeight,
       };
     }, selector);
+    // The games clip is the window's top-left corner at the manifest's size --
+    // the palette column and the gauge under it. Anchored at the frame origin,
+    // never offset by it.
     const gameClip = cell.game && cell.clip
-      ? { x: Math.round(frame.x) + cell.clip.left, y: Math.round(frame.y) + cell.clip.top, width: cell.clip.left, height: cell.clip.top }
+      ? { x: Math.round(frame.x), y: Math.round(frame.y), width: cell.clip.width, height: cell.clip.height ?? Math.round(frame.height) }
       : null;
     try {
       if (gameClip) {

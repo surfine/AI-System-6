@@ -117,7 +117,11 @@ test.assert(
 const iconCss = `${read("styles/40-icons.css")}\n${read("styles/50-apps.css")}`;
 test.assertIncludes(iconCss, ".has-classic-mask .sys-icon-classic-mask", "Finder selection reveals only the matching Classic mask");
 test.assertIncludes(iconCss, ".has-classic-mask .sys-icon-classic-art", "Finder selection targets only the smooth Classic artwork layer");
-test.assertIncludes(iconCss, "filter: invert(1)", "Finder selection reverses the same artwork above its mask instead of swapping icons");
+// The reversal is the same artwork, but it cannot be a CSS filter over the art
+// <image>: WebKit ignores it there, which left the black art on the black mask.
+// The painter draws the reversed copy and the selected state swaps layers.
+test.assertIncludes(iconCss, ".has-classic-mask .sys-icon-classic-reverse", "Finder selection reverses the same artwork above its mask instead of swapping icons");
+test.assertIncludes(iconCss, ".sys-icon-classic-reverse {\n  display: inline;", "the selected state paints the reversed artwork layer");
 test.assertIncludes(iconCss, ".sys-icon-classic .classic-paper", "Classic paper owns its fill recipe");
 test.assertIncludes(iconCss, "stroke: none", "one-pixel mask runs are not expanded into silhouettes");
 

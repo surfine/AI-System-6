@@ -233,7 +233,32 @@ function assertTailFacesSubject(placement, size, subject, label) {
 
 // ---------------------------------------------------------------------------
 // The wiring that the pure function cannot prove.
+//
+// H. The desk's own select harness, measured in the running CMF Studio: the
+// field label is the balloon's subject and the listbox opens directly below
+// it, 175x204. The list is the next thing the person has to operate, so the
+// balloon has to leave it alone — before the fix the wrap was in no keepClear
+// rectangle at all and the balloon settled on the choices.
+{
+  const subject = { left: 46, top: 104, width: 190, height: 40 };
+  const listbox = rect(46, 148, 175, 204, PANEL_WEIGHT);
+  const size = { width: 300, height: 69 };
+  const placement = placeBalloonHelp({ subject, keepClear: [rect(46, 104, 190, 40, SUBJECT_WEIGHT), listbox], field: FIELD, size });
+
+  test.assert(!overlaps(box(placement, size), listbox), "H: the balloon clears the open listbox the field owns");
+  test.assert(placement.overlap === 0, "H: and pays nothing for it — the listbox was weighted as a panel, not a peer");
+  test.assert(
+    placement.top + size.height <= listbox.top,
+    "H: it stands above the field instead, with the whole list still readable (measured 10,23 in the running app)",
+  );
+  assertTailFacesSubject(placement, size, subject, "H");
+}
+
 const balloon = source;
+test.assertIncludes(balloon, ".system-select-menu", "the placer knows the desk's own select harness owns a listbox");
+test.assertIncludes(balloon, "target.querySelector?.('.select-wrap.is-system-select-open > .system-select-menu')".replace(/'/g, '"'), "an open listbox inside the balloon's subject is kept clear too");
+test.assertIncludes(balloon, "selectWrap.querySelector(\":scope > .system-select-menu\")", "a select button names the listbox it opens");
+test.assertIncludes(balloon, ".select-wrap.is-system-select-open > .system-select-menu", "an open listbox is remembered at its measured size, like a menu");
 const foundation = read("styles/00-foundation.css");
 const appEntry = read("app.js");
 const actions = read("app/core/actions.js");

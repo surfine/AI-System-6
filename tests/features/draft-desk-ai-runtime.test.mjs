@@ -1,3 +1,4 @@
+import { readdirSync } from "node:fs";
 import { createFeatureTest } from "../helpers/feature-test-harness.mjs";
 import { read } from "../helpers/feature-test-harness.mjs";
 import { createDraftDeskVm } from "../helpers/draft-desk-vm.mjs";
@@ -154,6 +155,45 @@ test.assertIncludes(composition, "task.commit(patch, { captureForm: false })", "
   test.assert(result === false, "a broken Protect sentinel rejects the model result");
   test.assert(project.quickDraft.workspace.body === original, "sentinel failure leaves the working body unchanged");
   test.assert((project.quickDraft.workspace.pendingDarkroom?.versions || []).length === 0, "sentinel failure does not add a before-ai Version");
+}
+
+// Every Quick Draft request rides the watchdog, and the shared controller has
+// exactly one owner.
+//
+// The raw pattern this replaces — `if (requestController)
+// requestController.abort(); requestController = new AbortController();` with
+// a bare `requestController = null` in `finally` — gives a cloud fetch no
+// deadline. A request that never settles never reaches its `finally`, so
+// `setBusy(true)` stands forever and the surface is wedged with no way back.
+// Six call sites carried it before it was drained, which is why this is a gate
+// and not a review note: a seventh must fail here rather than ship.
+{
+  const laneDir = new URL("../../apps/desktop/app/features/", import.meta.url);
+  const laneFiles = readdirSync(laneDir)
+    .filter((name) => name === "draft-desk.js" || /^quick-draft-.*\.js$/.test(name))
+    .sort();
+  test.assert(laneFiles.includes("draft-desk.js"), "the lane gate can see the module that owns the controller");
+  test.assert(laneFiles.length > 1, "the lane gate can see the Quick Draft call sites");
+  for (const name of laneFiles) {
+    const source = read(`app/features/${name}`);
+    if (name === "draft-desk.js") continue;
+    test.assert(
+      !source.includes("new AbortController()"),
+      `${name} opens no raw AbortController — it calls beginQuickDraftRequest()`
+    );
+    test.assert(
+      !source.includes("requestController"),
+      `${name} never touches the shared controller directly`
+    );
+  }
+  const owner = read("app/features/draft-desk.js");
+  for (const helper of ["beginQuickDraftRequest", "settleQuickDraftRequest", "quickDraftRequestTimedOut"]) {
+    test.assertIncludes(owner, `function ${helper}(`, `draft-desk.js still defines ${helper}`);
+  }
+  // The watchdog rides its own controller. A single shared timer id let one
+  // request's settle defuse a newer request's watchdog, and that newer request
+  // then hung forever — the exact wedge the deadline exists to prevent.
+  test.assertIncludes(owner, "controller.quickDraftTimer", "the watchdog timer stays on the controller it guards");
 }
 
 test.finish();

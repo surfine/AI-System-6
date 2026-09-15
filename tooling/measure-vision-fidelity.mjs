@@ -23,7 +23,7 @@ import { readFileSync } from "node:fs";
 import { basename, extname } from "node:path";
 import process from "node:process";
 
-const MODEL = "deepseek-v4-flash-vision-exp";
+const MODEL = "deepseek-flash";
 const BASE_URL = process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com";
 const PREVIEW_MAX_EDGE = 960; // apps/desktop/app/core/image-attachments.js
 

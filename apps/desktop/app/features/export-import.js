@@ -2,13 +2,6 @@
 
 // Loaded before app.js as a classic script; shares the AI System 6 global scope.
 
-function apiUrl(pathname) {
-  const configuredBase = window.AISystem6Config?.apiBaseUrl || "";
-  if (configuredBase) return new URL(pathname, configuredBase).toString();
-  if (window.location.protocol === "file:") return `http://localhost:4173${pathname}`;
-  return pathname;
-}
-
 function compactStatusDetail(detail) {
   return String(detail || "").replace(/\s+/g, " ").trim().slice(0, 160);
 }
@@ -99,8 +92,11 @@ function saveMarkdownArtifact(markdown, name) {
 function downloadMarkdown(markdown, name) {
   // [lane-honesty] saveArtifact returns false when it could not build a file
   // (e.g. empty content) — the status must not claim "downloaded" over that.
+  // The answer is returned as well, because a caller that records a run has to
+  // report what happened rather than that it asked.
   const saved = saveMarkdownArtifact(markdown, name);
   setStatus(saved ? t("downloaded_markdown_only") : t("markdown_download_failed"));
+  return saved;
 }
 
 /**
@@ -1675,32 +1671,36 @@ async function commitImportedProjectAtomically(imported) {
         await Promise.all(writes);
       }
     );
-    // The desk-plan save below (saveDeskState) decides "another window
-    // changed this" by comparing against the base it last saw. This
-    // transaction just wrote settings and every affected collection directly,
-    // outside that bookkeeping, so without reporting what it wrote, the next
-    // save compares against a stale or absent base and refuses itself as a
-    // foreign conflict -- see commitDeskPlansAfterAtomicImport in the caller.
+    // This transaction wrote settings and every affected collection directly,
+    // outside the desk bookkeeping saveDeskState compares against, so the
+    // records it wrote have to become the base the next save tests itself
+    // against -- otherwise that save reads its own prior write as a foreign
+    // edit and refuses, permanently. The body is lazy; a restore is the only
+    // thing that needs it.
+    if (typeof ensureLazySystemModule === "function") {
+      await ensureLazySystemModule("app/core/persistence-adopt-bases.js", "AISystem6AdoptImportedDeskBasesLoaded").catch(() => {});
+    }
+    window.AISystem6AdoptImportedDeskBases?.({ imported, settings: importedSettings });
     return importedSettings;
   } finally {
     db.close();
   }
 }
 
-async function importProjectBackupAsNewProject() {
+async function importProjectBackupAsNewProject(backup = previewedProjectBackup) {
   const backupTools = window.AISystem6ProjectDiskBackup;
-  const validation = backupTools.validateBackup(previewedProjectBackup);
+  const validation = backupTools.validateBackup(backup);
   const integrity = validation.valid
-    ? await backupTools.verifyIntegrity(previewedProjectBackup)
+    ? await backupTools.verifyIntegrity(backup)
     : { valid: false };
-  if (!previewedProjectBackup || !validation.valid || !integrity.valid) {
+  if (!backup || !validation.valid || !integrity.valid) {
     setStatus(t("backup_import_invalid"));
     return;
   }
 
   setControlLoading(importProjectBackupButton, true, t("backup_importing"));
   try {
-    const imported = remapProjectDiskBackup(previewedProjectBackup);
+    const imported = remapProjectDiskBackup(backup);
     // Protect the imported documents' version history BEFORE any mutation:
     // if a revision cannot be persisted, the import aborts cleanly instead
     // of importing content with no recovery point.
@@ -1727,13 +1727,9 @@ async function importProjectBackupAsNewProject() {
 
     isProjectMounted = true;
     activeProjectId = imported.project.id;
-    // The commit above already wrote startupProjectId to disk (see the
-    // comment on importedSettings), but the saveDeskState() call below
-    // recomputes its own settings snapshot from the live globals, and
-    // startupProjectId is one of them (persistence-status.js's
-    // settingsSnapshotPayload()). Leaving the in-memory variable at its
-    // pre-import value let that second, ordinary save quietly overwrite the
-    // commit's correct value with the old project's id.
+    // The commit above already wrote startupProjectId to disk, but the
+    // saveDeskState() below recomputes its settings snapshot from the live
+    // globals and would overwrite that value with the old project's id.
     startupProjectId = imported.project.id;
     selectedProjectId = imported.project.id;
     selectedFolderId = "all";
@@ -1776,6 +1772,64 @@ async function importProjectBackupAsNewProject() {
   } finally {
     setControlLoading(importProjectBackupButton, false);
   }
+}
+
+// A shared launch link mounts a whole Project Hard Disk and then stops on the
+// manuscript: the reason such a link is shared is the finished text, not the
+// desk it was written on. The disk arrives through the ordinary import path,
+// so it becomes a project of the visitor's own -- nothing they already have is
+// touched, and what they receive is theirs to keep, rename or throw away.
+//
+// Following the same link twice must not leave two copies of one project, so
+// the route remembers the id it created and a later visit mounts that instead.
+const sharedProjectDiskMountKey = "aiSystem6SharedDisk:";
+
+function rememberedSharedProjectDiskId(route) {
+  try {
+    return localStorage.getItem(sharedProjectDiskMountKey + route) || "";
+  } catch {
+    return "";
+  }
+}
+
+async function openSharedProjectDisk(route) {
+  const remembered = rememberedSharedProjectDiskId(route);
+  const existing = remembered ? projects.find((project) => project.id === remembered) : null;
+  if (existing) {
+    if (activeProjectId !== existing.id) {
+      mountProject(existing);
+      closeProjectScopedWindows();
+      scheduleWorkspaceRender({ projectReferences: true, mountedTextDisk: true, menuState: true });
+      await loadActiveProjectReferences();
+      await saveDeskState();
+    }
+    await handleAction("open-teachtext-manuscript");
+    return;
+  }
+
+  await ensureSharedProjectDisksModule();
+  const backup = (window.AISystem6SharedProjectDisks || {})[route];
+  if (!backup) {
+    setStatus(t("backup_import_invalid"));
+    return;
+  }
+  const before = activeProjectId;
+  await importProjectBackupAsNewProject(backup);
+  // importProjectBackupAsNewProject reports its own failure and returns; only
+  // a project that actually mounted is worth remembering.
+  if (activeProjectId && activeProjectId !== before) {
+    try {
+      localStorage.setItem(sharedProjectDiskMountKey + route, activeProjectId);
+    } catch {
+      // A visitor with storage blocked gets a fresh copy each visit, which is
+      // better than refusing the link.
+    }
+  }
+  // `open-teachtext` is the wrong door: on the desktop profile it looks for a
+  // scratch tab and makes a NEW empty document when there is none, and a disk
+  // from a shared link has only a manuscript. This is the command behind
+  // Writing > Go To > Manuscript, and it syncs the linked document first.
+  await handleAction("open-teachtext-manuscript");
 }
 
 async function previewProjectBackupFile() {

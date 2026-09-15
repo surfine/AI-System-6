@@ -58,7 +58,13 @@ test.assertMatches(
 );
 test.assertIncludes(chatMessages, '? "clio_first_welcome_message"', "a true first use greets with the Clio introduction");
 test.assertIncludes(chatMessages, ': (clioTalkTemporaryMode ? "temporary_welcome_message" : "welcome_message")', "returning users keep the ordinary ClioTalk welcome");
-test.assertIncludes(chatMessages, 't("clio_first_welcome_no_model")', "a first use without a model gets a quiet note inside the greeting, not a gate");
+// Still a quiet note inside the greeting, never a gate — but it now says WHICH
+// of the two reasons applies. The website's own AI is the default, so the
+// honest sentence is usually not "connect a model": it is that today's shared
+// budget is spent, and where to add your own key.
+test.assertIncludes(chatMessages, '"clio_first_welcome_no_model"', "a first use without a model gets a quiet note inside the greeting, not a gate");
+test.assertIncludes(chatMessages, '"clio_shared_quota_spent"', "and a spent shared budget says so, instead of asking for a model that is already there");
+test.assertIncludes(chatMessages, 'providerState.quota?.state === "exhausted"', "the note reads the resolver's own quota state rather than guessing");
 for (const starter of ["idea", "notes", "file", "explore"]) {
   test.assertMatches(chatMessages, new RegExp(`\\["${starter}", "clio_starter_${starter}"\\]`), `the introduction offers the ${starter} starter`);
 }

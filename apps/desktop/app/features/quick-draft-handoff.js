@@ -67,7 +67,7 @@ async function commitQuickDraftProjectDocument({ projectId = "", title = "", bod
         messageKey: "first_work_backup_reminder",
         state: "saved",
         actionId: "export-project-backup",
-        actionLabel: t("export_project_backup"),
+        actionLabelKey: "export_project_backup",
       });
     }
     return { ok: true, documentId: file.id, repairNeeded: false };
@@ -166,7 +166,15 @@ async function transferQuickDraftToTeachText() {
     setQuickDraftStatus(t("quick_draft_no_project"));
     return false;
   }
-  if (!quickDraftDocumentMarkdown(slot.record)) return false;
+  // A handoff that the other application refuses is not a quiet no-op: the
+  // button looked dead in the profile where the Review Desk window does not
+  // exist at all, and an empty body left TeachText's command saying nothing
+  // while the Review Desk's said the body was empty. Every exit answers now.
+  if (!quickDraftDocumentMarkdown(slot.record)) {
+    setQuickDraftStatus(t("quick_draft_empty_body"));
+    refs.draft?.focus();
+    return false;
+  }
   if (!await saveQuickDraftAsProjectDocument()) return false;
   const documentId = activeProjectQuickDraft({ create: false })?.record.workspace.projectDocId;
   const file = documentId
@@ -175,11 +183,17 @@ async function transferQuickDraftToTeachText() {
   const dispatch = window.AISystem6ApplicationRegistry?.dispatchApplicationIntent;
   if (file && typeof dispatch === "function") {
     const result = await dispatch("teachText", { intent: "open", items: [file], sourceAppId: "quickDraft" });
-    if (!result?.ok) return false;
+    if (!result?.ok) {
+      setQuickDraftStatus(t("quick_draft_teachtext_failed"));
+      return false;
+    }
     setQuickDraftStatus(t("quick_draft_teachtext_done"));
     return true;
   }
-  if (!documentId || !window.AISystem6TeachText?.openDocument?.(documentId)) return false;
+  if (!documentId || !window.AISystem6TeachText?.openDocument?.(documentId)) {
+    setQuickDraftStatus(t("quick_draft_teachtext_failed"));
+    return false;
+  }
   setQuickDraftStatus(t("quick_draft_teachtext_done"));
   return true;
 }
@@ -208,11 +222,17 @@ async function sendQuickDraftToReviewDesk() {
       sourceAppId: "quickDraft",
       options: { mode: "facts" },
     });
-    if (!result?.ok) return false;
+    if (!result?.ok) {
+      setQuickDraftStatus(t("quick_draft_review_failed"));
+      return false;
+    }
     setQuickDraftStatus(t("quick_draft_review_done"));
     return true;
   }
-  if (!documentId || !await window.AISystem6ReviewDesk?.openDocument?.({ documentId, mode: "facts" })) return false;
+  if (!documentId || !await window.AISystem6ReviewDesk?.openDocument?.({ documentId, mode: "facts" })) {
+    setQuickDraftStatus(t("quick_draft_review_failed"));
+    return false;
+  }
   setQuickDraftStatus(t("quick_draft_review_done"));
   return true;
 }

@@ -1,5 +1,5 @@
 <!-- canonical-source: README.md -->
-<!-- source-sha256: f11cdcc21c3eda88249d3edfbcced7a3fd4b3348845a0ac8f258f3859b685c85 -->
+<!-- source-sha256: 936118b3307c136e1b526b51c08ca7d572a3d5b98f2513f49fd010a486876511 -->
 
 > 英文版为准 / 仅供人类参考
 
@@ -32,8 +32,17 @@
 
 </div>
 
+<div align="center">
+
+**直接打开一个窗口：** [配色工作台](https://system6.aaronlau.me/go/cmf-studio) · [盆景城市](https://system6.aaronlau.me/go/bonsai-city) · [终末地终端](https://system6.aaronlau.me/go/endfield-terminal) · [时间机器](https://system6.aaronlau.me/go/time-machine) · [OpenTTD](https://system6.aaronlau.me/go/openttd) · [DOOM](https://system6.aaronlau.me/go/doom)
+
+<sub>每个应用都有唯一一个可分享的地址 <code>/go/&lt;app-id&gt;</code>。桌面围绕它打开。</sub>
+
+</div>
+
 ## 目录
 
+- [1.0.55 有什么新东西](#1055-有什么新东西)
 - [它保护的是什么](#它保护的是什么)
 - [60 秒跑起来](#60-秒跑起来)
 - [路线就是产品](#路线就是产品)
@@ -46,6 +55,21 @@
 - [这个仓库如何让自己保持诚实](#这个仓库如何让自己保持诚实)
 - [仓库是怎么摆的](#仓库是怎么摆的)
 - [参与贡献](#参与贡献)
+
+## 1.0.55 有什么新东西
+
+- **配色工作台按产品实拍的打光来照配色。** iPhone 17 Pro / Max（一个条目、
+  两种姿态）、iPhone Air、iPhone 17e、MacBook Neo，以及可折叠的 iPhone Duo，
+  都在官方场景自己的环境光下渲染，逐部件配色，并可导出 USDZ 用于 AR。
+- **Duo 会折，样式也由你决定。** 连续转轴取代了姿态切换，内外屏图片分开保存，
+  原始壁纸一个按钮就能恢复，折叠视频在你的机器上渲染完成。
+- **每个应用只有一个地址。** `/go/cmf-studio`、`/go/bonsai-city`、`/go/doom`
+  等是把这个窗口交给别人的唯一方式；服务器上那些旧的裸目录由安装器自己退役。
+- **公网可以接待一位访客。** 打开访客桥之后，另一个 agent 可以经由指名你这张
+  桌面的邀请，从互联网连上来；工具契约、权限和在审校台等待你确认的方式，
+  与你在 Mac 上使用时完全一致。
+
+每个测试版都有自己的[发布说明](https://github.com/surfine/AI-System-6/releases)。
 
 ## 它保护的是什么
 
@@ -235,7 +259,7 @@ System 6.0.8 资源和实际观察到的 Macintosh 行为出发；后面几个�
 ## 在一个 1988 年的约束下建造
 
 ```text
-启动关键载荷            ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,927,224 字节
+启动关键载荷            ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,953,017 字节
 两张 1.44 MB 软盘       ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  2,949,120 字节
 重型工具                按需懒加载，从第三张盘上来
 ```

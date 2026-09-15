@@ -362,9 +362,9 @@ function runClaimCheckFromMenu() {
 }
 
 function setReviewDeskMode(mode = "style") {
-  const normalizedMode = mode === "facts" || mode === "hkrr" ? mode : "style";
+  const normalizedMode = ["facts", "hkrr", "guests"].includes(mode) ? mode : "style";
   reviewDeskMode = normalizedMode;
-  const resultMode = normalizedMode === "style" ? "style" : "facts";
+  const resultMode = normalizedMode === "style" ? "style" : normalizedMode === "guests" ? "guests" : "facts";
   document.querySelectorAll("[data-review-result]").forEach((panel) => {
     panel.classList.toggle("is-hidden", panel.dataset.reviewResult !== resultMode);
   });
@@ -849,6 +849,8 @@ function receiptProjectCdBurn(item) {
   pushSystemNotification(t("project_cd_burn_receipt", item.title), {
     state: "done",
     windowName: "projectCd",
+    messageKey: "project_cd_burn_receipt",
+    messageArgs: [item.title],
   });
 }
 
@@ -1129,9 +1131,9 @@ function getApplicationActionHandlers() {
       if (!await runSelectedTaskConfig()) setStatus(t("task_config_is_invalid_missing_files"));
     },
     "pause-task-config": () => { if (!setTaskConfigLifecycle("paused")) setStatus(t("select_finder_item_first")); },
-    "complete-task-config": () => {
+    "complete-task-config": async () => {
       if (!setTaskConfigLifecycle("completed")) return setStatus(t("select_finder_item_first"));
-      saveClioTalkRetrospective();
+      await saveClioTalkRetrospective();
     },
     "resume-task-config": () => { if (!resumeSelectedTaskConfig()) setStatus(t("select_finder_item_first")); },
     "cancel-task-config": () => { if (!setTaskConfigLifecycle("cancelled")) setStatus(t("select_finder_item_first")); },
@@ -1370,6 +1372,10 @@ function getApplicationActionHandlers() {
     "clip-selected-find-path": async () => {
       await ensureFindPathModule();
       clipSelectedFindPath();
+    },
+    "find-path-to-floppy": async () => {
+      await ensureFindPathModule();
+      await putFindPathOnFileFloppy();
     },
     "focus-search-query": () => findPathQueryInput?.focus(),
     "synthesize-search-results": async () => {
@@ -1645,6 +1651,7 @@ window.AISystem6Runtime?.registerLazyCommand?.("open-dictionary",{ensure:ensureD
 window.AISystem6Runtime?.registerLazyCommand?.("open-system-help",{ensure:ensureDictionaryHelpModule});
 window.AISystem6Runtime?.registerLazyCommand?.("open-soundscape",{ensure:ensureSoundscapeModule});
 window.AISystem6Runtime?.registerLazyCommand?.("open-cmf-studio",{ensure:ensureCmfStudioModule});
+window.AISystem6DirectCmfEntry = () => handleAction("open-cmf-studio");
 window.AISystem6Runtime?.registerLazyCommand?.("open-image-prompt-studio",{ensure:ensureImagePromptStudioModule});
 window.AISystem6Runtime?.registerLazyCommand?.("open-openttd",{ensure:ensureOpenTTDModule});
 window.AISystem6Runtime?.registerLazyCommand?.("open-doom",{ensure:ensureDoomModule});
@@ -1658,11 +1665,13 @@ window.AISystem6Runtime?.registerLazyCommand?.("open-clio-project",{ensure:ensur
 window.AISystem6Runtime?.registerLazyCommand?.("clio-project-reset-layout",{ensure:ensureClioProjectModule});
 window.AISystem6Runtime?.registerLazyCommand?.("open-clio-paint",{ensure:ensureClioPaintModule});
 window.AISystem6Runtime?.registerLazyCommand?.("open-todo-da",{ensure:ensureTodoDaModule});
+window.AISystem6Runtime?.registerLazyCommand?.("open-sideask-pad",{ensure:ensureSideAskPadModule});
 window.AISystem6Runtime?.registerLazyCommand?.("open-theme-lab",{ensure:ensureThemeLabModule});
 window.AISystem6Runtime?.registerLazyCommand?.("open-quick-draft",{ensure:ensureQuickDraftModule});
 window.AISystem6Runtime?.registerLazyCommand?.("open-docmap",{ensure:ensureDocMapModule});
 window.AISystem6Runtime?.registerCommand?.("open-about",{handler:()=>openWindow("about"),isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("peek-project-disk",{handler:async({peekProjectId=""}={})=>{await ensureProjectPeekModule();await openProjectPeek(peekProjectId);},isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-project-overview",{handler:async()=>{await ensureProjectPeekModule();await openProjectOverview();},isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-applications",{handler:()=>openWindow("applications"),isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-help-folder",{handler:()=>openWindow("helpFolder"),isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-chooser",{handler:()=>openWindow("chooser"),isAvailable:()=>!0});
@@ -1705,6 +1714,10 @@ window.AISystem6Runtime?.registerCommand?.("open-claim-check",{handler:()=>openR
 window.AISystem6Runtime?.registerCommand?.("open-style-sheet",{handler:()=>openReviewDesk("style"),isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-writing-flow-windows",{handler:openWritingFlowWindows,isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-teachtext",{handler:openTeachTextForWorkspace,isAvailable:()=>!0});
+// Shared Project Hard Disk links. The command is eager -- the DISK is the lazy
+// part, loaded inside the handler -- and the reference is an arrow so it is
+// resolved when the command runs, not when this line is evaluated.
+window.AISystem6Runtime?.registerCommand?.("open-shared-disk-dtk",{handler:()=>openSharedProjectDisk("dtk"),isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-finishing-receipt",{handler:()=>openFinishingReceiptForSelection(),isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-clio-attachment-picker",{handler:beginClioTalkAttachmentPicker,isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-clio-image-picker",{handler:openClioImagePicker,isAvailable:()=>!0});
@@ -1745,6 +1758,9 @@ window.AISystem6Runtime?.registerCommand?.("open-menu-selection",{handler:openFi
 window.AISystem6Runtime?.registerCommand?.("open-project-disk",{handler:openSelectedProject,isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-rebuild-flow",{handler:openRebuildFlow,isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-review-desk",{handler:()=>openReviewDesk("style"),isAvailable:()=>!0});
+// Review Desk is a writing-route surface: in the desktop profile it stays
+// unavailable, so the notification falls back to opening the receipt itself.
+window.AISystem6Runtime?.registerCommand?.("open-guest-reviews",{handler:async()=>{await openReviewDesk("guests");await ensureGuestToolsModule();window.AISystem6GuestTools?.renderGuestReviews?.();const win=getWindow("reviewDesk");if(win&&!win.classList.contains("is-hidden"))return;const latest=(window.AISystem6RunReceipts?.queryReceipts?.({limit:50,includeRunning:!0})||[]).find((file)=>String(file.runReceipt?.sourceAppId||"").startsWith("guest:"));if(latest)await window.AISystem6ApplicationRegistry?.openProjectObject?.(latest,"open");},isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-project-backup",{handler:openProjectBackupPanel,isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-system-file-system",{handler:()=>showSystemModal(t("system_file_not_openable"),"alert"),isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-system-file-finder",{handler:()=>showSystemModal(t("system_file_not_openable"),"alert"),isAvailable:()=>!0});

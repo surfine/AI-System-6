@@ -59,7 +59,13 @@
   flex: 0 0 auto;
 }
 
+/* The sidebar hands this section a bounded row (minmax(0,1fr)); a block box
+   would hand the row's height straight back to the list, which is sized by its
+   own content. Grid passes the bound down, so the list scrolls inside the row
+   instead of pushing the whole app page into a scroll. */
 .endfield-nav-section {
+  display: grid;
+  grid-template-rows: minmax(0,1fr);
   min-width: 0;
   min-height: 0;
 }
@@ -99,7 +105,7 @@
   min-width: 0;
   border: 0;
   border-bottom: var(--endfield-evidence-divider);
-  border-radius: 0;
+  border-radius: var(--item-radius);
   background: transparent;
   color: var(--ink);
   font: inherit;
@@ -585,6 +591,28 @@
   font-family: var(--mono-font);
   font-size: 10px;
 }
+.endfield-status-bar .endfield-progress .select-wrap {
+  /* The base bar rule clips every span (overflow hidden + ellipsis), but the
+     System 6 select harness draws its popup below the wrap as an absolute
+     descendant — clipping the wrap would cut the menu off. Let the wrap's own
+     box stay inline; only the inner button ellipsizes. */
+  overflow: visible;
+  white-space: normal;
+}
+.endfield-status-bar .endfield-progress .system-select-button {
+  box-sizing: border-box;
+  width: auto;
+  min-width: 128px;
+  max-width: 190px;
+  min-height: 19px;
+  padding: 0 26px 0 6px;
+  /* Keep the compact bar's own monospaced face rather than letting an era
+     re-dress the button at control size (Aqua's .system-select-button is
+     20px/13px Lucida; that would break out of the 28px status row and fight
+     the surrounding mono text). */
+  font: inherit;
+  font-weight: 700;
+}
 .endfield-status-bar .endfield-progress .select-wrap select {
   box-sizing: border-box;
   width: auto;
@@ -636,6 +664,27 @@
   border-radius: 2px;
   font-weight: 700;
   color: var(--endfield-ink, var(--ink));
+}
+.endfield-source-origin {
+  /* The quote's own column: auto-placement would drop this row under the index
+     stamp, because the clip button already holds column 3 for two rows. */
+  grid-column: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  align-items: center;
+  margin: 5px 0 0;
+  font-family: var(--mono-font);
+  font-size: 10px;
+  color: var(--endfield-muted);
+}
+.endfield-source-link {
+  color: inherit;
+  text-decoration: underline;
+}
+.endfield-source-link:focus-visible {
+  outline: var(--control-focus-outline);
+  outline-offset: 1px;
 }
 .endfield-source-quote {
   grid-column: 2;

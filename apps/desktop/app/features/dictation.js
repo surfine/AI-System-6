@@ -212,9 +212,13 @@ function dictationButtonWouldCoverControl(candidate, target) {
   // .da-origin is no control, but it is the row saying where this accessory's
   // text came from, and it sits directly above the field -- exactly where the
   // button prefers to go. Covering it is as bad as covering a button.
-  const controls = document.querySelectorAll("button, [role='button'], summary, select, input[type='button'], input[type='submit'], .da-origin");
-  return [...controls].some((control) => {
-    if (control === dictationFieldButton || control === target || target.contains?.(control)) return false;
+  //
+  // The field is in this list too: its first line is where a writer puts the
+  // caret, and a slot clamped into the window's lane lands right there and
+  // swallows the click that was meant for the paper.
+  const controls = [target, ...document.querySelectorAll("button, [role='button'], summary, select, input[type='button'], input[type='submit'], .da-origin")];
+  return controls.some((control) => {
+    if (control === dictationFieldButton || (control !== target && target.contains?.(control))) return false;
     if (control.closest?.(".is-hidden") || control.hidden || control.disabled) return false;
     const rect = control.getBoundingClientRect();
     if (rect.width <= 0 || rect.height <= 0) return false;

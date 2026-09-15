@@ -810,7 +810,61 @@
     const selected = selectedMoment();
     if (ui("soundscape-restore")) ui("soundscape-restore").disabled = !selected;
     if (ui("soundscape-link-project")) ui("soundscape-link-project").disabled = !selected;
+    if (ui("soundscape-rename-moment")) ui("soundscape-rename-moment").disabled = !selected;
+    if (ui("soundscape-delete-moment")) ui("soundscape-delete-moment").disabled = !selected;
     updateRecoverAction();
+  }
+
+  // Renaming already existed: Use This Style writes the name and the sentence
+  // back to the selected moment. It was only reachable from the Style panel,
+  // so from Saved there was no sign a moment could be renamed at all. This is
+  // the missing entrance, not a second way to write the name — and it loads
+  // the moment's own style first, so writing the name back cannot quietly
+  // replace the style the moment was saved with.
+  function renameSelectedMoment() {
+    const moment = selectedMoment();
+    if (!moment) return;
+    setStyle(moment.style || STYLE_PRESETS.standard, false);
+    setActivePanel("style");
+    const note = ui("soundscape-style-note");
+    if (note) {
+      note.hidden = false;
+      ui("soundscape-style-note-toggle")?.setAttribute("aria-expanded", "true");
+    }
+    const name = ui("soundscape-style-name");
+    if (name) name.value = moment.name || "";
+    if (ui("soundscape-style-sentence")) ui("soundscape-style-sentence").value = moment.sentence || "";
+    name?.focus();
+    name?.select?.();
+    setStatus(translate("soundscape_rename_hint", "Name it, then choose Use This Style."));
+  }
+
+  // Removing a saved moment is bookkeeping, not playback: nothing stops, and
+  // no audio file is touched. A project that pointed at this moment loses the
+  // link with it, or returning to that project's soundscape would keep naming
+  // a moment that is no longer there.
+  async function deleteSelectedMoment() {
+    const moment = selectedMoment();
+    if (!moment) return;
+    const title = momentTitle(moment);
+    if (typeof showSystemModal === "function") {
+      const answer = await showSystemModal(
+        translate("soundscape_delete_confirm", `Remove “${title}” from Saved? The music itself is untouched.`, title),
+        "confirm",
+        { confirmKey: "soundscape_delete_moment", defaultAction: "cancel", danger: true },
+      );
+      if (answer !== "yes") return;
+    }
+    const index = state.saved.findIndex((item) => item.id === moment.id);
+    state.saved = state.saved.filter((item) => item.id !== moment.id);
+    Object.keys(state.projectLinks || {}).forEach((projectId) => {
+      if (state.projectLinks[projectId] === moment.id) delete state.projectLinks[projectId];
+    });
+    const next = state.saved[Math.min(Math.max(index, 0), state.saved.length - 1)];
+    state.selectedSavedId = next?.id || "";
+    persist();
+    renderSaved();
+    setStatus(translate("soundscape_moment_deleted", "Removed from Saved. The music keeps playing."));
   }
 
   // A saved moment can outlive its source: a local file is gone after reload,
@@ -1695,6 +1749,8 @@
     ui("soundscape-restore")?.addEventListener("click", () => restoreMoment());
     ui("soundscape-link-project")?.addEventListener("click", linkSelectedToProject);
     ui("soundscape-recover-moment")?.addEventListener("click", recoverSelectedMoment);
+    ui("soundscape-rename-moment")?.addEventListener("click", renameSelectedMoment);
+    ui("soundscape-delete-moment")?.addEventListener("click", deleteSelectedMoment);
     ui("soundscape-restore-project")?.addEventListener("click", restoreProjectSoundscape);
 
     const modeSwitch = document.querySelector(".soundscape-mode-switch");

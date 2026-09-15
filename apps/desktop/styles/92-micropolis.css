@@ -15,10 +15,18 @@
   container-type: inline-size;
 }
 
+/* The gauge cells are one instrument strip, divided by their own border-left
+   hairlines, so they must stay against each other. The shared status bar is
+   `justify-content: space-between`, which is harmless while the status cell
+   is there to absorb the slack (`flex: 1 1 auto`) but not once the drop order
+   below removes it: on a portrait phone the three surviving cells spread over
+   the whole bar and the hairlines float in open space. Start them together in
+   every state instead. */
 .micropolis-details-bar {
   display: flex;
   min-width: 0;
   align-items: center;
+  justify-content: flex-start;
   gap: 0;
   overflow: hidden;
   white-space: nowrap;
@@ -120,10 +128,17 @@
   shape-rendering: crispEdges;
 }
 
-/* On a phone the toolbar is too narrow for the 58px panel gauge; the
-   gauge-bar cell in the details bar is the only RCI there (the same rule as
-   Bonsai's docked-edge, applied to the Micropolis phone width). */
-@media (max-width: 700px) {
+/* Wherever the mobile shell hands the screen to one app, the gauge-bar cell in
+   the details bar is the only RCI (the same rule as Bonsai's docked-edge). The
+   footer is the last child of a column the shell can make far shorter than its
+   content: held sideways, a phone gives the palette 344px for 817px of tools,
+   so the second gauge parked at the end of that scroll sits about 428px below
+   the fold while the details-bar gauge is already on screen. This used to read
+   `max-width: 700px`, which is a portrait-only test — a phone on its side is
+   912px wide, so the duplicate came back exactly where there is least room for
+   it. The device-class query is the shell's own boundary, so the rule now
+   follows the shell instead of a width. */
+@media (max-width: 860px), (hover: none) and (pointer: coarse) and (max-height: 660px) {
   .micropolis-toolbar-footer {
     display: none;
   }

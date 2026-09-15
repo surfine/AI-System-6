@@ -5,7 +5,15 @@
   height: var(--bonsai-window-height);
   min-width: 320px;
   min-height: 360px;
-  position: relative;
+  /* No `position` here. The base `.window` rule is `position: absolute`, and
+     the window manager writes `left`/`top` as desk coordinates against that.
+     This sheet is lazy, so a `position: relative` written here landed AFTER
+     placement and turned every coordinate into a flow offset: the clamp read
+     the frame at x=182, computed the correct x=164, wrote it, and the frame
+     stayed at 182 (its static x=18 plus the 164 offset) -- two pixels past an
+     iPad in landscape, and a fixed point the clamp could never leave. The
+     absolute frame is already a containing block, so every absolutely
+     positioned part below still resolves against the window. */
   /* Mac rule: chrome never selects. A pointer drag across the window --
      panning the map, sweeping past overlay chips or dialog labels -- must
      not paint a text selection over the UI; only real text-edit fields
@@ -156,6 +164,7 @@
 }
 
 .bonsai-window .bonsai-workspace {
+  border-radius: var(--surface-radius);
   position: relative;
   --bonsai-rail: 28px;
   --bonsai-palette: 140px;
@@ -227,7 +236,7 @@
   min-height: 0;
   padding: 0;
   border: 1px solid var(--shade);
-  border-radius: 0;
+  border-radius: var(--item-radius);
   background: var(--paper);
   color: var(--ink);
 }
@@ -573,6 +582,7 @@
 
 .bonsai-window .bonsai-map-setup,
 .bonsai-window .bonsai-city-browser {
+  border-radius: var(--surface-radius);
   position: absolute;
   left: 50%;
   top: 50%;
@@ -642,6 +652,7 @@
 }
 
 .bonsai-window .bonsai-setup-preview-note {
+  border-radius: var(--inset-radius);
   min-height: 30px;
   margin: 0;
   padding: 5px;
@@ -654,6 +665,7 @@
 }
 
 .bonsai-window .bonsai-setup-advanced {
+  border-radius: var(--inset-radius);
   margin: 0;
   padding: 3px 5px;
   border: 1px solid var(--shade);
@@ -856,6 +868,28 @@
   break-inside: avoid;
 }
 
+/* Choosing which region leaves (D06). The plan is square because the Bonsai
+   map is, and it keeps its pixels: a smoothed thumbnail of a tile map is a
+   blur, and the rectangle has to land on a tile the player can see. */
+.bonsai-window .bonsai-departure-canvas {
+  display: block;
+  width: 100%;
+  max-width: 264px;
+  margin: 6px auto;
+  border: 1px solid var(--shade);
+  background: var(--paper);
+  image-rendering: pixelated;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.bonsai-window .bonsai-departure-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 6px;
+}
+
 /* Graphs (M4): the 1-bit chart canvas and its controls. */
 .bonsai-window .bonsai-graph-canvas {
   display: block;
@@ -988,6 +1022,7 @@
    hint. Panels stack by DOM order — the map stack, then this card, then the
    goals card — stacking by DOM order only, per the stylesheet budget. */
 .bonsai-window .bonsai-minimap-card {
+  border-radius: var(--surface-radius);
   position: absolute;
   top: 8px;
   left: 8px;
@@ -1012,6 +1047,7 @@
 }
 
 .bonsai-window .bonsai-minimap-card .bonsai-minimap {
+  border-radius: var(--inset-radius);
   display: block;
   width: 100%;
   height: 64px;
@@ -1032,7 +1068,7 @@
   font-size: 9px;
   line-height: 1.3;
   border: 1px solid var(--shade);
-  border-radius: 0;
+  border-radius: var(--item-radius);
   background: var(--paper);
   color: var(--ink);
 }

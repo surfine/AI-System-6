@@ -204,6 +204,18 @@ body[data-theme="aqua"] {
     linear-gradient(128deg,
       #3b6ba3 0%, #4d86ba 34%, #6ea6d6 46%, #82b6e2 52%,
       #6ea6d6 58%, #4d85ba 70%, #416f9f 100%);
+  /* Endfield terminal: the story pane dresses in the era's blue, overlaid with
+     the terminal's contour-line survey (等高线), a soft gradient wash and a
+     faint chartreuse glow — the same Endfield recipe Liquid Glass wears. */
+  --endfield-pane-bg:
+    linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+    url("assets/endfield-background.svg"),
+    radial-gradient(circle at 88% 8%, rgba(234, 253, 79, 0.24), transparent 34%),
+    linear-gradient(150deg, #e6eff8 0%, #b9d1e9 40%, #d6e5f2 72%, #eef4f9 100%);
+  --endfield-pane-bg-size: 34px 34px, 34px 34px, max(1200px, 118vw) auto, auto, auto;
+  --endfield-pane-bg-position: center, center, 45% 20%, center, center;
+  --endfield-pane-bg-repeat: repeat, repeat, no-repeat, no-repeat, no-repeat;
   --window-bg:
     repeating-linear-gradient(to bottom, #f1f1f1 0 1px, #ffffff 1px 2px, #f1f1f1 2px 3px, #eaeaea 3px 4px);
   --window-border: 1px solid #8b8b8b;
@@ -982,13 +994,19 @@ body[data-theme="snow-leopard"] {
      switch has to show it. */
   --theme-ui-font: "Lucida Grande", "Lucida Sans Unicode", "Hiragino Sans GB", "STHeiti", "Microsoft YaHei", sans-serif;
   --theme-title-font: var(--theme-ui-font);
-  /* Snow Leopard pop-up arrow: taller double-arrow with the native steel
-     blue stroke, vertically centered. */
+  /* Snow Leopard pop-up arrow: the era's blue double arrow, placed the same
+     way Aqua places its own — a fixed top offset in the control's own 22px
+     box, no transform. The old glyph drew 6x3 triangles with a 3px gap, so at
+     1x the pair read as one rounded blob, and with no top offset the arrow sat
+     against the control's upper edge instead of in the middle of its well.
+     The triangles now carry the measured 4px height and 4px gap this family
+     uses, with the era's steel blue. */
   --system-select-arrow-right: 6px;
+  --system-select-arrow-top: 4px;
   --system-select-arrow-width: 8px;
-  --system-select-arrow-height: 13px;
-  --system-select-arrow-transform: translateY(-50%);
-  --system-select-arrow-bg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='13' viewBox='0 0 8 13'%3E%3Cpath d='m1 5 3-3 3 3zM1 8l3 3 3-3z' fill='%23064a79'/%3E%3C/svg%3E");
+  --system-select-arrow-height: 14px;
+  --system-select-arrow-transform: none;
+  --system-select-arrow-bg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='14' viewBox='0 0 8 14'%3E%3Cpath d='M4 1 7 5H1Zm0 12 3-4H1Z' fill='%23064a79' shape-rendering='crispEdges'/%3E%3C/svg%3E");
   --system-readable-min: 13px;
   --system-title-size: 13px;
   --system-control-size: 13px;
@@ -1189,6 +1207,17 @@ body[data-theme="snow-leopard"] {
   --desktop-surface:
     radial-gradient(circle at 30% 24%, rgba(255, 255, 255, 0.3), transparent 26%),
     linear-gradient(180deg, #311238 0%, #813271 14%, #ae529f 26%, #ae5fb0 40%, #a562b5 55%, #975baa 70%, #905b9b 82%, #471858 100%);
+  /* Endfield terminal: lavender-paper survey, contour lines (等高线) and a
+     chartreuse glow over the era's violet. */
+  --endfield-pane-bg:
+    linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+    url("assets/endfield-background.svg"),
+    radial-gradient(circle at 88% 8%, rgba(234, 253, 79, 0.24), transparent 34%),
+    linear-gradient(160deg, #ece4f2 0%, #c9b4da 40%, #dccce8 72%, #f0e9f4 100%);
+  --endfield-pane-bg-size: 34px 34px, 34px 34px, max(1200px, 118vw) auto, auto, auto;
+  --endfield-pane-bg-position: center, center, 45% 20%, center, center;
+  --endfield-pane-bg-repeat: repeat, repeat, no-repeat, no-repeat, no-repeat;
   --window-bg: #ededed;
   --window-border: 1px solid #8b8b8b;
   --window-radius: 5px;
@@ -1792,7 +1821,8 @@ body[data-theme="aqua"] :where(
 
   border: var(--field-focus-border);
   outline: 0;
-  background: var(--field-focus-bg);
+  /* Preserve the arrow and other control images while changing the fill. */
+  background-color: var(--field-focus-bg);
   box-shadow: var(--field-focus-ring);
 
 }
@@ -2739,6 +2769,10 @@ body[data-theme="aqua"] :is(.btn:disabled, .btn.is-disabled), body[data-theme="s
 
   background: var(--control-disabled-bg);
   color: var(--system-disabled-fg, var(--shade-dark));
+  /* The era marks a live default button with its blue stroke, and that stroke
+     has to dim with the rest of the control: a blue outline around a grey
+     label reads as a button waiting to be pressed. */
+  border-color: var(--btn-disabled-border, var(--shade-dark));
   /* Through the token, not a literal: this rule and the one above it are the
      same weight and this one is later, so a literal here silently outranks the
      era's answer. An era that declares nothing still gets none. */
@@ -2785,7 +2819,8 @@ body[data-theme="aqua"] :is(input, textarea, select):not(.mde-input):focus, body
 
   border: var(--field-focus-border);
   outline: 0;
-  background: var(--field-focus-bg);
+  /* Preserve the arrow and other control images while changing the fill. */
+  background-color: var(--field-focus-bg);
   box-shadow: var(--field-focus-ring);
 
 }

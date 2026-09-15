@@ -258,6 +258,12 @@ function updateDerivedIndexNotification(messageKey, messageArgs, state) {
 }
 
 async function processDerivedIndexQueue() {
+  // Seamless first-use warm-up: if the app has no cloud/local embedding and
+  // will fall back to the in-browser model, start its download now so the
+  // first user search does not stall waiting for the model.
+  if (typeof preloadBrowserEmbeddingFallback === "function") {
+    preloadBrowserEmbeddingFallback();
+  }
   let failedEmbeddings = 0;
   let completedChunks = 0;
   let interrupted = false;

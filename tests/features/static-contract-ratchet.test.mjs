@@ -31,10 +31,12 @@ const budget = JSON.parse(readFileSync(budgetPath, "utf8"));
 // the shared VM harnesses, or builds its own VM directly with node:vm — the
 // same union ~100 existing feature tests already use.
 //
-// Two files are infrastructure ABOUT the suite rather than contracts about
+// The explicitly listed files are infrastructure ABOUT the suite rather than contracts about
 // the app, and are excluded from both sides of the count: this ratchet, and
 // gate-self-proof, which builds each gate's own defect from a fixture or a
-// temporary git repository and requires the gate to go red. Neither makes a
+// temporary git repository and requires the gate to go red. The development
+// feedback and generator-cache contracts likewise execute tooling in temporary
+// projects and exercise failures, log bounds and cache invalidation. None makes a
 // claim about the product, so neither belongs in a budget that measures how
 // much of the product is claimed without being executed. Every other file in
 // tests/features/ is counted, whatever it does.
@@ -48,6 +50,8 @@ const executingSignal = /node:vm|boot-vm\.mjs|draft-desk-vm\.mjs|write-lease-vm\
 const suiteInfrastructure = new Set([
   "static-contract-ratchet.test.mjs",
   "gate-self-proof.test.mjs",
+  "development-feedback.test.mjs",
+  "generated-assets-cache.test.mjs",
 ]);
 
 /** Every module specifier the file imports, static or dynamic. */

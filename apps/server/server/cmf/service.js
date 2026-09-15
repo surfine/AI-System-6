@@ -213,6 +213,25 @@ const MODELS = Object.freeze({
       tXyqmuCYyFmMJhw: "simTray",
     },
   },
+  "iphone-18-pro": {
+    id: "iphone-18-pro",
+    label: "iPhone 18 Pro",
+    asset: path.join(desktopRoot, "assets", "cmf", "iphone-18-pro.usdz"),
+    paletteMeta: {
+      silver18Pro: { label: "Silver", hex: "#c4c4c4" },
+      burgundy18Pro: { label: "Burgundy", hex: "#2e0f14" },
+      glacier18Pro: { label: "Glacier", hex: "#a3b1c4" },
+      black18Pro: { label: "Black", hex: "#242424" },
+    },
+    defaultParts: Object.fromEntries(["frame", "frameSide", "backGlass", "volumeUp", "volumeDown", "actionOrSim", "sideButton", "cameraControl", "usbC", "screwOrSpeaker"].map((part) => [part, "silver18Pro"])),
+    exactMeshParts: {
+      tGmDwIVAJzsXtCr: "actionOrSim", IhutpDtXiHOXZQQ: "volumeUp",
+      MLXiLvzAcyadwsO: "volumeDown", PiNlHXRokKeMMue: "sideButton",
+      BBOLhsUzCqVnqIr: "cameraControl", RkmKFSzCSaemljP: "cameraControl",
+      uzPNjLhCsKQHKkA: "cameraControl", tSzbeyqDWPqajtE: "backGlass",
+      lHgsWfYosJjEHHx: "backGlass",
+    },
+  },
   "iphone-17-pro": {
     id: "iphone-17-pro",
     label: "iPhone 17 Pro",
@@ -931,13 +950,24 @@ async function makeUsdz(input, output, recipe) {
       }
     }
     const result = makeCmfUsda(source, recipe);
-    // Keep the recolored layer as text and repackage with plain zip. USDZ is
-    // a zip with the USD layer at the archive root; both the in-app renderer
-    // and Quick Look read a .usda root layer.
+    // Keep the recolored layer as text and repackage with STORED entries. USDZ
+    // is a zip with the USD layer at the archive root, but the format also
+    // requires every entry to be uncompressed: Apple's USD runtime refuses a
+    // deflated archive outright with "compressed files are not supported", and
+    // then renders an empty scene. That is what the long-standing "SceneKit
+    // returns black PNGs on this Mac" note was actually recording -- measured
+    // 2026-09-14 on an Apple M5: the shipped iphone-air.usdz (Defl:N) loads
+    // nothing and snapshots 0 opaque pixels, while the same archive repacked
+    // with `-0` loads and renders 9,290 opaque samples at mean luminance 0.749.
+    // Both SCNRenderer(device: nil) and a real MTLDevice behave identically, so
+    // neither the machine nor the device was ever the cause.
+    //
+    // This is the file a writer opens in Quick Look or AR, so it has to be the
+    // compliant one. The in-app three.js loader reads either.
     await fs.writeFile(rootLayer, result.text, "utf8");
 
     await fs.rm(output, { force: true });
-    const packageArgs = ["-r", output, rootName];
+    const packageArgs = ["-r", "-0", output, rootName];
     const entries = await fs.readdir(workdir, { withFileTypes: true });
     for (const entry of entries) {
       if (entry.isDirectory()) packageArgs.push(entry.name);

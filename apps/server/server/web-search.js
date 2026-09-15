@@ -2,7 +2,7 @@
 // provider. The Responses API executes web_search server-side; the model then
 // writes a cited answer grounded in those results. We pin the official
 // DeepSeek endpoint (the Responses API has no alternate base URL) and the
-// v4-flash model, which is currently the only Responses-capable model.
+// Flash model, which is currently the only Responses-capable model.
 
 "use strict";
 
@@ -131,7 +131,7 @@ function buildWebSearchPayload({
 }) {
   const replayCalls = Array.isArray(searchCalls) ? searchCalls.filter((call) => call && call.type === "web_search_call") : [];
   const payload = {
-    model: "deepseek-v4-flash",
+    model: "deepseek-flash",
     instructions: instructions || webSearchInstructions(),
     input: replayCalls.length
       ? [

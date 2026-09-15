@@ -36,6 +36,8 @@ test.assert(!/Llama|Cassidy|SimPark|SimBus|SimRail|Darco|Plymouth Arco/i.test(tr
 const canvasRenderer = read("app/features/bonsai-renderer-canvas.js");
 test.assertIncludes(canvasRenderer, 'visualKind: "catalog"', "the Canvas backend draws imported catalog tiles");
 test.assertIncludes(canvasRenderer, "CATALOG_COLORS", "catalog tiles are tinted by category");
-test.assertMatches(canvasRenderer, /fnvUpdate\(hash, gridValue\(snapshot, \["catalogId"\]/, "the chunk signature invalidates when catalog tiles change");
+// The signature reads the resolved catalog layer now — the same fact, without
+// re-resolving the layer name sixteen thousand times a pass.
+test.assertMatches(canvasRenderer, /fnvUpdate\(hash, layerAt\(layers\.catalogId,/, "the chunk signature invalidates when catalog tiles change");
 
 test.finish();

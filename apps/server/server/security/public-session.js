@@ -251,6 +251,69 @@ function issueMacSharedToken(session) {
   };
 }
 
+const GUEST_BRIDGE_TOKEN_TTL_SECONDS = 30 * 24 * 60 * 60;
+
+/**
+ * An invitation to one desk. The writer mints it on their own page and hands
+ * it to the agent out of band; it names the desk, so a guest can never reach
+ * a stranger's browser on the same public deployment.
+ *
+ * @param {string} deskId
+ */
+function issueGuestBridgeToken(deskId) {
+  const desk = String(deskId || "");
+  if (!sessionSecretConfigured() || !/^[A-Za-z0-9_-]{8,64}$/.test(desk)) return null;
+  const now = Math.floor(Date.now() / 1000);
+  const payload = {
+    v: 1,
+    scope: "mcp-guest",
+    iat: now,
+    exp: now + GUEST_BRIDGE_TOKEN_TTL_SECONDS,
+    desk,
+    nonce: crypto.randomBytes(18).toString("base64url"),
+  };
+  const encoded = base64urlJson(payload);
+  return {
+    token: `g1.${encoded}.${sign(`mcp-guest.${encoded}`)}`,
+    expiresIn: GUEST_BRIDGE_TOKEN_TTL_SECONDS,
+    expiresAt: new Date(payload.exp * 1000).toISOString(),
+  };
+}
+
+/**
+ * @param {import("node:http").IncomingMessage} req
+ * @returns {{ desk: string, exp: number } | null}
+ */
+function guestBridgeTokenFromRequest(req) {
+  if (!sessionSecretConfigured()) return null;
+  const parts = bearerToken(req).split(".");
+  if (parts.length !== 3 || parts[0] !== "g1") return null;
+  const [, encoded, suppliedSignature] = parts;
+  const expectedSignature = sign(`mcp-guest.${encoded}`);
+  const supplied = Buffer.from(suppliedSignature);
+  const expected = Buffer.from(expectedSignature);
+  if (supplied.length !== expected.length || !crypto.timingSafeEqual(supplied, expected)) return null;
+  try {
+    const payload = JSON.parse(Buffer.from(encoded, "base64url").toString("utf8"));
+    const now = Math.floor(Date.now() / 1000);
+    if (
+      payload?.v !== 1
+      || payload.scope !== "mcp-guest"
+      || typeof payload.desk !== "string"
+      || !/^[A-Za-z0-9_-]{8,64}$/.test(payload.desk)
+      || typeof payload.nonce !== "string"
+      || payload.nonce.length < 16
+      || !Number.isFinite(payload.exp)
+      || payload.exp <= now
+    ) {
+      return null;
+    }
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
 function issueSessionCookie() {
   if (!sessionSecretConfigured()) return "";
   const now = Math.floor(Date.now() / 1000);
@@ -573,6 +636,8 @@ module.exports = {
   sessionFromRequest,
   sharedSessionFromRequest,
   macSharedSessionFromRequest,
+  issueGuestBridgeToken,
+  guestBridgeTokenFromRequest,
   issueMacSharedToken,
   issueSessionCookie,
   verifyTurnstileAttempt,

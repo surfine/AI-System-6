@@ -8,7 +8,7 @@
 
 "use strict";
 
-const { isPublicDeployment } = require("./runtime-profile.js");
+const { isPublicDeployment, publicGuestBridgeEnabled } = require("./runtime-profile.js");
 
 /**
  * @typedef {(
@@ -81,6 +81,11 @@ const handleReader = lazyHandler(() => require("./routes/reader.js"), "./routes/
 const handleTimeMachine = lazyHandler(() => require("./routes/time-machine.js"), "./routes/time-machine.js", "handleTimeMachine");
 const handleEndfieldSearch = lazyHandler(() => require("./routes/endfield-search.js"), "./routes/endfield-search.js", "handleEndfieldSearch");
 const handleEndfieldAsk = lazyHandler(() => require("./routes/endfield-ask.js"), "./routes/endfield-ask.js", "handleEndfieldAsk");
+const handleMcp = lazyHandler(() => require("./routes/mcp.js"), "./routes/mcp.js", "handleMcp");
+const handleMcpClient = lazyHandler(() => require("./routes/mcp-client.js"), "./routes/mcp-client.js", "handleMcpClient");
+const handleAgentExecutorStream = lazyHandler(() => require("./routes/agent-executor.js"), "./routes/agent-executor.js", "handleAgentExecutorStream");
+const handleAgentExecutorReply = lazyHandler(() => require("./routes/agent-executor.js"), "./routes/agent-executor.js", "handleAgentExecutorReply");
+const handleAgentExecutorToken = lazyHandler(() => require("./routes/agent-executor.js"), "./routes/agent-executor.js", "handleAgentExecutorToken");
 const handleImportText = lazyHandler(() => require("./routes/import-text.js"), "./routes/import-text.js", "handleImportText");
 const handleImportOcrPages = lazyHandler(() => require("./routes/import-ocr-pages.js"), "./routes/import-ocr-pages.js", "handleImportOcrPages");
 const handleSubtitlesTranslate = lazyHandler(() => require("./routes/subtitles-translate.js"), "./routes/subtitles-translate.js", "handleSubtitlesTranslate");
@@ -137,6 +142,19 @@ const localExactRoutes = new Map([
   ["POST /api/import-ocr-pages", handleImportOcrPages],
   ["POST /api/subtitles/translate", handleSubtitlesTranslate],
   ["POST /api/search/answer", handleSearchAnswer],
+  // The guest bridge is loopback-only by construction: none of these three
+  // keys appear in publicExactRouteKeys, so the public profile never serves
+  // them. /mcp admits itself (security/mcp-admission.js); the executor pair
+  // sits under /api/ and takes the ordinary browser same-origin guard.
+  ["POST /mcp", handleMcp],
+  ["GET /mcp", handleMcp],
+  ["DELETE /mcp", handleMcp],
+  ["OPTIONS /mcp", handleMcp],
+  // Outbound: the desk asks an external MCP server the writer configured.
+  ["POST /api/mcp/client", handleMcpClient],
+  ["GET /api/agent/executor", handleAgentExecutorStream],
+  ["POST /api/agent/executor/reply", handleAgentExecutorReply],
+  ["POST /api/agent/executor/token", handleAgentExecutorToken],
   ["GET /api/cmf/capabilities", handleCmfCapabilities],
   ["POST /api/cmf/export-usdz", handleCmfExportUsdz],
   ["POST /api/cmf/render-views", handleCmfRenderViews],
@@ -173,6 +191,25 @@ const publicExactRouteKeys = new Set([
   "POST /api/cmf/render-views",
   "POST /api/cmf/render-preview",
 ]);
+
+// The guest bridge on the public deployment is opt-in and off by default
+// (AI_SYSTEM6_PUBLIC_MCP=1). Off, none of these paths exist in public mode at
+// all, so the live site answers 404 rather than 401 and nothing about it
+// changes. On, /mcp admits only a signed invitation to a named desk
+// (security/mcp-admission.js), and the three executor paths stay under the
+// ordinary Turnstile session guard because they belong to the writer's own
+// page, not to the guest.
+if (publicGuestBridgeEnabled) {
+  [
+    "POST /mcp",
+    "GET /mcp",
+    "DELETE /mcp",
+    "OPTIONS /mcp",
+    "GET /api/agent/executor",
+    "POST /api/agent/executor/reply",
+    "POST /api/agent/executor/token",
+  ].forEach((key) => publicExactRouteKeys.add(key));
+}
 
 const exactRoutes = isPublicDeployment
   ? new Map([...localExactRoutes].filter(([key]) => publicExactRouteKeys.has(key)))

@@ -122,7 +122,7 @@ corpus.forEach((record) => {
   });
 });
 const untouched = corpus.filter((record) => !record.descriptions && !record.partOf);
-test.assert(untouched.length === 62, `${untouched.length} prompts carry no skill metadata and stay ordinary prompt files`);
+test.assert(untouched.length === 64, `${untouched.length} prompts carry no skill metadata and stay ordinary prompt files`);
 
 // ------------------------------------------- precedence, reused not rebuilt
 api.upsertProjectPromptOverride(projectId, "writing-route.skill-table-shaping", "This project hands over CSV, never a sheet.");

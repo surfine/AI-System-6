@@ -94,10 +94,21 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
     return { width: rect.width, height: rect.height };
   }
 
+  // The canvas stops at 2x.
+  //
+  // Every sprite in the atlas is 1-bit-era artwork authored at 1x, so a third
+  // device pixel buys nothing but work: on a phone at DPR 3 the backing store
+  // is 1170x2532, and simply compositing the layers measured 50-115ms a frame
+  // in the acceptance gate. Capping at 2x is a renderer resolution, not a
+  // product one — the sim, the save format and the artwork are untouched — and
+  // it is still twice the density the art was drawn for.
+  const MAX_CANVAS_DPR = 2;
+
   function requestedDpr(value) {
-    if (Number.isFinite(value) && value > 0) return value;
-    const globalDpr = Number(window.devicePixelRatio);
-    return Number.isFinite(globalDpr) && globalDpr > 0 ? globalDpr : 1;
+    const asked = Number.isFinite(value) && value > 0
+      ? value
+      : (Number(window.devicePixelRatio) > 0 ? Number(window.devicePixelRatio) : 1);
+    return Math.min(asked, MAX_CANVAS_DPR);
   }
 
   function clearContext(name) {
@@ -430,7 +441,20 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
     const size = mapSize(snapshot);
     const index = y * size + x;
     const point = projectPoint(snapshot, x, y, altitudeAt(snapshot, index), true);
-    if (!drawSprite(context, terrainSprite(snapshot, index), point.sx, point.sy)) {
+    const sprite = terrainSprite(snapshot, index);
+    // Fractional zoom rounds independently trimmed sprites to device pixels.
+    // A small continuous bed closes subpixel gaps between adjacent diamonds.
+    const halfW = MATH.TILE_W * state.camera.zoom / 2 + 0.75;
+    const halfH = MATH.TILE_H * state.camera.zoom / 2 + 0.75;
+    context.fillStyle = sprite === "terrain.snow" ? "#dce8ee" : isWater(snapshot, index) ? "#4b8191" : "#7d9463";
+    context.beginPath();
+    context.moveTo(point.sx, point.sy - halfH);
+    context.lineTo(point.sx + halfW, point.sy);
+    context.lineTo(point.sx, point.sy + halfH);
+    context.lineTo(point.sx - halfW, point.sy);
+    context.closePath();
+    context.fill();
+    if (!drawSprite(context, sprite, point.sx, point.sy)) {
       fallbackDiamond(context, point.sx, point.sy, isWater(snapshot, index) ? "#3979a8" : "#6b9f57", "#385b35");
     }
     drawCliffShadows(context, snapshot, x, y, point);
@@ -445,18 +469,20 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
     const alt = altitudeAt(snapshot, index);
     const zoom = state.camera.zoom;
     const neighbors = [[0, -1, "n"], [1, 0, "e"], [0, 1, "s"], [-1, 0, "w"]];
+    const halfW = MATH.TILE_W / 2, halfH = MATH.TILE_H / 2;
     const edges = {
-      n: [[0, -12], [24, 0], [-3, 2]],
-      s: [[-24, 0], [0, 12], [3, -2]],
-      e: [[24, 0], [0, 12], [-3, -2]],
-      w: [[0, -12], [-24, 0], [3, 2]],
+      n: [[0, -halfH], [halfW, 0], [-3, 2]],
+      s: [[-halfW, 0], [0, halfH], [3, -2]],
+      e: [[halfW, 0], [0, halfH], [-3, -2]],
+      w: [[0, -halfH], [-halfW, 0], [3, 2]],
     };
     for (const [dx, dy, dir] of neighbors) {
       const nx = x + dx;
       const ny = y + dy;
       if (nx < 0 || ny < 0 || nx >= size || ny >= size) continue;
       if (altitudeAt(snapshot, ny * size + nx) <= alt) continue;
-      const [a, b, inward] = edges[dir];
+      const ports = ["n", "e", "s", "w"];
+      const [a, b, inward] = edges[ports[(ports.indexOf(dir) + state.camera.rotation) % 4]];
       context.fillStyle = "rgba(15, 20, 17, 0.22)";
       context.beginPath();
       context.moveTo(point.sx + a[0] * zoom, point.sy + a[1] * zoom);
@@ -966,8 +992,38 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
     return null;
   }
 
+  // The per-tile layers, resolved once per pass.
+  //
+  // Every one of these loops used to call gridValue(snapshot, ["stage",
+  // "buildingStage"], index, 0) for every tile — re-resolving the same two
+  // names, and then the same array, sixteen thousand times a pass, with five
+  // such passes on every simulation tick (one for the signature, one for the
+  // buildings, one each for trees, parks and blaze). A 128x128 city therefore
+  // paid roughly a hundred thousand name lookups per tick before a sprite was
+  // drawn, which is what the acceptance gate's frame-cost contract measures and
+  // what the player feels as a stutter. The arrays do not change between
+  // passes; they are named once, here.
+  function gridLayers(snapshot) {
+    return {
+      stage: snapshot?.stage || snapshot?.buildingStage || null,
+      variant: snapshot?.variant || snapshot?.buildingVariant || null,
+      zone: snapshot?.zone || snapshot?.zoneType || null,
+      buildingState: snapshot?.buildingState || null,
+      trees: snapshot?.tree || snapshot?.trees || null,
+      park: snapshot?.park || null,
+      over: snapshot?.over || null,
+      catalogId: snapshot?.catalogId || null,
+      blaze: snapshot?.blaze || null,
+    };
+  }
+
+  function layerAt(layer, index, fallback = 0) {
+    return layer && layer[index] !== undefined ? layer[index] : fallback;
+  }
+
   function buildingObjects(snapshot) {
     const size = mapSize(snapshot);
+    const layers = gridLayers(snapshot);
     const buildings = [];
     const covered = new Set();
     if (Array.isArray(snapshot.buildings)) {
@@ -981,16 +1037,16 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
       for (let x = 0; x < size; x += 1) {
         if (covered.has(`${x}:${y}`)) continue;
         const index = y * size + x;
-        const stage = Number(gridValue(snapshot, ["stage", "buildingStage"], index, 0)) | 0;
-        const zone = gridValue(snapshot, ["zone", "zoneType"], index, ZONE.NONE);
-        const buildingState = gridValue(snapshot, ["buildingState"], index, stage > 0 ? 3 : 0);
+        const stage = Number(layerAt(layers.stage, index, 0)) | 0;
+        const zone = layerAt(layers.zone, index, ZONE.NONE);
+        const buildingState = layerAt(layers.buildingState, index, stage > 0 ? 3 : 0);
         if ((!stage && !buildingState) || !zonePrefix(zone)) continue;
         buildings.push({
           x,
           y,
           zone,
           stage,
-          variant: Number(gridValue(snapshot, ["variant", "buildingVariant"], index, 1)) || 1,
+          variant: Number(layerAt(layers.variant, index, 1)) || 1,
           state: buildingState,
           footprint: { w: 1, h: 1 },
         });
@@ -1026,15 +1082,16 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
 
   function buildingSignature(snapshot) {
     const size = mapSize(snapshot);
+    const layers = gridLayers(snapshot);
     let hash = 2166136261;
     for (let index = 0; index < size * size; index += 1) {
-      hash = fnvUpdate(hash, Number(gridValue(snapshot, ["stage", "buildingStage"], index, 0)) || 0);
-      hash = fnvUpdate(hash, Number(gridValue(snapshot, ["variant", "buildingVariant"], index, 0)) || 0);
-      hash = fnvAny(hash, gridValue(snapshot, ["zone", "zoneType"], index, 0));
-      hash = fnvUpdate(hash, Boolean(gridValue(snapshot, ["tree", "trees"], index, false)));
-      hash = fnvUpdate(hash, Boolean(gridValue(snapshot, ["park"], index, false)) || gridValue(snapshot, ["over"], index, OVER.NONE) === OVER.PARK);
-      hash = fnvUpdate(hash, gridValue(snapshot, ["catalogId"], index, 0));
-      hash = fnvUpdate(hash, gridValue(snapshot, ["blaze"], index, 0));
+      hash = fnvUpdate(hash, Number(layerAt(layers.stage, index, 0)) || 0);
+      hash = fnvUpdate(hash, Number(layerAt(layers.variant, index, 0)) || 0);
+      hash = fnvAny(hash, layerAt(layers.zone, index, 0));
+      hash = fnvUpdate(hash, Boolean(layerAt(layers.trees, index, false)));
+      hash = fnvUpdate(hash, Boolean(layerAt(layers.park, index, false)) || layerAt(layers.over, index, OVER.NONE) === OVER.PARK);
+      hash = fnvUpdate(hash, layerAt(layers.catalogId, index, 0));
+      hash = fnvUpdate(hash, layerAt(layers.blaze, index, 0));
     }
     [snapshot.buildings, snapshot.trees].forEach((list) => {
       if (!Array.isArray(list)) return;
@@ -1058,6 +1115,7 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
     clearContext("buildings");
     const context = state.contexts.buildings;
     const size = mapSize(snapshot);
+    const layers = gridLayers(snapshot);
     const scenery = buildingObjects(snapshot).map((building) => ({ ...building, visualKind: "building" }));
     if (Array.isArray(snapshot.trees)) {
       snapshot.trees.forEach((tree, sequence) => {
@@ -1067,7 +1125,7 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
       });
     } else {
       for (let index = 0; index < size * size; index += 1) {
-        if (!gridValue(snapshot, ["tree", "trees"], index, false)) continue;
+        if (!layerAt(layers.trees, index, false)) continue;
         scenery.push({
           x: index % size, y: Math.floor(index / size), visualKind: "tree",
           // Seasons accent the forest, they do not repaint it: one tree in
@@ -1085,32 +1143,18 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
       }
     }
     for (let index = 0; index < size * size; index += 1) {
-      if (!gridValue(snapshot, ["park"], index, false) && gridValue(snapshot, ["over"], index, OVER.NONE) !== OVER.PARK) continue;
+      if (!layerAt(layers.park, index, false) && layerAt(layers.over, index, OVER.NONE) !== OVER.PARK) continue;
       scenery.push({ x: index % size, y: Math.floor(index / size), visualKind: "tree", variant: 3, footprint: { w: 1, h: 1 } });
     }
     if (snapshot.blaze) {
       for (let index = 0; index < size * size; index += 1) {
-        const value = snapshot.blaze[index];
+        const value = layers.blaze[index];
         if (!value) continue;
         scenery.push({ x: index % size, y: Math.floor(index / size), visualKind: "blaze", flooded: value === 6, age: value, footprint: { w: 1, h: 1 } });
       }
     }
     const catalog = window.AISystem6BonsaiCatalog;
-    if (catalog && snapshot.catalogId) {
-      for (let index = 0; index < size * size; index += 1) {
-        const id = snapshot.catalogId[index];
-        if (!id) continue;
-        if (gridValue(snapshot, ["zone"], index, 0)) continue;
-        if (snapshot.facilityAt && snapshot.facilityAt[index] >= 0) continue;
-        if (gridValue(snapshot, ["road"], index, 0) || gridValue(snapshot, ["rail"], index, 0) || gridValue(snapshot, ["wire"], index, 0)) continue;
-        if (gridValue(snapshot, ["highway"], index, 0) || gridValue(snapshot, ["onramp"], index, 0)) continue;
-        if (gridValue(snapshot, ["tree", "trees"], index, false) || gridValue(snapshot, ["park"], index, false)) continue;
-        const entry = catalog.entryOf(id);
-        if (!entry || entry.category === "clear" || entry.category === "trees") continue;
-        scenery.push({ x: index % size, y: Math.floor(index / size), visualKind: "catalog", category: entry.category, size: entry.size,
-          label: entry.labelKey.replace("bonsai_catalog_", ""), footprint: { w: 1, h: 1 } });
-      }
-    }
+    MATH.collectCatalogObjects(snapshot, catalog).forEach((object) => scenery.push({ ...object, visualKind: "catalog" }));
     MATH.sortByAnchor(scenery, size, state.camera.rotation).forEach((building) => {
       const baseX = Math.max(0, Math.min(size - 1, Math.floor(building.x)));
       const baseY = Math.max(0, Math.min(size - 1, Math.floor(building.y)));
@@ -1130,6 +1174,7 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
         return;
       }
       if (building.visualKind === "catalog") {
+        if (building.spriteId && drawSprite(context, nightFrame(building.spriteId, snapshot), point.sx, point.sy)) return;
         // Bespoke recipe first, then a shared facility frame, then the
         // category-tinted placeholder block.
         if (drawSprite(context, nightFrame(`catalog.${building.label}`, snapshot), point.sx, point.sy)) return;
@@ -1262,10 +1307,11 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
   // tile, its jib swinging with the tick.
   function drawConstructionCranes(context, snapshot) {
     const size = mapSize(snapshot);
+    const layers = gridLayers(snapshot);
     const zoom = state.camera.zoom;
     const tick = Number(snapshot.tick) | 0;
     for (let index = 0; index < size * size; index += 1) {
-      if (Number(gridValue(snapshot, ["buildingState"], index, 0)) !== 2) continue;
+      if (Number(layerAt(layers.buildingState, index, 0)) !== 2) continue;
       const x = index % size;
       const y = Math.floor(index / size);
       const point = projectPoint(snapshot, x, y, altitudeAt(snapshot, index));
@@ -1292,12 +1338,13 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
   // cleanliness.
   function drawSakuraPetals(context, snapshot) {
     const size = mapSize(snapshot);
+    const layers = gridLayers(snapshot);
     const zoom = state.camera.zoom;
     const tick = Number(snapshot.tick) | 0;
     const season = Math.floor(((Number(snapshot.tick) || 0) % 1500) / 375);
     if (season !== 0) return;
     for (let index = 0; index < size * size; index += 1) {
-      if (!gridValue(snapshot, ["tree", "trees"], index, false)) continue;
+      if (!layerAt(layers.trees, index, false)) continue;
       if (index % 3 !== 0) continue; // blossom trees only, matching the sprite selection
       const x = index % size;
       const y = Math.floor(index / size);
@@ -1347,10 +1394,11 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
     const roads = [];
     const rails = [];
     const occupied = [];
+    const layers = gridLayers(snapshot);
     for (let index = 0; index < size * size; index += 1) {
       if (isRoad(snapshot, index)) roads.push(index);
       if (isRail(snapshot, index)) rails.push(index);
-      if (Number(gridValue(snapshot, ["stage", "buildingStage"], index, 0)) > 0) occupied.push(index);
+      if (Number(layerAt(layers.stage, index, 0)) > 0) occupied.push(index);
     }
     const seed = Number(snapshot.seed) | 0;
     const carCount = Math.min(36, Math.ceil(roads.length / 12));
@@ -1647,24 +1695,12 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
       if (!inView(point)) return;
       drawWindows(point, nightFrame(`facility.${facility.kind}`, snapshot));
     });
-    if (!window.AISystem6BonsaiCatalog || !snapshot.catalogId) return;
-    for (let index = 0; index < size * size; index += 1) {
-      const id = snapshot.catalogId[index];
-      if (!id) continue;
-      if (gridValue(snapshot, ["zone"], index, 0)) continue;
-      if (snapshot.facilityAt && snapshot.facilityAt[index] >= 0) continue;
-      if (gridValue(snapshot, ["road"], index, 0) || gridValue(snapshot, ["rail"], index, 0) || gridValue(snapshot, ["wire"], index, 0)) continue;
-      if (gridValue(snapshot, ["highway"], index, 0) || gridValue(snapshot, ["onramp"], index, 0)) continue;
-      if (gridValue(snapshot, ["tree", "trees"], index, false) || gridValue(snapshot, ["park"], index, false)) continue;
-      const entry = window.AISystem6BonsaiCatalog.entryOf(id);
-      if (!entry || entry.category === "clear" || entry.category === "trees") continue;
-      const label = entry.labelKey.replace("bonsai_catalog_", "");
-      const x = index % size;
-      const y = Math.floor(index / size);
-      const point = projectPoint(snapshot, x, y, altitudeAt(snapshot, index));
-      if (!inView(point)) continue;
-      drawWindows(point, nightFrame(`catalog.${label}`, snapshot));
-    }
+    MATH.collectCatalogObjects(snapshot, window.AISystem6BonsaiCatalog).forEach((object) => {
+      const x = object.x + (object.footprint.w - 1) / 2;
+      const y = object.y + (object.footprint.h - 1) / 2;
+      const point = projectPoint(snapshot, x, y, altitudeAt(snapshot, object.y * size + object.x));
+      if (inView(point)) drawWindows(point, nightFrame(object.spriteId || `catalog.${object.label}`, snapshot));
+    });
   }
 
   function render(snapshot, viewState) {

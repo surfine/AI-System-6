@@ -42,8 +42,9 @@ function boot(scenario) {
   const sim = new engine.Simulation(map, scenario.level, engine.Simulation.SPEED_PAUSED);
   sim._startingYear = scenario.year;
   const tally = scenarios.seedTown(engine, map, sim, scenario.town);
+  const grown = scenarios.growTown(engine, sim, scenario);
   sim.budget.setFunds(scenario.funds);
-  return { map, sim, tally };
+  return { map, sim, tally, grown };
 }
 
 for (const scenario of scenarios.SCENARIOS) {
@@ -51,7 +52,7 @@ for (const scenario of scenarios.SCENARIOS) {
   const { sim, tally } = boot(scenario);
   test.assert(tally.zones >= Math.floor(preset.cols * preset.rows * 0.6), `${scenario.id}: the starting town has most of its ${preset.cols * preset.rows} zones (${tally.zones})`);
   test.assert(tally.roads >= 20, `${scenario.id}: the starting town has a road grid (${tally.roads} tiles)`);
-  test.assert(tally.plant === true, `${scenario.id}: the starting town has a power plant`);
+  test.assert(tally.plants === (preset.plants || 1), `${scenario.id}: the starting town has its ${preset.plants || 1} power plant(s) (${tally.plants})`);
   test.assert(sim.budget.totalFunds === scenario.funds, `${scenario.id}: the seeder leaves the scenario treasury, not its own`);
   test.assert(sim.getDate().year === scenario.year, `${scenario.id}: the city starts in ${scenario.year}`);
   const again = boot(scenario);
@@ -61,6 +62,93 @@ for (const scenario of scenarios.SCENARIOS) {
   );
 }
 test.assert(engine.BaseTool.getAutoBulldoze() === true, "the seeder restores the auto-bulldoze setting it borrowed");
+
+// --- a scenario opens on the situation it announces -------------------------------------
+
+// The rule that would have caught it: boot the scenario the way the shell does
+// and read it before the player has touched anything. A population scenario
+// must open short of its target; a scenario whose goal is a condition — a jam,
+// a crime wave, a pollution crisis — must open with that condition above the
+// bar, because "keep it under 60" on a city that is already under 60 asks for
+// nothing. The rule is taken from the goal, not from a field a scenario can
+// drop: dropping the premise is exactly the defect being guarded against.
+for (const scenario of scenarios.SCENARIOS) {
+  const { sim, grown } = boot(scenario);
+  const value = scenarios.measure(sim, scenario.goal.kind);
+  test.assert(
+    scenarios.judge(scenario, value, 0) !== "won",
+    `${scenario.id}: no scenario is won at tick zero (${scenario.goal.kind} ${value} against ${scenario.goal.value})`,
+  );
+  if (scenario.goal.kind === "population") {
+    test.assert(
+      value < scenario.goal.value,
+      `${scenario.id}: the starting town is short of its population goal (${value} of ${scenario.goal.value})`,
+    );
+  } else {
+    test.assert(
+      value > scenario.goal.value,
+      `${scenario.id}: opens on the condition it announces, above its own goal (${scenario.goal.kind} ${value} > ${scenario.goal.value})`,
+    );
+    test.assert(
+      sim.evaluation.cityPop > 0,
+      `${scenario.id}: the condition arrives in a living city, not on an empty grid (population ${sim.evaluation.cityPop})`,
+    );
+  }
+  if (scenario.premise) {
+    test.assert(grown !== null && grown.met === true, `${scenario.id}: the seeder grows its own town until the premise is real (${grown && grown.months} months)`);
+    test.assert(
+      sim.evaluation.cityPop >= scenario.premise.population,
+      `${scenario.id}: the grown town reaches the premise's population floor (${sim.evaluation.cityPop} of ${scenario.premise.population})`,
+    );
+    test.assert(sim.getDate().year === scenario.year, `${scenario.id}: growing the town first still opens in ${scenario.year}`);
+    const again = boot(scenario);
+    test.assert(
+      scenarios.measure(again.sim, scenario.goal.kind) === value && again.sim.evaluation.cityPop === sim.evaluation.cityPop,
+      `${scenario.id}: the grown city is the same city every time (the build-up draws from the scenario's own seed)`,
+    );
+  }
+}
+
+// --- the seeded town actually develops -------------------------------------------------
+
+// A scenario whose zones never light up is unplayable: the city sits at
+// population zero and asks forever for the zones it already has. The seeder
+// wires both road axes because the engine refuses a wire on a road
+// intersection, and a single axis leaves the plant cut off from the grid.
+function runMonths(sim, months) {
+  sim.disasterManager.disastersEnabled = false;
+  for (let frame = 0; frame < 16 * scenarios.TICKS_PER_MONTH * months; frame += 1) {
+    sim._simulate(sim._constructSimData());
+    sim._updateTime();
+  }
+}
+
+function unpoweredZones(map, preset, origin) {
+  const dark = [];
+  for (let row = 0; row < preset.rows; row += 1) {
+    for (let col = 0; col < preset.cols; col += 1) {
+      const x = origin.x + col * 4 + 2;
+      const y = origin.y + row * 4 + 2;
+      const tile = map.getTile(x, y);
+      if (tile.isZone() && !tile.isPowered()) dark.push(`${x},${y}`);
+    }
+  }
+  return dark;
+}
+
+for (const scenario of scenarios.SCENARIOS) {
+  const { map, sim, tally } = boot(scenario);
+  sim.setSpeed(engine.Simulation.SPEED_MED);
+  runMonths(sim, 3);
+  const dark = unpoweredZones(map, scenarios.TOWN_PRESETS[scenario.town], tally.origin);
+  test.assert(dark.length === 0, `${scenario.id}: the coal plant powers every seeded zone (dark: ${dark.join(" ") || "none"})`);
+}
+
+const grower = boot(scenarios.scenarioById("quietwater"));
+grower.sim.setSpeed(engine.Simulation.SPEED_MED);
+runMonths(grower.sim, 24);
+test.assert(grower.sim.evaluation.cityPop > 0, `a seeded town grows a population within two years (${grower.sim.evaluation.cityPop})`);
+test.assert(grower.sim._census.resPop > 0, "the residential zones develop rather than standing empty");
 
 // --- triggers fire on schedule, once ---------------------------------------------------
 

@@ -49,7 +49,8 @@ function iconContainersIn(markup) {
       continue;
     }
     const classMatch = attrs.match(/class="([^"]*)"/);
-    const node = { tag, classes: classMatch ? classMatch[1].trim().split(/\s+/) : [] };
+    const idMatch = attrs.match(/id="([^"]*)"/);
+    const node = { tag, id: idMatch ? idMatch[1] : "", classes: classMatch ? classMatch[1].trim().split(/\s+/) : [] };
     const iconMatch = attrs.match(/data-system-icon="([^"]*)"/);
     if (iconMatch) found.push({ iconId: iconMatch[1], node, ancestors: [...stack] });
     if (!VOID_TAGS.has(tag) && !selfClosing) stack.push(node);
@@ -73,32 +74,77 @@ const headerEnd = html.indexOf("</header>");
 test.assert(headerStart > -1 && headerEnd > headerStart, "the menu bar markup is where this contract expects it");
 const menuBarIcons = iconContainersIn(html.slice(headerStart, headerEnd));
 test.assert(menuBarIcons.length >= 2, "the menu bar still carries the model and project icons this contract was written for");
+// One icon button in the bar is not a menu title: the guest indicator acts on
+// its click (it opens Chooser) instead of pulling a menu down, so it cannot sit
+// inside a .menu — the menu handler returns before any data-action runs. It
+// carries its own reversal rule, asserted below, which is the price of being
+// admitted here.
+const standaloneButtonIds = new Set(["guest-indicator"]);
 for (const { iconId, ancestors } of menuBarIcons) {
   const buttonDepth = ancestors.map((a) => a.tag).lastIndexOf("button");
   test.assert(buttonDepth > 0, `menu-bar icon "${iconId}" sits inside a button the reversal rules can address`);
   const parentOfButton = ancestors[buttonDepth - 1];
+  const standalone = standaloneButtonIds.has(ancestors[buttonDepth]?.id || "");
   test.assert(
-    parentOfButton && parentOfButton.tag === "div" && parentOfButton.classes.includes("menu"),
+    standalone || (parentOfButton && parentOfButton.tag === "div" && parentOfButton.classes.includes("menu")),
     `menu-bar icon "${iconId}" is a direct .menu > button title icon; an icon button elsewhere in the bar needs its own reversal rule in 40-icons.css before this list admits it`,
   );
   test.assert(classicVocabulary.has(iconId), `menu-bar icon "${iconId}" is in the classic vocabulary, so it renders the mask+art pair the reversal rules act on`);
   test.assert(classicAssetsExist(iconId, 16), `menu-bar icon "${iconId}" owns 16px classic art and mask files`);
 }
 
-// The generic menu-title reversal treatment those containers rely on.
+// ---------------------------------------------------------------------------
+// The reversal itself. It is an SVG filter over a third layer, never a CSS
+// filter over the art: WebKit ignores `filter` on an SVG <image>, so the black
+// art painted straight onto the black selection mask and every reversed
+// surface read as a solid blob. A state counts as reversed only when both
+// halves hold — the black art hidden, the painter's reversed layer shown.
+// ---------------------------------------------------------------------------
+test.assertMatches(systemIcons,
+  /class="sys-icon-classic-reverse" href="\$\{art\}"[^>]*filter="url\(#\$\{classicReverseFilterId\}\)"/,
+  "the painter draws a reversed copy of the same classic art through an SVG filter");
+test.assertMatches(systemIcons,
+  /filter id="\$\{classicReverseFilterId\}"[\s\S]*?feColorMatrix type="matrix" values="-1 0 0 0 1 0 -1 0 0 1 0 0 -1 0 1 0 0 0 1 0"/,
+  "the reversed layer is the same art file through an inverting colour matrix");
 test.assertMatches(icons,
-  /\.menu\.is-open > button \.sys-icon-svg\.has-classic-mask \.sys-icon-classic-art,\s*\.menu-bar > \.menu > button:focus-visible \.sys-icon-svg\.has-classic-mask \.sys-icon-classic-art \{\s*filter: invert\(1\);/,
-  "a pulled-down or keyboard-focused menu title inverts its classic art");
-test.assertMatches(icons,
-  /\.menu-bar > \.menu > button:hover \.sys-icon-svg\.has-classic-mask \.sys-icon-classic-art \{\s*filter: invert\(1\);/,
-  "a hovered menu title inverts its classic art on pointer devices");
+  /\.sys-icon-svg\.has-classic-mask \.sys-icon-classic-mask,\s*\.sys-icon-svg\.has-classic-mask \.sys-icon-classic-reverse \{\s*display: none;/,
+  "the reversed layer rests hidden, so only a reversed state paints it");
+test.assert(!/filter:\s*invert\([01]\)/.test(icons),
+  "no classic state reaches for a CSS filter over the art — WebKit ignores it on an SVG <image>, which is the blob this contract exists to prevent");
 
-// The warm-up: without a resting no-op filter, Chromium's first invert(1)
-// composites a stale raster — a white plate on the menu title, a swallowed
-// art layer (bare black mask) on the active chooser tab.
-test.assertMatches(icons,
-  /\.sys-icon-svg\.has-classic-mask \.sys-icon-classic-art \{\s*filter: invert\(0\);/,
-  "classic art rests on the filter path (invert(0)) so state inverts repaint from live vectors, not a stale raster");
+function escapeForRegExp(text) {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// Both halves of one state's reversal, read out of the rule body itself.
+function reversalState(state) {
+  const selector = escapeForRegExp(state);
+  return {
+    hidesArt: new RegExp(`${selector} \\.sys-icon-svg\\.has-classic-mask \\.sys-icon-classic-art[^{}]*\\{\\s*display: none;`).test(icons),
+    showsReverse: new RegExp(`${selector} \\.sys-icon-svg\\.has-classic-mask \\.sys-icon-classic-reverse[^{}]*\\{\\s*display: inline;`).test(icons),
+  };
+}
+
+// Each standalone icon button owns the reversal the menu titles get for free,
+// and a pulled-down or keyboard-focused menu title owns the generic one.
+for (const state of [
+  ".menu-bar > .guest-indicator:focus-visible",
+  ".menu-bar > .guest-indicator:hover",
+  ".menu.is-open > button",
+  ".menu-bar > .menu > button:focus-visible",
+  ".menu-bar > .menu > button:hover",
+]) {
+  const halves = reversalState(state);
+  test.assert(halves.hidesArt, `${state} hides the black classic art while it reverses`);
+  test.assert(halves.showsReverse, `${state} paints the reversed layer in its place`);
+}
+
+// A menu title reverses the art alone: the title already paints the black
+// field, so nothing there reveals the selection mask.
+test.assert(
+  !/\.menu\.is-open > button[\s\S]{0,400}?\.sys-icon-classic-mask \{\s*display: block;/.test(icons),
+  "a reversed menu title does not also paint the silhouette mask",
+);
 
 // ---------------------------------------------------------------------------
 // 2. Control Panel chooser. The active tab shows the black mask silhouette
@@ -121,9 +167,9 @@ for (const { iconId, ancestors } of chooserIcons) {
 test.assertMatches(icons,
   /\.control-chooser \.system-tab\.is-active \.sys-icon-svg\.has-classic-mask \.sys-icon-classic-mask \{\s*display: block;/,
   "the active chooser tab reveals the classic mask silhouette");
-test.assertMatches(icons,
-  /\.control-chooser \.system-tab\.is-active \.sys-icon-svg\.has-classic-mask \.sys-icon-classic-art \{\s*filter: invert\(1\);/,
-  "the active chooser tab reverses the art to white over the silhouette");
+const chooserReversal = reversalState(".control-chooser .system-tab.is-active");
+test.assert(chooserReversal.hidesArt, "the active chooser tab hides the black art it is replacing");
+test.assert(chooserReversal.showsReverse, "the active chooser tab paints the reversed art to white over the silhouette");
 
 // ---------------------------------------------------------------------------
 // 3. Control Strip. Module tiles become a full ink block on hover / focus /
@@ -131,9 +177,21 @@ test.assertMatches(icons,
 // ---------------------------------------------------------------------------
 test.assertIncludes(stripRuntime, 'button.className = "control-strip-module"', "strip modules are the buttons this contract pins");
 test.assertIncludes(stripRuntime, 'button.innerHTML = renderSystemIcon(iconId, { size: "mini" })', "strip modules render system icons, so they carry classic art");
-test.assertMatches(strip,
-  /\.control-strip-module:hover \.sys-icon-svg\.has-classic-mask \.sys-icon-classic-art,\s*\.control-strip-module:focus-visible \.sys-icon-svg\.has-classic-mask \.sys-icon-classic-art,\s*\.control-strip-module\.is-open \.sys-icon-svg\.has-classic-mask \.sys-icon-classic-art \{\s*filter: invert\(1\);/,
-  "a hovered, focused, or open strip module inverts its classic art instead of going black-on-black");
+for (const state of [
+  ".control-strip-module:hover",
+  ".control-strip-module:focus-visible",
+  ".control-strip-module.is-open",
+]) {
+  const selector = escapeForRegExp(state);
+  test.assert(
+    new RegExp(`${selector} \\.sys-icon-svg\\.has-classic-mask \\.sys-icon-classic-art[^{}]*\\{\\s*display: none;`).test(strip),
+    `${state} hides the black classic art instead of leaving it black-on-black`,
+  );
+  test.assert(
+    new RegExp(`${selector} \\.sys-icon-svg\\.has-classic-mask \\.sys-icon-classic-reverse[^{}]*\\{\\s*display: inline;`).test(strip),
+    `${state} paints the reversed classic art in its place`,
+  );
+}
 
 // Every icon a strip module can show either owns classic 16px assets (so the
 // invert has art to reverse) or is a shared inline glyph that follows the

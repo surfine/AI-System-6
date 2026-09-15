@@ -56,6 +56,43 @@
     },
   });
 
+  // The MCP bridge, both directions. The page answers a guest's tool call and
+  // mints an invitation through these, and asks an external server through the
+  // third, so a shell that carries the desk somewhere else can swap the
+  // transport without touching the bridge itself.
+  window.AISystem6Capabilities?.registerServiceProvider?.("agent.executorReply", {
+    id: "same-origin-node",
+    request(input = {}) {
+      return sameOriginNode.request({
+        url: "/api/agent/executor/reply",
+        init: input.init,
+        signal: input.signal,
+      });
+    },
+  });
+
+  window.AISystem6Capabilities?.registerServiceProvider?.("agent.executorToken", {
+    id: "same-origin-node",
+    request(input = {}) {
+      return sameOriginNode.request({
+        url: "/api/agent/executor/token",
+        init: input.init,
+        signal: input.signal,
+      });
+    },
+  });
+
+  window.AISystem6Capabilities?.registerServiceProvider?.("mcp.client", {
+    id: "same-origin-node",
+    request(input = {}) {
+      return sameOriginNode.request({
+        url: "/api/mcp/client",
+        init: input.init,
+        signal: input.signal,
+      });
+    },
+  });
+
   window.AISystem6Capabilities?.registerServiceProvider?.("timeMachine.remote", {
     id: "same-origin-node",
     request(input = {}) {
@@ -408,6 +445,9 @@
         "system.version",
         "quickDraft.thesis",
         "bureaucracyMeme.captions",
+        "agent.executorReply",
+        "agent.executorToken",
+        "mcp.client",
       ];
       names.forEach((name) => {
         window.AISystem6Capabilities?.setCapability?.(name, "same-origin-node");

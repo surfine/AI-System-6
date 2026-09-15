@@ -1,6 +1,6 @@
 // Bonsai City pure isometric view math / 盆景城市等距视图数学.
 //
-// The simulation never enters this module. It provides deterministic 48x24
+// The simulation never enters this module. It provides deterministic 64x32
 // projection, four quarter-turn rotations, inverse picking, diagonal viewport
 // culling, and multi-tile painter anchors for the Canvas 2D renderer.
 window.AISystem6BonsaiRendererLoaded = true;
@@ -258,7 +258,54 @@ window.AISystem6BonsaiRendererLoaded = true;
     return edges;
   }
 
+  // A catalog id is repeated over its entire imported footprint; it is not
+  // an independent building on every tile. Claim only complete, level squares.
+  function collectCatalogObjects(snapshot, catalog) {
+    if (!snapshot?.catalogId || !catalog?.entryOf) return [];
+    const size = Number(snapshot.size) || Math.sqrt(snapshot.catalogId.length);
+    if (!Number.isInteger(size) || size < 1) return [];
+    const grid = (names, i, fallback = 0) => {
+      for (const name of names) if (snapshot[name]?.[i] !== undefined) return snapshot[name][i];
+      return fallback;
+    };
+    const eligible = (i) => {
+      const over = Number(grid(["over"], i));
+      return !grid(["zone", "zoneType"], i)
+        && !(snapshot.facilityAt && snapshot.facilityAt[i] >= 0)
+        && !grid(["road"], i) && !grid(["rail"], i) && !grid(["wire"], i)
+        && !grid(["highway"], i) && !grid(["onramp"], i)
+        && !grid(["tree", "trees"], i) && !grid(["park"], i)
+        && ![1, 2, 3, 4].includes(over);
+    };
+    const altitude = (i) => Number(grid(["alt", "height", "elevation"], i));
+    const claimed = new Uint8Array(size * size);
+    const result = [];
+    for (let index = 0; index < size * size; index += 1) {
+      if (claimed[index] || !eligible(index)) continue;
+      const id = Number(snapshot.catalogId[index]) || 0;
+      const entry = id && catalog.entryOf(id);
+      if (!entry || entry.category === "clear" || entry.category === "trees") continue;
+      const x = index % size, y = Math.floor(index / size);
+      const declared = Math.max(1, Math.floor(Number(entry.size) || 1));
+      let complete = x + declared <= size && y + declared <= size;
+      for (let dy = 0; complete && dy < declared; dy += 1) for (let dx = 0; dx < declared; dx += 1) {
+        const at = (y + dy) * size + x + dx;
+        if (claimed[at] || Number(snapshot.catalogId[at]) !== id || !eligible(at) || altitude(at) !== altitude(index)) { complete = false; break; }
+      }
+      const span = complete ? declared : 1;
+      for (let dy = 0; dy < span; dy += 1) for (let dx = 0; dx < span; dx += 1) claimed[(y + dy) * size + x + dx] = 1;
+      const fragment = !complete;
+      const label = String(entry.labelKey).replace("bonsai_catalog_", "");
+      result.push({ x, y, id, category: fragment ? "infrastructure" : entry.category, size: span,
+        label: fragment ? "infrastructure" : label, originalLabel: label,
+        footprint: { w: span, h: span }, fragment,
+        ...(!fragment && (id === 0xc6 || id === 0xc7 || id === 0xc8) ? { spriteId: id === 0xc8 ? "facility.wind" : "facility.hydro" } : {}) });
+    }
+    return result;
+  }
+
   window.AISystem6BonsaiRenderer = Object.freeze({
+    collectCatalogObjects,
     TILE_W,
     TILE_H,
     HEIGHT_STEP,

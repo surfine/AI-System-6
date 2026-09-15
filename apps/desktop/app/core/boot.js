@@ -296,6 +296,9 @@ async function boot() {
     if (window.AISystem6DocMapLoaded) await runBootStep(t("docmap"), () => syncDocMapLayoutControls());
     applyLanguage();
     await runBootStep("System controls", () => initSystemSelectControls());
+    // Loopback only; a public page never subscribes. Approvals were applied
+    // with the settings above, so the first guest call can be answered.
+    await runBootStep("Guest bridge", () => window.AISystem6GuestExecutor?.start?.());
     await runBootStep("System controls", () => initSharedControlBehaviors());
     await runBootStep("System icons", () => hydrateSystemIcons());
     // Each Finder-style window paints on its own: a corrupt record in one
@@ -334,6 +337,13 @@ async function boot() {
     // the Working Session snapshot.
     const resumedWorkingSession = !writerMode
       && await startupTaskWithTimeout(restoreWorkingSession(), "restoreWorkingSession", 3500);
+    // The saved scene has now had its chance to come back (Writer Mode skips
+    // restore, and that counts as its chance), so the desk may write scenes
+    // again. Until this line every save is suppressed, or boot's own window
+    // moves would capture the un-booted markup and overwrite the record this
+    // very line just read. Everything after it — startup items, Writer Mode,
+    // the writer's own work — saves normally.
+    settleWorkingSessionRestore();
     // Someone who wrote a paragraph is not on first launch, whatever the flag
     // says. Replay remains available later without replacing the saved scene.
     if (!clioOnboardingCompleted && !resumedWorkingSession) {

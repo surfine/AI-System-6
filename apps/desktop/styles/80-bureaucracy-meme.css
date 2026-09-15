@@ -133,7 +133,7 @@
   padding: 4px 8px;
   border: var(--bureaucracy-surface-border);
   border-right: 0;
-  border-radius: 0;
+  border-radius: var(--item-radius);
   background: transparent;
   color: var(--bureaucracy-ink);
   font: inherit;
@@ -145,12 +145,12 @@
 }
 
 .bureaucracy-tone:first-child {
-  border-radius: var(--control-radius) 0 0 var(--control-radius);
+  border-radius: var(--control-radius) var(--item-radius) var(--item-radius) var(--control-radius);
 }
 
 .bureaucracy-tone:last-child {
   border-right: var(--bureaucracy-surface-border);
-  border-radius: 0 var(--control-radius) var(--control-radius) 0;
+  border-radius: var(--item-radius) var(--control-radius) var(--control-radius) var(--item-radius);
 }
 
 .bureaucracy-tone b {
@@ -345,6 +345,7 @@
 }
 
 .bureaucracy-canvas-wrap {
+  border-radius: var(--surface-radius);
   display: grid;
   place-items: center;
   min-height: 0;
@@ -379,6 +380,7 @@
 }
 
 .bureaucracy-candidates {
+  border-radius: var(--surface-radius);
   display: grid;
   align-content: start;
   gap: 0;
@@ -395,7 +397,7 @@
   padding: 7px 8px;
   border: 0;
   border-bottom: var(--bureaucracy-surface-border);
-  border-radius: 0;
+  border-radius: var(--item-radius);
   background: transparent;
   color: var(--bureaucracy-ink);
   font: inherit;
@@ -443,7 +445,7 @@
   padding: 2px 6px;
   border: var(--bureaucracy-surface-border);
   border-right: 0;
-  border-radius: 0;
+  border-radius: var(--item-radius);
   background: transparent;
   color: var(--bureaucracy-ink);
   font: inherit;
@@ -451,12 +453,12 @@
 }
 
 .bureaucracy-language button:first-child {
-  border-radius: var(--control-radius) 0 0 var(--control-radius);
+  border-radius: var(--control-radius) var(--item-radius) var(--item-radius) var(--control-radius);
 }
 
 .bureaucracy-language button:last-child {
   border-right: var(--bureaucracy-surface-border);
-  border-radius: 0 var(--control-radius) var(--control-radius) 0;
+  border-radius: var(--item-radius) var(--control-radius) var(--control-radius) var(--item-radius);
 }
 
 .bureaucracy-caption-editor label {
@@ -473,7 +475,17 @@
   line-height: 1.35;
 }
 
-@container bureaucracy-meme (max-width: 900px) {
+/* The composer is a WIDTH problem and only ever was one. Its four columns floor
+   at 260 + 330 for topic and tone, plus the vision row and the button at their
+   content widths (measured 156px and 112px here, 224px and 112px at the desk's
+   metrics), plus three gaps and the section's own padding: about 980px of
+   container before the grid stops fitting the pane, which clips. This read
+   `max-width: 900px`, and an iPhone Air held sideways gives the container
+   912px -- twelve pixels clear of the rule -- so the floors blew the grid.
+   The number below is what the parts measure, not the width of a device.
+   (The prelude takes ONE query. `@container name (a), name (b)` is invalid and
+   the whole block is dropped in silence; write `((a) or (b))`.) */
+@container bureaucracy-meme (max-width: 1000px) {
   .bureaucracy-composer {
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas:
@@ -481,13 +493,24 @@
       "tone vision"
       "error error";
   }
+}
 
+/* Too narrow to seat the preview beside the caption list: one column, scrolled. */
+@container bureaucracy-meme (max-width: 900px) {
   .bureaucracy-layout {
     grid-template-columns: minmax(0, 1fr);
     /* `auto` collapses the assets track to 18px here (its grid rows resolve
        against the nested scrollable list), which clips the template/upload
-       row. Size the track to its content so the templates stay visible. */
-    grid-template-rows: max-content minmax(360px, 1fr) minmax(var(--bureaucracy-copy-min-height), auto);
+       row. Size the track to its content so the templates stay visible.
+       The copy track was `minmax(328px, auto)`, which reads as "at least 328,
+       more if the content needs it" and is not what a grid does: the three
+       tracks already overflow the pane, so there is no free space to
+       distribute, every track sits at its BASE size, and a minmax base comes
+       from the minimum. The caption editor measured 375px tall against a
+       328px track and the panel's own `overflow: hidden` ate the last 49px --
+       the second language's box, on the two phone-portrait sizes. The panel
+       keeps its 328px floor below; the track is sized to content. */
+    grid-template-rows: max-content minmax(360px, 1fr) max-content;
     grid-template-areas:
       "assets"
       "preview"
@@ -501,6 +524,34 @@
 
   .bureaucracy-copy-panel {
     min-height: var(--bureaucracy-copy-min-height);
+  }
+}
+
+/* Short, but with width to spare: a phone on its side, or a Mac window dragged
+   flat. Height is the scarce thing here, not width, so stacking is the wrong
+   answer to it -- one 892px column scrolled through four screens, with the
+   caption list, a column of short lines, as the widest object on the desk.
+   Keep the two columns the container has room for and let the ROWS give:
+   sized to their content, with the layout scrolling, so no panel is clipped
+   into a box shorter than the controls inside it. Ordered after the narrow
+   block on purpose -- from 770 to 900 both preludes match, and this one is the
+   answer for a container that is short rather than narrow. 770 is where the
+   preview column falls to 400px, below which it is no wider than the caption
+   list beside it and has stopped being a preview. */
+@container bureaucracy-meme ((max-height: 480px) and (min-width: 770px)) {
+  .bureaucracy-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
+    /* `auto` collapses the assets track against the nested scrollable list,
+       the same way it does in the narrow block above. */
+    grid-template-rows: max-content minmax(360px, 1fr);
+    grid-template-areas:
+      "assets assets"
+      "preview copy";
+    overflow: auto;
+  }
+
+  .bureaucracy-assets {
+    grid-template-columns: minmax(210px, 270px) minmax(0, 1fr);
   }
 }
 

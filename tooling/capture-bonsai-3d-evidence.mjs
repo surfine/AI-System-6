@@ -20,7 +20,8 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const args = process.argv.slice(2);
 const urlIndex = args.indexOf("--url");
 const serverUrl = urlIndex >= 0 ? args[urlIndex + 1] : (process.env.BONSAI_EVIDENCE_URL || "http://localhost:4173");
-const outDir = path.join(root, "internal", "evidence", "bonsai-voxel");
+const outputIndex = args.indexOf("--output");
+const outDir = outputIndex >= 0 ? path.resolve(args[outputIndex + 1]) : path.join(root, "internal", "evidence", "bonsai-voxel");
 const CITY = "Troubled mid-size city";
 
 function wait(ms) {
@@ -67,7 +68,7 @@ async function main() {
     const page = await context.newPage();
     page.on("pageerror", (error) => console.error(`pageerror: ${error?.message || error}`));
     await page.goto(serverUrl, { waitUntil: "domcontentloaded" });
-    await page.waitForFunction(() => document.body.dataset.appReady === "ready", null, { timeout: 20000 });
+    await page.waitForFunction(() => document.body.dataset.appReady === "ready", null, { timeout: 60000 });
     await page.evaluate(() => {
       for (const dialog of document.querySelectorAll("dialog[open]")) dialog.close();
       currentLanguage = "en";

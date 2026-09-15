@@ -33,6 +33,7 @@ import {
   writeGateReceipt,
 } from "./lib/gate-receipts.mjs";
 import { SHIP_GATES, SHIP_REQUIRED_CHECKS, shipGateEntry } from "./lib/ship-gates.mjs";
+import { collectHeldOutput, describeLanes, lanePlan, lanesInOrder, runLanes } from "./lib/gate-lanes.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const checks = SHIP_GATES.map((gate) => ({ ...gate, command: process.execPath }));
@@ -140,42 +141,31 @@ for (const check of runnableChecks) {
   );
 }
 
-function runQuiet(check) {
+// One gate, in whichever lane the plan put it in. The lane decides only where
+// its output goes — see tooling/lib/gate-lanes.mjs.
+function execute(check, { holdOutput }) {
   const started = Date.now();
-  process.stdout.write(`\n[verify:ship] ${check.name} …\n`);
-  const result = spawnSync(check.command, check.args, {
-    cwd: repositoryRoot,
-    encoding: "utf8",
-    stdio: "inherit",
-    env: childEnv,
-  });
-  return { exitCode: result.status === null ? 1 : result.status, durationMs: Date.now() - started };
-}
-
-// A gate that shares the machine cannot also share the terminal: interleaved
-// stdio makes two failures unreadable. Its output is held and printed whole,
-// under its own name, the moment it ends.
-function runShared(check) {
-  const started = Date.now();
+  if (!holdOutput) {
+    const result = spawnSync(check.command, check.args, {
+      cwd: repositoryRoot,
+      encoding: "utf8",
+      stdio: "inherit",
+      env: childEnv,
+    });
+    return Promise.resolve({
+      exitCode: result.status === null ? 1 : result.status,
+      durationMs: Date.now() - started,
+      output: "",
+    });
+  }
   return new Promise((resolvePromise) => {
     const child = spawn(check.command, check.args, {
       cwd: repositoryRoot,
       env: childEnv,
       stdio: ["ignore", "pipe", "pipe"],
     });
-    const chunks = [];
-    child.stdout.on("data", (chunk) => chunks.push(chunk));
-    child.stderr.on("data", (chunk) => chunks.push(chunk));
-    child.on("error", (error) => {
-      chunks.push(Buffer.from(`\n[verify:ship] ${check.name} could not start: ${error.message}\n`));
-      resolvePromise({ exitCode: 1, durationMs: Date.now() - started, output: Buffer.concat(chunks).toString("utf8") });
-    });
-    child.on("close", (code) => {
-      resolvePromise({
-        exitCode: code === null ? 1 : code,
-        durationMs: Date.now() - started,
-        output: Buffer.concat(chunks).toString("utf8"),
-      });
+    collectHeldOutput(child).then((held) => {
+      resolvePromise({ exitCode: held.exitCode, durationMs: Date.now() - started, output: held.output });
     });
   });
 }
@@ -213,43 +203,14 @@ function record(check, outcome) {
   process.stdout.write(`[verify:ship] ${check.name} → exit ${outcome.exitCode} (${outcome.durationMs}ms)\n`);
 }
 
-const byCost = (a, b) => (a.costHintMs || 0) - (b.costHintMs || 0);
-const quietChecks = runnableChecks.filter((check) => check.quiet).sort(byCost);
-const sharedChecks = runnableChecks.filter((check) => !check.quiet).sort(byCost);
-// The cheap pixel gates come first because they are the cheapest way to learn
-// the release is not going to happen. A quiet gate is put AFTER the shared
-// block only when it costs more than the longest gate in that block, because
-// only then does waiting buy any overlap.
-//
-// The rule used to be "the last quiet gate goes last", which is the same
-// answer while all seven run and the wrong one as soon as receipts are spent:
-// with only the 8-second token check left to run, it was queued behind two
-// minutes of shared browser work it could have refused the release before.
-const sharedCeilingMs = sharedChecks.reduce((most, check) => Math.max(most, check.costHintMs || 0), 0);
-const cheapQuiet = quietChecks.filter((check) => (check.costHintMs || 0) <= sharedCeilingMs);
-const expensiveQuiet = quietChecks.filter((check) => (check.costHintMs || 0) > sharedCeilingMs);
+// The lanes are the gates' own declaration, and verify:gate reads the same
+// one — see tooling/lib/gate-lanes.mjs.
+const lanes = lanePlan(runnableChecks);
 if (runnableChecks.length) {
-  const plan = [
-    ...cheapQuiet.map((check) => check.name),
-    ...(sharedChecks.length ? [`(${sharedChecks.map((check) => check.name).join(" + ")})`] : []),
-    ...expensiveQuiet.map((check) => check.name),
-  ];
-  process.stdout.write(`[verify:ship] run order, cheapest refusal first: ${plan.join(" → ")}\n`);
+  process.stdout.write(`[verify:ship] run order, cheapest refusal first: ${describeLanes(lanes)}\n`);
 }
-
-for (const check of cheapQuiet) record(check, runQuiet(check));
-
-if (sharedChecks.length) {
-  const names = sharedChecks.map((check) => check.name).join(", ");
-  process.stdout.write(`\n[verify:ship] ${names} … (sharing the machine, output held until each ends)\n`);
-  const outcomes = await Promise.all(sharedChecks.map((check) => runShared(check)));
-  sharedChecks.forEach((check, index) => {
-    process.stdout.write(`\n[verify:ship] ——— ${check.name} ———\n${outcomes[index].output}`);
-    record(check, outcomes[index]);
-  });
-}
-
-for (const check of expensiveQuiet) record(check, runQuiet(check));
+const outcomes = await runLanes(lanes, { label: "verify:ship", execute });
+for (const check of lanesInOrder(lanes)) record(check, outcomes.get(check.name));
 
 const report = {
   schema: "ai-system-6/verification-ship/v2",

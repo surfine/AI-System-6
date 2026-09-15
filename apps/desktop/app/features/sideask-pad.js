@@ -398,3 +398,5 @@ async function promoteSideAskPad() {
 // census, which dispatches by action id rather than by clicking the pixel,
 // could and did.
 window.AISystem6Runtime?.registerApplication({id:"sideAskPad",windowName:"sideAskPad",mount:async()=>{if(typeof ensureApplicationShell==="function")await ensureApplicationShell().catch(()=>{});return sideAskPad();},restore:async()=>{if(typeof ensureApplicationShell==="function")await ensureApplicationShell().catch(()=>{});return sideAskPad();},commands:{"open-sideask-pad":{handler:()=>openSideAskPad(),isAvailable:()=>!0},"sideask-pad-ask":{handler:()=>askSideAskPad(),isAvailable:()=>sideAskBusy?!!sideAskAbort:!!sideAskPad()?.question.value.trim()},"sideask-pad-clear":{handler:()=>clearSideAskPad(),isAvailable:()=>!(sideAskBusy||!(sideAskPad()?.question.value.trim()||sideAskExchange))},"sideask-pad-promote":{handler:()=>promoteSideAskPad(),isAvailable:()=>!sideAskBusy&&!!sideAskExchange},"sideask-pad-interview":{handler:()=>interviewQuestionSheet(),isAvailable:()=>!sideAskBusy&&sideAskFrontSubject()?.name==="questionSheet"}}});
+
+window.AISystem6SideAskPadLoaded = true;

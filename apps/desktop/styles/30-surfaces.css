@@ -96,7 +96,7 @@
   gap: 6px;
   border: 0;
   border-bottom: var(--system-help-list-button-border-bottom);
-  border-radius: 0;
+  border-radius: var(--item-radius);
   background: transparent;
   color: var(--ink);
   font: inherit;
@@ -193,6 +193,15 @@
   margin: 0;
 }
 
+/* The definition and example rows are the running text of this window, so they
+   read at the same measure as the Reader. Without it a zoomed window on a wide
+   desk drew an 851px line. Only prose is capped: the alias and related-term
+   lists, the route ribbon and the action row are indexes, not reading, and keep
+   the full pane width. */
+.system-help-info dd:not(.system-help-aliases):not(.system-help-related):not(:has(.system-help-route)) {
+  max-width: var(--reading-measure);
+}
+
 .system-help-card h3 {
   margin: 0;
   font-size: 17px;
@@ -287,7 +296,7 @@
   padding: 8px;
 }
 
-@media (max-width: 860px) {
+@media (max-width: 860px), (hover: none) and (pointer: coarse) and (max-height: 660px) {
   .system-help-window {
     left: 24px;
     right: auto;
@@ -405,7 +414,7 @@
   border: 0;
   border-top: var(--review-splitter-border);
   border-bottom: var(--review-splitter-border);
-  border-radius: 0;
+  border-radius: var(--item-radius);
   background:
     repeating-linear-gradient(
       90deg,
@@ -498,6 +507,49 @@
   border: 0;
   min-height: 0;
   overflow: auto;
+}
+
+/* Guest reviews: one card per receipt a guest agent submitted, read here and
+   adopted or rejected by the writer. */
+.guest-review-card {
+  display: grid;
+  gap: 6px;
+  padding-bottom: 8px;
+  border-bottom: var(--system-border);
+}
+
+.guest-review-card h4 {
+  margin: 0;
+  font-size: inherit;
+}
+
+.guest-review-findings {
+  margin: 0;
+  padding-left: 18px;
+}
+
+/* Grounding marks: a mark that is off is stated, not hidden — "not pinned"
+   is the fact the writer needs. Off marks read as struck through, on marks
+   as ordinary labels, so the eye finds what holds without a colour code. */
+.guest-finding-marks {
+  display: inline-flex;
+  gap: 6px;
+  vertical-align: baseline;
+}
+
+.guest-mark {
+  font-size: 0.82em;
+  color: var(--shade-dark);
+  text-decoration: line-through;
+}
+
+.guest-mark.is-on {
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.guest-review-grounding {
+  margin: 0;
 }
 
 .review-result-column table {
@@ -617,6 +669,7 @@
 /* Finder Get Info is the object's inspection surface, so it requests the
    authored large icon tier instead of repeating the list-view thumbnail. */
 .info-icon-stage {
+  border-radius: var(--surface-radius);
   width: 112px;
   height: 112px;
   display: grid;
@@ -787,6 +840,7 @@
    the single #status element, which moves here from ClioTalk's info bar
    whenever a route window is in front. */
 .window-status-strip {
+  border-radius: var(--item-radius);
   flex: 0 0 auto;
   display: flex;
   align-items: center;
@@ -800,6 +854,20 @@
   line-height: 1.35;
   color: var(--ink);
   overflow: hidden;
+}
+
+/* The strip clips, so a message longer than the window was cut mid-word with
+   nothing to say it had been. On a 420px phone the moving #status span measured
+   242px starting at x=324 -- about a third of a receipt on screen and no sign
+   of the rest. It shares the row with the other status cells, so it takes the
+   remaining width and ends in an ellipsis: a truncated receipt now looks
+   truncated, and the row still reserves its height. */
+.window-status-strip #status {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* The frame appears with the message. The row reserves its height either way,
@@ -1286,7 +1354,7 @@
   padding: var(--tab-padding, 4px 10px);
   border: var(--tab-border, var(--system-border));
   border-bottom: var(--tab-border-bottom, none);
-  border-radius: var(--tab-radius) var(--tab-radius) 0 0;
+  border-radius: var(--tab-radius) var(--tab-radius) var(--tab-inner-radius) var(--tab-inner-radius);
   background: var(--tab-bg);
   box-shadow: var(--tab-shadow, none);
   font-variation-settings: var(--tab-font-variation-settings, inherit);
@@ -1316,7 +1384,7 @@
 }
 
 .system-tab:first-child {
-  border-radius: var(--tab-first-radius, var(--tab-radius) var(--tab-radius) 0 0);
+  border-radius: var(--tab-first-radius, var(--tab-radius) var(--tab-radius) var(--tab-inner-radius) var(--tab-inner-radius));
 }
 
 .system-tab:last-child {
@@ -1324,7 +1392,7 @@
      tabs themselves: Platinum sets --tab-border to 0 and still ends the strip
      with the system line, which is what the Mac OS 9 capture shows. */
   border-right: var(--tab-last-border-right, var(--system-border));
-  border-radius: var(--tab-last-radius, var(--tab-radius) var(--tab-radius) 0 0);
+  border-radius: var(--tab-last-radius, var(--tab-radius) var(--tab-radius) var(--tab-inner-radius) var(--tab-inner-radius));
 }
 
 .system-tab:focus-visible {
@@ -1505,6 +1573,7 @@
    off a settings navigation, and giving them Aqua's 6px 9px and its 3px bottom
    radius rewrote a third of that window. The specimen carries those values. */
 .system-tab-panel {
+  border-radius: var(--surface-radius);
   display: grid;
   gap: 8px;
   width: 100%;
@@ -1712,7 +1781,7 @@
   padding: 0;
   border: 0;
   border-right: var(--alarm-clock-divider);
-  border-radius: 0;
+  border-radius: var(--micro-radius);
   background: transparent;
   color: var(--ink);
 }
@@ -1753,7 +1822,7 @@
   min-height: 0;
   padding: 0 2px;
   border: 0;
-  border-radius: 0;
+  border-radius: var(--micro-radius);
   outline-offset: -3px;
   background: transparent;
   color: var(--ink);
@@ -1802,7 +1871,7 @@
   margin-left: 3px;
   padding: 0;
   border: 0;
-  border-radius: 0;
+  border-radius: var(--micro-radius);
   background: transparent;
 }
 

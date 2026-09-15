@@ -21,7 +21,7 @@
 // never exposes the choice to the user: the desktop stays quiet, and no
 // surface grows an AI control a writer must reason about mid-sentence.
 
-const FAST_MODEL = "deepseek-v4-flash";
+const FAST_MODEL = "deepseek-flash";
 const DEEP_MODEL = "deepseek-v4-pro";
 
 // The browser sends this instead of a model id when the user leaves the
@@ -200,15 +200,17 @@ function autoModelForTask(taskKind) {
 }
 
 /**
- * Cost weight against the shared allowance. DeepSeek prices v4-pro at three
- * times v4-flash on both cache-missed input and output, before and after the
- * 2026-08-17 peak/off-peak change, so one weight covers both.
+ * Cost weight against the shared allowance. DeepSeek's published rates put
+ * V4 Pro at 4.5x Flash on cache-missed input and 3.375x on output, so one
+ * weight cannot be exact for both directions. The reservation takes the
+ * larger ratio: over-reserving shortens a session, while under-reserving
+ * spends the shared key past the daily budget it exists to protect.
  *
  * @param {unknown} model
  * @returns {number}
  */
 function cloudModelBudgetWeight(model) {
-  return String(model || "").trim().toLowerCase().includes("v4-pro") ? 3 : 1;
+  return String(model || "").trim().toLowerCase().includes("v4-pro") ? 4.5 : 1;
 }
 
 module.exports = {

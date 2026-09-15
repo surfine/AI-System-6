@@ -22,6 +22,8 @@ const { positiveInteger } = require("./lib/numbers.js");
 const {
   DEEPSEEK_CLOUD_MODELS,
   DEEPSEEK_BASE_URL_DEFAULT,
+  isDeepSeekCloudModelId,
+  normalizeCloudModelId,
   resolveCloudTarget,
 } = require("./cloud.js");
 const { preparePublicCloudCall } = require("./lib/cloud-route.js");
@@ -82,7 +84,10 @@ async function loadEndfieldStoryData() {
         text: line.text || "",
         lineIndex,
         kind: official ? (line.speaker ? "通讯" : "日志") : "对话",
-        version: official ? "v1.5" : "v1.4",
+        // The whole mission corpus was rebuilt from today's live warfarin.wiki
+        // (game version v1.5, last updated 2026-09-02), so every mission line
+        // is v1.5 text regardless of which Skland/wharfarin bucket it came from.
+        version: "v1.5",
         versionBasis: "mission",
         missionIndex,
         chapterKey: endfieldChapterKey(mission),
@@ -193,6 +198,8 @@ async function loadEndfieldOperatorData() {
     endfieldOperatorCache = {
       source: data.source,
       scrapedAt: data.scrapedAt,
+      gameVersion: data.gameVersion || "",
+      lastUpdated: data.lastUpdated || "",
       operators: data.operators || [],
       lines,
     };
@@ -200,6 +207,8 @@ async function loadEndfieldOperatorData() {
     endfieldOperatorCache = {
       source: "",
       scrapedAt: "",
+      gameVersion: "",
+      lastUpdated: "",
       operators: [],
       lines: [],
     };
@@ -238,6 +247,8 @@ async function loadEndfieldTutorialData() {
     endfieldTutorialCache = {
       source: data.source,
       scrapedAt: data.scrapedAt,
+      gameVersion: data.gameVersion || "",
+      lastUpdated: data.lastUpdated || "",
       tutorials: data.tutorials || [],
       lines,
     };
@@ -245,6 +256,8 @@ async function loadEndfieldTutorialData() {
     endfieldTutorialCache = {
       source: "",
       scrapedAt: "",
+      gameVersion: "",
+      lastUpdated: "",
       tutorials: [],
       lines: [],
     };
@@ -283,6 +296,8 @@ async function loadEndfieldLoreData() {
     endfieldLoreCache = {
       source: data.source,
       scrapedAt: data.scrapedAt,
+      gameVersion: data.gameVersion || "",
+      lastUpdated: data.lastUpdated || "",
       typeCounts: data.typeCounts || {},
       lore: data.lore || [],
       lines,
@@ -291,6 +306,8 @@ async function loadEndfieldLoreData() {
     endfieldLoreCache = {
       source: "",
       scrapedAt: "",
+      gameVersion: "",
+      lastUpdated: "",
       typeCounts: {},
       lore: [],
       lines: [],
@@ -330,6 +347,8 @@ async function loadEndfieldDocumentData() {
     endfieldDocumentCache = {
       source: data.source,
       scrapedAt: data.scrapedAt,
+      gameVersion: data.gameVersion || "",
+      lastUpdated: data.lastUpdated || "",
       typeCounts: data.typeCounts || {},
       documents: data.documents || [],
       lines,
@@ -338,6 +357,8 @@ async function loadEndfieldDocumentData() {
     endfieldDocumentCache = {
       source: "",
       scrapedAt: "",
+      gameVersion: "",
+      lastUpdated: "",
       typeCounts: {},
       documents: [],
       lines: [],
@@ -707,6 +728,46 @@ function endfieldOldestScrape(stamps) {
   return usable.reduce((oldest, stamp) => (stamp < oldest ? stamp : oldest));
 }
 
+// The corpus line kind -> status-bar bucket key. Mirror of the client's
+// ENDFIELD_KIND_LABEL_KEYS so the header's stamps agree with the source cards.
+const ENDFIELD_KIND_LABEL = {
+  "对话": "dialogue",
+  "日志": "log",
+  "通讯": "comms",
+  "档案": "files",
+  "语音": "voice",
+  "教学": "tutorial",
+  "见闻辑录": "lore",
+  "中枢档案": "hub",
+};
+
+/**
+ * Aggregate the version each line claims, grouped by the label bucket the
+ * terminal shows in its status bar. A bucket that mixes versions answers with
+ * its oldest (the only one the archive can honestly stand behind), so a
+ * refresh that updated only the official layer cannot claim a uniform corpus.
+ *
+ * @param {...Array<{kind: string, version?: string}>} lineLists
+ * @returns {Record<string, string>}
+ */
+function endfieldKindVersions(...lineLists) {
+  const sets = {};
+  for (const lines of lineLists) {
+    for (const line of lines || []) {
+      const key = ENDFIELD_KIND_LABEL[line.kind];
+      const version = line.version;
+      if (!key || !version) continue;
+      (sets[key] || (sets[key] = new Set())).add(version);
+    }
+  }
+  const result = {};
+  for (const key of Object.keys(sets)) {
+    const versions = [...sets[key]].sort();
+    result[key] = versions[0];
+  }
+  return result;
+}
+
 async function findEndfieldStoryMatches(query, limit = 12, options = {}) {
   const data = await loadEndfieldStoryData();
   const operatorData = await loadEndfieldOperatorData();
@@ -839,6 +900,10 @@ async function findEndfieldStoryMatches(query, limit = 12, options = {}) {
       lore: loreData,
       documents: documentData,
     }),
+    kindVersions: endfieldKindVersions(
+      data.lines, operatorData.lines, tutorialData.lines,
+      loreData.lines, documentData.lines,
+    ),
     oldestScrapedAt: endfieldOldestScrape([
       data.scrapedAt, operatorData.scrapedAt, tutorialData.scrapedAt,
       loreData.scrapedAt, documentData.scrapedAt,
@@ -893,6 +958,10 @@ async function buildEndfieldEmptyMeta() {
       lore: loreData,
       documents: documentData,
     }),
+    kindVersions: endfieldKindVersions(
+      data.lines, operatorData.lines, tutorialData.lines,
+      loreData.lines, documentData.lines,
+    ),
     oldestScrapedAt: endfieldOldestScrape([
       data.scrapedAt, operatorData.scrapedAt, tutorialData.scrapedAt,
       loreData.scrapedAt, documentData.scrapedAt,
@@ -1003,12 +1072,12 @@ async function postEndfieldChatPayload(payload, body, signal, req) {
       credentialId: body._cloud_credential_id,
       suppliedApiKey: body._cloud_api_key,
       requestedBaseUrl: body._cloud_base_url,
-      model: String(body._cloud_model || payload.model || "deepseek-v4-flash"),
+      model: normalizeCloudModelId(body._cloud_model || payload.model || "deepseek-flash"),
       payload,
       req,
     });
     const cloudPayload = enforceMarkdownOnlyChatPayload({ ...cloud.payload, model: cloud.model });
-    if (/^(?:deepseek-)?v4-(?:pro|flash)$/i.test(cloud.model)) {
+    if (isDeepSeekCloudModelId(cloud.model)) {
       cloudPayload.thinking = { type: "disabled" };
       delete cloudPayload.temperature;
       delete cloudPayload.top_p;
@@ -1044,10 +1113,10 @@ async function postEndfieldChatPayload(payload, body, signal, req) {
       })
     : "";
   if (body._cloud_active && cloudApiKey) {
-    const model = String(body._cloud_model || payload.model || "deepseek-v4-flash").trim();
+    const model = normalizeCloudModelId(body._cloud_model || payload.model || "deepseek-flash");
     const baseUrl = cloudTarget.baseUrl;
     const cloudPayload = enforceMarkdownOnlyChatPayload({ ...payload, model });
-    if (/^(?:deepseek-)?v4-(?:pro|flash)$/i.test(model)) {
+    if (isDeepSeekCloudModelId(model)) {
       // Matches cloud-chat.js: leaving thinking enabled on a long,
       // strict-citation RAG prompt lets the model spend the whole
       // max_tokens budget on hidden reasoning and return an empty answer.

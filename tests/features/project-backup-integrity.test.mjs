@@ -768,7 +768,11 @@ test.assertIncludes(
   "async function commitImportedProjectAtomically(imported)",
   "backup import has one explicit atomic repository operation"
 );
-const importStart = exportImportSource.indexOf("async function importProjectBackupAsNewProject()");
+// Located by name, not by an exact signature: the function grew a parameter
+// when shared project-disk links needed to import a backup they did not
+// preview, and pinning the empty argument list silently sliced nothing, which
+// made this contract pass on a string it never found.
+const importStart = exportImportSource.indexOf("async function importProjectBackupAsNewProject(");
 const importEnd = exportImportSource.indexOf("async function previewProjectBackupFile()", importStart);
 const importBlock = exportImportSource.slice(importStart, importEnd);
 test.assert(

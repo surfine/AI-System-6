@@ -665,7 +665,7 @@ async function runDesktopMaintenance(reason = "event") {
     renderProjectCd?.();
     pushSystemNotification?.(t("maintenance_repaired", dataPlan.items.length, reason), {
       windowName: "notificationCenter",
-      actionLabel: t("view_repair_report"),
+      actionLabelKey: "view_repair_report",
     });
     console.info(
       `[AI System 6] Desktop maintenance (${reason}): ${dataPlan.items.length} repair(s), snapshot ${snapshot.id.slice(0, 8)}, record ${record.id.slice(0, 8)}`

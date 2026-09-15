@@ -20,6 +20,7 @@
 
 .time-machine-navigation,
 .time-machine-address-form {
+  border-radius: var(--surface-radius);
   border: var(--time-machine-toolbar-border);
   background: var(--time-machine-toolbar-bg);
 }
@@ -448,8 +449,20 @@
   line-height: 1.58;
 }
 
+/* The reading measure, the same one Reader and System Help hold. A restored
+   page is as wide as the window unless something stops it: measured 2026-09-05,
+   an archived article drew a 706px line on a 13-inch desk, 718px in a small
+   desk window, 827px on a phone in landscape and the same 706px on a 32-inch
+   display -- 200 characters and more to a line. The article keeps its own
+   padding, so the column is centred in whatever the window gives it. */
+.time-machine-reader > * {
+  max-width: var(--reading-measure);
+  margin-inline: auto;
+}
+
+/* Block-axis longhand, so the centring above survives on the title too. */
 .time-machine-reader h1 {
-  margin: 0 0 8px;
+  margin-block: 0 8px;
   font-family: var(--title-font);
   line-height: 1.15;
 }
@@ -632,5 +645,30 @@
 
   .time-machine-reader-actions :is(.btn, input) {
     min-height: 44px;
+  }
+}
+
+/* A phone in landscape is 420 CSS px tall, and the toolbar rows above the
+   calendar take the top third of that. "The viewport minus a fixed 120px" was
+   written for a screen where the popover starts near the top: measured
+   2026-09-05 at 912x420 it opened at y=143 and ran to 443, so the last 23px --
+   the date note and the bottom row of the month -- sat under the screen edge
+   where no finger reaches. A share of the viewport holds at every phone
+   geometry, because the toolbar above does not grow with the screen. */
+@media (max-width: 860px), (hover: none) and (pointer: coarse) and (max-height: 660px) {
+  .time-machine-date-popover {
+    max-height: min(540px, 60vh);
+  }
+}
+
+/* iOS zooms the whole desk when a focused field is under 16px. The shared touch
+   guard in 60-responsive.css cannot reach these two: they are addressed by id
+   (1,1,0) and no reasonable class ladder out-ranks that, so the rule belongs
+   here, beside the declaration it corrects. `max()` keeps the System 6 text-size
+   preference free to go larger. */
+@media (hover: none) and (pointer: coarse) {
+  .time-machine-address-form > #time-machine-address,
+  .time-machine-date-control > #time-machine-date {
+    font-size: max(16px, var(--system-control-size));
   }
 }

@@ -42,10 +42,10 @@ test.assertNotIncludes(cloudModel, "anthropic:", "cloud UI does not promote Anth
 test.assertIncludes(serverCloud, "DEEPSEEK_CLOUD_MODELS", "server cloud registry is the DeepSeek model registry");
 test.assertIncludes(serverCloud, "DeepSeek is the first-class cloud QA target", "server cloud helpers document DeepSeek as the cloud QA target");
 test.assertIncludes(serverCloud, "compatible endpoint as a best-effort escape hatch", "server cloud helpers retain OpenAI-compatible provider openness");
-test.assertIncludes(serverCloud, "deepseek-v4-flash", "server cloud registry includes DeepSeek v4 Flash");
+test.assertIncludes(serverCloud, 'id: DEEPSEEK_FLASH_MODEL_ID', "server cloud registry includes the current DeepSeek Flash id");
 test.assertIncludes(serverCloud, "deepseek-v4-pro", "server cloud registry includes DeepSeek v4 Pro");
 test.assertIncludes(cloudRoute, "await resolveCloudTarget(requestedTargetBaseUrl)", "cloud route resolves and pins the trusted endpoint before provider access");
-test.assertIncludes(cloudRoute, "DEEPSEEK_V4_MODELS", "cloud chat route has DeepSeek v4-specific compatibility handling");
+test.assertIncludes(cloudRoute, "isDeepSeekCloudModelId", "cloud chat route has DeepSeek-specific compatibility handling");
 test.assertIncludes(cloudRoute, "payload.thinking = policy.thinking", "DeepSeek v4 cloud route decides thinking server-side by task type");
 
 test.finish();

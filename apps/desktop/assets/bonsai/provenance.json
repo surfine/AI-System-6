@@ -3,33 +3,42 @@
   "files": [
     {
       "file": "assets/bonsai/atlas-north.png",
-      "sha256": "02c30a2bd9ae722175c0df1095307b3ac771cfcd0581549ccb9825fcce31f730"
+      "sha256": "eda417575c460a7b7960df8eaa2e16bec356e2768fc6d19974b0763ef4b9c920"
     },
     {
       "file": "assets/bonsai/atlas-east.png",
-      "sha256": "a828e2d444cc35494a0db082643a4239c0a453d6de86546316d8b9e44298328c"
+      "sha256": "6a7832aad0dad3c1bf3bf6d33e69a24507c64eb51d2d9260b4a6ff2638ce9e44"
     },
     {
       "file": "assets/bonsai/atlas-south.png",
-      "sha256": "98e37c97f1253ad03b9dbde081f1ba2e1a0c0a8ddef858cd19922e0b31c2a5a8"
+      "sha256": "92a1386c25466d456783890056282c158123702669b9b08f86780e91f7b18931"
     },
     {
       "file": "assets/bonsai/atlas-west.png",
-      "sha256": "8eab37a22ab7183f51f0480e1e6c302157c38b1e25df0a6177c4e6c49d57a148"
+      "sha256": "42fa781725c66d88eaf62e977dbcb1ed970306226b416bcc52edd60dbe22e287"
     }
   ],
   "metadata": "assets/bonsai/atlas-metadata.json",
   "sourceFile": "assets/bonsai/atlas-source.json",
+  "materialManifest": "assets/bonsai/textures.json",
+  "sourceArtwork": {
+    "file": "assets/bonsai/source-art/city-materials-v1.png",
+    "prompt": "assets/bonsai/source-art/city-materials-v1.prompt.txt",
+    "tool": "image_gen.imagegen",
+    "model": "unknown (not exposed by tool)",
+    "requestedModel": "GPT Image 2.5",
+    "sha256": "bfdc023937446080c6b98aec39a34462073ba13a8abb1ceb1905e8e3bd1027f0"
+  },
   "author": "AI System 6 (original, agent-authored)",
-  "date": "2026-08-24T00:00:00.000Z",
-  "tool": "tooling/build-bonsai-atlas.mjs (JSON micro-voxel recipes + deterministic PNG encoder)",
+  "date": "2026-09-11T00:00:00.000Z",
+  "tool": "tooling/build-bonsai-atlas.mjs (shared runtime geometry + saved image textures + deterministic orthographic rasterizer)",
   "license": "MIT",
   "source": "original",
   "notes": [
-    "Original isometric pixel art composed from project-owned grammar: massing (single, setback, twin, wing, courtyard, podium, stepped, gable), roof form (flat deck with parapet, pitched, hipped, sawtooth, stepped), roof furniture (tank, stair bulkhead, vents, chimney, stack, sign, antenna), facade treatment (punched or ribbon windows, floor banding, shopfront, loading bay, door) and ordered-dither shading.",
+    "Original city art from shared runtime building, roof, facility and tree geometry, rendered orthographically with saved generated materials; directional transport markings remain deterministic geometry.",
     "No pixels copied, traced, sampled, measured from, or converted from any external game or artwork; the reference authorized by the 2026-08-24 amendment was not consulted for this build.",
-    "Massing, roof form, wall colour and window rhythm are indexed by different primes of the variant number, so twenty-four variants per stage sample the combinations instead of repeating a handful of silhouettes.",
-    "The generator has no network path and no wall clock, and reads only the checked-in source recipe; a rebuild is byte-identical.",
-    "All four rotations share frame ids and dimensions; direction-specific light and small asymmetries are generated deliberately."
+    "Building identity selects massing, roof and wall colour independently of position, light and camera; twenty-four authored variants per stage stay stable across backends.",
+    "The generator has no network path and no wall clock, and reads checked-in recipes, runtime geometry and saved texture/mask PNGs; a rebuild is byte-identical.",
+    "All four rotations share frame ids and dimensions; camera rotation changes visible faces without changing asset identity."
   ]
 }

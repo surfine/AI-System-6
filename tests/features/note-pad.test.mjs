@@ -101,7 +101,26 @@ test.assert(
 test.assertIncludes(desktopTools, "function knockAfterWritingBell()", "the bell has one way to knock");
 test.assertIncludes(desktopTools, "pushSystemNotification(t(\"bell_stopped_here\", where.title), {", "the bell posts a system message rather than inventing a channel");
 test.assertIncludes(desktopTools, "windowName: where.window,", "the message carries the way back the Notification Center already draws");
+// The way back is labelled by key, not by the word t("back") returned at the
+// moment the bell rang: the writer can switch language between the knock and
+// the reading, and a Chinese sentence beside an English "Back" is the seam.
+test.assertIncludes(desktopTools, "actionLabelKey: \"back\",", "the button is labelled from a key, so it is drawn in the language the writer is reading in");
+test.assertNotMatches(desktopTools, /actionLabel: t\(/, "the bell never freezes a rendered button label into the record");
 test.assertIncludes(desktopTools, "writingBellStartedFrom = typeof currentWritingPosition === \"function\"", "the bell learns the way back before it rings");
+
+// A knock can outlive the language it was pushed in: the writer switches
+// language while the message still sits in Notification Center. So the push
+// carries its key + args and the Center re-renders at draw time.
+test.assertMatches(
+  desktopTools,
+  /messageKey: "bell_stopped",\s*\n\s*messageArgs: \[\],/,
+  "the silent knock carries its own key, not only the language it was pushed in"
+);
+test.assertMatches(
+  desktopTools,
+  /messageKey: "bell_stopped_here",\s*\n\s*messageArgs: \[where\.title\],/,
+  "and so does the knock that names where the writer stopped"
+);
 
 // ---- A paused bell does not hand time back ---------------------------------
 //

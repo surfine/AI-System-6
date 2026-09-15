@@ -26,8 +26,15 @@ const deploymentTarget = isPublicDeployment
     ? "mac"
     : "local";
 
+// The public deployment does not carry the guest bridge unless the owner asks
+// for it. Off, /mcp is not in the public route table at all, so the live site
+// behaves exactly as it did before the bridge existed.
+const publicGuestBridgeEnabled = isPublicDeployment
+  && String(process.env.AI_SYSTEM6_PUBLIC_MCP || "").trim() === "1";
+
 module.exports = {
   LOCAL_PROFILE,
+  publicGuestBridgeEnabled,
   PUBLIC_PROFILE,
   deploymentProfile,
   deploymentTarget,

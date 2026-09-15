@@ -495,4 +495,26 @@ for (const key of staticKeys) {
 test.assertMatches(en, /micropolis_label: "Micropolis"/, "the product name stays Micropolis in English");
 test.assertMatches(zh, /micropolis_label: "Micropolis"/, "the product name stays untranslated in Chinese (brand rule)");
 
+// --- the keys reach the game ---
+// The keydown listener lives on the window element, so a key only arrives while
+// focus is inside it. Nothing ever took focus — the engine canvas is tabindex
+// -1 and clicking the map left document.activeElement on <body> — so all
+// sixteen tool keys, pause, the pan and zoom keys and Escape were unreachable
+// in normal play, while the handler itself worked perfectly when a key was
+// delivered by hand. The map is a real tab stop now, takes focus when a city
+// becomes ready, and takes it again on touch. Verified with real key presses:
+// "b" selects Bulldozer $1, "q" selects Query.
+test.assertIncludes(shellSource, 'data-micropolis-viewport tabindex="0"', "the city map is a tab stop, so a keyboard-only player can reach it");
+test.assertIncludes(shellSource, 'data-i18n-aria-label="micropolis_map_label"', "and says what it is");
+test.assertIncludes(shellSource, "viewport.focus({ preventScroll: true });", "a city that is ready to play is ready to take a key");
+test.assertIncludes(shellSource, "if (document.activeElement !== viewport) viewport.focus({ preventScroll: true });", "and touching the map gives the keys back");
+for (const key of ["micropolis_map_label"]) {
+  test.assertIncludes(en, `${key}:`, `English copy exists for ${key}`);
+  test.assertIncludes(zh, `${key}:`, `Chinese copy exists for ${key}`);
+}
+
+// The separator belongs to the price: Query and the other free tools read
+// "Query ·" with nothing after the dot.
+test.assertIncludes(shellSource, 'armed.textContent = t(`micropolis_tool_${tool.id}`) + (tool.cost > 0 ? ` · $${tool.cost}` : "");', "a free tool's readout ends at its name");
+
 test.finish();

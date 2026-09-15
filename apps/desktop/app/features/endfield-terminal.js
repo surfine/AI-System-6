@@ -80,11 +80,11 @@ function saveEndfieldRecentQuery(query) {
 function endfieldRoutePayload() {
   if (typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudConfig?.provider && cloudCredentialReady()) {
     return {
-      model: cloudConfig.model || "deepseek-v4-flash",
+      model: cloudConfig.model || "deepseek-flash",
       _cloud_active: true,
       ...cloudCredentialTransportFields(),
       _cloud_base_url: cloudConfig.baseUrl || "https://api.deepseek.com",
-      _cloud_model: cloudConfig.model || "deepseek-v4-flash",
+      _cloud_model: cloudConfig.model || "deepseek-flash",
     };
   }
   return {
@@ -138,12 +138,26 @@ function renderEndfieldStatusChrome() {
     stamps.className = "endfield-stamps";
     bar.prepend(stamps);
   }
-  stamps.innerHTML = [
-    `<span class="endfield-stamp">${escapeHtml(t("endfield_stamp_dialogue"))} v1.4</span>`,
-    `<span class="endfield-stamp">${escapeHtml(t("endfield_stamp_log"))} v1.5</span>`,
-    `<span class="endfield-stamp">${escapeHtml(t("endfield_stamp_files"))} v1.5</span>`,
-    `<span class="endfield-stamp is-gap">${escapeHtml(t("endfield_stamp_structure"))} ${escapeHtml(t("endfield_not_wired"))}</span>`,
-  ].join("");
+  // Versions come from the archive's own line provenance, not a hardcoded
+  // label, so the header can never claim a version the corpus does not carry.
+  // When every bucket shares one version the per-kind split collapses to a
+  // single stamp; a genuinely mixed corpus (part refreshed, part not) keeps
+  // the honest per-kind breakdown.
+  const kindVersions = endfieldMeta?.kindVersions || {};
+  const buckets = [
+    ["dialogue", "endfield_stamp_dialogue"],
+    ["log", "endfield_stamp_log"],
+    ["files", "endfield_stamp_files"],
+  ]
+    .map(([key, labelKey]) => ({ key, labelKey, version: kindVersions[key] }))
+    .filter((bucket) => bucket.version);
+  const distinctVersions = [...new Set(buckets.map((bucket) => bucket.version))];
+  const parts = distinctVersions.length === 1
+    ? [`<span class="endfield-stamp">${escapeHtml(distinctVersions[0])}</span>`]
+    : buckets.map((bucket) =>
+      `<span class="endfield-stamp">${escapeHtml(t(bucket.labelKey))} ${escapeHtml(bucket.version)}</span>`);
+  parts.push(`<span class="endfield-stamp is-gap">${escapeHtml(t("endfield_stamp_structure"))} ${escapeHtml(t("endfield_not_wired"))}</span>`);
+  stamps.innerHTML = parts.join("");
   ensureEndfieldProgressControl(bar);
 }
 
@@ -155,7 +169,7 @@ function ensureEndfieldProgressControl(bar) {
     const label = document.createElement("span");
     label.textContent = t("endfield_progress_label");
     const selectWrap = document.createElement("span");
-    selectWrap.className = "select-wrap";
+    selectWrap.className = "select-wrap select-wrap-inline";
     progress = document.createElement("select");
     progress.id = "endfield-progress";
     progress.setAttribute("aria-label", t("endfield_progress_label"));
@@ -174,6 +188,13 @@ function ensureEndfieldProgressControl(bar) {
     selectWrap.append(progress);
     wrap.append(label, selectWrap);
     (bar || document.body).append(wrap);
+    // The progress picker is a closed set, so it must run on the System 6
+    // select harness rather than the native platform dropdown — otherwise the
+    // <select> paints the OS's own disclosure arrow and the eras disagree
+    // (Aqua/Snow Leopard draw a blue well; the base theme draws a bare
+    // triangle). The harness is only wired over selects that exist at boot, so
+    // this dynamically-created one has to be optimised in on its own.
+    if (typeof initSystemSelectControls === "function") initSystemSelectControls();
   }
 }
 
@@ -215,6 +236,8 @@ function endfieldBuildSourceGroups(resultKinds, foldedCount, missingCount) {
 
 function renderEndfieldWelcome() {
   if (!endfieldOutputEl) return;
+  endfieldRenderedSources = [];
+  endfieldRenderedQuery = "";
   endfieldOutputEl.innerHTML = `
     <article class="endfield-answer endfield-welcome">
       <p class="endfield-kicker">${escapeHtml(t("endfield_kicker_audience"))}</p>
@@ -262,6 +285,8 @@ function renderEndfieldResults(data) {
   const answerHtml = typeof markdownToSystemHtml === "function"
     ? markdownToSystemHtml(data.answer || "")
     : escapeHtml(data.answer || "").replace(/\n/g, "<br>");
+  endfieldRenderedSources = results.slice();
+  endfieldRenderedQuery = String(data.query || endfieldLastQuery || "").trim();
   const sources = endfieldSourceCardsHTML(results, questionType);
   const verdicts = endfieldVerdictBlocks(data.answer || "");
 
@@ -283,6 +308,61 @@ const endfieldShowMissing = (item, questionType) =>
   (item.kind === "日志" || item.kind === "通讯")
   && (questionType === "when" || questionType === "general");
 
+// Where a quote came from. The archive already carries the mission URL, the
+// speaker and the line number; the card used to drop all three, so a clipped
+// quote left the terminal with nothing to check it against. Nothing here
+// invents an address: a line without a real http(s) URL says it has none.
+const ENDFIELD_SOURCE_URL = /^https?:\/\//i;
+
+// The cards and the clip read the same rendered list, so 【n】, the card id and
+// the clipped file always name the same line of the same result set.
+let endfieldRenderedSources = [];
+let endfieldRenderedQuery = "";
+
+function endfieldSourceUrl(item) {
+  const url = String(item?.missionUrl || item?.url || "").trim();
+  return ENDFIELD_SOURCE_URL.test(url) ? url : "";
+}
+
+function endfieldSourceRoute(item) {
+  return [item?.missionTitle, item?.process || item?.section, item?.chapter].filter(Boolean).join(" · ");
+}
+
+function endfieldSourceOriginHTML(item) {
+  const bits = [];
+  const speaker = String(item?.speaker || "").trim();
+  if (speaker) bits.push(`<span class="endfield-source-speaker">${escapeHtml(speaker)}</span>`);
+  if (Number.isInteger(item?.lineIndex)) {
+    bits.push(`<span class="endfield-source-line">${escapeHtml(t("endfield_source_line", item.lineIndex + 1))}</span>`);
+  }
+  const url = endfieldSourceUrl(item);
+  bits.push(url
+    ? `<a class="endfield-source-link" href="${escapeHtml(url)}" target="_blank" rel="noopener" data-source-url>${escapeHtml(t("endfield_open_source"))}</a>`
+    : `<span class="endfield-stamp is-gap" data-source-url-missing>${escapeHtml(t("endfield_no_source_url"))}</span>`);
+  return `<p class="endfield-source-origin">${bits.join("")}</p>`;
+}
+
+// A clipped quote has to survive leaving the terminal, so the file carries the
+// route, entry id, line, version and URL it was read from, plus the question
+// that retrieved it.
+function endfieldClipDocument(item, sourceIndex) {
+  const route = endfieldSourceRoute(item);
+  const url = endfieldSourceUrl(item);
+  const lines = [`# ${route || t("endfield_clip_source")} 【${sourceIndex}】`, ""];
+  lines.push(`> ${String(item?.text || "").trim().replace(/\n/g, "\n> ")}`, "");
+  // Label and value stay separate: the archive's own strings (URL, entry id,
+  // version) must survive verbatim, whichever UI language wrote the file.
+  if (route) lines.push(`- ${t("endfield_clip_route")}${route}`);
+  if (item?.speaker) lines.push(`- ${t("endfield_clip_speaker")}${item.speaker}`);
+  if (item?.missionId) lines.push(`- ${t("endfield_clip_entry")}${item.missionId}`);
+  if (Number.isInteger(item?.lineIndex)) lines.push(`- ${t("endfield_clip_line")}${item.lineIndex + 1}`);
+  if (item?.version) lines.push(`- ${t("endfield_clip_version")}${item.version}`);
+  lines.push(`- ${url ? `${t("endfield_clip_link")}${url}` : t("endfield_clip_no_link")}`);
+  if (endfieldRenderedQuery) lines.push(`- ${t("endfield_clip_question")}${endfieldRenderedQuery}`);
+  lines.push(`- ${t("endfield_clip_time")}${new Date().toISOString()}`);
+  return `${lines.join("\n")}\n`;
+}
+
 function endfieldSourceCardsHTML(results, questionType, countOnly = false) {
   let missing = 0;
   const cards = [];
@@ -300,6 +380,7 @@ function endfieldSourceCardsHTML(results, questionType, countOnly = false) {
           ${item.missionIndex != null ? `<span class="endfield-stamp" data-stamp-mission>#${item.missionIndex + 1}</span>` : ""}
         </div>
         <p class="endfield-source-quote">${escapeHtml(item.text || "")}</p>
+        ${endfieldSourceOriginHTML(item)}
         <button class="btn mini-btn" type="button" data-clip-source="${index + 1}" data-clip-text="${escapeHtml(item.text || "")}">${escapeHtml(t("endfield_clip_source"))}</button>
       </div>
     `);
@@ -341,17 +422,22 @@ function endfieldVerdictBlocks(answer) {
 
 async function clipEndfieldSource(button) {
   const sourceIndex = Number(button?.dataset?.clipSource) || 0;
-  const text = String(button?.dataset?.clipText || "").trim();
+  const rendered = endfieldRenderedSources[sourceIndex - 1];
+  const text = String(rendered?.text || button?.dataset?.clipText || "").trim();
   if (!sourceIndex || !text) return;
   const source = document.getElementById(`endfield-evidence-${sourceIndex}`);
   const name = source ? `${source.dataset.kind || "endfield"}-source-${sourceIndex}.md` : `endfield-source-${sourceIndex}.md`;
+  const body = endfieldClipDocument(rendered || { text }, sourceIndex);
   const file = typeof File === "function"
-    ? new File([`${text}\n`], name, { type: "text/markdown" })
-    : { name, size: text.length, text: () => Promise.resolve(`${text}\n`) };
+    ? new File([body], name, { type: "text/markdown" })
+    : { name, size: body.length, text: () => Promise.resolve(body) };
   try {
-    if (typeof insertFilesIntoFileFloppy === "function") {
-      await insertFilesIntoFileFloppy([file], { source: "endfieldTerminal", openAfter: "rag" });
-    }
+    // The floppy reports what it actually mounted. A missing mount used to
+    // still read as "clipped", which told the writer a source was saved when
+    // nothing was.
+    if (typeof insertFilesIntoFileFloppy !== "function") throw new Error("file-floppy-unavailable");
+    const result = await insertFilesIntoFileFloppy([file], { source: "endfieldTerminal", openAfter: "rag" });
+    if (!result?.mountedFileNames?.length) throw new Error("not-mounted");
     button.textContent = t("endfield_clipped");
     button.disabled = true;
   } catch {

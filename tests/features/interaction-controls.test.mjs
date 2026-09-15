@@ -56,8 +56,36 @@ test.assertIncludes(modal, 'if (typeof closeMenus === "function") closeMenus()',
 test.assertIncludes(modal, 'document.body.classList.add("has-system-modal")', "system modals mark the menu as inactive while open");
 test.assertIncludes(modal, 'document.body.classList.remove("has-system-modal")', "system modals restore menu interaction on close");
 test.assertIncludes(desktopRuntime, 'document.body.classList.add("has-system-modal")', "startup settings dialog shares the system modal menu contract");
+// Opening is the second act. A gesture that wandered between the two clicks —
+// a drag ending near an icon, a trackpad sliding under a pressing finger — is
+// not a double click, and the desk must not open whatever it stopped on.
+test.assertIncludes(
+  read("app/core/wireup.js"),
+  "const DOUBLE_CLICK_SLOP_PX = 8;",
+  "the two clicks of an opening gesture have to land in the same place",
+);
+test.assertIncludes(
+  read("app/core/wireup.js"),
+  "if (!steadyDoubleClick(event)) return;",
+  "and a wandered gesture opens nothing",
+);
+
 test.assertIncludes(foundation, ".menu-popover button:hover:not(:disabled):not(.is-disabled)", "Menu hover excludes disabled items");
 test.assertIncludes(foundation, ".menu-sub-popover button:hover:not(:disabled):not(.is-disabled)", "Submenu hover excludes disabled items");
+// A submenu row reverses through the menu tokens, exactly as a menu's own rows
+// do. Painting the rule with raw --ink/--paper made the plate and the text
+// disagree the moment an era's paper was translucent: Liquid Glass put grey
+// text on a black plate, one row below a title that stayed white.
+test.assertMatches(
+  foundation,
+  /\.menu-sub-popover button \{[\s\S]*?background: var\(--menu-item-bg, transparent\);[\s\S]*?color: var\(--menu-item-fg\);/,
+  "Submenu rows paint from the menu item tokens, like a menu's own rows"
+);
+test.assertMatches(
+  foundation,
+  /\.menu-sub-popover button:hover:not\(:disabled\):not\(\.is-disabled\) \{\s*--menu-item-bg: var\(--menu-item-active-bg\);/,
+  "and their hover swaps those tokens instead of naming ink and paper"
+);
 
 test.assertIncludes(
   windows,
@@ -108,7 +136,7 @@ test.assertIncludes(
   "Liquid Glass button hover excludes active and selected states"
 );
 test.assertIncludes(liquid, "--btn-active-bg:", "Liquid Glass overrides the shared active-state token");
-test.assertIncludes(liquid, "--btn-radius: 10px", "Liquid Glass keeps role-specific button geometry instead of universal pills");
+test.assertIncludes(liquid, "--btn-radius: var(--r-md)", "Liquid Glass keeps role-specific button geometry instead of universal pills");
 test.assertNotIncludes(liquid, "body.use-liquid-glass .btn {\n  border: 1px solid var(--btn-border-color);\n  border-radius: 999px", "Liquid Glass shared buttons are not generic pills");
 test.assertIncludes(liquid, "background: var(--btn-bg)", "Liquid Glass buttons consume shared state tokens");
 test.assertIncludes(liquid, "body.use-liquid-glass .btn:active:not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected)", "Liquid Glass pressed state does not override selected controls");
@@ -121,7 +149,14 @@ test.assertIncludes(liquid, "--liquid-menu-alpha: calc(0.76 + 0.24 * var(--liqui
 test.assertIncludes(liquid, "rgba(248, 251, 252, var(--liquid-menu-alpha))", "Liquid Glass menu panels consume the shared opacity parameter instead of a dead literal");
 test.assert(!liquid.includes("body.use-liquid-glass .menu-bar > :is(.cloud-switcher-menu, .project-switcher-menu, .multifinder-menu) > button"), "Liquid Glass does not add an idle capsule around right-side menu controls");
 test.assertIncludes(responsive, "body.use-liquid-glass .menu-bar", "the frosted menu bar rule is collocated with its base rule in the responsive layer");
-test.assertIncludes(responsive, "backdrop-filter: blur(18px) saturate(155%) brightness(1.02)", "Liquid Glass menu bar is a real frosted system strip, not an opaque classic white slab");
+// The bar keeps the era's translucent tint and gives up the frost: a
+// backdrop-filter makes WebKit rasterise the strip together with its 13px
+// labels, and on a phone — worst once the desk is added to the Home Screen and
+// the bar runs under the status area — the menu read as a blurred smear. The
+// material's own tint is what keeps it from being a flat white slab.
+test.assertIncludes(responsive, "body.use-liquid-glass .menu-bar {", "the Liquid Glass menu bar is styled where its base rule lives");
+test.assertIncludes(responsive, "backdrop-filter: none;", "the phone's menu bar keeps its tint without the frost");
+test.assertIncludes(liquid, "--menu-bar-bg:", "and the era still supplies that tint");
 test.assertIncludes(liquid, "backdrop-filter: blur(34px) saturate(160%) brightness(1.04)", "Liquid Glass menu popovers blur the desktop strongly enough to protect menu readability");
 test.assertIncludes(liquid, "inset 0 2px 5px rgba(0, 0, 0, 0.22)", "Liquid Glass top-level menu buttons keep a visible pressed state without changing their hit model");
 test.assertIncludes(liquid, "body.use-liquid-glass .view-btn:hover:not(.is-active)", "Liquid Glass view button hover does not override active view");

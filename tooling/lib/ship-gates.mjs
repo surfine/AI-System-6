@@ -1,10 +1,13 @@
-// The gates a release must pass, declared once: seven browser gates and one
-// CPU-only playthrough.
+// The gates a release must pass, declared once: eight that drive a browser and
+// one CPU-only playthrough.
 //
 // verify-ship.mjs runs them as a queue; verify-gate.mjs runs one of them during
 // development and banks the receipt. Both read this list, so a developer and a
 // release always speak about the same gate with the same name and the same
 // command.
+//
+// Which lane each gate runs in is `quiet` below, and the plan built from this
+// list is tooling/lib/gate-lanes.mjs. One list, one plan, two callers.
 
 export const SHIP_REQUIRED_CHECKS = Object.freeze([
   "theme-lab-regression",
@@ -15,15 +18,17 @@ export const SHIP_REQUIRED_CHECKS = Object.freeze([
   "appearance-phase5",
   "appearance-snapshot",
   "appearance-token-tables",
+  "device-matrix",
 ]);
 
 /**
  * Two properties decide when a gate may run, and they are the gate's own, not
  * the scheduler's guesswork:
  *
- * `quiet` — the gate compares pixels, so a second browser on the same machine
- * can change what it photographs. Blur is the worst of them: a concurrent
- * backdrop-filter is not reproducible. A quiet gate runs alone.
+ * `quiet` — the gate's verdict depends on this machine being quiet. Pixels are
+ * the common case (a concurrent backdrop-filter is not reproducible), and a
+ * clock is the other one: a walk that waits for a window to appear times out on
+ * a busy machine. A quiet gate runs alone, and the reason is written on it.
  *
  * `costHintMs` — the last measured wall clock, used only to order the queue.
  * A wrong hint costs ordering, never correctness.
@@ -45,6 +50,24 @@ export const SHIP_GATES = Object.freeze([
     args: ["tooling/appearance-token-check.mjs", "--verify"],
     quiet: true,
     costHintMs: 8_000,
+  },
+  {
+    // Geometry and reachability on a phone, at three real device sizes and in
+    // both orientations. It photographs nothing, so another browser beside it
+    // changes the clock and not the verdict.
+    name: "device-matrix",
+    args: ["tooling/verify-device-matrix.mjs"],
+    // It photographs nothing and asserts no clock, so a neighbour once seemed
+    // free. Measured 2026-09-15, beside the acceptance gate: one cell reported a
+    // window that never opened (`iphone-duo-inner-landscape findChange opens
+    // 0x0`), and the same cell passes on its own. The matrix carries its own
+    // parallelism inside one gate (four cells, each with its own context) and
+    // that is the whole of its budget; the lane stays alone.
+    quiet: true,
+    // Re-measured 2026-09-15, when the matrix stopped measuring one cell at a
+    // time: nine cells, four at a time, is three waves of about 85-95s plus the
+    // desk cells. The old one-at-a-time run cost 1055_000 here.
+    costHintMs: 360_000,
   },
   {
     name: "appearance-real-apps",
@@ -75,11 +98,24 @@ export const SHIP_GATES = Object.freeze([
     costHintMs: 90_000,
   },
   {
-    // Behaviour, not pixels: eight browser scenarios that assert what the game
-    // does. Another browser beside it changes the clock, not the verdict.
+    // Behaviour AND the clock: twelve browser scenarios that assert what the
+    // game does, and hold the frame rate and the long-task budget while they do
+    // it. So it cannot share the machine — see the lane note above `quiet`.
+    // Measured 2026-09-15: beside the parallel phone matrix it threw on
+    // `classic-zh-phone` for a 150ms interaction long task, which is a
+    // measurement of the four browsers painting next to it rather than of the
+    // game. Alone it passes with the floors holding (5th-percentile 46.9-57.8
+    // against floors of 42-55).
+    //
+    // It runs on the browser's own rasteriser rather than SwiftShader: the
+    // scenarios, the FPS floors and the long-task contracts are unchanged, and
+    // the gate's summary records which graphics path ran. Forcing software cost
+    // a 128x128 city a sixty-second paint here (measured 2026-09-15) — a fact
+    // about the CPU rasteriser, not about the game, since nobody plays sixteen
+    // thousand tiles through one. On hardware all twelve scenarios pass.
     name: "bonsai-acceptance",
-    args: ["tooling/verify-bonsai-acceptance.mjs"],
-    quiet: false,
+    args: ["tooling/verify-bonsai-acceptance.mjs", "--hardware"],
+    quiet: true,
     costHintMs: 90_000,
   },
   {
@@ -88,10 +124,15 @@ export const SHIP_GATES = Object.freeze([
     // Manuscript -> Review Desk -> Project CD on a clean profile, plus the
     // DTK demo disk restored through the real import path. A release cannot
     // proceed without this passing — see internal/operations/RELEASE.md.
-    // It asserts what is on screen, never how it is painted.
+    // It asserts what is on screen, never how it is painted — but it asserts it
+    // through waits, and a machine carrying three other browsers does not
+    // answer them in time. Measured 2026-09-15: alongside the parallel phone
+    // matrix and the acceptance gate, each stop took 13-20s instead of 4-7s and
+    // the Project CD export never landed before its 15s deadline. Alone, the
+    // same run walks the whole route in 162s and passes. So it runs alone.
     name: "eight-stop-walk",
     args: ["tooling/verify-walk.mjs"],
-    quiet: false,
+    quiet: true,
     costHintMs: 118_000,
   },
   {

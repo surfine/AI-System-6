@@ -189,7 +189,13 @@ function applySecurityHeaders(res) {
     "Content-Security-Policy",
     [
       "default-src 'self'",
-      "script-src 'self' https://challenges.cloudflare.com",
+      // 'wasm-unsafe-eval' compiles WebAssembly and nothing else -- it does not
+      // re-admit eval(). The in-browser embedding model (transformers.js plus
+      // multilingual-e5-small, loaded from app/vendor/embed) is WebAssembly, so
+      // without this it aborts at boot on every packaged Mac app and every
+      // local run: "Refused to create a WebAssembly object". The two wasm games
+      // already carry the same grant on their own asset paths in static.js.
+      "script-src 'self' 'wasm-unsafe-eval' https://challenges.cloudflare.com",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob:",
       "font-src 'self' data:",

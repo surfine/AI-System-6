@@ -73,4 +73,49 @@ test.assertIncludes(
 test.assertIncludes(en, 'finder_more_below: "More items below"', "English labels the continuation control");
 test.assertIncludes(zh, 'finder_more_below: "下方还有项目"', "Chinese labels the continuation control");
 
+// A Finder page that opens onto a frame with no content area is a trap: the
+// window's own frame lane covers its Zoom and close boxes, so nothing inside
+// it can undo the size. Two rules keep the state out of reach — refuse to
+// pass such a frame on, and re-measure a window that is already wearing one.
+test.assertIncludes(
+  windowManager,
+  "function finderFrameHasContentRoom(win, frame) {",
+  "one predicate decides whether a frame leaves a Finder page room to show anything",
+);
+test.assertIncludes(
+  windowManager,
+  "const frame = finderFrameHasContentRoom(source, candidateFrame) ? candidateFrame : null;",
+  "a Finder page never inherits a frame that is all chrome",
+);
+test.assertMatches(
+  windowManager,
+  /isFinderContentWindow\(win\)\s*\n\s*&& !finderFrameHasContentRoom\(win, windowFrame\(win\)\)\s*\n\s*\) \{[\s\S]*?fitFinderWindowToContents\(win\);/,
+  "opening the window again is the way back from a frame with no content area",
+);
+test.assertIncludes(
+  windowManager,
+  ':not(.is-app-hidden):not(.is-collapsed)"))',
+  "a WindowShade stub is never the source a Finder page continues from",
+);
+
 test.finish();
+
+// A folder that happens to hold one row of icons must not open as a letterbox.
+// Measured on a 1440x960 desk: Applications used to open at 420x348 — one row
+// of five icons. Fitting is a floor and a ceiling now, and the floor is clamped
+// by the desk so a small screen keeps the old behaviour.
+test.assertIncludes(
+  windowManager,
+  "const FINDER_FIT_FLOOR_WIDTH = 560;",
+  "a fitted folder window may not open narrower than two columns of icons",
+);
+test.assertIncludes(
+  windowManager,
+  "const FINDER_FIT_FLOOR_HEIGHT = 420;",
+  "nor shorter than two rows",
+);
+test.assertIncludes(
+  windowManager,
+  "desiredHeight = Math.max(desiredHeight, comfortableHeight);",
+  "the floor is applied to the height the fit computed, not instead of it",
+);

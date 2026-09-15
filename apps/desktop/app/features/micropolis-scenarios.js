@@ -14,6 +14,8 @@ window.AISystem6MicropolisScenariosLoaded = true;
 
   const TICKS_PER_MONTH = 4;
   const TICKS_PER_YEAR = 48;
+  // The engine spreads one tick over sixteen phases, one phase per frame.
+  const FRAMES_PER_TICK = 16;
 
   // id, starting year, terrain seed, difficulty, treasury, town preset,
   // scripted triggers (months after the start), and the goal with its deadline.
@@ -24,23 +26,32 @@ window.AISystem6MicropolisScenariosLoaded = true;
       triggers: [{ atMonths: 1, disaster: "earthquake" }], goal: { kind: "population", value: 6000, years: 5 } },
     { id: "ashford", year: 1944, seed: 0xa5f0d944, level: 1, funds: 20000, town: "large",
       triggers: [1, 2, 3, 4, 5].map((month) => ({ atMonths: month, disaster: "fire" })), goal: { kind: "population", value: 6000, years: 5 } },
-    { id: "gridlock", year: 1965, seed: 0x6d1d1965, level: 1, funds: 20000, town: "large", triggers: [],
-      goal: { kind: "traffic", value: 40, years: 10 } },
+    { id: "gridlock", year: 1965, seed: 0x6d1d1965, level: 1, funds: 20000, town: "crowded", triggers: [],
+      premise: { value: 75, population: 2000, maxMonths: 180 }, goal: { kind: "traffic", value: 60, years: 10 } },
     { id: "marrowbay", year: 1957, seed: 0x3a22b957, level: 0, funds: 20000, town: "medium",
       triggers: [{ atMonths: 1, disaster: "monster" }], goal: { kind: "population", value: 4000, years: 5 } },
-    { id: "harbourheights", year: 1972, seed: 0x4a2b0972, level: 2, funds: 20000, town: "large", triggers: [],
-      goal: { kind: "crime", value: 60, years: 10 } },
+    { id: "harbourheights", year: 1972, seed: 0x4a2b0972, level: 2, funds: 20000, town: "precinct", triggers: [],
+      premise: { value: 75, population: 3000, maxMonths: 180 }, goal: { kind: "crime", value: 60, years: 10 } },
     { id: "riverbend", year: 2010, seed: 0x21ec2010, level: 0, funds: 20000, town: "medium",
       triggers: [{ atMonths: 1, disaster: "flood" }], goal: { kind: "population", value: 3000, years: 5 } },
-    { id: "smokestack", year: 2047, seed: 0x5a0c2047, level: 2, funds: 20000, town: "large", triggers: [],
-      goal: { kind: "pollution", value: 60, years: 10 } },
+    { id: "smokestack", year: 2047, seed: 0x5a0c2047, level: 2, funds: 20000, town: "foundry", triggers: [],
+      premise: { value: 75, population: 1500, maxMonths: 180 }, goal: { kind: "pollution", value: 60, years: 10 } },
   ]);
 
   // Town presets: blocks of 3x3 zones on a road grid with a pitch of four.
+  // `mix` is the repeating run of zone kinds laid along each diagonal, `plants`
+  // the number of coal plants in the apron. The four disaster scenarios take a
+  // balanced town and get their premise from a trigger; the three condition
+  // scenarios take a town whose shape is the premise — housing packed onto few
+  // roads, a precinct with no police, a quarter that is mostly furnaces.
+  const BALANCED_MIX = ["residential", "residential", "commercial", "industrial"];
   const TOWN_PRESETS = Object.freeze({
-    small: { cols: 3, rows: 2 },
-    medium: { cols: 5, rows: 3 },
-    large: { cols: 6, rows: 4 },
+    small: { cols: 3, rows: 2, mix: BALANCED_MIX, plants: 1 },
+    medium: { cols: 5, rows: 3, mix: BALANCED_MIX, plants: 1 },
+    large: { cols: 6, rows: 4, mix: BALANCED_MIX, plants: 1 },
+    crowded: { cols: 7, rows: 4, mix: ["residential", "residential", "residential", "commercial", "industrial"], plants: 1 },
+    precinct: { cols: 10, rows: 6, mix: ["residential", "residential", "residential", "commercial", "industrial"], plants: 2 },
+    foundry: { cols: 8, rows: 5, mix: ["industrial", "industrial", "residential", "industrial", "commercial"], plants: 3 },
   });
   const BLOCK_PITCH = 4;
   const PLANT_APRON = 6; // room for the 4x4 coal plant to the right of the grid
@@ -77,9 +88,10 @@ window.AISystem6MicropolisScenariosLoaded = true;
     return best;
   }
 
-  // Zone kind per block: two residential, one commercial, one industrial.
-  function zoneKindFor(col, row) {
-    return ["residential", "residential", "commercial", "industrial"][(col + row) % 4];
+  // Zone kind per block, from the preset's repeating mix.
+  function zoneKindFor(preset, col, row) {
+    const mix = (preset && preset.mix) || BALANCED_MIX;
+    return mix[(col + row) % mix.length];
   }
 
   // Lays the starting town through the engine's own tools with a temporary
@@ -94,7 +106,7 @@ window.AISystem6MicropolisScenariosLoaded = true;
     const savedAutoBulldoze = engine.BaseTool.getAutoBulldoze();
     budget.totalFunds = 1e9;
     engine.BaseTool.setAutoBulldoze(true);
-    const tally = { origin, roads: 0, wires: 0, zones: 0, plant: false };
+    const tally = { origin, roads: 0, wires: 0, zones: 0, plants: 0 };
     const apply = (tool, x, y) => {
       if (!map.testBounds(x, y)) return false;
       tool.doTool(x, y, sim.blockMaps);
@@ -110,24 +122,89 @@ window.AISystem6MicropolisScenariosLoaded = true;
       for (let col = 0; col <= preset.cols; col += 1) {
         for (let y = origin.y; y <= bottom; y += 1) if (apply(tools.road, origin.x + col * BLOCK_PITCH, y)) tally.roads += 1;
       }
-      // Power runs along every horizontal road (road-and-wire crossings);
-      // zones touching those tiles conduct.
+      // Power runs along the roads as road-and-wire crossings, on both axes.
+      // The engine refuses a wire on a road intersection, so a single axis
+      // leaves the grid in stripes: every crossing breaks the line, and the
+      // plant, which touches a vertical road, is cut off from all of it.
+      // Wiring both axes routes power around each refused intersection.
       for (let row = 0; row <= preset.rows; row += 1) {
         for (let x = origin.x; x <= right; x += 1) if (apply(tools.wire, x, origin.y + row * BLOCK_PITCH)) tally.wires += 1;
       }
+      for (let col = 0; col <= preset.cols; col += 1) {
+        for (let y = origin.y; y <= bottom; y += 1) if (apply(tools.wire, origin.x + col * BLOCK_PITCH, y)) tally.wires += 1;
+      }
       for (let row = 0; row < preset.rows; row += 1) {
         for (let col = 0; col < preset.cols; col += 1) {
-          const kind = zoneKindFor(col, row);
+          const kind = zoneKindFor(preset, col, row);
           if (apply(tools[kind], origin.x + col * BLOCK_PITCH + 2, origin.y + row * BLOCK_PITCH + 2)) tally.zones += 1;
         }
       }
-      // The coal plant sits just right of the grid, touching the top road.
-      tally.plant = apply(tools.coal, right + 2, origin.y + 1);
+      // The coal plants sit just right of the grid; the first touches the top
+      // road, and any others stack below it down the apron.
+      for (let index = 0; index < (preset.plants || 1); index += 1) {
+        if (apply(tools.coal, right + 2, origin.y + 1 + index * 5)) tally.plants += 1;
+      }
     } finally {
       budget.totalFunds = savedFunds;
       engine.BaseTool.setAutoBulldoze(savedAutoBulldoze);
     }
     return tally;
+  }
+
+  // --- the premise the scenario starts in --------------------------------------
+
+  // A town that has just been laid has no traffic, no crime and no smoke: those
+  // are things a running city does, not things a tile is. A scenario whose goal
+  // is a condition therefore has to hand the player a city that has already
+  // lived a while, or it announces a jam, a crime wave or a pollution crisis and
+  // opens on an empty grid that satisfies the goal before anyone has touched it.
+  //
+  // So the three condition scenarios run their own town forward at seed time,
+  // month by month, until the condition they name is actually there. The draw is
+  // seeded from the scenario's own seed, so the city that is handed over is the
+  // same city on every machine, and `months` says how long that took.
+  function scenarioRandom(seed) {
+    let value = (seed ^ 0x9e3779b9) >>> 0;
+    return () => {
+      value = (Math.imul(value, 1664525) + 1013904223) >>> 0;
+      return value / 4294967296;
+    };
+  }
+
+  function growTown(engine, sim, scenario) {
+    const premise = scenario && scenario.premise;
+    if (!premise) return null;
+    const random = engine.Random;
+    const savedSpeed = sim._speed;
+    const savedDisasters = sim.disasterManager.disastersEnabled;
+    // A stray fire or quake during the build-up would be a different city.
+    sim.disasterManager.disastersEnabled = false;
+    if (random && typeof random.setRandomSource === "function") random.setRandomSource(scenarioRandom(scenario.seed));
+    let months = 0;
+    let value = 0;
+    try {
+      sim.setSpeed(engine.Simulation.SPEED_MED);
+      while (months < premise.maxMonths) {
+        for (let frame = 0; frame < FRAMES_PER_TICK * TICKS_PER_MONTH; frame += 1) {
+          sim._simulate(sim._constructSimData());
+          sim._updateTime();
+        }
+        months += 1;
+        value = measure(sim, scenario.goal.kind);
+        // Both halves matter: a crisis on an empty grid is not a city in
+        // trouble, and a healthy city is not the premise either.
+        if (value >= premise.value && sim.evaluation.cityPop >= premise.population) break;
+      }
+    } finally {
+      if (random && typeof random.setRandomSource === "function") random.setRandomSource(null);
+      sim.disasterManager.disastersEnabled = savedDisasters;
+      sim.setSpeed(savedSpeed);
+      // The town was built before the scenario opens, so the clock goes back:
+      // the city starts in the year the premise names, with its deadline ahead.
+      sim._cityTime = 0;
+      sim._updateTime();
+    }
+    return { months, value, population: sim.evaluation.cityPop, met: value >= premise.value && sim.evaluation.cityPop >= premise.population };
   }
 
   // --- running state -----------------------------------------------------------
@@ -149,19 +226,34 @@ window.AISystem6MicropolisScenariosLoaded = true;
     if (kind === "population") return sim.evaluation.cityPop || 0;
     if (kind === "crime") return sim._census.crimeAverage || 0;
     if (kind === "pollution") return sim._census.pollutionAverage || 0;
-    if (kind === "traffic") {
-      const blockMap = sim.blockMaps.trafficDensityMap;
-      let total = 0;
-      let count = 0;
-      for (let y = 0; y < sim._map.height; y += blockMap.blockSize) {
-        for (let x = 0; x < sim._map.width; x += blockMap.blockSize) {
-          total += blockMap.worldGet(x, y);
-          count += 1;
+    if (kind === "traffic") return roadTrafficAverage(sim);
+    return 0;
+  }
+
+  // How busy the roads that carry anything are, on the engine's own 0-240
+  // density scale. Averaging over the whole map instead divides the town's
+  // traffic by the wilderness around it: the number falls as the city grows,
+  // and no town ever reaches a jam.
+  function roadTrafficAverage(sim) {
+    const TV = window.MicropolisEngine ? window.MicropolisEngine.TileValues : null;
+    const roadBase = TV ? TV.ROADBASE : 64;
+    const lastRoad = TV ? TV.LASTROAD : 206;
+    const density = sim.blockMaps.trafficDensityMap;
+    const map = sim._map;
+    let total = 0;
+    let busy = 0;
+    for (let y = 0; y < map.height; y += 1) {
+      for (let x = 0; x < map.width; x += 1) {
+        const tile = map.getTileValue(x, y);
+        if (tile < roadBase || tile > lastRoad) continue;
+        const value = density.worldGet(x, y);
+        if (value > 0) {
+          total += value;
+          busy += 1;
         }
       }
-      return count ? Math.round(total / count) : 0;
     }
-    return 0;
+    return busy ? Math.round(total / busy) : 0;
   }
 
   // Pure: "won", "lost", or "" for still running. A population goal wins
@@ -208,6 +300,7 @@ window.AISystem6MicropolisScenariosLoaded = true;
     findTownOrigin,
     zoneKindFor,
     seedTown,
+    growTown,
     createState,
     dueTriggers,
     measure,

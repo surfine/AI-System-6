@@ -257,6 +257,38 @@ window.AISystem6PromptFiles = Object.freeze([
     "hash": "5a8cc637266a681ded7bea8722c562179f94bb5d4ff2e2e5fcba5ad064a7d47b"
   },
   {
+    "id": "writing-route.hkrr-lift",
+    "name": "HKRR 提亮",
+    "nameEn": "HKRR Lift",
+    "names": {
+      "zh": "HKRR 提亮",
+      "en": "HKRR Lift"
+    },
+    "editable": "project",
+    "category": "Writing Route",
+    "bodies": {
+      "zh": "你正在执行 AI System 6 的 HKRR 提亮能力。请对提供的正文做一次非破坏性提亮：\n\n- Happiness：增加发现感、趣味或反直觉处；\n- Knowledge：让信息增量和人话解释更清楚；\n- Resonance：保留并加强人的感受、处境和判断；\n- Rhythm：调整节奏、停顿、转场和回收，让它读得下去。\n\n只返回完整的提亮后 Markdown，不要解释、前言、后记、审阅表或修改说明。保留作者的判断、具体细节、事实边界、引用、数字、日期、段落结构和已经写出的口气。不得新增材料没有支持的事实、感受、人物或结论，不得把不确定写成确定，也不得为了顺口删掉关键信息点。提亮是方向，不是抹平作者；如果某处已经成立，保留它。",
+      "en": "You are executing AI System 6's HKRR Lift capability on the supplied draft. Improve discovery, information gain, human feeling, and rhythm without inventing facts or flattening uncertainty. Return only the complete revised Markdown. Preserve the writer's judgment, concrete details, structure, and voice."
+    },
+    "hash": "8dc723c2b7c042b13cf17ffa4a89f309e9f56e79cd25f1fe6a57b0103b29413a"
+  },
+  {
+    "id": "writing-route.humanizer",
+    "name": "Humanizer",
+    "nameEn": "Humanizer",
+    "names": {
+      "zh": "Humanizer",
+      "en": "Humanizer"
+    },
+    "editable": "project",
+    "category": "Writing Route",
+    "bodies": {
+      "zh": "你正在执行 AI System 6 的 Humanizer 能力。请对提供的正文做一次保守改写：删掉模型腔、宣传腔、泛泛总结和整齐得不自然的句式，换成具体、平实、有人在现场说话的表达。\n\n保留作者自己的判断、犹豫、具体细节、混合情绪、事实、引用、数字、日期、Markdown 结构和不确定边界。不要编造事实、来源、感受或个人经历；不要把粗粝处、口语停顿和有用的重复统统抹平；不要把文本改成另一种人格。只返回完整的改写后 Markdown，不要解释、前言、后记或修改说明。写作者会在桌面上决定是否采用。",
+      "en": "You are executing AI System 6's Humanizer capability on the supplied draft. Remove model-shaped phrasing while preserving the writer's voice, facts, uncertainty, specific details and meaning. Return only the complete revised Markdown."
+    },
+    "hash": "a50a6bd99b6cd2d9cfd6ff67ab718ee0c810a7b544a7699606b6a48024652532"
+  },
+  {
     "id": "writing-route.outline-critique",
     "name": "大纲批评",
     "nameEn": "Critique Outline",

@@ -13,25 +13,25 @@
     <meta name="apple-mobile-web-app-title" content="AI System 6" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="theme-color" content="#000000" />
-    <link rel="apple-touch-icon" href="assets/app-icon/app-icon-180.png?v=20260904.2" />
-    <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png?v=20260904.2" />
-    <link rel="manifest" href="assets/app-icon/manifest.json?v=20260904.2" />
-    <script src="app/core/theme-registry.js?v=20260904.2"></script>
-    <link rel="stylesheet" href="styles.bundle.css?v=20260904.2" />
+    <link rel="apple-touch-icon" href="assets/app-icon/app-icon-180.png?v=20260914.7" />
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png?v=20260914.7" />
+    <link rel="manifest" href="assets/app-icon/manifest.json?v=20260914.7" />
+    <script src="app/core/theme-registry.js?v=20260914.7"></script>
+    <link rel="stylesheet" href="styles.bundle.css?v=20260914.7" />
     <!-- The app bundle is referenced at the end of a ~340 KB body, so the
          preload scanner reaches it late. This starts the download beside the
          stylesheet instead. Both URLs carry the same build stamp, so the
          browser serves the script tag from this one request. -->
-    <link rel="preload" as="script" href="app.bundle.js?v=20260904.2" />
+    <link rel="preload" as="script" href="app.bundle.js?v=20260914.7" />
   </head>
   <body class="is-booting">
-    <script src="app/core/theme-body-init.js?v=20260904.2"></script>
+    <script src="app/core/theme-body-init.js?v=20260914.7"></script>
     <!-- Registers a window-level error/unhandledrejection net before
          app.bundle.js loads, so a top-level crash in the bundle (a
          temporal-dead-zone ReferenceError, for example) still shows the Sad
          Mac recovery screen instead of leaving a blank page. See
          app/core/boot-safety-net.js. -->
-    <script src="app/core/boot-safety-net.js?v=20260904.2"></script>
+    <script src="app/core/boot-safety-net.js?v=20260914.7"></script>
     <header class="menu-bar" aria-label="System menu" data-i18n-aria-label="system_menu">
       <div class="menu">
         <button class="apple" aria-label="Apple menu" data-i18n-aria-label="apple_menu" data-balloon-help="balloon_apple_menu">
@@ -120,6 +120,12 @@
       </div>
       <span id="app-menu-slot" hidden></span>
       <div class="menu-spacer"></div>
+      <!-- A guest at the desk shows here the way a mounted AppleShare volume
+           did; it opens Chooser, where the writer can change or revoke it. -->
+      <button id="guest-indicator" class="guest-indicator is-hidden" type="button" data-action="open-chooser" aria-label="Guest at the desk" data-i18n-aria-label="guests">
+        <span class="sys-icon" data-system-icon="chooser" aria-hidden="true"></span>
+        <span id="guest-indicator-label"></span>
+      </button>
       <div class="menu cloud-switcher-menu" data-control-strip-counterpart="model">
         <button id="cloud-model-indicator" class="cloud-model-indicator is-hidden" type="button" aria-haspopup="menu" aria-label="Cloud Model Status" data-i18n-aria-label="cloud_model_status" data-balloon-help="balloon_model_status">
           <span class="cloud-icon sys-icon" data-system-icon="cloudModel" aria-hidden="true"></span>
@@ -381,6 +387,38 @@
         </form>
       </dialog>
 
+      <!-- A guest agent asking to join the desk. Shown once per agent name; the
+           privilege menu never offers more than the guest asked for. -->
+      <dialog id="guest-approval-modal" class="finder-operation-modal guest-approval-modal" aria-labelledby="guest-approval-title">
+        <form method="dialog">
+          <section class="finder-operation-body">
+            <h2 id="guest-approval-title" data-i18n="guest_approve_title">A guest asks to join the desk</h2>
+            <p class="finder-operation-lede"><b id="guest-approval-name"></b></p>
+            <p class="finder-operation-lede"><span data-i18n="guest_approve_purpose">Purpose</span>: <span id="guest-approval-purpose"></span></p>
+            <!-- Most MCP clients cannot send a custom header, so the guest
+                 often states no purpose. The writer may write down what they
+                 understood it to be; Chooser shows that from then on. -->
+            <p id="guest-approval-purpose-row" class="finder-operation-lede" hidden>
+              <label for="guest-approval-purpose-field" data-i18n="guest_approve_purpose_yours">What is it here for?</label>
+              <input id="guest-approval-purpose-field" type="text" autocomplete="off" data-i18n-placeholder="guest_approve_purpose_hint" placeholder="e.g. review the letter before it goes out" />
+            </p>
+            <label class="chooser-source" for="guest-approval-privilege">
+              <span class="sys-icon" data-system-icon="chooser" aria-hidden="true"></span>
+              <div class="select-wrap"><select id="guest-approval-privilege" aria-label="Privilege" data-i18n-aria-label="guest_approve_privilege">
+                <option value="read" data-i18n="guest_privilege_read">Read only</option>
+                <option value="propose" data-i18n="guest_privilege_propose">May propose</option>
+                <option value="change" data-i18n="guest_privilege_change">May change</option>
+              </select></div>
+            </label>
+            <p class="finder-operation-lede" data-i18n="guest_approve_lede">Choose what it may do. You can change or revoke this in Chooser.</p>
+          </section>
+          <div class="button-row finder-operation-actions">
+            <button class="btn" value="deny" id="guest-approval-deny" data-i18n="guest_deny">Decline</button>
+            <button class="btn default" value="allow" id="guest-approval-allow" data-i18n="guest_allow">Allow</button>
+          </div>
+        </form>
+      </dialog>
+
       <dialog id="public-verification-modal" class="finder-operation-modal public-verification-modal">
         <form method="dialog">
           <section class="finder-operation-body">
@@ -441,7 +479,7 @@
             <h2 data-i18n="versions_title">Versions</h2>
             <p class="hint" data-i18n="versions_hint">Check two revisions to compare, or check one to restore as a new revision. Run records open the originating model run.</p>
             <div id="document-versions-list" class="versions-list"></div>
-            <pre id="document-versions-diff" class="versions-diff" tabindex="0"></pre>
+            <pre id="document-versions-diff" class="versions-diff" tabindex="0" aria-label="Version comparison" data-i18n-aria-label="versions_compare_title"></pre>
           </section>
           <div class="button-row finder-operation-actions">
             <button class="btn" type="button" id="versions-compare" data-i18n="versions_compare">Compare</button>
@@ -463,7 +501,7 @@
              first message rather than after it. -->
         <div class="details-bar assistant-details-bar">
           <span class="clio-tally" id="clio-tally" hidden></span>
-          <span class="clio-status-host" data-status-host data-status-home><!-- No data-i18n: setStatus owns this line's text. The element used to
+          <span class="clio-status-host" data-status-host data-status-home aria-live="polite"><!-- No data-i18n: setStatus owns this line's text. The element used to
                carry data-i18n="ready", so applyLanguage() rewrote it to the
                translated "Ready" behind setStatus's back — a second, silent
                declaration of what the line says. --><span id="status" hidden></span></span>
@@ -513,7 +551,7 @@
         <form id="chat-form" class="composer">
           <div id="attached-clips" class="attached-clips is-hidden"></div>
           <label class="visually-hidden" for="prompt" data-i18n="message">Message</label>
-          <textarea id="prompt" rows="1" placeholder="Ask the local model something..." data-requires-write data-i18n-placeholder="prompt_placeholder" required></textarea>
+          <textarea id="prompt" rows="1" enterkeyhint="send" placeholder="Ask the local model something..." data-requires-write data-i18n-placeholder="prompt_placeholder" required></textarea>
           <div class="composer-action-row">
             <div class="compose-tools-anchor">
               <button class="btn composer-file-button composer-icon-button" id="compose-tools-toggle" type="button" data-action="toggle-compose-tools" aria-expanded="false" aria-haspopup="menu" aria-controls="compose-tools-menu" data-i18n-aria-label="compose_tools" data-i18n-title="compose_tools">
@@ -743,7 +781,7 @@
               <span data-i18n="cloud_model_label">Model</span>
               <div class="select-wrap model-combo-wrap">
                 <select id="cloud-model-select"></select>
-                <input id="cloud-model" type="text" autocomplete="off" placeholder="deepseek-v4-flash" hidden />
+                <input id="cloud-model" type="text" autocomplete="off" placeholder="deepseek-flash" hidden />
               </div>
             </label>
 
@@ -805,6 +843,14 @@
               <div class="field-row">
                 <input id="keep-screen-awake" type="checkbox" />
                 <label for="keep-screen-awake" data-i18n="keep_screen_awake" data-balloon-help="balloon_keep_screen_awake">Keep Screen Awake</label>
+              </div>
+
+              <!-- The Finder's own setting, in the place the Finder keeps it:
+                 unmounted volumes are not drawn on the desk unless asked for.
+                 The menu-bar project switcher is the way back to them. -->
+              <div class="field-row">
+                <input id="show-unmounted-disks" type="checkbox" />
+                <label for="show-unmounted-disks" data-i18n="show_unmounted_disks" data-balloon-help="balloon_show_unmounted_disks">Show unmounted project disks on the desktop</label>
               </div>
 
               <div class="field-row">
@@ -938,6 +984,37 @@
               </select></div>
             </label>
           </section>
+          <!-- Guests: agents that reach the desk over MCP on this Mac. Each is
+               approved once by name; the list is the writer's standing answer
+               (privilege, revoke, forget), rendered by the lazy guest-tools module. -->
+          <section class="control-section chooser-section chooser-guests-section" aria-labelledby="chooser-guests-title">
+            <h3 id="chooser-guests-title" data-i18n="guests">Guests</h3>
+            <p class="hint control-status" data-i18n="chooser_guests_note">Guest agents connect through MCP on this Mac. Each one is approved by name; a guest reads and proposes, and nothing enters the manuscript until you adopt it.</p>
+            <ul id="chooser-guest-list" class="chooser-guest-list"></ul>
+            <p id="chooser-guest-empty" class="hint control-status" data-i18n="chooser_guests_empty">No guest has asked to connect yet.</p>
+            <p id="chooser-guest-bridge" class="hint control-status" data-i18n="guest_bridge_offline">Guest bridge: not connected (loopback only).</p>
+            <p class="hint control-status"><span data-i18n="chooser_guest_hint">Connect Claude Code:</span> <code id="chooser-guest-command">claude mcp add --transport http ais6 http://127.0.0.1:4173/mcp</code></p>
+            <!-- An invitation names this desk, so a guest that reaches the
+                 site over the internet lands here and nowhere else. Giving the
+                 desk a new name revokes every invitation at once. -->
+            <div class="button-row">
+              <button class="btn" type="button" id="chooser-guest-invite" data-i18n="guest_invite">Invite a Guest...</button>
+              <button class="btn" type="button" id="chooser-guest-rotate" data-i18n="guest_rotate_desk">New Desk Name</button>
+            </div>
+            <p id="chooser-guest-invitation" class="hint control-status" hidden></p>
+          </section>
+          <!-- Servers: MCP servers this desk asks. The other direction of the
+               same window. Whatever a server answers lands on the File Floppy;
+               rendered by the lazy MCP servers module. -->
+          <section class="control-section chooser-section chooser-servers-section" aria-labelledby="chooser-servers-title">
+            <h3 id="chooser-servers-title" data-i18n="mcp_servers">Servers</h3>
+            <p class="hint control-status" data-i18n="chooser_servers_note">Servers this desk can ask through MCP. A server that answers a search tool joins the Search Engine menu above; whatever it returns lands on the File Floppy, never in the manuscript.</p>
+            <ul id="chooser-server-list" class="chooser-server-list"></ul>
+            <p id="chooser-server-empty" class="hint control-status" data-i18n="chooser_servers_empty">No server has been added yet.</p>
+            <div class="button-row">
+              <button class="btn" type="button" id="chooser-add-server" data-i18n="mcp_server_add">Add Server...</button>
+            </div>
+          </section>
         </div>
       </aside>
 
@@ -948,6 +1025,7 @@
         </div>
         <div class="details-bar compact-status-bar">
           <span class="status-bar-leading" data-i18n="short_term_memory">Short-term memory</span>
+          <div class="window-status-strip" aria-live="polite"><span class="window-status-slot" data-status-host></span></div>
           <span class="status-bar-trailing" data-i18n="retrieval_context">Retrieval context</span>
         </div>
         <div class="window-pane settings memory-transfer-pane memory-transfer-floppy-pane">
@@ -1324,10 +1402,7 @@
                 <option value="iphone-17-standard" data-i18n="cmf_model_iphone_17">iPhone 17</option>
               </select></span>
             </label>
-            <label class="cmf-control cmf-control-pose" id="cmf-pose-control" hidden data-balloon-help="balloon_cmf_pose">
-              <span data-i18n="cmf_pose">Pose</span>
-              <span class="select-wrap"><select id="cmf-pose"></select></span>
-            </label>
+
             <label class="cmf-control cmf-control-preset" data-balloon-help="balloon_cmf_preset">
               <span data-i18n="cmf_preset">Preset</span>
               <span class="select-wrap"><select id="cmf-preset">
@@ -1348,7 +1423,7 @@
                 <span class="mobile-control-long" data-i18n="cmf_export_usdz">Export USDZ</span>
                 <span class="mobile-control-short" data-i18n="cmf_export_short">Export</span>
               </button>
-              <button class="btn" type="button" id="cmf-export-views" data-i18n="cmf_export_views">Export Views</button>
+              <button class="btn" type="button" id="cmf-export-views" data-i18n-aria-label="cmf_export_views" aria-label="Export Views"><span class="mobile-control-long" data-i18n="cmf_export_views">Export Views</span><span class="mobile-control-short" data-i18n="cmf_export_views_short">Views</span></button>
             </div>
           </aside>
           <section class="cmf-preview-panel" aria-labelledby="cmf-preview-title">
@@ -1363,6 +1438,7 @@
               <canvas id="cmf-model-canvas" tabindex="0" aria-label="Interactive CMF model" data-i18n-aria-label="cmf_model_canvas" hidden></canvas>
               <p id="cmf-preview-empty" class="cmf-preview-empty" data-i18n="cmf_model_loading">Loading interactive model…</p>
             </div>
+            <div class="cmf-motion-controls" id="cmf-motion-controls" hidden></div>
             <div class="cmf-view-strip" id="cmf-view-strip" role="toolbar" aria-label="Model views" data-i18n-aria-label="cmf_model_views" data-balloon-help="balloon_cmf_views"></div>
           </section>
           <aside class="cmf-panel cmf-parts-panel">
@@ -1481,7 +1557,7 @@
                 </div>
                 <form id="soundscape-search-form" class="soundscape-search-form">
                   <label class="sr-only" for="soundscape-search-input" data-i18n="soundscape_search_label">Find in your Music library</label>
-                  <input id="soundscape-search-input" type="search" autocomplete="off" data-i18n-placeholder="soundscape_search_placeholder" placeholder="Song, artist, album" />
+                  <input id="soundscape-search-input" type="search" inputmode="search" enterkeyhint="search" autocomplete="off" data-i18n-placeholder="soundscape_search_placeholder" placeholder="Song, artist, album" />
                   <button class="btn mini-btn" type="submit" data-i18n="search">Search</button>
                 </form>
                 <div id="soundscape-search-results" class="soundscape-list soundscape-search-results" aria-live="polite" hidden></div>
@@ -1492,7 +1568,7 @@
                 <div class="soundscape-field-shell">
                   <span class="soundscape-axis soundscape-axis-top" data-i18n="soundscape_tension">Tension</span>
                   <span class="soundscape-axis soundscape-axis-left" data-i18n="soundscape_cold">Cold</span>
-                  <div id="soundscape-style-field" class="soundscape-style-field" role="application" tabindex="0" aria-describedby="soundscape-style-summary">
+                  <div id="soundscape-style-field" class="soundscape-style-field" role="application" tabindex="0" aria-labelledby="soundscape-tab-style" aria-describedby="soundscape-style-summary">
                     <span class="soundscape-style-grid" aria-hidden="true"></span>
                     <span id="soundscape-style-puck" class="soundscape-style-puck" aria-hidden="true"></span>
                   </div>
@@ -1538,6 +1614,8 @@
                   <button class="btn default" type="button" id="soundscape-restore" disabled data-i18n="soundscape_restore">Return to Moment</button>
                   <button class="btn" type="button" id="soundscape-link-project" disabled data-i18n="soundscape_add_project">Add to Current Project</button>
                   <button class="btn" type="button" id="soundscape-recover-moment" disabled data-i18n="soundscape_find_again">Find It Again</button>
+                  <button class="btn" type="button" id="soundscape-rename-moment" disabled data-i18n="soundscape_rename_moment">Rename…</button>
+                  <button class="btn" type="button" id="soundscape-delete-moment" disabled data-i18n="soundscape_delete_moment">Remove</button>
                 </div>
               </section>
             </div>
@@ -1639,6 +1717,7 @@
         </div>
         <div class="details-bar compact-status-bar">
           <span class="status-bar-leading" id="project-cd-count">0 Project CD items</span>
+          <div class="window-status-strip" aria-live="polite"><span class="window-status-slot" data-status-host></span></div>
           <span class="status-bar-trailing" data-i18n="local_disk">Desktop</span>
         </div>
         <div class="window-pane project-cd-pane">
@@ -1793,7 +1872,7 @@
           <div class="documents-toolbar">
             <button class="btn" type="button" id="documents-up" data-i18n="all_documents" hidden>All Documents</button>
             <span id="documents-folder-label" class="visually-hidden" data-i18n="all_folders">All folders</span>
-            <input id="new-folder-name" type="text" value="Project Notes" />
+            <input id="new-folder-name" type="text" value="Project Notes" aria-labelledby="new-folder" />
             <button class="btn" type="button" id="new-folder" data-i18n="new_folder">New Folder</button>
           </div>
           <div id="document-icon-grid" class="finder-grid document-icon-grid window-frame-scroller"></div>
@@ -1953,6 +2032,9 @@
               <div id="claim-results" class="claim-results is-hidden" data-review-result="facts">
                 <p class="empty-folder-note" data-i18n="claim_check_empty">Run Fact Check from Review Desk.</p>
               </div>
+              <div id="guest-review-results" class="claim-results guest-review-results is-hidden" data-review-result="guests">
+                <p class="empty-folder-note" data-i18n="guest_reviews_empty">No guest review for this project yet.</p>
+              </div>
             </section>
           </div>
           <div id="review-desk-empty-note" class="empty-folder-note review-desk-empty-note is-hidden"><p data-i18n="review_desk_requires_final">The Review Desk reviews a finished manuscript. Mark the Manuscript as Final to start.</p><button class="btn default" type="button" data-action="advance-manuscript-to-review" data-i18n="to_review">To Review</button></div>
@@ -1972,6 +2054,7 @@
                   <button class="btn" type="button" data-action="review-mingming-handoff" data-i18n="review_mingming_handoff">How Luoluo Would Receive It</button>
                   <button class="btn" type="button" data-action="review-mingming-handoff-backstage" data-i18n="review_mingming_handoff_backstage">Backstage Handoff Review</button>
                   <button class="btn" type="button" data-action="ai-praise" data-i18n="praise">Praise Me</button>
+                  <button class="btn" type="button" data-action="open-guest-reviews" data-i18n="guest_reviews">Guest Reviews</button>
                 <hr />
                     <button class="btn" type="button" data-action="toggle-sideask" aria-pressed="false" data-i18n="sideask">SideAsk</button>
                   </div>
@@ -2052,6 +2135,7 @@
             <option value="assistant" data-i18n="stack_assistant">ClioTalk</option>
             <option value="ideas" data-i18n="stack_ideas">Ideas</option>
           </select>
+          <div class="window-status-strip" aria-live="polite"><span class="window-status-slot" data-status-host></span></div>
         </div>
         <div class="window-pane scrapbook-pane">
           <div id="scrap-list" class="scrap-list"></div>
@@ -2147,7 +2231,7 @@
           <span class="status-bar-trailing" id="print-directory-meta">--</span>
         </div>
         <div class="window-pane print-directory-pane">
-          <div id="print-directory-preview" class="print-directory-preview" tabindex="0"></div>
+          <div id="print-directory-preview" class="print-directory-preview" tabindex="0" aria-labelledby="print-directory-title"></div>
           <div class="button-row">
             <button class="btn default" type="button" id="print-directory-download" data-i18n="print_to_markdown">Print to Markdown</button>
             <button class="btn" type="button" data-action="close-print-directory" data-i18n="close">Close</button>
@@ -2169,6 +2253,7 @@
             <div class="tdi-stack-host" data-tdi-stack-for="reader-tabs"></div>
           </div>
           <div class="status-bar-trailing reader-status-actions">
+            <div class="window-status-strip" aria-live="polite"><span class="window-status-slot" data-status-host></span></div>
             <details class="teachtext-command-menu command-menu-opens-down reader-command-menu" id="reader-command-menu">
               <summary class="btn" id="reader-command-summary" data-i18n="reader_commands">Commands...</summary>
               <div class="teachtext-command-popover reader-command-popover">
@@ -2303,7 +2388,7 @@
               <a id="time-machine-save-archive-is" href="#" target="_blank" rel="noreferrer" hidden></a>
               <div class="time-machine-stage window-frame-scroller" id="time-machine-stage">
                 <iframe id="time-machine-frame" class="time-machine-frame" title="Restricted web view" sandbox="allow-scripts"></iframe>
-                <article id="time-machine-reader" class="time-machine-reader is-hidden" tabindex="0"></article>
+                <article id="time-machine-reader" class="time-machine-reader is-hidden" tabindex="0" aria-labelledby="time-machine-reader-view"></article>
                 <div id="time-machine-home" class="time-machine-home">
                   <div class="time-machine-home-copy">
                     <span class="sys-icon sys-icon-desktop" data-system-icon="timeMachine" aria-hidden="true"></span>
@@ -2499,7 +2584,7 @@
         <form id="find-path-form" class="window-pane find-path-pane">
           <label class="visually-hidden" for="find-path-query" data-i18n="query">Query</label>
           <div class="find-path-query-row">
-            <input id="find-path-query" type="text" data-i18n-placeholder="searcher_web_placeholder" placeholder="Search the web..." />
+            <input id="find-path-query" type="text" inputmode="search" enterkeyhint="search" data-i18n-placeholder="searcher_web_placeholder" placeholder="Search the web..." />
             <button class="btn default" type="submit" data-i18n="search">Search</button>
             <button class="btn" type="button" id="synthesize-find-path" data-action="synthesize-search-results" data-i18n="synthesize" hidden>Synthesize</button>
           </div>
@@ -2513,6 +2598,10 @@
               <span class="mobile-control-short" data-i18n="searcher_open_reader_short">Reader</span>
             </button>
             <button class="btn" type="button" data-action="clip-selected-find-path" data-i18n="clip">Clip</button>
+            <button class="btn" type="button" data-action="find-path-to-floppy" data-i18n-aria-label="find_path_to_floppy">
+              <span class="mobile-control-long" data-i18n="find_path_to_floppy">To File Floppy</span>
+              <span class="mobile-control-short" data-i18n="file_floppy_short">Floppy</span>
+            </button>
             <button class="btn" type="button" id="copy-find-path" data-action="copy-search-result-markdown" data-i18n-aria-label="copy_markdown">
               <span class="mobile-control-long" data-i18n="copy_markdown">Copy Markdown</span>
               <span class="mobile-control-short" data-i18n="copy">Copy</span>
@@ -2604,6 +2693,7 @@
           <span class="status-bar-leading" id="docmap-count">0 nodes</span>
           <div class="status-bar-context tdi-stack-host" data-tdi-stack-for="docmap-tabs"></div>
           <div class="status-bar-trailing docmap-status-actions">
+            <div class="window-status-strip" aria-live="polite"><span class="window-status-slot" data-status-host></span></div>
             <details class="teachtext-command-menu command-menu-opens-down docmap-command-menu is-disabled" id="docmap-command-menu">
               <summary class="btn" id="docmap-command-summary" data-i18n="docmap_commands">Commands...</summary>
               <div class="teachtext-command-popover docmap-command-popover">
@@ -2845,7 +2935,7 @@
         </div>
         <div class="window-pane system-help-pane">
           <div class="system-help-control-row">
-            <input id="system-help-query" type="search" data-i18n-placeholder="system_help_search" placeholder="Search system terms" />
+            <input id="system-help-query" type="search" inputmode="search" data-i18n-placeholder="system_help_search" placeholder="Search system terms" />
             <label class="control-field" for="system-help-group">
               <span data-i18n="system_help_show">Show</span>
               <div class="select-wrap"><select id="system-help-group" data-i18n-aria-label="system_help_groups" aria-label="System Help groups"></select></div>
@@ -2875,9 +2965,9 @@
             </div>
           </div>
           <div class="dictation-transcripts">
-            <label data-i18n="raw_transcript">Raw Transcript</label>
+            <label for="dictation-raw" data-i18n="raw_transcript">Raw Transcript</label>
             <textarea id="dictation-raw" rows="4" placeholder="Spoken text appears here..." data-i18n-placeholder="dictation_raw_hint"></textarea>
-            <label data-i18n="cleaned_transcript">Cleaned Transcript</label>
+            <label for="dictation-cleaned" data-i18n="cleaned_transcript">Cleaned Transcript</label>
             <textarea id="dictation-cleaned" rows="4" placeholder="AI cleaned text..." data-i18n-placeholder="dictation_clean_hint"></textarea>
           </div>
           <div class="button-row dictation-bottom-actions">
@@ -2901,9 +2991,9 @@
         </div>
         <div class="window-pane translation-pad-pane">
           <div class="translation-pad-textareas">
-            <label data-i18n="source_text">Source</label>
+            <label for="translation-pad-source" data-i18n="source_text">Source</label>
             <textarea id="translation-pad-source" rows="5" data-i18n-placeholder="translation_source_hint" placeholder="Text to translate..."></textarea>
-            <label data-i18n="translation_label">Translation</label>
+            <label for="translation-pad-result" data-i18n="translation_label">Translation</label>
             <textarea id="translation-pad-result" rows="5" readonly></textarea>
           </div>
           <div class="button-row translation-pad-actions">
@@ -2959,7 +3049,7 @@
           <span class="status-bar-trailing" id="clipboard-destination" data-i18n="insert_into_teachtext">Insert into TeachText</span>
         </div>
         <div class="window-pane clipboard-pane">
-          <textarea id="clipboard-text" rows="10" readonly></textarea>
+          <textarea id="clipboard-text" rows="10" readonly aria-labelledby="clipboard-title"></textarea>
           <!-- No .spacer: four buttons plus it need 328px of a 322px row. -->
           <div class="button-row is-one-line">
             <button class="btn" type="button" id="clipboard-clear" data-i18n="clear">Clear</button>
@@ -3411,7 +3501,7 @@
       </section>
     </main>
 
-    <script src="app/generated/build-info.js?v=20260904.2"></script>
-    <script src="app.bundle.js?v=20260904.2"></script>
+    <script src="app/generated/build-info.js?v=20260914.7"></script>
+    <script src="app.bundle.js?v=20260914.7"></script>
   </body>
 </html>

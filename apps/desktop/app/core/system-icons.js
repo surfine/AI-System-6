@@ -715,7 +715,38 @@ function classicSystemIconArt(iconId, sourceSize) {
   const stem = systemIconEscape(iconId);
   const mask = systemIconAssetUrl(`assets/themes/classic/icons/${stem}-mask-${sourceSize}.svg`);
   const art = systemIconAssetUrl(`assets/themes/classic/icons/${stem}-${sourceSize}.svg`);
-  return `<image class="sys-icon-classic-mask" href="${mask}" x="0" y="0" width="32" height="32" preserveAspectRatio="xMidYMid meet" /><image class="sys-icon-classic-art" href="${art}" x="0" y="0" width="32" height="32" preserveAspectRatio="xMidYMid meet" />`;
+  return `<image class="sys-icon-classic-mask" href="${mask}" x="0" y="0" width="32" height="32" preserveAspectRatio="xMidYMid meet" /><image class="sys-icon-classic-art" href="${art}" x="0" y="0" width="32" height="32" preserveAspectRatio="xMidYMid meet" /><image class="sys-icon-classic-reverse" href="${art}" x="0" y="0" width="32" height="32" preserveAspectRatio="xMidYMid meet" filter="url(#${classicReverseFilterId})" />`;
+}
+
+// The classic reversal (反白) is an SVG filter, not a CSS one. WebKit ignores
+// `filter` on an SVG <image> element, so a reversed surface painted the black
+// art onto the black silhouette mask and read as a solid blob — the desktop,
+// Finder, the menu bar, the Control Panel chooser and the strip modules all at
+// once. The painter therefore draws the same art file a third time through this
+// filter, and CSS swaps which layer paints; nothing swaps the icon for a
+// second drawing.
+//
+// The definition lives once per document rather than once per icon: every
+// reference resolves to the same matrix, and a duplicate id per icon would put
+// thousands of them on one desk. Zero size, not display:none, because an engine
+// that never lays the definition out may drop the reference with it.
+const classicReverseFilterId = "sys-icon-classic-reverse";
+
+// The tests load this painter in a bare vm context to read its vocabulary, so
+// neither the default nor the boot call may touch `document` unguarded.
+function ensureClassicReverseFilter(root) {
+  const fallback = typeof document === "undefined" ? null : document;
+  const target = root ?? fallback;
+  const doc = target?.nodeType === 9 ? target : target?.ownerDocument || fallback;
+  if (!doc?.body || doc.getElementById(classicReverseFilterId)) return;
+  const host = doc.createElementNS("http://www.w3.org/2000/svg", "svg");
+  host.setAttribute("class", "sys-icon-reverse-defs");
+  host.setAttribute("aria-hidden", "true");
+  host.setAttribute("focusable", "false");
+  host.setAttribute("width", "0");
+  host.setAttribute("height", "0");
+  host.innerHTML = `<defs><filter id="${classicReverseFilterId}" x="0" y="0" width="100%" height="100%"><feColorMatrix type="matrix" values="-1 0 0 0 1 0 -1 0 0 1 0 0 -1 0 1 0 0 0 1 0" /></filter></defs>`;
+  doc.body.append(host);
 }
 
 function platinumCoreSystemIconArt(iconId, sourceSize) {
@@ -843,6 +874,9 @@ function renderSystemIcon(iconId, options = {}) {
 }
 
 function hydrateSystemIcons(root = document) {
+  // Every classic icon carries a reversed layer that is only a reference until
+  // this exists, so the definition is in place before the first hydrate paints.
+  ensureClassicReverseFilter(root);
   root.querySelectorAll("[data-system-icon]").forEach((item) => {
     item.classList.add("sys-icon");
     const useSmallSource = item.matches([
@@ -864,7 +898,12 @@ function hydrateSystemIcons(root = document) {
     const usePlatinumDesktopSource = !useSmallSource && item.classList.contains("sys-icon-desktop");
     item.innerHTML = systemIconSvg(item.dataset.systemIcon, {
       sourceSize: useSmallSource ? 16 : 32,
-      platinumSourceSize: useSmallSource ? 16 : usePlatinumDesktopSource ? 42 : 32,
+      // Platinum sizes its own SVG by tier, so the tier has to answer the same
+      // context question the display size does. Icon view used to inherit the
+      // legacy `.sys-icon-mini` hint and painted 16px artwork inside a 34px
+      // cell — the only era small enough to notice, and the reason this is
+      // spelled out rather than left to the source-size hint.
+      platinumSourceSize: useFinderSource ? 32 : useSmallSource ? 16 : usePlatinumDesktopSource ? 42 : 32,
       // Finder icon view owns the actual 44 px display contract even when
       // legacy markup still carries the compact `sys-icon-mini` class.  The
       // rendered context must win over that historical source-size hint or a
@@ -873,3 +912,7 @@ function hydrateSystemIcons(root = document) {
     });
   });
 }
+
+// The bundle is loaded at the end of the body, so hydrated markup from
+// index.html and icons rendered straight from a string share one definition.
+if (typeof document !== "undefined") ensureClassicReverseFilter();

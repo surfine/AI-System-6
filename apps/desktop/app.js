@@ -53,6 +53,7 @@ const {
 const {
   defaultProjectName,
   displayNameRewrites,
+  appAuthoredDefaultProjectNames,
 } = projectConfig;
 
 // The name a fresh disk is born with follows the interface language; the frozen
@@ -402,6 +403,7 @@ const {
   liquidTintLevelOutput,
   soundEffectsInput,
   menuClockInput,
+  showUnmountedDisksInput,
   classicLineIconsInput,
   controlStripInput,
   controlStripShowInput,
@@ -1610,7 +1612,13 @@ const translationCache = new Map();
 let styleSheetSourceOffset = 0;
 function projectDisplayName(projectOrName) {
   const value = typeof projectOrName === "string" ? projectOrName : projectOrName?.name;
-  return displayNameRewrites.reduce((name, rule) => name.replace(rule.pattern, rule.replacement), String(value || ""));
+  const stored = String(value || "");
+  // The first project is named by the app, in whatever language happened to be
+  // on screen when the desk first opened. Read it through the current language
+  // instead of showing a name the writer never typed. Anything they did type
+  // falls straight through.
+  if (appAuthoredDefaultProjectNames.includes(stored)) return t("default_project_name");
+  return displayNameRewrites.reduce((name, rule) => name.replace(rule.pattern, rule.replacement), stored);
 }
 
 var translations = window.AISystem6Data?.translations || {};
@@ -1724,6 +1732,27 @@ function t(key, ...args) {
   const table = tables[currentLanguage || "en"] || tables.zh || tables.en || {};
   const value = table[key] ?? tables.en?.[key] ?? key;
   return typeof value === "function" ? value(...args) : value;
+}
+
+// ---- When the writer's language is actually on the page --------------------
+//
+// Both translation tables are lazy, so at the moment this bundle evaluates,
+// tables[currentLanguage] is an empty object and t() answers with the key it
+// was handed. Everything the boot sequence paints is safe: boot fetches the
+// table, then calls applyLanguage(). A surface that speaks on its own clock is
+// not -- a lazy module that arrives on `load`, a service-worker event -- and a
+// dialog reading "shell_update_ready" at the writer is the shape that takes.
+//
+// This is the one signal such a caller waits on. It answers after the language
+// has been CHOSEN as well as loaded, because a saved setting can move it after
+// the boot default: resolving on the table alone would trade a raw key for an
+// English sentence in front of a Chinese desk.
+let languageIsReady = false;
+let announceLanguageReady = () => {};
+const languageReadyPromise = new Promise((resolve) => { announceLanguageReady = resolve; });
+
+function whenLanguageReady() {
+  return languageIsReady ? Promise.resolve() : languageReadyPromise;
 }
 
 function updateFilePickerSelectionLabel(files, labelEl) {
@@ -1855,6 +1884,17 @@ function applyMenuClock(options = {}) {
   if (options.persist !== false) saveDeskState();
 }
 
+// The Finder's own setting: the desk redraws its disks and saves the choice.
+function applyShowUnmountedDisks(options = {}) {
+  if (typeof renderProjectDiskDesktopIcons === "function") renderProjectDiskDesktopIcons();
+  if (typeof setStatus === "function") {
+    setStatus(t(showUnmountedDisksInput?.checked
+      ? "unmounted_disks_shown"
+      : "unmounted_disks_hidden"));
+  }
+  if (options.persist !== false) saveDeskState();
+}
+
 // The declarative half of applyLanguage(), scoped to one subtree.
 //
 // A window that its module builds arrives after boot, so it misses the boot
@@ -1902,6 +1942,14 @@ window.AISystem6TranslateWithin = translateWithin;
 
 function applyLanguage() {
   document.documentElement.lang = currentLanguage === "zh" ? "zh-Hans" : "en";
+  // The desk is now speaking the language the writer will read. A failed table
+  // fetch still arrives here (boot swallows that error deliberately), so a late
+  // surface degrades to key fallbacks rather than waiting forever for a table
+  // that is never coming.
+  if (!languageIsReady) {
+    languageIsReady = true;
+    announceLanguageReady();
+  }
   if (typeof syncKeyboardShortcutLabels === "function") syncKeyboardShortcutLabels();
   window.refreshFinderContinuationIndicators?.();
 

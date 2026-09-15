@@ -20,6 +20,7 @@
 
 .clio-paint-toolbar,
 .clio-paint-patterns {
+  border-radius: var(--micro-radius);
   display: flex;
   flex-wrap: wrap;
   gap: 2px;
@@ -53,6 +54,7 @@
 }
 
 .clio-paint-canvas-wrap {
+  border-radius: var(--surface-radius);
   position: relative;
   align-self: flex-start;
   border: var(--system-border);
@@ -170,4 +172,63 @@
 .clio-paint-pane[data-clio-paint-busy="true"] .clio-paint-status-actions {
   opacity: 0.6;
   pointer-events: none;
+}
+
+/* The paint document is a fixed 480px bitmap. On a phone that is wider than the
+   window, so the canvas is scaled down to fit rather than scrolled -- the
+   pointer maths already divides by the rendered rect (`canvas.width /
+   rect.width` in clio-paint.js), so a scaled canvas still paints the pixel the
+   finger is on, and `image-rendering: pixelated` keeps the bitmap a bitmap.
+
+   Width was only half of it. Turn the same phone sideways and height becomes
+   the scarce axis: a 912x420 iPhone Air leaves 284px of pane for a 300px
+   document, an 844x390 leaves 254px, and the width cap says nothing about
+   either -- so the bottom of the paper sat below the screen and had to be
+   scrolled to. A paint document whose edge you cannot see is not a document
+   you can compose in, so the height half follows in the block below -- on a
+   narrower query, for the reason written there. */
+@media (hover: none) and (pointer: coarse) {
+  .clio-paint-canvas-wrap {
+    max-width: 100%;
+  }
+
+  .clio-paint-canvas {
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* The height half, and it is deliberately keyed on the phone DEVICE CLASS
+   rather than on the touch class above. Height needs a number to fit into,
+   the number is the pane's, and a size container is the only way to name it --
+   but size containment lays the pane out as if it had no contents, so it is
+   only safe where the pane's height comes from somewhere other than its
+   contents. That is exactly the phone flow: the query below is character for
+   character `phoneViewportQuery` in window-manager.js, which is what puts
+   clioPaint in `mobileFullScreenAppIds` on the shell's grid, so wherever this
+   matches the pane is already grid-sized. Applied one query wider, on the
+   touch class, it collapsed the floating iPad-landscape window to a 20px pane
+   and a 0x0 canvas -- measured, not reasoned. */
+@media (max-width: 860px), (hover: none) and (pointer: coarse) and (max-height: 660px) {
+  .clio-paint-pane {
+    /* `.clio-paint-result` above is an inline-size container, which offers no
+       cqh and does not contain the canvas, so 100cqh below is unambiguous. */
+    container-type: size;
+  }
+
+  .clio-paint-canvas {
+    /* Minus the wrap's two border lines: they sit outside the canvas but
+       inside the pane, so they are part of what has to fit. With both axes
+       capped the replaced-element sizing rules do the rest -- the canvas
+       keeps its 8:5 ratio and contains itself in whichever axis runs out
+       first, which is still width in both portrait cells.
+       A cap, deliberately, and not `min-height: 0` on the wrap to let flex
+       shrink it. Shrinking measures the same in an empty window and then
+       fails the moment the result panel opens: the two flex items share the
+       shortfall and the paper collapses to 0x0 (measured, all five cells). A
+       cap is a cap; a shrink is a competition. */
+    max-height: calc(100cqh - (2 * var(--system-control-line)));
+    width: auto;
+    height: auto;
+  }
 }

@@ -275,9 +275,24 @@ function syncQuickDraftDrawerButtons() {
 // paper over. The writer keeps the body in front of them and the darkroom sits
 // beside it, which is the whole reason the two are separate windows: looking at
 // what a pass did to a sentence while the sentence is still in reach.
+// One owner for "is the paper showing?".
+//
+// The class is written onto the preview's own host. Every guard that used to
+// ask the DRAFT's container instead answered no forever once the views moved
+// into their own window, and the code behind it stopped running with no error
+// and no failing test. Both the setter and every reader go through these two,
+// so the question has exactly one answer.
+function quickDraftPreviewHost() {
+  return refs.preview?.closest(".lightroom-view") || refs.preview?.parentElement || null;
+}
+
+function quickDraftPreviewIsOpen() {
+  return Boolean(quickDraftPreviewHost()?.classList.contains("is-previewing"));
+}
+
 function showQuickDraftDisplayMode(mode) {
   if (!refs.preview || !refs.draft) return;
-  const container = refs.preview.closest(".lightroom-view") || refs.preview.parentElement;
+  const container = quickDraftPreviewHost();
   if (quickDraftDisplayMode === "listen" && mode !== "listen") window.AISystem6QuickDraftListen?.stop?.();
   quickDraftDisplayMode = mode === "grain" ? "grain" : mode === "listen" ? "listen" : "read";
   container?.classList.add("is-previewing");
@@ -335,7 +350,7 @@ function noteLightroomClosed() {
   if (typeof clearLightroomSubject === "function") clearLightroomSubject();
   if (quickDraftDisplayMode === "body") return;
   if (quickDraftDisplayMode === "listen") window.AISystem6QuickDraftListen?.stop?.();
-  const container = refs.preview?.closest(".lightroom-view") || refs.preview?.parentElement;
+  const container = quickDraftPreviewHost();
   quickDraftDisplayMode = "body";
   container?.classList.remove("is-previewing", "is-graining", "is-listening");
   refs.preview?.classList.add("is-hidden");
@@ -346,7 +361,7 @@ function noteLightroomClosed() {
 
 function leaveQuickDraftPreview() {
   if (!refs.preview || !refs.draft) return;
-  const container = refs.preview.closest(".lightroom-view") || refs.preview.parentElement;
+  const container = quickDraftPreviewHost();
   if (quickDraftDisplayMode === "listen") window.AISystem6QuickDraftListen?.stop?.();
   const wasReading = quickDraftDisplayMode === "read";
   quickDraftDisplayMode = "body";

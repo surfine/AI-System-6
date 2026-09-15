@@ -48,7 +48,17 @@ test.assertIncludes(bureaucracy, 'button.setAttribute("aria-pressed"', "Meme cho
 test.assertIncludes(bureaucracy, "currentEditedCaption", "Edited captions are the source of the rendered preview");
 test.assertIncludes(bureaucracyStyles, "@container bureaucracy-meme", "Meme workbench owns narrow-window layouts through its container");
 test.assertIncludes(foundationStyles, "--bureaucracy-copy-min-height: 328px", "Meme workbench reserves enough narrow-window height for the caption editor's bottom inset");
-test.assertIncludes(bureaucracyStyles, "minmax(var(--bureaucracy-copy-min-height), auto)", "Meme workbench lets the caption column retain its bottom breathing room");
+// The floor moved from the grid TRACK to the panel itself (2026-09-05). When
+// the tracks already overflow the pane there is no free space to distribute,
+// every track sits at its base size, and a minmax base is its minimum -- so a
+// 375px caption editor in a 328px track lost its last 49px to the panel's own
+// `overflow: hidden`, which is the second language's box on a phone. The panel
+// now carries the floor and the track is sized to content.
+test.assertMatches(
+  bureaucracyStyles,
+  /\.bureaucracy-copy-panel \{[^}]*min-height: var\(--bureaucracy-copy-min-height\)/,
+  "Meme workbench lets the caption column retain its bottom breathing room"
+);
 test.assertIncludes(bureaucracyStyles, "min-height: var(--bureaucracy-copy-min-height)", "Meme caption panel consumes the shared narrow-height contract");
 test.assertNotIncludes(bureaucracyStyles, "body:not(.use-liquid-glass)", "Meme geometry no longer forks between themes");
 test.assertNotIncludes(bureaucracyStyles, "!important", "Meme workbench adds no priority overrides");

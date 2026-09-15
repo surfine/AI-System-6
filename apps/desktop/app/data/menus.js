@@ -132,6 +132,8 @@ const finderMenus = [
     menuSeparator,
     menuItem("insert-text-disk", "insert_file_floppy_menu"),
     menuItem("eject-menu-selection", "eject", "eject"),
+    menuSeparator,
+    menuItem("open-project-overview", "project_overview"),
   ]),
   menu("edit", "menu_edit", editBasics),
   menu("view", "menu_view", [

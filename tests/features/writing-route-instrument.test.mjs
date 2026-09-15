@@ -52,8 +52,13 @@ test.assertIncludes(html, "data-status-home", "ClioTalk keeps the home host so t
 // other four carry a strip of their own. What matters is that setStatus()
 // always has somewhere in the active window to render, or the product goes
 // mute exactly where the writer is standing.
+// A floor, not a ceiling. The five route surfaces and ClioTalk's home are the
+// six this contract was written for; a window outside the route that takes the
+// status line into its own bar is the same repair, not a violation — File
+// Floppy and Project CD have since done exactly that, because with ClioTalk
+// closed their receipts had nowhere to land.
 test.assert(
-  (html.match(/data-status-host/g) || []).length === 6,
+  (html.match(/data-status-host/g) || []).length >= 6,
   "every route window has a status host, plus ClioTalk's home",
 );
 test.assertIncludes(surfaces, ".window-status-strip {", "the strip has its own System 6 info-bar recipe");

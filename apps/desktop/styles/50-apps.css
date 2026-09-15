@@ -1,4 +1,5 @@
 .scrap-empty-card {
+  border-radius: var(--surface-radius);
   grid-column: 1 / -1;
   min-height: 120px;
   border: var(--scrap-empty-card-border);
@@ -1241,6 +1242,7 @@
 }
 
 .page-setup-group {
+  border-radius: var(--surface-radius);
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
@@ -2102,6 +2104,7 @@ body[data-line-spacing="relaxed"] {
 }
 
 .memory-transfer-note {
+  border-radius: var(--surface-radius);
   display: grid;
   grid-template-columns: 34px minmax(0, 1fr);
   align-items: center;
@@ -2563,6 +2566,7 @@ body:not(.use-liquid-glass) .scrap-list button.is-multi-selected:not(.is-selecte
 }
 
 .source-info-panel {
+  border-radius: var(--surface-radius);
   min-height: 19px;
   border: var(--source-info-panel-border);
   background: var(--paper);
@@ -2812,6 +2816,7 @@ body:not(.use-liquid-glass) .scrap-list button.is-multi-selected:not(.is-selecte
 }
 
 .large-icon {
+  border-radius: var(--surface-radius);
   width: 56px;
   height: 56px;
   border: var(--large-icon-border);
@@ -2946,8 +2951,11 @@ input[type="radio"]:checked:disabled {
 
 .icon-column {
   position: absolute;
-  /* The whole column sat under the sensor housing on a phone held sideways.
-     Portrait reports no side inset, so this is the same 22px there. */
+  /* The launcher belongs to the right edge of the display, the way the writing
+     spine belongs to the left one (owner decision, 2026-09-14: the rails stand
+     at the edges they name, and the desk between them is what grows). The whole
+     column sat under the sensor housing on a phone held sideways, so the safe
+     area still pushes it clear. */
   right: max(22px, var(--safe-area-right));
   top: 18px;
   bottom: max(22px, var(--safe-area-bottom));

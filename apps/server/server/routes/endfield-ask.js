@@ -30,6 +30,7 @@
 
 const { send, readJsonBody, requestSignal } = require("../lib/http.js");
 const { modelContentFromChatData } = require("../chat.js");
+const { cloudUpstreamWarning } = require("../responses.js");
 const {
   classifyLmStudioProxyError,
   getLoadedLmStudioModelInfo,
@@ -78,7 +79,7 @@ async function handleEndfieldAsk(req, res) {
     const limit = Math.min(Math.max(Number(body.limit || 14), 4), 28);
     const routeModel = String(
       body._cloud_active
-        ? (body._cloud_model || "deepseek-v4-flash")
+        ? (body._cloud_model || "deepseek-flash")
         : (body.model || getLoadedLmStudioModelInfo()?.model || "local-model")
     ).trim();
     const matches = await findEndfieldStoryMatches(query, limit, { progress: String(body.progress || "all") });
@@ -154,6 +155,13 @@ async function handleEndfieldAsk(req, res) {
       send(res, upstream.ok ? 502 : upstream.status, JSON.stringify({
         error: `${source === "cloud" ? "Cloud" : "Local"} model request failed`,
         detail: text.substring(0, 1000) || `HTTP ${upstream.status}`,
+        // A shared key that has run out of money answers 402, and without this
+        // the lore terminal showed "check the model or the archive" -- which
+        // sends the reader to look at the one thing that was fine. The other
+        // model routes already name the upstream reason; this one did not.
+        ...(source === "cloud" && cloudUpstreamWarning(upstream.status)
+          ? { warning: cloudUpstreamWarning(upstream.status) }
+          : {}),
         ...matches,
       }), { "Content-Type": "application/json" });
       return;
@@ -167,6 +175,9 @@ async function handleEndfieldAsk(req, res) {
         error: data.error || `${source === "cloud" ? "Cloud" : "Local"} model request failed`,
         code: data.code || classifyLmStudioProxyError(detail, upstream.status),
         detail,
+        ...(source === "cloud" && cloudUpstreamWarning(upstream.status)
+          ? { warning: data.warning || cloudUpstreamWarning(upstream.status) }
+          : {}),
         ...matches,
       }), { "Content-Type": "application/json" });
       return;

@@ -210,6 +210,21 @@ test.assertIncludes(source, "function momentUnavailable(moment = selectedMoment(
 test.assertIncludes(source, "function recoverSelectedMoment()", "recovery hands the user back to Music or the file picker");
 test.assertNotIncludes(source, "--soundscape-swatch-width", "swatch width no longer pretends to encode intensity");
 
+// Saved moments can be tidied where they live: removal is bookkeeping, and
+// renaming reuses Use This Style instead of growing a second writer.
+test.assertIncludes(html, 'id="soundscape-delete-moment"', "a saved moment can be removed from the Saved drawer");
+test.assertIncludes(html, 'id="soundscape-rename-moment"', "renaming has an entrance from the Saved drawer");
+test.assertIncludes(source, "async function deleteSelectedMoment()", "removal is its own deliberate action");
+test.assertIncludes(source, 'confirmKey: "soundscape_delete_moment"', "removal asks first, through the shared System 6 confirm");
+test.assertIncludes(source, "if (state.projectLinks[projectId] === moment.id) delete state.projectLinks[projectId]", "removing a moment clears the projects that pointed at it");
+test.assertNotIncludes(source, "function deleteMomentAudio", "removal never touches the audio itself");
+test.assertIncludes(source, "function renameSelectedMoment()", "the rename entrance is a route into the existing writer");
+test.assertNotIncludes(source, "moment.name = ui(\"soundscape-rename", "renaming still goes through applyStyleToSelected");
+for (const key of ["soundscape_rename_moment", "soundscape_delete_moment", "soundscape_moment_deleted"]) {
+  test.assertIncludes(en, key, `${key} is translated for English`);
+  test.assertIncludes(zh, key, `${key} is translated for Chinese`);
+}
+
 // The palette is a chart of named colours, not three adjectives over a 240px
 // field. Every cell has a name, and the six preset buttons are six of them.
 const chartRows = source.match(/const CHART_CELLS = Object\.freeze\(\[([\s\S]*?)\]\.map/);

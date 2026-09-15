@@ -140,12 +140,30 @@ window.AISystem6CityDemandGaugeLoaded = true;
       const col = colorOrder[bar.id] || ink;
       // Up = demand; down = oversupply. Up ends at zeroY-1, down starts at
       // zeroY+1 so the zero line is never punctured.
-      if (px > 0) {
+      //
+      // Every bar is outlined in ink before it reads as colour. That is what
+      // the original does — micropolisgaugeview.py strokes each column black
+      // before filling it — and here it is what legibility requires: against
+      // paper, industrial #ffff00 measures 1.07:1 and residential #00ff00
+      // 1.37:1, both invisible; only commercial #0000ff (8.59:1) would
+      // survive alone. The original's own #e6e6ff panel has the same problem,
+      // which is why it strokes at all.
+      //
+      // Ours is 1 px and inset, not the original's 2 px centred: the
+      // narrowest bar here is 6 px and 2 px each side would leave 2 px of
+      // colour. A bar 1 or 2 px tall becomes all outline and reads as ink —
+      // the correct degenerate case, because an ink sliver is visible and a
+      // yellow one is not.
+      if (px !== 0) {
+        const barTop = px > 0 ? zeroY - px : zeroY + 1;
+        const barTall = Math.abs(px);
         ctx.fillStyle = col;
-        ctx.fillRect(x, zeroY - px, spec.barWidth, px);
-      } else if (px < 0) {
-        ctx.fillStyle = col;
-        ctx.fillRect(x, zeroY + 1, spec.barWidth, -px);
+        ctx.fillRect(x, barTop, spec.barWidth, barTall);
+        ctx.fillStyle = ink;
+        ctx.fillRect(x, barTop, spec.barWidth, 1);
+        ctx.fillRect(x, barTop + barTall - 1, spec.barWidth, 1);
+        ctx.fillRect(x, barTop, 1, barTall);
+        ctx.fillRect(x + spec.barWidth - 1, barTop, 1, barTall);
       }
       // Highlight outline (2-px ink) around this bar (M5 blink).
       if (highlight === bar.id) {

@@ -148,7 +148,27 @@ function isTrustedDeepSeekCredentialTarget(provider, targetBaseUrl) {
  * @property {boolean} [vision]      True when the model reads image content.
  */
 
-const DEEPSEEK_VISION_MODEL_ID = "deepseek-v4-flash-vision-exp";
+// DeepSeek renamed the Flash model: the current name is `deepseek-flash`
+// (served by DeepSeek-V4.1-Flash), and Flash reads images directly. The two
+// old ids — `deepseek-v4-flash` and the experimental
+// `deepseek-v4-flash-vision-exp` — are delisted but still resolve upstream to
+// the same model, so they stay accepted on the way in and never leave the
+// machine as the pinned id. See the vision guide, 2026-09:
+// https://api-docs.deepseek.com/zh-cn/guides/vision/
+const DEEPSEEK_FLASH_MODEL_ID = "deepseek-flash";
+const DEEPSEEK_PRO_MODEL_ID = "deepseek-v4-pro";
+
+/** @type {Readonly<Record<string, string>>} */
+const DEEPSEEK_MODEL_ALIASES = Object.freeze({
+  "deepseek-v4-flash": DEEPSEEK_FLASH_MODEL_ID,
+  "deepseek-v4-flash-vision-exp": DEEPSEEK_FLASH_MODEL_ID,
+  "v4-flash": DEEPSEEK_FLASH_MODEL_ID,
+  "v4-pro": DEEPSEEK_PRO_MODEL_ID,
+});
+
+// Flash is the vision model. The constant keeps the name the rest of the
+// codebase already reads for "the model an image request must reach".
+const DEEPSEEK_VISION_MODEL_ID = DEEPSEEK_FLASH_MODEL_ID;
 
 /**
  * Image limits published by the DeepSeek vision guide. The server enforces
@@ -157,48 +177,80 @@ const DEEPSEEK_VISION_MODEL_ID = "deepseek-v4-flash-vision-exp";
  */
 const CLOUD_VISION_LIMITS = Object.freeze({
   maxImageBytes: 32 * 1024 * 1024,
+  maxFileIdImageBytes: 64 * 1024 * 1024,
+  maxRequestBodyBytes: 48 * 1024 * 1024,
   maxImagesPerRequest: 600,
+  // Single side of an image, and the tighter ceiling that applies once one
+  // request carries 15 or more images.
+  maxImageSide: 8192,
+  maxImageSideManyImages: 4096,
+  manyImagesThreshold: 15,
   mimeTypes: Object.freeze(["image/jpeg", "image/png", "image/gif", "image/webp"]),
   detailModes: Object.freeze(["auto", "low", "high", "original"]),
 });
 
 /**
- * Built-in cloud model registry. Mirrors the same array in root
- * server-cloud.js exactly. The order is significant — the client
- * surfaces it in this order in the cloud-model picker, so the vision model
- * goes last and the text models keep their place.
+ * Built-in cloud model registry: what DeepSeek's `GET /models` currently
+ * answers. The desktop picker mirrors this array, so the order is significant
+ * — Flash first, Pro second.
  *
  * @type {readonly CloudModelDescriptor[]}
  */
 const DEEPSEEK_CLOUD_MODELS = [
-  { id: "deepseek-v4-flash", name: "DeepSeek V4 Flash", context_length: 1000000 },
-  { id: "deepseek-v4-pro", name: "DeepSeek V4 Pro", context_length: 1000000 },
   {
-    id: DEEPSEEK_VISION_MODEL_ID,
-    name: "DeepSeek V4 Flash Vision (experimental)",
+    id: DEEPSEEK_FLASH_MODEL_ID,
+    name: "DeepSeek Flash",
     context_length: 1000000,
     vision: true,
   },
+  { id: DEEPSEEK_PRO_MODEL_ID, name: "DeepSeek V4 Pro", context_length: 1000000 },
 ];
+
+/**
+ * Map a provider model id the product has used before onto the id DeepSeek
+ * currently publishes. Unknown ids pass through unchanged so a custom
+ * endpoint's own model names keep working.
+ *
+ * @param {string} modelId
+ * @returns {string}
+ */
+function normalizeCloudModelId(modelId) {
+  const id = String(modelId || "").trim();
+  const key = id.toLowerCase();
+  if (DEEPSEEK_MODEL_ALIASES[key]) return DEEPSEEK_MODEL_ALIASES[key];
+  // A published id keeps its canonical casing; anything else belongs to a
+  // custom endpoint and is handed back exactly as it arrived.
+  return DEEPSEEK_CLOUD_MODELS.some((model) => model.id === key) ? key : id;
+}
+
+/**
+ * @param {string} modelId
+ * @returns {boolean}
+ */
+function isDeepSeekCloudModelId(modelId) {
+  const id = normalizeCloudModelId(modelId);
+  return DEEPSEEK_CLOUD_MODELS.some((model) => model.id === id);
+}
 
 /**
  * @param {string} modelId
  * @returns {boolean}
  */
 function cloudModelSupportsVision(modelId) {
-  const id = String(modelId || "").trim();
+  const id = normalizeCloudModelId(modelId);
   return DEEPSEEK_CLOUD_MODELS.some((model) => model.id === id && model.vision === true);
 }
 
 /**
- * The text models silently drop image blocks, so any surface that carries an
- * image must be routed to the vision model instead of the picked chat model.
+ * A model that cannot read images would silently drop the image blocks, so
+ * any surface that carries one is routed to the vision model instead of the
+ * picked chat model.
  *
  * @param {string} preferred
  * @returns {string}
  */
 function resolveCloudVisionModel(preferred) {
-  const id = String(preferred || "").trim();
+  const id = normalizeCloudModelId(preferred);
   return cloudModelSupportsVision(id) ? id : DEEPSEEK_VISION_MODEL_ID;
 }
 
@@ -218,8 +270,12 @@ function cloudAuthHeaders(apiKey) {
 module.exports = {
   CLOUD_VISION_LIMITS,
   DEEPSEEK_CLOUD_MODELS,
+  DEEPSEEK_FLASH_MODEL_ID,
+  DEEPSEEK_PRO_MODEL_ID,
   DEEPSEEK_VISION_MODEL_ID,
   cloudModelSupportsVision,
+  isDeepSeekCloudModelId,
+  normalizeCloudModelId,
   resolveCloudVisionModel,
   cloudAuthHeaders,
   DEEPSEEK_API_KEY_DEFAULT,
