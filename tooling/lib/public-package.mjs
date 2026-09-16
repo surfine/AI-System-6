@@ -35,6 +35,10 @@ export const publicScriptNames = new Set([
   "test:e2e:smoke",
   "prestart",
   "start",
+  // The continuous preview entry ships its tooling file (`tooling/dev-preview.mjs`),
+  // so the command belongs in the public surface too. Its contract reads
+  // package.json.
+  "dev",
   "build",
   "prebuild:app",
   "build:app",

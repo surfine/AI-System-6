@@ -6,9 +6,15 @@
   if (typeof module === "object" && module.exports) module.exports = api;
   if (root) root.AISystem6ModelTaskRuntime = api;
 })(typeof globalThis !== "undefined" ? (/** @type {any} */ (globalThis)).window || null : null, () => {
-  const serverPromptFiles = typeof require === "function"
-    ? (() => { try { return require("../generated/ai-prompt-files.json"); } catch { return []; } })()
-    : [];
+  // The prompt files are generated from private editorial sources and are
+  // deliberately absent from the public snapshot, so the type check there must
+  // not require the module to exist. The read is already guarded at runtime:
+  // the absence of the file is an empty list, not a failure.
+  const readServerPromptFiles = () => {
+    // @ts-ignore optional generated module
+    try { return require("../generated/ai-prompt-files.json"); } catch { return []; }
+  };
+  const serverPromptFiles = typeof require === "function" ? readServerPromptFiles() : [];
   const protectedWritingSpans = Object.freeze([
     "number",
     "date",
