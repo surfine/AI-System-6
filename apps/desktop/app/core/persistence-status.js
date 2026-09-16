@@ -1249,25 +1249,16 @@ function deskRecordConflictError(conflicts) {
 // labels, the writing flow), and while the cheap detector below covers the
 // active project, the rest of them have not been migrated yet. Trusting them
 // would trade a measurable few milliseconds for a silent loss.
-// Empty on purpose, and not because the mechanism is unused: this is the
-// migration gate, and the first collection joins it when its scan-shadow run
-// proves every writer names every record it moves. Until then the plan reads
-// the bytes, because the alternative is the failure this desk has already paid
-// for once — a save that reports memory as written while the disk never saw it.
-//
-// The lane that introduced the trust list also wrote the control that rules it
-// out for now: tests/features/desk-commit-consistency.test.mjs edits a record
-// in place with nothing marking it and requires the next plan to catch it, and
-// tests/e2e/scan-shadow.spec.mjs says its instrument is only trustworthy
-// because "an edit nobody reported has to be caught, or the run above proves
-// nothing". Trusting chatFiles or the rest before their writers report would
-// skip exactly that comparison, for a few milliseconds, silently.
-//
-// The comparison now names the two cases apart: a miss on a collection listed
-// here is a regression, a miss anywhere else is still the migration list. That
-// split is why the list can be read honestly while it is empty — it reports
-// `notYetMigrated` rather than pretending there is nothing to migrate.
-const trustedKeys = [];
+// Each collection joined this list the way the gate asks: the run in
+// tests/e2e/scan-shadow.spec.mjs drives the app's own entry points with the
+// comparison switched on, and its misses on these five are zero while the
+// deliberate unreported edit at the end of that run is still caught. A miss on
+// a collection listed here is a regression; a miss anywhere else is still the
+// migration list (`notYetMigrated`), which is how the list can be read
+// honestly. `projects` is not on it: the outline claim, DocMap, the dictionary
+// and the Finder labels still write that record in place, so it keeps the full
+// scan.
+const trustedKeys = "chatFiles chatFolders scraps trash imageAttachments".split(" ");
 
 function deskCollectionPlan(definition) {
   const key = definition.key;

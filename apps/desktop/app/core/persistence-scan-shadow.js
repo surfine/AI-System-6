@@ -141,15 +141,16 @@ window.AISystem6ScanShadow = (() => {
   function report() {
     // A miss on a collection whose writers have all been migrated is a
     // regression; the same miss on a collection that is still covered by the
-    // full scan is the migration list. Both are listed, and both are counted:
-    // while the desk trusts nothing, every miss is an unreported writer, which
-    // is the whole point of running the comparison. `notYetMigrated` is what
-    // tells the two apart the day a collection joins the trust list.
+    // full scan is the migration list. The total counts the first kind, so the
+    // gate fails on a regression and stays honest about the second, which is
+    // named in `notYetMigrated` instead of being hidden.
     return {
       enabled,
       comparisons,
       totalMissed: mismatches.reduce(
-        (total, entry) => total + entry.missedPuts.length + entry.missedDeletes.length,
+        (total, entry) => total + (entry.trusted === false
+          ? 0
+          : entry.missedPuts.length + entry.missedDeletes.length),
         0
       ),
       notYetMigrated: mismatches.filter((entry) => entry.trusted === false).map((entry) => ({

@@ -393,35 +393,57 @@ function seedRecord({ body, saved }) {
 
 // Why the save plan still scans every record.
 //
-// A record edited in place with nothing marking it dirty - `project.updatedAt =
-// ...` in a command, a field written straight onto a file object - is still a
-// write, and today only the fingerprint comparison sees it. Measured on the
-// whole workspace: 364 direct field assignments across features/core against
-// 5 store commits and 4 markDeskDirty call sites, so the scan cannot be skipped
-// for a dirty set until those writers report their changes. This case exists so
-// that precondition is visible: when the last direct writer is migrated, this
-// assertion is the one to replace.
+// A record edited in place with nothing marking it dirty is a writer that did
+// not report, and the plan has to hold both halves of that at once:
+//
+//   - on a collection whose writers all report (chatFiles is on the trust list
+//     today), an unreported in-place edit is NOT written. That is the trade the
+//     trust list buys - the save costs what the edit costs - and the evidence
+//     that the writers still report is the run in
+//     tests/e2e/scan-shadow.spec.mjs, which drives the app's own entry points
+//     with the comparison switched on;
+//   - on a collection that still has direct writers (projects: the outline
+//     claim, DocMap, the dictionary, the Finder labels), the plan keeps the
+//     full scan, so an unreported edit there is still caught.
+//
+// This case used to assert only the second half, on the day nothing was
+// trusted; it now pins the boundary between the two.
 {
   const vmw = bootDesk();
   const outcome = await vmw.run(`
     (() => {
       chatFiles.push({ id: "unmarked", projectId: "p1", type: "text", name: "Unmarked.md", body: "first", folderId: null });
-      const definition = deskCollectionDefinitions().find((entry) => entry.key === "chatFiles");
-      const firstPlan = deskCollectionPlan(definition);
+      const chatDefinition = () => deskCollectionDefinitions().find((entry) => entry.key === "chatFiles");
+      const firstPlan = deskCollectionPlan(chatDefinition());
       const wroteAtFirstPlan = firstPlan.puts.some((put) => put.id === "unmarked");
       storageRecordFingerprintCache.set("chatFiles", firstPlan.current);
 
       // No markDeskDirty, no store commit: exactly the legacy writer shape.
       chatFiles[0].body = "edited in place";
-      const secondPlan = deskCollectionPlan(deskCollectionDefinitions().find((entry) => entry.key === "chatFiles"));
-      const caught = secondPlan.puts.find((put) => put.id === "unmarked");
-      return { wroteAtFirstPlan, caught: Boolean(caught), written: caught ? caught.item.body : "" };
+      const trustedPlan = deskCollectionPlan(chatDefinition());
+      const trustedCatch = trustedPlan.puts.some((put) => put.id === "unmarked");
+
+      // The same shape on a collection that is still fully scanned.
+      projects.push({ id: "scan-me", name: "Scan Me", questionSheet: "", outline: "", drafts: [] });
+      const projectDefinition = () => deskCollectionDefinitions().find((entry) => entry.key === "projects");
+      const projectFirst = deskCollectionPlan(projectDefinition());
+      storageRecordFingerprintCache.set("projects", projectFirst.current);
+      projects.find((item) => item.id === "scan-me").questionSheet = "edited in place";
+      const projectSecond = deskCollectionPlan(projectDefinition());
+      const scannedCatch = projectSecond.puts.some(
+        (put) => put.id === "scan-me" && put.item.questionSheet === "edited in place"
+      );
+      return { wroteAtFirstPlan, trustedCatch, scannedCatch };
     })()
   `);
   test.assert(outcome.wroteAtFirstPlan === true, "a new record is written on the first save");
   test.assert(
-    outcome.caught === true && outcome.written === "edited in place",
-    "an in-place edit nothing marked is still caught, because the plan fingerprints every record"
+    outcome.trustedCatch === false,
+    "a trusted collection is not scanned: an unreported in-place edit there is not written"
+  );
+  test.assert(
+    outcome.scannedCatch === true,
+    "a collection that still has direct writers keeps the full scan, so its unreported edits are still caught"
   );
 }
 

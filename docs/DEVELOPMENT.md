@@ -169,14 +169,15 @@ Pad actually use.
   fingerprints the rest, so a writer that stays silent on a trusted collection
   would lose its edit at the next save.
 
-  The trust list is EMPTY, and that is a decision rather than a stub: nothing
-  is trusted until the comparison in `tests/e2e/scan-shadow.spec.mjs` shows
-  every writer in a collection reporting, and today it shows that for none of
-  them. Every collection is still fully scanned, so an unreported edit is still
-  caught everywhere. The instrument reads the whole truth while it is empty —
-  it names the two cases apart, so a miss on a trusted collection is a
-  regression and a miss anywhere else is the migration list
-  (`notYetMigrated`), rather than reporting nothing at all.
+  `chatFiles`, `chatFolders`, `scraps`, `trash` and `imageAttachments` are on
+  the trust list: each joined it when the comparison in
+  `tests/e2e/scan-shadow.spec.mjs` showed every writer there reporting, with
+  the run's deliberate unreported edit still caught. `projects` is not on the
+  list — the outline claim, DocMap, the dictionary and the Finder labels still
+  write that record in place — so it keeps the full scan and an unreported edit
+  there is still caught. The instrument names the two cases apart, so a miss on
+  a trusted collection is a regression and a miss anywhere else is the
+  migration list (`notYetMigrated`).
 
 ### What the two pilots cost to maintain
 
