@@ -3382,6 +3382,20 @@ html:lang(zh-Hans) .title-bar h2 {
   color: var(--compose-menu-hover-fg);
 }
 
+/* The icon column is reserved whether or not a row has an icon. Auto-placement
+   put an icon-less row's copy into the 34px icon column, so "Endfield story
+   source" — the one row without artwork — wrapped one character per line and
+   stood 198px tall among 48px rows. Name the columns instead of trusting the
+   order the children happen to arrive in. */
+.compose-tools-menu button > .sys-icon,
+.compose-tools-menu button > .compose-tool-icon {
+  grid-column: 1;
+}
+
+.compose-tools-menu button > .compose-tool-copy {
+  grid-column: 2;
+}
+
 .compose-tools-menu button:focus-visible {
   outline: 2px solid var(--shade-dark);
   outline-offset: 1px;
