@@ -1113,6 +1113,12 @@ body:has(.shutdown-screen:not(.is-hidden)) .dictation-field-button {
    in every appearance. */
 .dictation-pane {
   max-height: calc(100vh - 56px);
+  /* When the window is shorter than the fields' own floor, the pane scrolls.
+     The alternative is what a shrink below that floor does: the field above
+     the action row spills over it (the row is placed after this pane's
+     content, not after the overflow). The translation pad takes the same
+     trade three rules down. */
+  overflow: auto;
 }
 
 .sideask-pad-pane {
@@ -1178,7 +1184,12 @@ body:has(.shutdown-screen:not(.is-hidden)) .dictation-field-button {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  min-height: 0;
+  /* The fields may shrink — each carries its own minimum — but this box may
+     not shrink below them: min-content is labels + those minima + the gaps, so
+     a tall window still spreads the fields out while a short one hands the
+     problem to the pane's scrollbar instead of stacking the last field over
+     the buttons underneath it. */
+  min-height: min-content;
 }
 
 .dictation-transcripts label,

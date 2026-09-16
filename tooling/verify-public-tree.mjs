@@ -236,6 +236,12 @@ function collectFiles(directory, files = [], ignored = ignoredLiteralPaths(root)
     // is history, `node_modules` is installed, and `dist/` is where a build and
     // a test run put their bytes.
     if (entry.name === ".git" || entry.name === "node_modules" || entry.name === "dist") continue;
+    // macOS litters `.DS_Store` (and `._*` resource forks) into any directory a
+    // Finder window, a Quick Look or a copy touches. They are not part of the
+    // tree, they are not tracked, and they arrive after a snapshot is written —
+    // counting them made the file and byte budgets fail on files no release
+    // ever contained.
+    if (entry.name === ".DS_Store" || entry.name.startsWith("._")) continue;
     const absolute = join(directory, entry.name);
     const relativePath = relative(root, absolute).split("\\").join("/");
     if (ignored.has(relativePath) || [...ignored].some((name) => relativePath.startsWith(`${name}/`))) continue;
