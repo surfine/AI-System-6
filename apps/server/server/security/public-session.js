@@ -34,6 +34,14 @@ const unprotectedPaths = new Set([
 ]);
 const selfAuthenticatedPaths = new Set([
   "/api/session/mac-token",
+  // Embeddings are indexed in the background, before a writer has connected
+  // Website AI, so demanding a Turnstile session here would mean the first
+  // semantic search of a visit falls back to a model in the browser — the
+  // problem this route exists to remove. The request is same-origin and the
+  // credential that pays is downstream: this route forwards to the Pages
+  // deployment with a relay token, and that ledger's daily ceiling is what
+  // bounds it, not the session.
+  "/api/cloud/embeddings",
 ]);
 
 class TtlLruWindows {

@@ -173,12 +173,23 @@ function publishDerivedSourceChunks(key) {
   const chunks = source?.products?.chunks;
   if (!source || chunks?.status !== "ready" || chunks.stale || !Array.isArray(chunks.data)) return;
   const embeddingProduct = source.products?.embeddings;
+  // Vectors only compare inside the route that produced them: a 384-dimension
+  // e5 vector scores zero against a 1024-dimension bge-m3 query, which reads as
+  // "nothing matched" instead of "this index is from another model". So the
+  // route is part of the product's identity, and a product from another route
+  // is not published — the project is re-derived instead.
+  const productRoute = String(embeddingProduct?.routeKey || "");
+  const routeMatches = typeof embeddingRouteKey === "function"
+    ? productRoute === embeddingRouteKey()
+    : true;
   const embeddings = embeddingProduct?.status === "ready"
     && !embeddingProduct.stale
+    && routeMatches
     && embeddingProduct.sourceHash === source.sourceHash
     && Array.isArray(embeddingProduct.data)
     ? new Map(embeddingProduct.data.map((item) => [item.chunkHash, item.embedding]))
     : new Map();
+  if (embeddingProduct && !routeMatches) scheduleDerivedIndexRouteRebuild(source.projectId);
   const nextChunks = chunks.data.map((chunk, index) => ({
     ...chunk,
     id: `derived:${key}:${index + 1}`,
@@ -201,6 +212,28 @@ function publishAllDerivedChunks() {
   removePublishedDerivedChunks(publishedKeys);
   publishedKeys.forEach(publishDerivedSourceChunks);
   if (typeof ragRankCache !== "undefined" && typeof ragRankCache.clear === "function") ragRankCache.clear();
+}
+
+/**
+ * A project whose stored vectors came from another embedding route is rebuilt
+ * once, in the background: the on-disk index is re-derived with the route in
+ * force now. The set keeps a rebuild from being scheduled again by every chunk
+ * of the same project that publishes while it waits.
+ */
+const derivedIndexRouteRebuilds = new Set();
+
+function scheduleDerivedIndexRouteRebuild(projectId) {
+  const target = String(projectId || "");
+  if (!target || derivedIndexRouteRebuilds.has(target)) return false;
+  derivedIndexRouteRebuilds.add(target);
+  setTimeout(() => {
+    derivedIndexRouteRebuilds.delete(target);
+    const queue = window.AISystem6DerivedIndexQueue;
+    if (typeof queue?.rebuildProject !== "function") return;
+    console.warn(`Derived index: embeddings were built by another route; re-deriving project ${target}.`);
+    Promise.resolve(queue.rebuildProject(target, { silent: true })).catch(() => {});
+  }, 1500);
+  return true;
 }
 
 async function deriveEmbeddingProduct(source, key) {
@@ -280,6 +313,12 @@ async function processDerivedIndexQueue() {
         job,
         product
       );
+      // Stamp the route that produced these vectors, so the next publish can
+      // tell whether they belong to the model in force now.
+      if (job.kind === "embeddings" && typeof embeddingRouteKey === "function") {
+        const productRecord = derivedIndexState.sources[job.sourceKey]?.products?.embeddings;
+        if (productRecord) productRecord.routeKey = embeddingRouteKey();
+      }
       if (job.kind === "chunks") completedChunks += Array.isArray(product) ? product.length : 0;
       if (job.kind === "chunks" || job.kind === "embeddings") publishDerivedSourceChunks(job.sourceKey);
     } catch (error) {

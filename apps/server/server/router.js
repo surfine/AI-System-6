@@ -9,6 +9,7 @@
 "use strict";
 
 const { isPublicDeployment, publicGuestBridgeEnabled } = require("./runtime-profile.js");
+const { embeddingsRelayConfig } = require("./embeddings-relay.js");
 
 /**
  * @typedef {(
@@ -209,6 +210,16 @@ if (publicGuestBridgeEnabled) {
     "POST /api/agent/executor/reply",
     "POST /api/agent/executor/token",
   ].forEach((key) => publicExactRouteKeys.add(key));
+}
+
+// The public deployment has no provider that can embed, so this route was
+// local-only and the web build fell back to a model in the visitor's browser.
+// With the relay configured it answers from the Pages deployment's Workers AI
+// model — the same rung the desktop reaches through LM Studio — and without the
+// relay the path does not exist in public mode at all, so nothing changes for a
+// deployment that has not opted in.
+if (isPublicDeployment && embeddingsRelayConfig()) {
+  publicExactRouteKeys.add("POST /api/cloud/embeddings");
 }
 
 const exactRoutes = isPublicDeployment

@@ -33,6 +33,7 @@ export const appModulePaths = [
   "app/shared/model-task-runtime.js",
   "app/shared/writing-agent-runtime.js",
   "app/shared/retrieval-runtime.js",
+  "app/shared/embedding-route.js",
   "app/shared/derived-index-runtime.js",
   "app/core/local-lmstudio-client.js",
   "app/data/menus.js",

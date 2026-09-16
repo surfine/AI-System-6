@@ -37,6 +37,42 @@ const {
 } = require("../cloud.js");
 const { isPublicDeployment } = require("../runtime-profile.js");
 const { resolveCloudCredential } = require("../credential-vault.js");
+const { embeddingsRelayConfig } = require("../embeddings-relay.js");
+
+/**
+ * Ask the Pages deployment's embeddings route, which owns the Workers AI binding
+ * and the allowance that pays for it. Returns null when the relay is not
+ * configured, or when it could not answer — the caller then keeps the old chain
+ * (provider, then LM Studio), so a relay outage costs quality, not function.
+ */
+async function relayEmbeddings(relay, payload, signal) {
+  try {
+    const response = await fetch(relay.url, {
+      method: "POST",
+      signal,
+      headers: {
+        "Content-Type": "application/json",
+        "x-ai-system6-embeddings-relay": relay.token,
+        "x-ai-system6-embeddings-relay-instance": relay.instance,
+      },
+      body: JSON.stringify({ input: payload.input, model: payload.model || "" }),
+    });
+    if (!response.ok) {
+      console.warn("[cloud-embeddings] Relay refused:", response.status, await response.text().catch(() => ""));
+      return null;
+    }
+    /** @type {{ data?: unknown[] } | null} */
+    const data = await response.json();
+    if (!data || !Array.isArray(data.data) || !data.data.length) {
+      console.warn("[cloud-embeddings] Relay answered without vectors.");
+      return null;
+    }
+    return data;
+  } catch (error) {
+    console.warn("[cloud-embeddings] Relay unavailable:", String(error?.message || error));
+    return null;
+  }
+}
 
 /**
  * @param {import("node:http").IncomingMessage} req
@@ -48,6 +84,16 @@ async function handleCloudEmbeddings(req, res) {
 
   try {
     const raw = await readJsonBody(req, { limitBytes: 512 * 1024 });
+    // The public deployment has no provider that can embed; the relay is its own
+    // backend. A local install keeps the provider and LM Studio path below.
+    const relay = isPublicDeployment ? embeddingsRelayConfig() : null;
+    if (relay) {
+      const relayed = await relayEmbeddings(relay, raw, signal);
+      if (relayed) {
+        send(res, 200, JSON.stringify(relayed), { "Content-Type": "application/json" });
+        return;
+      }
+    }
     const requestedBaseUrl = isPublicDeployment
       ? DEEPSEEK_PUBLIC_BASE_URL
       : raw._cloud_base_url || DEEPSEEK_BASE_URL_DEFAULT;

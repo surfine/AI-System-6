@@ -46,7 +46,13 @@ const budget = JSON.parse(readFileSync(budgetPath, "utf8"));
 // `// this file does not use node:vm` in a purely static contract moved it
 // into the executing column and bought a free slot under the budget. An
 // import is the thing that actually reaches the app; a comment is not.
-const executingSignal = /node:vm|boot-vm\.mjs|draft-desk-vm\.mjs|write-lease-vm\.mjs|backup-vm\.mjs|app-boot-vm\.mjs/;
+// Two kinds of reach, both real: a VM harness that runs the app's own code, and
+// an import of the deployed server's own modules. The second was added when the
+// public deployment grew a Pages Function worth testing — `functions/_lib/*` and
+// `functions/api/*` ARE the shipped server there, and a contract that imports
+// them runs the route, its validation and its ledger rather than reading text
+// about them.
+const executingSignal = /node:vm|boot-vm\.mjs|draft-desk-vm\.mjs|write-lease-vm\.mjs|backup-vm\.mjs|app-boot-vm\.mjs|^\.\.\/\.\.\/functions\/(_lib|api)\//;
 const suiteInfrastructure = new Set([
   "static-contract-ratchet.test.mjs",
   "gate-self-proof.test.mjs",

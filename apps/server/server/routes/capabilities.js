@@ -22,6 +22,7 @@ const {
   sharedCloudBudgetConfig,
   sharedCloudConfigured,
 } = require("../shared-cloud-budget.js");
+const { embeddingsRelayConfig } = require("../embeddings-relay.js");
 
 /**
  * @param {import("node:http").IncomingMessage} _req
@@ -30,6 +31,11 @@ const {
 function handleCapabilities(_req, res) {
   const publicAccessReady = publicReadiness().ready;
   const sharedCloud = isPublicDeployment && publicAccessReady && sharedCloudConfigured();
+  // The public site borrows the Pages deployment's Workers AI route; a local
+  // install reaches its own LM Studio. Either way the client is told which model
+  // answers, because a route that cannot name its model cannot be compared with
+  // the vectors it produced.
+  const embeddingsRelay = isPublicDeployment ? embeddingsRelayConfig() : null;
   const cloudFilesAvailable = !isPublicDeployment || publicAccessReady;
   const macSharedAvailable = sharedCloud;
   const sharedCloudBudget = sharedCloudBudgetConfig();
@@ -88,7 +94,9 @@ function handleCapabilities(_req, res) {
     features: {
       cloud_byok: true,
       cloud_shared: sharedCloud,
-      cloud_embeddings: !isPublicDeployment,
+      cloud_embeddings: !isPublicDeployment || Boolean(embeddingsRelay),
+      cloud_embeddings_model: embeddingsRelay ? embeddingsRelay.model : "",
+      cloud_embeddings_dimensions: embeddingsRelay ? embeddingsRelay.dimensions : 0,
       search: true,
       reader: true,
       time_machine: true,

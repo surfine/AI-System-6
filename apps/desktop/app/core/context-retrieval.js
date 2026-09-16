@@ -4,15 +4,62 @@ const ragRankCache = new Map();
 const ragRankCacheLimit = 24;
 let hasShownDeepseekEmbeddingNotice = false;
 
+// ---- Which backend answers this build's embeddings -------------------------
+//
+// DeepSeek publishes no embeddings endpoint, so on the public deployment the
+// shared brain cannot answer a semantic search, and the app used to fall all
+// the way to the in-browser e5-small model: a 384-dimension download per
+// visitor, computed on the machine least able to afford it. The Pages Function
+// now serves bge-m3 (1024 dimensions, multilingual) from Workers AI, next to
+// the desktop app's own rung on the ladder. So the hosted route is tried
+// whenever the deployment advertises it, whatever the chat provider is.
+//
+// The route is a single identity — provider, model, dimensions — because two
+// routes produce vectors that cannot be compared: cosine similarity between a
+// 384-dimension and a 1024-dimension vector is zero, which reads as "nothing
+// matched" rather than "the index was built by another model".
+function hostedEmbeddingsAvailable() {
+  // The service provider being registered is not the same claim as a model the
+  // deployment can serve: desktop and VPS registrations answer that provider
+  // from LM Studio, and those vectors are not the edge model's. Only a
+  // deployment that named its model has a hosted route.
+  return Boolean(window.AISystem6EmbeddingRoute?.hostedRoute?.());
+}
+
+function currentHostedEmbeddingRoute() {
+  return hostedEmbeddingsAvailable()
+    ? window.AISystem6EmbeddingRoute?.hostedRoute?.() || { provider: "workers-ai", model: "", dimensions: 0 }
+    : null;
+}
+
+// The identity of the vectors this session produces. app/shared/embedding-route.js
+// owns the rule; this only feeds it the local half.
+function embeddingRouteKey() {
+  return window.AISystem6EmbeddingRoute?.key?.({
+    localModel: String(embeddingModelInput?.value?.trim() || ""),
+    localConnected: !!localLmStudioConnectionEnabled,
+  }) || "unknown";
+}
+
+// The retrieval module is also loaded in bare vm contexts by its contracts, so
+// the listener is installed only where there is something to listen on.
+if (typeof window.addEventListener === "function") {
+  window.addEventListener("ai-system6:capabilities", (event) => {
+    window.AISystem6EmbeddingRoute?.setHostedRoute?.(event?.detail?.features || {});
+  });
+}
+
 function ragRankContextVersion(chunks = []) {
   const isCloud = typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudConfig?.provider !== "deepseek";
   return window.AISystem6RetrievalRuntime.buildRetrievalCacheVersion({
     projectId: activeProjectId,
     chunks,
-    embeddingProvider: isCloud ? cloudConfig.provider : "local",
-    embeddingModel: isCloud
-      ? String(cloudConfig?.model || "")
-      : String(embeddingModelInput?.value || ""),
+    embeddingProvider: currentHostedEmbeddingRoute() ? "workers-ai" : isCloud ? cloudConfig.provider : "local",
+    embeddingModel: currentHostedEmbeddingRoute()
+      ? String(currentHostedEmbeddingRoute()?.model || "")
+      : isCloud
+        ? String(cloudConfig?.model || "")
+        : String(embeddingModelInput?.value || ""),
     embeddingDimensions: chunks.find((chunk) => Array.isArray(chunk.embedding))?.embedding?.length || 0,
   });
 }
@@ -111,11 +158,18 @@ function chunkText(text, source) {
 
 async function embedTexts(texts, signal, options = {}) {
   const isCloud = typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudCredentialReady();
-  const useCloudEmbeddings = isCloud && cloudConfig?.provider && cloudConfig.provider !== "deepseek";
+  const hostedEmbeddings = currentHostedEmbeddingRoute();
+  // The hosted route answers the one case the provider check cannot: the shared
+  // brain is DeepSeek, which has no embeddings endpoint, and the deployment
+  // serves one anyway.
+  const useCloudEmbeddings = Boolean(hostedEmbeddings)
+    || (isCloud && cloudConfig?.provider && cloudConfig.provider !== "deepseek");
   const modelForCloudEmbeddings = String(cloudConfig?.model || "").trim();
   const localModel = String(embeddingModelInput?.value?.trim() || "");
   const localConnected = !!localLmStudioConnectionEnabled;
-  const isDeepSeekEmbeddingUnsupported = isCloud && cloudConfig?.provider === "deepseek";
+  const isDeepSeekEmbeddingUnsupported = isCloud
+    && cloudConfig?.provider === "deepseek"
+    && !hostedEmbeddings;
   const asQuery = !!options.asQuery;
 
   const readVectors = async (response, source) => {
@@ -201,7 +255,10 @@ async function embedTexts(texts, signal, options = {}) {
 function preloadBrowserEmbeddingFallback() {
   try {
     const isCloud = typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudCredentialReady();
-    const cloudUsable = isCloud && cloudConfig?.provider !== "deepseek";
+    // The hosted route counts as usable here too: no point downloading a model
+    // the visitor is not going to run.
+    const cloudUsable = Boolean(currentHostedEmbeddingRoute())
+      || (isCloud && cloudConfig?.provider !== "deepseek");
     const localModel = String(embeddingModelInput?.value?.trim() || "");
     const localUsable = !!localModel && !!localLmStudioConnectionEnabled;
     if (cloudUsable || localUsable) return;
