@@ -1927,7 +1927,18 @@
   --endfield-surface-radius: 0;
   --endfield-surface-shadow: none;
   --endfield-muted: var(--shade-dark);
-  --endfield-hover-bg: var(--quiet-panel);
+  /* A hover is a state, so it has to read as one on every era's pane. This
+     slot used to borrow --quiet-panel, which is a *surface* colour: on paper
+     the hover was a whisper, and over the terminal's blueprint it was a white
+     wash that left the contour lines showing through the row it was meant to
+     mark — the owner reported that as a broken hover. An ink tint reads on
+     both: it deepens the blueprint instead of hiding it, and it sits far below
+     the selected row's ink, which is the same colour at full strength. */
+  --endfield-hover-bg: rgba(16, 17, 20, 0.08);
+  /* The quiet inset the same sheet paints behind inline code and quotes. It
+     was the hover's old home, which is why the two needs were tangled: a
+     surface can be as faint as it likes, a state cannot. */
+  --endfield-quiet-bg: var(--quiet-panel);
   --endfield-selected-bg: var(--ink);
   --endfield-selected-fg: var(--paper);
   --endfield-evidence-divider: 1px solid var(--ink);

@@ -260,7 +260,7 @@
 .endfield-answer .markdown-body code {
   border: 1px solid var(--endfield-muted);
   padding: 0 0.25em;
-  background: var(--endfield-hover-bg);
+  background: var(--endfield-quiet-bg);
   font-family: var(--mono-font);
   font-size: 0.9em;
 }
@@ -269,7 +269,7 @@
   padding: 0.35em 0.8em;
   border-left: var(--endfield-quote-rule);
   border-radius: var(--endfield-quote-radius);
-  background: var(--endfield-hover-bg);
+  background: var(--endfield-quiet-bg);
 }
 
 /* Same number, same mark: the inline chip is the evidence index scaled down to
