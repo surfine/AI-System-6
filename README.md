@@ -273,7 +273,7 @@ is a mockup, because a script re-shoots all of it from the running app.
 ## Built under a 1988 constraint
 
 ```text
-boot-critical payload   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,946,817 bytes
+boot-critical payload   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,947,952 bytes
 two 1.44 MB floppies    ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  2,949,120 bytes
 heavy tools             load lazily, from a third disk
 ```

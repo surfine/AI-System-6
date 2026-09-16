@@ -7,6 +7,9 @@ let balloonHelpEnabled = false;
 let balloonHelpTouchedInspect = false;
 let balloonHelpExplicit = false;
 let balloonHelpTarget = null;
+// The object whose balloon stood down because its own panel opened. Kept apart
+// from balloonHelpTarget, which hideBalloonHelp() clears.
+let balloonHelpYieldedTarget = null;
 let balloonHelpTextKey = "";
 let balloonHelpTimer = null;
 
@@ -329,10 +332,13 @@ function balloonHelpOpenSurfaces(target) {
     // The desk's own select harness. Its menu is a div inside the wrap, not a
     // .menu-popover, so a balloon explaining the control treated the open list
     // as a neighbour and settled on top of the choices.
-    target.closest(".select-wrap.is-system-select-open")?.querySelector(":scope > .system-select-menu"),
-    // A field label owns its control, so the balloon's subject is often the
-    // label rather than the button: look inside the subject too.
-    target.querySelector?.(".select-wrap.is-system-select-open > .system-select-menu"),
+    // The same two-step lookup the owned-panel answer uses, so "is it open?"
+    // and "which panel is it?" cannot disagree about a converted select. A
+    // field label owns its control, so the subject is often the label rather
+    // than the button: that label sits OUTSIDE the wrap and can only reach in.
+    (target.closest(".select-wrap.is-system-select-open")
+      || target.querySelector?.(".select-wrap.is-system-select-open"))
+      ?.querySelector(":scope > .system-select-menu"),
     target.closest("details[open]")?.querySelector(":scope > .teachtext-command-popover, :scope > .teachtext-command-subpopover"),
     target.closest(".menu-popover, .menu-sub-popover, .menu-submenu-popover, .teachtext-command-popover, .teachtext-command-subpopover"),
   ].filter(Boolean);
@@ -352,9 +358,12 @@ function balloonHelpOwnedPanel(target) {
   // for both around and inside the subject. Without this the panel was in no
   // keepClear rectangle at all, and the balloon landed on the commands — the
   // next thing the person has to operate.
-  const selectWrap = target.matches?.(".system-select-button")
-    ? target.closest(".select-wrap.has-system-select")
-    : target.querySelector?.(".select-wrap.has-system-select");
+  // Three shapes reach here: the button a person points at, the native select
+  // the harness left transparent behind it, and a label wrapping the whole
+  // control. All three have to find the same listbox, or the panel is in no
+  // keep-clear rectangle and the balloon lands on the choices.
+  const selectWrap = target.closest?.(".select-wrap.has-system-select")
+    || target.querySelector?.(".select-wrap.has-system-select");
   if (selectWrap) return selectWrap.querySelector(":scope > .system-select-menu");
   const withSub = target.closest(".menu-item-with-sub");
   if (withSub && withSub.querySelector(":scope > button") === target) {
@@ -509,7 +518,52 @@ function positionBalloonHelp(target) {
 // left the balloon sitting on commands that had appeared underneath it.
 function refreshBalloonHelpPlacement() {
   rememberBalloonHelpPanelSizes();
-  if (balloonHelpTarget) positionBalloonHelp(balloonHelpTarget);
+  syncBalloonHelpWithOwnedPanel();
+}
+
+/**
+ * Does this object's own panel stand open right now?
+ */
+function balloonHelpOwnedPanelIsOpen(target) {
+  const panel = balloonHelpOwnedPanel(target);
+  if (!panel) return false;
+  return balloonHelpOpenSurfaces(target).includes(panel);
+}
+
+/**
+ * The balloon explains an object; it yields to the panel that object opens, and
+ * comes back when the panel closes. Placement alone kept losing that fight —
+ * the balloon is already up when the control is pressed, and a listbox opens
+ * directly under the trigger the tail points at, inside a panel that is tight
+ * already, so no step-aside is both near and clear. A state cannot be dodged by
+ * a layout: that is what the reporter's "说了很多次气球帮助不要挡住菜单" needs.
+ */
+function yieldBalloonHelpToOwnedPanel() {
+  if (!balloonHelpTarget) return false;
+  if (!balloonHelpOwnedPanelIsOpen(balloonHelpTarget)) return false;
+  balloonHelpYieldedTarget = balloonHelpTarget;
+  hideBalloonHelp();
+  return true;
+}
+
+function syncBalloonHelpWithOwnedPanel() {
+  if (!balloonHelpTarget) {
+    restoreBalloonHelpAfterOwnedPanel();
+    return;
+  }
+  yieldBalloonHelpToOwnedPanel();
+}
+
+function restoreBalloonHelpAfterOwnedPanel() {
+  const target = balloonHelpYieldedTarget;
+  if (!target) return;
+  if (!balloonHelpEnabled || !target.isConnected) {
+    balloonHelpYieldedTarget = null;
+    return;
+  }
+  if (balloonHelpOwnedPanelIsOpen(target)) return;
+  balloonHelpYieldedTarget = null;
+  if (target.matches(":hover") || target.contains(document.activeElement)) showBalloonHelp(target);
 }
 
 function hideBalloonHelp() {
@@ -528,7 +582,6 @@ function showBalloonHelp(target, key = balloonHelpKeyFor(target), options = {}) 
   const balloon = balloonHelpElement();
   const text = document.querySelector("#balloon-help-text");
   if (!balloon || !text || !target || !key || (!balloonHelpEnabled && !options.force)) return;
-
   window.clearTimeout(balloonHelpTimer);
   forgetBalloonHelpTarget(balloonHelpTarget);
   balloonHelpTarget = target;
@@ -540,6 +593,9 @@ function showBalloonHelp(target, key = balloonHelpKeyFor(target), options = {}) 
     balloon.showPopover();
   }
   positionBalloonHelp(target);
+  // The object may already have its panel open (a re-entry, a focus move): the
+  // same rule as the mutation path decides whether it may stay at all.
+  syncBalloonHelpWithOwnedPanel();
 
   if (options.autoHideMs) {
     balloonHelpTimer = window.setTimeout(hideBalloonHelp, options.autoHideMs);
@@ -666,4 +722,18 @@ function initializeBalloonHelp() {
 
   window.addEventListener("resize", hideBalloonHelp);
   document.addEventListener("scroll", hideBalloonHelp, true);
+
+  // A panel opens and closes without telling the balloon anything; the DOM is
+  // the announcement. One rule then covers every kind of panel — a menu, a
+  // select listbox, a details popover — because all of them say so in the same
+  // place: the open surface our own panel lookup already knows.
+  if (typeof MutationObserver === "function") {
+    new MutationObserver(() => {
+      syncBalloonHelpWithOwnedPanel();
+    }).observe(document.body, {
+      attributes: true,
+      attributeFilter: ["class", "hidden", "open", "aria-expanded"],
+      subtree: true,
+    });
+  }
 }

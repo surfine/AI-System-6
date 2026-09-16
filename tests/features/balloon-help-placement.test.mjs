@@ -256,7 +256,12 @@ function assertTailFacesSubject(placement, size, subject, label) {
 
 const balloon = source;
 test.assertIncludes(balloon, ".system-select-menu", "the placer knows the desk's own select harness owns a listbox");
-test.assertIncludes(balloon, "target.querySelector?.('.select-wrap.is-system-select-open > .system-select-menu')".replace(/'/g, '"'), "an open listbox inside the balloon's subject is kept clear too");
+// The wrap is asked for by class and then for its own menu; the one-selector
+// spelling this used to pin moved when the owned-panel lookup became one answer
+// for all three target shapes. The behaviour it protects — an open listbox
+// inside the balloon's subject stays clear, and the balloon yields to it — is
+// held by tests/features/balloon-help-panel.test.mjs, which runs the module.
+test.assertIncludes(balloon, ".select-wrap.is-system-select-open", "an open listbox inside the balloon's subject is kept clear too");
 test.assertIncludes(balloon, "selectWrap.querySelector(\":scope > .system-select-menu\")", "a select button names the listbox it opens");
 test.assertIncludes(balloon, ".select-wrap.is-system-select-open > .system-select-menu", "an open listbox is remembered at its measured size, like a menu");
 const foundation = read("styles/00-foundation.css");

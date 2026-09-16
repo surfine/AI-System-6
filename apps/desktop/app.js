@@ -2207,6 +2207,15 @@ function refreshSystemSelectControl(select) {
     menu.setAttribute("aria-label", accessibleName);
   }
   button.title = select.title || select.getAttribute("aria-label") || "";
+  // Balloon Help explains the control a person can point at, and that is now
+  // the button: the native select is transparent and has pointer-events:none,
+  // so its own data-balloon-help can never be reached by the pointer. Copying
+  // the keys keeps the explanation attached to the visible control — and keeps
+  // the balloon's own panel lookup able to see the listbox this button owns.
+  for (const key of ["balloonHelp", "balloonHelpDisabled"]) {
+    if (select.dataset[key]) button.dataset[key] = select.dataset[key];
+    else delete button.dataset[key];
+  }
   button.classList.toggle("is-hidden", !!hidden);
   menu.classList.toggle("is-hidden", !!hidden);
   if (hidden || select.disabled) wrap.classList.remove("is-system-select-open");
