@@ -107,7 +107,17 @@ for (const token of [
 ]) {
   test.assertIncludes(foundation, `${token}:`, `${token} has a Classic default`);
 }
-test.assertIncludes(liquid, "--system-help-group-bg: var(--glass-reading-surface)", "the sticky group heading stays solid on glass");
+// "Stays solid" is the whole point of this token, and the reading surface it
+// borrowed is 90% opaque: the row the heading covers read through it as a ghost
+// of its icon and label, lined up under the heading's own text, which is what
+// the owner photographed as two labels on top of each other. The value is the
+// reading surface's composite spelled out — and spelled without alpha.
+test.assertNotIncludes(liquid, "--system-help-group-bg: var(--glass-reading-surface)", "the translucent reading surface is not a lid");
+test.assertIncludes(
+  liquid,
+  "--system-help-group-bg:\n    linear-gradient(180deg, rgba(255, 255, 255, 1), rgba(250, 253, 254, 1)),\n    #f7fbfd;",
+  "the sticky group heading stays solid on glass",
+);
 test.assertIncludes(liquid, "--system-help-panel-bg: var(--glass-reading-surface)", "both scrollers stay solid on glass");
 test.assertIncludes(liquid, "--system-help-row-icon-size: 22px", "solid glass object art gets its two extra pixels through a token");
 test.assertNotIncludes(liquid, "body.use-liquid-glass .system-help-list", "Liquid Glass does not fork the System Help list");

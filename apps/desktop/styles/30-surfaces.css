@@ -74,8 +74,12 @@
 }
 
 /* Finder list view: one group heading per kind, then one row per object. */
-/* Sticky and positioned, so it already paints over the static rows: no
-   z-index needed. */
+/* Sticky and positioned, so it already paints over the static rows: no extra
+   layer is declared here. That is exactly why its fill has to be opaque — the
+   heading is the lid on the rows it scrolls over, and the owner photographed
+   a see-through lid as two labels reading on top of each other. An era that
+   wants translucency answers with a solid value in --system-help-group-bg
+   (see Liquid Glass); the rows behind a lid are never the place for it. */
 .system-help-group {
   position: sticky;
   top: 0;

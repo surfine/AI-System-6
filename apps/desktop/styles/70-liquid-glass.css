@@ -1563,7 +1563,15 @@ body.use-liquid-glass {
   --system-help-list-button-border-bottom: 1px solid rgba(16, 17, 20, 0.1);
   /* A sticky group heading is a scroller surface: it must stay solid so rows
      do not read through it while the list moves. */
-  --system-help-group-bg: var(--glass-reading-surface);
+  /* Opaque, and deliberately not the translucent reading surface the list
+     itself wears: this row is sticky, so it is the lid over the rows that
+     scroll under it. At 90% the covered row's icon and label read through it
+     as a ghost under the heading's own text — the owner reported the pair as
+     overlapping labels. The value is what the reading surface composites to
+     over the window, so the list does not show a seam. */
+  --system-help-group-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 1), rgba(250, 253, 254, 1)),
+    #f7fbfd;
   --system-help-group-border-bottom: 1px solid rgba(16, 17, 20, 0.16);
   --system-help-head-border-bottom: 1px solid rgba(16, 17, 20, 0.16);
   --system-help-actions-border-top: 1px solid rgba(16, 17, 20, 0.12);

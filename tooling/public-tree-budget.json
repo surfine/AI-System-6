@@ -1,6 +1,6 @@
 {
   "note": "Sized against the snapshot the release builds. maxBytes carries 64 KiB of headroom because a release compiles its commit hash into two generated files (and into anything that embeds them), so the same tree is a few hundred bytes larger inside a release than in a working checkout; without the headroom the budget trips on its own stamp.",
-  "maxFiles": 4932,
+  "maxFiles": 4933,
   "maxBytes": 129516544,
   "maxAssetFiles": 3709,
   "maxAssetBytes": 85076907
