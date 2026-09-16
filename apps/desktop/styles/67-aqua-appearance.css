@@ -176,7 +176,9 @@ body[data-theme="aqua"] {
   --panel: #e9e9e9;
   --quiet-panel: #fafafa;
   --shade: #c4c4c4;
-  --shade-dark: #8b8b8b;
+  /* 3.41:1 on paper, where this token carries 13px text (--system-readable-min)
+     as well as chrome. The floor is 4.5:1; #6b6b6b measures 5.33:1. */
+  --shade-dark: #6b6b6b;
   /* Theme Family Contract §5, the two divider roles. System 6 rules a desk in
      ink — a solid black primary rule and a dotted secondary one — and Platinum
      keeps the dotted hairline. Aqua rules it in grey hairlines and had never
@@ -1044,8 +1046,15 @@ body[data-theme="snow-leopard"] {
   --traffic-light-size: 14px;
   /* 10.6 lamps are the same glossy spheres as early Aqua, scaled to 12px:
      white highlight, colored body, dark rim, soft contact shadow. */
-  /* Resolution split, same as Aqua: 1x serves the canonical Finder pixels
-     (14x13), dense displays get the measured-gradient sphere below. */
+  /* The sprites are drawn at 2x and scaled back to 14x13, so a dense display
+     gets the art at its own resolution instead of stretching fourteen pixels
+     into twenty-eight. They used to be 1x, and that is why the lamps arrived
+     as soft blobs on this machine: measured at deviceScaleFactor 2, the
+     outline covered four device pixels instead of one and the sheen ran into
+     the rim. Their anatomy is the capture's own - a rim running from #5f2829
+     at the top to #a26363 at the bottom, a body shaded vertically from
+     #a92c2d through #d73737 to #dba2a2, and one small sheen where the capture
+     has one. The green lamp carries the same stops off lamp-zoom.png. */
   --traffic-light-close-bg: url("./assets/themes/snow-leopard/lamp-close.png");
   --traffic-light-resize-bg: url("./assets/themes/snow-leopard/lamp-zoom.png");
   --traffic-light-sprite-size: 14px 13px;
@@ -1500,9 +1509,16 @@ body[data-theme="snow-leopard"] {
   /* The frame is not one flat colour: navy across the top, near-black down the
      right, dark grey along the bottom, and a blue rail down the left. */
   --choice-checked-border-color: #00006a #0a0a0a #272727 #0f57c8;
-  /* Quaqua 9.1 CheckBox.icons.png frame 2 draws a dark two-pixel check,
-     not the shared one-pixel X used by earlier eras. */
+  /* Quaqua 9.1 CheckBox.icons.png frame 2 draws a dark check, not the shared
+     one-pixel X used by earlier eras. It is a 14px tick in a 14px well: the
+     capture's mark runs from a vertex two thirds of the way down to a tip that
+     reaches the well's own top edge. The arm's last two pixels in the reference
+     sit ABOVE that edge - the tick is drawn by the cell there - and this one
+     stops at it, because a background image is clipped to the control and the
+     boot payload has no room for the second mechanism an overlay would need. */
   --choice-checkmark-image: url("./assets/themes/snow-leopard/checkbox-checked-dark.svg");
+  --choice-checkmark-size: 14px 14px;
+  --choice-disabled-checkmark-image: url("./assets/themes/snow-leopard/checkbox-checked-disabled.svg");
   --radio-bg: linear-gradient(#ffffff, #dedede);
   --radio-border: 1px solid #949494;
   --radio-shadow: inset 0 1px 0 #ffffff;
@@ -1522,7 +1538,6 @@ body[data-theme="snow-leopard"] {
      rgb(120,120,120) dot. The blue is gone, so the opacity fade goes too. */
   --choice-disabled-checked-bg: #efefef;
   --choice-disabled-checked-bg-image: none;
-  --choice-disabled-checkmark-image: url("./assets/themes/snow-leopard/checkbox-checked-disabled.svg");
   --choice-disabled-border-color: #a8a8a8;
   --choice-disabled-opacity: 1;
   --radio-disabled-checked-image:

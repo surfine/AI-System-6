@@ -121,10 +121,17 @@ async function repairCloudHumanizerOutputIfNeeded(options) {
   let hits = findHumanizerOutputHits(content);
   const explicitRewrite = shouldRepairHumanizerOutput(taskKind);
 
+  // What the run's ledger is told about each repair call. An attempt exists
+  // from the moment the request is on the wire - not from the moment a
+  // response happens to be readable - so a call that was sent and then cut off
+  // is still one attempt the run owes an explanation for.
   let attempts = 0;
   let repaired = false;
   let totalUsageTokens = Math.max(0, Number(options.initialUsageTokens) || 0);
-  for (; explicitRewrite && attempts < 2 && hits.length; attempts += 1) {
+  // `round` bounds the loop the way `attempts < 2` used to: the counter itself
+  // may only move when a request is really sent, and a loop bounded by it
+  // could spin forever if a transport never reported the send.
+  for (let round = 0; explicitRewrite && round < 2 && hits.length; round += 1) {
     const repairPayload = {
       ...payload,
       stream: false,
@@ -145,6 +152,8 @@ async function repairCloudHumanizerOutputIfNeeded(options) {
       ],
     };
     let repairReservation = null;
+    let requestSent = false;
+    let usageBooked = false;
     try {
       repairReservation = options.reserveSharedCall?.(repairPayload) || null;
       const { response } = await postJsonWithFallback(
@@ -154,7 +163,16 @@ async function repairCloudHumanizerOutputIfNeeded(options) {
         authHeaders,
         {
           ...transportOptions,
-          onRequest: () => repairReservation?.markUpstreamStarted(),
+          // One callback per call, but a transport may report the send more
+          // than once: the attempt is registered the first time and never
+          // counted twice.
+          onRequest: () => {
+            if (!requestSent) {
+              requestSent = true;
+              attempts += 1;
+            }
+            repairReservation?.markUpstreamStarted();
+          },
         }
       );
       const text = await response.text();
@@ -170,6 +188,7 @@ async function repairCloudHumanizerOutputIfNeeded(options) {
       // whether or not its usage arrived, so a missing figure widens the
       // unknown instead of vanishing into the total.
       options.onUsage?.(repairData?.usage);
+      usageBooked = true;
       if (repairUsage !== null) {
         repairReservation?.addUsage(repairData.usage);
         totalUsageTokens += repairUsage;
@@ -189,6 +208,12 @@ async function repairCloudHumanizerOutputIfNeeded(options) {
       }));
       break;
     } finally {
+      // Sent, but the response never produced a usage figure - a broken body,
+      // an unreadable stream, a cancelled call. The ledger learns that this
+      // call cost something it cannot quantify, so the run reports a floor
+      // marked unknown rather than a smaller, precise-looking total. A call
+      // that was refused before it was sent is not booked at all.
+      if (requestSent && !usageBooked) options.onUsage?.(undefined);
       repairReservation?.settle();
     }
   }
@@ -710,4 +735,8 @@ async function handleCloudChat(req, res) {
   }
 }
 
-module.exports = { handleCloudChat };
+// `repairCloudHumanizerOutputIfNeeded` is exported for its own accounting
+// contract: whether a sent repair call reaches the run's ledger is decided
+// inside it, and the alternative - driving it only through the whole route -
+// would need a public-deployment session to reach the same lines.
+module.exports = { handleCloudChat, repairCloudHumanizerOutputIfNeeded };

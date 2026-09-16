@@ -93,20 +93,31 @@ const checks = [
   },
 ];
 
-if (build) {
-  checks.push({
-    label: "app build",
-    command: npm,
-    commandArgs: ["run", "build:app"],
-  });
-}
-
+// One selection set, one runner. `--feature` and `--file` used to start the
+// suite twice, and the second selection always contained the named contracts
+// again, so asking for both ran the same contract twice. The set is built here,
+// before the build, and every reason a contract is in it is printed once.
+const selectedContracts = [];
+const selectionReasons = [];
 if (features.length) {
-  checks.push({
-    label: `feature contract${features.length === 1 ? "" : "s"}`,
-    command: process.execPath,
-    commandArgs: ["tooling/verify-features.mjs", ...features],
+  // An unknown name is a typo, and a typo must not cost a bundle rebuild. The
+  // suite answers with its own list, so the naming rule lives in one place.
+  const listed = spawnSync(process.execPath, ["tooling/verify-features.mjs", "--list"], {
+    cwd: root,
+    encoding: "utf8",
   });
+  if (listed.status !== 0) {
+    console.error(listed.stderr || "NO  could not list the feature contracts.");
+    process.exit(listed.status === null ? 1 : listed.status);
+  }
+  const available = new Set(listed.stdout.split("\n").map((line) => line.trim()).filter(Boolean));
+  const unknown = features.filter((name) => !available.has(name) && !available.has(name.replace(/\.test\.mjs$/, "")));
+  if (unknown.length) {
+    console.error(`NO  unknown feature selector(s): ${unknown.join(", ")}. No tests ran, and nothing was built.`);
+    process.exit(2);
+  }
+  selectedContracts.push(...features);
+  selectionReasons.push(`--feature ${features.join(", ")}`);
 }
 
 if (sourceFiles.length) {
@@ -127,13 +138,26 @@ if (sourceFiles.length) {
       ? `--file ${sourceFiles.join(", ")} → ${selected.length} contract(s): ${selected.join(", ")}`
       : `--file ${sourceFiles.join(", ")} → no contract reads these files`,
   );
-  if (selected.length) {
-    checks.push({
-      label: `feature contract${selected.length === 1 ? "" : "s"} for the changed files`,
-      command: process.execPath,
-      commandArgs: ["tooling/verify-features.mjs", ...selected],
-    });
-  }
+  selectedContracts.push(...selected);
+  if (selected.length) selectionReasons.push(`--file ${sourceFiles.join(", ")}`);
+}
+
+const contractsToRun = [...new Set(selectedContracts)];
+
+if (build) {
+  checks.push({
+    label: "app build",
+    command: npm,
+    commandArgs: ["run", "build:app"],
+  });
+}
+
+if (contractsToRun.length) {
+  checks.push({
+    label: `feature contract${contractsToRun.length === 1 ? "" : "s"} (${selectionReasons.join("; ")})`,
+    command: process.execPath,
+    commandArgs: ["tooling/verify-features.mjs", ...contractsToRun],
+  });
 }
 
 if (css) {

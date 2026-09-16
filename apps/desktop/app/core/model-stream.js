@@ -411,6 +411,21 @@ async function readModelTextStream(response, options = {}) {
  * `{"ai_system6_result":{...}}`, an error event `{"ai_system6_error":{...}}`,
  * and a terminating `{"type":"done"}` (or `data: [DONE]`).
  *
+ * The final envelope is what makes the answer an answer: the text that
+ * streamed before it is a preview of a run that has not finished, and the
+ * citations only arrive with the envelope. A stream that ends without one has
+ * been cut off, and a call that returns the partial text as an ordinary result
+ * reports a broken search as a complete one - so it throws instead, carrying
+ * the text received so far as `partialContent` and a stable `code`:
+ *
+ *   - `web_search_incomplete`    the stream ended before the final envelope
+ *                                (including a frame cut off mid-JSON at EOF)
+ *   - `web_search_invalid_event` a complete event frame carried broken JSON
+ *   - the server's own code      for an `ai_system6_error` event
+ *
+ * Events that carry no data (comments, heartbeats) and fields the protocol
+ * does not define are ignored, not read as damage.
+ *
  * @param {Response} response
  * @param {{
  *   onStatus?: (status: string) => void,
@@ -457,9 +472,27 @@ async function readWebSearchStream(response, options = {}) {
   let result = null;
   let streamError = null;
   let finished = false;
+  // A frame that carried data and could not be parsed. Tracked rather than
+  // dropped: a provider whose events arrive damaged is not a provider that
+  // answered with an empty citation list.
+  let brokenEvent = "";
+  let truncatedEvent = false;
 
-  const consumeEvent = (eventText) => {
+  /**
+   * The answer so far, plus the reason it is not a complete one. Callers keep
+   * the text through `partialContent`; nothing here invents citations for it.
+   */
+  const incomplete = (code, message) => {
+    if (content) emitDelta(content, true);
+    const error = new Error(message);
+    error.code = code;
+    if (content) error.partialContent = content;
+    return error;
+  };
+
+  const consumeEvent = (eventText, complete = true) => {
     const dataLine = String(eventText || "").split(/\r?\n/).find((line) => line.startsWith("data:"));
+    // A comment or a heartbeat frame carries no data line at all.
     if (!dataLine) return;
     const raw = String(dataLine).slice(5).trim();
     if (!raw || raw === "[DONE]") {
@@ -467,7 +500,15 @@ async function readWebSearchStream(response, options = {}) {
       return;
     }
     let data = null;
-    try { data = JSON.parse(raw); } catch { return; }
+    try {
+      data = JSON.parse(raw);
+    } catch {
+      // The last frame has no terminator to prove it was whole: that is the
+      // connection stopping mid-event, not an event that arrived damaged.
+      if (complete) brokenEvent = raw.slice(0, 200);
+      else truncatedEvent = true;
+      return;
+    }
     if (data.ai_system6_status) onStatus?.(String(data.ai_system6_status));
     const delta = data?.choices?.[0]?.delta?.content;
     if (typeof delta === "string") {
@@ -479,31 +520,74 @@ async function readWebSearchStream(response, options = {}) {
     if (data.type === "done") finished = true;
   };
 
-  while (!signal?.aborted && !finished) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    let boundary = buffer.search(/\r?\n\r?\n/);
-    while (boundary !== -1) {
-      const eventText = buffer.slice(0, boundary);
-      buffer = buffer.slice(boundary + (buffer[boundary] === "\r" ? 4 : 2));
-      consumeEvent(eventText);
-      boundary = buffer.search(/\r?\n\r?\n/);
-    }
+  // A waiting read is woken by the abort: without this, a cancelled search
+  // held its reader (and its connection) until the socket happened to end.
+  const abortError = () => {
+    const error = new DOMException("The web search stream was stopped.", "AbortError");
+    if (content) error.partialContent = content;
+    return error;
+  };
+  const onAbort = () => {
+    try {
+      reader.cancel?.()?.catch?.(() => {});
+    } catch {}
+  };
+  if (signal) {
+    if (signal.aborted) throw abortError();
+    signal.addEventListener("abort", onAbort, { once: true });
   }
-  buffer += decoder.decode();
-  if (buffer.trim()) consumeEvent(buffer);
 
-  if (signal?.aborted) {
-    throw new DOMException("The web search stream was stopped.", "AbortError");
+  try {
+    while (!signal?.aborted && !finished) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      let boundary = buffer.search(/\r?\n\r?\n/);
+      while (boundary !== -1) {
+        const eventText = buffer.slice(0, boundary);
+        buffer = buffer.slice(boundary + (buffer[boundary] === "\r" ? 4 : 2));
+        consumeEvent(eventText);
+        boundary = buffer.search(/\r?\n\r?\n/);
+      }
+    }
+    buffer += decoder.decode();
+    // What is left is an event with no closing blank line. It is still read -
+    // a provider may simply end its stream after the last frame - but a JSON
+    // failure in it is a truncated stream, not a damaged event.
+    if (buffer.trim()) consumeEvent(buffer, false);
+
+    if (signal?.aborted) throw abortError();
+    if (streamError) {
+      const error = new Error(String(streamError.detail || streamError.error || "Web search failed"));
+      error.code = String(streamError.code || "");
+      error.warning = String(streamError.warning || "");
+      if (content) error.partialContent = content;
+      throw error;
+    }
+    if (brokenEvent) {
+      throw incomplete(
+        "web_search_invalid_event",
+        `The web search sent an event that is not valid JSON: ${brokenEvent}`
+      );
+    }
+    if (truncatedEvent) {
+      throw incomplete("web_search_incomplete", "The web search stopped in the middle of an event.");
+    }
+    if (!result) {
+      // Ended without the final envelope. `finished` only says the provider
+      // closed the stream; the answer it was building never arrived.
+      throw incomplete(
+        "web_search_incomplete",
+        "The web search ended before its final answer arrived."
+      );
+    }
+    emitDelta(content, true);
+    onResult?.(result);
+    return result;
+  } finally {
+    signal?.removeEventListener?.("abort", onAbort);
+    try {
+      reader.releaseLock?.();
+    } catch {}
   }
-  if (streamError) {
-    const error = new Error(String(streamError.detail || streamError.error || "Web search failed"));
-    error.code = String(streamError.code || "");
-    error.warning = String(streamError.warning || "");
-    throw error;
-  }
-  emitDelta(content, true);
-  if (result) onResult?.(result);
-  return result || { answer: content, citations: [], results: [], searchCalls: [] };
 }

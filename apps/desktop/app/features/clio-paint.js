@@ -26,6 +26,14 @@
 //     text), not a reproduction of a specific native resource — there is no
 //     System 6 MacPaint to draw from, so no fidelity claim is made beyond
 //     "the same shape of tool set."
+//   - What JS Paint (1j01/jspaint) taught this file, kept because each one is
+//     about the drawing loop rather than about features: a paint document
+//     earns its keep with a real history (a stack of undo steps with redo,
+//     and the step still being drawn held apart so a mis-drag is cancelled
+//     instead of committed), a selection that can be MOVED instead of only
+//     cleared, and Shift meaning "constrain proportions" while a shape is
+//     drawn. History lives and dies with the window: nothing here adds a
+//     persistence boundary, and the picture on disk stays one PNG.
 
 window.AISystem6ClioPaintLoaded = true;
 
@@ -65,6 +73,7 @@ function installClioPaintWindow() {
             <button class="view-switch-option" type="button" id="clio-paint-shape-filled" aria-pressed="false" data-action="clio-paint-shape-filled-toggle" data-i18n="clio_paint_shape_filled">Filled</button>
             <span class="clio-paint-tool-sep" aria-hidden="true"></span>
             <button class="view-switch-option" type="button" data-action="clio-paint-undo" data-i18n="undo">Undo</button>
+            <button class="view-switch-option" type="button" data-action="clio-paint-redo" data-i18n="redo">Redo</button>
             <button class="view-switch-option" type="button" data-action="clio-paint-new" data-i18n="clio_paint_new">New</button>
           </div>
           <div class="clio-paint-patterns" id="clio-paint-patterns" role="listbox" data-i18n-aria-label="clio_paint_patterns_label" aria-label="Patterns"></div>`,
@@ -101,8 +110,16 @@ const clioPaintState = {
   tool: "pencil",
   pattern: 1,
   shapeFilled: false,
-  undo: null,
+  // Undo/redo is a pair of 1-bit step stacks plus the snapshot of whatever is
+  // being drawn at this moment. See the History section below.
+  history: { past: [], future: [], pending: null },
+  // The packed bits of the picture the last time it was saved, loaded or
+  // cleared, so undo can tell "back to what is on disk" from "still unsaved".
+  savedBits: null,
   selection: null,
+  // While a marquee is being dragged: the lifted pixels and where the pointer
+  // took hold of them.
+  floating: null,
   drawing: null,
   patterns: [],
   lastResult: null,
@@ -264,7 +281,10 @@ function setClioPaintTool(tool) {
   clioPaintState.selection = null;
   updateClioPaintMarqueeOverlay();
   const { toolbar, canvas } = clioPaintElements();
-  if (canvas) canvas.dataset.clioPaintTool = tool;
+  if (canvas) {
+    canvas.dataset.clioPaintTool = tool;
+    canvas.dataset.clioPaintSelection = "";
+  }
   toolbar?.querySelectorAll("[data-clio-paint-tool]").forEach((button) => {
     button.setAttribute("aria-pressed", String(button.dataset.clioPaintTool === tool));
   });
@@ -300,22 +320,233 @@ function clioPaintCanvasPoint(event) {
   };
 }
 
-function clioPaintSnapshotUndo() {
+// --- History ---------------------------------------------------------------
+//
+// A deep undo stack and a 1-bit picture are not in tension, because a step
+// does not have to cost what the canvas costs: the same step kept as ImageData
+// is 480x300x4 bytes (576 KB), and kept the way the picture is actually made —
+// one bit per pixel, black or white — it is 18 KB. So a step is packed before
+// it is kept, which is what makes sixty of them (~1 MB) affordable where a
+// single raw snapshot would already be most of the budget.
+//
+// The stack semantics are JS Paint's, which is where this shape was learned:
+// undos/redos stacks around a current node (a new edit empties the redo
+// stack), and cancel() discarding the node a cancelled operation would have
+// left behind. Here the same two ideas wear paint clothes — `past`/`future`
+// are stacks of packed steps, and `pending` is the picture as it was when the
+// operation now in progress began, which is both what a shape preview
+// repaints from and what Escape restores without writing a step at all.
+
+const CLIO_PAINT_HISTORY_LIMIT = 60;
+
+/**
+ * One packed step: bit `x + y * width` set for a black pixel.
+ * Pure — takes and returns plain data, so it can be checked without a canvas.
+ *
+ * @param {{width: number, height: number, data: Uint8ClampedArray}} imageData
+ * @returns {Uint8Array}
+ */
+function clioPaintPackImageData(imageData) {
+  const width = imageData.width;
+  const height = imageData.height;
+  const bits = new Uint8Array(Math.ceil((width * height) / 8));
+  const data = imageData.data;
+  const total = width * height;
+  for (let pixel = 0; pixel < total; pixel += 1) {
+    const i = pixel * 4;
+    // Every tool thresholds what it touched, so a pixel here is already black
+    // or white; the alpha test is what keeps a transparent corner white
+    // instead of reading as black.
+    if (data[i + 3] > 32 && data[i] < 128) bits[pixel >> 3] |= 128 >> (pixel & 7);
+  }
+  return bits;
+}
+
+/** Write packed bits back into an ImageData-shaped object, in place. */
+function clioPaintApplyPackedBits(imageData, bits) {
+  const total = imageData.width * imageData.height;
+  const data = imageData.data;
+  for (let pixel = 0; pixel < total; pixel += 1) {
+    const value = bits[pixel >> 3] & (128 >> (pixel & 7)) ? 0 : 255;
+    const i = pixel * 4;
+    data[i] = data[i + 1] = data[i + 2] = value;
+    data[i + 3] = 255;
+  }
+  return imageData;
+}
+
+function clioPaintBitsEqual(a, b) {
+  if (!a || !b || a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i += 1) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}
+
+/** Newest last; anything past the limit falls off the oldest end. */
+function clioPaintTrimHistory(history, limit = CLIO_PAINT_HISTORY_LIMIT) {
+  while (history.past.length > limit) history.past.shift();
+  return history;
+}
+
+/**
+ * One committed step. A new edit also closes the redo branch, the way every
+ * stack-based undo does: what you undid is no longer reachable once you draw
+ * something else.
+ */
+function clioPaintPushHistoryEntry(history, entry, limit = CLIO_PAINT_HISTORY_LIMIT) {
+  history.past.push(entry);
+  clioPaintTrimHistory(history, limit);
+  history.future.length = 0;
+  return entry;
+}
+
+function clioPaintToolLabelKey(tool) {
+  return tool === "move" ? "clio_paint_op_move" : `clio_paint_tool_${tool}`;
+}
+
+function clioPaintPackCanvas() {
   const ctx = clioPaintCtx();
   const canvas = clioPaintElements().canvas;
-  if (!ctx || !canvas) return;
-  clioPaintState.undo = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  if (!ctx || !canvas) return null;
+  return clioPaintPackImageData(ctx.getImageData(0, 0, canvas.width, canvas.height));
+}
+
+/**
+ * Remember the picture as it is now, before the tool about to run changes it.
+ * Shape previews redraw from this, Escape puts it back, and a committed step
+ * keeps it as the state Undo returns to.
+ */
+function clioPaintSnapshotPending() {
+  const ctx = clioPaintCtx();
+  const canvas = clioPaintElements().canvas;
+  if (!ctx || !canvas) return false;
+  clioPaintState.history.pending = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  return true;
+}
+
+function clioPaintRestorePending() {
+  const ctx = clioPaintCtx();
+  const pending = clioPaintState.history.pending;
+  if (!ctx || !pending) return false;
+  ctx.putImageData(pending, 0, 0);
+  return true;
+}
+
+/**
+ * Close the step a tool just finished: the pending snapshot becomes the state
+ * Undo returns to, tagged with what the operation was.
+ *
+ * `coalesce` folds it into the step before it when that step is the same kind
+ * of operation, so dragging a selection around — or nudging it ten times — is
+ * one row in the menu rather than ten. The earlier snapshot is the one kept,
+ * so undoing a run of moves returns to before the run started.
+ */
+function clioPaintCommitHistory(labelKey, { coalesce = false } = {}) {
+  const pending = clioPaintState.history.pending;
+  if (!pending) return false;
+  const history = clioPaintState.history;
+  if (coalesce && history.past[history.past.length - 1]?.labelKey === labelKey) {
+    history.future.length = 0;
+  } else {
+    clioPaintPushHistoryEntry(history, { labelKey, bits: clioPaintPackImageData(pending) });
+  }
+  history.pending = null;
+  return true;
+}
+
+function clioPaintHistoryDepth() {
+  return { past: clioPaintState.history.past.length, future: clioPaintState.history.future.length };
+}
+
+function clioPaintCanUndo() {
+  return clioPaintState.history.past.length > 0;
+}
+
+function clioPaintCanRedo() {
+  return clioPaintState.history.future.length > 0;
+}
+
+function clioPaintApplyStepBits(bits) {
+  const ctx = clioPaintCtx();
+  const canvas = clioPaintElements().canvas;
+  if (!ctx || !canvas || !bits) return false;
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  clioPaintApplyPackedBits(imageData, bits);
+  ctx.putImageData(imageData, 0, 0);
+  return true;
+}
+
+/** Did Undo land back on the picture that is already saved? Say so. */
+function clioPaintSyncDirtyFromSaved() {
+  const current = clioPaintPackCanvas();
+  clioPaintState.dirty = !(current && clioPaintState.savedBits && clioPaintBitsEqual(current, clioPaintState.savedBits));
+}
+
+function clioPaintResetHistory() {
+  clioPaintState.history = { past: [], future: [], pending: null };
+  clioPaintState.floating = null;
+  clioPaintState.savedBits = clioPaintPackCanvas();
 }
 
 function undoClioPaint() {
-  const ctx = clioPaintCtx();
-  const canvas = clioPaintElements().canvas;
-  if (!ctx || !canvas || !clioPaintState.undo) return;
-  const current = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  ctx.putImageData(clioPaintState.undo, 0, 0);
-  clioPaintState.undo = current;
-  clioPaintState.dirty = true;
+  const history = clioPaintState.history;
+  const step = history.past.pop();
+  if (!step) return false;
+  const current = clioPaintPackCanvas();
+  if (current) history.future.push({ labelKey: step.labelKey, bits: current });
+  clioPaintApplyStepBits(step.bits);
+  // A picture in the middle of a drag is not a picture at rest: undo puts the
+  // whole move back, floating copy included.
+  clioPaintState.floating = null;
+  clioPaintState.drawing = null;
+  clioPaintSyncDirtyFromSaved();
   syncClioPaintStatus();
+  setStatus(t("clio_paint_undid", t(step.labelKey)));
+  return true;
+}
+
+function redoClioPaint() {
+  const history = clioPaintState.history;
+  const step = history.future.pop();
+  if (!step) return false;
+  const current = clioPaintPackCanvas();
+  if (current) {
+    history.past.push({ labelKey: step.labelKey, bits: current });
+    clioPaintTrimHistory(history);
+  }
+  clioPaintApplyStepBits(step.bits);
+  clioPaintState.floating = null;
+  clioPaintState.drawing = null;
+  clioPaintSyncDirtyFromSaved();
+  syncClioPaintStatus();
+  setStatus(t("clio_paint_redid", t(step.labelKey)));
+  return true;
+}
+
+/**
+ * Escape means "put it back", the way JS Paint's cancel() discards the state a
+ * cancelled operation would have left behind: the pending snapshot returns and
+ * no step is written, so a mis-drag costs nothing and leaves no trace in the
+ * menu. An aborted move drops the marquee too — the pixels are back where they
+ * started, so the selection that no longer describes anything goes with them.
+ */
+function cancelClioPaintOperation() {
+  const drawing = clioPaintState.drawing;
+  if (!drawing && !clioPaintState.floating) return false;
+  const hadPixels = Boolean(clioPaintState.history.pending);
+  const wasSelectionWork = drawing?.tool === "move" || drawing?.tool === "marquee";
+  clioPaintRestorePending();
+  clioPaintState.history.pending = null;
+  clioPaintState.drawing = null;
+  clioPaintState.floating = null;
+  if (wasSelectionWork) clioPaintState.selection = null;
+  updateClioPaintMarqueeOverlay();
+  syncClioPaintStatus();
+  // Only a cancelled operation that had pixels under it has anything to
+  // report: a marquee that was still being dragged just vanishes.
+  if (hadPixels) setStatus(t("clio_paint_op_cancelled"));
+  return true;
 }
 
 function clioPaintThreshold(x, y, w, h) {
@@ -342,7 +573,7 @@ function clioPaintThreshold(x, y, w, h) {
 }
 
 function clioPaintBeginStroke(tool, point) {
-  clioPaintSnapshotUndo();
+  clioPaintSnapshotPending();
   clioPaintState.drawing = { tool, last: point, minX: point.x, minY: point.y, maxX: point.x, maxY: point.y };
   clioPaintStrokeSegment(point, point);
 }
@@ -373,12 +604,40 @@ function clioPaintEndStroke() {
   clioPaintThreshold(state.minX, state.minY, state.maxX - state.minX, state.maxY - state.minY);
   clioPaintState.drawing = null;
   clioPaintState.dirty = true;
+  clioPaintCommitHistory(clioPaintToolLabelKey(state.tool));
   syncClioPaintStatus();
 }
 
 function clioPaintBeginShape(tool, point) {
-  clioPaintSnapshotUndo();
-  clioPaintState.drawing = { tool, start: point, current: point };
+  clioPaintSnapshotPending();
+  clioPaintState.drawing = { tool, start: point, current: point, constrain: false };
+}
+
+/**
+ * What Shift means while a shape is being drawn — the same convention JS Paint
+ * documents for its box and shape tools ("the size shown is affected by
+ * holding Shift to constrain proportions"): a line snaps to 45-degree steps,
+ * a rectangle to a square, an oval to a circle. Pure, so the rule can be
+ * checked without a canvas.
+ */
+function clioPaintConstrainPoint(start, end, tool, constrain) {
+  if (!constrain) return { x: end.x, y: end.y };
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  if (tool === "line") {
+    const step = Math.PI / 4;
+    const angle = Math.round(Math.atan2(dy, dx) / step) * step;
+    const length = Math.hypot(dx, dy);
+    return {
+      x: start.x + Math.round(Math.cos(angle) * length),
+      y: start.y + Math.round(Math.sin(angle) * length),
+    };
+  }
+  const size = Math.max(Math.abs(dx), Math.abs(dy));
+  return {
+    x: start.x + (dx < 0 ? -size : size),
+    y: start.y + (dy < 0 ? -size : size),
+  };
 }
 
 function clioPaintDrawShape(ctx, tool, start, end, filled) {
@@ -409,13 +668,17 @@ function clioPaintDrawShape(ctx, tool, start, end, filled) {
   }
 }
 
-function clioPaintPreviewShape(point) {
+function clioPaintPreviewShape(point, constrain) {
   const ctx = clioPaintCtx();
   const state = clioPaintState.drawing;
-  if (!ctx || !state || !clioPaintState.undo) return;
-  ctx.putImageData(clioPaintState.undo, 0, 0);
-  state.current = point;
-  clioPaintDrawShape(ctx, state.tool, state.start, point, clioPaintState.shapeFilled);
+  if (!ctx || !state || !clioPaintState.history.pending) return;
+  // Redraw from the state the shape started from, so the outline that follows
+  // the pointer never leaves a trail of earlier outlines behind it.
+  clioPaintRestorePending();
+  if (constrain !== undefined) state.constrain = constrain === true;
+  state.current = clioPaintConstrainPoint(state.start, point, state.tool, state.constrain);
+  clioPaintDrawShape(ctx, state.tool, state.start, state.current, clioPaintState.shapeFilled);
+  clioPaintShowDragSize(state.current.x - state.start.x, state.current.y - state.start.y);
 }
 
 function clioPaintEndShape() {
@@ -428,6 +691,7 @@ function clioPaintEndShape() {
   clioPaintThreshold(x, y, w, h);
   clioPaintState.drawing = null;
   clioPaintState.dirty = true;
+  clioPaintCommitHistory(clioPaintToolLabelKey(state.tool));
   syncClioPaintStatus();
 }
 
@@ -436,7 +700,7 @@ function clioPaintFloodFill(point) {
   const canvas = clioPaintElements().canvas;
   const pattern = clioPaintState.patterns[clioPaintState.pattern];
   if (!ctx || !canvas || !pattern) return;
-  clioPaintSnapshotUndo();
+  clioPaintSnapshotPending();
   const w = canvas.width;
   const h = canvas.height;
   const imageData = ctx.getImageData(0, 0, w, h);
@@ -466,7 +730,19 @@ function clioPaintFloodFill(point) {
   }
   ctx.putImageData(imageData, 0, 0);
   clioPaintState.dirty = true;
+  clioPaintCommitHistory(clioPaintToolLabelKey("fill"));
   syncClioPaintStatus();
+}
+
+/**
+ * While a box is being dragged, the window's own status line says how big it
+ * is — JS Paint prints the same figure under the canvas as you size a shape,
+ * and it is the difference between drawing a 40-pixel box and guessing.
+ */
+function clioPaintShowDragSize(width, height) {
+  const { statusLabel } = clioPaintElements();
+  if (!statusLabel) return;
+  statusLabel.textContent = t("clio_paint_size", String(Math.abs(Math.round(width))), String(Math.abs(Math.round(height))));
 }
 
 function updateClioPaintMarqueeOverlay() {
@@ -487,17 +763,147 @@ function updateClioPaintMarqueeOverlay() {
   marquee.hidden = !(w > 0 && h > 0);
 }
 
+/** The selection as a plain rectangle, whatever way round it was dragged. */
+function clioPaintSelectionRect() {
+  const sel = clioPaintState.selection;
+  if (!sel) return null;
+  return {
+    x: Math.min(sel.x, sel.x + sel.w),
+    y: Math.min(sel.y, sel.y + sel.h),
+    w: Math.abs(sel.w),
+    h: Math.abs(sel.h),
+  };
+}
+
+function clioPaintPointInSelection(point) {
+  const rect = clioPaintSelectionRect();
+  if (!rect || rect.w <= 0 || rect.h <= 0) return false;
+  return point.x >= rect.x && point.x < rect.x + rect.w && point.y >= rect.y && point.y < rect.y + rect.h;
+}
+
+/**
+ * Take the selected pixels off the picture and into a floating canvas of their
+ * own, leaving white behind. This is the move half of a selection: the region
+ * is what travels, not an outline of it.
+ *
+ * It also keeps the picture as it looks with that region already gone. Every
+ * frame of a drag redraws from that, not from the pending snapshot: pending is
+ * the picture BEFORE the lift — with the pixels still in their old place — so
+ * redrawing from it would put a copy back at the source and leave a trail of
+ * them behind. (Found in a real browser, where the count of black pixels came
+ * back at 889 where 480 had been drawn.)
+ */
+function clioPaintLiftSelection() {
+  const canvas = clioPaintElements().canvas;
+  const ctx = clioPaintCtx();
+  const rect = clioPaintSelectionRect();
+  if (!canvas || !ctx || !rect || rect.w <= 0 || rect.h <= 0) return null;
+  const floating = document.createElement("canvas");
+  floating.width = rect.w;
+  floating.height = rect.h;
+  floating.getContext("2d").drawImage(canvas, rect.x, rect.y, rect.w, rect.h, 0, 0, rect.w, rect.h);
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
+  return {
+    canvas: floating,
+    base: ctx.getImageData(0, 0, canvas.width, canvas.height),
+    w: rect.w,
+    h: rect.h,
+    grabX: 0,
+    grabY: 0,
+  };
+}
+
 function clioPaintBeginMarquee(point) {
+  clioPaintState.drawing = { tool: "marquee", start: point, constrain: false };
   clioPaintState.selection = { x: point.x, y: point.y, w: 0, h: 0 };
   updateClioPaintMarqueeOverlay();
 }
 
-function clioPaintUpdateMarquee(point) {
-  const sel = clioPaintState.selection;
-  if (!sel) return;
-  sel.w = point.x - sel.x;
-  sel.h = point.y - sel.y;
+/**
+ * Dragging from inside an existing marquee moves those pixels instead of
+ * starting a new one: the region is lifted off the picture, follows the
+ * pointer, and lands when the drag ends. JS Paint's selection is the same kind
+ * of object — a floating canvas dragged from inside itself, with its own
+ * history entry for the move — and this is the half of it that a sketch pad
+ * actually needs, since placing a box in the right spot is most of sketching.
+ */
+function clioPaintBeginSelectionDrag(point) {
+  if (!clioPaintPointInSelection(point)) return false;
+  const rect = clioPaintSelectionRect();
+  clioPaintSnapshotPending();
+  const floating = clioPaintLiftSelection();
+  if (!floating) return false;
+  floating.grabX = point.x - rect.x;
+  floating.grabY = point.y - rect.y;
+  clioPaintState.floating = floating;
+  clioPaintState.drawing = { tool: "move", start: point, current: point };
+  return true;
+}
+
+function clioPaintDragSelection(point) {
+  const floating = clioPaintState.floating;
+  const ctx = clioPaintCtx();
+  if (!floating || !ctx || !clioPaintState.drawing) return;
+  // Every frame redraws from the lifted base — the picture with the selection
+  // already taken out of it — so the pixels cannot pile up on top of
+  // themselves along the way, and cannot be left behind at the source.
+  ctx.putImageData(floating.base, 0, 0);
+  const x = point.x - floating.grabX;
+  const y = point.y - floating.grabY;
+  ctx.drawImage(floating.canvas, x, y);
+  clioPaintState.selection = { x, y, w: floating.w, h: floating.h };
+  clioPaintState.drawing.current = point;
   updateClioPaintMarqueeOverlay();
+  clioPaintShowDragSize(floating.w, floating.h);
+}
+
+function clioPaintEndSelectionDrag() {
+  if (!clioPaintState.floating) return;
+  clioPaintState.floating = null;
+  clioPaintState.drawing = null;
+  clioPaintState.dirty = true;
+  clioPaintCommitHistory(clioPaintToolLabelKey("move"), { coalesce: true });
+  syncClioPaintStatus();
+}
+
+/**
+ * The same move one pixel at a time, for placing a box exactly. It shares the
+ * move's history row, so a run of arrows is undone in one step.
+ */
+function clioPaintNudgeSelection(dx, dy) {
+  const rect = clioPaintSelectionRect();
+  const ctx = clioPaintCtx();
+  if (!rect || !ctx || rect.w <= 0 || rect.h <= 0) return false;
+  clioPaintSnapshotPending();
+  const floating = clioPaintLiftSelection();
+  if (!floating) {
+    clioPaintState.history.pending = null;
+    return false;
+  }
+  ctx.putImageData(floating.base, 0, 0);
+  const x = rect.x + dx;
+  const y = rect.y + dy;
+  ctx.drawImage(floating.canvas, x, y);
+  clioPaintState.selection = { x, y, w: rect.w, h: rect.h };
+  updateClioPaintMarqueeOverlay();
+  clioPaintState.dirty = true;
+  clioPaintCommitHistory(clioPaintToolLabelKey("move"), { coalesce: true });
+  syncClioPaintStatus();
+  return true;
+}
+
+function clioPaintUpdateMarquee(point, constrain) {
+  const state = clioPaintState.drawing;
+  const sel = clioPaintState.selection;
+  if (!state || state.tool !== "marquee" || !sel) return;
+  if (constrain !== undefined) state.constrain = constrain === true;
+  // Shift makes a square marquee, the same rule a rectangle is drawn under.
+  const end = clioPaintConstrainPoint(state.start, point, "rect", state.constrain);
+  sel.w = end.x - state.start.x;
+  sel.h = end.y - state.start.y;
+  updateClioPaintMarqueeOverlay();
+  clioPaintShowDragSize(sel.w, sel.h);
 }
 
 function clearClioPaintSelection() {
@@ -509,10 +915,11 @@ function clearClioPaintSelection() {
   const w = Math.abs(sel.w);
   const h = Math.abs(sel.h);
   if (w <= 0 || h <= 0) return;
-  clioPaintSnapshotUndo();
+  clioPaintSnapshotPending();
   ctx.fillStyle = "#fff";
   ctx.fillRect(x, y, w, h);
   clioPaintState.dirty = true;
+  clioPaintCommitHistory("clio_paint_op_clear");
   syncClioPaintStatus();
 }
 
@@ -549,7 +956,7 @@ function clioPaintBeginText(point, clientPoint) {
 function clioPaintStampText(point, text) {
   const ctx = clioPaintCtx();
   if (!ctx) return;
-  clioPaintSnapshotUndo();
+  clioPaintSnapshotPending();
   ctx.font = "14px Monaco, monospace";
   ctx.textBaseline = "top";
   ctx.fillStyle = "#000";
@@ -557,6 +964,7 @@ function clioPaintStampText(point, text) {
   const width = Math.max(8, ctx.measureText(text).width);
   clioPaintThreshold(point.x, point.y, width, 18);
   clioPaintState.dirty = true;
+  clioPaintCommitHistory(clioPaintToolLabelKey("text"));
   syncClioPaintStatus();
 }
 
@@ -576,50 +984,129 @@ function wireClioPaintCanvas() {
     clioPaintElements().root?.querySelector(".clio-paint-text-input")?.blur();
     event.preventDefault();
     canvas.setPointerCapture?.(event.pointerId);
+    // Focus follows the click: undo, Delete and the arrow keys belong to the
+    // document the writer just put the pointer on, and the window-level
+    // shortcut listener only hears keys that land inside the window.
+    canvas.focus?.({ preventScroll: true });
     const point = clioPaintCanvasPoint(event);
     const tool = clioPaintState.tool;
     if (tool === "pencil" || tool === "eraser") clioPaintBeginStroke(tool, point);
     else if (tool === "fill") clioPaintFloodFill(point);
     else if (tool === "line" || tool === "rect" || tool === "oval") clioPaintBeginShape(tool, point);
-    else if (tool === "marquee") clioPaintBeginMarquee(point);
+    // Pressing inside the marquee moves those pixels; pressing anywhere else
+    // starts a new one.
+    else if (tool === "marquee" && !clioPaintBeginSelectionDrag(point)) clioPaintBeginMarquee(point, event.shiftKey);
     else if (tool === "text") {
       const rect = canvas.getBoundingClientRect();
       clioPaintBeginText(point, { x: event.clientX - rect.left, y: event.clientY - rect.top });
     }
   });
   clioPaintInstanceResources().listen(canvas, "pointermove", (event) => {
-    if (!clioPaintState.drawing && !clioPaintState.selection) return;
     const point = clioPaintCanvasPoint(event);
     const tool = clioPaintState.tool;
+    if (clioPaintState.floating) {
+      clioPaintDragSelection(point);
+      return;
+    }
+    if (!clioPaintState.drawing) {
+      // Report what the pointer is over, for the CSS that turns it into a
+      // move cursor (96-clio-paint.css).
+      canvas.dataset.clioPaintSelection = tool === "marquee" && clioPaintPointInSelection(point) ? "inside" : "";
+      return;
+    }
     if ((tool === "pencil" || tool === "eraser") && clioPaintState.drawing) {
       clioPaintStrokeSegment(clioPaintState.drawing.last, point);
       clioPaintState.drawing.last = point;
     } else if ((tool === "line" || tool === "rect" || tool === "oval") && clioPaintState.drawing) {
-      clioPaintPreviewShape(point);
+      clioPaintPreviewShape(point, event.shiftKey);
     } else if (tool === "marquee" && clioPaintState.selection) {
-      clioPaintUpdateMarquee(point);
+      clioPaintUpdateMarquee(point, event.shiftKey);
     }
   });
   const finish = (event) => {
     if (canvas.hasPointerCapture?.(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
+    if (clioPaintState.floating) { clioPaintEndSelectionDrag(); return; }
     const tool = clioPaintState.tool;
     if ((tool === "pencil" || tool === "eraser") && clioPaintState.drawing) clioPaintEndStroke();
     else if ((tool === "line" || tool === "rect" || tool === "oval") && clioPaintState.drawing) clioPaintEndShape();
+    else if (tool === "marquee" && clioPaintState.drawing) clioPaintState.drawing = null;
   };
   clioPaintInstanceResources().listen(canvas, "pointerup", finish);
   clioPaintInstanceResources().listen(canvas, "pointercancel", finish);
 }
 
-function handleClioPaintKeydown(event) {
+const CLIO_PAINT_NUDGE_KEYS = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+
+function clioPaintWindowIsInFront() {
   const win = document.querySelector('[data-window="clioPaint"]');
-  if (!win || win.classList.contains("is-hidden") || !win.classList.contains("is-active")) return;
+  return !!win && !win.classList.contains("is-hidden") && win.classList.contains("is-active");
+}
+
+function handleClioPaintKeydown(event) {
+  // An event somebody nearer the writer has already answered — a menu being
+  // walked with the arrow keys, a dialog taking Escape — is not this window's
+  // to act on. Delete, Escape and the arrow keys all reach the document even
+  // while a menu or a dialog is up.
+  if (event.defaultPrevented) return;
+  if (!clioPaintWindowIsInFront()) return;
   if (typeof getActiveEditableElement === "function" && getActiveEditableElement()) return;
+  if (document.body.classList.contains("has-system-modal")) return;
+  // Escape is "put it back": first the operation still under the pointer, then
+  // the marquee itself.
+  if (event.key === "Escape") {
+    if (cancelClioPaintOperation()) event.preventDefault();
+    else if (clioPaintState.selection) {
+      clioPaintState.selection = null;
+      updateClioPaintMarqueeOverlay();
+      event.preventDefault();
+    }
+    return;
+  }
   if ((event.key === "Delete" || event.key === "Backspace") && clioPaintState.tool === "marquee" && clioPaintState.selection) {
     event.preventDefault();
     clearClioPaintSelection();
-  } else if (event.key === "Escape" && clioPaintState.selection) {
-    clioPaintState.selection = null;
-    updateClioPaintMarqueeOverlay();
+    return;
+  }
+  const nudge = CLIO_PAINT_NUDGE_KEYS[event.key];
+  if (nudge && clioPaintState.tool === "marquee" && clioPaintState.selection) {
+    const step = event.shiftKey ? 8 : 1;
+    if (clioPaintNudgeSelection(nudge[0] * step, nudge[1] * step)) event.preventDefault();
+  }
+}
+
+/**
+ * ⌘Z / ⇧⌘Z / ⌘Y (and the Ctrl spellings) for the picture itself.
+ *
+ * The desk's own undo is about the focused text field, so over a painting it
+ * answered "there is nothing to edit here" and undid nothing. A paint document
+ * has to own the key while its window is the one in front — the same rule this
+ * window already follows for Delete and Escape, which it reads wherever the
+ * focus happens to be.
+ *
+ * The listener is registered in the CAPTURE phase for a reason that is easy to
+ * lose: the desk's shortcut dispatcher is a bubble-phase listener on this same
+ * document, so a bubble-phase listener here would run second, after the desk
+ * had already answered. Capture runs first, and claiming the event
+ * (preventDefault) is what stops the desk from also answering it — runShortcut
+ * returns early on a prevented event. Registering on the window element
+ * instead would only hear keys that land inside the window, which is not true
+ * at the moment the window opens. (ClioChart claims the same key from its own
+ * grid, which is focused whenever it is being used: the same rule, reached
+ * from the other side.)
+ */
+function handleClioPaintHistoryKeydown(event) {
+  if (event.defaultPrevented || !(event.metaKey || event.ctrlKey) || event.altKey) return;
+  const key = String(event.key).toLowerCase();
+  if (key !== "z" && key !== "y") return;
+  if (!clioPaintWindowIsInFront()) return;
+  // A field being typed in keeps its own undo, and so does a dialog the writer
+  // has to answer before anything behind it moves.
+  if (typeof getActiveEditableElement === "function" && getActiveEditableElement()) return;
+  if (document.body.classList.contains("has-system-modal")) return;
+  const redo = event.shiftKey || key === "y";
+  event.preventDefault();
+  if (!(redo ? redoClioPaint() : undoClioPaint())) {
+    setStatus(t(redo ? "clio_paint_nothing_to_redo" : "clio_paint_nothing_to_undo"));
   }
 }
 
@@ -631,8 +1118,33 @@ function handleClioPaintKeydown(event) {
 // auto-loads the project's most recent clioPaint picture, so "reload and
 // reopen" lands on the same picture without a separate Open dialog.
 
+/**
+ * The two history controls in the toolbar and what a step that cannot run says
+ * about itself. A button that will do nothing because there is nothing behind
+ * it is shown as unavailable, rather than left looking identical to one that
+ * works and then doing nothing.
+ */
+const CLIO_PAINT_HISTORY_CONTROLS = [
+  { action: "clio-paint-undo", canRun: clioPaintCanUndo, emptyKey: "clio_paint_nothing_to_undo" },
+  { action: "clio-paint-redo", canRun: clioPaintCanRedo, emptyKey: "clio_paint_nothing_to_redo" },
+];
+
+function syncClioPaintHistoryButtons() {
+  const { toolbar } = clioPaintElements();
+  if (!toolbar) return;
+  CLIO_PAINT_HISTORY_CONTROLS.forEach((control) => {
+    const button = toolbar.querySelector(`[data-action="${control.action}"]`);
+    if (!button) return;
+    const canRun = control.canRun();
+    button.disabled = !canRun;
+    button.dataset.clioPaintUnavailable = canRun ? "" : control.emptyKey;
+    button.title = canRun ? "" : t(control.emptyKey);
+  });
+}
+
 function syncClioPaintStatus() {
   const { statusLabel } = clioPaintElements();
+  syncClioPaintHistoryButtons();
   if (!statusLabel) return;
   statusLabel.textContent = clioPaintState.dirty
     ? t("clio_paint_status_unsaved")
@@ -675,6 +1187,8 @@ async function saveClioPaintPicture() {
   clioPaintState.attachmentId = record.id;
   clioPaintState.projectId = project.id;
   clioPaintState.dirty = false;
+  // The picture on disk is now this picture, so undo can land back on it.
+  clioPaintState.savedBits = clioPaintPackCanvas();
   project.updatedAt = new Date().toISOString();
   markDeskDirty("projects", project.id);
   // The picture is already attached in memory (usable by sketch-read etc.
@@ -700,7 +1214,7 @@ function loadClioPaintRecord(record) {
       ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
       clioPaintThreshold(0, 0, canvas.width, canvas.height);
       clioPaintState.attachmentId = record.id;
-      clioPaintState.undo = null;
+      clioPaintResetHistory();
       clioPaintState.selection = null;
       clioPaintState.dirty = false;
       updateClioPaintMarqueeOverlay();
@@ -719,7 +1233,7 @@ function clioPaintBlankCanvas() {
   ctx.fillStyle = "#fff";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   clioPaintState.attachmentId = "";
-  clioPaintState.undo = null;
+  clioPaintResetHistory();
   clioPaintState.selection = null;
   clioPaintState.dirty = false;
   hideClioPaintResult();
@@ -1000,6 +1514,7 @@ const CLIO_PAINT_COMMAND_NAMES = [
   "clio-paint-sketch-outline",
   "clio-paint-sketch-prompt",
   "clio-paint-undo",
+  "clio-paint-redo",
   "clio-paint-clear-selection",
   "clio-paint-shape-filled-toggle",
   "clio-paint-result-apply",
@@ -1027,8 +1542,11 @@ function clioPaintCommandAvailability(action) {
   if (activeWindow?.dataset.window !== "clioPaint") {
     return { available: false, reason: "clio_paint_needs_window" };
   }
-  if (action === "clio-paint-undo" && !clioPaintState.undo) {
+  if (action === "clio-paint-undo" && !clioPaintCanUndo()) {
     return { available: false, reason: "clio_paint_nothing_to_undo" };
+  }
+  if (action === "clio-paint-redo" && !clioPaintCanRedo()) {
+    return { available: false, reason: "clio_paint_nothing_to_redo" };
   }
   if (action === "clio-paint-clear-selection" && (clioPaintState.tool !== "marquee" || !clioPaintState.selection)) {
     return { available: false, reason: "clio_paint_no_selection" };
@@ -1048,6 +1566,7 @@ function runClioPaintCommand(action) {
   if (action === "clio-paint-sketch-outline") return runClioPaintSketchToOutline();
   if (action === "clio-paint-sketch-prompt") return runClioPaintSketchToImagePrompt();
   if (action === "clio-paint-undo") return undoClioPaint();
+  if (action === "clio-paint-redo") return redoClioPaint();
   if (action === "clio-paint-clear-selection") return clearClioPaintSelection();
   if (action === "clio-paint-shape-filled-toggle") return toggleClioPaintShapeFilled();
   if (action === "clio-paint-result-apply") return applyClioPaintOutlineResult();
@@ -1072,6 +1591,10 @@ function bindClioPaintControls() {
   // The Paint menu's shortcuts are handled while the window is the active one,
   // so this listener follows the instance rather than the document's lifetime.
   clioPaintInstanceResources().listen(document, "keydown", handleClioPaintKeydown);
+  // Undo/redo has to get there before the desk's dispatcher, which is why it
+  // is the one listener here registered in the capture phase (see
+  // handleClioPaintHistoryKeydown).
+  clioPaintInstanceResources().listen(document, "keydown", handleClioPaintHistoryKeydown, { capture: true });
 }
 
 async function openClioPaint() {
@@ -1117,7 +1640,11 @@ window.AISystem6RegisterApplicationMenuSet?.("clioPaint", [
     id: "edit",
     labelKey: "menu_edit",
     items: [
-      { type: "item", action: "clio-paint-undo", labelKey: "undo", conditionId: "clio-paint-undo" },
+      // shortcutId is display only (the key itself is claimed inside the
+      // window, see handleClioPaintHistoryKeydown); the row still dispatches
+      // its own Paint command.
+      { type: "item", action: "clio-paint-undo", labelKey: "undo", shortcutId: "undo", conditionId: "clio-paint-undo" },
+      { type: "item", action: "clio-paint-redo", labelKey: "redo", shortcutId: "redo", conditionId: "clio-paint-redo" },
       { type: "separator" },
       { type: "item", action: "clio-paint-clear-selection", labelKey: "clear", conditionId: "clio-paint-clear-selection" },
     ],
@@ -1147,6 +1674,8 @@ window.AISystem6ClioPaint = Object.freeze({
   shapeFilled: () => clioPaintState.shapeFilled === true,
   setTool: setClioPaintTool,
   setPattern: setClioPaintPattern,
+  undo: undoClioPaint,
+  redo: redoClioPaint,
   save: saveClioPaintPicture,
   newPicture: newClioPaintPicture,
   sketchToOutline: runClioPaintSketchToOutline,
@@ -1161,14 +1690,21 @@ window.AISystem6ClioPaint = Object.freeze({
   /** Diagnostics: how many resources this instance still holds. */
   resourceCount: () => (clioPaintResources.disposed ? 0 : clioPaintResources.size),
   /** A read-only snapshot of what this window currently holds. */
-  state: () => ({
-    projectId: clioPaintState.projectId,
-    attachmentId: clioPaintState.attachmentId,
-    dirty: clioPaintState.dirty === true,
-    tool: clioPaintState.tool,
-    pattern: clioPaintState.pattern,
-    hasResult: Boolean(clioPaintState.lastResult),
-  }),
+  state: () => {
+    // How many steps the two stacks hold — counts, never the packed bits: a
+    // step is not an object anyone outside this window can act on.
+    const depth = clioPaintHistoryDepth();
+    return {
+      projectId: clioPaintState.projectId,
+      attachmentId: clioPaintState.attachmentId,
+      dirty: clioPaintState.dirty === true,
+      tool: clioPaintState.tool,
+      pattern: clioPaintState.pattern,
+      undoDepth: depth.past,
+      redoDepth: depth.future,
+      hasResult: Boolean(clioPaintState.lastResult),
+    };
+  },
   /** The current result as a copy, never the live record. */
   result: () => (clioPaintState.lastResult ? { ...clioPaintState.lastResult } : null),
   /** Whether a Paint command can run now, and what it is waiting for. */

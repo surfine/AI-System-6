@@ -228,6 +228,92 @@ function runningApplicationRows() {
   return rows;
 }
 
+// ---- The front application's windows ---------------------------------------
+//
+// The application list answers "which application". With seventeen windows in
+// Finder's registry, twenty-two in the accessories and ten in the writing
+// studio, nothing answered "which window". The historical home for that list is
+// the Window menu — System 7 put one in every application's bar and Mac OS X
+// kept it — and this desk's bar budget currently allows four stable menus
+// (tests/features/menu-bar.test.mjs:182), so what ships here is the walk over
+// the same set: the application's own windows, which is what the desk already
+// means by "this application's windows" (visibleWindowsForApp: Bring All to
+// Front, Hide and Quit all read it). Desk accessories are not in it: they do
+// not own the menu bar here, exactly as they did not in System 6, and the Apple
+// menu's own DA rows are their way back.
+
+function frontApplicationId() {
+  return menuOwnerAppId || activeAppId || "finder";
+}
+
+function applicationWindowOrder(appId = frontApplicationId()) {
+  // A window shaded into its title bar is still open: WindowShade is this
+  // desk's minimize, so a list that dropped those would lose the windows a
+  // writer is most likely to be looking for. Front-most first, the order the
+  // window switcher in 98.js used (z-index as a last-used proxy).
+  return visibleWindowsForApp(appId)
+    .sort((a, b) => Number(b.style.zIndex || 0) - Number(a.style.zIndex || 0));
+}
+
+function applicationWindowTitle(win) {
+  return win?.querySelector(".title-bar h1, .title-bar h2")?.textContent?.trim()
+    || win?.dataset.window
+    || "";
+}
+
+/**
+ * Walk the application's windows, front-most first, so one key answers "the
+ * other window I was just in". ⌘` is Mac OS X's key for exactly this — System 6
+ * had no such key (the Apple menu's DA rows were the way back to a desk
+ * accessory), and a browser may claim the combination before the page sees it:
+ * 98.js hit the same wall with Alt+Tab and had to choose another.
+ *
+ * The walk keeps its own cursor. It has to: raising a window rewrites the
+ * z-order, so a formula read from the list every press would make ⇧⌘` land
+ * somewhere other than the window ⌘` just left (measured: forward to the window
+ * behind, then back, landed on the least recent one instead of returning).
+ * The snapshot is dropped as soon as the front window is not the one the cursor
+ * points at — i.e. as soon as the writer has picked a window themselves.
+ */
+let windowWalk = { appId: "", names: [], index: 0 };
+
+function cycleApplicationWindows(direction = 1) {
+  const appId = frontApplicationId();
+  const windows = applicationWindowOrder(appId);
+  const frontName = windows.find((win) => win.classList.contains("is-active"))?.dataset.window || "";
+  if (windowWalk.appId !== appId || windowWalk.names[windowWalk.index] !== frontName) {
+    windowWalk = { appId, names: windows.map((win) => win.dataset.window), index: 0 };
+  }
+  if (windows.length < 2) {
+    // The application is named because a desk accessory in front does not own
+    // the bar: without the name, "only one window" could be read as being about
+    // the window the writer is looking at.
+    const appLabel = multiFinderAppLabels[appId] || appId;
+    setStatus(windows.length ? t("window_only_one", appLabel) : t("window_none_open", appLabel));
+    return false;
+  }
+  const step = direction < 0 ? -1 : 1;
+  const count = windowWalk.names.length;
+  let next = null;
+  for (let hop = 0; hop < count && !next; hop += 1) {
+    windowWalk.index = ((windowWalk.index + step) % count + count) % count;
+    const candidate = getWindow(windowWalk.names[windowWalk.index]);
+    // A window can close while the walk is still open; the snapshot skips it
+    // rather than stopping the key dead.
+    if (candidate && !candidate.classList.contains("is-hidden")) next = candidate;
+  }
+  if (!next) {
+    windowWalk = { appId, names: [], index: 0 };
+    setStatus(t("window_none_open", multiFinderAppLabels[appId] || appId));
+    return false;
+  }
+  const nextAppId = getWindowAppId(next);
+  if (hiddenAppIds.has(nextAppId)) unhideApp(nextAppId);
+  focusWindow(next, 1);
+  setStatus(t("window_front_now", applicationWindowTitle(next)));
+  return true;
+}
+
 // The verbs that act on the application as a whole. Mac OS X keeps these in the
 // bold application menu (Aqua HIG p.55-56: Hide, Hide Others, Show All, then a
 // separator and Quit); the application-owned eras keep them with MultiFinder's

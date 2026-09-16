@@ -163,4 +163,176 @@ test.assert(
   "clio_paint_status_already_new exists in both languages"
 );
 
+// ---- History: the packing rule and the stack rule, executed ----------------
+//
+// The undo stack's whole claim is that a step costs one bit per pixel instead
+// of four bytes, and that the stacks behave like stacks (newest last, redo
+// cleared by a new edit, oldest dropped at the limit). Both are pure, so both
+// run here against real buffers rather than being read as strings. The slice
+// is the part of the module that needs no canvas: the limit constant, the
+// packing pair, the comparison, and the bookkeeping.
+const historySlice = source.slice(
+  source.indexOf("const CLIO_PAINT_HISTORY_LIMIT"),
+  source.indexOf("function clioPaintToolLabelKey")
+);
+const historyContext = vm.createContext({});
+vm.runInContext(historySlice, historyContext);
+const packImageData = vm.runInContext("clioPaintPackImageData", historyContext);
+const applyPackedBits = vm.runInContext("clioPaintApplyPackedBits", historyContext);
+const bitsEqual = vm.runInContext("clioPaintBitsEqual", historyContext);
+const pushHistoryEntry = vm.runInContext("clioPaintPushHistoryEntry", historyContext);
+
+function fakeImageData(width, height) {
+  const image = { width, height, data: new Uint8ClampedArray(width * height * 4).fill(255) };
+  return image;
+}
+function setPixel(image, x, y, channels) {
+  const [r, g, b, a = 255] = channels;
+  const i = (y * image.width + x) * 4;
+  image.data[i] = r;
+  image.data[i + 1] = g;
+  image.data[i + 2] = b;
+  image.data[i + 3] = a;
+}
+
+// The number the module's own rationale is built on: 480x300 is eight pixels
+// to the byte, so a step is 18 KB and not 576 KB.
+test.assert(
+  packImageData(fakeImageData(480, 300)).length === 18_000,
+  "a step of the real 480x300 document packs to 18 KB"
+);
+
+// A round trip has to make the same decisions packing made: black stays
+// black, white stays white, and an antialiased or transparent pixel — which a
+// 1-bit picture cannot hold — comes back white rather than becoming an edge.
+const pictured = fakeImageData(5, 3);
+setPixel(pictured, 0, 0, [0, 0, 0]);
+setPixel(pictured, 4, 2, [40, 40, 40]);
+setPixel(pictured, 1, 1, [200, 200, 200]);
+setPixel(pictured, 2, 1, [0, 0, 0, 0]);
+const pictureBits = packImageData(pictured);
+const restored = applyPackedBits(fakeImageData(5, 3), pictureBits);
+const pixel = (image, x, y) => [...image.data.slice((y * image.width + x) * 4, (y * image.width + x) * 4 + 4)];
+test.assert(pictureBits.length === 2, "a 5x3 picture packs into two bytes, not fifteen pixels");
+test.assert(pixel(restored, 0, 0).join() === "0,0,0,255", "a black pixel comes back black and opaque");
+test.assert(pixel(restored, 4, 2).join() === "0,0,0,255", "a dark pixel comes back black");
+test.assert(pixel(restored, 1, 1).join() === "255,255,255,255", "an antialiased edge comes back white, not gray");
+test.assert(pixel(restored, 2, 1).join() === "255,255,255,255", "a transparent pixel comes back white, not black");
+test.assert(pixel(restored, 3, 0).join() === "255,255,255,255", "everything untouched stays white");
+test.assert(
+  packImageData(restored).join() === pictureBits.join(),
+  "packing a restored step gives the same step back, so undo cannot drift"
+);
+test.assert(bitsEqual(pictureBits, pictureBits.slice()) && !bitsEqual(pictureBits, new Uint8Array(pictureBits.length)), "step comparison answers both ways");
+
+// The stack: newest last, a new edit closes the redo branch, the oldest step
+// falls off at the limit.
+const history = { past: [], future: [] };
+pushHistoryEntry(history, { labelKey: "clio_paint_tool_pencil", bits: pictureBits.slice() });
+pushHistoryEntry(history, { labelKey: "clio_paint_tool_fill", bits: pictureBits.slice() });
+test.assert(history.past.length === 2, "committing a step puts it on the undo stack");
+history.future.push(history.past.pop());
+test.assert(history.past.length === 1 && history.future.length === 1, "undo moves a step to the redo stack");
+pushHistoryEntry(history, { labelKey: "clio_paint_tool_line", bits: pictureBits.slice() });
+test.assert(history.future.length === 0, "drawing something new closes the redo branch");
+
+const longHistory = { past: [], future: [] };
+for (let step = 1; step <= 70; step += 1) {
+  pushHistoryEntry(longHistory, { labelKey: `step-${step}`, bits: pictureBits.slice() });
+}
+test.assert(longHistory.past.length === 60, "the undo stack stops at sixty steps instead of growing without bound");
+test.assert(longHistory.past[0].labelKey === "step-11", "and it is the oldest step that falls off");
+test.assert(longHistory.past[59].labelKey === "step-70", "with the newest still last");
+
+// ---- Shift: constrain proportions, executed --------------------------------
+//
+// What Shift means while a shape is drawn is a rule, not a rendering choice,
+// so it is checked as a rule.
+const constrainSlice = source.slice(
+  source.indexOf("function clioPaintConstrainPoint"),
+  source.indexOf("function clioPaintDrawShape")
+);
+const constrainContext = vm.createContext({});
+vm.runInContext(constrainSlice, constrainContext);
+const constrainPoint = vm.runInContext("clioPaintConstrainPoint", constrainContext);
+
+const horizontalish = constrainPoint({ x: 10, y: 10 }, { x: 60, y: 14 }, "line", true);
+test.assert(horizontalish.y === 10, "a nearly horizontal line snaps flat");
+test.assert(horizontalish.x === 60, "and keeps its length");
+const diagonal = constrainPoint({ x: 0, y: 0 }, { x: 30, y: 32 }, "line", true);
+test.assert(diagonal.x === diagonal.y, "a nearly diagonal line snaps to 45 degrees");
+const square = constrainPoint({ x: 10, y: 10 }, { x: 50, y: -5 }, "rect", true);
+test.assert(square.x === 50 && square.y === -30, "a rectangle becomes a square, on the side it was dragged to");
+const circle = constrainPoint({ x: 20, y: 20 }, { x: 30, y: 45 }, "oval", true);
+test.assert(circle.x - 20 === 25 && circle.y - 20 === 25, "an oval becomes a circle");
+const freehand = constrainPoint({ x: 10, y: 10 }, { x: 50, y: -5 }, "rect", false);
+test.assert(freehand.x === 50 && freehand.y === -5, "with Shift up the shape goes exactly where the pointer is");
+
+// ---- The wiring: what the window claims, and what it leaves alone ----------
+test.assertIncludes(source, 'data-action="clio-paint-redo"', "the toolbar carries the other half of undo");
+test.assertIncludes(source, '"clio-paint-redo",', "Redo is a command like every other Paint command");
+test.assert(
+  en.includes("clio_paint_nothing_to_redo:") && zh.includes("clio_paint_nothing_to_redo:"),
+  "a Redo with an empty stack has an answer in both languages"
+);
+test.assertMatches(
+  source,
+  /clioPaintInstanceResources\(\)\.listen\(document, "keydown", handleClioPaintHistoryKeydown, \{ capture: true \}\)/,
+  "undo/redo is claimed in the capture phase, which is what reaches the key before the desk's bubble-phase dispatcher"
+);
+test.assertMatches(
+  source,
+  /function handleClioPaintHistoryKeydown\(event\)\s*\{[\s\S]*?event\.preventDefault\(\)/,
+  "and it claims the key by preventing the default, so the desk does not also answer it"
+);
+test.assertMatches(
+  source,
+  /function handleClioPaintHistoryKeydown\(event\)\s*\{[\s\S]*?has-system-modal[\s\S]*?event\.preventDefault\(\)/,
+  "a dialog the writer has to answer keeps the key, rather than the picture behind it"
+);
+test.assert(
+  (source.match(/shortcutId: "redo"/g) || []).length === 1,
+  "the Paint menu prints the key it actually answers to on its Redo row"
+);
+test.assertIncludes(source, "clioPaintState.history = { past: [], future: [], pending: null };", "a new or loaded picture starts with an empty history");
+test.assertIncludes(source, "clioPaintState.savedBits = clioPaintPackCanvas();", "saving records the picture undo is allowed to call saved");
+
+// Escape cancels the operation under the pointer without writing a step.
+const cancelBody = source.slice(
+  source.indexOf("function cancelClioPaintOperation"),
+  source.indexOf("function clioPaintThreshold")
+);
+test.assertNotIncludes(cancelBody, "clioPaintCommitHistory(", "a cancelled operation leaves no step behind, so Undo never has to undo it");
+test.assertIncludes(cancelBody, "clioPaintRestorePending();", "Escape puts the picture back the way it was");
+test.assertMatches(
+  source,
+  /if \(event\.key === "Escape"\) \{\s*if \(cancelClioPaintOperation\(\)\)/,
+  "the window's own Escape handler asks the drawing first, before dropping the marquee"
+);
+
+// A selection that can be moved, not only cleared.
+test.assertIncludes(source, "function clioPaintBeginSelectionDrag(point)", "a press inside the marquee starts a move");
+test.assertMatches(
+  source,
+  /tool === "marquee" && !clioPaintBeginSelectionDrag\(point\)\) clioPaintBeginMarquee\(point, event\.shiftKey\)/,
+  "and a press anywhere else starts a new marquee instead"
+);
+test.assertIncludes(source, "clioPaintCommitHistory(clioPaintToolLabelKey(\"move\"), { coalesce: true });", "a move is one history row, however many frames it took");
+test.assertIncludes(source, "function clioPaintNudgeSelection(dx, dy)", "the arrow keys move the selection a pixel at a time");
+test.assertIncludes(source, "clioPaintState.savedBits = clioPaintPackCanvas();", "the picture on disk stays the reference for 'unsaved'");
+test.assertIncludes(
+  source,
+  'button.dataset.clioPaintUnavailable = canRun ? "" : control.emptyKey;',
+  "a history button that is off records which emptiness turned it off, not just that it is off"
+);
+test.assertMatches(
+  source,
+  /function handleClioPaintKeydown\(event\)\s*\{[\s\S]{0,400}?if \(event\.defaultPrevented\) return;/,
+  "and Delete, Escape and the arrows stand back from a key an open menu or dialog already answered"
+);
+
+// The JS Paint borrowings are recorded where the mechanism is, so the next
+// reader knows why the shape is what it is.
+test.assertIncludes(source, "JS Paint", "the module says which precedent it followed");
+
 test.finish();

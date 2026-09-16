@@ -406,30 +406,41 @@ async function printSelectedProjectCdItem() {
 }
 
 async function addProjectCdItem(markdown, name, options = {}) {
-  if (!getActiveProject()) {
+  const mountedProject = getActiveProject();
+  if (!mountedProject) {
     setStatus(t("no_project_mounted"));
     return null;
   }
 
+  // Everything this burn needs is named now, before anything is awaited: the
+  // project it belongs to, the document it protects, and the CD item it means
+  // to replace. The burn waits for the pre-burn version history - a real write
+  // with a real delay - and the desk is free to move under it while it waits.
+  const projectId = String(mountedProject.id);
   const title = `${sanitizeFilename(name)}.md`;
   // The full record is assembled ONCE from the explicit options; callers must
   // not patch sourceDocumentId etc. onto the result afterwards.
   const sourceDocumentId = String(options.sourceDocumentId ?? activeTextFileId ?? "");
   const sourceKind = String(options.sourceKind || "markdown");
-  const existingIndex = projectCdItems.findIndex((item) =>
-    item.projectId === activeProjectId && item.title === title
+  // The overwrite target is captured as an IDENTITY, never as an array
+  // position: another burn can insert a file ahead of it while this one waits,
+  // and an index remembered from before the await then deletes a file nobody
+  // asked to touch. The id is used by the "is this still the same record"
+  // check below, not to address the array.
+  const requestedTargetId = String(
+    projectCdItems.find((item) => item.projectId === projectId && item.title === title)?.id || ""
   );
   const now = new Date().toISOString();
   const item = {
-    id: existingIndex >= 0 ? projectCdItems[existingIndex].id : crypto.randomUUID(),
-    projectId: activeProjectId,
+    id: requestedTargetId || crypto.randomUUID(),
+    projectId,
     title,
     format: String(options.format || "text/markdown"),
     body: markdown,
     sourceDocumentId,
     sourceKind,
     claimCheckId: String(options.claimCheckId || ""),
-    burnedAt: existingIndex >= 0 ? projectCdItems[existingIndex].burnedAt : now,
+    burnedAt: now,
     updatedAt: now,
     languageMode: /Bilingual/i.test(String(name || "")) ? "bilingual" : "original",
     metadata: {
@@ -445,8 +456,8 @@ async function addProjectCdItem(markdown, name, options = {}) {
   if (typeof createDocumentRevision === "function") {
     try {
       await createDocumentRevision({
-        projectId: activeProjectId,
-        documentId: item.sourceDocumentId || activeTextFileId || "",
+        projectId,
+        documentId: sourceDocumentId || activeTextFileId || "",
         body: markdown,
         origin: "system",
         operation: "project-cd",
@@ -458,17 +469,53 @@ async function addProjectCdItem(markdown, name, options = {}) {
       return null;
     }
   }
+
+  /** @type {any} */
+  let stored = null;
+  let refused = false;
   await window.AISystem6StateStores?.projects.commit((draft) => {
-    if (existingIndex >= 0) {
-      draft.projectCdItems.splice(existingIndex, 1);
+    // The identity of the burn is decided INSIDE the commit queue, where the
+    // draft is the desk as it stands when this write really runs. The index
+    // taken before the version history was written says nothing about what is
+    // at that position now.
+    if (!draft.projects.some((project) => String(project?.id) === projectId)) {
+      // The project this burn belonged to is gone. Writing its CD item anyway
+      // would file a deliverable under a disk the writer no longer has.
+      refused = true;
+      return;
     }
-    draft.projectCdItems.unshift(item);
+    const replaceIndex = draft.projectCdItems.findIndex(
+      (entry) => String(entry?.projectId) === projectId && entry?.title === title
+    );
+    const takingOver = replaceIndex >= 0 ? draft.projectCdItems[replaceIndex] : null;
+    if (takingOver) {
+      // Same project and same file name: the burn replaces that deliverable in
+      // place, keeping its identity and the date it first landed. This is also
+      // what makes two burns of one name converge on one record.
+      stored = { ...item, id: takingOver.id, burnedAt: takingOver.burnedAt || item.burnedAt };
+      draft.projectCdItems.splice(replaceIndex, 1);
+    } else {
+      // Nothing holds this file name now. The record the burn set out to
+      // replace may have been deleted, or renamed away from this title. The id
+      // captured for that record is not this new file's to take: reusing it
+      // either quietly rebuilds a record the writer deleted or collides with
+      // the record that now holds the id. Only an id reserved for a record
+      // that never existed - and that nothing has taken since - may be used.
+      const reservedIsFree = !requestedTargetId
+        && !draft.projectCdItems.some((entry) => entry?.id === item.id);
+      stored = reservedIsFree ? item : { ...item, id: crypto.randomUUID() };
+    }
+    draft.projectCdItems.unshift(stored);
   });
-  selectedProjectCdItemId = item.id;
+  if (refused || !stored) {
+    setStatus(t("no_project_mounted"));
+    return null;
+  }
+  selectedProjectCdItemId = stored.id;
   selectedProjectCdItemIds.clear();
-  selectedProjectCdItemIds.add(item.id);
+  selectedProjectCdItemIds.add(stored.id);
   renderProjectCd();
-  return item;
+  return stored;
 }
 
 function activeTeachTextCanBurn() {

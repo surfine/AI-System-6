@@ -99,6 +99,14 @@ if (!allTests.length) {
   process.exit(1);
 }
 
+// Who is here, without running anything. `verify:quick` asks this before it
+// builds, so a mistyped selector is answered in milliseconds instead of after a
+// full bundle rebuild.
+if (process.argv.includes("--list")) {
+  allTests.forEach((name) => console.log(featureName(name)));
+  process.exit(0);
+}
+
 const unknown = requested.filter((name) => !allTests.some((file) => name === file || name === featureName(file)));
 if (unknown.length) {
   console.error(`NO  unknown feature selector(s): ${unknown.join(", ")}. No tests ran.`);

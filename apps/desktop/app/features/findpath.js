@@ -167,6 +167,10 @@ function renderFindPathResults() {
 // cited answer plus the raw search results; both stay temporary until the
 // user opens a source in Reader.
 let findPathWebAnswer = null;
+// The text of a search that stopped before its final envelope. Kept beside the
+// finished answer so the summary surface can say which of the two it is
+// showing: a partial reply is not an answer, and it is not nothing either.
+let findPathIncompleteAnswer = "";
 
 /**
  * Show the synthesized online answer above the results list. Keeps the
@@ -177,6 +181,10 @@ let findPathWebAnswer = null;
  */
 function renderWebAnswerSummary(deepSeekProvider) {
   const answer = deepSeekProvider ? findPathWebAnswer?.answer : "";
+  if (!answer && deepSeekProvider && findPathIncompleteAnswer) {
+    renderWebSearchIncomplete(findPathIncompleteAnswer);
+    return;
+  }
   if (!answer) {
     findPathSummaryEl.classList.add("is-hidden");
     findPathSummaryEl.replaceChildren();
@@ -215,6 +223,30 @@ function renderWebSearchStreamingText(text) {
 }
 
 /**
+ * The text a stopped search did receive, kept on screen but labelled for what
+ * it is. The reply never reached its final envelope, so there are no sources
+ * yet - unknown, not absent - and nothing here may read as a finished answer.
+ *
+ * @param {string} text
+ */
+function renderWebSearchIncomplete(text) {
+  const body = String(text || "").trim();
+  if (!body) return;
+  findPathSummaryEl.classList.remove("is-hidden");
+  findPathSummaryEl.replaceChildren();
+  const label = document.createElement("div");
+  label.className = "hint";
+  label.textContent = t("search_answer_incomplete_label");
+  const content = document.createElement("div");
+  content.textContent = body;
+  const note = document.createElement("div");
+  note.className = "hint";
+  note.textContent = t("search_answer_incomplete_note");
+  findPathSummaryEl.append(label, content, note);
+  findPathSummaryEl.scrollTop = 0;
+}
+
+/**
  * Run Searcher's DeepSeek online-answer provider. The server calls the
  * Responses API web_search tool once and returns the cited answer plus the
  * search results; this function keeps the answer in module state and returns
@@ -225,6 +257,7 @@ function renderWebSearchStreamingText(text) {
  */
 async function runWebAnswerSearch(query) {
   findPathWebAnswer = null;
+  findPathIncompleteAnswer = "";
   const response = await window.AISystem6Capabilities.requestService("search.remote", {
     path: "/api/search/answer",
     init: {
@@ -241,9 +274,27 @@ async function runWebAnswerSearch(query) {
   if (!response.ok) {
     throw new Error(await response.text());
   }
-  const result = await readWebSearchStream(response, {
-    onDelta: (text) => renderWebSearchStreamingText(text),
-  });
+  let result = null;
+  try {
+    result = await readWebSearchStream(response, {
+      onDelta: (text) => renderWebSearchStreamingText(text),
+    });
+  } catch (error) {
+    const code = String(error?.code || "");
+    if (code !== "web_search_incomplete" && code !== "web_search_invalid_event") throw error;
+    // The partial text stays visible, under the honest label: the summary is
+    // drawn from this on the repaint the failure triggers, so the clear that
+    // repaint performs cannot wipe it. The failure still travels, so the
+    // results pane and the status bar report a search that did not finish
+    // instead of an answer that did.
+    findPathIncompleteAnswer = String(error?.partialContent || "").trim();
+    const stopped = new Error(t(
+      code === "web_search_invalid_event" ? "search_answer_broken_event" : "search_answer_incomplete_note"
+    ));
+    stopped.code = code;
+    stopped.partialContent = String(error?.partialContent || "");
+    throw stopped;
+  }
   findPathWebAnswer = {
     answer: String(result.answer || ""),
     citations: Array.isArray(result.citations) ? result.citations : [],

@@ -6,6 +6,15 @@
 const renderSignatureCache = new Map();
 const storageSnapshotCache = new Map();
 const storageRecordFingerprintCache = new Map();
+// ONE monotonic serial for every "this record moved" report, never reset while
+// the window lives. A save plan freezes the serial it saw for each record and
+// only answers that exact report; a report that arrived while the transaction
+// was open is newer, and the next plan has to write what it stands for.
+//
+// A counter that restarted (per record, or cleared with a collection) would
+// hand a fresh edit the number an answered one had, and the newer edit would
+// be mistaken for the one already on disk.
+let deskChangeSerial = 0;
 const dirtyDeskRecords = new Map();
 const deletedDeskRecords = new Map();
 // Records whose deletion the disk has already confirmed. The fingerprint cache
@@ -15,7 +24,7 @@ const deletedDeskRecords = new Map();
 // costs a transaction with nothing in it, and it reports a store the desk never
 // wrote.
 const confirmedDeletes = new Set();
-const dirtyDeskCollections = new Set();
+const dirtyDeskCollections = new Map();
 // Conflicts are tracked per collection and id, not as one flag for the desk.
 // A single boolean meant a receipt that landed cleanly could clear a
 // manuscript's standing conflict, and the status bar would then claim a file
@@ -202,25 +211,61 @@ function scheduleDeskCollectionRender(keys, options = {}) {
   scheduleRenderTasks([...tasks]);
 }
 
+/**
+ * The key a mark has to carry to be the one the save plan looks up.
+ *
+ * Every collection is keyed by the record's own id except the Trash, whose
+ * records are stored under a separate `_storageId` (its business record is the
+ * trashed object, and the same object can be trashed twice). A caller that
+ * knows a trashed record by its business id - a state-store commit hands over
+ * `item.id ?? item._storageId` - would otherwise mark a key no plan record
+ * ever has, and the report would be dropped on the floor.
+ *
+ * @param {string} kind
+ * @param {any} recordId
+ */
+function deskMarkCacheKey(kind, recordId) {
+  const value = String(recordId ?? "");
+  if (kind !== "trash" || !value) return value;
+  try {
+    if (!Array.isArray(trashItems)) return value;
+    const index = trashItems.findIndex(
+      (item) => String(item?.id ?? "") === value || String(item?._storageId ?? "") === value
+    );
+    if (index < 0) return value;
+    return String(deskRecordIdentity(kind, trashItems[index], index));
+  } catch {
+    // The collection is not loaded yet: the report keeps the id the caller
+    // used, and the record still reaches the disk the way a new record does.
+    return value;
+  }
+}
+
 function markDeskDirty(kind = "settings", recordId = "") {
   if (kind === "settings") {
     storageSnapshotCache.delete("settings");
     return;
   }
+  const serial = (deskChangeSerial += 1);
   if (!recordId) {
-    dirtyDeskCollections.add(kind);
+    // A mark without a record names the whole collection: something here
+    // moved without saying which record, so the plan may not skip any of it.
+    dirtyDeskCollections.set(kind, serial);
     return;
   }
-  if (!dirtyDeskRecords.has(kind)) dirtyDeskRecords.set(kind, new Set());
-  dirtyDeskRecords.get(kind).add(String(recordId));
-  deletedDeskRecords.get(kind)?.delete(String(recordId));
+  const cacheKey = deskMarkCacheKey(kind, recordId);
+  if (!dirtyDeskRecords.has(kind)) dirtyDeskRecords.set(kind, new Map());
+  dirtyDeskRecords.get(kind).set(cacheKey, serial);
+  deletedDeskRecords.get(kind)?.delete(cacheKey);
 }
 
 function markDeskDeleted(kind, recordId) {
   if (!kind || recordId === undefined || recordId === null || recordId === "") return;
-  if (!deletedDeskRecords.has(kind)) deletedDeskRecords.set(kind, new Set());
-  deletedDeskRecords.get(kind).add(String(recordId));
-  dirtyDeskRecords.get(kind)?.delete(String(recordId));
+  const serial = (deskChangeSerial += 1);
+  const cacheKey = deskMarkCacheKey(kind, recordId);
+  if (!deletedDeskRecords.has(kind)) deletedDeskRecords.set(kind, new Map());
+  deletedDeskRecords.get(kind).set(cacheKey, serial);
+  dirtyDeskRecords.get(kind)?.delete(cacheKey);
 }
 
 // Typing marks its own record, at the keystroke. Waiting for the autosave
@@ -1270,12 +1315,24 @@ function deskCollectionPlan(definition) {
   // the evidence that the writers are still trustworthy.
   const trustReports = trustedKeys.includes(key)
     && window.AISystem6ScanShadow?.isEnabled?.() !== true;
+  // A collection-wide mark says "something in here moved, and the writer did
+  // not name it". It has to defeat the trusted fast path - otherwise the one
+  // report that admits it does not know which record moved is the report the
+  // plan skips - and it is captured by serial so that a mark arriving while
+  // this plan is being written out belongs to the next save.
+  const collectionSerial = dirtyDeskCollections.get(key) || 0;
   const dirtyHere = dirtyDeskRecords.get(key);
+  const deletedHere = deletedDeskRecords.get(key);
+  // What each write of this plan answers. Only the serial frozen here stops
+  // being dirty, so an edit that lands while the transaction is open stays
+  // reported for the save that follows it.
+  const serials = { collection: collectionSerial, puts: new Map(), deletes: new Map() };
   definition.items.forEach((liveItem, index) => {
     const id = deskRecordIdentity(key, liveItem, index);
     const cacheKey = String(id);
     const known = previous.get(cacheKey);
-    if (trustReports && known && !dirtyHere?.has(cacheKey)) {
+    const dirtySerial = dirtyHere?.get(cacheKey) || 0;
+    if (trustReports && known && !collectionSerial && !dirtySerial) {
       // Nothing reported this record and it is already on the desk: carry the
       // base forward without re-reading bytes that are, by the writers' own
       // account, unchanged. This is what makes a save cost what the edit cost.
@@ -1287,7 +1344,7 @@ function deskCollectionPlan(definition) {
     // desk, not by the edit: the comparison is the scan.
     const fingerprint = deskRecordFingerprint(liveItem);
     current.set(cacheKey, { id, fingerprint });
-    if (known?.fingerprint !== fingerprint || dirtyHere?.has(cacheKey)) {
+    if (known?.fingerprint !== fingerprint || dirtySerial) {
       // Freeze only what this plan will write. A plan is a promise about the
       // bytes it will store, so the write may not be "whatever the live object
       // says when the transaction finally opens": typing continues while
@@ -1296,6 +1353,7 @@ function deskCollectionPlan(definition) {
       // copy at all.
       const item = freezeDeskWriteValue(liveItem);
       puts.push({ id, item, base: known?.fingerprint });
+      serials.puts.set(cacheKey, dirtySerial);
     }
   });
   const deletes = [];
@@ -1303,14 +1361,16 @@ function deskCollectionPlan(definition) {
     if (current.has(cacheKey)) continue;
     if (confirmedDeletes.has(`${key}:${cacheKey}`)) continue;
     deletes.push({ id: cached.id, base: cached.fingerprint });
+    serials.deletes.set(cacheKey, deletedHere?.get(cacheKey) || 0);
   }
-  for (const cacheKey of deletedDeskRecords.get(key) || []) {
+  for (const cacheKey of deletedHere?.keys() || []) {
     const cached = previous.get(cacheKey);
     if (cached && !deletes.some((entry) => String(entry.id) === String(cached.id))) {
       deletes.push({ id: cached.id, base: cached.fingerprint });
+      serials.deletes.set(cacheKey, deletedHere.get(cacheKey) || 0);
     }
   }
-  return { ...definition, current, puts, deletes };
+  return { ...definition, current, puts, deletes, serials };
 }
 
 // The window that holds the write lease holds the DATABASE CONNECTION, not the
@@ -1718,22 +1778,39 @@ async function persistDeskState() {
       changedPlans.forEach((plan) => {
         const dirty = dirtyDeskRecords.get(plan.key);
         const deleted = deletedDeskRecords.get(plan.key);
+        const serials = plan.serials || { collection: 0, puts: new Map(), deletes: new Map() };
         const resolved = [];
         plan.puts.forEach(({ id }) => {
           const cacheKey = String(id);
-          dirty?.delete(cacheKey);
+          const serial = serials.puts.get(cacheKey) || 0;
+          // Only the report this plan froze stops being pending: a record
+          // that moved again while the transaction was open keeps its newer
+          // report for the next save.
+          if (serial && dirty?.get(cacheKey) === serial) dirty.delete(cacheKey);
           confirmedDeletes.delete(`${plan.key}:${cacheKey}`);
           resolved.push({ key: plan.key, id: cacheKey });
         });
         plan.deletes.forEach(({ id }) => {
           const cacheKey = String(id);
-          dirty?.delete(cacheKey);
-          deleted?.delete(cacheKey);
-          confirmedDeletes.add(`${plan.key}:${cacheKey}`);
+          const serial = serials.deletes.get(cacheKey) || 0;
+          // The same rule for a removal: a record deleted and put back while
+          // the delete was in flight keeps its newer tombstone.
+          if (serial && deleted?.get(cacheKey) === serial) {
+            deleted.delete(cacheKey);
+            dirty?.delete(cacheKey);
+            confirmedDeletes.add(`${plan.key}:${cacheKey}`);
+          }
           resolved.push({ key: plan.key, id: cacheKey });
         });
         clearDeskRecordConflicts(resolved);
-        if (!dirty?.size && !deleted?.size) dirtyDeskCollections.delete(plan.key);
+      });
+      // A collection-wide mark is answered by the plan that saw it: the scan
+      // happened, and a later mark stands for a save that has not looked yet.
+      plans.forEach((plan) => {
+        const serial = plan.serials?.collection || 0;
+        if (serial && dirtyDeskCollections.get(plan.key) === serial) {
+          dirtyDeskCollections.delete(plan.key);
+        }
       });
       setDeskRecordConflictStanding(false);
       window.AISystem6DerivedIndexQueue?.afterProjectCommit();

@@ -175,19 +175,12 @@ body.quick-draft-focus .writing-spine-panel {
 
 .spine-actions button:disabled .sys-icon,
 .spine-actions button.is-disabled .sys-icon {
-  -webkit-mask-image: repeating-conic-gradient(#000 0% 25%, transparent 0% 50%);
+  /* Unprefixed only: every browser this desk runs in has had `mask-image` since
+     2022, and the pair of declarations cost 120 bytes of a boot payload that
+     has 512 to spare. The ejected disk in 40-icons.css keeps its prefix - that
+     rule predates this one and is not mine to re-verify. */
   mask-image: repeating-conic-gradient(#000 0% 25%, transparent 0% 50%);
-  -webkit-mask-size: 2px 2px;
   mask-size: 2px 2px;
-}
-
-/* The number is part of the same stop, so it dims with it. Its border was the
-   one full-ink line left in a greyed item, which read as the stop being
-   available and only its contents missing. */
-.spine-actions button:disabled .spine-step-number,
-.spine-actions button.is-disabled .spine-step-number {
-  border-color: var(--shade-dark);
-  color: var(--shade-dark);
 }
 
 .spine-actions .icon,

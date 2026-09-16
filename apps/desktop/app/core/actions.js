@@ -24,6 +24,15 @@ const keyboardShortcutRegistry = [
   { id: "save", key: "s", action: "save-current", display: "⌘S", labelKey: "save_current", keyCaps: true, scope: ["teachText", "clioTalk", "quickDraft"] },
   { id: "save-copy", key: "s", shift: true, action: "save-copy", display: "⇧⌘S", labelKey: "save_copy", keyCaps: true, scope: ["teachText"] },
   { id: "close-window", key: "w", action: "close-active-window", display: "⌘W", labelKey: "close_window", keyCaps: true, scope: "global" },
+  // The desk's windows, in the order Mac OS X walks them: front-most first,
+  // backwards with Shift. A browser can claim ⌘` for its own windows before the
+  // page ever sees it (98.js hit the same wall with Alt+Tab and had to choose
+  // another combination), which is why the same list is reachable from the
+  // right end without the key.
+  // Pinned by physical key: with Shift held, `event.key` is "~" on most
+  // layouts, so the shifted row would never match on `key` alone.
+  { id: "cycle-window", key: "`", code: "Backquote", action: "cycle-window", display: "⌘`", labelKey: "cycle_window", keyCaps: true, scope: "global" },
+  { id: "cycle-window-back", key: "`", code: "Backquote", shift: true, action: "cycle-window-back", display: "⇧⌘`", labelKey: "cycle_window_back", keyCaps: true, scope: "global" },
   // Holding a thought has to work while the writer is typing, so it is
   // deliberately NOT suppressed in an editable — mid-sentence is exactly when
   // the door goes — and it claims nothing a text field already uses. It matches
@@ -1478,6 +1487,10 @@ function getApplicationActionHandlers() {
     "hide-other-apps": hideOtherApps,
     "show-all-apps": showAllApps,
     "bring-app-front": () => bringAppToFront(activeAppId),
+    // The window half of the same question: ⌘` walks the application's own
+    // windows, front-most first.
+    "cycle-window": () => cycleApplicationWindows(1),
+    "cycle-window-back": () => cycleApplicationWindows(-1),
     "quit-active-app": () => quitApp(activeAppId),
     "close-save-chat": closeSaveChatDialog,
   };

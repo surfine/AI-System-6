@@ -146,12 +146,19 @@ test.assertNotMatches(
 test.assertIncludes(windowsCss, ".spine-actions button.is-selected b {", "the stop the writer is in reverses its label through the shared selected state");
 test.assertIncludes(windowManager, 'button.classList.toggle("is-selected", current);', "the palette sets the shared selected state");
 test.assertIncludes(liquidCss, "body.use-liquid-glass .spine-actions button.is-selected b", "Liquid Glass reverses the selected label and sets its text fill");
+test.assertIncludes(liquidCss, "body.use-liquid-glass .spine-actions button.holds-pen .spine-step-number", "Liquid Glass reverses the pen badge too");
 test.assertIncludes(windowsCss, ".spine-actions button.holds-pen .spine-step-number {", "the stop that owns the text fills its step badge");
-// The badge is the route's annotation, not one of the era's controls, so the
-// Liquid Glass sheet must not re-shape it: a pill centred on the artwork here
-// against a corner chip in five other appearances is two maps for one route.
-// The era still shows through --paper/--ink, which the shared rule reads.
-test.assertNotIncludes(liquidCss, ".spine-step-number", "Liquid Glass leaves the step badge to the shared rule, in the shared shape");
+// The two shapes are the two conventions, not a drift to be corrected: Liquid
+// Glass marks a step with a filled circle centred on the artwork, and the five
+// appearances before it draw a square chip on the icon's corner. An earlier
+// pass unified them by deleting the Liquid rule and making the pen badge a
+// circle everywhere; this pins both halves so that cannot happen again.
+test.assertIncludes(liquidCss, "border-radius: var(--r-pill);", "Liquid Glass keeps its circular step badge");
+test.assertNotMatches(
+  windowsCss,
+  /\.spine-actions button\.holds-pen \.spine-step-number \{[^}]*border-radius/,
+  "the square-chip appearances keep a square pen badge",
+);
 // The terminus is greyed the way this desk greys anything it cannot read: by
 // dropping every other pixel of the artwork, the same 2px checker the ejected
 // disks wear. It used to be a 45-degree hazard stripe across the whole button,

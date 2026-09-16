@@ -2867,6 +2867,12 @@ input[type="checkbox"]:checked {
   background-image:
     var(--choice-checkmark-image),
     var(--choice-checked-bg-image, none);
+  /* The tick can be its own size. 10.6 draws it 14px in a 14px well, and the
+     absolute fidelity floor measures the difference: at the shared 12px the
+     glyph scored markMismatch 0.619 against the reference's 0.35 ceiling. */
+  background-size:
+    var(--choice-checkmark-size, 12px 12px),
+    var(--choice-checked-bg-size, 12px 12px);
   border-color: var(--choice-checked-border-color, inherit);
   box-shadow: var(--choice-checked-shadow, inherit);
 }

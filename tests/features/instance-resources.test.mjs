@@ -77,6 +77,11 @@ test.assert(
     window.__live = window.AISystem6InstanceResources.create("live-timer");
     window.__live.timeout(() => { window.__liveFired += 1; }, 5);
     window.__liveSizeBefore = window.__live.size;
+
+    window.__lateFired = 0;
+    window.__late = window.AISystem6InstanceResources.create("late-timer");
+    window.__late.dispose("closed");
+    window.__late.timeout(() => { window.__lateFired += 1; }, 5);
   `, timerContext);
   await new Promise((resolve) => setTimeout(resolve, 80));
   const timers = vm.runInContext(`({
@@ -84,6 +89,7 @@ test.assert(
     liveFired: window.__liveFired,
     liveSizeBefore: window.__liveSizeBefore,
     liveSizeAfter: window.__live.size,
+    lateFired: window.__lateFired,
   })`, timerContext);
   test.assert(
     timers.cancelledFired === 0,
@@ -92,6 +98,10 @@ test.assert(
   test.assert(
     timers.liveFired === 1 && timers.liveSizeBefore === 1 && timers.liveSizeAfter === 0,
     "a timer that runs to the end leaves the registry by itself"
+  );
+  test.assert(
+    timers.lateFired === 0,
+    "a timer asked for after disposal never starts"
   );
 }
 
@@ -106,5 +116,106 @@ const selfEnding = await run(`
   })()
 `);
 test.assert(selfEnding.length === 0, "a resource that ended on its own is not released again");
+
+// A disposed instance is finished, not paused: it may not create anything it
+// no longer has a place to remember. The public shape is unchanged - the calls
+// still return a function that removes a registration without running it.
+const afterDispose = await run(`
+  (() => {
+    const resources = window.AISystem6InstanceResources.create("finished-window");
+    const target = document;
+    let heard = 0;
+    resources.add(() => {}, "first");
+    resources.dispose("closed");
+    const removeListener = resources.listen(target, "instance-resource-late-ping", () => { heard += 1; });
+    target.dispatchEvent(new Event("instance-resource-late-ping"));
+    return {
+      heard,
+      size: resources.size,
+      removedCleanly: typeof removeListener() === "undefined",
+      removedTimer: typeof resources.timeout(() => { heard += 1; }, 1) === "function",
+    };
+  })()
+`);
+test.assert(
+  afterDispose.heard === 0 && afterDispose.size === 0,
+  "a disposed instance installs no listener and reports no resource"
+);
+test.assert(
+  afterDispose.removedCleanly === true && afterDispose.removedTimer === true,
+  "and the register calls still answer with their unregister function"
+);
+
+const lateCleanups = await run(`
+  (() => {
+    const resources = window.AISystem6InstanceResources.create("late-cleanup");
+    const order = [];
+    resources.add(() => order.push("before"), "before");
+    resources.dispose("closed");
+    const remove = resources.add(() => order.push("late"), "late");
+    remove();
+    return { order, returnedFunction: typeof remove };
+  })()
+`);
+test.assert(
+  lateCleanups.order.join(",") === "before,late",
+  "a cleanup handed to an already disposed instance runs at once instead of being dropped"
+);
+test.assert(
+  lateCleanups.returnedFunction === "function"
+    && lateCleanups.order.filter((entry) => entry === "late").length === 1,
+  "the unregister function it hands back cannot run that cleanup a second time"
+);
+
+// A stale reference is the case this rule exists for: the async task that
+// resumed after the window was destroyed must not leave a live resource behind
+// on the instance that already reported itself released.
+const staleReference = await run(`
+  (() => {
+    const resources = window.AISystem6InstanceResources.create("stale-window");
+    const target = document;
+    let heard = 0;
+    const pending = Promise.resolve().then(() => {
+      resources.listen(target, "instance-resource-stale-ping", () => { heard += 1; });
+      resources.timeout(() => { heard += 1; }, 1);
+    });
+    resources.dispose("closed");
+    return pending.then(() => {
+      target.dispatchEvent(new Event("instance-resource-stale-ping"));
+      return { heard, size: resources.size };
+    });
+  })()
+`);
+test.assert(
+  staleReference.heard === 0 && staleReference.size === 0,
+  "work that resumes after disposal installs nothing on the instance it still holds"
+);
+
+{
+  // The failure was silent before: the cleanup was refused, the listener that
+  // was already attached stayed live, and nothing said so.
+  const quietContext = vm.createContext({ window: {}, console, setTimeout, clearTimeout });
+  vm.runInContext(read("app/core/instance-resources.js"), quietContext, { filename: "instance-resources.js" });
+  const outcome = vm.runInContext(`
+    (() => {
+      const resources = window.AISystem6InstanceResources.create("late-failure");
+      resources.dispose("closed");
+      const warnings = [];
+      const originalWarn = console.warn;
+      console.warn = (...args) => warnings.push(args.map(String).join(" "));
+      try {
+        resources.add(() => { throw new Error("late cleanup failed"); }, "late-failing");
+        resources.add(() => {}, "late-ok");
+      } finally {
+        console.warn = originalWarn;
+      }
+      return warnings;
+    })()
+  `, quietContext);
+  test.assert(
+    outcome.length === 1 && /late-failure/.test(outcome[0]),
+    "a cleanup that throws after disposal is reported, and it does not stop the next one"
+  );
+}
 
 test.finish();

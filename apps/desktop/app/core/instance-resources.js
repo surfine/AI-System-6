@@ -11,6 +11,12 @@
 // and a cleanup that throws must not stop the rest of the cleanup. So the
 // instance keeps its own list, and the abort path is one convenience on top of
 // it rather than the whole mechanism.
+//
+// Disposal is the end of the instance, not a checkpoint: a listener or a timer
+// asked for after it is refused rather than created, and a cleanup registered
+// after it runs immediately, so a late async task cannot leave a live resource
+// on an instance that has already reported itself released. Remounting is a
+// new instance's job.
 
 window.AISystem6InstanceResources = (() => {
   /**
@@ -21,10 +27,41 @@ window.AISystem6InstanceResources = (() => {
     const disposers = new Set();
     let disposed = false;
 
-    /** Register one cleanup. Returns a function that removes it without running. */
+    /**
+     * Run one cleanup, isolated and reported the same way dispose() reports
+     * one. @param {{ dispose: () => void, label: string }} entry
+     * @returns {{ label: string, error: any } | null}
+     */
+    const release = (entry) => {
+      try {
+        entry.dispose();
+        return null;
+      } catch (error) {
+        return { label: entry.label, error };
+      }
+    };
+
+    /**
+     * Register one cleanup. Returns a function that removes it without running.
+     *
+     * A registration that arrives after disposal is cleaned up at once: the
+     * caller may already have created the thing it is handing over - a
+     * listener attached a line earlier, an object URL - and dropping the
+     * cleanup on the floor is how a "disposed" instance keeps a live resource
+     * behind a size of zero. The returned function is a no-op, because the
+     * cleanup has already run and running it twice is a second side effect,
+     * not a second release.
+     */
     const add = (dispose, label = "") => {
-      if (disposed || typeof dispose !== "function") return () => {};
+      if (typeof dispose !== "function") return () => {};
       const entry = { dispose, label: String(label || "") };
+      if (disposed) {
+        const failure = release(entry);
+        if (failure) {
+          console.warn(`Instance "${name || "unnamed"}" could not release a resource registered after it was disposed.`, failure);
+        }
+        return () => {};
+      }
       disposers.add(entry);
       return () => disposers.delete(entry);
     };
@@ -44,7 +81,9 @@ window.AISystem6InstanceResources = (() => {
        * handlers that do not take one.
        */
       listen(target, type, handler, options = {}) {
-        if (!target?.addEventListener) return () => {};
+        // Nothing is created for a disposed instance: the listener would keep
+        // firing with no registry left to remember it.
+        if (disposed || !target?.addEventListener) return () => {};
         const controller = typeof AbortController === "function" && options.signal === undefined
           ? new AbortController()
           : null;
@@ -60,6 +99,9 @@ window.AISystem6InstanceResources = (() => {
       },
       /** A timer that is guaranteed to be cleared. */
       timeout(callback, delayMs) {
+        // Same rule as a listener: a disposed instance does not start new work
+        // it cannot later stop.
+        if (disposed) return () => {};
         const handle = setTimeout(() => {
           remove();
           callback();
@@ -76,11 +118,8 @@ window.AISystem6InstanceResources = (() => {
         disposed = true;
         const failures = [];
         [...disposers].reverse().forEach((entry) => {
-          try {
-            entry.dispose();
-          } catch (error) {
-            failures.push({ label: entry.label, error });
-          }
+          const failure = release(entry);
+          if (failure) failures.push(failure);
         });
         disposers.clear();
         if (failures.length) {

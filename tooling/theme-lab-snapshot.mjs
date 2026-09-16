@@ -36,9 +36,35 @@ const MAX_CAPTURE_ATTEMPTS = 2;
 
 const mode = process.argv[2] || "--verify";
 if (!["--verify", "--update"].includes(mode)) {
-  console.error("Usage: node tooling/theme-lab-snapshot.mjs --verify|--update");
+  console.error("Usage: node tooling/theme-lab-snapshot.mjs --verify|--update [--only <era>[,<era>...]]");
   process.exit(1);
 }
+
+/**
+ * The eras to capture.
+ *
+ * The default is all six, which is what a release gate wants. A developer who
+ * changed one era's stylesheet does not: six full-page captures take between
+ * forty seconds and two minutes on this machine, and five of them cannot have
+ * moved. Scoping is opt-in rather than inferred, because the capture is the
+ * evidence and a gate that guesses what to photograph is not a gate.
+ */
+const requestedThemes = (() => {
+  const index = process.argv.indexOf("--only");
+  const inline = process.argv.find((argument) => argument.startsWith("--only="));
+  const raw = inline ? inline.slice("--only=".length) : (index >= 0 ? process.argv[index + 1] : "");
+  return String(raw || "")
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+})();
+for (const themeId of requestedThemes) {
+  if (!THEMES.includes(themeId)) {
+    console.error(`--only ${themeId}: unknown era. Known: ${THEMES.join(", ")}`);
+    process.exit(1);
+  }
+}
+const selectedThemes = requestedThemes.length ? THEMES.filter((themeId) => requestedThemes.includes(themeId)) : THEMES;
 
 // Refuse to capture anything on a worktree whose reference submodule is empty:
 // the fallback font shifts every metric and the resulting diff blames innocent code.
@@ -395,7 +421,7 @@ try {
   // runs of an unchanged tree disagreed by more than the drift budget. A
   // release gate is worth the extra minute.
   const captured = [];
-  for (const themeId of THEMES) {
+  for (const themeId of selectedThemes) {
     const path = await captureThemeWithRetry(browser, server.url, themeId);
     console.log(`OK  captured Theme Lab: ${themeId}`);
     captured.push([themeId, path]);
@@ -403,13 +429,33 @@ try {
   const currentPaths = new Map(captured);
 
   if (mode === "--update") {
-    for (const themeId of THEMES) {
-      copyFileSync(currentPaths.get(themeId), join(BASELINE_DIR, `${themeId}.png`));
+    // Only the eras whose pixels actually moved are written. Rewriting a
+    // baseline that matched byte-for-byte used to re-encode all six PNGs on
+    // every update, so a one-era change arrived as a six-file diff and each
+    // reviewer had to work out by hand which five were noise.
+    let written = 0;
+    let unchanged = 0;
+    for (const themeId of selectedThemes) {
+      const baselinePath = join(BASELINE_DIR, `${themeId}.png`);
+      const current = currentPaths.get(themeId);
+      if (existsSync(baselinePath)) {
+        const result = await comparePng(baselinePath, current);
+        if (result.pass) {
+          unchanged += 1;
+          console.log(`OK  ${themeId}: baseline already matches (${result.detail})`);
+          continue;
+        }
+      }
+      copyFileSync(current, baselinePath);
+      written += 1;
+      console.log(`OK  ${themeId}: baseline written`);
     }
-    console.log(`OK  updated ${THEMES.length} Theme Lab baselines in tests/visual/theme-lab/`);
+    console.log(
+      `OK  ${written} Theme Lab baseline(s) written, ${unchanged} left alone, in tests/visual/theme-lab/`
+    );
   } else {
     let failed = 0;
-    for (const themeId of THEMES) {
+    for (const themeId of selectedThemes) {
       const baselinePath = join(BASELINE_DIR, `${themeId}.png`);
       if (!existsSync(baselinePath)) {
         console.error(`NO  missing Theme Lab baseline: ${baselinePath}`);
@@ -427,7 +473,7 @@ try {
       console.error(`Theme Lab visual verification failed: ${failed} era(s). Current captures: internal/evidence/drafts/theme-lab-current/`);
       process.exitCode = 1;
     } else {
-      console.log(`OK  Theme Lab visual verification passed for ${THEMES.length} eras.`);
+      console.log(`OK  Theme Lab visual verification passed for ${selectedThemes.length} era(s).`);
     }
   }
 } catch (error) {

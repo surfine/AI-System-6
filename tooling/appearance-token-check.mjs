@@ -68,6 +68,31 @@ const mode = process.argv.includes("--capture")
   ? "capture"
   : process.argv.includes("--noise") ? "noise" : "verify";
 
+/**
+ * The eras to sweep.
+ *
+ * All five by default, which is what a release gate wants. A developer who
+ * changed one era's stylesheet pays for the sweep five times over otherwise:
+ * the probe list is the same for every era, only the era's own values move. A
+ * scoped capture merges into the baseline instead of replacing it, so the eras
+ * it did not sweep keep the rows they already had.
+ */
+const requestedThemes = (() => {
+  const index = process.argv.indexOf("--only");
+  const inline = process.argv.find((argument) => argument.startsWith("--only="));
+  const raw = inline ? inline.slice("--only=".length) : (index >= 0 ? process.argv[index + 1] : "");
+  return String(raw || "").split(",").map((entry) => entry.trim()).filter(Boolean);
+})();
+for (const theme of requestedThemes) {
+  if (!TOKEN_COMPARED_THEMES.includes(theme)) {
+    console.error(`--only ${theme}: not a compared era. Known: ${TOKEN_COMPARED_THEMES.join(", ")}`);
+    process.exit(1);
+  }
+}
+const selectedThemes = requestedThemes.length
+  ? TOKEN_COMPARED_THEMES.filter((theme) => requestedThemes.includes(theme))
+  : TOKEN_COMPARED_THEMES;
+
 function stripComments(css) {
   return css.replace(/\/\*[\s\S]*?\*\//g, " ");
 }
@@ -330,7 +355,7 @@ async function readPass(page, themeId, probeList) {
 async function sweep(page, probeList) {
   const classicA = await readPass(page, "classic", probeList);
   const themePasses = {};
-  for (const theme of TOKEN_COMPARED_THEMES) {
+  for (const theme of selectedThemes) {
     themePasses[theme] = await readPass(page, theme, probeList);
   }
   const classicB = await readPass(page, "classic", probeList);
@@ -338,7 +363,7 @@ async function sweep(page, probeList) {
     Object.keys(classicA).filter((key) => classicA[key] !== classicB[key])
   );
   const deltas = {};
-  for (const theme of TOKEN_COMPARED_THEMES) {
+  for (const theme of selectedThemes) {
     const delta = {};
     for (const key of Object.keys(classicA)) {
       if (unstable.has(key)) continue;
@@ -368,7 +393,7 @@ try {
   if (mode === "noise") {
     const second = await sweep(page, probes);
     const disagreeing = new Set();
-    for (const theme of TOKEN_COMPARED_THEMES) {
+    for (const theme of selectedThemes) {
       const keys = new Set([...Object.keys(result.deltas[theme]), ...Object.keys(second.deltas[theme])]);
       for (const key of keys) {
         if (JSON.stringify(result.deltas[theme][key]) !== JSON.stringify(second.deltas[theme][key])) {
@@ -382,7 +407,7 @@ try {
     failed = disagreeing.size > 0;
   } else if (mode === "capture") {
     mkdirSync(dirname(BASELINE_PATH), { recursive: true });
-    const entryCount = TOKEN_COMPARED_THEMES.reduce((sum, theme) => sum + Object.keys(result.deltas[theme]).length, 0);
+    const entryCount = selectedThemes.reduce((sum, theme) => sum + Object.keys(result.deltas[theme]).length, 0);
     // A key can be stable inside one run and still disagree across runs when
     // the matched element set depends on window state (a disabled-button
     // count that settles 124/125/126 by mount timing). Capture runs a second
@@ -390,7 +415,7 @@ try {
     // skips them instead of testifying about a count that cannot be held.
     const second = await sweep(page, probes);
     const crossRunUnstable = new Set(result.unstable);
-    for (const theme of TOKEN_COMPARED_THEMES) {
+    for (const theme of selectedThemes) {
       const keys = new Set([...Object.keys(result.deltas[theme]), ...Object.keys(second.deltas[theme])]);
       for (const key of keys) {
         if (JSON.stringify(result.deltas[theme][key]) !== JSON.stringify(second.deltas[theme][key])) {
@@ -398,16 +423,33 @@ try {
         }
       }
     }
+    // A scoped capture merges: the eras it did not sweep keep the rows they
+    // already had, and the unstable set only ever grows within that scope (a
+    // key that has been seen to wander is safe to keep skipping). An
+    // unscoped capture is the reset, and rewrites the file whole.
+    const scoped = requestedThemes.length > 0;
+    const existing = scoped && existsSync(BASELINE_PATH)
+      ? JSON.parse(readFileSync(BASELINE_PATH, "utf8"))
+      : null;
+    if (scoped && !existing) {
+      console.error("--only needs an existing baseline to merge into; run a full capture first.");
+      process.exit(1);
+    }
+    const themes = scoped ? { ...existing.themes, ...result.deltas } : result.deltas;
+    const unstable = scoped
+      ? [...new Set([...(existing.unstable || []), ...crossRunUnstable])].sort()
+      : [...crossRunUnstable].sort();
     writeFileSync(BASELINE_PATH, `${JSON.stringify({
       generatedBy: "tooling/appearance-token-check.mjs --capture",
       probeCount: probes.length,
       geometryProbes: geometryCount,
       tokenProbes: tokenCount,
-      unstable: [...crossRunUnstable].sort(),
-      themes: result.deltas,
+      unstable,
+      themes,
     }, null, 1)}\n`);
     console.log(
-      `Captured token/geometry deltas for ${TOKEN_COMPARED_THEMES.join(", ")}: `
+      `Captured token/geometry deltas for ${selectedThemes.join(", ")}`
+        + `${scoped ? ` (merged into ${TOKEN_COMPARED_THEMES.length} eras)` : ""}: `
         + `${entryCount} classic-anchored entries from ${probes.length} probes `
         + `(${geometryCount} geometry, ${tokenCount} tokens; ${crossRunUnstable.size} dropped as self/cross-run unstable) `
         + `in ${((Date.now() - startedAt) / 1000).toFixed(1)}s`
@@ -427,7 +469,7 @@ try {
     const probeKeys = new Set(probes.map((probe) => `${probe.selector}|${probe.property}`));
     let compared = 0;
     let skipped = 0;
-    for (const theme of TOKEN_COMPARED_THEMES) {
+    for (const theme of selectedThemes) {
       const known = baseline.themes?.[theme] || {};
       const current = result.deltas[theme] || {};
       const keys = new Set([...Object.keys(known), ...Object.keys(current)]);

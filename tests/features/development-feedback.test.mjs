@@ -72,6 +72,37 @@ appendFileSync('gates.log', 'gate\\n');`);
   result = run("verify-quick.mjs", ["--gate", "fixture"], { ...env, BUILD_STATUS: "3" });
   assert.equal(result.status, 3);
   assert.equal(readFileSync(join(scratch, "gates.log"), "utf8"), "gate\ngate\n", "a failed build prevents gate execution");
+
+  // One selection set, one runner. `--feature` and `--file` reaching the suite
+  // as two runs, with the second selection containing the first again, is the
+  // same contract measured twice; the fixture counts the runs instead of
+  // trusting the wiring.
+  const buildsSoFar = readFileSync(join(scratch, "builds.log"), "utf8");
+  put("tooling/select-feature-contracts.mjs", "console.log('good');");
+  put(
+    "tooling/verify-features.mjs",
+    "import { appendFileSync } from 'node:fs';\n"
+    + "const args = process.argv.slice(2);\n"
+    + "if (args.includes('--list')) { console.log('good'); process.exit(0); }\n"
+    + "appendFileSync('features.log', `${args.join(' ')}\\n`);",
+  );
+  result = run("verify-quick.mjs", ["--feature", "good", "--file", "app/features/good.js", "--no-build"], env);
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(
+    readFileSync(join(scratch, "features.log"), "utf8"),
+    "good\n",
+    "selecting a contract by name and by file starts the suite once, with the union deduped",
+  );
+  assert.equal(readFileSync(join(scratch, "builds.log"), "utf8"), buildsSoFar, "and that run builds nothing of its own");
+
+  // A mistyped selector is answered before the build: the list comes from the
+  // suite, so the naming rule is not written down twice.
+  result = run("verify-quick.mjs", ["--feature", "typo"], env);
+  assert.equal(result.status, 2);
+  assert.match(result.stderr, /unknown feature selector\(s\): typo/);
+  assert.match(result.stderr, /nothing was built/);
+  assert.equal(readFileSync(join(scratch, "builds.log"), "utf8"), buildsSoFar, "a typo does not cost a bundle rebuild");
+
   console.log("OK  development feedback: bounded logs, selector integrity, coverage and one-build gate chain");
 } finally {
   rmSync(scratch, { recursive: true, force: true });

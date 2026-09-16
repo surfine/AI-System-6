@@ -83,6 +83,17 @@
   cursor: default;
 }
 
+/* A selection that can be dragged has to look draggable before the pointer is
+   down, not after: the canvas itself reports whether the pointer is over the
+   marquee, and this is the only thing that reads it. */
+.clio-paint-canvas[data-clio-paint-tool="marquee"][data-clio-paint-selection="inside"] {
+  cursor: move;
+}
+
+/* Undo and Redo use the shared .view-switch-option:disabled skin (30-surfaces)
+   when their stack is empty, so a step that cannot run does not look like one
+   that will. */
+
 .clio-paint-marquee {
   position: absolute;
   border: 1px dashed var(--ink);

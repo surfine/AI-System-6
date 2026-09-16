@@ -21,10 +21,29 @@ export function preappGenerators(root) {
       inputs: [...common, "node_modules/stream-markdown-parser/package.json", "node_modules/stream-markdown-parser/dist/index.cjs"],
       outputs: ["apps/desktop/app/vendor/stream-markdown-parser.global.js"],
     },
-    // esbuild's resolution/import closure and the embed generator's network
-    // fallback need separate policies. Keep executing these existing builders.
-    { name: "cmf-renderer-vendor", script: "tooling/build-cmf-renderer-vendor.mjs" },
-    { name: "embed-vendor", script: "tooling/build-embed-vendor.mjs" },
+    // The three vendor builders below used to run on every prebuild, which
+    // meant esbuild re-bundling Three.js (and an embed copy) for every ordinary
+    // build. Their inputs are now declared like the steps above: the local
+    // tooling tree carries the patch/recipe bytes, the package and lock carry
+    // the dependency identity, and the dependency directory carries the actual
+    // dependency bytes — so a version bump that changes nothing on disk is
+    // still a miss, and an unreadable input is a miss rather than a hit.
+    {
+      name: "cmf-renderer-vendor",
+      script: "tooling/build-cmf-renderer-vendor.mjs",
+      inputs: [...common, "node_modules/three"],
+      outputs: ["apps/desktop/app/vendor/cmf-renderer.js"],
+    },
+    {
+      name: "embed-vendor",
+      script: "tooling/build-embed-vendor.mjs",
+      inputs: [
+        ...common,
+        "node_modules/@huggingface/transformers/package.json",
+        "node_modules/@huggingface/transformers/dist/transformers.min.js",
+      ],
+      outputs: ["apps/desktop/app/vendor/embed/transformers.min.js"],
+    },
     {
       name: "ai-prompt-files",
       script: "tooling/build-ai-prompt-files.mjs",
@@ -48,7 +67,12 @@ export function preappGenerators(root) {
         ...(previews ? ["internal/evidence/bonsai-facility-preview.png", "internal/evidence/bonsai-city-preview.png"] : []),
       ],
     },
-    { name: "bonsai-renderer-vendor", script: "tooling/build-bonsai-renderer-vendor.mjs" },
+    {
+      name: "bonsai-renderer-vendor",
+      script: "tooling/build-bonsai-renderer-vendor.mjs",
+      inputs: [...common, "node_modules/three", "tooling/vendor/bonsai-renderer-entry.mjs"],
+      outputs: ["apps/desktop/app/vendor/bonsai-renderer.js"],
+    },
   ];
 }
 

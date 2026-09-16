@@ -576,6 +576,12 @@ const ensureQuickDraftModule = createLazyModuleLoader("AISystem6QuickDraftLoaded
   "app/core/chat-vent-guidance.js",
   "app/data/draft-desk-presets.js",
   "app/core/listen-beats.js",
+  /* The workspace normalizers ride with the UI that calls them. This module
+     was never added to the list when the rest of the family went lazy, so it
+     sat in the boot bundle as 20.9KB that nothing eager referenced - measured
+     2026-09-16, and the boot payload is over its floor until it moves. It
+     loads before draft-desk.js, which consumes its normalizers. */
+  "app/core/quick-draft-workspace.js",
   "app/features/draft-desk.js",
   "app/features/quick-draft-intake.js",
   "app/features/quick-draft-editor.js",
