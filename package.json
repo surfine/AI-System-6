@@ -27,7 +27,7 @@
     "dev": "node tooling/dev-preview.mjs",
     "docs:sync-hashes": "node tooling/update-doc-locale-hashes.mjs",
     "lint": "eslint apps/server/server tests/integration",
-    "prebuild:app": "npm run build:stream-markdown-vendor && npm run build:cmf-renderer-vendor",
+    "prebuild:app": "node tooling/build-preapp.mjs --public",
     "prestart": "npm run build:app",
     "site:capture-frames": "node tooling/capture-site-frames.mjs",
     "site:capture-route": "node tooling/capture-site-route.mjs",

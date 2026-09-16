@@ -538,6 +538,7 @@ window.AISystem6TranslationsZh = {
     project_cd_open_hint: "双击可在 Reader 中只读打开。",
     project_cd_ejected: "项目光盘已收回。",
     project_cd_cleared: "已清空当前项目硬盘的项目光盘。",
+    project_cd_burn_conflict: "项目光盘里这份稿件在刻录等待期间被删除、改名或改过内容，本次刻录已取消。项目光盘保持原样。",
     project_cd_burn_receipt: (title) => `项目光盘已刻录：《${title}》。原稿仍在项目硬盘上。`,
     project_cd_trashed: (count) => `已将 ${count} 个项目光盘文件移到废纸篓。`,
     items_moved_trash: (count) => `已将 ${count} 个项目移到废纸篓。`,

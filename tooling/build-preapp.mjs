@@ -9,12 +9,12 @@ import { repositoryRoot } from "./lib/paths.mjs";
 // Only generators with fully enumerated read/write sets opt in to caching.
 // The whole tooling tree covers their local helper imports conservatively;
 // package/lock and actual dependency bytes also participate, not just versions.
-export function preappGenerators(root) {
+export function preappGenerators(root, { publicOnly = false } = {}) {
   const common = ["tooling", "package.json", "package-lock.json"];
   const bonsai = "apps/desktop/assets/bonsai";
   const generated = "apps/desktop/app/generated";
   const previews = existsSync(resolve(root, "internal/evidence"));
-  return [
+  const all = [
     {
       name: "stream-markdown-vendor",
       script: "tooling/build-stream-markdown-vendor.mjs",
@@ -74,11 +74,30 @@ export function preappGenerators(root) {
       outputs: ["apps/desktop/app/vendor/bonsai-renderer.js"],
     },
   ];
+  return publicOnly ? all.filter((generator) => PUBLIC_PREAPP_GENERATOR_NAMES.includes(generator.name)) : all;
 }
 
-export function buildPreapp({ root = repositoryRoot, force = false } = {}) {
+/**
+ * The steps the public snapshot runs from its own `prebuild:app`.
+ *
+ * `ai-prompt-files` is absent on purpose: it rebuilds from private prompt
+ * sources, and the public entry has never run it. Every other step builds a
+ * vendor bundle or an atlas whose inputs and outputs both ship, so a contributor
+ * with nothing but the snapshot gets the same artifacts the maintainer does —
+ * and, because the cache below is shared, a second build writes nothing.
+ */
+export const PUBLIC_PREAPP_GENERATOR_NAMES = Object.freeze([
+  "stream-markdown-vendor",
+  "cmf-renderer-vendor",
+  "embed-vendor",
+  "bonsai-textures",
+  "bonsai-atlas",
+  "bonsai-renderer-vendor",
+]);
+
+export function buildPreapp({ root = repositoryRoot, force = false, publicOnly = false } = {}) {
   const started = performance.now();
-  for (const generator of preappGenerators(root)) {
+  for (const generator of preappGenerators(root, { publicOnly })) {
     const stepStarted = performance.now();
     const run = () => {
       const result = spawnSync(process.execPath, [generator.script], { cwd: root, stdio: "inherit" });
@@ -97,10 +116,13 @@ export function buildPreapp({ root = repositoryRoot, force = false } = {}) {
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const args = process.argv.slice(2);
-  if (args.some((arg) => arg !== "--force")) {
-    console.error("Usage: node tooling/build-preapp.mjs [--force]");
+  if (args.some((arg) => arg !== "--force" && arg !== "--public")) {
+    console.error("Usage: node tooling/build-preapp.mjs [--force] [--public]");
     process.exitCode = 2;
   } else {
-    process.exitCode = buildPreapp({ force: args.includes("--force") });
+    process.exitCode = buildPreapp({
+      force: args.includes("--force"),
+      publicOnly: args.includes("--public"),
+    });
   }
 }

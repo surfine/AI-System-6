@@ -73,9 +73,16 @@ export const publicScriptNames = new Set([
   "verify:theme-icons",
 ]);
 
-/** Public prebuild: only vendor bundles; private prompt sources stay private. */
-export const publicPrebuildApp =
-  "npm run build:stream-markdown-vendor && npm run build:cmf-renderer-vendor";
+/**
+ * Public prebuild: the same cached pipeline the maintainer runs, restricted to
+ * the steps a snapshot can actually perform. It used to name two vendor builds
+ * directly, which meant the public entry never touched the generated-asset cache
+ * that exists beside it: every public build re-bundled Three.js and the embed
+ * copy from scratch, and a second build in the same tree did the same work
+ * again. `--public` keeps that entry's scope — private prompt sources are still
+ * never read here — while the caching lives in one place.
+ */
+export const publicPrebuildApp = "node tooling/build-preapp.mjs --public";
 
 export function buildPublicPackageJson(privatePkg) {
   const scripts = { ...(privatePkg.scripts || {}) };

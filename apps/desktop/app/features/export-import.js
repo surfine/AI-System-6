@@ -422,17 +422,21 @@ async function addProjectCdItem(markdown, name, options = {}) {
   // not patch sourceDocumentId etc. onto the result afterwards.
   const sourceDocumentId = String(options.sourceDocumentId ?? activeTextFileId ?? "");
   const sourceKind = String(options.sourceKind || "markdown");
-  // The overwrite target is captured as an IDENTITY, never as an array
-  // position: another burn can insert a file ahead of it while this one waits,
-  // and an index remembered from before the await then deletes a file nobody
-  // asked to touch. The id is used by the "is this still the same record"
-  // check below, not to address the array.
-  const requestedTargetId = String(
-    projectCdItems.find((item) => item.projectId === projectId && item.title === title)?.id || ""
-  );
+  // The overwrite is a request against ONE record as it stood when the request
+  // was made — its id, its name, and the content the writer meant to replace.
+  // An id alone is not enough: the record can be edited while this burn waits,
+  // and a file name alone is not enough: that name can be taken by a different
+  // file in the meantime. Neither is an array position, which another burn can
+  // move out from under this one. All three are captured now and re-checked
+  // inside the commit queue, where the draft is the desk as it really is.
+  const targetAtRequest = projectCdItems.find(
+    (entry) => String(entry?.projectId) === projectId && entry?.title === title
+  ) || null;
+  const requestedId = String(targetAtRequest?.id || "");
+  const requestedBody = String(targetAtRequest?.body ?? "");
   const now = new Date().toISOString();
   const item = {
-    id: requestedTargetId || crypto.randomUUID(),
+    id: requestedId || crypto.randomUUID(),
     projectId,
     title,
     format: String(options.format || "text/markdown"),
@@ -472,43 +476,55 @@ async function addProjectCdItem(markdown, name, options = {}) {
 
   /** @type {any} */
   let stored = null;
-  let refused = false;
+  let refused = "";
   await window.AISystem6StateStores?.projects.commit((draft) => {
-    // The identity of the burn is decided INSIDE the commit queue, where the
-    // draft is the desk as it stands when this write really runs. The index
-    // taken before the version history was written says nothing about what is
-    // at that position now.
     if (!draft.projects.some((project) => String(project?.id) === projectId)) {
       // The project this burn belonged to is gone. Writing its CD item anyway
       // would file a deliverable under a disk the writer no longer has.
-      refused = true;
+      refused = t("no_project_mounted");
       return;
     }
-    const replaceIndex = draft.projectCdItems.findIndex(
+    const holdsName = draft.projectCdItems.find(
       (entry) => String(entry?.projectId) === projectId && entry?.title === title
-    );
-    const takingOver = replaceIndex >= 0 ? draft.projectCdItems[replaceIndex] : null;
-    if (takingOver) {
-      // Same project and same file name: the burn replaces that deliverable in
-      // place, keeping its identity and the date it first landed. This is also
-      // what makes two burns of one name converge on one record.
-      stored = { ...item, id: takingOver.id, burnedAt: takingOver.burnedAt || item.burnedAt };
-      draft.projectCdItems.splice(replaceIndex, 1);
+    ) || null;
+
+    if (requestedId) {
+      // The burn named one file. It is that file only while it is still the same
+      // record — same project, same name, same body — and still the one holding
+      // the name. A name is not an identity, and an id whose body changed is a
+      // different deliverable than the writer chose; either way the burn is
+      // cancelled rather than written onto something it never named.
+      const target = draft.projectCdItems.find((entry) => String(entry?.id) === requestedId) || null;
+      if (
+        !target
+        || String(target.projectId) !== projectId
+        || String(target.title || "") !== title
+        || String(target.body ?? "") !== requestedBody
+        || (holdsName && holdsName !== target)
+      ) {
+        refused = t("project_cd_burn_conflict");
+        return;
+      }
+      stored = { ...item, id: target.id, burnedAt: target.burnedAt || item.burnedAt };
+      draft.projectCdItems.splice(draft.projectCdItems.indexOf(target), 1);
     } else {
-      // Nothing holds this file name now. The record the burn set out to
-      // replace may have been deleted, or renamed away from this title. The id
-      // captured for that record is not this new file's to take: reusing it
-      // either quietly rebuilds a record the writer deleted or collides with
-      // the record that now holds the id. Only an id reserved for a record
-      // that never existed - and that nothing has taken since - may be used.
-      const reservedIsFree = !requestedTargetId
-        && !draft.projectCdItems.some((entry) => entry?.id === item.id);
+      // Nothing held this name when the burn started. A file that holds it now
+      // arrived while the burn waited: a conflict, not an invitation to write.
+      if (holdsName) {
+        refused = t("project_cd_burn_conflict");
+        return;
+      }
+      // The reserved id may only be used while nothing has taken it.
+      const reservedIsFree = !draft.projectCdItems.some((entry) => entry?.id === item.id);
       stored = reservedIsFree ? item : { ...item, id: crypto.randomUUID() };
     }
     draft.projectCdItems.unshift(stored);
   });
   if (refused || !stored) {
-    setStatus(t("no_project_mounted"));
+    // A refusal is not a burn: the caller must not report one, and the caller
+    // that also downloads checks this null before it does. The version history
+    // already written stands; the CD still holds what it held.
+    setStatus(refused || t("no_project_mounted"));
     return null;
   }
   selectedProjectCdItemId = stored.id;

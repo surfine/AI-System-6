@@ -182,6 +182,11 @@ function bootDesk(cdItems = "") {
 }
 
 // --- The target is deleted while the burn waits -------------------------------
+//
+// The writer asked to replace one file. That file is gone when the burn's turn
+// comes, so the burn is cancelled: the request named a record, and the record it
+// named no longer exists. Landing the body as a new file would put back a
+// deliverable the writer had just removed.
 
 {
   const vmw = bootDesk(cdSeed([["A", "A.md", "old-A"], ["B", "B.md", "old-B"]]));
@@ -207,18 +212,132 @@ function bootDesk(cdItems = "") {
         ids,
         duplicateIds: ids.filter((id, index) => ids.indexOf(id) !== index),
         reborn: window.__disk.filter((item) => item.id === "B").length,
+        status: window.__status,
       };
     })()
   `);
   test.assert(
-    outcome.reborn === 0 && outcome.burnedId !== "B",
-    "a deleted target is not quietly rebuilt under the id it had"
+    outcome.burnedId === null,
+    "a burn whose target was deleted while it waited is refused"
   );
   test.assert(
-    outcome.titles.includes("A.md") && outcome.titles.includes("B.md"),
-    "the burn still lands as a new file and the untouched file stays"
+    outcome.reborn === 0 && !outcome.titles.includes("B.md"),
+    "the deleted target is not rebuilt, under its old id or its old name"
   );
-  test.assert(outcome.duplicateIds.length === 0, "the new record does not collide with any other id");
+  test.assert(outcome.titles.includes("A.md"), "the file nobody asked to touch stays");
+  test.assert(outcome.duplicateIds.length === 0, "no id is duplicated");
+  test.assert(
+    /取消|cancel/i.test(outcome.status),
+    `the refusal is reported rather than shown as a burn (${outcome.status})`
+  );
+}
+
+// --- The deleted target's name is taken by another file ------------------------
+//
+// The strongest form of the same mistake: B is deleted and a different record
+// (NEW-B) is created under the same name while the burn waits. Replacing "the
+// file named B.md" would write this burn's body onto a file the writer never
+// asked to touch.
+{
+  const vmw = bootDesk(cdSeed([["A", "A.md", "old-A"], ["B", "B.md", "old-B"]]));
+  await vmw.run(`window.__holdNextRevision(); window.__burnB = addProjectCdItem("new-B", "B"); "started";`);
+  await waitForRevision(vmw);
+  await vmw.run(`
+    (async () => {
+      await window.AISystem6StateStores.projects.commit((draft) => {
+        const index = draft.projectCdItems.findIndex((item) => item.id === "B");
+        if (index >= 0) draft.projectCdItems.splice(index, 1);
+        draft.projectCdItems.unshift({ id: "NEW-B", projectId: "p1", title: "B.md", body: "someone-elses-body" });
+      });
+      return "committed";
+    })()
+  `);
+  await vmw.run(`window.__releaseRevision();`);
+  const outcome = await vmw.run(`
+    (async () => {
+      const burned = await window.__burnB;
+      const replacement = window.__disk.find((item) => item.id === "NEW-B") || null;
+      return {
+        burned,
+        replacementBody: replacement?.body || null,
+        titles: window.__disk.map((item) => item.title),
+        ids: window.__disk.map((item) => item.id),
+        status: window.__status,
+      };
+    })()
+  `);
+  test.assert(outcome.burned === null, "the old operation is refused when another file took the name");
+  test.assert(
+    outcome.replacementBody === "someone-elses-body",
+    "and the file that holds the name keeps its own body"
+  );
+  test.assert(
+    !outcome.ids.includes("B") && outcome.titles.filter((title) => title === "B.md").length === 1,
+    "the burned body lands nowhere and no duplicate B.md is created"
+  );
+}
+
+// --- The target's own body changes while the burn waits ------------------------
+//
+// Same id, same name, different deliverable: the writer edited the CD file after
+// asking for the burn. Replacing it now would discard that edit without ever
+// asking, so the burn is cancelled and the edit stays.
+{
+  const vmw = bootDesk(cdSeed([["B", "B.md", "old-B"]]));
+  await vmw.run(`window.__holdNextRevision(); window.__burnB = addProjectCdItem("new-B", "B"); "started";`);
+  await waitForRevision(vmw);
+  await vmw.run(`
+    (async () => {
+      await window.AISystem6StateStores.projects.commit((draft) => {
+        const target = draft.projectCdItems.find((item) => item.id === "B");
+        if (target) target.body = "edited-while-waiting";
+      });
+      return "committed";
+    })()
+  `);
+  await vmw.run(`window.__releaseRevision();`);
+  const outcome = await vmw.run(`
+    (async () => {
+      const burned = await window.__burnB;
+      const target = window.__disk.find((item) => item.id === "B") || null;
+      return { burned, body: target?.body || null, status: window.__status };
+    })()
+  `);
+  test.assert(outcome.burned === null, "a target whose body changed under the burn is refused");
+  test.assert(outcome.body === "edited-while-waiting", "the edit made while the burn waited is the one on the CD");
+}
+
+// --- A same-name file appears where the burn started from nothing --------------
+//
+// No file held the name when the burn began, so there was nothing to replace. A
+// name that appears during the wait belongs to whoever created it: the burn is a
+// conflict, and overwriting would need the writer to ask again, against the file
+// that is really there.
+{
+  const vmw = bootDesk(cdSeed([["A", "A.md", "old-A"]]));
+  await vmw.run(`window.__holdNextRevision(); window.__burnOne = addProjectCdItem("first body", "One"); "started";`);
+  await waitForRevision(vmw);
+  await vmw.run(`
+    (async () => {
+      const created = await addProjectCdItem("second body", "One");
+      window.__created = created ? { id: created.id, body: created.body } : null;
+      return "committed";
+    })()
+  `);
+  await vmw.run(`window.__releaseRevision();`);
+  const outcome = await vmw.run(`
+    (async () => {
+      const burned = await window.__burnOne;
+      const existing = window.__disk.filter((item) => item.title === "One.md");
+      return { burned, created: window.__created, bodies: existing.map((item) => item.body), count: existing.length, status: window.__status };
+    })()
+  `);
+  test.assert(outcome.created?.body === "second body", "the burn that started from nothing waits its turn");
+  test.assert(outcome.burned === null, "and is refused when a file took the name meanwhile");
+  test.assert(
+    outcome.count === 1 && outcome.bodies[0] === "second body",
+    "the name holds exactly the file that was created for it, not the earlier burn's body"
+  );
 }
 
 // --- The target is renamed while the burn waits -------------------------------
@@ -244,7 +363,7 @@ function bootDesk(cdItems = "") {
       const renamed = window.__disk.find((item) => item.title === "B-renamed.md") || null;
       const fresh = window.__disk.find((item) => item.title === "B.md") || null;
       return {
-        burnedId: burned?.id || null,
+        burned,
         renamed,
         fresh,
         duplicateIds: ids.filter((id, index) => ids.indexOf(id) !== index),
@@ -256,8 +375,8 @@ function bootDesk(cdItems = "") {
     "the record renamed away from the file name is not rewritten by the burn"
   );
   test.assert(
-    outcome.fresh?.body === "new-B" && outcome.fresh?.id !== "B",
-    "the burn lands as its own file with its own identity"
+    outcome.burned === null && !outcome.fresh,
+    "the burn is refused rather than landing as a file the writer never asked for"
   );
   test.assert(outcome.duplicateIds.length === 0, "two records never share one id");
 }

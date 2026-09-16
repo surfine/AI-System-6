@@ -554,6 +554,7 @@ window.AISystem6TranslationsEn = {
     project_cd_open_hint: "Double-click to open read-only in Reader.",
     project_cd_ejected: "Project CD put away.",
     project_cd_cleared: "Project CD cleared for the current Project Hard Disk.",
+    project_cd_burn_conflict: "That Project CD deliverable was deleted, renamed, or edited while this burn waited, so the burn was cancelled and the CD kept what it held.",
     project_cd_burn_receipt: (title) => `Project CD burned: “${title}”. The originals stay on the Project Hard Disk.`,
     project_cd_trashed: (count) => `${count} Project CD item${count === 1 ? "" : "s"} moved to Trash.`,
     items_moved_trash: (count) => `${count} items moved to Trash.`,
