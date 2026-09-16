@@ -206,11 +206,14 @@ const systemIconPaths = {
     <path d="M16 14l3 2-3 2z" />
   `,
   clioPaint: `
-    <path d="M4 6h24v20H4z" />
-    <path d="M8 22l16-16" />
-    <circle cx="10" cy="12" r="2" />
-    <circle cx="16" cy="10" r="2" />
-    <circle cx="22" cy="14" r="2" />
+    <path d="M13.5 5C9.9 5 7 8.4 7 12.7c0 5.4 4.6 9.4 10 9.4 2.6 0 4-1 4-2.6 0-.8-.3-1.4-.3-2.2 0-1 .6-1.8 1.5-2.3 1.6-1 3.3-2.6 3.3-5.1C25.5 6.9 20.4 5 13.5 5z" />
+    <circle cx="11" cy="10.5" r="2.2" />
+    <circle cx="15.5" cy="8.8" r="1.8" />
+    <circle class="classic-ink" cx="9.5" cy="17.5" r="1.7" />
+    <circle cx="14" cy="16" r="2.4" />
+    <path d="M27.5 3v9" />
+    <path class="classic-ink" d="M25.6 3.5h3.8v3.8h-3.8z" />
+    <path class="classic-ink" d="M27.5 13c2.2 0 3.3 1.2 3.3 2.5s-1.1 1.8-3.3 1.8-3.3-.5-3.3-1.8S25.3 13 27.5 13z" />
   `,
   liquidCover: `
     <path d="M4 6h24v20H4z" />
@@ -512,11 +515,14 @@ const classicPlusSystemIconPaths = {
     <path class="classic-ink" d="M16 14l3 2-3 2z" />
   `,
   clioPaint: `
-    <path d="M4 6h24v20H4z" />
-    <path class="classic-ink" d="M8 22l16-16" />
-    <circle cx="10" cy="12" r="2" />
-    <circle cx="16" cy="10" r="2" />
-    <circle class="classic-ink" cx="22" cy="14" r="2" />
+    <path d="M13.5 5C9.9 5 7 8.4 7 12.7c0 5.4 4.6 9.4 10 9.4 2.6 0 4-1 4-2.6 0-.8-.3-1.4-.3-2.2 0-1 .6-1.8 1.5-2.3 1.6-1 3.3-2.6 3.3-5.1C25.5 6.9 20.4 5 13.5 5z" />
+    <circle cx="11" cy="10.5" r="2.2" />
+    <circle cx="15.5" cy="8.8" r="1.8" />
+    <circle class="classic-ink" cx="9.5" cy="17.5" r="1.7" />
+    <circle cx="14" cy="16" r="2.4" />
+    <path d="M27.5 3v9" />
+    <path class="classic-ink" d="M25.6 3.5h3.8v3.8h-3.8z" />
+    <path class="classic-ink" d="M27.5 13c2.2 0 3.3 1.2 3.3 2.5s-1.1 1.8-3.3 1.8-3.3-.5-3.3-1.8S25.3 13 27.5 13z" />
   `,
   liquidCover: `
     <path d="M4 6h24v20H4z" />

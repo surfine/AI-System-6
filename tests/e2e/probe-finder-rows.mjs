@@ -80,17 +80,34 @@ try {
   const demoBroken = !idle.painted || !running.painted || !stopped.painted
     || idle.icons !== 1 || running.icons !== 1 || stopped.icons !== 1
     || running.glyph !== "pause" || stopped.glyph !== "writingDemo";
+  // The other half of the same question: an icon element is not an icon if the
+  // file it points at is not there. ClioPaint wore a placeholder for weeks
+  // because its Classic asset was never written.
+  const icons = await page.evaluate(async () => {
+    const hrefs = [...document.querySelectorAll(".sys-icon image")]
+      .map((image) => image.getAttribute("href"))
+      .filter(Boolean);
+    const unique = [...new Set(hrefs)];
+    const bad = [];
+    for (const href of unique) {
+      const response = await fetch(href, { cache: "no-store" }).catch(() => null);
+      if (!response?.ok) bad.push(`${href} → ${response?.status ?? "network error"}`);
+    }
+    return { checked: unique.length, bad };
+  });
+  console.log(`icon files referenced: ${icons.checked}, unreadable: ${icons.bad.length}`);
+  if (icons.bad.length) console.error(`PROBLEM: ${icons.bad.join("\n")}`);
   if (rows.unlabeled || rows.icons !== rows.rows) {
     console.error(`PROBLEM: ${rows.icons} icons for ${rows.rows} rows, ${rows.unlabeled} without a name`);
   }
   if (demoBroken) console.error("PROBLEM: the demo row lost its icon or its state");
   if (warnings.length) console.error(`WARNINGS:\n${warnings.join("\n")}`);
   console.log(
-    warnings.length || demoBroken || rows.unlabeled
+    warnings.length || demoBroken || rows.unlabeled || icons.bad.length
       ? "probe: something is wrong"
-      : "probe: every row has one icon and a name, and the demo row survives its toggle"
+      : "probe: every row has one icon and a name, every icon file reads, and the demo row survives its toggle"
   );
-  process.exitCode = warnings.length || demoBroken || rows.unlabeled || rows.icons !== rows.rows ? 1 : 0;
+  process.exitCode = warnings.length || demoBroken || rows.unlabeled || icons.bad.length || rows.icons !== rows.rows ? 1 : 0;
 } finally {
   await context.close();
   await browser.close();
