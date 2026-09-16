@@ -189,3 +189,54 @@ test("the section capsule is centred in the pane", async ({ page }) => {
   expect(geometry.contentWidth - geometry.railWidth).toBeGreaterThan(4);
   expect(Math.abs(geometry.railCenter - geometry.contentCenter)).toBeLessThanOrEqual(1);
 });
+
+test("the menu bar is a flat, legible strip on a phone-sized screen", async ({ page }) => {
+  // Portrait ≤860 flattens these surfaces on purpose — a strip of 13px labels
+  // on a phone needs a legible bar, not a material. That recipe is what the
+  // iPhone report should land on: the system's own glass material used to be
+  // applied on top of it, which halved the labels' contrast (measured off the
+  // screenshot: ink ~103-152 instead of ~56). Handing the bar back to that
+  // recipe is the fix; the branch it lives in is held by
+  // tests/features/liquid-glass-menu.test.mjs, because no test browser here
+  // supports -apple-visual-effect.
+  await page.setViewportSize({ width: 420, height: 912 });
+  await bootApp(page);
+  await dismissGuide(page);
+  await page.evaluate(() => applyTheme("liquid-glass"));
+  await page.waitForFunction(() => document.body.dataset.theme === "liquid-glass");
+  const bar = await page.evaluate(() => {
+    const parse = (value) => {
+      const parts = value.match(/[\d.]+/g).map(Number);
+      return { r: parts[0], g: parts[1], b: parts[2], a: parts.length > 3 ? parts[3] : 1 };
+    };
+    const over = (ink, paper) => {
+      const mix = (a, b) => a * ink.a + b * (1 - ink.a);
+      return [mix(ink.r, paper.r), mix(ink.g, paper.g), mix(ink.b, paper.b)];
+    };
+    const element = document.querySelector(".menu-bar");
+    const style = getComputedStyle(element);
+    const label = getComputedStyle(element.querySelector(".menu > button"));
+    const ink = parse(label.color);
+    const paperBase = parse(style.backgroundColor);
+    const paper = over(paperBase, { r: 255, g: 255, b: 255, a: 1 });
+    const composited = over(ink, { r: paper[0], g: paper[1], b: paper[2], a: 1 });
+    return {
+      backgroundImage: style.backgroundImage,
+      backgroundColor: style.backgroundColor,
+      backdrop: style.backdropFilter || style.webkitBackdropFilter,
+      position: style.position,
+      height: Math.round(element.getBoundingClientRect().height),
+      // What the user actually reads: the label's ink as it lands on the bar.
+      labelLuminance: Math.round(0.2126 * composited[0] + 0.7152 * composited[1] + 0.0722 * composited[2]),
+      labelCss: label.color,
+    };
+  });
+  expect(bar.backgroundImage).toBe("none");
+  expect(bar.backgroundColor).toBe("rgba(255, 255, 255, 0.5)");
+  expect(bar.backdrop).toBe("none");
+  expect(bar.position).toBe("fixed");
+  expect(bar.height).toBeGreaterThanOrEqual(24);
+  // A legible strip: the same ink the desk profile shows (≈56). The material
+  // that was washing it left the labels at ~130.
+  expect(bar.labelLuminance).toBeLessThanOrEqual(90);
+});

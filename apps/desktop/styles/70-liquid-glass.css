@@ -4398,21 +4398,33 @@ body.use-liquid-glass .btn.default.is-disabled:is(:hover, :focus-visible, :activ
 
 @supports (-apple-visual-effect: -apple-system-glass-material) {
   body.use-liquid-glass .window,
-  body.use-liquid-glass .menu-bar,
   body.use-liquid-glass .menu-popover,
   body.use-liquid-glass .system-modal,
   body.use-liquid-glass .startup-settings-modal {
     background: transparent;
     /* Where the system has its own glass material, that material IS the
        material: stacking the CSS blur on top of it blurred the surface twice.
-       The menu bar showed it worst — the system's material is strongest once
-       the desk runs standalone from the Home Screen, and a second blur over a
-       strip of 13px labels is what the owner saw as "the menu bar went
-       blurry". The CSS approximation stays for engines that have no system
-       material, which is what the rest of this stylesheet paints. */
+       The CSS approximation stays for engines that have no system material,
+       which is what the rest of this stylesheet paints. */
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
     -apple-visual-effect: -apple-system-glass-material;
+  }
+
+  /* The menu bar is the one surface that does NOT take the system material.
+     The material is applied to the bar's whole layer, so the small labels
+     inside it arrive washed and soft — the owner reported exactly that on an
+     iPhone, where the bar runs as the top strip of the screen and the system
+     has the strongest hand on it. Dropping the bar's own CSS blur (below,
+     where the material is not available) took the second blur off the same
+     strip; this takes the remaining one off as well, and the bar paints the
+     appearance's own translucent gradient instead. Windows, popovers and the
+     modals keep the system material: their content is large and sits on the
+     material, not in it. */
+  body.use-liquid-glass .menu-bar {
+    background: var(--menu-bar-bg);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
 
   body.use-liquid-glass .menu-bar::before {
