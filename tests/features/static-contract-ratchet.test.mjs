@@ -47,12 +47,12 @@ const budget = JSON.parse(readFileSync(budgetPath, "utf8"));
 // into the executing column and bought a free slot under the budget. An
 // import is the thing that actually reaches the app; a comment is not.
 // Two kinds of reach, both real: a VM harness that runs the app's own code, and
-// an import of the deployed server's own modules. The second was added when the
-// public deployment grew a Pages Function worth testing — `functions/_lib/*` and
-// `functions/api/*` ARE the shipped server there, and a contract that imports
-// them runs the route, its validation and its ledger rather than reading text
-// about them.
-const executingSignal = /node:vm|boot-vm\.mjs|draft-desk-vm\.mjs|write-lease-vm\.mjs|backup-vm\.mjs|app-boot-vm\.mjs|^\.\.\/\.\.\/functions\/(_lib|api)\//;
+// an import of a deployed server's own modules. The second was added when the
+// public deployment grew code worth testing — `functions/_lib/*` and
+// `functions/api/*` ARE the shipped server on Pages, and `workers/*` is the
+// deployed Durable Object; a contract that imports them runs the route, its
+// validation and its ledger rather than reading text about them.
+const executingSignal = /node:vm|boot-vm\.mjs|draft-desk-vm\.mjs|write-lease-vm\.mjs|backup-vm\.mjs|app-boot-vm\.mjs|^\.\.\/\.\.\/(functions\/(_lib|api)|workers)\//;
 const suiteInfrastructure = new Set([
   "static-contract-ratchet.test.mjs",
   "gate-self-proof.test.mjs",
