@@ -574,15 +574,44 @@ async function writingDemoPreflightModel() {
   }
 }
 
+// Applications rows are rebuilt from data, so their name span carries no i18n
+// id and nothing but the artwork marks the icon span. Swapping the label by
+// writing to the button itself took the leading icon with it and left "Stop
+// Live Demo" as bare text while the idle row kept its document, which is the
+// disappearance the Extras folder reported. Resolve the label span on its own,
+// leave the artwork in place, and answer the state with the transport glyph so
+// a running demo stops advertising Play.
+function writingDemoItemLabelElement(button) {
+  return button.querySelector("span[data-i18n]")
+    || button.querySelector(".finder-item-label")
+    // Markup that predates the label class still keeps the name next to the
+    // icon, in either the icon view or the list's own name cell. Naming the
+    // label is the whole job: a looser match would hand back the cell that
+    // holds the icon and take the artwork out again.
+    || button.querySelector(".finder-list-name-cell span:not(.sys-icon)");
+}
+
+function writingDemoSetToggleButton(button, running, labels) {
+  const labelEl = writingDemoItemLabelElement(button);
+  if (labelEl) {
+    const label = running ? labels.running : labels.idle;
+    if (labelEl.textContent !== label) labelEl.textContent = label;
+  }
+  button.dataset.demoRunning = running ? "true" : "false";
+  const iconEl = button.querySelector(".sys-icon[data-system-icon]");
+  if (!iconEl) return;
+  // The row keeps its own artwork as the idle icon; the pause glyph is only
+  // borrowed for the trip back out.
+  button.dataset.demoIdleIcon ||= iconEl.dataset.systemIcon || "writingDemo";
+  const nextIcon = running ? "pause" : button.dataset.demoIdleIcon;
+  if (iconEl.dataset.systemIcon === nextIcon) return;
+  iconEl.dataset.systemIcon = nextIcon;
+  if (typeof hydrateSystemIcons === "function") hydrateSystemIcons(button);
+}
+
 function writingDemoSetButtons(running) {
   document.querySelectorAll('[data-action="play-writing-demo"], [data-static-finder-action="play-writing-demo"]').forEach((button) => {
-    const label = running ? t("writing_demo_stop") : t("guide_play_demo");
-    // Finder items carry a leading icon span; replacing textContent wholesale
-    // would erase the icon, leaving "Stop Live Demo" without one while the
-    // play item keeps it. Swap only the label span when present.
-    const labelEl = button.querySelector("span[data-i18n]") || button;
-    labelEl.textContent = label;
-    button.dataset.demoRunning = running ? "true" : "false";
+    writingDemoSetToggleButton(button, running, { running: t("writing_demo_stop"), idle: t("guide_play_demo") });
   });
 }
 
@@ -691,10 +720,19 @@ function writingDemoKeydown(event) {
 
 function writingDemoSetTeaserButtons(running) {
   document.querySelectorAll('[data-action="play-teaser-demo"], [data-static-finder-action="play-teaser-demo"]').forEach((button) => {
-    const labelEl = button.querySelector("span[data-i18n]") || button;
-    labelEl.textContent = running ? t("teaser_demo_stop") : t("guide_play_teaser_demo");
-    button.dataset.demoRunning = running ? "true" : "false";
+    writingDemoSetToggleButton(button, running, { running: t("teaser_demo_stop"), idle: t("guide_play_teaser_demo") });
   });
+}
+
+// The Finder drops and rebuilds these rows whenever a folder is opened, the
+// view mode changes, or the language flips. Re-apply whichever demo is still
+// running so the fresh markup shows Stop with the pause glyph instead of an
+// idle Play row while the desk is busy. A run that is winding down after Stop
+// already owns its own label, so it is not re-applied.
+function writingDemoSyncFinderToggles() {
+  const activeRun = writingDemoRun && !writingDemoRun.stopped ? writingDemoRun : null;
+  writingDemoSetButtons(activeRun?.mode === "full");
+  writingDemoSetTeaserButtons(activeRun?.mode === "teaser");
 }
 
 async function writingDemoTypeInto(input, text, { replace = true, delay = 4 } = {}) {
@@ -2273,5 +2311,6 @@ window.AISystem6WritingDemo = {
   stop: stopWritingDemo,
   playTeaser: playTeaserDemo,
   stopTeaser: stopTeaserDemo,
+  syncToggleState: writingDemoSyncFinderToggles,
 };
 window.AISystem6WritingDemoLoaded = true;

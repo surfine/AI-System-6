@@ -1161,7 +1161,7 @@ function renderStaticFinderWindow(winName) {
   if (isFinderListMode(mode)) {
     const renderListRow = (item) => `
       <button class="finder-list-row${selected?.action === item.action ? " is-selected" : ""}" data-static-finder-window="${escapeHtml(winName)}" data-static-finder-action="${escapeHtml(item.action)}"${controlStripModuleDragAttributes(item)}${dropletDropAttributes(item)}>
-        <span class="finder-list-name-cell">${renderFinderItemIcon(item, mode)}<span>${escapeHtml(item.name)}</span></span>
+        <span class="finder-list-name-cell">${renderFinderItemIcon(item, mode)}<span class="finder-item-label">${escapeHtml(item.name)}</span></span>
         <span>${escapeHtml(item.kind)}</span>
         <span>${escapeHtml(item.sizeLabel || "--")}</span>
         <span>${escapeHtml(item.updatedAt ? new Date(item.updatedAt).toLocaleDateString() : "--")}</span>
@@ -1178,13 +1178,15 @@ function renderStaticFinderWindow(winName) {
       ${dropletListLabel}
       ${droplets.map(renderListRow).join("")}
     `;
+    syncWritingDemoFinderToggles();
+    guardFinderRows(grid);
     return;
   }
 
   const renderIconItem = (item) => `
     <button class="finder-item${selected?.action === item.action ? " is-selected" : ""}" data-static-finder-window="${escapeHtml(winName)}" data-static-finder-action="${escapeHtml(item.action)}"${controlStripModuleDragAttributes(item)}${dropletDropAttributes(item)}>
       ${renderFinderItemIcon(item, mode)}
-      <span>${escapeHtml(item.name)}</span>
+      <span class="finder-item-label">${escapeHtml(item.name)}</span>
     </button>
   `;
   grid.innerHTML = [
@@ -1192,6 +1194,38 @@ function renderStaticFinderWindow(winName) {
     dropletSectionLabel,
     ...droplets.map(renderIconItem),
   ].filter(Boolean).join("");
+  syncWritingDemoFinderToggles();
+  guardFinderRows(grid);
+}
+
+// A row that silently loses its icon is a bug the person sees and we do not:
+// the Finder rebuilds these rows from data on every open, view change and
+// language flip, and a state toggle that writes the wrong element takes the
+// artwork with it. The two Play/Stop rows in Applications → Extras did exactly
+// that, and the browser suite that used to sweep this could not see it either —
+// it had no spec for those rows. The render itself can, in microseconds, and it
+// names the row rather than leaving a screenshot to be interpreted.
+function guardFinderRows(grid) {
+  if (!grid) return;
+  grid.querySelectorAll(".finder-item, .finder-list-row").forEach((row) => {
+    const icons = row.querySelectorAll(".sys-icon").length;
+    const name = (row.querySelector(".finder-item-label")?.textContent || "").trim();
+    if (icons === 1 && name) return;
+    console.warn(
+      `AI System 6: Finder row "${row.dataset.staticFinderAction || "(no action)"}" `
+      + `rendered with ${icons} icon(s) and ${name ? "a name" : "no name"}.`
+    );
+  });
+}
+
+// Rows in the Applications folder are rebuilt from data, so a demo that is
+// still running has to paint its Stop state — and its pause glyph — onto the
+// fresh markup. The demo module is lazy, so this stays a guarded no-op until
+// someone actually plays it.
+function syncWritingDemoFinderToggles() {
+  if (typeof window.AISystem6WritingDemo?.syncToggleState === "function") {
+    window.AISystem6WritingDemo.syncToggleState();
+  }
 }
 
 function toggleViewMode(winName, mode) {

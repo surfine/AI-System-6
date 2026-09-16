@@ -43,6 +43,10 @@ jobs:
         run: npm run test:public-clean
 
   browser-smoke:
+    # One browser boot, no suite: start the app, close the guide, make a
+    # project, put two windows on the desk, reload and read the state back.
+    # This is the check that would notice a bundle the browser cannot run, and
+    # it costs a couple of minutes instead of an afternoon.
     name: ${{ matrix.browser }} smoke
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -68,5 +72,7 @@ jobs:
         run: npx playwright install --with-deps ${{ matrix.browser }}
       - name: Build the browser bundle
         run: npm run build
-      - name: Run ${{ matrix.project }} smoke
-        run: npm run test:e2e:smoke -- --project ${{ matrix.project }}
+      - name: Run the ${{ matrix.project }} smoke
+        run: npm run test:static-smoke
+        env:
+          AISYSTEM6_STATIC_ENGINE: ${{ matrix.browser }}

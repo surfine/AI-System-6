@@ -81,7 +81,13 @@ function routeCapabilities(context, mode) {
     } else if (mode === "invalid-json") {
       await route.fulfill({ status: 200, contentType: "application/json", body: "{not-json" });
     }
-    // 404 falls through to the static server.
+    // 404 falls through to the static server. The fall-through has to be
+    // spelled out: a route handler that returns without answering leaves the
+    // request pending, and the app then waits forever for capabilities instead
+    // of booting into its degraded mode.
+    else {
+      await route.continue();
+    }
   });
 }
 
@@ -174,8 +180,18 @@ async function verifyFullStaticFlow(browser, baseURL) {
 
 async function main() {
   const { server, baseURL } = await startStaticServer();
+  // A caller that already knows which engine it wants (a CI matrix job) can
+  // name it; by itself the smoke proves both.
+  const requested = String(process.env.AISYSTEM6_STATIC_ENGINE || "").trim().toLowerCase();
+  const engines = [["chromium", chromium], ["webkit", webkit]]
+    .filter(([name]) => !requested || requested === name);
+  if (!engines.length) {
+    console.error(`Unknown AISYSTEM6_STATIC_ENGINE="${requested}"; use chromium or webkit.`);
+    server.close();
+    process.exit(1);
+  }
   try {
-    for (const [name, browserType] of [["chromium", chromium], ["webkit", webkit]]) {
+    for (const [name, browserType] of engines) {
       const browser = await browserType.launch();
       await verifyFullStaticFlow(browser, baseURL);
 

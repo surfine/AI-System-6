@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/DEVELOPMENT.md -->
-<!-- source-sha256: b49585e830a6472d9071c8988841bb9be46da8a29aae716ff3dae4215b52a862 -->
+<!-- source-sha256: 0e1f211d14d25c59b4fca81b15fb6f86b9983dbba464e3d4fd94bd52c586fe32 -->
 
 > 英文版为准 ・ 仅供人类参考
 
@@ -38,13 +38,12 @@ npm start
 | `npm run verify:contracts` | 运行源码与架构契约 |
 | `npm run test:unit` | 运行加固边界的重点行为测试 |
 | `npm run test:integration` | 使用本地假上游运行路由集成测试 |
-| `npm run test:e2e:smoke` | 在 Chromium 与 WebKit 中运行启动、持久化及双窗口 smoke |
+| `npm run test:static-smoke` | 从静态文件服务在 Chromium 与 WebKit 中启动桌面（启动、持久化、双窗口） |
 | `npm run verify:version` | 检查 package、构建、运行时与 Release 身份 |
 | `npm run verify:checkjs` | 类型检查带注解的前端 JavaScript |
 | `npm run verify:src` | 类型检查规范 Node 服务端 |
 | `npm run verify:public-tree` | 验证命令、必需文件、资产预算、文档与 CI |
 | `npm run verify:public` | `verify:public-tree` 的兼容别名 |
-| `npm run test:e2e` | 运行扩展 Playwright 诊断 |
 
 CI 会按锁文件安装依赖、执行 lint 与构建，运行契约、重点单测和使用假上游的集成测试，
 再检查版本、checkJs、服务端类型、文档和公开文件树，并在独立的 Chromium 与 WebKit job

@@ -41,8 +41,6 @@ const releaseBuilder = exists("tooling/build-web-release.mjs")
   : "";
 const releaseAssets = read("tooling/check-release-assets.mjs");
 const packageJson = read("package.json");
-const e2eConfig = read("tests/e2e/playwright.config.mjs");
-const e2eSmoke = read("tests/e2e/doom-engine.spec.mjs");
 const buildDoc = read("tooling/games/doom/build.md");
 const buildScript = read("tooling/games/doom/build-doom.sh");
 const runtimePatch = read("tooling/games/doom/patches/emscripten-runtime.patch");
@@ -586,10 +584,6 @@ for (const requiredAsset of [
 if (releaseBuilder) {
   test.assertIncludes(releaseBuilder, "/^styles(?:\\.[a-z0-9-]+)?\\.css$/i", "lazy game styles resolve from the desktop root");
 }
-test.assertIncludes(e2eConfig, "mobile-user-journey|doom-engine", "the heavy playable smoke is owned by Chromium only");
-test.assertIncludes(e2eSmoke, "mobileMatrix", "the browser diagnostic covers all four touch quadrants");
-test.assertIncludes(e2eSmoke, "DOOM_TEST_IWAD", "a real IWAD smoke is explicit and opt-in");
-
 for (const key of [
   "doom_label",
   "doom_title",

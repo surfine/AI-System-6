@@ -305,7 +305,7 @@ for (const required of [
   "apps/desktop/app/generated/build-info.js",
   "apps/server/package.json",
   "apps/server/tsconfig.json",
-  "tests/e2e/playwright.config.mjs",
+  "tests/e2e/static-only-smoke.mjs",
   ".github/workflows/ci.yml",
 ]) {
   assertFile(required);

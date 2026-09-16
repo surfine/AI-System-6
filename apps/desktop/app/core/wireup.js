@@ -881,6 +881,22 @@ function wireAppEvents() {
 
   rememberInput.addEventListener("change", saveDeskState);
 
+  // A real double click delivers the second click (detail 2) and then its own
+  // dblclick, and both open the row. Windows open twice to the same place, but
+  // the two Play/Stop rows in Applications do not: the gesture started the
+  // demo and stopped it again before the first frame, which is what left the
+  // row looking pressed-then-idle. One gesture, one action.
+  let staticFinderOpenAction = "";
+  let staticFinderOpenedAt = 0;
+  const openStaticFinderTarget = (target) => {
+    const action = target.dataset.staticFinderAction;
+    const now = Date.now();
+    if (action === staticFinderOpenAction && now - staticFinderOpenedAt < 250) return;
+    staticFinderOpenAction = action;
+    staticFinderOpenedAt = now;
+    handleAction(action);
+  };
+
   document.addEventListener("click", (event) => {
     if (!event.target.closest(".select-wrap.has-system-select")) {
       closeSystemSelectMenus();
@@ -978,7 +994,7 @@ function wireAppEvents() {
     const staticFinderTarget = event.target.closest("[data-static-finder-action]");
     if (staticFinderTarget) {
       if (event.detail >= 2) {
-        handleAction(staticFinderTarget.dataset.staticFinderAction);
+        openStaticFinderTarget(staticFinderTarget);
         return;
       }
       selectStaticFinderItem(staticFinderTarget.dataset.staticFinderWindow, staticFinderTarget.dataset.staticFinderAction);
@@ -1045,7 +1061,7 @@ function wireAppEvents() {
   
     const staticFinderTarget = event.target.closest("[data-static-finder-action]");
     if (!staticFinderTarget) return;
-    handleAction(staticFinderTarget.dataset.staticFinderAction);
+    openStaticFinderTarget(staticFinderTarget);
   });
 
   // The Writing Flow palette reports content, so it follows typing rather than

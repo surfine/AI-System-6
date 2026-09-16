@@ -34,17 +34,16 @@ browser bundle before starting the server.
 | `npm run verify:contracts` | Run source and architecture contracts |
 | `npm run test:unit` | Run focused behavior tests for hardened boundaries |
 | `npm run test:integration` | Run route tests against local fake upstreams |
-| `npm run test:e2e:smoke` | Run startup, persistence, and two-window smoke in Chromium and WebKit |
+| `npm run test:static-smoke` | Boot the desk in Chromium and WebKit from a static file server (startup, persistence, two windows) |
 | `npm run verify:version` | Check package, build, runtime, and release identity |
 | `npm run verify:checkjs` | Type-check the annotated frontend JavaScript |
 | `npm run verify:src` | Type-check the canonical Node server |
 | `npm run verify:public-tree` | Verify commands, required files, asset budgets, docs, and CI |
 | `npm run verify:public` | Compatibility alias for `verify:public-tree` |
-| `npm run test:e2e` | Run the extended Playwright diagnostics |
 
 CI installs from the lockfile, lints, builds, runs contracts, focused unit and
 fake-upstream integration tests, checks version/checkJs/server types/docs/public
-tree, and executes the smoke in separate Chromium and WebKit jobs. In the
+tree, and executes the static smoke in separate Chromium and WebKit jobs. In the
 maintainer source tree it also builds a clean public snapshot in a temporary
 directory and really runs `npm ci`, `npm run build`, and `npm test` there.
 
