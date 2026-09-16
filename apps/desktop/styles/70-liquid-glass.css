@@ -3725,35 +3725,16 @@ body.use-liquid-glass .spine-actions b {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
-body.use-liquid-glass .spine-actions button.holds-pen .spine-step-number {
-  background: rgba(16, 17, 20, 0.84);
-  color: #ffffff;
-  -webkit-text-fill-color: #ffffff;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28);
-}
-
-body.use-liquid-glass .spine-actions .spine-step-number {
-  /* On the icon, like every other appearance: this era's badge is a 24px
-     pill, so it centres on the artwork rather than sitting off its corner. */
-  top: -6px;
-  left: calc(50% - 0.75rem);
-  width: 1.5rem;
-  height: 1.5rem;
-  border: 0;
-  border-radius: var(--r-pill);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.34)),
-    rgba(255, 255, 255, 0.22);
-  color: rgba(18, 28, 38, 0.72);
-  font-family: var(--ui-font);
-  font-size: 0.78rem;
-  font-weight: 800;
-  line-height: 1.5rem;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 0 0 1px rgba(255, 255, 255, 0.44),
-    0 8px 20px rgba(18, 28, 38, 0.1);
-}
+/* The writing flow's step badge is not a control, so this era does not
+   re-shape it.
+   It was a 24px pill centred on the artwork here, against a 17px corner chip
+   everywhere else: same seven stops, same numbers, two different maps. The
+   badge says which stop you are on, and a reader who learns the map in one
+   appearance has to re-learn it in this one. The material still belongs to the
+   era - the shared rule paints it from --paper and --ink, which are this
+   era's translucent white and near-black - so what differs now is the
+   surface, not the annotation. The disabled terminus was already settled this
+   way, in 10-windows.css. */
 
 body.use-liquid-glass .desktop-app-icon span[data-liquid-label] {
   width: fit-content;
