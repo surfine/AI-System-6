@@ -90,6 +90,7 @@ export const appModulePaths = [
   "app/core/dom-handles.js",
   "app/core/wireup.js",
   "app/core/boot.js",
+  "app/core/build-freshness.js",
 ];
 
 export const lazyRuntimePaths = [
