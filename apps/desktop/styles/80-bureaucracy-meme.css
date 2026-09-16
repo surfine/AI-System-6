@@ -21,6 +21,18 @@
   flex: 0 0 auto;
 }
 
+/* The status bar is a stacking context of its own, so the note's own z-index
+   only ordered it inside the bar: the pane that follows the bar still painted
+   its composer over the note, and the note read as buried under the controls
+   it is supposed to sit above. Lifting the note inside the bar was not enough
+   (measured: the input still hit-tested above it); the bar itself takes the
+   window-local popover layer while the note is open, which puts the note above
+   the pane it overlaps. Closed, the bar keeps its place in the flow. */
+.bureaucracy-meme-window .details-bar:has(.bureaucracy-safety[open]) {
+  position: relative;
+  z-index: var(--z-local-popover);
+}
+
 .bureaucracy-safety summary {
   cursor: pointer;
   font-size: 11px;
