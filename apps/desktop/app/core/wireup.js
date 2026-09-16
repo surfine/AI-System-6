@@ -1077,14 +1077,16 @@ function wireAppEvents() {
   // features add.
   document.addEventListener("toggle", (event) => {
     const details = event.target;
-    if (!details?.matches?.(".teachtext-command-menu, .teachtext-command-submenu")) return;
+    if (!details?.matches?.(".teachtext-command-menu, .teachtext-command-submenu, .tdi-document-stack")) return;
     if (details.open) positionCommandPopover(details);
     else clearCommandPopoverPlacement(details);
   }, true);
 
   window.addEventListener("resize", () => {
     document.querySelectorAll(".menu.is-open").forEach(positionOpenMenu);
-    document.querySelectorAll(".teachtext-command-menu[open], .teachtext-command-submenu[open]").forEach(positionCommandPopover);
+    document.querySelectorAll(
+      ".teachtext-command-menu[open], .teachtext-command-submenu[open], .tdi-document-stack[open]"
+    ).forEach(positionCommandPopover);
   });
 
   document.querySelector(".menu-bar")?.addEventListener("scroll", () => {

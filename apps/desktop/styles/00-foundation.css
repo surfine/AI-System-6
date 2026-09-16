@@ -857,6 +857,10 @@
   --control-chooser-icon-display: block;
   --control-chooser-icon-size: 32px;
   --control-chooser-label-size: 11px;
+  /* The rail's floor, in the rail's own pixel height (see .control-chooser):
+     Classic's cdev rail never scrolls, so its automatic minimum size is the
+     icon column itself and it needs no number here. */
+  --control-chooser-min-height: auto;
   /* System 6 native window chrome, measured at the emulator's exact 2×
      pixels: 17px title-bar box + the window's 1px top border and 1px inset. */
   --system-titlebar-height: 17px;

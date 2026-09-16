@@ -956,6 +956,10 @@ body[data-theme="aqua"] {
   --control-chooser-icon-display: block;
   --control-chooser-icon-size: 24px;
   --control-chooser-label-size: 10px;
+  /* The toolbar rail's own height: 24px icon + 2px gap + the 12px name, in a
+     4px 8px cell, on the 1px-ruled rail. Aqua's strip has no padding of its
+     own, so this is the whole rail. */
+  --control-chooser-min-height: 47px;
 
   /* Control Strip — a signed counterfactual: the strip died with Mac OS X
      10.0, so this is "the strip had it survived into Jaguar", built from
@@ -1689,6 +1693,9 @@ body[data-theme="snow-leopard"] {
   --control-chooser-icon-display: block;
   --control-chooser-icon-size: 22px;
   --control-chooser-label-size: 10px;
+  /* The toolbar rail's own height: 22px icon + 2px gap + the 12px name, in a
+     3px 8px 4px cell, on the 2px-padded rail with its bottom rule. */
+  --control-chooser-min-height: 48px;
 
   /* Control Strip — signed counterfactual (see the Aqua note): brushed
      silver gradient, etched hairline dividers, quiet shadow, the selection

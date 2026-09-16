@@ -141,6 +141,13 @@ function ensureDictationFieldButton() {
   dictationFieldButton.type = "button";
   dictationFieldButton.id = "dictation-field-button";
   dictationFieldButton.className = "dictation-field-button is-hidden";
+  // A native <dialog> lives in the top layer, where no z-index can reach it.
+  // The button belongs to the field it floats beside, and that field can be
+  // inside such a dialog (naming a new Project Hard Disk is the everyday
+  // case), so the control has to be in the same layer rather than behind the
+  // window it was placed for. Balloon help already rides the top layer this
+  // way; manual popovers are the established mechanism here.
+  dictationFieldButton.setAttribute("popover", "manual");
   dictationFieldButton.addEventListener("mousedown", (event) => {
     event.preventDefault();
   });
@@ -172,7 +179,32 @@ function updateDictationFieldButtonLabel() {
 function hideDictationFieldButton() {
   if (!dictationFieldButton) return;
   dictationFieldButton.classList.add("is-hidden");
+  closeDictationFieldButtonLayer(dictationFieldButton);
   dictationFieldButtonTarget = null;
+}
+
+/**
+ * Re-promote the button in the top layer. Top-layer order is promotion order,
+ * so hiding and showing again is what keeps the control above a dialog that
+ * was opened after it. A browser without the Popover API leaves the button
+ * exactly as it was: a fixed element at its own z-index.
+ *
+ * @param {HTMLElement} button
+ */
+function openDictationFieldButtonLayer(button) {
+  if (typeof button.showPopover !== "function") return;
+  try {
+    if (button.matches(":popover-open")) button.hidePopover();
+    button.showPopover();
+  } catch {}
+}
+
+/** @param {HTMLElement} button */
+function closeDictationFieldButtonLayer(button) {
+  if (typeof button.hidePopover !== "function") return;
+  try {
+    if (button.matches(":popover-open")) button.hidePopover();
+  } catch {}
 }
 
 function scheduleDictationFieldButtonHide() {
@@ -285,6 +317,7 @@ function positionDictationFieldButton(target = dictationFieldButtonTarget) {
   // window frame. Unhiding here costs no frame -- the position is written
   // before this task yields, so nothing is painted in between.
   button.classList.remove("is-hidden");
+  openDictationFieldButtonLayer(button);
   button.style.removeProperty("--dictation-field-button-height");
 
   const gap = 4;

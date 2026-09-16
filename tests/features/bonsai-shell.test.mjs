@@ -79,6 +79,14 @@ test.assertIncludes(shellSource, "tileScreenPoint", "the balloon anchors near th
 test.assertIncludes(shellSource, "tileBalloonOpen", "the balloon dismisses on the next tap");
 test.assertIncludes(shellSource, "BONSAI_TOUCH_LONG_PRESS_MS", "holding a finger queries the tile instead of building");
 test.assertIncludes(shellSource, "data-bonsai-overlay-chip", "the ten data-view chips live in the minimap card");
+// The minimap is a control, not a picture: it draws the tile bounds the camera
+// is looking at and a click (or an arrow key) moves the view there.
+test.assertIncludes(shellSource, "function miniMapViewportBounds()", "the shell reads the camera's tile bounds through the shared math");
+test.assertIncludes(shellSource, "viewport: miniMapViewportBounds()", "the minimap draws that rectangle");
+test.assertIncludes(shellSource, "function miniMapTileAt(event)", "a pointer on the minimap resolves to a tile");
+test.assertIncludes(shellSource, "function centerViewOnTile(tile)", "the view can be centred on a tile, keeping zoom, rotation and the data view");
+test.assertIncludes(shellSource, "onMiniMapPointer", "a press on the minimap navigates");
+test.assertIncludes(shellSource, 'data-bonsai-minimap width="1" height="1" tabindex="0"', "the minimap is reachable from the keyboard");
 test.assertIncludes(shellSource, "data-bonsai-status-overlay", "the gauge names the active overlay");
 test.assertIncludes(shellSource, "bonsai_menu_data_views", "the data views mirror under the Options menu for keyboard reach");
 test.assertIncludes(shellSource, "openGraphs", "the graphs panel opens from the Windows menu");

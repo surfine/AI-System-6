@@ -311,6 +311,9 @@ body.use-liquid-glass {
   --control-chooser-icon-display: block;
   --control-chooser-icon-size: 14px;
   --control-chooser-label-size: 11px;
+  /* The capsule's own height: 14px icon + 4px gap + the 13.2px name, in a
+     3px 8px segment, on the 3px-padded track. */
+  --control-chooser-min-height: 34px;
   --memory-transfer-note-bg: rgba(255, 255, 255, 0.26);
   --memory-transfer-note-line: rgba(16, 17, 20, 0.28);
   --memory-transfer-note-border: rgba(255, 255, 255, 0.48);

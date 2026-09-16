@@ -162,4 +162,27 @@ test.assertIncludes(foundation, "--control-chooser-active-label-bg: var(--select
 test.assertIncludes(surfaces, ".control-chooser .system-tab.is-active .control-chooser-label", "the highlight box is a token recipe, not an era selector");
 test.assertIncludes(icons, ".control-chooser .system-tab.is-active .sys-icon-svg.has-classic-mask .sys-icon-classic-mask", "the selected section icon still shows its silhouette");
 
+// The rail keeps the room its own tabs need. It is a scroll container wherever
+// it has to be (Platinum clips its strip, the portrait rule takes overflow-x),
+// and a scroll container's automatic minimum size is zero — so the settings
+// grid could hand the rail whatever the open section left over. Platinum's
+// General form is the tallest in the panel: the rail came out 13px of its 29
+// and the strip's own overflow cut all four names in half. Each era that
+// clothes the rail now pins the height it measured (a floor, so a longer
+// translation still grows it); Classic's cdev rail has no overflow and needs
+// no number.
+test.assertIncludes(surfaces, "min-height: var(--control-chooser-min-height, auto);", "the rail's floor is an era token");
+test.assertIncludes(foundation, "--control-chooser-min-height: auto;", "Classic's rail is never squeezed, so it pins nothing");
+const aqua = read("styles/67-aqua-appearance.css");
+const glass = read("styles/70-liquid-glass.css");
+for (const [file, value, era] of [
+  [appearance, "29px", "Platinum's OS 8 tab sheet"],
+  [aqua, "47px", "Aqua's 24px toolbar"],
+  [aqua, "48px", "Snow Leopard's 22px toolbar"],
+  [appearance, "46px", "Yosemite's 20px toolbar"],
+  [glass, "34px", "Liquid Glass's capsule"],
+]) {
+  test.assertIncludes(file, `--control-chooser-min-height: ${value};`, `${era} pins its own measured height`);
+}
+
 test.finish();

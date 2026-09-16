@@ -1475,6 +1475,20 @@
   border-radius: var(--control-chooser-radius);
   border-bottom: var(--control-chooser-border-bottom);
   border-right: var(--control-chooser-border-right);
+  /* The rail keeps the room its own tabs need, at any window height. It is a
+     scroll container wherever it has to be (Platinum clips its own strip, the
+     portrait rule takes overflow-x), and a scroll container has an automatic
+     minimum size of zero — so the Control Panel's settings grid was free to
+     hand this row whatever the panel's tallest section left over: 13px of a
+     29px rail, with the strip's own overflow then cutting every section name
+     in half. Each era pins the floor to the rail height it measured itself,
+     which is a number the rail cannot derive from its contents (a scroll
+     container measures its tabs at zero) and which does not have to be exact:
+     it is a floor, so a longer translation still grows the rail. When the
+     window cannot fit the rail plus the open section, the pane below scrolls
+     instead of the labels paying for it. Classic leaves the floor at auto:
+     its cdev rail is a column with no overflow, so nothing squeezes it. */
+  min-height: var(--control-chooser-min-height, auto);
 }
 
 .control-chooser .system-tab {

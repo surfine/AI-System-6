@@ -69,6 +69,11 @@
   display: block;
   width: 32px;
   height: 20px;
+  /* The instrument is drawn from this value, so it is declared here rather
+     than inherited from the button: an inherited value arrives mid-transition
+     on the way out as well as in, and the gauge was painted in a grey that is
+     neither ink nor paper. */
+  color: var(--btn-fg);
   image-rendering: pixelated;
   shape-rendering: crispEdges;
 }
@@ -212,8 +217,30 @@
   display: block;
   width: 72px;
   height: 44px;
+  /* Same rule as the status-bar gauge: the ink is declared, not inherited. */
+  color: var(--btn-fg);
   image-rendering: pixelated;
   shape-rendering: crispEdges;
+}
+
+/* The two RCI instruments are drawn from their own computed color, and the
+   buttons they sit in invert on hover and press. Declaring the ink per state
+   here is what makes the gauge read the state the pointer is in: the button's
+   color is animated (--control-motion-fast-in), and an inherited value is read
+   mid-transition, so the frame, the zero line and the R/C/I letters were
+   painted in a grey that is neither ink nor paper - the instrument disappeared
+   into the inverted cell. The canvas has no transition of its own, so this
+   declaration lands in the same frame as the state change. */
+.bonsai-window .bonsai-rci-button:hover:not(:disabled) .bonsai-rci-gauge,
+.bonsai-window .bonsai-rci-button:active:not(:disabled) .bonsai-rci-gauge,
+.bonsai-window .bonsai-rci-panel-button:hover:not(:disabled) .bonsai-rci-panel,
+.bonsai-window .bonsai-rci-panel-button:active:not(:disabled) .bonsai-rci-panel {
+  color: var(--btn-hover-fg);
+}
+
+.bonsai-window .bonsai-rci-button:active:not(:disabled) .bonsai-rci-gauge,
+.bonsai-window .bonsai-rci-panel-button:active:not(:disabled) .bonsai-rci-panel {
+  color: var(--btn-active-fg);
 }
 
 .bonsai-window .bonsai-rail {

@@ -652,6 +652,10 @@ body[data-theme="platinum"] {
   --control-chooser-active-weight: var(--system-strong-weight);
   --control-chooser-icon-display: none;
   --control-chooser-label-size: inherit;
+  /* The OS 8 tab sheet's own height: the 28px tab plus the strip's bottom
+     rule. Platinum's strip clips, so the rail has to carry this floor or the
+     settings grid can hand the row less than its tabs need. */
+  --control-chooser-min-height: 29px;
   /* Control Strip — Platinum is the strip's native era (Mac OS 8/9): raised
      #DDD body with an outer-end half-capsule tab, ribbed grip, and each
      module as a small bevel button that presses to an inset. Approximation
@@ -1690,6 +1694,9 @@ body[data-theme="yosemite"] {
   --control-chooser-icon-display: block;
   --control-chooser-icon-size: 20px;
   --control-chooser-label-size: 10px;
+  /* The toolbar rail's own height: 20px icon + 2px gap + the 12px name, in a
+     3px 8px 4px cell, on the 2px-padded rail with its bottom rule. */
+  --control-chooser-min-height: 46px;
   /* Control Strip — signed counterfactual: translucent 10.10 white with a
      hairline frame; the active module lights the system blue instead of
      gaining a plate. Flat 5px corners keep distance from the Liquid Glass

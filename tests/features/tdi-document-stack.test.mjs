@@ -15,6 +15,8 @@ const styles = read("styles/20-reader-docmap.css");
 const timeMachineStyles = read("styles/22-time-machine.css");
 const foundation = read("styles/00-foundation.css");
 const liquid = read("styles/70-liquid-glass.css");
+const appJs = read("app.js");
+const wireup = read("app/core/wireup.js");
 
 test.assertIncludes(projectDisk, "function renderTdiDocumentStack(container, tabs, options = {})", "one renderer owns the compact document stack");
 test.assertIncludes(projectDisk, "renderTdiDocumentStack(container, visibleTabs, options);", "the compact stack is a projection of every shared TDI tab strip");
@@ -72,6 +74,24 @@ test.assertIncludes(styles, ".tdi-shell > .tdi-rail,", "constrained windows remo
 test.assertIncludes(styles, "@container (min-width: 760px)", "wide windows preserve the existing vertical rail");
 test.assertIncludes(styles, "flex-direction: column;", "wide rail tabs remain a spatially stable vertical list");
 test.assertIncludes(styles, "z-index: var(--z-local-popover)", "the stack menu stays inside the owning window layer");
+// Anchored inside the window it belongs to, the menu can still hang over the
+// edge when the stack host sits near it. Command menus already get nudged back
+// inside their clip region; an open document stack takes the same path.
+test.assertIncludes(
+  appJs,
+  ":scope > .tdi-stack-popover",
+  "the stack menu is placed by the same clip-region path as the command menus"
+);
+test.assertMatches(
+  wireup,
+  /"\.teachtext-command-menu, \.teachtext-command-submenu, \.tdi-document-stack"/,
+  "opening a document stack triggers that placement"
+);
+test.assertMatches(
+  wireup,
+  /\.tdi-document-stack\[open\][\s\S]{0,60}?\.forEach\(positionCommandPopover\)/,
+  "and a window resize re-places an open stack menu"
+);
 test.assertIncludes(foundation, "--tdi-stack-popover-border:", "Classic owns the stack material through shared tokens");
 test.assertIncludes(liquid, "--tdi-stack-popover-backdrop-filter:", "Liquid Glass supplies its material twin without changing the model");
 test.assertNotIncludes(styles, "!important", "the shared stack does not add cascade debt");

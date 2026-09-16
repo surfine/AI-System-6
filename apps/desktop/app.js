@@ -2499,7 +2499,13 @@ function popoverClipBounds(element) {
 }
 
 function commandPopoverFor(details) {
-  return details?.querySelector(":scope > .teachtext-command-popover, :scope > .teachtext-command-subpopover") || null;
+  // The document stack's switcher is a <details> in the same status bar and
+  // anchors its own popover the same way, so it takes the same nudging: with
+  // the stack host near the window's edge, a 340px menu anchored to it hangs
+  // over the edge and the window's overflow cuts the left half of every row.
+  return details?.querySelector(
+    ":scope > .teachtext-command-popover, :scope > .teachtext-command-subpopover, :scope > .tdi-stack-popover"
+  ) || null;
 }
 
 // The CSS anchors a command popover to its summary; this only nudges the

@@ -812,6 +812,38 @@ window.AISystem6BonsaiCityLoaded = true;
     return Math.round(Number(source[kind] ?? source[short] ?? source[short.toUpperCase()] ?? state.current?.[`${kind}Demand`] ?? 0));
   }
 
+  // The two RCI instruments — the status bar's 32×20 bar and the palette's
+  // 72×44 panel — are drawn from the canvas's own computed color, which is the
+  // ink of the button they sit in. That button inverts on hover, focus and
+  // press (the desk's reversal), so the canvas has to be redrawn when the
+  // inversion changes: otherwise the frame, the zero line, the +/− marks and
+  // the R/C/I letters keep the ink they were painted with and disappear into
+  // the inverted cell, leaving only the three demand bars floating.
+  function renderDemandGauges() {
+    const win = bonsaiWindow();
+    if (!win || !state.current) return;
+    const r = demandValue("residential");
+    const c = demandValue("commercial");
+    const i = demandValue("industrial");
+    const drawTier = (selector, tier) => {
+      const canvas = win.querySelector(selector);
+      if (!canvas) return;
+      const style = getComputedStyle(canvas);
+      window.AISystem6CityDemandGauge.draw(canvas, tier, { r: r / 200, c: c / 200, i: i / 200 }, {
+        colors: {
+          r: style.getPropertyValue("--city-demand-r") || "#1f9d3a",
+          c: style.getPropertyValue("--city-demand-c") || "#2a55c7",
+          i: style.getPropertyValue("--city-demand-i") || "#d9a900",
+        },
+        ink: style.color || "#000",
+        highlight: state.demandHighlight?.id || null,
+      });
+      canvas.setAttribute("aria-label", `${t("city_demand_label")} R ${r} C ${c} I ${i}`);
+    };
+    drawTier("[data-bonsai-rci-gauge]", "gauge-bar");
+    drawTier("[data-bonsai-rci-panel]", "bonsai-panel");
+  }
+
   function renderStatus() {
     const win = bonsaiWindow();
     if (!win) return;
@@ -836,37 +868,7 @@ window.AISystem6BonsaiCityLoaded = true;
       target.textContent = name === "date" || name === "city" || name === "overlay" || name === "saved" ? value : `${t(`bonsai_status_label_${name}`)} ${value}`;
     });
     if (state.current) {
-      const r = demandValue("residential");
-      const c = demandValue("commercial");
-      const i = demandValue("industrial");
-      const gauge = win.querySelector("[data-bonsai-rci-gauge]");
-      if (gauge) {
-        const cs = getComputedStyle(gauge);
-        window.AISystem6CityDemandGauge.draw(gauge, "gauge-bar", { r: r / 200, c: c / 200, i: i / 200 }, {
-          colors: {
-            r: cs.getPropertyValue("--city-demand-r") || "#1f9d3a",
-            c: cs.getPropertyValue("--city-demand-c") || "#2a55c7",
-            i: cs.getPropertyValue("--city-demand-i") || "#d9a900",
-          },
-          ink: cs.color || "#000",
-          highlight: state.demandHighlight?.id || null,
-        });
-        gauge.setAttribute("aria-label", `${t("city_demand_label")} R ${r} C ${c} I ${i}`);
-      }
-      const panel = win.querySelector("[data-bonsai-rci-panel]");
-      if (panel) {
-        const cs = getComputedStyle(panel);
-        window.AISystem6CityDemandGauge.draw(panel, "bonsai-panel", { r: r / 200, c: c / 200, i: i / 200 }, {
-          colors: {
-            r: cs.getPropertyValue("--city-demand-r") || "#1f9d3a",
-            c: cs.getPropertyValue("--city-demand-c") || "#2a55c7",
-            i: cs.getPropertyValue("--city-demand-i") || "#d9a900",
-          },
-          ink: cs.color || "#000",
-          highlight: state.demandHighlight?.id || null,
-        });
-        panel.setAttribute("aria-label", `${t("city_demand_label")} R ${r} C ${c} I ${i}`);
-      }
+      renderDemandGauges();
       // Deterministic weather (clean-room SC2K MISC): a pure function of the
       // city seed + calendar, shown live in the gauge bar.
       const weatherEl = win.querySelector("[data-bonsai-weather]");
@@ -2024,7 +2026,86 @@ window.AISystem6BonsaiCityLoaded = true;
   function renderMiniMap() {
     const canvas = query("[data-bonsai-minimap]");
     if (!canvas || !state.current || typeof renderer()?.renderMiniMap !== "function") return;
-    renderer().renderMiniMap(canvas, sim().buildRenderSnapshot(state.current), { overlay: state.overlay });
+    renderer().renderMiniMap(canvas, sim().buildRenderSnapshot(state.current), {
+      overlay: state.overlay,
+      // What the camera is looking at, so the map can show it.
+      viewport: miniMapViewportBounds(),
+    });
+  }
+
+  // The minimap is a control, not a picture: it shows where the camera is
+  // looking and a click on it moves the view there - Red Alert's map. The
+  // bounds come from the same shared MATH the backends project with, so the
+  // rectangle and the map agree about where the viewport is.
+  function miniMapViewportBounds() {
+    const math = window.AISystem6BonsaiRenderer;
+    const stats = renderer()?.debugStats?.() || {};
+    const size = Number(state.current?.size) || 0;
+    const width = Number(stats.cssWidth) || 0;
+    const height = Number(stats.cssHeight) || 0;
+    if (!math?.visibleTiles || !size || !width || !height) return null;
+    const zoom = Number.isFinite(stats.zoom) ? stats.zoom : 1;
+    const camera = math.createCamera({
+      size,
+      zoom,
+      rotation: Number.isFinite(stats.rotation) ? stats.rotation : 0,
+      originX: width / 2 + (Number(stats.panX) || 0),
+      originY: height / 2 - (size - 1) * (math.TILE_H / 2) * zoom + (Number(stats.panY) || 0),
+    });
+    const tiles = math.visibleTiles(size, camera, { left: 0, top: 0, right: width, bottom: height }, null, { margin: 0, maxAltitude: 0 });
+    if (!Array.isArray(tiles) || !tiles.length) return null;
+    const xs = tiles.map(([x]) => x);
+    const ys = tiles.map(([, y]) => y);
+    const minX = Math.min(...xs);
+    const minY = Math.min(...ys);
+    return {
+      x: minX,
+      y: minY,
+      width: Math.max(...xs) - minX + 1,
+      height: Math.max(...ys) - minY + 1,
+    };
+  }
+
+  /** The tile a minimap pointer event points at. */
+  function miniMapTileAt(event) {
+    const canvas = query("[data-bonsai-minimap]");
+    const size = Number(state.current?.size) || 0;
+    if (!canvas || !size) return null;
+    const rect = canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return null;
+    const x = Math.floor(((event.clientX - rect.left) / rect.width) * size);
+    const y = Math.floor(((event.clientY - rect.top) / rect.height) * size);
+    return {
+      x: Math.max(0, Math.min(size - 1, x)),
+      y: Math.max(0, Math.min(size - 1, y)),
+    };
+  }
+
+  /**
+   * Put the given tile in the middle of the map. Zoom, rotation and the data
+   * view are the writer's choices, so they ride along unchanged.
+   * @param {{ x: number, y: number }} tile
+   */
+  function centerViewOnTile(tile) {
+    const size = Number(state.current?.size) || 0;
+    const stats = renderer()?.debugStats?.() || {};
+    if (!size || !Number.isInteger(tile?.x) || !Number.isInteger(tile?.y)) return null;
+    if (typeof renderer()?.resetView !== "function") return null;
+    renderer().resetView({
+      size,
+      center: tile,
+      zoom: Number.isFinite(stats.zoom) ? stats.zoom : undefined,
+      rotation: Number.isFinite(stats.rotation) ? stats.rotation : 0,
+      overlay: state.overlay,
+    });
+    renderMiniMap();
+    scheduleSessionCommit();
+    return tile;
+  }
+
+  function navigateFromMiniMap(event) {
+    const tile = miniMapTileAt(event);
+    return tile ? centerViewOnTile(tile) : null;
   }
 
   function updateOverlayChips() {
@@ -2042,7 +2123,7 @@ window.AISystem6BonsaiCityLoaded = true;
     if (!card) return;
     card.innerHTML = `
       <div class="bonsai-minimap-title" data-bonsai-minimap-toggle>${t("bonsai_minimap")}</div>
-      <canvas class="bonsai-minimap" data-bonsai-minimap width="1" height="1" aria-label="${t("bonsai_minimap")}"></canvas>
+      <canvas class="bonsai-minimap" data-bonsai-minimap width="1" height="1" tabindex="0" aria-label="${t("bonsai_minimap")}"></canvas>
       <div class="bonsai-overlay-chips" role="group" aria-label="${t("bonsai_overlay")}">
         ${OVERLAYS.map((overlay) => `<button class="bonsai-overlay-chip" type="button" data-bonsai-overlay-chip="${overlay}" aria-pressed="${state.overlay === overlay}">${t(`bonsai_overlay_${overlay.replaceAll("-", "_")}`)}</button>`).join("")}
       </div>`;
@@ -3327,6 +3408,58 @@ window.AISystem6BonsaiCityLoaded = true;
       event.stopPropagation();
       runBonsaiMenuCommand(command);
     });
+    // The instrument follows the button it sits in: hover, focus and press
+    // invert it, so the gauge is redrawn as the inversion comes and goes.
+    // The redraw waits a frame: while the pointer event is being dispatched
+    // the hover style is not guaranteed to be resolved yet, and a gauge read
+    // in that instant keeps the ink of the state the pointer just left.
+    let demandRedrawFrame = 0;
+    const redrawDemandOnInversion = (event) => {
+      if (!event.target?.closest?.("[data-bonsai-rci-button], [data-bonsai-rci-panel-button]")) return;
+      if (demandRedrawFrame) return;
+      demandRedrawFrame = requestAnimationFrame(() => {
+        // Two frames: the browser settles the hover/active style a frame
+        // after the pointer event, and the gauge must read the ink of the
+        // state the pointer is in, not the one it left.
+        demandRedrawFrame = requestAnimationFrame(() => {
+          demandRedrawFrame = 0;
+          renderDemandGauges();
+        });
+      });
+    };
+    state.cleanups.push(() => {
+      if (demandRedrawFrame) cancelAnimationFrame(demandRedrawFrame);
+      demandRedrawFrame = 0;
+    });
+    ["pointerover", "pointerout", "pointerdown", "pointerup", "keydown", "keyup"]
+      .forEach((type) => listen(win, type, redrawDemandOnInversion, { capture: true }));
+
+    // Red Alert's minimap: a press moves the view to that place, and the arrow
+    // keys do the same from the keyboard, one tile (Shift: four) at a time.
+    const onMiniMapPointer = (event) => {
+      if (!event.target?.closest?.("[data-bonsai-minimap]")) return;
+      event.preventDefault();
+      navigateFromMiniMap(event);
+    };
+    listen(win, "pointerdown", onMiniMapPointer, { capture: true });
+    listen(win, "keydown", (event) => {
+      if (!event.target?.closest?.("[data-bonsai-minimap]")) return;
+      const bounds = miniMapViewportBounds();
+      if (!bounds) return;
+      const next = {
+        x: bounds.x + Math.floor(bounds.width / 2),
+        y: bounds.y + Math.floor(bounds.height / 2),
+      };
+      const step = event.shiftKey ? 4 : 1;
+      if (event.key === "ArrowLeft") next.x -= step;
+      else if (event.key === "ArrowRight") next.x += step;
+      else if (event.key === "ArrowUp") next.y -= step;
+      else if (event.key === "ArrowDown") next.y += step;
+      else return;
+      event.preventDefault();
+      centerViewOnTile(next);
+    }, { capture: true });
+
     listen(win, "click", (event) => {
       const railCell = event.target.closest(".bonsai-rail-cell");
       if (railCell) {

@@ -6,6 +6,8 @@ import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("city-demand-gauge");
 const source = read("app/features/city-demand-gauge.js");
+const bonsai = read("app/features/bonsai-city.js");
+const bonsaiStyles = read("styles/94-bonsai.css");
 
 function makeCanvas() {
   const rects = [];
@@ -139,5 +141,22 @@ test.assert(typeof loadGauge().draw === "function", "the core exposes draw()");
     "and the tokens name the evidence they were measured from",
   );
 }
+
+// Both Bonsai instruments sit inside buttons that invert on hover and press,
+// and a canvas keeps the ink it was painted with. The gauge therefore has to
+// be redrawn when the inversion changes, and its ink has to be declared per
+// state rather than inherited: an inherited value is read mid-transition.
+test.assertIncludes(bonsai, "function renderDemandGauges()", "one function paints both Bonsai RCI instruments");
+test.assertIncludes(
+  bonsai,
+  '["pointerover", "pointerout", "pointerdown", "pointerup", "keydown", "keyup"]',
+  "the reversal states of both buttons ask for that repaint"
+);
+test.assertIncludes(
+  bonsaiStyles,
+  ".bonsai-window .bonsai-rci-panel-button:active:not(:disabled) .bonsai-rci-panel",
+  "the pressed state carries the inverted ink into the canvas"
+);
+test.assertIncludes(bonsaiStyles, "color: var(--btn-fg);", "and the resting ink is declared, not inherited");
 
 test.finish();

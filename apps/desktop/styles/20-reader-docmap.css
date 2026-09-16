@@ -1040,8 +1040,14 @@ body.is-resizing-tdi {
    21px pixel-art rail -- and no token holds that number. */
 .dictation-field-button {
   position: fixed;
+  /* The button is a manual popover, so it lands in the top layer with the
+     native <dialog> windows it can be placed for; the UA's own popover box
+     (inset: 0, auto margins, centered) is neutralised the same way balloon
+     help neutralises it. */
+  inset: auto;
   left: var(--dictation-field-button-x, 0px);
   top: var(--dictation-field-button-y, 0px);
+  margin: 0;
   z-index: var(--z-floating-field-control);
   /* Centred the way every other push button centres its label, so the label
      stays on the middle of whatever height the row hands down. Liquid Glass
