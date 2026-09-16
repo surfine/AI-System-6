@@ -3074,15 +3074,33 @@ async function loadLazyWindowAppearanceShell(name) {
 // Accessory is registered by window name and a multi-window application (Quick
 // Draft, TeachText) by app id. The runtime mounts once and reports
 // "unregistered" cheaply, so the second try costs nothing.
-async function mountWindowApplication(name) {
+async function mountWindowApplication(name, { reentrant = false } = {}) {
   const runtime = window.AISystem6Runtime;
   if (typeof runtime?.mountApplication !== "function") return;
-  const byWindow = await runtime.mountApplication(name, { windowName: name });
+  const byWindow = await runtime.mountApplication(name, { windowName: name, reentrant });
   if (byWindow?.status !== "unregistered") return;
-  await runtime.mountApplication(getWindowAppId(name), { windowName: name });
+  await runtime.mountApplication(getWindowAppId(name), { windowName: name, reentrant });
 }
 
+// Windows whose open is on the stack right now. A module may build its own
+// window and register `mount: open`, so the mount below calls openWindow() on
+// the window that is already opening: the nested open is told it is nested, and
+// the runtime answers its mount instead of handing it the promise it is already
+// inside. Without the mark, that promise waits on itself and the app never
+// appears (Cover Glass, Quick Draft).
+const windowsBeingOpened = new Set();
+
 async function openWindow(name, options = {}) {
+  const nestedOpen = windowsBeingOpened.has(name);
+  if (!nestedOpen) windowsBeingOpened.add(name);
+  try {
+    return await openWindowInner(name, options, nestedOpen);
+  } finally {
+    if (!nestedOpen) windowsBeingOpened.delete(name);
+  }
+}
+
+async function openWindowInner(name, options = {}, nestedOpen = false) {
   if (!isWorkspaceWindowAllowed(name)) {
     updateMenuState();
     return;
@@ -3164,7 +3182,7 @@ async function openWindow(name, options = {}) {
 
   await loadLazyWindowModule(name);
 
-  await mountWindowApplication(name);
+  await mountWindowApplication(name, { reentrant: nestedOpen });
   runWindowHook(name, "onOpen", { win, wasAlreadyOpen });
   win.classList.remove("is-hidden", "is-collapsed");
   if (isPortraitDocumentFlow() && mobileFinderPageWindowNames.has(name)) {

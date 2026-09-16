@@ -123,8 +123,30 @@ async function mountApplication(id, options = {}) {
   if (!record) return { ok: false, status: "unregistered" };
   if (record.mounted) return { ok: true, status: "ok" };
   const inFlight = runtimeMountsInFlight.get(normalizedId);
-  if (inFlight) return inFlight;
+  // A module may build its own window, and the usual way to write that is
+  // `mount: open` where open() calls openWindow() on itself. The window manager
+  // mounts before it reveals, so that call arrives back here — and handing it
+  // the promise of the mount it is already inside is a promise cycle: the outer
+  // mount waits for the inner open, the inner open waits for the outer mount,
+  // and neither ever finishes. Cover Glass and Quick Draft both hung on it, with
+  // the window built and hidden and the action "opening" forever.
+  //
+  // Only a caller *inside* that mount is answered this way, and the window
+  // manager is the one that knows: it marks the window it is opening, and a
+  // nested open of the same window carries that mark down. Two callers opening
+  // different windows, or the same window from independent stacks, still share
+  // one initialization and both wait for it.
+  if (inFlight) {
+    return options.reentrant === true
+      ? { ok: true, status: "mounting" }
+      : inFlight;
+  }
   const attempt = (async () => {
+    // Let this attempt reach the in-flight map before the mount body runs. A
+    // mount may call back in for the very application it is mounting, before
+    // its first await, and an unregistered attempt would start a second mount
+    // and then a third: the guard has to exist before the work it guards.
+    await Promise.resolve();
     if (!record.mount) {
       record.mounted = true;
       return { ok: true, status: "ok" };
