@@ -152,6 +152,26 @@ test.assertIncludes(windowsCss, ".spine-actions button.holds-pen .spine-step-num
 // against a corner chip in five other appearances is two maps for one route.
 // The era still shows through --paper/--ink, which the shared rule reads.
 test.assertNotIncludes(liquidCss, ".spine-step-number", "Liquid Glass leaves the step badge to the shared rule, in the shared shape");
+// The terminus is greyed the way this desk greys anything it cannot read: by
+// dropping every other pixel of the artwork, the same 2px checker the ejected
+// disks wear. It used to be a 45-degree hazard stripe across the whole button,
+// which said "unavailable" loudly and laid its diagonal through the stop's own
+// name. Dimmed is the native thing, not a modern approximation of it.
+test.assertIncludes(
+  windowsCss,
+  ".spine-actions button:disabled .sys-icon",
+  "the unusable terminus is greyed on its icon"
+);
+test.assertIncludes(
+  windowsCss,
+  "repeating-conic-gradient(#000 0% 25%, transparent 0% 50%)",
+  "and greyed by a real 50% checker at the icon's own pixel pitch"
+);
+test.assertNotIncludes(
+  windowsCss,
+  "background: repeating-linear-gradient(45deg, var(--paper) 0 4px, var(--shade-dark) 4px 8px)",
+  "the terminus no longer lays a hazard stripe across the stop"
+);
 
 // --- E. A phase gets the screen -------------------------------------------
 

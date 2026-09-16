@@ -144,24 +144,50 @@ body.quick-draft-focus .writing-spine-panel {
   text-align: center;
 }
 
-/* A stop that cannot be used yet is dimmed the same way in every appearance:
-   the route's own dither over paper, ink dimmed once. The generic disabled
-   button chrome is era-tinted — a gradient in Aqua, a flat grey in Platinum,
-   a translucent film in Liquid Glass — which is right for a button and wrong
-   for one fixed stop on the map. */
+/* A stop that cannot be used yet is dimmed the same way in every appearance,
+   and dimmed the way this desk has always dimmed a thing you cannot read: by
+   dropping every other pixel of the artwork, the same 2px checker the ejected
+   disks wear in 40-icons.css. The name keeps its ink, dimmed once, so the stop
+   is still named on the map.
+
+   It used to be a 45-degree hazard stripe laid across the whole button, icon
+   and name together. It said "unavailable" and it said it loudly, and it read
+   as caution tape: four-pixel bands at full contrast, with the diagonal
+   running through the label's own letters. Greying the icon is the desk's
+   native word for this, and it leaves the route's map quiet enough to read.
+
+   The generic disabled button chrome is era-tinted — a gradient in Aqua, a
+   flat grey in Platinum, a translucent film in Liquid Glass — which is right
+   for a button and wrong for one fixed stop on the map, so the tokens below
+   keep it off this one. Liquid Glass's film is for buttons; giving the stop
+   the values this rule reads keeps six eras painting one look without a second
+   selector twin in that stylesheet. */
 .spine-actions button:disabled,
 .spine-actions button.is-disabled {
-  /* The route's terminus is dimmed by the desk's own recipe in every
-     appearance. Liquid Glass's disabled-control film is for buttons; giving
-     the stop the same values its own rule reads keeps six eras painting one
-     look without a second selector twin in that stylesheet. */
-  --liquid-disabled-control-bg: repeating-linear-gradient(45deg, var(--paper) 0 4px, var(--shade-dark) 4px 8px);
+  --liquid-disabled-control-bg: transparent;
   --liquid-disabled-control-fg: var(--shade-dark);
   --liquid-disabled-control-border: transparent;
   --liquid-disabled-control-shadow: none;
   color: var(--shade-dark);
-  background: repeating-linear-gradient(45deg, var(--paper) 0 4px, var(--shade-dark) 4px 8px);
+  background: transparent;
   box-shadow: none;
+}
+
+.spine-actions button:disabled .sys-icon,
+.spine-actions button.is-disabled .sys-icon {
+  -webkit-mask-image: repeating-conic-gradient(#000 0% 25%, transparent 0% 50%);
+  mask-image: repeating-conic-gradient(#000 0% 25%, transparent 0% 50%);
+  -webkit-mask-size: 2px 2px;
+  mask-size: 2px 2px;
+}
+
+/* The number is part of the same stop, so it dims with it. Its border was the
+   one full-ink line left in a greyed item, which read as the stop being
+   available and only its contents missing. */
+.spine-actions button:disabled .spine-step-number,
+.spine-actions button.is-disabled .spine-step-number {
+  border-color: var(--shade-dark);
+  color: var(--shade-dark);
 }
 
 .spine-actions .icon,
