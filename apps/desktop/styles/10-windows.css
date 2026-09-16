@@ -3777,6 +3777,14 @@ select:focus {
   align-content: start;
   gap: 10px;
   overflow-y: auto;
+  /* The pane's scroller is era-owned through tokens, like the chooser rail
+     above it: the defaults further down are the Classic/Platinum lane (a
+     paper track, an inked left edge, an inked thumb), and an appearance that
+     owns a different bar swaps values instead of adding selectors. Liquid
+     Glass swaps them for its glass pill; Classic renders exactly what its
+     literals used to say. The engine's own bar is deliberately not asked for:
+     specifying scrollbar-width or scrollbar-color here hands the pane over to
+     the standard path, which drops the lane the era asked for. */
   padding: 10px var(--settings-scrollbar-lane-padding-right) 10px 12px;
   background: var(--settings-scrollbar-lane-bg);
 }
@@ -3804,23 +3812,31 @@ select:focus {
 
 .control-panel .settings::-webkit-scrollbar,
 .chooser-panel .settings::-webkit-scrollbar {
-  width: 16px;
-  height: 16px;
-  background: var(--paper);
+  width: var(--settings-scrollbar-width, 16px);
+  height: var(--settings-scrollbar-width, 16px);
+  background: var(--settings-scrollbar-track-bg, var(--paper));
 }
 
 .control-panel .settings::-webkit-scrollbar-track,
 .chooser-panel .settings::-webkit-scrollbar-track {
-  background: var(--paper);
-  border-left: var(--system-control-line) solid var(--ink);
+  background: var(--settings-scrollbar-track-bg, var(--paper));
+  border-left: var(--settings-scrollbar-track-edge, var(--system-control-line) solid var(--ink));
 }
 
 .control-panel .settings::-webkit-scrollbar-thumb,
 .chooser-panel .settings::-webkit-scrollbar-thumb {
-  border: var(--system-control-line) solid var(--ink);
-  border-radius: var(--item-radius);
-  background: var(--paper);
-  box-shadow: inset 1px 1px 0 var(--shade);
+  border: var(--settings-scrollbar-thumb-border, var(--system-control-line) solid var(--ink));
+  border-radius: var(--settings-scrollbar-thumb-radius, var(--item-radius));
+  background-color: var(--settings-scrollbar-thumb-bg, var(--paper));
+  background-clip: var(--settings-scrollbar-thumb-clip, border-box);
+  box-shadow: var(--settings-scrollbar-thumb-shadow, inset 1px 1px 0 var(--shade));
+}
+
+/* Approach may deepen the thumb. An era that never painted a hover state
+   leaves the token at the resting colour, so Classic is unchanged. */
+.control-panel .settings:hover::-webkit-scrollbar-thumb,
+.chooser-panel .settings:hover::-webkit-scrollbar-thumb {
+  background-color: var(--settings-scrollbar-thumb-hover-bg, var(--settings-scrollbar-thumb-bg, var(--paper)));
 }
 
 .control-panel .settings::-webkit-scrollbar-corner,

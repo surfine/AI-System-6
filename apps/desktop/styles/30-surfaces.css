@@ -1470,6 +1470,10 @@
   gap: var(--control-chooser-gap);
   width: var(--control-chooser-width);
   max-width: 100%;
+  /* An era whose chooser hugs its own content centres the rail in the pane
+     instead of leaving it against the leading edge — the segmented control
+     this appearance wears is a centred object, not a full-width tab row. */
+  justify-self: var(--control-chooser-justify-self, stretch);
   padding: var(--control-chooser-padding);
   background: var(--control-chooser-bg);
   border-radius: var(--control-chooser-radius);

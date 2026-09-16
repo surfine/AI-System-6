@@ -286,6 +286,9 @@ body.use-liquid-glass {
   --control-chooser-radius: var(--r-pill);
   --control-chooser-padding: 3px;
   --control-chooser-width: max-content;
+  /* The capsule hugs its contents, so it sits centred in the pane rather than
+     against the leading edge like a full-width tab row. */
+  --control-chooser-justify-self: center;
   --control-chooser-direction: row;
   --control-chooser-gap: 2px;
   --control-chooser-border-bottom: 0;
@@ -769,8 +772,13 @@ body.use-liquid-glass {
      All of it is value. Two lengths (the well's thickness and the lens's
      diameter) are the only geometry, and each is read by one rule. */
   --glass-slider-row-height: 34px;
-  --glass-slider-thickness: 12px;
-  --glass-slider-lens-size: 22px;
+  /* The slider is a Mac control first: a 4px track and a 20px knob, the
+     geometry the platform has used since Big Sur. The appearance's material
+     belongs in how those two are painted, not in their size — the 12px well
+     and 22px lens this recipe shipped with read as an iOS pill, and a slider
+     that changes size on approach reads as decoration rather than control. */
+  --glass-slider-thickness: 4px;
+  --glass-slider-lens-size: 20px;
   /* Where the value has reached, measured to the lens centre rather than to
      the raw percentage: the lens travels inside the track, so a plain
      percentage puts the bright rim ahead of the lens at one end and behind
@@ -789,67 +797,33 @@ body.use-liquid-glass {
       + var(--glass-slider-lens-size) / 2
     );
   --glass-slider-lit: #0a84ff;
-  --glass-slider-well: rgba(16, 17, 20, 0.13);
-  /* Three layers, painted top to bottom.
-
-     The first is sized to the fill rather than to the track and is drawn
-     from its right edge inward, so the 2px rim it ends on travels with the
-     value at a fixed distance rather than at a fraction of the fill. It is
-     the brightest thing on the control, and it meets the leading edge of
-     the lens wherever the lens has been dragged to.
-
-     The second is the well's own glass, and it covers the fill and the empty
-     run alike: dark where the groove is cut in at the top, lit along the
-     bottom lip. That pair is what makes a groove read as depth rather than
-     as a coloured stripe, and running it over the fill too is why the fill
-     reads as light inside glass instead of as paint on a bar. */
+  --glass-slider-well: rgba(16, 17, 20, 0.12);
+  /* Two flat runs: the value's accent up to the knob, a quiet well after it.
+     No groove and no bright rim — a Mac slider is a line and a knob, and the
+     track must not compete with the control that carries the appearance's
+     own name. The hairline keeps the line from dissolving into the pane. */
   --glass-slider-track-bg:
-    linear-gradient(
-      270deg,
-      rgba(255, 255, 255, 0.95) 0 2px,
-      rgba(255, 255, 255, 0.34) 3px,
-      rgba(255, 255, 255, 0) 22px
-    ) left center / var(--glass-slider-fill) 100% no-repeat,
-    linear-gradient(
-      180deg,
-      rgba(16, 17, 20, 0.3),
-      rgba(16, 17, 20, 0.03) 44%,
-      rgba(255, 255, 255, 0.16) 72%,
-      rgba(255, 255, 255, 0.62)
-    ),
     linear-gradient(
       90deg,
       var(--glass-slider-lit) 0 var(--glass-slider-fill),
       var(--glass-slider-well) var(--glass-slider-fill) 100%
     );
-  /* The well is cut in at the top and lit at the bottom lip — that pair is
-     what makes a groove read as depth instead of as a coloured stripe. */
-  --glass-slider-track-shadow:
-    inset 0 1.5px 2.5px rgba(16, 17, 20, 0.34),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.8),
-    inset 1.25px 0 0 -0.75px rgba(230, 230, 230, 0.8),
-    inset -1.25px 0 0 -0.75px rgba(229, 229, 229, 0.8),
-    0 1px 0 rgba(255, 255, 255, 0.62);
-  /* The lens. One object, one primary glass surface: the blur lives here and
-     not on the track, so the control never stacks blur on blur. */
-  --glass-slider-lens-bg:
-    radial-gradient(124% 124% at 30% 8%, rgba(255, 255, 255, 0.99), rgba(255, 255, 255, 0.52) 38%, rgba(255, 255, 255, 0.04) 70%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0.06) 56%, rgba(255, 255, 255, 0.42)),
-    rgba(255, 255, 255, 0.14);
+  --glass-slider-track-shadow: inset 0 0 0 0.5px rgba(16, 17, 20, 0.06);
+  /* The knob: opaque white, one hairline, one short drop. It carries no blur
+     of its own — the appearance's glass is the panel behind it. */
+  --glass-slider-lens-bg: #ffffff;
   --glass-slider-lens-shadow:
-    inset 0 1.5px 0 rgba(255, 255, 255, 0.99),
-    inset 0 -2.5px 3px rgba(16, 17, 20, 0.26),
-    inset 1.5px 0 0 -0.75px rgba(255, 255, 255, 0.92),
-    inset -1.5px 0 0 -0.75px rgba(255, 255, 255, 0.7),
-    0 0 0 0.5px rgba(16, 17, 20, 0.18),
-    0 2px 5px rgba(18, 28, 38, 0.28),
-    0 10px 20px rgba(18, 28, 38, 0.16);
-  --glass-slider-lens-filter: blur(7px) saturate(190%) brightness(1.1);
+    0 0 0 0.5px rgba(16, 17, 20, 0.08),
+    0 0.5px 1px rgba(16, 17, 20, 0.18),
+    0 2px 5px rgba(18, 28, 38, 0.18);
+  --glass-slider-lens-filter: none;
   --glass-slider-lens-scale: 1;
   /* Travel and duration are tokens so reduced motion can take them to
      nothing without a second copy of the state rules. */
-  --glass-slider-hover-scale: 1.06;
-  --glass-slider-press-scale: 1.16;
+  /* A Mac knob keeps its size: hover and press move the material, never the
+     geometry, so the pointer cannot resize the target under itself. */
+  --glass-slider-hover-scale: 1;
+  --glass-slider-press-scale: 1;
   --glass-slider-motion: var(--control-motion-fast-in);
   --glass-blue: #64d2ff;
   --glass-progress-blue: #0a84ff;
@@ -973,6 +947,21 @@ body.use-liquid-glass {
   --liquid-desktop-icon-label-line-height: 1;
   --settings-scrollbar-lane-bg: transparent;
   --settings-scrollbar-lane-padding-right: 12px;
+  /* The pane's scroller, the appearance's own bar: a quiet lane, a translucent
+     pill, and a darker pill on approach. A scrollbar is never global here —
+     the rest of the app leaves the platform's bar alone — but the pane cannot
+     leave its own alone, because the shared recipe's defaults are the Mac OS 8
+     lane (paper track, inked left edge, inked thumb), which down the side of a
+     glass panel read as a black ribbon. No ink survives in these values. */
+  --settings-scrollbar-width: 12px;
+  --settings-scrollbar-track-bg: transparent;
+  --settings-scrollbar-track-edge: 0;
+  --settings-scrollbar-thumb-border: 3px solid transparent;
+  --settings-scrollbar-thumb-radius: var(--r-pill);
+  --settings-scrollbar-thumb-bg: rgba(16, 17, 20, 0.34);
+  --settings-scrollbar-thumb-hover-bg: rgba(16, 17, 20, 0.5);
+  --settings-scrollbar-thumb-clip: padding-box;
+  --settings-scrollbar-thumb-shadow: none;
 
   /* Migrated twin overrides. Each pairs with a default in :root in
      styles/00-foundation.css. Deleting the corresponding body.use-liquid-glass
@@ -2620,11 +2609,14 @@ body.use-liquid-glass .liquid-tint-row input[type="range"]:focus {
   outline: none;
 }
 
-/* Approach lights the lens before the press, the way every other glass
-   control here previews itself. */
+/* Approach deepens the knob's drop a touch and does nothing else: the pointer
+   must not resize what it is about to grab. */
 body.use-liquid-glass .liquid-tint-row input[type="range"]:hover {
   --glass-slider-lens-scale: var(--glass-slider-hover-scale);
-  --glass-slider-lens-filter: blur(8px) saturate(210%) brightness(1.14);
+  --glass-slider-lens-shadow:
+    0 0 0 0.5px rgba(16, 17, 20, 0.1),
+    0 1px 2px rgba(16, 17, 20, 0.22),
+    0 3px 7px rgba(18, 28, 38, 0.2);
 }
 
 /* Keyboard focus must be at least as findable as hover, so it keeps the
@@ -2632,25 +2624,22 @@ body.use-liquid-glass .liquid-tint-row input[type="range"]:hover {
 body.use-liquid-glass .liquid-tint-row input[type="range"]:focus-visible {
   --glass-slider-lens-scale: var(--glass-slider-hover-scale);
   --glass-slider-lens-shadow:
-    inset 0 1.5px 0 rgba(255, 255, 255, 0.99),
-    inset 0 -2.5px 3px rgba(16, 17, 20, 0.26),
-    0 0 0 0.5px rgba(16, 17, 20, 0.2),
+    0 0 0 0.5px rgba(16, 17, 20, 0.1),
+    0 1px 2px rgba(16, 17, 20, 0.22),
     0 0 0 4px var(--glass-field-focus-ring),
-    0 3px 7px rgba(18, 28, 38, 0.3);
+    0 3px 7px rgba(18, 28, 38, 0.2);
 }
 
-/* The drag. A held lens presses into the well, thickens, and refracts harder
-   — the value is being changed, so the glass answers rather than a colour. */
+/* The drag. A held knob sits into the line — a shade cooler, a shorter drop,
+   the accent halo the focus ring already uses — so the press reads as contact
+   rather than as a bigger object. */
 body.use-liquid-glass .liquid-tint-row input[type="range"]:active {
   --glass-slider-lens-scale: var(--glass-slider-press-scale);
-  --glass-slider-lens-filter: blur(10px) saturate(230%) brightness(1.18);
+  --glass-slider-lens-bg: #f2f3f5;
   --glass-slider-lens-shadow:
-    inset 0 2px 0 rgba(255, 255, 255, 0.99),
-    inset 0 -3px 5px rgba(16, 17, 20, 0.34),
-    0 0 0 0.5px rgba(16, 17, 20, 0.22),
+    0 0 0 0.5px rgba(16, 17, 20, 0.14),
     0 0 0 5px rgba(10, 132, 255, 0.22),
-    0 4px 10px rgba(18, 28, 38, 0.34),
-    0 14px 26px rgba(18, 28, 38, 0.2);
+    0 1px 2px rgba(18, 28, 38, 0.24);
 }
 
 body.use-liquid-glass .liquid-tint-row input[type="range"]::-webkit-slider-runnable-track {
@@ -4273,49 +4262,6 @@ body.use-liquid-glass .view-btn[data-view="list"]::before {
 body.use-liquid-glass .view-btn[data-view="list"].is-active::before {
   background: rgba(255, 255, 255, 0.9);
   box-shadow: 0 -5px 0 rgba(255, 255, 255, 0.9), 0 5px 0 rgba(255, 255, 255, 0.9);
-}
-
-html:has(body.use-liquid-glass),
-body.use-liquid-glass,
-body.use-liquid-glass * {
-  scrollbar-color: rgba(16, 17, 20, 0.34) rgba(255, 255, 255, 0.18);
-  scrollbar-width: thin;
-}
-
-html:has(body.use-liquid-glass)::-webkit-scrollbar,
-body.use-liquid-glass::-webkit-scrollbar,
-body.use-liquid-glass *::-webkit-scrollbar {
-  width: 12px;
-  height: 12px;
-  background: rgba(255, 255, 255, 0.28);
-}
-
-html:has(body.use-liquid-glass)::-webkit-scrollbar-track,
-body.use-liquid-glass::-webkit-scrollbar-track,
-body.use-liquid-glass *::-webkit-scrollbar-track {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.1));
-  box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.42);
-}
-
-html:has(body.use-liquid-glass)::-webkit-scrollbar-thumb,
-body.use-liquid-glass::-webkit-scrollbar-thumb,
-body.use-liquid-glass *::-webkit-scrollbar-thumb {
-  border: 2px solid rgba(255, 255, 255, 0.28);
-  border-radius: var(--r-pill);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.56), rgba(16, 17, 20, 0.24)), rgba(16, 17, 20, 0.22);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.66), 0 2px 7px rgba(18, 28, 38, 0.12);
-}
-
-html:has(body.use-liquid-glass)::-webkit-scrollbar-thumb:hover,
-body.use-liquid-glass::-webkit-scrollbar-thumb:hover,
-body.use-liquid-glass *::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.64), rgba(16, 17, 20, 0.34)), rgba(16, 17, 20, 0.3);
-}
-
-html:has(body.use-liquid-glass)::-webkit-scrollbar-corner,
-body.use-liquid-glass::-webkit-scrollbar-corner,
-body.use-liquid-glass *::-webkit-scrollbar-corner {
-  background: rgba(255, 255, 255, 0.18);
 }
 
 body.use-liquid-glass button:disabled:not(.memory-card),
