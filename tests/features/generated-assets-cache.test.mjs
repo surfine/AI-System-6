@@ -19,7 +19,11 @@ try {
     writeFileSync(join(root, "output.txt"), `result ${runs}`);
     return 0;
   };
-  const execute = (options = {}) => runCachedGenerator(root, spec, generate, { environment, ...options });
+  const execute = (options = {}) => runCachedGenerator(root, spec, generate, {
+    environment,
+    environmentKeys: ["BUILD_OPTION"],
+    ...options,
+  });
   test.assert(!execute().cached && runs === 1, "the first request generates outputs");
   test.assert(execute().cached && runs === 1, "unchanged complete inputs reuse intact outputs");
   writeFileSync(join(root, "sources/recipe.json"), "second");
@@ -35,23 +39,39 @@ try {
   rmSync(join(root, "output.txt"));
   test.assert(!execute().cached && runs === 7, "missing output regenerates");
   test.assert(!execute({ environment: { BUILD_OPTION: "two" } }).cached && runs === 8, "changed environment regenerates");
+  // Everything else about how the process was started is not an input. Hashing
+  // it made `npm run build:app` miss the work the in-process prebuild behind
+  // `npm run dev` had just written, and the two repackaged each other's outputs
+  // forever, because npm sets npm_lifecycle_event and npm_config_* per script.
+  test.assert(
+    execute({ environment: { BUILD_OPTION: "two", npm_lifecycle_event: "build:app", npm_config_argv: "{}", PWD: "/somewhere/else" } }).cached,
+    "how the process was started is not an input"
+  );
+  test.assert(
+    !execute({ environment: { BUILD_OPTION: "two" }, environmentKeys: ["BUILD_OPTION", "CI"] }).cached && runs === 9,
+    "a caller can widen what counts, and an absent declared name is a real value"
+  );
+  test.assert(
+    execute({ environment: { BUILD_OPTION: "two" }, environmentKeys: ["BUILD_OPTION", "CI"] }).cached && runs === 9,
+    "and the same declared set reuses what it wrote"
+  );
   const receiptPath = join(root, "dist/build-cache/generated-assets/example.json");
   const receipt = readFileSync(receiptPath, "utf8");
   test.assert(!receipt.includes("BUILD_OPTION"), "receipts retain digests rather than environment values");
   writeFileSync(receiptPath, "broken json");
-  test.assert(!execute().cached && runs === 9, "malformed receipts regenerate");
-  test.assert(!execute({ force: true }).cached && runs === 10, "force runs a generator even with a valid receipt");
+  test.assert(!execute().cached && runs === 10, "malformed receipts regenerate");
+  test.assert(!execute({ force: true }).cached && runs === 11, "force runs a generator even with a valid receipt");
   const failed = runCachedGenerator(root, spec, () => 7, { environment, force: true });
   test.assert(failed.status === 7, "failed generation retains its nonzero exit status");
-  test.assert(!execute().cached && runs === 11, "failed generation drops the previous successful receipt");
+  test.assert(!execute().cached && runs === 12, "failed generation drops the previous successful receipt");
   const mutating = runCachedGenerator(root, spec, () => {
     generate();
     writeFileSync(join(root, "sources/recipe.json"), "edited during build");
     return 0;
   }, { environment, force: true });
-  test.assert(mutating.status === 0 && !execute().cached && runs === 13, "input edits during a build never bank a mixed-input result");
+  test.assert(mutating.status === 0 && !execute().cached && runs === 14, "input edits during a build never bank a mixed-input result");
   rmSync(join(root, "dependency.js"));
-  test.assert(!execute().cached && !execute().cached && runs === 15, "unreadable inputs never bank a receipt even if the generator succeeds");
+  test.assert(!execute().cached && !execute().cached && runs === 16, "unreadable inputs never bank a receipt even if the generator succeeds");
 
   // Execute the actual orchestrator against lightweight fixture generators:
   // dependency ordering and early failure are observable, without real assets.

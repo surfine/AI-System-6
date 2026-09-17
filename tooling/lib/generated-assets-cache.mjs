@@ -4,6 +4,35 @@ import path from "node:path";
 
 const SCHEMA = "ai-system-6/generated-assets/v1";
 
+/**
+ * The only environment names that can reach a cached generator and change the
+ * bytes it writes.
+ *
+ * This used to be the whole environment, and that made the cache useless in
+ * the ordinary local loop: `npm run build:app` and the in-process prebuild
+ * `npm run dev` starts set different `npm_lifecycle_event`/`npm_config_*`
+ * values, so each one missed everything the other had just written and
+ * repackaged the vendor bundles and the Bonsai atlas — about 12.6 s of work —
+ * with no input change at all. None of the generators reads the environment;
+ * the tooling tree is already an input, so a generator that starts reading a
+ * variable invalidates the cache through its own source change.
+ *
+ * What is left is the residue that reaches a generator or its dependencies
+ * without passing through an input file: locale and timezone (case folding,
+ * collation, date formatting), the Node runtime's own switches, and the
+ * reproducible-build stamp. A caller can narrow or replace this through
+ * `environmentKeys`.
+ */
+export const CACHE_ENVIRONMENT_KEYS = Object.freeze([
+  "LANG",
+  "LC_ALL",
+  "LC_CTYPE",
+  "SOURCE_DATE_EPOCH",
+  "TZ",
+  "NODE_ENV",
+  "NODE_OPTIONS",
+]);
+
 // Include file contents and directory membership, never just mtimes. Symlink
 // targets participate too; an unreadable input or a cycle disables reuse.
 export function digestAssetPaths(root, paths) {
@@ -34,7 +63,7 @@ export function digestAssetPaths(root, paths) {
   return hash.digest("hex");
 }
 
-function fingerprint(root, spec, environment) {
+function fingerprint(root, spec, environment, environmentKeys) {
   return createHash("sha256").update(JSON.stringify({
     schema: SCHEMA,
     node: process.versions,
@@ -42,8 +71,8 @@ function fingerprint(root, spec, environment) {
     platform: process.platform,
     arch: process.arch,
     // Hash values only; credentials and other environment data are never
-    // stored in the receipt or printed. Conservative misses are inexpensive.
-    environment: Object.entries(environment).sort(([a], [b]) => a.localeCompare(b)),
+    // stored in the receipt or printed.
+    environment: environmentKeys.map((name) => [name, environment[name] ?? null]),
     extra: spec.extra || [],
     outputs: spec.outputs,
     inputs: digestAssetPaths(root, spec.inputs),
@@ -51,13 +80,17 @@ function fingerprint(root, spec, environment) {
 }
 
 /** Execute a generator or reuse its byte-identical inputs AND intact outputs. */
-export function runCachedGenerator(root, spec, run, { environment = process.env, force = false } = {}) {
+export function runCachedGenerator(root, spec, run, {
+  environment = process.env,
+  environmentKeys = CACHE_ENVIRONMENT_KEYS,
+  force = false,
+} = {}) {
   if (!/^[a-z0-9-]+$/.test(spec.name)) throw new Error("Invalid generator cache name");
   if (!spec.outputs?.length) throw new Error("A cached generator needs declared outputs");
   const receiptPath = path.join(root, "dist/build-cache/generated-assets", `${spec.name}.json`);
   let before;
   try {
-    before = fingerprint(root, spec, environment);
+    before = fingerprint(root, spec, environment, environmentKeys);
     if (!force) {
       const receipt = JSON.parse(readFileSync(receiptPath, "utf8"));
       if (receipt.schema === SCHEMA && receipt.inputs === before
@@ -76,7 +109,7 @@ export function runCachedGenerator(root, spec, run, { environment = process.env,
   let after;
   let outputs;
   try {
-    after = fingerprint(root, spec, environment);
+    after = fingerprint(root, spec, environment, environmentKeys);
     outputs = digestAssetPaths(root, spec.outputs);
   } catch {
     return { cached: false, status: 0 };

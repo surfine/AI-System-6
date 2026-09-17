@@ -70,18 +70,12 @@ test.assertMatches(
 test.assertIncludes(persistence, "message.from === liveProgressInstanceId()) return", "a window ignores its own broadcast");
 test.assertIncludes(persistence, "applyingMirroredText", "the repaint's own input events cannot bounce back out as a broadcast");
 
-// The focus guard: right for the writer, wrong for the mirror.
-test.assertIncludes(persistence, "function setMirroredEditorValue", "a mirror window repaints its editors directly");
-test.assertMatches(
-  persistence,
-  /function setMirroredEditorValue[\s\S]*?const scrollTop = element\.scrollTop;[\s\S]*?element\.scrollTop = scrollTop;/,
-  "and keeps the reader's place instead of jumping on every keystroke elsewhere",
-);
-test.assertMatches(
-  persistence,
-  /function setMirroredEditorValue[\s\S]*?dispatchEvent\(new Event\("input"/,
-  "mirrored writes go through the input event so the markdown overlay repaints with them",
-);
+// A mirror window repaints from the stored record, not by copying another
+// window's text into an editor: the entry point below is the only one that knows
+// which records hold unsaved edits, so a mirrored message can never overwrite a
+// pending local one. The `setMirroredEditorValue` helper this used to pin was
+// left from an earlier review harness; nothing called it, and its assertion now
+// lives on the record feed where the guarantee actually is.
 // Every window can be typed in, so neither the lease nor the focus decides
 // whether a mirrored message may replace a record. The message is a refresh
 // hint: the window re-reads the stored record through the one entry point that

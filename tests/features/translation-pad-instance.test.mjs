@@ -103,4 +103,33 @@ test.assert(
   "an answer for text the writer cleared does not refill the pad"
 );
 
+
+// --- A streaming answer fills the pad as it arrives --------------------------
+const streaming = await run(`
+  (async () => {
+    const api = window.AISystem6TranslationPad;
+    const source = document.querySelector("#translation-pad-source");
+    const result = document.querySelector("#translation-pad-result");
+    source.value = "A paragraph long enough to arrive in pieces.";
+    getTranslationTargetForUi = () => "zh";
+    beginLongTask = () => true;
+    endLongTask = () => {};
+    const seen = [];
+    translateTextWithLocalModel = async (text, language, options) => {
+      options.onProgress?.("第一部分");
+      seen.push(result.value);
+      options.onProgress?.("第一部分与第二部分");
+      seen.push(result.value);
+      return "第一部分与第二部分";
+    };
+    await api.translate();
+    return { seen, final: result.value };
+  })()
+`);
+test.assert(
+  streaming.seen[0] === "第一部分" && streaming.seen[1] === "第一部分与第二部分",
+  "the result box shows each partial translation as it arrives"
+);
+test.assert(streaming.final === "第一部分与第二部分", "and holds the finished translation at the end");
+
 test.finish();

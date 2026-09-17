@@ -5,8 +5,22 @@
  *
  * A contract holds a source file to account by naming it — `read("app/features/
  * quick-draft.js")` — so the mention is the dependency. This walks the contract
- * suite once and prints the names of the contracts that mention any of the
- * paths it was given, one per line.
+ * suite once and prints the names of the contracts that reach any of the paths
+ * it was given, one per line.
+ *
+ * "Reach" is a mention or an import, and it is transitive through the shared
+ * helpers, because a path string is not the whole dependency:
+ *
+ *   - the contract names the file (`read("…")`), or
+ *   - the contract imports a helper that names it, or that imports another
+ *     helper which does (a contract using `boot-vm.mjs` is answerable for
+ *     anything `boot-vm.mjs` reads), or
+ *   - the changed path IS a contract or a helper: a contract answers for
+ *     itself, and a helper answers for every contract that imports it, however
+ *     deep the import chain runs.
+ *
+ * Both directions stay conservative: a path nothing reaches selects nothing, and
+ * the caller is told that rather than being handed a silent pass.
  *
  * It is the selection half of `verify:quick --file`: the whole suite is about
  * 210 CPU-seconds across 334 contracts, and a module change has no business
@@ -17,13 +31,14 @@
  *   node tooling/select-feature-contracts.mjs apps/desktop/app/features/quick-draft.js
  */
 
-import { readFileSync, readdirSync, statSync } from "node:fs";
-import { dirname, join, relative } from "node:path";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { dirname, join, relative, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const featureDir = join(root, "tests", "features");
+const helperDir = join(root, "tests", "helpers");
 const wanted = process.argv.slice(2).filter((argument) => argument && !argument.startsWith("--"));
 
 if (!wanted.length) {
@@ -31,13 +46,30 @@ if (!wanted.length) {
   process.exit(1);
 }
 
-function collect(dir, out = []) {
+function collect(dir, { suffix = ".test.mjs", out = [] } = {}) {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const absolute = join(dir, entry.name);
-    if (entry.isDirectory()) collect(absolute, out);
-    else if (entry.name.endsWith(".test.mjs")) out.push(absolute);
+    if (entry.isDirectory()) collect(absolute, { suffix, out });
+    else if (entry.name.endsWith(suffix)) out.push(absolute);
   }
   return out;
+}
+
+/** Every module specifier a file imports, relative or not. */
+function importSpecifiers(source) {
+  const specifiers = [];
+  const pattern = /(?:^|[^\w.])import\s*(?:[^"'()]*?\sfrom\s*)?["']([^"']+)["']|import\(\s*["']([^"']+)["']\s*\)/g;
+  for (const match of source.matchAll(pattern)) {
+    const specifier = match[1] || match[2];
+    if (specifier) specifiers.push(specifier);
+  }
+  return specifiers;
+}
+
+function resolveSpecifier(fromFile, specifier) {
+  if (!specifier.startsWith(".")) return "";
+  const candidate = resolve(dirname(fromFile), specifier);
+  return existsSync(candidate) ? candidate : "";
 }
 
 const needles = wanted.map((path) => {
@@ -48,6 +80,36 @@ const needles = wanted.map((path) => {
   return [normalized, normalized.replace(/^apps\/desktop\//, "")];
 }).flat();
 
+const wantedAbsolute = new Set(
+  wanted.map((path) => resolve(root, path.replaceAll("\\", "/")))
+);
+
+// Every helper that reaches one of the wanted paths, following helper→helper
+// imports to the end. A contract importing one of these is answerable for it.
+const helpers = new Map();
+for (const file of collect(helperDir, { suffix: ".mjs" })) {
+  helpers.set(file, importSpecifiers(readFileSync(file, "utf8"))
+    .map((specifier) => resolveSpecifier(file, specifier))
+    .filter(Boolean));
+}
+
+function helperReachesWanted(file) {
+  const seen = new Set();
+  const queue = [file];
+  while (queue.length) {
+    const current = queue.shift();
+    if (seen.has(current)) continue;
+    seen.add(current);
+    if (wantedAbsolute.has(current)) return true;
+    const source = readFileSync(current, "utf8");
+    if (needles.some((needle) => needle && source.includes(needle))) return true;
+    for (const imported of helpers.get(current) || []) if (!seen.has(imported)) queue.push(imported);
+  }
+  return false;
+}
+
+const reachingHelpers = new Set([...helpers.keys()].filter((file) => helperReachesWanted(file)));
+
 const selected = [];
 for (const file of collect(featureDir).sort()) {
   let source = "";
@@ -56,7 +118,14 @@ for (const file of collect(featureDir).sort()) {
   } catch {
     continue;
   }
-  if (needles.some((needle) => needle && source.includes(needle))) {
+  const imports = importSpecifiers(source)
+    .map((specifier) => resolveSpecifier(file, specifier))
+    .filter(Boolean);
+  const isWantedItself = wantedAbsolute.has(file);
+  const importsAffectedHelper = imports.some((imported) => reachingHelpers.has(imported));
+  if (isWantedItself
+    || importsAffectedHelper
+    || needles.some((needle) => needle && source.includes(needle))) {
     selected.push(relative(featureDir, file).replace(/\.test\.mjs$/, ""));
   }
 }

@@ -4181,7 +4181,9 @@ function placeAssistantSidecarWindow(name, win) {
   const sidecarInputTarget = name === "dictation"
     ? dictationInputTarget
     : name === "translationPad"
-      ? translationPadInputTarget
+      // The pad owns this, and it is a lazy module: a sidecar placement that
+      // somehow ran before the pad loaded would otherwise be a ReferenceError.
+      ? (typeof translationPadInputTarget === "undefined" ? null : translationPadInputTarget)
       : null;
   const targetWindow = sidecarInputTarget?.closest?.(".window");
   const sourceWindow = (

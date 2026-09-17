@@ -60,6 +60,12 @@ matches the work:
 | `npm test` | the fast lane: every contract except the six whole-system simulations | ~30 s |
 | `npm run verify:features -- --lane batch` | only those six simulators | ~45 s |
 | `npm run verify:features -- --all` | every contract: the nightly and CI answer | ~45 s |
+| `node tooling/preview-translation-pad.mjs` | one component in a real browser: the shipped Translation Pad, the shipped markup, and a translation that answers on demand | seconds |
+
+One runner, several names: `npm test`, `npm run verify:contracts` and
+`npm run verify:features` all run `tooling/verify-features.mjs`, and `verify:feature`
+is the same runner for a single name. Running two of them runs the same contracts
+twice — pick one. `verify:public` is an alias of `verify:public-tree`.
 
 `--file` over-approximates on purpose: a contract that mentions the path still
 runs, and a path no contract mentions runs none — the run says so rather than
@@ -215,9 +221,12 @@ what has to happen before it can go. (`AISystem6Runtime.c` and
 reads `listCommands`, `listLazyCommands`, `forEachCommand`, `getCommand` or
 `getLazyCommand`, and the maps are no longer handed out.)
 
-| Alias | Consumers | Exit condition |
-| --- | --- | --- |
-| `setMirroredEditorValue` | no application code - the mirror refreshes through `applyMirroredWorkingText`, and the route's record-owned surfaces (outline, drafts) are projected by `projectRecordIntoWritingSurface`, which writes only changed bytes, keeps a focused field's caret and repaints the highlight overlay. The extraction is now only external: `ai-system6-review-tests/review-regressions.mjs` loads it by name and asserts beside it that a mirrored message never overwrites a pending local edit | rewrite that harness to assert the record feed instead, then delete |
+The list is empty. An alias earns a row only while something reads it: name that
+consumer and what has to happen before the alias can go, and delete the row with
+the alias. `setMirroredEditorValue` was the last entry; nothing in the app called
+it, the external review harness that extracted it by name no longer does, and the
+guarantee it stood beside — a mirrored message never overwrites a pending local
+edit — is held by the record feed.
 
 ## Pull request loop
 
@@ -225,7 +234,9 @@ reads `listCommands`, `listLazyCommands`, `forEachCommand`, `getCommand` or
 2. Make the smallest coherent source change.
 3. Add or update a feature contract.
 4. Rebuild generated output through the documented command.
-5. Run the targeted check, then the complete public CI sequence.
+5. Run the targeted check for what you changed (`npm run verify:quick -- --file <path>`).
+   The complete public CI sequence runs in CI and before a release, not after every
+   targeted check.
 6. Explain risk, verification, and visual evidence in the pull request.
 
 See [CONTRIBUTING.md](../CONTRIBUTING.md) for community and review expectations.

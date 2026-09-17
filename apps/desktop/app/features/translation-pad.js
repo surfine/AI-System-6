@@ -4,8 +4,81 @@
 
 
 
+/**
+ * The host this pad runs in.
+ *
+ * The pad owns its window root, its own transient state, and the behaviour of
+ * its controls. Everything else it needs is a host capability: where the markup
+ * it binds is, how a translation is asked for, where a status line lives, and
+ * the long-task receipt and file output the desk already owns.
+ *
+ * The desk is the default host, resolved lazily so the module still loads in a
+ * bare VM. The development preview supplies its own through `useHost` before it
+ * mounts, which is what lets one component file run in both places instead of a
+ * second implementation of the pad appearing beside it.
+ */
+let translationPadHostOverride = null;
+
+// The pad's own transient state: what the writer has in the pad right now, and
+// which field it came from. It belongs to this component, not to the desk's
+// global scope, so the same component can run somewhere else with its own state.
+let translationPadSourceText = "";
+let translationPadTranslatedText = "";
+let translationPadTargetLanguage = "";
+let translationPadSourceLabel = "";
+let translationPadInputTarget = null;
+let translationPadSelectionRange = null;
+
+function translationPadDeskHost() {
+  return {
+    // Ids are unique in the desk, so the document is the root there.
+    root: () => document,
+    element: (name) => ({
+      source: translationPadSourceInput,
+      result: translationPadResultInput,
+      status: translationPadStatusEl,
+      target: translationPadTargetEl,
+      clear: translationPadClearButton,
+      translate: translationPadTranslateButton,
+      send: translationPadSendButton,
+    })[name] || null,
+    currentLanguage: () => currentLanguage,
+    t: (key, ...args) => t(key, ...args),
+    setStatus: (message) => setStatus(message),
+    openWindow: (name) => openWindow(name),
+    beginLongTask: (kind, label) => beginLongTask(kind, label),
+    endLongTask: (kind) => endLongTask(kind),
+    isAbortError: (error) => isAbortError(error),
+    friendlyErrorDetail: (error) => friendlyErrorDetail(error),
+    getTranslationTargetForUi: (text) => getTranslationTargetForUi(text),
+    translateText: (text, language, options) => translateTextWithLocalModel(text, language, options),
+    currentTranslationModel: () => currentTranslationModel(),
+    formatTranslationMeta: (...args) => formatTranslationMeta(...args),
+    getSelectionContext: () => getSelectionServiceContext(),
+    selectionLabel: (context) => selectionLabelForContext(context),
+    // The output half stays the desk's: the pad hands the writer's text back to
+    // the surface it came from, and only the desk knows those surfaces.
+    writeToSource: (options) => writeTranslationPadToSource(options),
+    sendToTeachText: () => sendTranslationPadToTeachText(),
+  };
+}
+
+function translationPadHost() {
+  return translationPadHostOverride || translationPadDeskHost();
+}
+
+/** The element the pad binds inside whichever root its host names. */
+function padEl(name) {
+  return translationPadHost().element(name);
+}
+
+/** Shorthand: the host in force right now. */
+function host() {
+  return translationPadHost();
+}
+
 function translationPadUiTargetLanguage() {
-  return currentLanguage === "zh" ? "zh" : "en";
+  return translationPadHost().currentLanguage() === "zh" ? "zh" : "en";
 }
 
 /**
@@ -16,16 +89,16 @@ function translationPadUiTargetLanguage() {
 let translationPadRunId = 0;
 
 function translationPadTargetLabel(language = translationPadUiTargetLanguage()) {
-  return language === "zh" ? t("to_chinese") : t("to_english");
+  return language === "zh" ? host().t("to_chinese") : host().t("to_english");
 }
 
 function translationPadSetStatus(keyOrText, ...args) {
-  if (!translationPadStatusEl) return;
-  translationPadStatusEl.textContent = args.length ? t(keyOrText, ...args) : t(keyOrText);
+  if (!padEl("status")) return;
+  padEl("status").textContent = args.length ? host().t(keyOrText, ...args) : host().t(keyOrText);
 }
 
 function translationPadSourceNeedsTranslation(source) {
-  return !!getTranslationTargetForUi(String(source || ""));
+  return !!host().getTranslationTargetForUi(String(source || ""));
 }
 
 function translationPadCanWriteToSource() {
@@ -42,29 +115,29 @@ function translationPadCanWriteToSource() {
 }
 
 function updateTranslationPadButtons() {
-  const source = translationPadSourceInput?.value.trim() || "";
+  const source = padEl("source")?.value.trim() || "";
   const hasSource = !!source;
   const hasTranslation = !!translationPadTranslatedText.trim();
   const needsTranslation = translationPadSourceNeedsTranslation(source);
-  if (translationPadTranslateButton) translationPadTranslateButton.disabled = !hasSource || !needsTranslation;
-  if (translationPadClearButton) translationPadClearButton.disabled = !hasSource && !hasTranslation;
-  if (translationPadSendButton) translationPadSendButton.disabled = !hasTranslation;
+  if (padEl("translate")) padEl("translate").disabled = !hasSource || !needsTranslation;
+  if (padEl("clear")) padEl("clear").disabled = !hasSource && !hasTranslation;
+  if (padEl("send")) padEl("send").disabled = !hasTranslation;
   // One default at a time, and it is whatever comes next: translate the
   // passage, then send it. A default button that cannot run is not a default.
-  translationPadTranslateButton?.classList.toggle("default", !hasTranslation);
-  translationPadSendButton?.classList.toggle("default", hasTranslation);
+  padEl("translate")?.classList.toggle("default", !hasTranslation);
+  padEl("send")?.classList.toggle("default", hasTranslation);
 }
 
 function syncTranslationPadStateFromInputs() {
-  const nextSource = translationPadSourceInput?.value || "";
+  const nextSource = padEl("source")?.value || "";
   if (nextSource !== translationPadSourceText) {
     translationPadTranslatedText = "";
-    if (translationPadResultInput) translationPadResultInput.value = "";
+    if (padEl("result")) padEl("result").value = "";
   }
   translationPadSourceText = nextSource;
-  translationPadTranslatedText = translationPadResultInput?.value || "";
+  translationPadTranslatedText = padEl("result")?.value || "";
   translationPadTargetLanguage = translationPadUiTargetLanguage();
-  if (translationPadTargetEl) translationPadTargetEl.textContent = translationPadTargetLabel(translationPadTargetLanguage);
+  if (padEl("target")) padEl("target").textContent = translationPadTargetLabel(translationPadTargetLanguage);
   updateTranslationPadButtons();
 }
 
@@ -78,9 +151,9 @@ function clearTranslationPad() {
   translationPadInputTarget = null;
   translationPadSelectionRange = null;
   translationPadTargetLanguage = translationPadUiTargetLanguage();
-  if (translationPadSourceInput) translationPadSourceInput.value = "";
-  if (translationPadResultInput) translationPadResultInput.value = "";
-  if (translationPadTargetEl) translationPadTargetEl.textContent = translationPadTargetLabel(translationPadTargetLanguage);
+  if (padEl("source")) padEl("source").value = "";
+  if (padEl("result")) padEl("result").value = "";
+  if (padEl("target")) padEl("target").textContent = translationPadTargetLabel(translationPadTargetLanguage);
   translationPadSetStatus("ready");
   updateTranslationPadButtons();
 }
@@ -88,7 +161,7 @@ function clearTranslationPad() {
 function openTranslationPad(options = {}) {
   const source = String(options.source || "").trim();
   if (source && !translationPadSourceNeedsTranslation(source)) {
-    setStatus(t("translation_already_interface_language"));
+    host().setStatus(host().t("translation_already_interface_language"));
     return false;
   }
 
@@ -99,33 +172,33 @@ function openTranslationPad(options = {}) {
   translationPadInputTarget = options.inputTarget || null;
   translationPadSelectionRange = options.selectionRange || null;
 
-  if (translationPadSourceInput) translationPadSourceInput.value = translationPadSourceText;
-  if (translationPadResultInput) translationPadResultInput.value = "";
-  if (translationPadTargetEl) translationPadTargetEl.textContent = translationPadTargetLabel(translationPadTargetLanguage);
+  if (padEl("source")) padEl("source").value = translationPadSourceText;
+  if (padEl("result")) padEl("result").value = "";
+  if (padEl("target")) padEl("target").textContent = translationPadTargetLabel(translationPadTargetLanguage);
   translationPadSetStatus(source ? "ready" : "translation_pad_empty");
   updateTranslationPadButtons();
-  openWindow("translationPad");
+  host().openWindow("translationPad");
   if (source) {
     translateTranslationPadSource();
   } else {
-    translationPadSourceInput?.focus();
+    padEl("source")?.focus();
   }
   return true;
 }
 
-function openTranslationPadFromSelection(context = getSelectionServiceContext()) {
+function openTranslationPadFromSelection(context = host().getSelectionContext()) {
   if (!context?.text) {
-    setStatus(t("select_text_first"));
+    host().setStatus(host().t("select_text_first"));
     return false;
   }
-  const targetLanguage = getTranslationTargetForUi(context.text);
+  const targetLanguage = host().getTranslationTargetForUi(context.text);
   if (!targetLanguage) {
-    setStatus(t("translation_already_interface_language"));
+    host().setStatus(host().t("translation_already_interface_language"));
     return false;
   }
   return openTranslationPad({
     source: context.text,
-    sourceLabel: selectionLabelForContext(context),
+    sourceLabel: host().selectionLabel(context),
     inputTarget: context.inputTarget || null,
     selectionRange: typeof context.start === "number" && typeof context.end === "number"
       ? { start: context.start, end: context.end }
@@ -134,25 +207,25 @@ function openTranslationPadFromSelection(context = getSelectionServiceContext())
 }
 
 async function translateTranslationPadSource() {
-  const source = translationPadSourceInput?.value.trim() || "";
+  const source = padEl("source")?.value.trim() || "";
   if (!source) {
     translationPadSetStatus("translation_pad_empty");
     updateTranslationPadButtons();
     return;
   }
-  const targetLanguage = getTranslationTargetForUi(source);
+  const targetLanguage = host().getTranslationTargetForUi(source);
   if (!targetLanguage) {
     translationPadSetStatus("translation_already_interface_language");
-    setStatus(t("translation_already_interface_language"));
+    host().setStatus(host().t("translation_already_interface_language"));
     updateTranslationPadButtons();
     return;
   }
 
   translationPadSourceText = source;
   translationPadTargetLanguage = targetLanguage;
-  if (translationPadTargetEl) translationPadTargetEl.textContent = translationPadTargetLabel(targetLanguage);
-  if (!beginLongTask("translate-selection", t("translating_selection"))) return;
-  if (translationPadTranslateButton) translationPadTranslateButton.disabled = true;
+  if (padEl("target")) padEl("target").textContent = translationPadTargetLabel(targetLanguage);
+  if (!host().beginLongTask("translate-selection", host().t("translating_selection"))) return;
+  if (padEl("translate")) padEl("translate").disabled = true;
   translationPadSetStatus("translating_selection");
 
   // A pad answer belongs to the text it was asked about. Clearing the pad or
@@ -163,13 +236,13 @@ async function translateTranslationPadSource() {
   const runIsStillCurrent = () => runId === translationPadRunId;
 
   try {
-    const translated = await translateTextWithLocalModel(source, targetLanguage, {
+    const translated = await host().translateText(source, targetLanguage, {
       preserveMarkdown: true,
       title: translationPadSourceLabel || "",
       onProgress: (partial) => {
         if (!runIsStillCurrent()) return;
         translationPadTranslatedText = partial;
-        if (translationPadResultInput) translationPadResultInput.value = partial;
+        if (padEl("result")) padEl("result").value = partial;
         translationPadSetStatus("translating_selection");
       },
     });
@@ -178,26 +251,26 @@ async function translateTranslationPadSource() {
       return;
     }
     translationPadTranslatedText = translated.trim();
-    if (translationPadResultInput) translationPadResultInput.value = translationPadTranslatedText;
+    if (padEl("result")) padEl("result").value = translationPadTranslatedText;
     translationPadSetStatus("ready");
-    setStatus(t("translation_pad_translated"));
+    host().setStatus(host().t("translation_pad_translated"));
   } catch (error) {
-    if (!isAbortError(error)) {
-      translationPadSetStatus("translation_failed", friendlyErrorDetail(error));
-      setStatus(t("translation_failed", friendlyErrorDetail(error)));
+    if (!host().isAbortError(error)) {
+      translationPadSetStatus("translation_failed", host().friendlyErrorDetail(error));
+      host().setStatus(host().t("translation_failed", host().friendlyErrorDetail(error)));
     }
   } finally {
-    endLongTask("translate-selection");
+    host().endLongTask("translate-selection");
     updateTranslationPadButtons();
   }
 }
 
 function translationPadMetadataLine() {
-  return `[${formatTranslationMeta(
+  return `[${host().formatTranslationMeta(
     translationPadTargetLanguage || translationPadUiTargetLanguage(),
     new Date().toISOString(),
-    translationPadSourceLabel || t("translation_pad"),
-    currentTranslationModel()
+    translationPadSourceLabel || host().t("translation_pad"),
+    host().currentTranslationModel()
   )}]`;
 }
 
@@ -214,7 +287,7 @@ function writeTranslationPadToSource({ replace = false } = {}) {
   target.dispatchEvent(new Event("input", { bubbles: true }));
   target.dispatchEvent(new Event("change", { bubbles: true }));
   if (target === teachTextBodyInput) markTeachTextModified();
-  setStatus(replace ? t("translation_pad_replaced") : t("translation_pad_inserted"));
+  host().setStatus(replace ? host().t("translation_pad_replaced") : host().t("translation_pad_inserted"));
   return true;
 }
 
@@ -222,17 +295,17 @@ function sendTranslationPadToTeachText() {
   const translated = translationPadTranslatedText.trim();
   if (!translated) return;
   sendTextToDestination(translated, "teachtext");
-  setStatus(t("translation_pad_sent_teachtext"));
+  host().setStatus(host().t("translation_pad_sent_teachtext"));
 }
 
 function sendTranslationPad() {
   const translated = translationPadTranslatedText.trim();
   if (!translated) return;
   if (translationPadCanWriteToSource()) {
-    writeTranslationPadToSource({ replace: true });
+    host().writeToSource({ replace: true });
     return;
   }
-  sendTranslationPadToTeachText();
+  host().sendToTeachText();
 }
 
 // The pad's controls, bound once per mount cycle and released together. Like
@@ -252,11 +325,11 @@ function mountTranslationPadRuntime() {
   if (translationPadMounted) return true;
   translationPadMounted = true;
   const resources = translationPadInstanceResources();
-  resources.listen(translationPadSourceInput, "input", syncTranslationPadStateFromInputs);
-  resources.listen(translationPadResultInput, "input", syncTranslationPadStateFromInputs);
-  resources.listen(translationPadClearButton, "click", clearTranslationPad);
-  resources.listen(translationPadTranslateButton, "click", translateTranslationPadSource);
-  resources.listen(translationPadSendButton, "click", sendTranslationPad);
+  resources.listen(padEl("source"), "input", syncTranslationPadStateFromInputs);
+  resources.listen(padEl("result"), "input", syncTranslationPadStateFromInputs);
+  resources.listen(padEl("clear"), "click", clearTranslationPad);
+  resources.listen(padEl("translate"), "click", translateTranslationPadSource);
+  resources.listen(padEl("send"), "click", sendTranslationPad);
   return true;
 }
 
@@ -273,6 +346,20 @@ window.AISystem6TranslationPad = Object.freeze({
   mount: mountTranslationPadRuntime,
   dispose: disposeTranslationPad,
   translate: () => translateTranslationPadSource(),
+  /**
+   * Run this same component under another host — the development preview does.
+   * The host names the root the markup lives in, the elements inside it, and the
+   * services the pad does not own. `null` puts the desk back.
+   */
+  useHost: (host = null) => {
+    translationPadHostOverride = host;
+    return translationPadHost();
+  },
+  host: () => translationPadHost(),
+  clear: clearTranslationPad,
+  syncFromInputs: syncTranslationPadStateFromInputs,
+  canWriteToSource: () => translationPadCanWriteToSource(),
+  send: sendTranslationPad,
   /** Diagnostics: how many bindings this instance still holds. */
   resourceCount: () => (translationPadResources.disposed ? 0 : translationPadResources.size),
 });

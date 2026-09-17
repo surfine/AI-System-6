@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/DEVELOPMENT.md -->
-<!-- source-sha256: 0e1f211d14d25c59b4fca81b15fb6f86b9983dbba464e3d4fd94bd52c586fe32 -->
+<!-- source-sha256: 9bbcb15ae2bd44967a2fae031f78e5459cefbc8d7e8fa36e8cddbca8331b0f76 -->
 
 > 英文版为准 ・ 仅供人类参考
 
@@ -44,6 +44,11 @@ npm start
 | `npm run verify:src` | 类型检查规范 Node 服务端 |
 | `npm run verify:public-tree` | 验证命令、必需文件、资产预算、文档与 CI |
 | `npm run verify:public` | `verify:public-tree` 的兼容别名 |
+| `node tooling/preview-translation-pad.mjs` | 在真实浏览器里预览单个组件：出厂的 Translation Pad、出厂的标记，以及按需返回的翻译 | 秒级 |
+
+同一个运行器有多个名字：`npm test`、`npm run verify:contracts` 与 `npm run verify:features` 都执行
+`tooling/verify-features.mjs`，`verify:feature` 是它针对单个名字的形式；同时跑两个等于把同一批契约跑两遍，
+选一个即可。`verify:public` 是 `verify:public-tree` 的别名。
 
 CI 会按锁文件安装依赖、执行 lint 与构建，运行契约、重点单测和使用假上游的集成测试，
 再检查版本、checkJs、服务端类型、文档和公开文件树，并在独立的 Chromium 与 WebKit job
@@ -167,9 +172,10 @@ README 聚焦产品价值与第一次成功运行。持久技术细节放在本�
 `listCommands`、`listLazyCommands`、`forEachCommand`、`getCommand` 或
 `getLazyCommand`，注册表本身不再对外交出。）
 
-| 别名 | 消费者 | 退出条件 |
-| --- | --- | --- |
-| `setMirroredEditorValue` | 应用代码已无消费者：镜像改走 `applyMirroredWorkingText`，路由中由记录拥有的界面（outline、drafts）改用 `projectRecordIntoWritingSurface` 投影写入（只在字节不同时写入、聚焦字段保留光标、重绘高亮覆盖层）。现在只剩外部抽取：`ai-system6-review-tests/review-regressions.mjs` 按名字加载它，并在旁边断言镜像消息绝不覆盖本地未提交的编辑 | 该测试改断记录馈送路径后即可删除 |
+这份清单现在是空的。只有仍被读取的别名才配占一行：写清消费者，以及什么条件下可以删；
+别名删掉时，这一行也跟着删。`setMirroredEditorValue` 是最后一条——应用里没有任何调用点，
+按名字抽取它的外部审查脚本也已不再使用，而它旁边那条保证（镜像消息永不覆盖本地未保存的编辑）
+由记录馈送路径持有。
 
 ## Pull request 循环
 
@@ -177,7 +183,8 @@ README 聚焦产品价值与第一次成功运行。持久技术细节放在本�
 2. 完成最小且完整的源码改动。
 3. 新增或更新功能契约。
 4. 通过文档命令重建生成产物。
-5. 先运行目标检查，再跑完整公开 CI 序列。
+5. 针对改动运行目标检查（`npm run verify:quick -- --file <path>`）。完整公开 CI 序列在 CI 与发版前运行，
+   不是每次目标检查之后都要跑一遍。
 6. 在 pull request 说明风险、验证与视觉证据。
 
 社区与审查要求见 [CONTRIBUTING.zh-CN.md](../CONTRIBUTING.zh-CN.md)。

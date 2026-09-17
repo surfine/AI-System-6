@@ -759,22 +759,6 @@ function applyMirroredWorkingText(message) {
     });
 }
 
-// A mirrored write goes through the input event so the markdown overlay
-// repaints with it; a silent value assignment would leave the painted layer
-// showing the previous text under a correct textarea. Nothing in the app calls
-// this any more -- the mirror refreshes through applyMirroredWorkingText above
-// -- but the review harness in ai-system6-review-tests extracts it by name and
-// asserts beside it that a mirrored message never overwrites a pending local
-// edit. It stays until that harness asserts the record-feed path instead; see
-// the compatibility table in docs/DEVELOPMENT.md.
-function setMirroredEditorValue(element, text) {
-  if (!element || element.value === text) return;
-  const scrollTop = element.scrollTop;
-  element.value = text;
-  element.scrollTop = scrollTop;
-  element.dispatchEvent(new Event("input", { bubbles: true }));
-}
-
 function handleLiveProgressMessage(event) {
   const message = event?.data;
   if (!message || !message.from || message.from === liveProgressInstanceId()) return;

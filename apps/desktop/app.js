@@ -1638,12 +1638,11 @@ let clipboardTranslationSourceText = "";
 let clipboardTranslationLanguage = "";
 let clipboardTranslationCreatedAt = "";
 let clipboardTranslationModel = "";
-let translationPadSourceText = "";
-let translationPadTranslatedText = "";
-let translationPadTargetLanguage = "";
-let translationPadSourceLabel = "";
-let translationPadInputTarget = null;
-let translationPadSelectionRange = null;
+// The Translation Pad's own transient state lives in the pad
+// (app/features/translation-pad.js), beside the behaviour that owns it, so the
+// component can run under another host — the development preview — without the
+// desk's globals. The pad is a lazy classic script and every reader runs after
+// it loads, which is the same arrangement dictation already uses.
 let currentDocMap = null;
 let selectedDocMapNodeId = null;
 let currentDictionaryResult = null;
