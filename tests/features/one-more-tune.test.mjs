@@ -1040,6 +1040,24 @@ test.assertIncludes(source, '"one-more-tune-play-again",', "the button's press u
     "the card says where to follow the person who made it");
   test.assertIncludes(source, 'const ONE_MORE_TUNE_BILIBILI = "space.bilibili.com/544081956";',
     "and that address is named once");
+
+  // ---- A link arrives at a locked door, and says so ------------------------
+  //
+  // A tap on a link inside a chat window is not a gesture in this page, so the
+  // browser keeps the first question's sound shut until the reader touches the
+  // player (measured: heard 0 on arrival, 1 after one tap, both engines). The
+  // face tells them, once, and the line leaves as soon as it is no longer true.
+  test.assertIncludes(source, "let oneMoreTuneArrivedFromLink = false;",
+    "arriving from somebody's link is a state the window keeps");
+  test.assertMatches(source, /if \(intent\.set\) \{\s*oneMoreTuneArrivedFromLink = true;/,
+    "set where the round is opened from that link");
+  test.assertMatches(source,
+    /oneMoreTuneArrivedFromLink && !question\.everHeard \? `<p class="playstate">[\s\S]{0,260}one_more_tune_tap_to_hear_hint/,
+    "and the question face asks for the one tap that starts the music");
+  test.assertIncludes(en, "one_more_tune_tap_to_hear:",
+    "in English");
+  test.assertIncludes(zh, "one_more_tune_tap_to_hear:",
+    "and in Chinese");
   test.assertMatches(source, /async function shareOneMoreTuneRound\(\)[\s\S]{0,1400}navigator\.share\(\{[\s\S]{0,200}files: \[file\]/,
     "sharing offers the poster as a file first, which is what a chat app accepts");
   test.assertMatches(source, /async function shareOneMoreTuneRound\(\)[\s\S]{0,2200}downloadOneMoreTuneShareCard\(\)/,

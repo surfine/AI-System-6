@@ -4795,6 +4795,8 @@ window.AISystem6TranslationsZh = {
     one_more_tune_tag_ten: "每局十题",
     one_more_tune_tag_listened: "听过了",
     one_more_tune_listen_first: "先听",
+    one_more_tune_tap_to_hear: "点一下圆盘，音乐来了",
+    one_more_tune_tap_to_hear_hint: "声音就是这道题。它出自哪里？",
     one_more_tune_media_failed: "这段放不出来，不计分。",
     one_more_tune_media_failed_hint: "可以在「学习」菜单里跳过这一题。",
     one_more_tune_media_unavailable: "这段放不出来，不计分。",

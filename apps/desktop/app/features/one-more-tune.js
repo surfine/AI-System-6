@@ -3884,6 +3884,7 @@ function renderOneMoreTuneChallenge(body) {
         ${oneMoreTuneRoundStage(question)}
         ${oneMoreTuneSongEmbed(question)}
         ${question.mediaFailed ? `<p class="playstate"><span class="tag" data-i18n="one_more_tune_media_failed">${oneMoreTuneEscape(t("one_more_tune_media_failed"))}</span><span class="hint" data-i18n="one_more_tune_media_failed_hint">${oneMoreTuneEscape(t("one_more_tune_media_failed_hint"))}</span></p>` : ""}
+        ${oneMoreTuneArrivedFromLink && !question.everHeard ? `<p class="playstate"><span class="tag" data-i18n="one_more_tune_tap_to_hear">${oneMoreTuneEscape(t("one_more_tune_tap_to_hear"))}</span><span class="hint" data-i18n="one_more_tune_tap_to_hear_hint">${oneMoreTuneEscape(t("one_more_tune_tap_to_hear_hint"))}</span></p>` : ""}
         <div class="one-more-tune-ask">
           <div class="questionlabel" id="one-more-tune-step-title" data-i18n="${question.prompt}">Which one does this belong to?</div>
           <div class="choices">
@@ -4924,6 +4925,19 @@ async function openOneMoreTune() {
  * progress is never thrown away for it.
  */
 let oneMoreTuneLaunchConsumed = false;
+/**
+ * True when this round arrived from somebody else's link.
+ *
+ * It matters for one reason: a tap on a link in a chat window is not a gesture
+ * inside this page, so the browser will not let the first question's sound
+ * start on its own. iOS is the strict one, and it is most of the audience. The
+ * friend gets the question face with the music waiting and no idea that a tap
+ * is what starts it — measured: `heard: 0` on arrival, `heard: 1` after one tap
+ * on the player, in both engines. So the face says so, in one short line, and
+ * the line goes away the moment they do it.
+ */
+let oneMoreTuneArrivedFromLink = false;
+
 function consumeOneMoreTuneLaunchIntent() {
   if (oneMoreTuneLaunchConsumed) return;
   const intent = window.AISystem6LaunchIntent?.parse?.(String(window.location?.search || "")) || {};
@@ -4936,7 +4950,10 @@ function consumeOneMoreTuneLaunchIntent() {
     if (backstage === "1") return void setOneMoreTuneView("sources");
   }
   setOneMoreTuneView("challenge");
-  if (intent.set) void openOneMoreTuneChallenge(intent.set);
+  if (intent.set) {
+    oneMoreTuneArrivedFromLink = true;
+    void openOneMoreTuneChallenge(intent.set);
+  }
 }
 
 function attachOneMoreTune() {
