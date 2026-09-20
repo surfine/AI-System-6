@@ -839,6 +839,24 @@ function oneMoreTuneEra(card) {
 }
 
 /**
+ * The era a finished round ended in: the one belonging to the last question
+ * that was actually answered. A card whose year nobody knows has no era, so it
+ * does not take the card's — the same refusal the reveal makes, kept here so
+ * the poster can say nothing it cannot name.
+ */
+function oneMoreTuneRoundEra(round = oneMoreTuneRound) {
+  const questions = Array.isArray(round?.questions) ? round.questions : [];
+  for (let index = questions.length - 1; index >= 0; index -= 1) {
+    const question = questions[index];
+    if (!question?.submitted) continue;
+    const cardId = question.localAnswer || oneMoreTuneCardIdForReveal(question.reveal);
+    const era = oneMoreTuneEra(oneMoreTuneCard(cardId));
+    if (era.name) return era;
+  }
+  return null;
+}
+
+/**
  * The band that names a card's era beside its stripe. The words carry the
  * answer; the colour only agrees with them, so nothing here depends on being
  * able to tell six hues apart.
@@ -1468,6 +1486,9 @@ const ONE_MORE_TUNE_FILM_WINDOW = "oneMoreTuneFilm";
 const ONE_MORE_TUNE_FILM_STAGE = "one-more-tune-film-stage";
 const ONE_MORE_TUNE_NETWORK_KEY = "ai-system6-one-more-tune-network";
 const ONE_MORE_TUNE_NETWORK_TTL_MS = 6 * 60 * 60 * 1000;
+// Where the person who made this wants to be found. The card is the one thing
+// that travels without a link around it, so the address travels on the card.
+const ONE_MORE_TUNE_BILIBILI = "space.bilibili.com/544081956";
 
 /**
  * Can this network reach YouTube at all?
@@ -3634,6 +3655,57 @@ function oneMoreTuneScoreCard() {
   ].join("\n");
 }
 
+/**
+ * Send a finished round to a friend.
+ *
+ * The three places this deck is passed around — WeChat, Telegram, iMessage —
+ * all take an image, and the poster is the thing worth sending: it carries the
+ * score, the ten cells, the era the round ended in and where to find the desk,
+ * with no song titles on it (the same ten questions play for whoever opens the
+ * link, so a name would be the answer). Score comparison is deliberately absent
+ * too: this is meant to be a happy thing to send, not a ladder.
+ *
+ * The order of the three ways out matters. A share sheet is the best one when
+ * the platform has it and accepts files. Downloading the image is second — the
+ * person can put it wherever they like. Copying the text is always last and
+ * always happens, because a chat window that refuses the sheet still accepts a
+ * paste, and a shared round with no poster is better than no shared round.
+ */
+async function shareOneMoreTuneRound() {
+  const round = oneMoreTuneRound;
+  if (!round) return;
+  const canvas = oneMoreTuneShareCardCanvas();
+  const text = oneMoreTuneScoreCard();
+  if (!canvas) {
+    await copyOneMoreTuneText(text, "one_more_tune_share_round_copied");
+    return;
+  }
+  const file = await new Promise((resolve) => {
+    try {
+      canvas.toBlob((blob) => resolve(blob ? new File([blob], `one-more-tune-${round.setId || "set"}.png`, { type: "image/png" }) : null), "image/png");
+    } catch {
+      resolve(null);
+    }
+  });
+  if (file && typeof navigator.share === "function" && navigator.canShare?.({ files: [file] })) {
+    try {
+      await navigator.share({
+        files: [file],
+        title: t("one_more_tune_share_sheet_title"),
+        text: `${text}\n\n${ONE_MORE_TUNE_BILIBILI}`,
+      });
+      setStatus(t("one_more_tune_share_round_sent"));
+      return;
+    } catch (error) {
+      // A cancelled sheet is a decision, not a failure: the poster must not
+      // arrive in somebody's Files anyway because they changed their mind.
+      if (error?.name === "AbortError") return;
+    }
+  }
+  downloadOneMoreTuneShareCard();
+  await copyOneMoreTuneText(text, "one_more_tune_share_round_saved");
+}
+
 async function copyOneMoreTuneText(text, doneKey) {
   if (!text) {
     setStatus(t("one_more_tune_share_unavailable"));
@@ -3899,8 +3971,8 @@ function renderOneMoreTuneRoundResult(body) {
         <div class="one-more-tune-result-actions">
           <div class="one-more-tune-step-actions">
             <button class="btn default" type="button" data-one-more-tune-command="one-more-tune-play-again" data-i18n="one_more_tune_play_again">Play again</button>
+            <button class="btn" type="button" data-one-more-tune-command="one-more-tune-share-round" data-i18n="one_more_tune_share_round">Send this round to a friend</button>
             <button class="btn" type="button" data-one-more-tune-command="one-more-tune-review-misses" data-i18n="one_more_tune_queue_misses">Add the misses to review</button>
-            <button class="btn" type="button" data-one-more-tune-command="one-more-tune-end-round" data-i18n="one_more_tune_back_to_shelf">Back to the shelf</button>
           </div>
         </div>
         <p class="hint one-more-tune-desk-line"><a href="/" target="_blank" rel="noopener noreferrer" data-i18n="one_more_tune_desk_link">One More Tune is one app on AI System 6 — open the desk</a></p>
@@ -3938,6 +4010,25 @@ function oneMoreTuneShareCardCanvas() {
 
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, size, size);
+  // The round wears the era of its last question. The owner's rule for this
+  // card: no fixed house style — the last card decides, so two rounds of the
+  // same ten produce two different cards and the six eras get seen. The mark
+  // stays the six stripes of the 1977 Apple logo either way; this is the ribbon
+  // at the top and the line that names it.
+  const closingEra = oneMoreTuneRoundEra(round);
+  const eraColor = closingEra ? oneMoreTuneEraColor(closingEra.id) : "";
+  if (closingEra) {
+    if (eraColor) {
+      ctx.fillStyle = eraColor;
+      ctx.fillRect(0, 0, size, 14);
+    } else {
+      // The 1-bit desk has no rainbow: its six eras arrive as six dot
+      // patterns, so the ribbon arrives as the one this era owns.
+      ctx.fillStyle = "#000000";
+      const step = 3 + Number(closingEra.id || 1);
+      for (let x = 0; x < size; x += step) ctx.fillRect(x, 0, Math.min(step - 1, size - x), 14);
+    }
+  }
   ctx.fillStyle = "#000000";
   ctx.textBaseline = "alphabetic";
   ctx.font = `500 30px ${mono}`;
@@ -4014,12 +4105,23 @@ function oneMoreTuneShareCardCanvas() {
   ctx.fillText(t("one_more_tune_share_card_invite"), 72, 1010);
   ctx.font = `400 28px ${mono}`;
   ctx.fillText(oneMoreTuneShareCode() || "", 72, 1068);
+  // The era the round ended in, in words: the ribbon above says which one, and
+  // a colour is never the only thing that says anything on this card.
+  if (closingEra) {
+    ctx.font = `400 22px ${mono}`;
+    ctx.fillText(t("one_more_tune_share_card_era").replace("{era}", closingEra.name), 72, 1108);
+  }
   // The desk the quiz is an app on. A card is the one thing here that travels
   // without the link around it, so the address travels with the card: whoever
   // sees a screenshot can find the desk it came from.
   ctx.font = `400 22px ${mono}`;
   ctx.fillText(t("one_more_tune_share_card_desk")
     .replace("{host}", String(window.location?.host || "system6.aaronlau.me")), 72, 1132);
+  // The one place the owner asked to be found. The card is the only thing here
+  // that travels without a link around it, so where to follow the person who
+  // made it travels with the card too.
+  ctx.fillText(t("one_more_tune_share_card_bilibili")
+    .replace("{handle}", ONE_MORE_TUNE_BILIBILI), 72, 1164);
   return canvas;
 }
 
@@ -4443,6 +4545,7 @@ const ONE_MORE_TUNE_COMMAND_NAMES = [
   "one-more-tune-open-challenge",
   "one-more-tune-end-round",
   "one-more-tune-review-misses",
+  "one-more-tune-share-round",
   "one-more-tune-add-to-study",
   "one-more-tune-find-film",
   "one-more-tune-share-card-image",
@@ -4584,6 +4687,7 @@ function runOneMoreTuneCommand(action) {
   if (action === "one-more-tune-round-skip") return void submitOneMoreTuneAnswer("", { outcome: "skipped" });
   if (action === "one-more-tune-end-round") return void endOneMoreTuneRound();
   if (action === "one-more-tune-review-misses") return void reviewOneMoreTuneMisses();
+  if (action === "one-more-tune-share-round") return shareOneMoreTuneRound();
   // The reveal's two doors, in the design's own words: add the card to the
   // study queue, or open the film the sound came from.
   if (action === "one-more-tune-add-to-study") {
@@ -4968,6 +5072,7 @@ window.AISystem6RegisterApplicationMenuSet?.("oneMoreTune", [
       { type: "item", action: "one-more-tune-report", labelKey: "one_more_tune_report", conditionId: "one-more-tune-report" },
       { type: "separator" },
       { type: "item", action: "one-more-tune-review-misses", labelKey: "one_more_tune_queue_misses", conditionId: "one-more-tune-review-misses" },
+      { type: "item", action: "one-more-tune-share-round", labelKey: "one_more_tune_share_round", conditionId: "one-more-tune-share-round" },
       { type: "item", action: "one-more-tune-share-set", labelKey: "one_more_tune_share_set", conditionId: "one-more-tune-share-set" },
       { type: "item", action: "one-more-tune-share-card-image", labelKey: "one_more_tune_share_card_image", conditionId: "one-more-tune-share-card-image" },
       { type: "item", action: "one-more-tune-share-score", labelKey: "one_more_tune_share_score", conditionId: "one-more-tune-share-score" },

@@ -1014,8 +1014,40 @@ test.assertIncludes(source, '"one-more-tune-play-again",', "the button's press u
   test.assert(resultCommands.length === 3,
     `the result face carries three buttons, not a rail of six (${resultCommands.join(", ")})`);
   test.assert(resultCommands.includes("one-more-tune-play-again") && resultCommands.includes("one-more-tune-review-misses")
-    && resultCommands.includes("one-more-tune-end-round"),
-    "and they are another round, the misses, and the way back");
+    && resultCommands.includes("one-more-tune-share-round"),
+    "and they are another round, sending this round to a friend, and the misses");
+  // Leaving the round is still one press away, in the Study menu — what left
+  // the face is the button, not the action.
+  test.assertIncludes(source, 'action: "one-more-tune-end-round", labelKey: "one_more_tune_leave"',
+    "and leaving the round lives in the menu");
+
+  // ---- What leaves the desk when a round is shared -------------------------
+  //
+  // The card that travels to WeChat, Telegram and iMessage is the poster, and
+  // the round it describes decides what the poster looks like: the era of the
+  // last question is the ribbon at the top and the line that names it, so two
+  // rounds of the same ten do not produce the same card. Two things are absent
+  // on purpose — a song title (the same ten questions play for whoever opens
+  // the link, so a name is the answer) and any comparison with somebody else's
+  // score, because this is meant to be a happy thing to send, not a ladder.
+  test.assertIncludes(source, "function oneMoreTuneRoundEra(round = oneMoreTuneRound) {",
+    "the poster takes its era from the round's last answered question");
+  test.assertMatches(source, /const closingEra = oneMoreTuneRoundEra\(round\);[\s\S]{0,320}ctx\.fillRect\(0, 0, size, 14\)/,
+    "and paints that era as the ribbon across the top of the card");
+  test.assertIncludes(en, 'one_more_tune_share_card_era: "last one landed in {era}"',
+    "in words as well, because a colour is never the only carrier on this card");
+  test.assertIncludes(en, "one_more_tune_share_card_bilibili:",
+    "the card says where to follow the person who made it");
+  test.assertIncludes(source, 'const ONE_MORE_TUNE_BILIBILI = "space.bilibili.com/544081956";',
+    "and that address is named once");
+  test.assertMatches(source, /async function shareOneMoreTuneRound\(\)[\s\S]{0,1400}navigator\.share\(\{[\s\S]{0,200}files: \[file\]/,
+    "sharing offers the poster as a file first, which is what a chat app accepts");
+  test.assertMatches(source, /async function shareOneMoreTuneRound\(\)[\s\S]{0,2200}downloadOneMoreTuneShareCard\(\)/,
+    "falls back to saving the image when the platform has no share sheet");
+  test.assertMatches(source, /async function shareOneMoreTuneRound\(\)[\s\S]{0,2600}copyOneMoreTuneText\(text, "one_more_tune_share_round_saved"\)/,
+    "and always leaves the text on the clipboard, because a paste always works");
+  test.assertNotIncludes(resultFace, '"one-more-tune-share-set"',
+    "the round's own share is not three separate rows wearing one face");
   for (const moved of ["one-more-tune-share-set", "one-more-tune-share-card-image", "one-more-tune-share-score"]) {
     test.assertNotIncludes(resultFace, moved, `the result face no longer carries ${moved}`);
   }
