@@ -255,8 +255,38 @@ self.addEventListener("message", (event) => {
   }
   if (data?.type === "offline-report") {
     event.source?.postMessage({ type: "offline-unavailable", paths: [...missingOffline] });
+    return;
+  }
+  // The page is running a build this worker's cached shell is older than (see
+  // app/core/build-freshness.js). It is about to reload, and this is what makes
+  // that one reload land on the new build: the navigation handler above serves
+  // the cached shell first by design, so a reload that arrived before the
+  // background refresh finished would run the same old bytes and spend the
+  // page's single attempt on them. The page asks; the fresh document is in the
+  // cache before it reloads.
+  if (data?.type === "refresh-shell") {
+    event.waitUntil(refreshShellDocument().then(
+      () => event.source?.postMessage({ type: "shell-refreshed" }),
+      () => event.source?.postMessage({ type: "shell-refresh-failed" }),
+    ));
   }
 });
+
+/**
+ * Replace the cached boot document with the deployment's current one.
+ *
+ * `reload` skips the HTTP cache for the same reason the install path uses it:
+ * the copy that must be stored is the deployment's own bytes, not a proxy's.
+ * A response that is not a 200 of this origin leaves the cached copy alone —
+ * an offline deployment must not cost the device the shell it already has.
+ */
+async function refreshShellDocument() {
+  const shellUrl = new URL("./", self.location).href;
+  const response = await fetch(new Request(shellUrl, { cache: "reload", credentials: "same-origin" }));
+  if (!isCacheableResponse(response)) throw new Error("The deployment did not answer with a document.");
+  const cache = await caches.open(SHELL_CACHE);
+  await cache.put(shellUrl, response);
+}
 
 // Serve the cached copy, and refresh it in the background for the next load.
 // The background half is handed to event.waitUntil, so the worker is not shut

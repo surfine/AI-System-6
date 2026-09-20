@@ -46,6 +46,16 @@ const check = (condition, message) => {
 const { child: server, url: baseURL } = await startAppServer(repositoryRoot);
 
 async function openGame(page, { insets = true } = {}) {
+  // Safari 16.4 added the audio session a page can declare, and no Playwright
+  // engine has it. The stub is only here to watch the page use it: iOS plays
+  // Web Audio as ambient sound, which the phone's ring/silent switch mutes,
+  // and media elements as playback, which it does not — the one difference
+  // between a desk, an iPad and a phone that this game is played on.
+  await page.addInitScript(() => {
+    const session = { type: "auto" };
+    Object.defineProperty(navigator, "audioSession", { configurable: true, get: () => session });
+    window.__audioSessionProbe = session;
+  });
   if (insets) {
     await page.addInitScript((vars) => {
       document.addEventListener("DOMContentLoaded", () => {
@@ -112,19 +122,24 @@ try {
       await page.locator('[data-one-more-tune-command="one-more-tune-start-round"]').click();
       await page.waitForTimeout(3_500);
 
-      const round = await page.evaluate(() => ({
-        contextState: oneMoreTuneAudio.context?.state || "(none)",
-        buffers: oneMoreTuneAudio.buffers.size,
-        elements: oneMoreTuneAudio.elements.size,
-        playing: oneMoreTuneAudio.playingCardId,
-        heard: oneMoreTuneQuestion()?.heard || 0,
-        autoPlayed: oneMoreTuneQuestion()?.autoPlayed === true,
-        mediaFailed: oneMoreTuneQuestion()?.mediaFailed === true,
-      }));
-      check(
-        round.playing !== "" && round.heard > 0 && round.mediaFailed === false && round.autoPlayed,
-        `${engine} ${label}: the first question sounds by itself (playing=${round.playing || "none"}, buffers=${round.buffers}, elements=${round.elements}, heard=${round.heard})`,
-      );
+        const round = await page.evaluate(() => ({
+          contextState: oneMoreTuneAudio.context?.state || "(none)",
+          buffers: oneMoreTuneAudio.buffers.size,
+          elements: oneMoreTuneAudio.elements.size,
+          playing: oneMoreTuneAudio.playingCardId,
+          heard: oneMoreTuneQuestion()?.heard || 0,
+          autoPlayed: oneMoreTuneQuestion()?.autoPlayed === true,
+          mediaFailed: oneMoreTuneQuestion()?.mediaFailed === true,
+        }));
+        check(
+          round.playing !== "" && round.heard > 0 && round.mediaFailed === false && round.autoPlayed,
+          `${engine} ${label}: the first question sounds by itself (playing=${round.playing || "none"}, buffers=${round.buffers}, elements=${round.elements}, heard=${round.heard})`,
+        );
+        const session = await page.evaluate(() => window.__audioSessionProbe?.type || "(no session api)");
+        check(
+          session === "playback",
+          `${engine} ${label}: the page declares a playback session, so the phone's ring switch cannot silence it (${session})`,
+        );
 
       const first = await geometry(page);
       check(first.pageScroll <= 0, `${engine} ${label}: the round does not scroll the page (${first.pageScroll}px)`);

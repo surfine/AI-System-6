@@ -18,12 +18,16 @@ function makeContext({
   running = "20260917.9",
   deployed = "20260917.9",
   controller = true,
+  answersShellRefresh = true,
   attempted = "",
   fails = false,
   capability = true,
 } = {}) {
   const reloads = [];
   const requests = [];
+  const log = [];
+  const timers = new Map();
+  let nextTimerId = 1;
   const storage = new Map(attempted ? [["ai-system6-build-reload", attempted]] : []);
   const listeners = new Map();
   const listenerFor = (type) => listeners.get(type) || [];
@@ -33,6 +37,28 @@ function makeContext({
       listeners.set(type, [...listenerFor(type), handler]);
     },
   };
+  // The worker half of the page: postMessage goes out, the worker's answer
+  // comes back as a message event, and a worker that never answers leaves the
+  // timer the page set to run out.
+  const workerListeners = new Map();
+  const workerFor = (type) => workerListeners.get(type) || [];
+  const serviceWorker = controller
+    ? {
+        controller: {
+          postMessage: (message) => {
+            log.push(`ask:${message.type}`);
+            if (!answersShellRefresh) return;
+            for (const handler of workerFor("message")) handler({ data: { type: "shell-refreshed" } });
+          },
+        },
+        addEventListener: (type, handler) => {
+          workerListeners.set(type, [...workerFor(type), handler]);
+        },
+        removeEventListener: (type, handler) => {
+          workerListeners.set(type, workerFor(type).filter((each) => each !== handler));
+        },
+      }
+    : null;
   const sandbox = {
     console,
     AISystem6Capabilities: {
@@ -46,12 +72,21 @@ function makeContext({
         };
       },
     },
-    location: { reload: () => reloads.push("reload") },
-    navigator: { serviceWorker: controller ? { controller: {} } : null },
+    location: { reload: () => { log.push("reload"); reloads.push("reload"); } },
+    navigator: { serviceWorker },
     sessionStorage: {
       getItem: (key) => storage.get(key) ?? null,
       setItem: (key, value) => storage.set(key, value),
     },
+    // A timer the contract can run out on demand, so a worker that never
+    // answers is measured rather than waited for.
+    setTimeout: (handler, delay) => {
+      const id = nextTimerId;
+      nextTimerId += 1;
+      timers.set(id, { handler, delay });
+      return id;
+    },
+    clearTimeout: (id) => timers.delete(id),
     AISystem6BuildInfo: { build: running },
     document,
     addEventListener: (type, handler) => {
@@ -66,7 +101,12 @@ function makeContext({
   const fire = async (type) => {
     for (const handler of listenerFor(type)) await handler({ type });
   };
-  return { api: context.AISystem6BuildFreshness, reloads, storage, requests, document, fire };
+  const runTimers = () => {
+    const pending = [...timers.entries()];
+    timers.clear();
+    pending.forEach(([, { handler }]) => handler());
+  };
+  return { api: context.AISystem6BuildFreshness, reloads, storage, requests, document, fire, log, runTimers, timers };
 }
 
 test.assert(typeof (await makeContext()).api?.checkForNewerBuild === "function", "the check is reachable for a contract to run");
@@ -138,5 +178,49 @@ test.assert(typeof (await makeContext()).api?.checkForNewerBuild === "function",
   await fire("visibilitychange");
   test.assert(reloads.length === 0, "and the attempt guard still holds, so a resumed page cannot loop either");
 }
+
+// The one reload has to BE the new build. The worker answers a navigation from
+// its cached shell and refreshes behind the page, so a reload that overtakes
+// that refresh runs the old build again — and the page's single attempt is
+// spent, which on a Home Screen icon means the old build until the app is next
+// opened. The page asks the worker to settle its shell first.
+{
+  const { api, log, reloads } = await makeContext({ running: "20260917.4", deployed: "20260917.9" });
+  test.assert(await api.checkForNewerBuild() === "reloading", "a stale page still reloads");
+  test.assert(log.join(" ") === "ask:refresh-shell reload", `and the worker is asked to settle its shell before the reload (${log.join(" ")})`);
+  test.assert(reloads.length === 1, "exactly once");
+}
+{
+  // A worker that cannot answer must not leave the page on the old build for
+  // good: the wait is bounded, and the plain reload follows it.
+  const context = await makeContext({ running: "20260917.4", deployed: "20260917.9", answersShellRefresh: false });
+  const settled = context.api.checkForNewerBuild();
+  // The check asks the deployment first, so the wait is not set on the first
+  // turn; let the page get as far as it is going to.
+  await new Promise((resolve) => setImmediate(resolve));
+  test.assert(context.reloads.length === 0, "a worker that has not answered holds the reload");
+  test.assert(context.timers.size === 1, "with one bounded wait running");
+  context.runTimers();
+  test.assert(await settled === "reloading", "and the wait running out reloads anyway");
+  test.assert(context.log.join(" ") === "ask:refresh-shell reload", "so a silent worker costs a moment, never the visit");
+}
+{
+  const { api, reloads } = await makeContext({ running: "20260917.9", deployed: "20260917.9" });
+  test.assert(await api.checkForNewerBuild() === "current", "a page already on the deployed build asks nothing");
+  test.assert(reloads.length === 0, "and does not reload");
+}
+
+// The worker half of that guarantee, kept where the page half lives: the page
+// can only be sure the reload lands on the new build if the worker really did
+// replace its copy first.
+const worker = read("apps/desktop/sw.js");
+test.assertIncludes(worker, 'if (data?.type === "refresh-shell")',
+  "the worker answers the page's request to settle its shell");
+test.assertMatches(worker, /fetch\(new Request\(shellUrl, \{ cache: "reload", credentials: "same-origin" \}\)\)/,
+  "by fetching the deployment's own document rather than the HTTP cache's copy");
+test.assertMatches(worker, /refreshShellDocument\(\)\.then\([\s\S]{0,200}shell-refreshed/,
+  "and it says so only once the fresh copy is stored");
+test.assertIncludes(worker, 'if (!isCacheableResponse(response)) throw new Error(',
+  "while a deployment that cannot answer leaves the shell the device already has");
 
 test.finish();

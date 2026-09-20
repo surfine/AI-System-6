@@ -134,6 +134,65 @@ async function handleOneMoreTuneMedia(req, res) {
 // pinned previews.
 const PREVIEW_MAX_BYTES = 8 * 1024 * 1024;
 const PREVIEW_TIMEOUT_MS = 12000;
+// How many bytes of pinned previews this host keeps, and the largest single
+// preview it will keep. A deck preview is about a megabyte, so the ceiling is
+// a couple of dozen of them: the questions a round asks, and the ones the next
+// person through asks again.
+const PREVIEW_CACHE_MAX_BYTES = 24 * 1024 * 1024;
+const PREVIEW_CACHE_ENTRY_MAX_BYTES = 2 * 1024 * 1024;
+
+/**
+ * The previews this host has already fetched, newest last.
+ *
+ * A shared round is the same ten files for everybody who opens the link, and
+ * the relay exists for the networks that cannot reach the store's CDN — often
+ * a whole carrier, many readers at once. Without this, each of those readers
+ * waits on a fresh trip to Apple through one small host, which is the shape
+ * that turns a link going around a group chat into silence. The deck pins at
+ * most a few dozen URLs, so this is bounded by construction and is emptied
+ * oldest-first when it reaches the ceiling.
+ */
+const previewCache = new Map();
+let previewCacheBytes = 0;
+
+function readCachedPreview(url) {
+  const kept = previewCache.get(url);
+  if (!kept) return null;
+  // Re-inserted so the least recently wanted one is the first to go.
+  previewCache.delete(url);
+  previewCache.set(url, kept);
+  return kept;
+}
+
+function keepCachedPreview(url, buffer) {
+  if (!buffer || buffer.byteLength === 0 || buffer.byteLength > PREVIEW_CACHE_ENTRY_MAX_BYTES) return;
+  const previous = previewCache.get(url);
+  if (previous) {
+    previewCacheBytes -= previous.byteLength;
+    previewCache.delete(url);
+  }
+  previewCache.set(url, buffer);
+  previewCacheBytes += buffer.byteLength;
+  while (previewCacheBytes > PREVIEW_CACHE_MAX_BYTES && previewCache.size) {
+    const oldest = previewCache.keys().next().value;
+    previewCacheBytes -= previewCache.get(oldest).byteLength;
+    previewCache.delete(oldest);
+  }
+}
+
+function sendPreviewBytes(res, contentType, buffer, method) {
+  res.writeHead(200, {
+    "Content-Type": contentType,
+    "Content-Length": String(buffer.byteLength),
+    "Cache-Control": "public, max-age=86400",
+    "X-Content-Type-Options": "nosniff",
+  });
+  if (method === "HEAD") {
+    res.end();
+    return;
+  }
+  res.end(buffer);
+}
 
 async function handleOneMoreTunePreview(req, res) {
   if (req.method !== "GET" && req.method !== "HEAD") {
@@ -148,6 +207,11 @@ async function handleOneMoreTunePreview(req, res) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), PREVIEW_TIMEOUT_MS);
   try {
+    const kept = readCachedPreview(url);
+    if (kept) {
+      sendPreviewBytes(res, kept.contentType, kept.bytes, req.method);
+      return;
+    }
     const upstream = await fetch(url, {
       signal: controller.signal,
       redirect: "follow",
@@ -162,8 +226,9 @@ async function handleOneMoreTunePreview(req, res) {
       sendJson(res, 502, { code: "preview_too_large", error: "That preview is larger than this relay serves." });
       return;
     }
+    const contentType = upstream.headers.get("content-type") || "audio/mp4";
     res.writeHead(200, {
-      "Content-Type": upstream.headers.get("content-type") || "audio/mp4",
+      "Content-Type": contentType,
       "Cache-Control": "public, max-age=86400",
       "X-Content-Type-Options": "nosniff",
     });
@@ -176,15 +241,25 @@ async function handleOneMoreTunePreview(req, res) {
     // host does not need to do.
     const reader = upstream.body.getReader();
     let sent = 0;
+    const held = [];
+    let heldBytes = 0;
     for (;;) {
       // eslint-disable-next-line no-await-in-loop -- the stream is sequential.
       const { done, value } = await reader.read();
       if (done) break;
       sent += value.byteLength;
       if (sent > PREVIEW_MAX_BYTES) break;
-      res.write(Buffer.from(value));
+      const chunk = Buffer.from(value);
+      if (heldBytes + chunk.byteLength <= PREVIEW_CACHE_ENTRY_MAX_BYTES) {
+        held.push(chunk);
+        heldBytes += chunk.byteLength;
+      }
+      res.write(chunk);
     }
     res.end();
+    // The next reader of these same bytes — the same question in the same
+    // shared round — is answered from here instead of from Apple.
+    if (heldBytes > 0) keepCachedPreview(url, { bytes: Buffer.concat(held, heldBytes), contentType });
   } catch {
     if (!res.headersSent) {
       sendJson(res, 504, { code: "preview_timeout", error: "The store preview took too long." });

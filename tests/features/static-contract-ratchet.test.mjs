@@ -52,7 +52,15 @@ const budget = JSON.parse(readFileSync(budgetPath, "utf8"));
 // `functions/api/*` ARE the shipped server on Pages, and `workers/*` is the
 // deployed Durable Object; a contract that imports them runs the route, its
 // validation and its ledger rather than reading text about them.
-const executingSignal = /node:vm|boot-vm\.mjs|draft-desk-vm\.mjs|write-lease-vm\.mjs|backup-vm\.mjs|app-boot-vm\.mjs|^\.\.\/\.\.\/(functions\/(_lib|api)|workers)\//;
+// `apps/server/server/routes/*` is the same thing on the other deployment: the
+// VPS serves those modules as its endpoints, so a contract that requires one
+// and drives it — `tests/features/one-more-tune-preview-relay.test.mjs` calls
+// the relay's handler and counts what it fetches — runs the shipped code, and
+// counting it as a reading of source would be the measurement lying. The routes
+// are named rather than all of apps/server: importing a data module is not
+// executing an endpoint, and a signal that wide would hand the whole server
+// tree's neighbours a slot each.
+const executingSignal = /node:vm|boot-vm\.mjs|draft-desk-vm\.mjs|write-lease-vm\.mjs|backup-vm\.mjs|app-boot-vm\.mjs|^\.\.\/\.\.\/(?:functions\/(?:_lib|api)|workers|apps\/server\/server\/routes)\//;
 const suiteInfrastructure = new Set([
   "static-contract-ratchet.test.mjs",
   "gate-self-proof.test.mjs",

@@ -4798,7 +4798,7 @@ window.AISystem6TranslationsZh = {
     one_more_tune_tap_to_hear: "点一下圆盘，音乐来了",
     one_more_tune_tap_to_hear_hint: "声音就是这道题。它出自哪里？",
     one_more_tune_media_failed: "这段放不出来，不计分。",
-    one_more_tune_media_failed_hint: "可以在「学习」菜单里跳过这一题。",
+    one_more_tune_media_failed_hint: "按一下圆盘再试一次；也可以在「学习」菜单里跳过。",
     one_more_tune_media_unavailable: "这段放不出来，不计分。",
     one_more_tune_round_opening: "正在开局……",
     one_more_tune_answer_failed: "这次作答没有被接受，没有计分。",

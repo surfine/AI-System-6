@@ -1965,6 +1965,7 @@ function oneMoreTuneAudioContext() {
   if (!oneMoreTuneAudio.context) {
     const Ctor = window.AudioContext || window.webkitAudioContext;
     if (!Ctor) return null;
+    oneMoreTuneClaimPlaybackAudioSession();
     oneMoreTuneAudio.context = new Ctor();
     oneMoreTuneInstanceResources().add(() => oneMoreTuneAudio.context?.close?.().catch(() => {}), "one-more-tune-audio-context");
   }
@@ -1988,6 +1989,7 @@ function oneMoreTuneHasAudio(cardId) {
  * media element the right to play later only if a gesture played it first.
  */
 function unlockOneMoreTuneAudio() {
+  oneMoreTuneClaimPlaybackAudioSession();
   const context = oneMoreTuneAudioContext();
   if (context && context.state !== "running") context.resume?.().catch(() => {});
   // WeChat's iOS browser keeps the audio bridge shut until this event fires;
@@ -2004,6 +2006,65 @@ function unlockOneMoreTuneAudio() {
 }
 
 /**
+ * Say out loud that this page is playback, not ambience.
+ *
+ * This is the phone-only silence. iOS plays Web Audio as *ambient* sound, which
+ * the ring/silent switch mutes; a media element plays as *playback* and is not
+ * muted by it. So the same quiz sounded on a desk and on an iPad — no iPad has
+ * a ring switch — and stayed silent on a phone whose switch was down, with no
+ * error and a face that looked like it was playing. Nothing on this page could
+ * have noticed: Safari does not report the switch.
+ *
+ * Safari 16.4 and later let the page declare its audio session, and the same
+ * declaration covers the installed app and WeChat's in-app browser, which are
+ * the same WebKit underneath. Older iPhones are handled by the media element
+ * the first tap already plays (see oneMoreTuneAudioElement).
+ */
+function oneMoreTuneClaimPlaybackAudioSession() {
+  const session = typeof navigator === "undefined" ? null : navigator.audioSession;
+  if (!session) return false;
+  try {
+    session.type = "playback";
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * A quarter second of silence, as a WAV, built here rather than fetched: the
+ * unlock below has to run inside the tap, and a network round trip inside a
+ * gesture is the one thing that cannot be waited for.
+ */
+function oneMoreTuneSilentWavUrl() {
+  const rate = 8000;
+  const samples = rate / 4;
+  const buffer = new ArrayBuffer(44 + samples);
+  const view = new DataView(buffer);
+  const ascii = (offset, text) => {
+    for (let index = 0; index < text.length; index += 1) view.setUint8(offset + index, text.charCodeAt(index));
+  };
+  ascii(0, "RIFF");
+  view.setUint32(4, 36 + samples, true);
+  ascii(8, "WAVEfmt ");
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, rate, true);
+  view.setUint32(28, rate, true);
+  view.setUint16(32, 1, true);
+  view.setUint16(34, 8, true);
+  ascii(36, "data");
+  view.setUint32(40, samples, true);
+  // Eight-bit PCM is unsigned, so 128 is silence, not a click.
+  new Uint8Array(buffer, 44, samples).fill(128);
+  let binary = "";
+  const bytes = new Uint8Array(buffer);
+  for (let index = 0; index < bytes.length; index += 1) binary += String.fromCharCode(bytes[index]);
+  return `data:audio/wav;base64,${btoa(binary)}`;
+}
+
+/**
  * The one media element this window plays through, and the only one a store
  * preview ever needs. It is created — and played once, muted — inside the tap
  * that opened the round, which is what lets every later question start by
@@ -2014,12 +2075,16 @@ function oneMoreTuneAudioElement() {
   if (oneMoreTuneAudio.gate) return oneMoreTuneAudio.gate;
   try {
     const element = new Audio();
-    element.muted = true;
+    // Unmuted on purpose. A muted element does not move the device's audio
+    // session to playback, and moving it is half of what this first play is
+    // for; the other half is the right to play later without a tap. The sound
+    // is silence, so nothing is heard either way.
+    element.muted = false;
     element.playsInline = true;
     element.setAttribute("playsinline", "");
     element.preload = "auto";
-    // A quarter second of silence: playing it in the gesture is the unlock.
-    element.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
+    element.setAttribute("x-webkit-airplay", "deny");
+    element.src = oneMoreTuneSilentWavUrl();
     const played = element.play?.();
     if (played?.then) played.then(() => { try { element.pause(); } catch {} }).catch(() => {});
     element.dataset.oneMoreTuneGate = "1";
@@ -3179,6 +3244,31 @@ function autoPlayOneMoreTuneQuestion() {
 }
 
 /**
+ * Get the sound ready before anybody asks for it.
+ *
+ * Playback needs a gesture; *fetching and decoding* do not. This deck used to
+ * do both inside the press that wanted the sound, so the press paid the whole
+ * download — measured on a phone-sized WebKit against the live site: six
+ * seconds between the tap and the first note on a cold question, which is not a
+ * quiz, it is a wait with a question attached. Called when a question's face is
+ * painted and again, opportunistically, for the question after it: by the time
+ * a finger lands on the record, starting it is the only work left.
+ */
+function preloadOneMoreTuneQuestion(question = oneMoreTuneQuestion()) {
+  if (!question || question.submitted) return null;
+  const media = question.media || {};
+  if (media.provider !== "preview" && media.provider !== "licensed_file") return null;
+  const key = oneMoreTuneQuestionAudioKey(question);
+  if (oneMoreTuneAudio.buffers.has(key) || oneMoreTuneAudio.elements.has(key)) return null;
+  if (question.preloading) return question.preloading;
+  question.preloading = oneMoreTuneLoadMedia(question).then((ready) => {
+    question.preloaded = ready === true;
+    return ready;
+  }).catch(() => false);
+  return question.preloading;
+}
+
+/**
  * Open a round. A private practice round wins when the person has one, because
  * it is the only round that plays their own recording; otherwise the server's
  * round is used. There is no local fallback: a round without sound is not one.
@@ -3360,7 +3450,14 @@ async function oneMoreTuneLoadPreviewElement(key, sources) {
 function oneMoreTunePreviewSources(url) {
   const direct = String(url || "");
   if (!/^https:\/\//.test(direct)) return [];
-  return [direct, `/api/one-more-tune/preview?url=${encodeURIComponent(direct)}`];
+  const relay = `/api/one-more-tune/preview?url=${encodeURIComponent(direct)}`;
+  // The store's CDN answers with `Access-Control-Allow-Origin: *` (measured,
+  // 2026-09-20), so a cross-origin fetch and decode is allowed, and a media
+  // element does not need CORS at all. The relay is not a workaround for iOS
+  // — it is for the network: a reader whose connection cannot reach Apple's
+  // CDN, or cannot reach it fast enough to start a question, still hears the
+  // question through this host's copy of the same pinned file.
+  return [direct, relay];
 }
 
 async function oneMoreTuneLoadMedia(question) {
@@ -3453,6 +3550,10 @@ async function playOneMoreTuneQuestion(question) {
     renderOneMoreTune();
     return false;
   }
+  // The question after this one is almost certainly next, and its download can
+  // happen while this one is playing: the round is ten questions, so warming
+  // one ahead is what keeps every tap after the first instant.
+  preloadOneMoreTuneQuestion(oneMoreTuneRound?.questions?.[(oneMoreTuneRound?.index ?? 0) + 1]);
   const { start, end } = oneMoreTuneCueWindow(question);
   const key = oneMoreTuneQuestionAudioKey(question);
   const played = playOneMoreTuneWindow(key, start, end);
@@ -3875,6 +3976,9 @@ function renderOneMoreTuneChallenge(body) {
   // the one state that still has to be said out loud is a cue that could not
   // play — because that is the moment the player has to act on it.
   const rightSoFar = oneMoreTuneRound.questions.filter((entry) => entry.correct).length;
+  // The face is about to be painted, so the sound it will be asked for is
+  // fetched and decoded now rather than inside the reader's press.
+  preloadOneMoreTuneQuestion(question);
   body.innerHTML = `
       <section class="one-more-tune-study one-more-tune-step-challenge one-more-tune-face" aria-labelledby="one-more-tune-step-title">
         <div class="sectiontag">
@@ -4943,17 +5047,28 @@ function consumeOneMoreTuneLaunchIntent() {
   const intent = window.AISystem6LaunchIntent?.parse?.(String(window.location?.search || "")) || {};
   if (intent.launch?.name !== "one-more-tune") return;
   oneMoreTuneLaunchConsumed = true;
-  if (oneMoreTuneRound) return;
-  const backstage = new URLSearchParams(String(window.location?.search || "")).get("backstage");
-  if (backstage === "1" || backstage === "0") {
-    setOneMoreTuneBackstage(backstage === "1");
-    if (backstage === "1") return void setOneMoreTuneView("sources");
-  }
-  setOneMoreTuneView("challenge");
-  if (intent.set) {
-    oneMoreTuneArrivedFromLink = true;
-    void openOneMoreTuneChallenge(intent.set);
-  }
+  // Open the window this link is for.
+  //
+  // Nothing else in the desk opens a window for a `?launch=` link — measured
+  // 2026-09-20: `/go/one-more-tune` reached this file and no further, so whether
+  // a friend landed in the quiz depended on whether a first-run window happened
+  // to leave it in front. On a phone that is the whole difference between
+  // "手机版有 bug" and a quiz: the shared link opened the desk's welcome and
+  // nothing else. The window is opened here, after the deck, and the rest of
+  // the intent is applied to it.
+  void openOneMoreTune().then(() => {
+    if (oneMoreTuneRound) return;
+    const backstage = new URLSearchParams(String(window.location?.search || "")).get("backstage");
+    if (backstage === "1" || backstage === "0") {
+      setOneMoreTuneBackstage(backstage === "1");
+      if (backstage === "1") return void setOneMoreTuneView("sources");
+    }
+    setOneMoreTuneView("challenge");
+    if (intent.set) {
+      oneMoreTuneArrivedFromLink = true;
+      void openOneMoreTuneChallenge(intent.set);
+    }
+  });
 }
 
 function attachOneMoreTune() {

@@ -111,7 +111,7 @@ export const publicProductContracts = [
   },
   {
     feature: "One More Tune",
-    tests: ["one-more-tune.test.mjs"],
+    tests: ["one-more-tune.test.mjs", "one-more-tune-preview-relay.test.mjs"],
   },
   {
     feature: "Time Machine",

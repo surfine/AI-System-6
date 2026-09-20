@@ -4819,7 +4819,7 @@ window.AISystem6TranslationsEn = {
     one_more_tune_tap_to_hear: "Tap the record to start",
     one_more_tune_tap_to_hear_hint: "The sound is the question. Where did it come from?",
     one_more_tune_media_failed: "It would not play, so it is not scored.",
-    one_more_tune_media_failed_hint: "Skip it from the Study menu.",
+    one_more_tune_media_failed_hint: "Press the record to try again, or skip it from the Study menu.",
     one_more_tune_media_unavailable: "It would not play, so it is not scored.",
     one_more_tune_round_opening: "Opening a round…",
     one_more_tune_answer_failed: "The round did not accept that answer; nothing was scored.",

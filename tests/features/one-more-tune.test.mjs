@@ -458,7 +458,13 @@ test.assertMatches(source, /oneMoreTuneShareLink\(\) \|\| oneMoreTuneShareCode\(
 // round that is already being played.
 test.assertIncludes(source, "function consumeOneMoreTuneLaunchIntent", "an arriving link is read once");
 test.assertMatches(source, /oneMoreTuneLaunchConsumed = true/, "and only once");
-test.assertMatches(source, /oneMoreTuneLaunchConsumed = true;\s*\n\s*if \(oneMoreTuneRound\) return;/, "a round in progress outranks a link");
+// The link opens the window it names: nothing else in the desk does that for a
+// `?launch=`, which is why a friend tapping `/go/one-more-tune` could land on
+// the desk's welcome instead of the quiz on some runs and not others.
+test.assertMatches(source, /oneMoreTuneLaunchConsumed = true;[\s\S]{0,700}void openOneMoreTune\(\)\.then/,
+  "and the window this link is for is opened by the link");
+test.assertMatches(source, /void openOneMoreTune\(\)\.then\(\(\) => \{\s*\n\s*if \(oneMoreTuneRound\) return;/,
+  "while a round already in progress still outranks a link");
 test.assertMatches(source, /setOneMoreTuneView\("challenge"\);\s*\n\s*if \(intent\.set\)/, "the link lands on the challenge, then opens the set");
 test.assertMatches(source, /oneMoreTuneEnsureDeck\(\)\.then\([\s\S]{0,800}consumeOneMoreTuneLaunchIntent\(\)/, "and it waits for the deck, because a round needs cards to name");
 test.assertMatches(source, /oneMoreTuneEnsureDeck\(\)\.then\([\s\S]{0,400}await oneMoreTuneHydrateState\(\)/, "the stored progress is adopted after the deck too, since the state is filed by card id");
@@ -861,10 +867,39 @@ test.assertIncludes(source, 'media.provider === "youtube" && !/^[\\w-]{11}$/.tes
   const serverDeckSource = read("apps/server/server/one-more-tune.js");
   test.assertIncludes(source, "function oneMoreTunePreviewSources(url) {",
     "one question's sound has a source chain of its own");
-  test.assertMatches(source, /oneMoreTunePreviewSources\(url\) \{[\s\S]{0,400}return \[direct, `\/api\/one-more-tune\/preview\?url=/,
-    "the store's CDN first, then this host relaying the same file");
+  test.assertMatches(source, /oneMoreTunePreviewSources\(url\) \{[\s\S]{0,1800}const relay = `\/api\/one-more-tune\/preview\?url=/,
+    "one question's sound has two places it can come from, named once");
   test.assertMatches(source, /for \(const source of oneMoreTunePreviewSources\(media\.url\)\)/,
     "and the decoded path walks that chain rather than giving up on the first failure");
+  // The chain is not an iOS workaround and must not pretend to be one: the
+  // store's CDN answers with `Access-Control-Allow-Origin: *` (measured), so
+  // the cross-origin fetch and decode is allowed and a media element needs no
+  // CORS at all. The relay is for a network that cannot reach the CDN — the
+  // one failure the store's own headers cannot answer.
+  test.assertMatches(source, /oneMoreTunePreviewSources\(url\) \{[\s\S]{0,900}return \[direct, relay\];/,
+    "and the store's CDN stays the first source for everyone, with the relay as the network's fallback");
+  test.assertIncludes(source, "Access-Control-Allow-Origin: *",
+    "and the reason is written down where the chain is, not assumed to be iOS");
+
+  // The phone-only silence: iOS plays Web Audio as ambient (muted by the
+  // ring/silent switch) and media elements as playback (not muted), and the
+  // ring switch exists on iPhones, not on iPads or desks — which is exactly
+  // the shape of the report: it sounds on a desk and on an iPad and is silent
+  // on a phone. Safari 16.4+ lets the page declare its session; the first tap
+  // additionally plays the silent element unmuted, which is what moves the
+  // session on older iPhones.
+  test.assertIncludes(source, "function oneMoreTuneClaimPlaybackAudioSession() {",
+    "a page that is played by ear says out loud that it is playback, not ambience");
+  test.assertMatches(source, /session\.type = "playback";/,
+    "by declaring the audio session Safari 16.4 added for exactly this");
+  test.assertMatches(source, /function unlockOneMoreTuneAudio\(\) \{\s*\n\s*oneMoreTuneClaimPlaybackAudioSession\(\);/,
+    "and the tap that unlocks the context claims the session in the same breath");
+  test.assertMatches(source, /oneMoreTuneAudio\.context = new Ctor\(\);|new Ctor\(\)/,
+    "with the context built beside it");
+  test.assertIncludes(source, "function oneMoreTuneSilentWavUrl() {",
+    "the unlock plays silence this file builds, so no round trip sits inside a gesture");
+  test.assertMatches(source, /element\.muted = false;[\s\S]{0,400}element\.src = oneMoreTuneSilentWavUrl\(\);/,
+    "and it plays unmuted, because a muted element moves no audio session");
   test.assertMatches(source, /oneMoreTuneLoadPreviewElement\(key, oneMoreTunePreviewSources\(media\.url\)\)/,
     "so does the media-element path WebKit takes");
   test.assertIncludes(serverDeckSource, "function isPinnedPreviewUrl(value) {",

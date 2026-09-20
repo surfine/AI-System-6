@@ -63,8 +63,49 @@
       global.sessionStorage?.setItem(ATTEMPT_KEY, running);
     } catch {}
     console.warn(`AI System 6: this page is running build ${running}; the deployment serves ${deployed}. Reloading once.`);
+    await settleShell();
     global.location.reload();
     return "reloading";
+  }
+
+  /**
+   * Ask the worker to put the deployment's current document in its cache first.
+   *
+   * The worker answers a navigation from the cached shell and refreshes it
+   * behind the page, so a reload can arrive before the refresh lands and run
+   * the same build a second time. That would spend this tab's one attempt on
+   * the build it was trying to leave, and the visitor would keep the old one
+   * until they next opened the app — on a Home Screen icon, that is days. One
+   * round trip buys the guarantee that the reload is the new build.
+   *
+   * Bounded, and silent about failure: a worker that cannot answer in time
+   * still gets the plain reload, which is what happened before this existed —
+   * an older page, not a page that never comes back.
+   */
+  function settleShell(timeoutMs = 3000) {
+    const worker = global.navigator?.serviceWorker?.controller;
+    if (!worker || typeof worker.postMessage !== "function") return Promise.resolve(false);
+    return new Promise((resolve) => {
+      let done = false;
+      const finish = (value) => {
+        if (done) return;
+        done = true;
+        global.clearTimeout?.(timer);
+        global.navigator.serviceWorker.removeEventListener?.("message", onMessage);
+        resolve(value);
+      };
+      const onMessage = (event) => {
+        if (event.data?.type === "shell-refreshed") finish(true);
+        if (event.data?.type === "shell-refresh-failed") finish(false);
+      };
+      const timer = global.setTimeout(() => finish(false), timeoutMs);
+      try {
+        global.navigator.serviceWorker.addEventListener("message", onMessage);
+        worker.postMessage({ type: "refresh-shell" });
+      } catch {
+        finish(false);
+      }
+    });
   }
 
   global.AISystem6BuildFreshness = Object.freeze({
