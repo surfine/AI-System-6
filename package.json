@@ -78,6 +78,7 @@
     "https-proxy-agent": "^9.1.0",
     "pdfjs-dist": "^6.2.108",
     "stream-markdown-parser": "^1.2.6",
-    "tesseract.js": "^7.0.0"
+    "tesseract.js": "^7.0.0",
+    "ts-fsrs": "5.4.2"
   }
 }

@@ -1,5 +1,7 @@
 # SC2K systems — clean-room study notes (learned, not copied)
 
+<!-- doc-claims: verified | audited: 2026-09-18 -->
+
 Pinned learning record from the published SimCity 2000 Windows 95 save
 specification (`OpenCity2k/SC2k-docs`, CC BY-SA 4.0) and the Moews file
 format notes. This records what the original *does* as systems so Bonsai

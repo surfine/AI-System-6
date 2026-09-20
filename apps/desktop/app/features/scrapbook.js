@@ -1100,14 +1100,14 @@ function renderContextPanel() {
         const forgetBtn = document.createElement("button");
         forgetBtn.className = "btn";
         forgetBtn.textContent = t("forget");
-        forgetBtn.onclick = async () => {
-          const result = await showSystemModal(t("forget_confirm"), "confirm");
-          if (result === "yes") {
-            if (contextItem.kind === 'scrap') moveScrapToTrash(contextItem.id);
-            else moveFileToTrashById(contextItem.id);
-            lastRetrievedContextItems = lastRetrievedContextItems.filter((item) => item.id !== contextItem.id);
-            renderContextPanel();
-          }
+        forgetBtn.onclick = () => {
+          // Forgetting moves the item to the Trash, where it stays recoverable
+          // until the trash is emptied, so there is nothing to ask about.
+          if (contextItem.kind === 'scrap') moveScrapToTrash(contextItem.id);
+          else moveFileToTrashById(contextItem.id);
+          lastRetrievedContextItems = lastRetrievedContextItems.filter((item) => item.id !== contextItem.id);
+          setStatus(t("items_moved_trash", 1));
+          renderContextPanel();
         };
         footer.append(forgetBtn);
       }
@@ -1260,9 +1260,10 @@ function renderTrash() {
       renderTrash();
       updateMenuState();
     });
-    button.addEventListener("dblclick", async () => {
-      const result = await showSystemModal(`${t("restore")}: ${item.title}?`, "confirm");
-      if (result === "yes") putAwayTrashItem(item);
+    button.addEventListener("dblclick", () => {
+      // Putting something back from the Trash never loses anything, so the
+      // double-click is the answer.
+      putAwayTrashItem(item);
     });
     trashListEl.append(button);
   });

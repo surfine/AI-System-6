@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/archive/ESM-MIGRATION-PLAN.md -->
-<!-- source-sha256: 53ab84a5f1f71e86e2c7640a7b8e2696a4a225905f635b2dbf45af801c4c5e63 -->
+<!-- source-sha256: daf05004598654eb643e862926be1e1ea2eedc09bce53c6405d5b9559bf7485a -->
 
 > 英文版为准 ・ 仅供人类参考
 

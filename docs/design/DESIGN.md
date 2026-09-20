@@ -1,5 +1,7 @@
 # AI System 6 Design Contract
 
+<!-- doc-claims: mixed | audited: 2026-09-18 -->
+
 `CLAUDE.md` remains the top-level source of truth. This file is the design
 operating contract for UI, CSS, visual review, and agent-generated interface
 work. Read it before changing windows, controls, themes, layout, icons, motion,
@@ -240,7 +242,7 @@ artwork.
 | Platinum — Mac OS 9 | MIT-licensed [`classic-stylesheets` Mac OS 9 recipes at `9ebd2d8`](https://github.com/nielssp/classic-stylesheets/tree/9ebd2d84664095345097a71e1a137f985d03d4f2/themes/macos9): window, button, input, tab, list, menu, and 16px scrollbar geometry plus state SVGs | Apple's [Mac OS 8 HIG](https://dev.os9.ca/techpubs/mac/pdf/HIGOS8Guidelines.pdf) supplies the 19px title bar, 20×58px standard button, 22px edit field, dialog spacing, and control semantics; [Classicy](https://github.com/robbiebyrd/classicy/tree/ca8c0ae294b5a289aa5a69cc223c152b55672d35) and [platinum.css](https://github.com/mat-sz/platinum.css/tree/d3f345731f886c7dc767be5877f10db14f11ead4) only cross-check missing geometry | Real Mac OS 9 Finder, Appearance, Open dialog, menu, SimpleText, and alert captures from the [GUIdebook Mac OS 9 gallery](https://guidebookgallery.org/screenshots/macos90) |
 | Aqua — Mac OS X 10.2 Jaguar | [Quaqua 9.1 nested package](https://www.randelshofer.ch/quaqua/files/quaqua-9.1.nested.zip): `Quaqua15JaguarLookAndFeel.java`, its `jaguar/` resources, common push/default/field/choice/popup/scrollbar assets, and the [Jaguar wrap-tab contract](https://www.randelshofer.ch/quaqua/guide/jtabbedpane.html) | Apple's archived [Aqua HIG](https://developer.apple.com/library/archive/documentation/UserExperience/Conceptual/OSXHIGuidelines/) supplies control roles and interaction semantics, not Jaguar pixel values | Real 10.2 Finder, System Preferences, open/save panels, Mail, and dialogs in the [512 Pixels Jaguar library](https://512pixels.net/projects/aqua-screenshot-library/mac-os-x-10-2-jaguar/) |
 | Snow Leopard — Mac OS X 10.6 | Quaqua 9.1: `Quaqua16SnowLeopardLookAndFeel.java`, Snow resources, active/inactive title bars and toolbars, source-list states, and size variants; the [Quaqua changelog](https://www.randelshofer.ch/quaqua/changes.html) records the Snow LAF arriving in 6.0 | Chromium's period [`platform-mac-snowleopard` Inspector CSS](https://chromium.googlesource.com/chromium/reference_builds/chrome_linux/+/f108f78bd628aceeb5d44dcaaac401a2a2e97a9d/resources/inspector/inspector.css) supplies Web-toolbar, search-field, status-bar, and compact custom-scrollbar evidence | Real 10.6 Finder, System Preferences, open/save panels, Mail, and dialogs in the [512 Pixels Snow Leopard library](https://512pixels.net/projects/aqua-screenshot-library/mac-os-x-10-6-snow-leopard/) |
-| Yosemite — OS X 10.10 | [Yosemite-gtk-theme `03b6f721`](https://github.com/vinceliuice/Yosemite-gtk-theme/tree/03b6f721): checkbox/radio/titlebutton asset geometry and `gtk-light.css` control values, plus period pure-CSS window studies for the shell hierarchy | Apple's archived [OS X HIG](https://developer.apple.com/library/archive/documentation/UserExperience/Conceptual/OSXHIGuidelines/) supplies control roles; [512 Pixels OS X 10.10 library](https://512pixels.net/projects/aqua-screenshot-library/mac-os-x-10-10-yosemite/) (Retina 2x) calibrates Finder, System Preferences, and Apple-menu translucency | Real 10.10 Finder, System Preferences, open/save panels, menus, toolbar, sidebar, controls, and scrollbar, pinned in the maintainer fidelity baseline |
+| Yosemite — OS X 10.10 | [Yosemite-gtk-theme `03b6f721`](https://github.com/vinceliuice/Yosemite-gtk-theme/tree/03b6f721): checkbox/radio/titlebutton asset geometry and `gtk-light.css` control values, plus period pure-CSS window studies for the shell hierarchy | Apple's archived [OS X HIG](https://developer.apple.com/library/archive/documentation/UserExperience/Conceptual/OSXHIGuidelines/) supplies control roles; the maintainer's own 10.10 captures calibrate Finder, System Preferences, and Apple-menu translucency | Real 10.10 Finder, System Preferences, open/save panels, menus, toolbar, sidebar, controls, and scrollbar, pinned in the maintainer fidelity baseline |
 
 Resolve conflicts in that order of authority: a native screenshot from the target
 OS wins; Quaqua supplies missing geometry, repeatable states, and regular/small/mini
@@ -253,7 +255,7 @@ must not enter the repository.
 Yosemite is the Liquid-Glass-family descendant for maintenance lineage only:
 it owns an independent 10.10 painter under `body[data-theme="yosemite"]` and
 must never be implemented as "Liquid Glass minus glass overrides" (see
-`docs/THEME-FAMILY-CONTRACT.md`).
+[THEME-FAMILY-CONTRACT.md](THEME-FAMILY-CONTRACT.md)).
 
 Platinum typography has an explicit licensing boundary: Charcoal and Charcoal
 CY remain local system-font names; the OFL-licensed [Asap variable face at
@@ -485,7 +487,7 @@ remain diagnostics when a comparison is needed.
 Optional design anti-pattern scan:
 
 ```sh
-node external/impeccable/skill/tooling/detect.mjs --json apps/desktop/index.html apps/desktop/app apps/desktop/styles
+node external/impeccable/skill/scripts/detect.mjs --json apps/desktop/index.html apps/desktop/app apps/desktop/styles
 ```
 
 Treat third-party and generated findings as signals, not automatic blockers.
@@ -506,3 +508,5 @@ Local product rules win when they are more specific.
 
 The goal is not more decoration. The goal is that every agent reaches for the
 same object grammar before it reaches for taste.
+
+<!-- claim-check: npm run verify:css + tooling/style-manifest.mjs (ownership) | node external/impeccable/skill/scripts/detect.mjs --help | the 512 Pixels Aqua library stops at 10.7 Lion, so the dead 10.10 citation was removed 2026-09-18 -->

@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/design/THEME-FAMILY-CONTRACT.md -->
-<!-- source-sha256: 87f5ce2cc93475b541205ffa8f4ee6f96cd59c77e8524f957410337e5e3d912d -->
+<!-- source-sha256: 0b79ce2f664d8a74ae3fc2bb64e865c092984b36e601c9008e08168fab995f75 -->
 
 英文版为准。本文档仅供人类参考。
 

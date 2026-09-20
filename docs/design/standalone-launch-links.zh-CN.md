@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/design/standalone-launch-links.md -->
-<!-- source-sha256: 046c76df3d4562ca855aee93ed9242ee3176caa01443a38ab6abaa3a75c68c0e -->
+<!-- source-sha256: e154ce615e8b91396fd768d1959bc2b450e122afce786b626cc787e50a00c009 -->
 <!-- 英文版为准，本文件仅供人类参考 -->
 
 # 独立直达链接 —— 一个链接，直接进某个功能
@@ -131,8 +131,14 @@ aisystem6://launch?route=endfield-terminal&mode=fullscreen
    与 Cloudflare Pages 的 `/go/<route>` 函数里；feature 测试保证三处不漂移。
 3. **启动**。先走完正常启动与工作区画像流程
    （`document.body.dataset.appReady === "ready"`）。
-4. **确认（仅写作画像）**。如果会话留在写作视图，先弹系统确认框问是否切到
-   desktop 画像；默认动作是取消，外部链接不能无声搬走写作中的用户。
+4. **桌面访问（仅写作画像）**。如果会话留在写作视图，链接把它移到桌面打开，
+   并在状态行说明一次。没有确认框：链接是访问者自己点的，写作路由的每个窗口和
+   文档都原样保留，而且这次切换是临时的——桌面记录里存的仍是作者自己选的画像，
+   下次启动照旧打开他的稿件。
+
+   就地导航到链接的窗口在离开时把写入租约交还（`releaseWriteLease({ unload:
+   true })`），新窗口直接接管桌面，不必等一个已经离开的窗口回话。同一个链接在
+   第二个标签页打开属于原有的正常交接，本来就是静默的。
 5. **打开**。`runStandaloneLaunchIntent()` 走既有 `handleAction` 派发注册好的
    惰性命令（含模块加载）；`mode=fullscreen` 时短暂轮询该路由自己的窗口，再套用
    既有 `maximizeWindow`（System 6 缩放）。不需要另写窗口打开器或新缩放助手。
@@ -163,9 +169,12 @@ Web 与共享核心：
       提供 `GET /go/:route`，Cloudflare Pages 侧提供
       `functions/go/[route].js`——两边都 302 到
       `/?launch=<route>&mode=fullscreen`。
-- [x] 写作画像守卫：切到 desktop 画像前弹系统确认框（默认取消）。
-- [x] i18n 文案在 translations-en/zh（`launch_switch_to_desktop`、
-      `launch_open_desktop`、`launch_cancelled`）。
+- [x] 写作画像接管：切到 desktop 画像并启动。链接访问期间
+      `workspaceProfileForDeskState()` 让桌面记录继续保存作者自己的画像，
+      下次启动照旧打开稿件。
+- [x] i18n 文案在 `apps/desktop/app/data/translations-en.js` 与
+      `apps/desktop/app/data/translations-zh.js`（`launch_switched_to_desktop`，
+      即报告这次切换的状态行）。
 - [x] 启动载荷不变：路由都是惰性功能命令，短链接处理器在服务端/边缘，不产生
       新的 bundle 字节。
 
@@ -199,8 +208,9 @@ macOS 壳：
 2. Scheme `aisystem6://launch?route=…&mode=…`；Web 参数 `?launch=…`。
 3. 路由集合：第 6 节的七个（含 `time-machine`、`liquid-cover`）。
 4. 分析：不做；多余查询参数一律忽略。
-5. 写作画像行为：深链落到 **desktop** 画像；会话若留在写作视图，先弹系统确认框
-   （默认取消）。
+5. 写作画像行为：深链落到 **desktop** 画像。会话若留在写作视图，直接切过去，
+   不弹框——切换是临时的（桌面记录仍存 `writing`，作者下次启动打开自己的稿件），
+   并在状态行说明这次移动。
 6. Web 与 macOS 都进 1.0.52：Web 为主渠道，macOS scheme（`aisystem6://`）
    同版本跟进。
 

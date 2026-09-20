@@ -594,13 +594,11 @@ async function organizeQuestionSheet() {
       setStatus(currentLanguage === "zh"
         ? `整理问题失败：${error?.message || error}`
         : `Question Sheet organization failed: ${error?.message || error}`);
-      try {
-        await showSystemModal(currentLanguage === "zh"
-          ? `整理问题失败：${error?.message || error}`
-          : `Question Sheet organization failed: ${error?.message || error}`, "alert");
-      } catch {
-        // Keep the status text visible if the modal cannot open.
-      }
+      // The status line already names the failure; the notification keeps the
+      // detail readable after the line moves on.
+      pushSystemNotification(currentLanguage === "zh"
+        ? `整理问题失败：${error?.message || error}`
+        : `Question Sheet organization failed: ${error?.message || error}`, { state: "failed" });
     }
   }
 

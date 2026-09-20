@@ -1,5 +1,7 @@
 # Bonsai City — SimCity 2000 Save Compatibility
 
+<!-- doc-claims: verified | audited: 2026-09-18 -->
+
 Status: **bidirectional — import (M2) and export (M7) shipped**; the final
 certification step is the owner's manual run below. Authorized by the
 phase 9 contract; licensing rules in
@@ -110,3 +112,5 @@ town"), exported through the File menu, never an EA file.
 Codec tests build every `.sc2` fixture synthetically at run time
 (`tests/features/bonsai-sc2.test.mjs`). Hand-authored byte arrays cover RLE
 edge cases. No city file binary exists in the repository.
+
+<!-- claim-check: tests/features/city-save-import.test.mjs, tests/features/bonsai-micropolis-roundtrip.test.mjs | docs/city-simulator/foundation-contract.json -->

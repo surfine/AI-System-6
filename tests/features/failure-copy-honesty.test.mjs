@@ -17,7 +17,7 @@
 // 2. reportWritingRouteModelFailure(error, label) - the shared route-command
 //    failure reporter, now living in core so both Outline and Section
 //    Drafts can reach it - must never let that raw diagnostic reach the
-//    status line or the follow-up modal.
+//    status line or the notification that follows it.
 // 3. writeHeldThoughts() used to swallow a localStorage failure and report
 //    it as caught; it must now return false on failure so the caller can
 //    tell the writer the truth instead of a success message it cannot back.
@@ -70,31 +70,40 @@ test.assert(ctx.friendlyErrorDetail({ message: humanMessage }) === humanMessage,
 
 // --- 2. reportWritingRouteModelFailure never surfaces the raw code ---------
 
-async function captureRouteFailure(error, label, { modelReady = true, modalAnswer = "no" } = {}) {
+async function captureRouteFailure(error, label, { modelReady = true } = {}) {
   const statusCalls = [];
-  const modalCalls = [];
+  const notifications = [];
   ctx.setStatus = (text) => statusCalls.push(text);
   ctx.modelReadyForRequests = () => modelReady;
-  ctx.showSystemModal = (message) => { modalCalls.push(message); return Promise.resolve(modalAnswer); };
-  ctx.handleAction = () => {};
+  ctx.pushSystemNotification = (message, options) => {
+    notifications.push({ message, options });
+    return "notification-id";
+  };
   await ctx.reportWritingRouteModelFailure(error, label);
-  return { statusCalls, modalCalls };
+  return { statusCalls, notifications };
 }
 
 ctx.currentLanguage = "en";
 {
-  const { statusCalls, modalCalls } = await captureRouteFailure(rawOffline, "Outline", { modelReady: false });
-  const allText = [...statusCalls, ...modalCalls].join(" | ");
+  const { statusCalls, notifications } = await captureRouteFailure(rawOffline, "Outline", { modelReady: false });
+  const allText = [...statusCalls, ...notifications.map((entry) => entry.message)].join(" | ");
   test.assert(statusCalls.length > 0, "a status message was set for the failed route command");
   test.assert(!allText.includes("lmstudio_server_offline"), `no surfaced text carries the raw code (got "${allText}")`);
   test.assert(allText.includes("Outline could not finish"), `the status names the failed task (got "${allText}")`);
-  test.assert(modalCalls.some((m) => /Open Control Panel/.test(m)), "an offline model prompts to open Control Panel");
+  test.assert(
+    notifications.some((entry) => entry.options?.windowName === "control" && entry.options?.actionLabelKey === "open"),
+    "an offline model offers Control Panel from the notification instead of a dialog in front of the desk",
+  );
+  test.assert(
+    notifications.every((entry) => entry.options?.state === "failed"),
+    "the failure is filed as a failed notification, so it stays readable after the status line moves on",
+  );
 }
 
 ctx.currentLanguage = "zh";
 {
-  const { statusCalls, modalCalls } = await captureRouteFailure(rawOffline, "大纲", { modelReady: false });
-  const allText = [...statusCalls, ...modalCalls].join(" | ");
+  const { statusCalls, notifications } = await captureRouteFailure(rawOffline, "大纲", { modelReady: false });
+  const allText = [...statusCalls, ...notifications.map((entry) => entry.message)].join(" | ");
   test.assert(!allText.includes("lmstudio_server_offline"), `ZH: no surfaced text carries the raw code (got "${allText}")`);
   test.assert(!allText.includes("Connect to LM Studio"), `ZH: no surfaced text carries the raw English sentence (got "${allText}")`);
   test.assert(allText.includes("没有完成"), `ZH: the status names the failed task (got "${allText}")`);

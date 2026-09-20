@@ -1,5 +1,5 @@
 <!-- canonical-source: CODE_OF_CONDUCT.md -->
-<!-- source-sha256: 80994d78244f38efe256e8d2dc304f3dfb556d3835dcdeb58c13f2651f404e04 -->
+<!-- source-sha256: 69d3ef1c97e8d45a6a41ca5b10dbbf0a66d4415c804e892acb6ca1dffbc37ff6 -->
 
 > 英文版为准 ・ 仅供人类参考
 

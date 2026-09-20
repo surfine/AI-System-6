@@ -107,6 +107,12 @@ const replacements = [
   ['Photographed from the running desktop by the same script that shoots everything else on this page.', '与本页其他画面一样，由脚本从运行中的桌面拍摄。'],
   ['Go Play Them', '去运行这些游戏'],
 
+  ['IT ALSO PLAYS THE MUSIC.', '它还会放音乐。'],
+  ['One More Tune: an unofficial quiz about the music Apple put in its ads. You hear the phrase, you name the thing it sold, and the desk tells you the rest.', 'One More Tune：一个非官方的问答游戏，题目是苹果广告里的音乐。你听到那一段，说出它卖的是什么，剩下的桌面讲给你听。'],
+  ['Every question plays itself: the sound is the question, so the tap that started the round is the only tap it wants. The reveal opens the original, and it visits the era the card belongs to. The whole desk changes appearance for the length of the look, then gives yours back.', '每一题都会自己出声：声音就是题目，所以开始那一局的那一下，就是它唯一需要的一下。揭晓会打开原片，并且造访这张卡所属的时代。整张桌面会在你看的这段时间里换成那个时代，然后把你的还给你。'],
+  ['The reveal: the stage, the record, the era.', '揭晓：舞台、出处，和那个时代。'],
+  ['Photographed from the running desktop. The sound is a promotional store preview, relayed by the desk\'s own host when a network cannot reach the store.', '截自运行中的桌面。声音是商店的推广试听；网络到不了商店时，由桌面自己的主机帮它转发。'],
+  ['Play a Round', '玩一局'],
   ['THE LITTLE THINGS, KEPT.', '那些小东西，也被留下。'],
   ['Calculator, puzzle, writing bell, alarm clock, dictation pad, memory cards. The small tools that say the desk was made with care.', '计算器、数字华容道、写作铃、闹钟、听写板和记忆卡片。这些小工具说明，桌面也在意工作之外的片刻。'],
   ['Adds up, in a beveled window.', '在带斜面的窗口里完成计算。'],

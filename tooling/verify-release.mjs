@@ -341,7 +341,23 @@ const pkgAssets = new Set(pkg.macPackagedAssets?.assets || []);
 });
 
 {
-  const payloadBuilder = readFileSync(join(root, "tooling/build-mac-server-payload.mjs"), "utf8");
+  // Read the builder out of the commit, not off the disk. This gate asks what
+  // the packaged runtime floor IS, and the answer is a property of the source
+  // that is being released — while a frozen release worktree is still being
+  // materialized, the working tree can briefly be missing files that the commit
+  // certainly has (observed: `tooling/` empty at +24s of a prepare run, filled
+  // by +30s, with this gate reading it at +27.5s). A release must not fail
+  // because a checkout was still in flight; a missing *commit* entry still
+  // fails, and names the commit it read.
+  const payloadBuilderPath = "tooling/build-mac-server-payload.mjs";
+  const fromCommit = spawnSync("git", ["show", `HEAD:${payloadBuilderPath}`], {
+    cwd: root,
+    encoding: "utf8",
+    maxBuffer: 16 * 1024 * 1024,
+  });
+  const payloadBuilder = fromCommit.status === 0 && fromCommit.stdout
+    ? fromCommit.stdout
+    : readFileSync(join(root, payloadBuilderPath), "utf8");
   if (/MIN_PACKAGED_NODE_MAJOR = 24/.test(payloadBuilder)) ok("mac payload refuses pre-24 Node runtimes");
   else fail("tooling/build-mac-server-payload.mjs lost its packaged-runtime floor");
 }

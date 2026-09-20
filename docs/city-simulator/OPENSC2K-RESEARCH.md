@@ -1,5 +1,7 @@
 # OpenSC2K Research Notes
 
+<!-- doc-claims: verified | audited: 2026-09-18 -->
+
 Pinned research record for the original city simulator. Purpose: know what
 the reference landscape looks like and where the boundary is. This file is
 not a specification and nothing in it is a template for implementation.
@@ -77,3 +79,5 @@ This file is an engineering risk record, not legal advice.
   extracted sprite sheets) and no LICENSE file, so its code is not usable in
   the MIT-clean Bonsai path even though it is a legitimate reference for
   structure and format facts.
+
+<!-- claim-check: GitHub API 2026-09-18: nicholas-ochoa/OpenSC2K, OpenCity2k/SC2k-docs, JDrocks450/OpenSC2Kv2 all exist -->

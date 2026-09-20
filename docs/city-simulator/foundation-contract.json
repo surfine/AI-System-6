@@ -235,13 +235,13 @@
   },
   "saveFormat": {
     "format": "bonsai-city",
-    "formatVersion": 3,
-    "currentEngineSaveVersion": 3,
+    "formatVersion": 4,
+    "currentEngineSaveVersion": 4,
     "derivedLayersNeverSaved": true,
     "buildingOccupancyDerivedFromDurableDevelopmentLayers": true,
     "v3DurableLayers": ["catalogId", "subway", "waterLevel", "salt", "rotate", "tunnel", "waterKind"],
     "sc2SidecarOptional": true,
-    "integrity": "planned-phase2",
+    "integrity": "SHA-256/sorted-json-v1",
     "migration": "pure-chain-vN-to-vN+1-input-never-mutated"
   },
   "phase0Invariants": {

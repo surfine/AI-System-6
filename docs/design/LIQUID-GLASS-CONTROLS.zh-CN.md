@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/design/LIQUID-GLASS-CONTROLS.md -->
-<!-- source-sha256: 05cafad0e8ba16ef642efd6c225fc3b3dab85224ea8004f6f519ed3f36749d8e -->
+<!-- source-sha256: aaccfc58a5747e10223b23059702650f1218c1af210ee5bbf83f0cef11840d44 -->
 
 # Liquid Glass 控件体验规范
 

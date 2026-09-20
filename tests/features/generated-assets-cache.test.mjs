@@ -76,7 +76,7 @@ try {
   // Execute the actual orchestrator against lightweight fixture generators:
   // dependency ordering and early failure are observable, without real assets.
   mkdirSync(join(root, "tooling"));
-  const names = ["stream-markdown-vendor", "cmf-renderer-vendor", "embed-vendor", "ai-prompt-files", "bonsai-textures", "bonsai-atlas", "bonsai-renderer-vendor"];
+  const names = ["stream-markdown-vendor", "cmf-renderer-vendor", "embed-vendor", "ai-prompt-files", "bonsai-textures", "bonsai-atlas", "bonsai-renderer-vendor", "fsrs-vendor"];
   // A step with no declared inputs runs on every single build, which is how
   // three vendor builders (including the esbuild pass over Three.js) used to
   // cost every ordinary `build:app`. Declaring inputs and outputs is what makes
@@ -90,7 +90,10 @@ try {
     writeFileSync(join(root, entry.script), `import { appendFileSync } from "node:fs"; appendFileSync("order.txt", ${JSON.stringify(`${entry.name}\n`)});\n`);
   }
   test.assert(buildPreapp({ root }) === 0, "the prebuild orchestrator runs fixture generators successfully");
-  test.assert(readFileSync(join(root, "order.txt"), "utf8") === `${names.join("\n")}\n`, "direct Node execution preserves all seven dependency steps in order");
+  // The count is the manifest's, not this sentence's: a new step is a change
+  // to the list above, and a sentence that says "seven" would only ever be
+  // stale by one number.
+  test.assert(readFileSync(join(root, "order.txt"), "utf8") === `${names.join("\n")}\n`, `direct Node execution preserves all ${names.length} dependency steps in order`);
   rmSync(join(root, "order.txt"));
   writeFileSync(join(root, preappGenerators(root)[1].script), "process.exit(9);\n");
   test.assert(buildPreapp({ root }) === 9, "a failed generator stops prebuild with its exit status");

@@ -1,5 +1,7 @@
 # AGENTS.md — Bonsai City (original city simulator)
 
+<!-- doc-claims: verified | audited: 2026-09-18 -->
+
 Scope: the original, MIT-clean city-building simulator inside AI System 6,
 officially named **Bonsai City / 盆景城市**. This file is the scoped rule set for
 any agent touching that path. The GPL game engines (Micropolis, OpenTTD,

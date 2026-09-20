@@ -799,7 +799,7 @@ async function generateMarpMarkdownAndOpenClioStage(sourceOverride = null) {
       const message = formatMarpSkillValidationError(validation);
       markActiveLongTaskFailed(message);
       setStatus(message);
-      await showSystemModal(message, "alert");
+      pushSystemNotification(message, { state: "failed" });
       return null;
     }
 
@@ -823,7 +823,7 @@ async function generateMarpMarkdownAndOpenClioStage(sourceOverride = null) {
         : `Marp Markdown generation failed: ${error.message}. Original document was not changed.`;
       markActiveLongTaskFailed(message);
       setStatus(message);
-      await showSystemModal(message, "alert");
+      pushSystemNotification(message, { state: "failed" });
     }
     return null;
   } finally {
@@ -859,7 +859,7 @@ async function printActiveMarkdownToSlidesAi() {
       const message = formatSlidesValidationError(validation);
       markActiveLongTaskFailed(message);
       setStatus(message);
-      await showSystemModal(message, "alert");
+      pushSystemNotification(message, { state: "failed" });
       return null;
     }
     openTemporarySlidesDocument(markdown, source.name);
@@ -871,7 +871,7 @@ async function printActiveMarkdownToSlidesAi() {
         : `AI slides draft failed: ${error.message}. Original document was not changed.`;
       markActiveLongTaskFailed(message);
       setStatus(message);
-      await showSystemModal(message, "alert");
+      pushSystemNotification(message, { state: "failed" });
     }
     return null;
   } finally {

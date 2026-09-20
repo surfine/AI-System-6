@@ -27,7 +27,6 @@ function getWindow(name) {
   return document.querySelector(`[data-window="${name}"]`);
 }
 
-const centeredSystemWindowNames = new Set(["about"]);
 const writerModeCssOwnedWindows = new Set(["teachText", "assistant", "findPath", "contextPanel"]);
 const writerModeCompatibleAppIds = new Set(["writingStudio", "teachText", "clioTalk", "accessories"]);
 // Windows the narrow non-writer work-area CSS does NOT own: dialogs, system
@@ -38,7 +37,7 @@ const writerModeCompatibleAppIds = new Set(["writingStudio", "teachText", "clioT
 // property of the window, so it lives in the registry with the rest.
 function isCenteredSystemWindow(winOrName) {
   const name = typeof winOrName === "string" ? winOrName : winOrName?.dataset.window;
-  return centeredSystemWindowNames.has(name);
+  return isCenteredWindow(name);
 }
 
 // The accessory ladder lives in 00-foundation.css. Reading it here keeps one
@@ -446,7 +445,7 @@ function windowHasOwnedPlacement(win) {
   return !win
     || writerMode
     || isPortraitDocumentFlow()
-    || centeredSystemWindowNames.has(name)
+    || isCenteredSystemWindow(name)
     || name === "saveChat"
     || writingLayoutWindowNames.has(name)
     || isAssistantSidecarWindow(name)
@@ -1068,6 +1067,7 @@ const mobileFullScreenAppIds = new Set([
   "clioChart",
   "clioProject",
   "clioPaint",
+  "oneMoreTune",
   "liquidCover",
   "cmfStudio",
   // The Image Prompt Studio built its window but never declared a phone role,
@@ -1964,33 +1964,16 @@ function placeCenteredSystemWindow(win) {
     return;
   }
 
-  if (win.dataset.window === "about") {
-    win.style.left = "50%";
-    win.style.top = "calc(var(--system-menu-height, 25px) + (100vh - var(--system-menu-height, 25px)) / 2)";
-    win.style.width = "";
-    win.style.transform = "translate(-50%, -50%)";
-    return;
-  }
-
-  const desktop = document.querySelector(".desktop");
-  const desktopRect = desktop?.getBoundingClientRect();
-  const avoidance = getDesktopAvoidanceInsets({ margin: 18, spineGap: 18, iconGap: 48 });
-  const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
-  const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
-  const workLeft = (desktopRect?.left || 0) + avoidance.left;
-  const workRight = (desktopRect?.right || viewportWidth) - avoidance.right;
-  const workTop = desktopRect?.top || 25;
-  const workBottom = (desktopRect?.bottom || viewportHeight) - controlStripPlacementReserve();
-  const rect = win.getBoundingClientRect();
-  const halfWidth = Math.min(rect.width || 360, Math.max(240, workRight - workLeft)) / 2;
-
-  const halfHeight = Math.min(rect.height || 280, Math.max(180, workBottom - workTop)) / 2;
-  const centerX = Math.min(Math.max(workLeft + (workRight - workLeft) / 2, workLeft + halfWidth), workRight - halfWidth);
-  const centerY = Math.min(Math.max(workTop + (workBottom - workTop) / 2, workTop + halfHeight), workBottom - halfHeight);
-
-  const base = win.offsetParent?.getBoundingClientRect() || { left: 0, top: 0 };
-  win.style.left = `${Math.round(centerX - base.left)}px`;
-  win.style.top = `${Math.round(centerY - base.top)}px`;
+  // Centered on the screen, not on the work area between the icons.
+  //
+  // A centered window is a summoned surface rather than a resident one: About,
+  // and the film One More Tune opens. Working out a "usable" middle beside the
+  // icon rail put the film window 68px left of the middle of the desk, which
+  // reads as misplaced on a screen with nothing else open. The work area still
+  // decides where a *cascading* window lands; this one is placed against the
+  // desktop it belongs to.
+  win.style.left = "50%";
+  win.style.top = "calc(var(--system-menu-height, 25px) + (100vh - var(--system-menu-height, 25px)) / 2)";
   win.style.width = "";
   win.style.transform = "translate(-50%, -50%)";
   pinWindowTransformToCorner(win);
@@ -3191,7 +3174,7 @@ async function openWindowInner(name, options = {}, nestedOpen = false) {
   if (mobileFinderPageWindowNames.has(name)) {
     renderFinderNavigationBar(win);
   }
-  if (centeredSystemWindowNames.has(name)) {
+  if (isCenteredSystemWindow(name)) {
     placeCenteredSystemWindow(win);
   }
   runWindowHook(name, "onReveal", { win, wasAlreadyOpen });
@@ -3233,7 +3216,7 @@ async function openWindowInner(name, options = {}, nestedOpen = false) {
     clearWindowInlineGeometry(win);
   }
 
-  if (shouldPlaceWindow && !centeredSystemWindowNames.has(name) && !["about", "saveChat"].includes(name)
+  if (shouldPlaceWindow && !isCenteredSystemWindow(name) && !["about", "saveChat"].includes(name)
       && !(writerMode && writerModeCssOwnedWindows.has(name))) {
     if (!useNarrowWindowFlow(win)) {
       const desktop = document.querySelector(".desktop");
@@ -4538,7 +4521,9 @@ function quietStartup() {
 }
 
 function showAboutMultiFinder() {
-  showSystemModal(t("about_multifinder_body"), "alert");
+  // About text is something to read, not something to answer. The balloon
+  // carries the same paragraph and leaves the desk usable.
+  pushSystemNotification(t("about_multifinder_body"));
 }
 
 async function restartSystem() {
@@ -4573,10 +4558,9 @@ async function restartSystem() {
 }
 
 async function shutDownSystem() {
-  if (typeof showSystemModal === "function") {
-    const result = await showSystemModal(t("shutdown_confirm"), "confirm", { defaultAction: "cancel" });
-    if (result !== "yes") return;
-  }
+  // Shut Down is the writer's own command and the desk saves itself on the way
+  // out, so there is nothing to ask about: the shutdown screen reports what
+  // actually happened, including a save that failed.
   let saveFailed = false;
   try {
     await saveDeskState();
@@ -4584,9 +4568,8 @@ async function shutDownSystem() {
   } catch (error) {
     // lane-errors: this used to log to the console only, then still show
     // "It is now safe to shut down AI System 6." - a claim the save that
-    // just failed could not back up. The confirm dialog above also promises
-    // "The desktop state will be saved", so the shutdown screen now says
-    // which one of those actually happened.
+    // just failed could not back up. The shutdown screen says which one of
+    // those actually happened instead of promising that both did.
     console.warn("Shutdown save failed", error);
     saveFailed = true;
   }

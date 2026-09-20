@@ -15,16 +15,22 @@
       "iphone-14pro-portrait 393x852",
       "iphone-air-portrait 420x912",
       "iphone-air-landscape 912x420",
+      "iphone-18pro-landscape 874x402",
+      "iphone-18promax-landscape 956x440",
       "iphone-duo-outer-portrait 466x678",
       "iphone-duo-inner-landscape 890x626",
       "ipad-portrait 820x1180",
       "ipad-landscape 1180x820",
+      "ipad-mini-portrait 744x1133",
+      "ipad-mini-landscape 1133x744",
       "mac-13-inch 1280x800"
     ],
     "deskOnly": [
       "iphone-duo-outer-landscape 678x466",
       "iphone-duo-inner-portrait 626x890",
-      "ipad-mini-portrait 744x1133",
+      "iphone-18pro-portrait 402x874",
+      "iphone-18promax-portrait 440x956",
+      "ipad-mini-portrait-desk 744x1133",
       "ipad-13-landscape 1366x1024",
       "mac-14-inch 1512x982",
       "mac-24-4k 1920x1080",
@@ -53,6 +59,16 @@
         "chrome-hit-44"
       ]
     },
+    "iphone-18pro-landscape": {
+      "alarmClock": [
+        "chrome-hit-44"
+      ]
+    },
+    "iphone-18promax-landscape": {
+      "alarmClock": [
+        "chrome-hit-44"
+      ]
+    },
     "iphone-duo-outer-portrait": {
       "alarmClock": [
         "chrome-hit-44"
@@ -73,10 +89,22 @@
         "chrome-hit-44"
       ]
     },
+    "ipad-mini-portrait": {
+      "alarmClock": [
+        "chrome-hit-44"
+      ]
+    },
+    "ipad-mini-landscape": {
+      "alarmClock": [
+        "chrome-hit-44"
+      ]
+    },
     "mac-13-inch": {},
-    "ipad-mini-portrait": {},
+    "ipad-mini-portrait-desk": {},
     "iphone-duo-outer-landscape": {},
-    "iphone-duo-inner-portrait": {}
+    "iphone-duo-inner-portrait": {},
+    "iphone-18pro-portrait": {},
+    "iphone-18promax-portrait": {}
   },
   "pageErrors": []
 }

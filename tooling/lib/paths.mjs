@@ -42,6 +42,7 @@ const desktopEntryFiles = new Set([
   "styles.time-machine.css",
   "styles.clio-chart.css",
   "styles.clio-paint.css",
+  "styles.one-more-tune.css",
   "styles.soundscape.css",
   "styles.liquid-cover.css",
   "styles.image-prompt-studio.css",

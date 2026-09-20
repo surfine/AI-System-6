@@ -570,6 +570,7 @@ const applicationDescriptionKeys = Object.freeze({
   "open-soundscape": "app_desc_soundscape",
   "open-endfield-terminal": "app_desc_endfield",
   "open-bureaucracy-meme": "app_desc_bureaucracy",
+  "open-one-more-tune": "app_desc_one_more_tune",
   "open-time-machine": "app_desc_time_machine",
   "open-rebuild-flow": "app_desc_rebuild",
   "play-writing-demo": "app_desc_live_demo",
@@ -808,6 +809,7 @@ function getApplicationsItems() {
     return withStaticFinderMetadata([
       { name: t("endfield_terminal_label"), iconId: "endfieldTerminal", icon: "tools-icon", action: "open-endfield-terminal", type: "application", kind: t("application") },
       { name: t("bureaucracy_meme_label"), iconId: "bureaucracyMeme", icon: "tools-icon", action: "open-bureaucracy-meme", type: "application", kind: t("application") },
+      { name: t("one_more_tune_label"), iconId: "oneMoreTune", icon: "tools-icon", action: "open-one-more-tune", type: "application", kind: t("application") },
       { name: t("time_machine_label"), iconId: "timeMachine", icon: "tools-icon", action: "open-time-machine", type: "application", kind: t("application") },
       { name: t("rebuild_article"), iconId: "rebuildArticle", icon: "tools-icon", action: "open-rebuild-flow", type: "application", kind: t("application"), workspaceCapability: workspaceCapabilityStudio },
       { name: t("guide_play_demo"), iconId: "writingDemo", icon: "teachtext-icon", action: "play-writing-demo", type: "application", kind: t("application"), workspaceCapability: workspaceCapabilityStudio },
@@ -1859,6 +1861,15 @@ function applyModernFonts(options = {}) {
 
 function getCurrentTheme() {
   return window.AISystem6Theme?.getCurrentTheme?.() || "classic";
+}
+
+// The Appearance the writer chose, which is not always the one on screen: Theme
+// Lab, an `?appearance=` deep link and One More Tune's era visits all preview a
+// release theme with `persist:false`, and a preview is this session's screen
+// only. The desk record stores this one, so the next launch opens the
+// Appearance its owner picked.
+function getCommittedTheme() {
+  return window.AISystem6Theme?.getCommittedTheme?.() || getCurrentTheme();
 }
 
 function themeHasCapability(capability) {
@@ -3033,25 +3044,22 @@ function applyBootLaunchIntent() {
 }
 
 // Standalone launch links (1.0.52): open an external ?launch= route after the
-// boot sequence. The link targets the desktop profile, so a session that was
-// left in the Writing view first asks (external links can arrive mid-task);
-// the requested window mode is applied to the launched window afterwards.
+// boot sequence. A route that belongs to the Writing view goes there; the rest
+// name a desk app, so a session left in the Writing view moves to the desk for
+// it. That move is the system's own call, not a question: the link is the
+// visitor's click, nothing is closed, and the switch is transient, so the
+// profile the writer chose still opens their manuscript next time. The window
+// mode is applied afterwards.
 async function runStandaloneLaunchIntent(intent) {
   if (!intent?.command || typeof handleAction !== "function") return;
   const inWritingView = typeof workspaceProfile !== "undefined" && workspaceProfile === "writing";
-  if (inWritingView) {
-    if (typeof showSystemModal !== "function") return;
-    const result = await showSystemModal(t("launch_switch_to_desktop"), "confirm", {
-      confirmKey: "launch_open_desktop",
-      defaultAction: "cancel",
-    });
-    if (result !== "yes") {
-      if (typeof setStatus === "function") setStatus(t("launch_cancelled"));
-      return;
+  if (intent.profile === "writing") {
+    if (!inWritingView && typeof activateWorkspaceProfile === "function") {
+      await activateWorkspaceProfile("writing", { openDefault: false, persist: false });
     }
-    if (typeof activateWorkspaceProfile === "function") {
-      await activateWorkspaceProfile("desktop", { openDefault: false, persist: false });
-    }
+  } else if (inWritingView && typeof activateWorkspaceProfile === "function") {
+    await activateWorkspaceProfile("desktop", { openDefault: false, persist: false, transient: true });
+    if (typeof setStatus === "function") setStatus(t("launch_switched_to_desktop"));
   }
   await handleAction(intent.command);
   if (!intent.fullscreen || typeof maximizeWindow !== "function") return;

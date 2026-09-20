@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/LOCAL-AND-CLOUD.md -->
-<!-- source-sha256: 0ac79ebc3c84d9da5895a8a2d7c5f38af66c41bc3f155f5f2b1eee8d484b3709 -->
+<!-- source-sha256: 683e6d35492a36fd58b1d3b1baef0b9b65bc6d2a94b46984c84d3c9805ef8b0c -->
 
 > 英文版为准 ・ 仅供人类参考
 

@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/design/historical-ui-mapping.md -->
-<!-- source-sha256: ca3914c22c4aebd3d8df705cd2e02b11337843e7c33f715027073cd24e78c734 -->
+<!-- source-sha256: f395c4270b67fdb97f7203af67524b2279e9b63ad7a5a2972d746e750909f1a2 -->
 
 英文版为准。本文档仅供人类参考。
 

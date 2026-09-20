@@ -195,7 +195,11 @@ function applySecurityHeaders(res) {
       // without this it aborts at boot on every packaged Mac app and every
       // local run: "Refused to create a WebAssembly object". The two wasm games
       // already carry the same grant on their own asset paths in static.js.
-      "script-src 'self' 'wasm-unsafe-eval' https://challenges.cloudflare.com",
+      // youtube.com is the IFrame API script that owns One More Tune's player:
+      // the platform's own handshake, play and state reporting, instead of this
+      // app guessing at its postMessage protocol. The player itself is the
+      // privacy-enhanced host (see frame-src below).
+      "script-src 'self' 'wasm-unsafe-eval' https://challenges.cloudflare.com https://www.youtube.com",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob:",
       "font-src 'self' data:",
@@ -203,11 +207,34 @@ function applySecurityHeaders(res) {
       // as invalid and dropped), so http://[::1]:* only produced console noise
       // and never actually allowed anything. localhost covers the local model
       // endpoint for both address families.
-      "connect-src 'self' http://127.0.0.1:* http://localhost:*",
+      // audio-ssl.itunes.apple.com is One More Tune's question audio: the store
+      // publishes these previews as promotional material for the recording, and
+      // the project owner chose to play them rather than ship a silent quiz.
+      // As of 2026-09-18 the owner records that permission covers both the
+      // recordings and this delivery path, on professional advice; before that
+      // the round said on its face that it did not. The URL stays opaque — no
+      // title, no artwork — because that is anti-spoiler hygiene and has
+      // nothing to do with rights. Allow only for this app's audio.
+      // itunes.apple.com is the store's own search API, which names the
+      // recording's store page: the Music app opens a store item, not a web
+      // search, so the reveal resolves the song before it offers the link. No
+      // key, no account, CORS-open, and the same service family as the audio
+      // host above.
+      "connect-src 'self' http://127.0.0.1:* http://localhost:* https://audio-ssl.itunes.apple.com https://itunes.apple.com",
+      // media-src is the same audio on the path iOS uses: WebKit refuses these
+      // store previews in decodeAudioData, so the quiz plays them through a
+      // media element, and a policy with only connect-src silences the phone.
+      // `data:` is the silent quarter-second the unlock plays inside the tap.
+      "media-src 'self' data: https://audio-ssl.itunes.apple.com",
       "worker-src 'self' blob:",
       // 'self' is for #time-machine-frame, which embeds our own
       // /api/time-machine/render endpoint (see routes/time-machine.js).
-      "frame-src 'self' https://challenges.cloudflare.com",
+      // youtube-nocookie is One More Tune's reveal: after the answer is in, the
+      // original ad plays in YouTube's own visible player with its own controls.
+      // Nothing embeds it while a question is open — the film is the answer —
+      // and nothing hides or crops it. The privacy-enhanced host is the one
+      // that sets no profiling cookies before a person presses play.
+      "frame-src 'self' https://challenges.cloudflare.com https://www.youtube-nocookie.com",
       "object-src 'none'",
       "base-uri 'none'",
       "frame-ancestors 'none'",

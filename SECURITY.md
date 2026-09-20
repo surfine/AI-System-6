@@ -1,5 +1,7 @@
 # Security Policy
 
+<!-- doc-claims: verified | audited: 2026-09-18 -->
+
 AI System 6 handles local project material and optional model-provider
 credentials. Security reports are treated as product defects, not support
 questions.
@@ -54,3 +56,5 @@ Good-faith research that avoids privacy violations, service disruption, data
 destruction, persistence, and access beyond what is necessary to demonstrate
 the issue is welcome. Stop and report if testing could affect another person or
 a production service.
+
+<!-- claim-check: .github (security policy) | no version pins: fixes target the latest public beta -->

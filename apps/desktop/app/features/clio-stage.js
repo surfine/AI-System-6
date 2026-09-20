@@ -182,7 +182,9 @@ async function ensureSlidesMarkdownValidForExport(markdown, name = "slides.md", 
     ? formatSlidesValidationError(validation)
     : `Slides Markdown failed validation: ${validation.errors.join(", ")}`;
   setStatus(message);
-  await showSystemModal(`${name}: ${message}`, "alert");
+  // A refused export says why in the status line and keeps the reason in the
+  // notification list, so a second attempt can still read it.
+  pushSystemNotification(`${name}: ${message}`, { state: "failed" });
   return false;
 }
 

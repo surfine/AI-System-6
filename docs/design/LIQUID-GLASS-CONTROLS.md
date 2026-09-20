@@ -1,5 +1,7 @@
 # Liquid Glass Control Experience
 
+<!-- doc-claims: verified | audited: 2026-09-18 -->
+
 This document extends [DESIGN.md](DESIGN.md) for controls rendered in the
 Liquid Glass theme. `CLAUDE.md`, `DESIGN.md`, the System 6 object grammar, and
 feature contracts remain authoritative. This is not permission to redesign

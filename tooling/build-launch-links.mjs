@@ -38,6 +38,7 @@ export const LAUNCH_ROUTES = Object.freeze([
   "liquid-cover",
   "dtk",
   "cmf-studio",
+  "one-more-tune",
 ]);
 
 function page(route) {

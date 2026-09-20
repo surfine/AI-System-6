@@ -1677,6 +1677,7 @@ window.AISystem6Runtime?.registerLazyCommand?.("see-as-chart",{ensure:ensureClio
 window.AISystem6Runtime?.registerLazyCommand?.("open-clio-project",{ensure:ensureClioProjectModule});
 window.AISystem6Runtime?.registerLazyCommand?.("clio-project-reset-layout",{ensure:ensureClioProjectModule});
 window.AISystem6Runtime?.registerLazyCommand?.("open-clio-paint",{ensure:ensureClioPaintModule});
+window.AISystem6Runtime?.registerLazyCommand?.("open-one-more-tune",{ensure:ensureOneMoreTuneModule});
 window.AISystem6Runtime?.registerLazyCommand?.("open-todo-da",{ensure:ensureTodoDaModule});
 window.AISystem6Runtime?.registerLazyCommand?.("open-sideask-pad",{ensure:ensureSideAskPadModule});
 window.AISystem6Runtime?.registerLazyCommand?.("open-theme-lab",{ensure:ensureThemeLabModule});
@@ -1775,10 +1776,11 @@ window.AISystem6Runtime?.registerCommand?.("open-review-desk",{handler:()=>openR
 // unavailable, so the notification falls back to opening the receipt itself.
 window.AISystem6Runtime?.registerCommand?.("open-guest-reviews",{handler:async()=>{await openReviewDesk("guests");await ensureGuestToolsModule();window.AISystem6GuestTools?.renderGuestReviews?.();const win=getWindow("reviewDesk");if(win&&!win.classList.contains("is-hidden"))return;const latest=(window.AISystem6RunReceipts?.queryReceipts?.({limit:50,includeRunning:!0})||[]).find((file)=>String(file.runReceipt?.sourceAppId||"").startsWith("guest:"));if(latest)await window.AISystem6ApplicationRegistry?.openProjectObject?.(latest,"open");},isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-project-backup",{handler:openProjectBackupPanel,isAvailable:()=>!0});
-window.AISystem6Runtime?.registerCommand?.("open-system-file-system",{handler:()=>showSystemModal(t("system_file_not_openable"),"alert"),isAvailable:()=>!0});
-window.AISystem6Runtime?.registerCommand?.("open-system-file-finder",{handler:()=>showSystemModal(t("system_file_not_openable"),"alert"),isAvailable:()=>!0});
-window.AISystem6Runtime?.registerCommand?.("open-system-file-multifinder",{handler:()=>showSystemModal(t("system_file_not_openable"),"alert"),isAvailable:()=>!0});
-window.AISystem6Runtime?.registerCommand?.("open-system-file-da-handler",{handler:()=>showSystemModal(t("system_file_not_openable"),"alert"),isAvailable:()=>!0});
+// Saying "not openable" is the whole answer; it needs no OK button.
+window.AISystem6Runtime?.registerCommand?.("open-system-file-system",{handler:()=>setStatus(t("system_file_not_openable")),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-system-file-finder",{handler:()=>setStatus(t("system_file_not_openable")),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-system-file-multifinder",{handler:()=>setStatus(t("system_file_not_openable")),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-system-file-da-handler",{handler:()=>setStatus(t("system_file_not_openable")),isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-system-folder-path",{handler:({systemFolderPath=""}={})=>navigateSystemFolderPath(systemFolderPath),isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-applications-folder-path",{handler:({applicationsFolderPath=""}={})=>navigateApplicationsFolderPath(applicationsFolderPath),isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-system-prompt-file",{
@@ -1822,7 +1824,8 @@ window.AISystem6Runtime?.registerCommand?.("open-chat-file",{
     return registry.applicationObjectAvailability(fileId, "open").available === true;
   },
 });
-window.AISystem6Runtime?.registerCommand?.("open-droplet",{handler:({dropletId=""}={})=>{const command=typeof getScriptableCommand==="function"?getScriptableCommand(dropletId):null;const name=command&&typeof dropletName==="function"?dropletName(command):t("droplet");showSystemModal(t("droplet_open_explainer",name),"alert");},isAvailable:()=>!0});
+// The explainer still has to be readable: it rides a notification instead.
+window.AISystem6Runtime?.registerCommand?.("open-droplet",{handler:({dropletId=""}={})=>{const command=typeof getScriptableCommand==="function"?getScriptableCommand(dropletId):null;const name=command&&typeof dropletName==="function"?dropletName(command):t("droplet");pushSystemNotification(t("droplet_open_explainer",name));},isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-control-strip-modules",{handler:()=>openWindow("controlStripModules"),isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-control-strip-module",{handler:({controlStripModuleId})=>{ensureControlStripModulesFolderModule().then(()=>window.AISystem6ControlStripModulesFolder?.openModule?.(controlStripModuleId)).catch(error=>console.warn("Control Strip Modules folder unavailable.",error));},isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-ai-connection-settings",{handler:()=>handleAction("open-cloud-ai-settings"),isAvailable:()=>!0});

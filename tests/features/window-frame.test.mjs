@@ -239,8 +239,9 @@ test.assertMatches(
   "The inactive title bar drops its controls by token"
 );
 // macOS states the same thing its own way: a background window's traffic lights
-// go one flat gray and drop their glyphs, rather than being dimmed in colour.
-test.assertIncludes(liquid, "--glass-lamp-inactive: #d4d5d7", "Glass has one flat gray for background lamps");
+// go one flat near-white (measured #f1f1f4 on a live macOS 27 window, with a
+// grey side rim) and drop their glyphs, rather than being dimmed in colour.
+test.assertIncludes(liquid, "--glass-lamp-inactive: #f1f1f4", "Glass has one flat tone for background lamps");
 test.assertMatches(
   liquid,
   /body\.use-liquid-glass \.close-box \{[^}]*var\(--glass-lamp-close\)/,

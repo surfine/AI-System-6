@@ -1911,11 +1911,11 @@ async function playWritingDemo() {
       if (preflightFailures.some((item) => item.label === (t("model_route")))) {
         openWindow("control");
       }
-      await showSystemModal(
+      pushSystemNotification(
         currentLanguage === "zh"
           ? `演示准备失败，未进入正式录屏流程：\n\n${failureText}`
           : `Live demo preflight failed before recording:\n\n${failureText}`,
-        "alert"
+        { state: "failed" },
       );
       return;
     }
@@ -1953,11 +1953,7 @@ async function playWritingDemo() {
     } else {
       console.error("Writing demo failed", error);
       terminalStatus = t("writing_demo_failed", error.message || String(error));
-      try {
-        await showSystemModal(terminalStatus, "alert");
-      } catch {
-        // Status text below remains visible if the modal cannot open.
-      }
+      pushSystemNotification(terminalStatus, { state: "failed" });
     }
   } finally {
     writingDemoStopModalAutoAccept();

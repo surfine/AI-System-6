@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/DEVELOPMENT.md -->
-<!-- source-sha256: 9bbcb15ae2bd44967a2fae031f78e5459cefbc8d7e8fa36e8cddbca8331b0f76 -->
+<!-- source-sha256: 2c140211bfe2c1da5ac595e3bb29236bc86e0a15633a916435e4549bea07016c -->
 
 > 英文版为准 ・ 仅供人类参考
 
@@ -52,7 +52,7 @@ npm start
 
 CI 会按锁文件安装依赖、执行 lint 与构建，运行契约、重点单测和使用假上游的集成测试，
 再检查版本、checkJs、服务端类型、文档和公开文件树，并在独立的 Chromium 与 WebKit job
-中执行 smoke。维护者源树还会在临时目录生成干净公开快照，并在其中真实执行 `npm ci`、
+中执行静态 smoke；发布时在其上再加八站 `verify:walk`。维护者源树还会在临时目录生成干净公开快照，并在其中真实执行 `npm ci`、
 `npm run build` 与 `npm test`。
 
 ## 编辑浏览器运行时
@@ -78,7 +78,7 @@ CI 会按锁文件安装依赖、执行 lint 与构建，运行契约、重点�
 `tests/features/` 中的功能测试是轻量、可执行的契约。若 bug 暴露了缺失不变量，或功能
 建立了新边界，就应增加测试。优先测试可观察结构或行为，而不是实现文字。
 
-Chromium 与 WebKit smoke 是发布条件。更广泛的 Playwright 测试仍为诊断，任何浏览器探针
+Chromium 与 WebKit 静态 smoke 在 CI 的每次改动上运行（`.github/workflows/ci.yml`，每个引擎一个 job）；发布时在它之上再加八站 `verify:walk`。更广泛的浏览器探针仍为诊断，任何浏览器探针
 都不能取代确定性产品契约。
 
 ## 资产与生成文件
@@ -135,7 +135,7 @@ README 聚焦产品价值与第一次成功运行。持久技术细节放在本�
   就会丢掉这次编辑。
 
   `chatFiles`、`chatFolders`、`scraps`、`trash`、`imageAttachments` 已在受信列表上：
-  只有当 `tests/e2e/scan-shadow.spec.mjs` 的对照证明该集合的写入者都会报备，并且同一轮
+  只有当 `app/core/persistence-scan-shadow.js` 的对照证明该集合的写入者都会报备（该文件由使用它的检查按需懒加载，不占启动载荷），并且同一轮
   结尾那次"故意不报备的编辑"仍然被抓到，集合才会加入。`projects` 不在列表上——大纲提炼、
   DocMap、词典和 Finder 标签仍在原地写这条记录——所以它保持全量扫描，未报备的编辑在那里
   依然会被抓住。仪器把两种情况分开命名：受信集合上的漏报是回归，其余地方的漏报是迁移清单
@@ -143,8 +143,10 @@ README 聚焦产品价值与第一次成功运行。持久技术细节放在本�
 
 ### 两个试点的维护成本
 
-下表是在这两个真实应用上量出来的，方便下一个人区分"回归"和"四舍五入"。计数来自
-源文件；字节是首次打开真正请求的量。
+下表是当年在这两个真实应用上一次性量出来的，方便下一个人区分"回归"和"四舍五入"。计数来自
+源文件；字节是当时首次打开真正请求的量。它是有日期的对照，不是实时钉住的数字：样式表用
+`npm run verify:floppy` 重新量（它会打印每个懒加载样式表），脚本用它在
+`lazyRuntimePaths` 里的条目量，再决定是不是回归。
 
 | | ClioPaint | Translation Pad |
 | --- | --- | --- |
@@ -160,8 +162,7 @@ README 聚焦产品价值与第一次成功运行。持久技术细节放在本�
 改关闭行为则是"应用自己的内容一个文件"，外加"如果改的是框架默认关闭行为，才动
 `window-manager.js`"——这正是这套框架要守住的分工。
 
-启动侧不受应用工作影响：桌面发布的是 `app.bundle.js`（1,959,019 B）与
-`styles.bundle.css`（728,131 B），整个 core 的 Floppy 预算为 2,954,112 B。
+启动侧不受应用工作影响：桌面发布 `app.bundle.js` 与 `styles.bundle.css`（当前体积就是 `npm run verify:floppy` 输出的前两行），整个 core 的 Floppy 预算为 2,954,624 B。
 开发用仪器不进入这份载荷——例如保存计划影子对照就以懒加载文件发布，由使用它的
 检查自己加载（`app/core/persistence-scan-shadow.js`）。
 

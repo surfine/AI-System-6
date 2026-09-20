@@ -98,6 +98,12 @@ const handleSystemMusic = lazyHandler(() => require("./routes/system-music.js"),
 const handleGamdlJobs = lazyHandler(() => require("./routes/gamdl.js"), "./routes/gamdl.js", "handleGamdlJobs");
 const handleGamdlJob = lazyHandler(() => require("./routes/gamdl.js"), "./routes/gamdl.js", "handleGamdlJob");
 const handleGamdlFile = lazyHandler(() => require("./routes/gamdl.js"), "./routes/gamdl.js", "handleGamdlFile");
+const handleOneMoreTuneRound = lazyHandler(() => require("./routes/one-more-tune.js"), "./routes/one-more-tune.js", "handleOneMoreTuneRound");
+const handleOneMoreTuneAnswer = lazyHandler(() => require("./routes/one-more-tune.js"), "./routes/one-more-tune.js", "handleOneMoreTuneAnswer");
+const handleOneMoreTuneReport = lazyHandler(() => require("./routes/one-more-tune.js"), "./routes/one-more-tune.js", "handleOneMoreTuneReport");
+const handleOneMoreTuneCredits = lazyHandler(() => require("./routes/one-more-tune.js"), "./routes/one-more-tune.js", "handleOneMoreTuneCredits");
+const handleOneMoreTuneMedia = lazyHandler(() => require("./routes/one-more-tune.js"), "./routes/one-more-tune.js", "handleOneMoreTuneMedia");
+const handleOneMoreTunePreview = lazyHandler(() => require("./routes/one-more-tune.js"), "./routes/one-more-tune.js", "handleOneMoreTunePreview");
 const handleGoRedirect = lazyHandler(() => require("./routes/go.js"), "./routes/go.js", "handleGoRedirect");
 
 /**
@@ -163,6 +169,9 @@ const localExactRoutes = new Map([
   ["GET /api/music/system", handleSystemMusic],
   ["POST /api/music/system", handleSystemMusic],
   ["POST /api/music/gamdl/jobs", handleGamdlJobs],
+  ["POST /api/one-more-tune/round", handleOneMoreTuneRound],
+  ["POST /api/one-more-tune/answer", handleOneMoreTuneAnswer],
+  ["GET /api/one-more-tune/report", handleOneMoreTuneReport],
 ]);
 
 const publicExactRouteKeys = new Set([
@@ -191,6 +200,13 @@ const publicExactRouteKeys = new Set([
   "POST /api/cmf/export-usdz",
   "POST /api/cmf/render-views",
   "POST /api/cmf/render-preview",
+  // One More Tune's own authority. Its three routes are the quiz: they hand
+  // out a round, take one answer each, and report the bank's readiness. They
+  // carry no credentials and read no writer's data, so the public deployment
+  // serves them to a visitor the same way it serves search and the reader.
+  "POST /api/one-more-tune/round",
+  "POST /api/one-more-tune/answer",
+  "GET /api/one-more-tune/report",
 ]);
 
 // The guest bridge on the public deployment is opt-in and off by default
@@ -242,6 +258,9 @@ const localPrefixRoutes = [
   { method: "POST", prefix: "/api/endfield/ask", handler: handleEndfieldAsk },
   { method: "GET", prefix: "/api/music/gamdl/jobs", handler: handleGamdlJob },
   { method: "GET", prefix: "/api/music/gamdl/files", handler: handleGamdlFile },
+  { method: "GET", prefix: "/api/one-more-tune/credits", handler: handleOneMoreTuneCredits },
+  { method: "GET", prefix: "/api/one-more-tune/media", handler: handleOneMoreTuneMedia },
+  { method: "GET", prefix: "/api/one-more-tune/preview", handler: handleOneMoreTunePreview },
 ];
 
 const publicPrefixRouteKeys = new Set([
@@ -252,6 +271,15 @@ const publicPrefixRouteKeys = new Set([
   "GET /api/endfield/search",
   "POST /api/endfield/search",
   "POST /api/endfield/ask",
+  // The credits path every question carries, and the reviewed-asset route a
+  // question would use if this deck ever had one. Both are the question's own
+  // material, served to whoever is looking at the question.
+  "GET /api/one-more-tune/credits",
+  "GET /api/one-more-tune/media",
+  // The question's own sound, relayed by this host for a reader whose network
+  // cannot reach the store's CDN. It is the same promotional preview the round
+  // hands out, and a quiz played by ear has no other way to be played.
+  "GET /api/one-more-tune/preview",
 ]);
 
 const prefixRoutes = isPublicDeployment

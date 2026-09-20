@@ -913,13 +913,9 @@ async function createProjectMemoryDraft() {
     multiline: true,
   });
   if (!body?.trim()) return null;
-  const confirmed = await showSystemModal(
-    currentLanguage === "zh"
-      ? "确认将这份草稿保存为项目长期记忆？"
-      : "Save this draft as durable Project Memory?",
-    "confirm"
-  ) === "yes";
-  if (!confirmed) return null;
+  // The two input dialogs above already showed exactly what would be saved and
+  // let it be edited. A third "are you sure" adds nothing the writer has not
+  // just typed, so the save goes through and the status line confirms it.
   const folder = ensureProjectMemoryFolder();
   const now = new Date().toISOString();
   const file = {
@@ -933,6 +929,7 @@ async function createProjectMemoryDraft() {
   saveDeskState();
   renderDocuments();
   renderProjectDisks();
+  setStatus(t("project_memory_saved", file.name));
   return file;
 }
 
@@ -2006,10 +2003,9 @@ function attachSelectedRetrospectiveToNextTask() {
 async function createSkillDraftFromSelectedRetrospective() {
   const file = getProjectFiles().find((item) => item.id === selectedChatFileId && item.artifactKind === "retrospective");
   if (!file) return null;
-  const confirmed = await showSystemModal(currentLanguage === "zh"
-    ? `根据“${file.name}”制作 Skill 草稿？不会自动安装或启用。`
-    : `Create a Skill draft from “${file.name}”? It will not be installed or enabled automatically.`, "confirm");
-  if (confirmed !== "yes") return null;
+  // A Skill draft is a new file beside the retrospective. It installs nothing
+  // and enables nothing, and it is deleted like any other draft file, so the
+  // menu command is the whole decision.
   const draft = await saveClioTalkArtifact("skill-draft", `${file.name} Skill Draft`, [
     `# ${file.name} Skill Draft`, "", "## Source retrospective", `- ${file.id}`, "", "## Reusable workflow", file.body || "",
   ].join("\n"));
@@ -2017,6 +2013,7 @@ async function createSkillDraftFromSelectedRetrospective() {
     draft.sourceRetrospectiveId = file.id;
     draft.sourceChatId = file.sourceChatId || "";
     saveDeskState();
+    setStatus(t("skill_draft_saved", draft.name));
   }
   return draft;
 }

@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/ARCHITECTURE.md -->
-<!-- source-sha256: 824e84d0dc2f8d02dc8190d079f588f7b2ff1c88fda1c3abb9c5974c8504d885 -->
+<!-- source-sha256: 5f8081edbbfeaefb89ebdf026eed01b099ce6a23d04258aca1dd6788f6a812e2 -->
 
 > 英文版为准 ・ 仅供人类参考
 

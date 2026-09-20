@@ -1,5 +1,7 @@
 # IsoCity Research Notes
 
+<!-- doc-claims: verified | audited: 2026-09-18 -->
+
 Pinned research record for the original city simulator's reference landscape.
 This file is not a specification and nothing in it is a template for
 implementation. It records what the MIT-licensed IsoCity project demonstrates
@@ -38,3 +40,5 @@ and where the boundary for the Bonsai path sits.
   Bonsai path stays original and MIT-clean. Cite ideas, do not copy code.
 - Recorded decisions land in `foundation-contract.json` and the scoped
   `AGENTS.md`; keep no private copies of IsoCity facts in implementation files.
+
+<!-- claim-check: GitHub API 2026-09-18: amilich/isometric-city exists, MIT -->

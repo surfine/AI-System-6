@@ -1,5 +1,7 @@
 # Code of Conduct
 
+<!-- doc-claims: verified | audited: 2026-09-18 -->
+
 AI System 6 is built around deliberate, inspectable work. The project community
 should feel the same way: rigorous without being hostile, curious without being
 careless, and welcoming without lowering its standards.

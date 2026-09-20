@@ -124,6 +124,64 @@ const test = createFeatureTest("takeover-handshake");
   await c.lease.release();
 }
 
+// The writer that never answers may simply have left. A page that navigates
+// away - a launch link opened in the same window, a reload - releases its lease
+// on pagehide and cannot reply to a request aimed at it, so silence used to
+// become "the other window still has unsaved changes" and a dialog for a window
+// that no longer exists.
+{
+  const storage = new Map();
+  // The stored writer of a window that is unloading: fresh when the arriving
+  // window boots, and gone by the time the request would have been answered.
+  storage.set("ai-system6-write-lease", JSON.stringify({
+    instanceId: "window-that-left",
+    claimedAt: Date.now(),
+    heartbeatAt: Date.now(),
+    epoch: 3,
+  }));
+  const arriving = createWriteLeaseInstance(storage, { fastTimers: true });
+  await arriving.lease.acquire();
+  test.assert(arriving.lease.isReadOnly() === true, "the arriving window starts read-only while the stored lease is still fresh");
+  const request = arriving.lease.requestTakeover();
+  // pagehide ran while the request was in flight.
+  storage.delete("ai-system6-write-lease");
+  const result = await request;
+  test.assert(
+    result.ok === true && result.writer === true,
+    "a writer that left while the request was in flight is claimed silently instead of asked about",
+  );
+  test.assert(arriving.lease.isOwner() === true && arriving.lease.isReadOnly() === false, "the arriving window is the writer");
+  test.assert(
+    JSON.parse(storage.get("ai-system6-write-lease")).instanceId === arriving.lease.instanceId,
+    "the lease moved off the instance that left",
+  );
+  await arriving.lease.release();
+}
+
+// Silence from a writer that is still there stays a question: it may be
+// holding work it could not save, which is the decision a person has to make.
+{
+  const storage = new Map();
+  storage.set("ai-system6-write-lease", JSON.stringify({
+    instanceId: "window-still-there",
+    claimedAt: Date.now(),
+    heartbeatAt: Date.now(),
+    epoch: 4,
+  }));
+  const arriving = createWriteLeaseInstance(storage, { fastTimers: true });
+  await arriving.lease.acquire();
+  const result = await arriving.lease.requestTakeover();
+  test.assert(
+    result.ok === false && result.reason === "timeout",
+    "a fresh writer that stays silent is still refused, so its unsaved work keeps its protection",
+  );
+  test.assert(
+    JSON.parse(storage.get("ai-system6-write-lease")).instanceId === "window-still-there",
+    "the lease stays with the silent writer",
+  );
+  await arriving.lease.release();
+}
+
 // Three instances: A writer, B and C read-only. C's request is answered only
 // by A; B never flushes and never replies.
 {

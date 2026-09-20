@@ -499,11 +499,9 @@ async function openSafariHttpLocalEntry() {
     clipboardCopied = false;
   }
   const copyStatusKey = clipboardCopied ? "safari_http_local_copied" : "safari_http_local_not_copied";
-  await showSystemModal(
-    `${t(copyStatusKey, url)}\n\n${t("safari_http_local_paste_hint")}`,
-    "alert",
-    { confirmKey: "ok" }
-  );
+  // The address and the paste hint are instructions to keep on screen while the
+  // other tab is used, which is exactly what a dialog stops.
+  pushSystemNotification(`${t(copyStatusKey, url)}\n\n${t("safari_http_local_paste_hint")}`);
 }
 
 async function connectLocalLmStudio(options = {}) {

@@ -10,7 +10,7 @@
 // Run: node tooling/generate-dtk-demo-disk.mjs
 // Output: internal/evidence/drafts/dtk-demo-disk/未来通车之后 Project Hard Disk Backup.json
 
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { randomUUID, randomBytes, webcrypto } from "node:crypto";
@@ -845,6 +845,19 @@ async function main() {
   mkdirSync(outDir, { recursive: true });
   const outPath = join(outDir, `${finalTitle} Project Hard Disk Backup.json`);
   const json = JSON.stringify(result.bundle, null, 2);
+  // This script builds the FIRST edition (2026-09-01). The disk has been edited
+  // by hand since -- thirty dossiers, 82 Scrapbook entries, run receipts -- and
+  // on 2026-09-12 it was rerun to "fix a hash" and silently put the 4-clip
+  // first edition back. A stale hash or count is restamped by
+  // tooling/build-shared-project-disks.mjs; this script never needs to run over
+  // an existing disk, so it refuses to without an explicit flag.
+  if (existsSync(outPath) && !process.argv.includes("--overwrite-with-first-edition")) {
+    console.error(`Refusing to overwrite ${outPath}.`);
+    console.error("It holds later edits this script does not know. To fix a hash or counts, run");
+    console.error("  node tooling/build-shared-project-disks.mjs");
+    console.error("Pass --overwrite-with-first-edition only to discard those edits on purpose.");
+    process.exit(1);
+  }
   writeFileSync(outPath, json, "utf8");
 
   console.log("Wrote", outPath);

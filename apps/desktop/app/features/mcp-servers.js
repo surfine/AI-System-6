@@ -272,11 +272,12 @@
         await refreshServerTools(refresh.dataset.mcpServerRefresh);
       } else if (remove) {
         const name = remove.dataset.mcpServerRemove;
-        const answer = typeof showSystemModal === "function"
-          ? await showSystemModal(t("mcp_server_remove_confirm", name), "confirm")
-          : "yes";
-        if (answer !== "yes") return;
+        // Removing a server leaves everything it already put on the File Floppy
+        // where it is, and adding it back is the same form again. Nothing here
+        // can lose work, so the click is the answer and the status line says
+        // what happened.
         executorApi()?.removeServer?.(name);
+        setStatus(t("mcp_server_removed", name));
         renderChooserServers();
       }
     });

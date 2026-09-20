@@ -1,5 +1,7 @@
 # Appearance QA Matrix
 
+<!-- doc-claims: mixed | audited: 2026-09-18 -->
+
 AI System 6 release-supported Appearance surface is all six appearances:
 
 | Surface            | Classic / System 6 | Platinum | Aqua | Snow Leopard | Yosemite | Liquid Glass |
@@ -137,9 +139,12 @@ placeholder against a 150pt fixture field with a left-aligned one;
 `checkbox-checked` and `radio-checked` compare against GTK-clone glyphs rather
 than native 10.10 art.
 
-Yosemite is the open fidelity debt: 13 of 19 specimens do not reach the floor
-(11 measured gaps plus 2 mark comparisons whose clone references cannot
-establish native 10.10 pixels).
+Yosemite is the open fidelity debt: most of its specimens do not reach the floor,
+in the two ways the table above separates — measured gaps, and mark comparisons
+whose clone references cannot establish native 10.10 pixels. Read the counts
+there rather than here: that table is derived from the manifests, and the
+sentence that used to repeat them was still quoting 19 specimens a manifest
+revision later.
 Its window and control references are native 10.10 captures; only the checkbox,
 radio and title-button glyphs still compare against GTK-clone assets. System 6 and Liquid Glass have no historical screenshot target and
 keep their design contract plus regression baseline; no fake fidelity board is
@@ -154,3 +159,6 @@ fidelity.
 
 QA criteria per surface: no clipping, no unreadable text, no wrong contrast,
 no broken focus, no wrong icon, and no malformed window chrome.
+
+<!-- claim-check: npm run verify:theme-lab:fidelity — run 2026-09-19, all five boards exit 0 (platinum 12/20 met, aqua 17/18, snow-leopard 18/18, yosemite 5/17 with 10 gaps and 2 unreliable references, yosemite-2x 3/4). The run before that failed every board at the content fingerprint, because the fingerprint hashed the build stamp; tooling/theme-lab-fidelity.mjs now strips that query before hashing, and platinum still passed after the stamp moved to 20260919.1. Re-run the command before quoting these numbers. -->
+<!-- claim-check: npm run verify:appearance, verify:appearance-apps -->

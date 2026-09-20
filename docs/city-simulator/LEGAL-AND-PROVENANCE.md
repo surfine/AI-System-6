@@ -1,5 +1,7 @@
 # Bonsai City — License and Provenance
 
+<!-- doc-claims: verified | audited: 2026-09-18 -->
+
 This file is the construction rule for what may enter the original Bonsai City
 path. It is a conservative engineering boundary, not legal advice.
 
@@ -116,3 +118,5 @@ written from public, non-copyrightable ideas and first principles.
 for `Math.random`, references to the separate GPL game engines, EA-origin
 `.SC2` fixtures, and unapproved registration or schema changes. The scoped
 AGENTS file makes these rules the standing instruction for any agent.
+
+<!-- claim-check: GitHub API licences 2026-09-18: OpenSC2K (GPL-3.0), amilich/isometric-city (MIT), OpenCity2k/SC2k-docs (no licence file) | docs/city-simulator/foundation-contract.json license block -->

@@ -111,4 +111,44 @@ const transactionsSource = read("app/core/storage-transactions.js");
   await b.lease.release();
 }
 
+// The page that is leaving gives the pen back and does not pick it up again.
+//
+// Chromium fires visibilitychange AFTER pagehide, so the resume path runs in a
+// document that has already released the lease - and it used to claim it
+// straight back. The claim it left behind looked fresh to the next window,
+// which then waited out the handshake timeout and asked the writer about a
+// window that no longer existed.
+{
+  const storage = new Map();
+  const a = createWriteLeaseInstance(storage, { fastTimers: true });
+  const b = createWriteLeaseInstance(storage, { fastTimers: true });
+  connectWriteLeaseChannels([a, b]);
+  await a.lease.acquire();
+  test.assert(a.lease.isOwner() === true, "the writer holds the pen before it leaves");
+  a.window.listeners.pagehide.forEach((listener) => listener());
+  test.assert(!storage.has("ai-system6-write-lease"), "the lease is gone the moment the page goes away");
+  const reconciled = await a.lease.reconcile();
+  test.assert(
+    reconciled.readOnly === true && !storage.has("ai-system6-write-lease"),
+    "the leaving page cannot claim its own lease back",
+  );
+  const arriving = await b.lease.acquire();
+  test.assert(
+    arriving.writer === true,
+    "the next window claims the desk directly instead of waiting on a window that left",
+  );
+  await b.lease.release();
+
+  // Back from BFCache is the same document coming back to life, not one that is
+  // leaving; the guard must lift or the returned page refuses its own pen.
+  a.window.listeners.pageshow.forEach((listener) => listener({ persisted: true }));
+  await new Promise((resolve) => setTimeout(resolve, 40));
+  const held = JSON.parse(storage.get("ai-system6-write-lease") || "null");
+  test.assert(
+    held?.instanceId === a.lease.instanceId && Number(held.epoch) > 0,
+    "a page restored from BFCache can hold the pen again",
+  );
+  await a.lease.release();
+}
+
 test.finish();

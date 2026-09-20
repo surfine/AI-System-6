@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/city-simulator/ISOCITY-RESEARCH.md -->
-<!-- source-sha256: 63c3c21bb4e66646a1791bdc7b15a8aab1cb9ebfac75a46842228cfe4a26099f -->
+<!-- source-sha256: fb50f35462c928cfc4d9ab1f4b4e90480b62e7af01b640590425ddb35011d08d -->
 
 > 英文版为准 ・ 仅供人类参考
 

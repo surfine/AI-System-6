@@ -1,5 +1,7 @@
 # Bonsai City — Original City Simulator
 
+<!-- doc-claims: mixed | audited: 2026-09-18 -->
+
 Official product name: **Bonsai City / 盆景城市**.
 
 Bonsai City is an original, MIT-clean isometric city-building simulator inside
@@ -60,9 +62,9 @@ here only as history.
 - A headless simulation core exists at
   `apps/desktop/app/features/bonsai-city-sim.js` (64/96/128 tile grids, seeded
   terrain presets, independent networks and zoning, construction, utilities,
-  services, population/demand/finance, integer ticks, and v3
+  services, population/demand/finance, integer ticks, and v4
   `serialize`/`deserialize`). It is wired through the lazy Applications →
-  Games window and ships in the curated 1.0.50 public beta snapshot.
+  Games window and ships in the curated public beta snapshot.
 - The core's seed policy is now contract-enforced: the shell must provide an
   integer seed; the core never falls back to `Math.random()`.
 - The kernel now carries a versioned command layer (immediate and

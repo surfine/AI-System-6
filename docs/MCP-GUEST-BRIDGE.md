@@ -1,5 +1,7 @@
 # MCP Guest Bridge
 
+<!-- doc-claims: verified | audited: 2026-09-18 -->
+
 AI System 6 speaks MCP (Model Context Protocol) so that an outside agent on
 the same Mac can work at the writer's desk as a **guest**. The first guest is
 Claude Code. This page says what a guest is, what it may do, and how the
@@ -319,3 +321,5 @@ claude mcp add --transport http my-desk https://system6.example/mcp \
 
 - **ClioTalk tool calls.** Clio itself calling an external server's tools mid
   conversation, with the results still landing on the File Floppy.
+
+<!-- claim-check: apps/server/server/routes/mcp.js, apps/server/server/mcp-tools.js, apps/server/server/security/mcp-admission.js | tests/features/mcp-guest-bridge.test.mjs, tests/features/mcp-outbound.test.mjs | functions/api/capabilities.js (AI_SYSTEM6_PUBLIC_MCP) -->

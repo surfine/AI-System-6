@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/city-simulator/SAVE-FORMAT.md -->
-<!-- source-sha256: b521d8fdfe9e75752d65e0ce60efa18f1156ca093d9918f4a4d90ed26392d4f9 -->
+<!-- source-sha256: 79516e2d360d36efdeea5ba442e4a5ea610dba3dd65176be687118027ca76c6a -->
 
 > 英文版为准 ・ 仅供人类参考
 
@@ -8,8 +8,8 @@
 ## 身份
 
 - 存档格式：`bonsai-city`
-- 当前格式版本：3
-- 当前引擎存档版本：3
+- 当前格式版本：4
+- 当前引擎存档版本：4
 - 支持地图尺寸：64×64、96×96 与 128×128（SC2K 原生尺寸）
 
 格式名与版本由模拟核心（`FORMAT` / `SAVE_VERSION`）和
@@ -25,13 +25,13 @@
 | `rulesetVersion` | 模拟语义 | 模拟核心 |
 | `indexedDbVersion` | 浏览器物理 store 布局 | AI System 6 外壳 |
 
-## v3 字段
+## v4 字段
 
 `serialize()` 输出纯 JSON 兼容值：
 
 | 字段 | 含义 |
 | --- | --- |
-| `format` / `version` | `bonsai-city` / 3 |
+| `format` / `version` | `bonsai-city` / 4 |
 | `name` | 城市名（仅显示，不翻译） |
 | `seed` | 初始整数种子 |
 | `rngState` | 当前 32 位 PRNG 状态 |
@@ -48,6 +48,7 @@
 | `sc2Sidecar` | 导入 `.sc2` 城市的可选保留侧表（原始 MISC 字节与未建模段），或 `null` |
 | `facilities` | 电力、供水、交通和公共服务设施；记录可自带 `w`/`h`（存档规则 3.1：煤电厂记录 SC2K 的 4×4 占地，没有该字段的记录是旧版 2×2 电厂并保持原尺寸） |
 | `history` | 有界的 120 个月城市历史 |
+| `view`、`budgetHistory`、`militaryBase` | v4 新增：保存的相机（`panX`/`panY`/`zoom`）、有界的逐月财政历史，以及军事基地生命周期（0 无、1 提议、2 拒绝、3 陆军、4 空军、5 海军、6 导弹） |
 | `nextCommandSequence` / `pendingCommands` | 确定性命令顺序 |
 
 派生网络（`powered`、`watered`、道路连接、覆盖、交通）、多格
@@ -72,23 +73,23 @@ parse → 结构验证 → 完整性验证 → clone
 - 比运行版本更新的存档显式拒绝（绝不部分迁移、绝不覆盖）。
 - `formatVersion`、`rulesetVersion`、`indexedDbVersion` 的升级彼此独立，
   各自需要对应契约/测试更新。
-- 存档规则 3.1（设施占地）是 v3 内部的增量规则：`deserialize` 保留记录自带的
+- 存档规则 3.1（设施占地）当年作为 v3 内部的增量规则落地，没有移动信封版本：`deserialize` 保留记录自带的
   `w`/`h`，`footprintOf` 对没有该字段的记录回答旧版尺寸，因此信封版本不变，
   旧城市逐字节照常加载。troubled 示例的检查点重新钉死，因为其配方现在建的
   是 4×4 电厂。
 
 ## 信封
 
-`encodeSave` 把 v3 引擎载荷包进信封：
+`encodeSave` 把 v4 引擎载荷包进信封：
 
 ```json
 {
   "format": "bonsai-city",
-  "formatVersion": 3,
+  "formatVersion": 4,
   "metadata": { "cityId": "…", "name": "…", "createdAt": "…", "updatedAt": "…" },
-  "engine": { "rulesetVersion": 3, "fixedTickHz": 20, "ticksPerDay": 5, "daysPerMonth": 25 },
+  "engine": { "rulesetVersion": 4, "fixedTickHz": 20, "ticksPerDay": 5, "daysPerMonth": 25 },
   "simulation": { "seed": "...", "rng": { "algorithm": "mulberry32-v1", "state": [0] } },
-  "payload": { "format": "bonsai-city", "version": 3, "…": "v3 引擎存档" },
+  "payload": { "format": "bonsai-city", "version": 4, "…": "v4 引擎存档" },
   "integrity": { "algorithm": "SHA-256", "canonicalization": "sorted-json-v1", "digest": "..." }
 }
 ```
@@ -100,7 +101,7 @@ parse → 结构验证 → 完整性验证 → clone
 规范化 = 键排序、数组保序、无空白，Node 与浏览器结果一致，检查点哈希可移植。
 
 内存版 `createCityRepository`（create/list/get/put/remove）保留为测试适配器。
-外壳通过共享写入围栏，把 v3 信封持久化到既有专用 `bonsaiCities` IndexedDB
+外壳通过共享写入围栏，把 v4 信封持久化到既有专用 `bonsaiCities` IndexedDB
 store。
 规范化序列化、完整性计算和大型导入解析优先使用专用存档 Worker。超时/错误
 路径有界地回退到同一直接 codec；Worker 与回退输出逐字节一致。

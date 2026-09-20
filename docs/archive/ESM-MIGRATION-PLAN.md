@@ -1,5 +1,7 @@
 # Incremental ESM Migration Plan
 
+<!-- doc-claims: historical | audited: 2026-09-18 -->
+
 > **Archived, not scheduled.** This plan is not being executed. Nothing in
 > `apps/desktop/app/` imports anything: there are zero `import ... from`
 > statements and zero `type="module"` scripts, and CLAUDE.md's *Do Not

@@ -110,6 +110,10 @@ export const publicProductContracts = [
     tests: ["clio-chart.test.mjs"],
   },
   {
+    feature: "One More Tune",
+    tests: ["one-more-tune.test.mjs"],
+  },
+  {
     feature: "Time Machine",
     tests: ["time-machine.test.mjs"],
   },

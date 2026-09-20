@@ -4,6 +4,8 @@
 
 # AI System 6
 
+<!-- doc-claims: verified | audited: 2026-09-18 -->
+
 **A local-first writing desk where the AI never becomes your voice.**<br>
 One route from your raw questions to a finished piece. Projects in your browser. A stateless server. Two floppy disks.
 
@@ -67,6 +69,13 @@ THERE ARE FOUR MORE INSIDE. NO MODEL REQUIRED TO LOOK AROUND.</sub>
   connects to your desk over the internet, through an invitation that names
   it, under the same tool contract, permissions and Review Desk approvals as
   on your Mac.
+- **One More Tune: a quiz about the music Apple put in its ads.** Every
+  question plays itself, because the sound *is* the question. Answer, and the
+  reveal opens the original — in a window of its own, centered on the desk —
+  and dresses the whole desk in the era the card belongs to, then hands your
+  appearance back. The sound is a store preview, and when a network cannot
+  reach the store, this desk's own host relays the same file, so the game is
+  playable by ear anywhere; the phone layout keeps a round on one screen.
 
 Every beta has [its own release notes](https://github.com/surfine/AI-System-6/releases).
 
@@ -273,7 +282,7 @@ is a mockup, because a script re-shoots all of it from the running app.
 ## Built under a 1988 constraint
 
 ```text
-boot-critical payload   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,953,075 bytes
+boot-critical payload   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,952,938 bytes
 two 1.44 MB floppies    ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  2,949,120 bytes
 heavy tools             load lazily, from a third disk
 ```
@@ -364,3 +373,5 @@ If AI writing tools should leave your voice alone, **[★ star AI System 6](http
 [**LIVE DESKTOP**](https://system6.aaronlau.me)&nbsp;&nbsp;·&nbsp;&nbsp;[**BILIBILI FILM**](https://www.bilibili.com/video/BV1ht3m6UEDb/)&nbsp;&nbsp;·&nbsp;&nbsp;[**PRODUCT SITE**](https://aisystem6.pages.dev)&nbsp;&nbsp;·&nbsp;&nbsp;[**LATEST RELEASE**](https://github.com/surfine/AI-System-6/releases/latest)
 
 </div>
+
+<!-- claim-check: npm run site:check | site/data/floppy-budget.json (bytes 2954038, budget 2954624, written by verify:floppy) | npm run verify:floppy, verify:docs, verify:public | site/img/frames (six appearances) -->

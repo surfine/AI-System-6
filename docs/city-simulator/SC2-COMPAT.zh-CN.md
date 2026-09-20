@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/city-simulator/SC2-COMPAT.md -->
-<!-- source-sha256: cee31598234100424a7bb31137b4a7e3172201f31f981139fb3ef1b646e458db -->
+<!-- source-sha256: 91c0a4f4307c53692e4b5d03fea4440a00675e06ac78f2c1688b58ceea58ebb9 -->
 
 > 英文版为准 ・ 仅供人类参考
 

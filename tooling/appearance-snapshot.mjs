@@ -50,6 +50,20 @@ const PIXEL_TOLERANCE = 8;
 // whole edge, a glyph, or a fill — dozens of pixels at minimum.
 const MIN_CHANGED_PIXELS = 8;
 
+// Measured on 2026-09-18, and worth knowing before chasing a red run: on this
+// machine three cells are not reproducible run to run at all. `--noise` — which
+// captures the same bytes twice and compares them with no baseline involved —
+// reports showcase-platinum 2708 px (0.2580%), showcase-aqua 3102 px (0.2955%)
+// and games-classic-desktop-micropolis 261 px (0.3107%), and a follow-up verify
+// flags the same three with the same magnitudes. The drift is a horizontal
+// shift of the menu bar's right cluster by a few pixels in the two showcase
+// cells, and the game's palette column in the third: rasterization, not source.
+// Two real state leaks were fixed the same day and are pinned below — the
+// MultiFinder switcher and the MarkItDown availability line — but a machine
+// that cannot draw the same menu bar twice will still disagree with a baseline
+// it wrote an hour earlier. Fixing that is a rasterization question, not a
+// tolerance question.
+
 // Each cell owns a browser context, so the pool is bounded the way the feature
 // runner bounds its VMs. AI_SYSTEM6_SNAPSHOT_JOBS overrides it; 1 makes the run
 // serial, which is the fallback if a machine ever shows parallel-only drift.
@@ -271,6 +285,40 @@ async function settleImages(page, selector) {
   }, selector);
 }
 
+/**
+ * The lines on these windows that a live probe writes, painted with the copies
+ * the interface ships.
+ *
+ * Both are service state, not interface: whether a guest bridge is listening on
+ * this Mac, and whether this machine's MarkItDown adapter works — the second
+ * even carries the absolute path it was found at. A baseline that holds either
+ * one can only ever agree with the machine that wrote it: the 2026-09-18
+ * baseline photographed "available" beside that machine's own home path, and a
+ * later run of the same bytes photographed "unavailable: Command failed",
+ * moving 12% of the chooser cell's pixels. So both are painted as the shipped
+ * offline sentences,
+ * and painted late — the MarkItDown status arrives from its own fetch, after the
+ * earlier pins, so pinning it before the shot is the only pinning that holds.
+ */
+async function pinLiveStatusLines(page) {
+  await page.evaluate(() => {
+    if (typeof t !== "function") return;
+    const bridge = document.getElementById("chooser-guest-bridge");
+    if (bridge) bridge.textContent = t("guest_bridge_offline");
+    const importer = document.getElementById("importer-status");
+    if (importer) {
+      importer.textContent = t("importer_status_unavailable");
+      importer.dataset.state = "unavailable";
+    }
+    // And the switcher again, here, because it is drawn by the same code that
+    // draws the app menu: a re-render during the settle waits puts it back
+    // after the pin that ran with the scene setup. Single-task mode is this
+    // cell's promise; this is the pin that runs closest to the shutter.
+    document.getElementById("multifinder-button")?.classList.add("is-hidden");
+    document.querySelector(".multifinder-menu")?.classList.add("is-hidden");
+  });
+}
+
 async function captureCell(page, cell, outDir) {
   const file = join(outDir, `${cell.id}.png`);
   if (cell.target === "desktop") {
@@ -291,6 +339,14 @@ async function captureCell(page, cell, outDir) {
       }
       if (typeof renderAppMenuBar === "function") renderAppMenuBar("clioTalk");
       document.querySelector(".multifinder-menu")?.classList.add("is-hidden");
+      // The right end of the bar is a second, later reader of the same mode: the
+      // switcher button is drawn whenever the desk is in MultiFinder mode, and
+      // boot's own asynchronous work can put it back after the pin above. The
+      // 2026-09-18 baseline photographed it (a black block at the far right)
+      // while two runs of the same bytes did not, and one showcase cell drifted
+      // 2644 pixels for it. Single-task mode is what this cell promises, so the
+      // switcher is hidden explicitly rather than raced for.
+      document.getElementById("multifinder-button")?.classList.add("is-hidden");
       // The menu clock shows FROZEN_EPOCH plus real elapsed time, so a page
       // that lives across a minute boundary displays a different minute. A
       // baseline cannot depend on how long the capture happened to take —
@@ -310,6 +366,12 @@ async function captureCell(page, cell, outDir) {
     // ones is not a menu bar drawn from missing ones. Same reason as the window
     // path below: geometry says nothing about whether an image has decoded.
     await settleImages(page, null);
+    // Last thing before the shot: the two lines on this scene that a live probe
+    // writes. The MarkItDown status lands after the pins in settle() — its fetch
+    // resolves whenever the endpoint answers — so pinning it earlier is pinning
+    // it before the thing that overwrites it. Everything here is a claim about
+    // the shipped interface, not about this machine's adapter.
+    await pinLiveStatusLines(page);
     await page.screenshot({ path: file, animations: "disabled", timeout: 30000 });
   } else {
     const contract = windowInterfaceRegistry[cell.target];
@@ -436,6 +498,7 @@ async function captureCell(page, cell, outDir) {
     const gameClip = cell.game && cell.clip
       ? { x: Math.round(frame.x), y: Math.round(frame.y), width: cell.clip.width, height: cell.clip.height ?? Math.round(frame.height) }
       : null;
+    await pinLiveStatusLines(page);
     try {
       if (gameClip) {
         await page.screenshot({

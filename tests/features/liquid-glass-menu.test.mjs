@@ -46,8 +46,18 @@ test.assertIncludes(
 );
 test.assertIncludes(
   liquid,
-  "body.use-liquid-glass .menu-bar {\n    background: var(--menu-bar-bg);",
+  "body.use-liquid-glass .menu-bar {\n    background: var(--menu-bar-bg);\n    backdrop-filter: none;\n    -webkit-backdrop-filter: none;",
   "the menu bar keeps the appearance's own material in that branch",
+);
+// The bar is the one surface the material must never reach again, and the
+// property is invisible to every engine a gate can drive: CSS.supports is false
+// in Chromium and WebKit both, so a green suite says nothing about it. The
+// refusal has to be written down where the grant is written down, or a future
+// selector list can hand the bar the material and no test can notice.
+test.assertMatches(
+  liquid,
+  /body\.use-liquid-glass \.menu-bar \{[^}]*-apple-visual-effect: none;[^}]*\}/,
+  "and it refuses the material by name instead of by omission",
 );
 
 test.assertIncludes(dictionary, 'id: "liquid-glass-appearance"', "System Help keeps the stable Appearance dictionary record id");

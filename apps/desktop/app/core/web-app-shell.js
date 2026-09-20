@@ -15,13 +15,12 @@
 // not wait on the network and the desk opens with no connection at all. Two
 // product rules shape the rest of it:
 //
-//   - Nothing changes under the writer. A new build waits; the System 6
-//     dialog asks; only a "Restart" answer replaces the running version.
+//   - Nothing changes under the writer, and nothing asks them. A new build
+//     waits until the page on screen IS that build, then takes over quietly;
+//     the running page is never reloaded or swapped out from under them.
 //   - Nothing is claimed that did not happen. Registration failure is quiet
 //     and non-fatal — the app simply runs from the network, as before.
 
-let shellRestartRequested = false;
-let shellUpdatePromptOpen = false;
 
 function uiIsChinese() {
   return String(document.documentElement.lang || "").toLowerCase().startsWith("zh");
@@ -119,47 +118,41 @@ function applicationShellScriptUrl() {
   return `/sw.js?v=${encodeURIComponent(build)}`;
 }
 
-async function offerApplicationShellUpdate(registration) {
+// The system decides, not the writer. A dialog here once asked "restart to
+// use the new version?" -- and most often asked it on a page that already WAS
+// the new version: navigation refreshes index.html behind the old worker, so
+// the next load runs the new build while the new worker still waits. A restart
+// then reloaded the same build, and "Cancel" left nothing to decide either.
+//
+// So: when the waiting worker's build is the build this page runs, it takes
+// over at once, with no reload -- the page and its worker now agree, and the
+// old caches go. When the page is older, nothing happens now: its lazy parts
+// still come from the old worker's cache, and the next load brings the new
+// page, which adopts the new worker then. Either way nothing is lost and
+// nobody is asked.
+function waitingWorkerBuild(worker) {
+  try {
+    return new URL(worker.scriptURL).searchParams.get("v") || "";
+  } catch {
+    return "";
+  }
+}
+
+function adoptApplicationShellUpdate(registration) {
   const waiting = registration?.waiting;
-  // With no controller this is the first install, not a replacement: there is
-  // no running version to interrupt and nothing to announce.
-  if (!waiting || shellUpdatePromptOpen || !navigator.serviceWorker.controller) return;
-  if (typeof showSystemModal !== "function") return;
-  shellUpdatePromptOpen = true;
-  // This module arrives on `load`, and a worker that is ALREADY waiting means
-  // the question is asked in that same tick -- before boot has chosen the
-  // language and fetched its (lazy) table. t() answers an absent table with the
-  // key it was handed, so asking now shows the writer a dialog that reads
-  // "shell_update_ready" over a button reading "shell_update_restart".
-  //
-  // Nothing is lost by waiting: the new version is on the device either way,
-  // and the whole point of the prompt is that it does not interrupt. What
-  // cannot wait is the sentence.
-  if (typeof whenLanguageReady === "function") await whenLanguageReady();
-  // Waiting takes real time, and the worker may have moved on in it.
-  if (!registration.waiting) {
-    shellUpdatePromptOpen = false;
-    return;
-  }
-  const answer = await showSystemModal(t("shell_update_ready"), "confirm", {
-    confirmKey: "shell_update_restart",
-  });
-  shellUpdatePromptOpen = false;
-  if (answer !== "yes") {
-    setStatus(t("shell_update_deferred"), { notify: false });
-    return;
-  }
-  shellRestartRequested = true;
+  if (!waiting) return;
+  const pageBuild = window.AISystem6BuildInfo?.build || "";
+  if (!pageBuild || waitingWorkerBuild(waiting) !== pageBuild) return;
   waiting.postMessage({ type: "skip-waiting" });
 }
 
 function watchApplicationShellUpdate(registration) {
-  if (registration.waiting) offerApplicationShellUpdate(registration);
+  if (registration.waiting) adoptApplicationShellUpdate(registration);
   registration.addEventListener("updatefound", () => {
     const installing = registration.installing;
     if (!installing) return;
     installing.addEventListener("statechange", () => {
-      if (installing.state === "installed") offerApplicationShellUpdate(registration);
+      if (installing.state === "installed") adoptApplicationShellUpdate(registration);
     });
   });
 }
@@ -178,16 +171,10 @@ function watchApplicationShellMessages() {
   // this the worker's answers are held and never delivered.
   navigator.serviceWorker.startMessages?.();
   navigator.serviceWorker.addEventListener("controllerchange", () => {
-    // The first activation claims this page too. Reload only for the restart
-    // the writer actually asked for.
-    if (!shellRestartRequested) {
-      // A first install claims the page here, and this is the first moment
-      // there is a worker to talk to.
-      keepActiveLanguageTable();
-      return;
-    }
-    shellRestartRequested = false;
-    window.location.reload();
+    // A first install, or an update adopted above, claims this page. It is
+    // never reloaded for it: this is just the first moment there is a (new)
+    // worker to talk to.
+    keepActiveLanguageTable();
   });
   watchLanguageForShell();
   keepActiveLanguageTable();

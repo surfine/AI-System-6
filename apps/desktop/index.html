@@ -2,36 +2,33 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <!-- viewport-fit=cover lets the desk reach under the notch and home
-         indicator; the safe-area insets in styles keep chrome out of them. -->
+    <!-- viewport-fit=cover: the desk reaches under the notch; safe-area insets in styles keep chrome out. -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>AI System 6</title>
-    <!-- Added to the iOS home screen this runs standalone, with no browser
-         chrome, so writing on a phone is uninterrupted. -->
+    <!-- On the iOS home screen this runs standalone, with no browser chrome. -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="AI System 6" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <!-- `black-translucent` forces white status glyphs; all six bars are light. -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <!-- Repainted at runtime; the appearance owns the colour. -->
     <meta name="theme-color" content="#000000" />
-    <link rel="apple-touch-icon" href="assets/app-icon/app-icon-180.png?v=20260917.12" />
-    <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png?v=20260917.12" />
-    <link rel="manifest" href="assets/app-icon/manifest.json?v=20260917.12" />
-    <script src="app/core/theme-registry.js?v=20260917.12"></script>
-    <link rel="stylesheet" href="styles.bundle.css?v=20260917.12" />
-    <!-- The app bundle is referenced at the end of a ~340 KB body, so the
-         preload scanner reaches it late. This starts the download beside the
-         stylesheet instead. Both URLs carry the same build stamp, so the
-         browser serves the script tag from this one request. -->
-    <link rel="preload" as="script" href="app.bundle.js?v=20260917.12" />
+    <link rel="apple-touch-icon" href="assets/app-icon/app-icon-180.png?v=20260919.20" />
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png?v=20260919.20" />
+    <link rel="manifest" href="assets/app-icon/manifest.json?v=20260919.20" />
+    <script src="app/core/theme-registry.js?v=20260919.20"></script>
+    <link rel="stylesheet" href="styles.bundle.css?v=20260919.20" />
+    <!-- The bundle sits at the end of a ~340 KB body; this starts its download
+         beside the stylesheet, under the same build stamp. -->
+    <link rel="preload" as="script" href="app.bundle.js?v=20260919.20" />
   </head>
   <body class="is-booting">
-    <script src="app/core/theme-body-init.js?v=20260917.12"></script>
-    <!-- Registers a window-level error/unhandledrejection net before
+    <script src="app/core/theme-body-init.js?v=20260919.20"></script>
+    <!-- A window-level error/unhandledrejection net, registered before
          app.bundle.js loads, so a top-level crash in the bundle (a
-         temporal-dead-zone ReferenceError, for example) still shows the Sad
-         Mac recovery screen instead of leaving a blank page. See
-         app/core/boot-safety-net.js. -->
-    <script src="app/core/boot-safety-net.js?v=20260917.12"></script>
+         temporal-dead-zone ReferenceError, say) still shows the Sad Mac
+         recovery screen rather than a blank page. app/core/boot-safety-net.js. -->
+    <script src="app/core/boot-safety-net.js?v=20260919.20"></script>
     <header class="menu-bar" aria-label="System menu" data-i18n-aria-label="system_menu">
       <div class="menu">
         <button class="apple" aria-label="Apple menu" data-i18n-aria-label="apple_menu" data-balloon-help="balloon_apple_menu">
@@ -53,9 +50,9 @@
           <hr />
           <!-- One command, one way back, and the accessory they share. Holding
                a thought captures where you were, what you were reading and what
-               was on the clipboard before it opens anything, so Escape one
-               keystroke later still costs nothing. The middle row names the
-               place it would take you to, which is the reminder itself. -->
+               was on the clipboard before it opens anything, so Escape a
+               keystroke later costs nothing. The middle row names where it
+               would take you, which is the reminder itself. -->
           <div class="menu-section-label" data-i18n="apple_menu_place">Your Place</div>
           <button data-action="hold-that-thought" data-i18n="hold_that_thought">Hold That Thought</button>
           <button data-action="resume-my-place" data-i18n="held_place_resume">Where I Left Off</button>
@@ -64,8 +61,8 @@
           <div class="menu-section-label" data-i18n="apple_menu_writing_da">Writing DA</div>
           <!-- The order is the moment you reach for each one: catch a thought,
                say it instead of typing it, ask about what is in front of you,
-               carry it across, see what was copied, stop safely. The menu is the
-               only place the whole group is ever seen at once. -->
+               carry it across, see what was copied, stop safely. This menu is the
+               one place the group is seen whole. -->
           <button data-action="open-note-pad" data-i18n="note_pad">Note Pad</button>
           <button data-action="open-dictation" data-i18n="dictation_pad">Dictation Pad</button>
           <button data-action="open-sideask-pad" data-i18n="sideask">SideAsk</button>
@@ -89,26 +86,13 @@
           <button data-action="open-control" data-i18n="control_panel">Control Panel</button>
           <button data-action="open-find-file" data-i18n="find_file">Find File</button>
           <button data-action="open-system-status" data-i18n="system_status">System Status</button>
-          <!-- MultiFinder's contribution to the Apple menu. In the
-               application-owned eras this is where System 6 put the list of
-               open applications (Apple's 1987 MultiFinder guide: "the icons
-               and names of all open applications appear in this section of the
-               Apple menu", with a check mark on the current one), so it is
-               where the switch list and the application verbs live when the
-               right end is an indicator rather than a menu. Rendered by
-               renderMultiFinderMenu(); empty and hidden in the Mac OS X eras,
-               where the same rows belong to the bold application menu. -->
+          <!-- MultiFinder's contribution to the Apple menu: the eras whose Apple menu owned the open-application list keep it here (Apple's 1987 MultiFinder guide, checked on the current one), so the switch list and the application verbs live here when the right end is an indicator rather than a menu. Drawn by renderMultiFinderMenu(); empty in the Mac OS X eras. -->
           <div id="apple-multifinder-apps" class="apple-multifinder-apps is-hidden"></div>
           <hr class="apple-multifinder-about-separator" />
           <button class="apple-multifinder-about-item" data-action="open-about-multifinder" data-i18n="about_multifinder">About MultiFinder...</button>
         </div>
       </div>
-      <!-- The bold application menu is Mac OS X only: Apple's Aqua HIG (June
-           2002, p.54) calls it "new in Mac OS X". The classic and platinum
-           appearances hide it, because there the whole bar already belongs to
-           the foreground application. About and Control Panel are the system's
-           own rows and stay here; the application's verbs are rendered into
-           the section below, named after whichever application is in front. -->
+      <!-- The bold application menu is Mac OS X only: Apple's Aqua HIG (June 2002, p.54) calls it "new in Mac OS X". Classic and platinum hide it - there the whole bar belongs to the front application. About and Control Panel are the system's rows and stay; the application's verbs render into the section below, named after whichever application is in front. -->
       <div class="menu menu-bar-current-app">
         <button type="button" aria-haspopup="menu"><strong id="current-app-menu-label">Finder</strong></button>
         <div class="menu-popover">
@@ -522,9 +506,9 @@
             <small id="clio-chat-file-path"></small>
           </button>
           <!-- A temporary conversation is the one case where "save" means
-               something, so its escape hatch lives here rather than only in a
-               menu: the boundary is reversible, and the user does not have to
-               decide whether a conversation is worth keeping before starting it. -->
+               something, so its escape hatch lives here and not only in a menu:
+               the boundary is reversible, and nobody has to decide whether a
+               conversation is worth keeping before starting one. -->
           <button class="btn mini-btn clio-keep-temporary is-hidden" id="clio-keep-temporary" type="button" data-action="save-conversation" data-i18n="save_as_conversation_file">Save as Conversation File…</button>
         </div>
         <div class="messages-stage">
@@ -638,11 +622,11 @@
           <button class="resize-box hidden" aria-label="Zoom" data-i18n-aria-label="zoom" disabled aria-hidden="true"></button>
         </div>
         <div class="window-pane settings control-settings">
-          <!-- One tablist, six era presentations: the base harness stays the
-               shared horizontal tab sheet; each appearance re-clothes it
-               through control-chooser tokens (Classic renders it as the
-               System 4-6 cdev icon rail). The icon spans are part of the
-               shared DOM and stay hidden where an era shows text-only tabs. -->
+          <!-- One tablist, six era presentations: the harness stays the shared
+               horizontal tab sheet; each appearance re-clothes it through
+               control-chooser tokens (Classic renders it as the System 4-6 cdev
+               icon rail). The icon spans stay in the shared DOM, hidden where an
+               era shows text-only tabs. -->
           <div class="system-tabs control-chooser" role="tablist" aria-label="Control Panel section" data-i18n-aria-label="control_panel_sections">
             <button class="system-tab" id="control-tab-local" type="button" role="tab" aria-selected="false" aria-controls="control-panel-local" data-control-tab="local"><span class="sys-icon" data-system-icon="localModel" aria-hidden="true"></span><span class="control-chooser-label" data-i18n="control_connection">Local Model</span></button>
             <button class="system-tab is-active" id="control-tab-cloud" type="button" role="tab" aria-selected="true" aria-controls="control-panel-cloud" data-control-tab="cloud"><span class="sys-icon" data-system-icon="cloudModel" aria-hidden="true"></span><span class="control-chooser-label" data-i18n="cloud_model">Cloud Model</span></button>
@@ -2007,9 +1991,7 @@
         <div class="details-bar app-status-bar teachtext-details-bar">
           <span class="status-bar-leading" id="style-sheet-count" data-i18n="draft_voice_stats_empty">0 words · ~0 sec</span>
           <span class="status-bar-context linked-manuscript-title" id="review-status-title" data-i18n="untitled">Untitled</span>
-          <!-- View Manuscript moved to Writing > Review Desk in the menu bar
-               (paper-lane chrome reduction); this slot now carries the route
-               status message. -->
+          <!-- View Manuscript moved to Writing > Review Desk; this slot carries the route status. -->
           <div class="status-bar-trailing window-status-strip" aria-live="polite"><span class="window-status-slot" data-status-host></span></div>
         </div>
         <div class="window-pane review-desk-pane">
@@ -2423,10 +2405,7 @@
         <div class="details-bar app-status-bar teachtext-details-bar">
           <span class="status-bar-leading" id="question-count">0 questions</span>
           <span class="status-bar-context linked-manuscript-title" id="question-manuscript-title">Untitled</span>
-          <!-- Open Flow moved to Writing > Go To in the menu bar (paper-lane
-               chrome reduction): a permanent row for one jump button was
-               chrome the menu already carried. This trailing slot now hosts
-               the route status message instead of duplicating a menu item. -->
+          <!-- Open Flow moved to Writing > Go To: a permanent row for one jump button was chrome the menu already carried, so this trailing slot carries the route status instead of a duplicate. -->
           <div class="status-bar-trailing window-status-strip" aria-live="polite"><span class="window-status-slot" data-status-host></span></div>
         </div>
         <div class="window-pane teachtext-surface-pane question-sheet-pane">
@@ -2474,8 +2453,7 @@
             <option value="draft" data-i18n="label_draft">Draft</option>
             <option value="ai" data-i18n="label_ai">AI Assisted</option>
           </select></div>
-          <!-- View Question Sheet moved to Writing > Go To (paper-lane chrome
-               reduction); this slot now carries the route status message. -->
+          <!-- View Question Sheet moved to Writing > Go To; this slot carries the route status. -->
           <div class="status-bar-trailing window-status-strip" aria-live="polite"><span class="window-status-slot" data-status-host></span></div>
         </div>
         <div class="window-pane teachtext-surface-pane outline-pane">
@@ -2528,8 +2506,7 @@
             <option value="draft" data-i18n="label_draft">Draft</option>
             <option value="ai" data-i18n="label_ai">AI Assisted</option>
           </select></div>
-          <!-- View Question Sheet moved to Writing > Go To (paper-lane chrome
-               reduction); this slot now carries the route status message. -->
+          <!-- View Question Sheet moved to Writing > Go To; this slot carries the route status. -->
           <div class="status-bar-trailing window-status-strip" aria-live="polite"><span class="window-status-slot" data-status-host></span></div>
         </div>
         <div class="window-pane teachtext-surface-pane section-drafts-pane">
@@ -3028,13 +3005,12 @@
         </div>
       </section>
 
-      <!-- Hold That Thought. Two modes on one small window, because the object
-           has two moments and they are not the same size: catching is four
+      <!-- Hold That Thought. Two modes on one small window: catching is four
            lines of context and two questions, picking up is a pile with a list
            on it. The mode row borrows the Alarm Clock's figure - equal cells,
-           dividers between, the current one inverted - as a layout only. These
-           modes are verbs with no native glyph to copy, and inventing 1-bit art
-           for them would be drawing from memory. -->
+           dividers, the current one inverted - as a layout only. These modes
+           are verbs with no native glyph, and inventing 1-bit art for them
+           would be drawing from memory. -->
       <!-- Looking inside a disk you have not mounted. Read-only on purpose: it
            answers "which project did I file that in?" and no other question.
            The list-over-detail figure is the one Hold That Thought's pile uses,
@@ -3501,7 +3477,7 @@
       </section>
     </main>
 
-    <script src="app/generated/build-info.js?v=20260917.12"></script>
-    <script src="app.bundle.js?v=20260917.12"></script>
+    <script src="app/generated/build-info.js?v=20260919.20"></script>
+    <script src="app.bundle.js?v=20260919.20"></script>
   </body>
 </html>

@@ -145,6 +145,15 @@ export const lazyStyleBundles = [
     loader: "app/core/config.js",
     sources: ["styles/96-clio-paint.css"],
   },
+  // One More Tune is lazy for the same reason: a deck nobody has opened yet
+  // should not spend boot bytes, and every selector is scoped to
+  // .one-more-tune-*.
+  {
+    id: "one-more-tune",
+    output: "styles.one-more-tune.css",
+    loader: "app/core/config.js",
+    sources: ["styles/97-one-more-tune.css"],
+  },
 ];
 
 // Every stylesheet the product ships, eager or lazy. Checks that reason about
@@ -193,6 +202,7 @@ export const styleLayerByPath = Object.freeze({
   "styles/93-openttd.css": "openttd",
   "styles/94-bonsai.css": "bonsai",
   "styles/96-clio-paint.css": "clio-paint",
+  "styles/97-one-more-tune.css": "one-more-tune",
 });
 
 // Layer order = eager files in bundle order, then lazy sheets in declaration

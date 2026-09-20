@@ -1536,7 +1536,9 @@ async function resetSystemStorage() {
   } catch (error) {
     console.error("Failed to reset system storage.", error);
     setStatus(t("reset_system_failed"));
-    await showSystemModal(t("reset_system_failed"), "alert");
+    // The reset already failed; there is nothing to answer. The status line and
+    // the notification both carry the reason and the next step.
+    pushSystemNotification(t("reset_system_failed"), { state: "failed" });
   }
 }
 

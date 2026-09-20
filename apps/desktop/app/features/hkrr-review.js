@@ -56,14 +56,16 @@ ${fullBody}`;
 async function saveHkrrReview() {
   const markdown = claimResultsEl?.innerText.trim() || "";
   if (!markdown) return setStatus(t("hkrr_review_none_to_save"));
-  const result = await showSystemModal(t("hkrr_review_save_confirm", clipContextContent(markdown, 1000)), "confirm");
-  if (result !== "yes") return;
+  // The review on screen is what gets saved, and the Save command is the
+  // writer's own. Asking them to confirm the text they are looking at only
+  // interrupted the save.
   const item = await addProjectCdItem(markdown, `HKRR Review - ${teachTextNameInput.value || t("review_desk")}`, {
     sourceDocumentId: activeTextFileId || "",
     sourceKind: "markdown",
   });
   if (item) {
     openWindow("projectCd");
+    setStatus(t("hkrr_review_saved", item.title));
     if (lastHkrrReviewReceiptId) {
       window.AISystem6RunReceipts?.finishReceipt?.(lastHkrrReviewReceiptId, {
         status: "completed",

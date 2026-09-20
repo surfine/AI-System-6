@@ -1,5 +1,7 @@
 # Desk Port: MCP for AI System 6
 
+<!-- doc-claims: mixed | audited: 2026-09-18 -->
+
 Status: design proposal, not implemented. This document exists so the
 architecture cost is visible before any code lands, as
 [Architecture](ARCHITECTURE.md) requires for a background agent that could save
@@ -248,3 +250,5 @@ Consent is layered:
 - Does the hosted desktop ever get a port? It would need a public relay with
   per-visitor sessions, which is the Mac shared relay's territory and out of
   scope here.
+
+<!-- claim-check: https://modelcontextprotocol.io/specification/2026-07-28/changelog (revision exists; tools/list, tools/call, subscriptions/listen, io.modelcontextprotocol/tasks) | status line says design proposal, not implemented -->

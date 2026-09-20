@@ -329,22 +329,21 @@ function completeWritingBell() {
   writingBellEndsAt = 0;
   clearWritingBellTimer();
   writingBellRemaining = writingBellDurations[writingBellMode];
-  const nextMode = completedMode === "work" ? "break" : "work";
   const message = t("bell_done", writingBellModeLabel(completedMode));
   setWritingBellStatus(t(completedMode === "work" ? "bell_work_done_hint" : "bell_break_done_hint"));
   setStatus(message);
+  // A timer that stops the writer to be dismissed is the timer interrupting the
+  // work it was measuring. The bell already rings in the desk's own channels —
+  // the status line says the interval is over, the knock below carries the way
+  // back to the sentence, and the next interval loads straight away.
   knockAfterWritingBell();
   playSystemSound("alert");
+  writingBellMode = completedMode === "work" ? "break" : "work";
+  writingBellRemaining = writingBellDurations[writingBellMode];
+  setWritingBellStatus(t("bell_next_ready", writingBellModeLabel()));
   renderWritingBell();
   saveDeskState();
   window.AISystem6ControlStrip?.refreshStrip?.();
-  showSystemModal(message, "alert").then(() => {
-    writingBellMode = nextMode;
-    writingBellRemaining = writingBellDurations[writingBellMode];
-    setWritingBellStatus(t("bell_next_ready", writingBellModeLabel()));
-    renderWritingBell();
-    saveDeskState();
-  });
 }
 
 function getWritingBellState() {
@@ -476,7 +475,6 @@ function movePuzzleTile(index) {
     setPuzzleStatus(message);
     setStatus(message);
     playSystemSound("save");
-    showSystemModal(message, "alert");
   } else {
     setPuzzleStatus(t("puzzle_hint"));
   }

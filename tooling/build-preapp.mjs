@@ -73,6 +73,15 @@ export function preappGenerators(root, { publicOnly = false } = {}) {
       inputs: [...common, "node_modules/three", "tooling/vendor/bonsai-renderer-entry.mjs"],
       outputs: ["apps/desktop/app/vendor/bonsai-renderer.js"],
     },
+    {
+      // The study window's scheduler. A dependency with its own lockfile entry,
+      // declared the same way as the renderers above so a version bump that
+      // changes nothing on disk is still a cache miss.
+      name: "fsrs-vendor",
+      script: "tooling/build-fsrs-vendor.mjs",
+      inputs: [...common, "node_modules/ts-fsrs", "tooling/vendor/fsrs-entry.mjs"],
+      outputs: ["apps/desktop/app/vendor/fsrs.js"],
+    },
   ];
   return publicOnly ? all.filter((generator) => PUBLIC_PREAPP_GENERATOR_NAMES.includes(generator.name)) : all;
 }
@@ -93,6 +102,7 @@ export const PUBLIC_PREAPP_GENERATOR_NAMES = Object.freeze([
   "bonsai-textures",
   "bonsai-atlas",
   "bonsai-renderer-vendor",
+  "fsrs-vendor",
 ]);
 
 export function buildPreapp({ root = repositoryRoot, force = false, publicOnly = false } = {}) {

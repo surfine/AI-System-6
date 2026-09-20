@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/MCP-GUEST-BRIDGE.md -->
-<!-- source-sha256: 32a1622a99a05cbf4926c34060fec4ecf7f876127c2586617f42525ab8514568 -->
+<!-- source-sha256: d01b7ea2563e627e0dd8d68b0bdac57cf7ecdd273b192220ade0c259c701f09b -->
 
 > 英文版为准 ・ 仅供人类参考
 

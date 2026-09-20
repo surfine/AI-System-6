@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/city-simulator/LEGAL-AND-PROVENANCE.md -->
-<!-- source-sha256: 3398f426c0b7c8f67acdbbb29d01e3175238bea5dad71bc27774d47a117ad4f7 -->
+<!-- source-sha256: 05c483d52755bd61cc6e41adcce9c8048754566e58be7bf37cd07b3e76a0ccdc -->
 
 > 英文版为准 ・ 仅供人类参考
 

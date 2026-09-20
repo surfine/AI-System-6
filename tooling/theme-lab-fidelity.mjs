@@ -54,6 +54,12 @@ const ATLAS_GAP = 18;
 const PANEL_LABEL_HEIGHT = 34;
 const ATLAS_HEADER_HEIGHT = 58;
 const PANEL_BACKGROUND = "#f0f0f0";
+// Asset URLs in the fixture carry the build stamp as a cache-busting query
+// (`assets/.../startupDisk-32.png?v=20260918.24`). The stamp is rewritten on
+// every build, so leaving it in the fingerprint made each release invalidate all
+// five boards: the alarm stopped meaning "the fixture changed" and started
+// meaning "someone built". Strip only that query value.
+const BUILD_STAMP_QUERY = /\?v=\d{8}\.\d+/g;
 
 function usage() {
   console.log(`Usage: node tooling/theme-lab-fidelity.mjs [options]
@@ -616,7 +622,8 @@ async function prepareCurrentPage(browser, serverUrl, manifest, outputDir) {
   }
   await assertFixtureStructure(page, capture.fixtureAssertions);
   const fixtureHtml = await lab.evaluate((element) => element.outerHTML);
-  const contentSha256 = sha256Buffer(Buffer.from(fixtureHtml));
+  const contractHtml = fixtureHtml.replace(BUILD_STAMP_QUERY, "");
+  const contentSha256 = sha256Buffer(Buffer.from(contractHtml));
   if (capture.contentSha256 && contentSha256 !== capture.contentSha256) {
     if (options.updateFingerprint) {
       const manifestPath = options.manifestPath || readManifest(manifest.theme).path;

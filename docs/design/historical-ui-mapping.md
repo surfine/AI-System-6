@@ -1,5 +1,7 @@
 # Historical UI Mapping
 
+<!-- doc-claims: verified | audited: 2026-09-18 -->
+
 This document constrains how AI System 6 surfaces that have **no direct
 historical counterpart** are drawn in the five appearances (Classic /
 Platinum / Aqua / Snow Leopard / Yosemite, plus Liquid Glass as the

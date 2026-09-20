@@ -1,5 +1,7 @@
 # SC2000.DAT container — research notes
 
+<!-- doc-claims: verified | audited: 2026-09-18 -->
+
 Pinned research record for the original city simulator's reference
 landscape. This file is not a specification and nothing in it is a template
 for implementation beyond the independently written reader in

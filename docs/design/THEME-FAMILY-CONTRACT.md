@@ -1,5 +1,7 @@
 # Theme Family Contract
 
+<!-- doc-claims: verified | audited: 2026-09-18 -->
+
 AI System 6 maintains exactly **three appearance families**, not six
 independent themes. A new app, panel, dialog, or system control is written
 once against the shared object grammar and the family it belongs to; the

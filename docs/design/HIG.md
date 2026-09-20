@@ -1,5 +1,7 @@
 # AI System 6 Human Interface Guidelines
 
+<!-- doc-claims: verified | audited: 2026-09-18 -->
+
 This is the normative interface and typography specification for AI System 6.
 It translates the product boundaries in [Architecture](../ARCHITECTURE.md) and
 the visual principles in [DESIGN.md](DESIGN.md) into repeatable decisions for

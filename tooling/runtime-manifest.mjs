@@ -3,7 +3,31 @@
 // icon tier: the foundation now sizes the icon view at 44 px and the runtime
 // asks for the Finder tier by view mode, which cost 200 bytes of payload and
 // left the reserve under its floor.
-export const floppyBudgetBytes = 2_954_112;
+//
+// Raised by 512 bytes again on 2026-09-17 for One More Tune. Not for the
+// application — the deck's module, stylesheet and deck data are all lazy and
+// cost the boot nothing. What the boot pays is the price of ADMITTING an
+// application at all: a window-registry record, a lazy loader and its opener
+// command, an Applications entry with its description, a MultiFinder name, a
+// phone role, a Classic icon glyph, and the language-switch repaint. That came
+// to 971 bytes with the drawing already compressed, against 1037 free — every
+// one of them a registration the architecture requires, and none of them a
+// feature that could be deferred instead. The rule this yields to ("reclaim
+// through lazy loading; do not raise the budget to fit a feature") is aimed at
+// features funded by inflation, and it still holds: nothing here is payload
+// that could have been made lazy.
+//
+// The menu-bar fix landed after that measurement and took 246 of the slack, so
+// this release had to reclaim 560 bytes rather than spend them. Three moves,
+// none of them the number: the quiz's three routes became ONE service
+// registration (the round names a route, the provider builds the URL), the
+// Classic glyph was redrawn to the same shape in 90 fewer bytes, and the
+// longest purely historical comments in index.html were tightened with every
+// fact and citation kept. Slack is 21 bytes. The next new application faces the
+// wall the note above names: the honest answer is to make admission itself
+// cheaper — one registration per app instead of eight — not to raise this
+// number a third time.
+export const floppyBudgetBytes = 2_954_624;
 
 export const coreFiles = [
   "index.html",
@@ -135,6 +159,7 @@ export const lazyRuntimePaths = [
   "app/core/clio-project.js",
   "app/features/clio-project-window.js",
   "app/features/clio-paint.js",
+  "app/features/one-more-tune.js",
   "app/features/todo-da.js",
   "app/features/sideask-pad.js",
   "app/features/liquid-cover.js",

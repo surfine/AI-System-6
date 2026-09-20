@@ -1,5 +1,7 @@
 # Classic / Platinum Fidelity Contract
 
+<!-- doc-claims: verified | audited: 2026-09-18 -->
+
 This is the written companion to
 [`tooling/classic-platinum-fidelity-contract.json`](../../tooling/classic-platinum-fidelity-contract.json).
 It records the visual and interaction contract for the Classic (System 6) and

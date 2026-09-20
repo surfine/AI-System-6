@@ -1,7 +1,7 @@
 # SC2000.DAT 容器 —— 研究记录
 
 <!-- canonical-source: docs/city-simulator/SC2000-DAT-FORMAT.md -->
-<!-- source-sha256: 7b7cf96775a70cb192aee3b17d93859e9751723f2048006996a4431fe62293ec -->
+<!-- source-sha256: ea31c6846461610db5ac66d09def2024b784e314e0cf94db23bd77d753fb77d2 -->
 
 > 英文版为准 ・ 仅供人类参考
 

@@ -1,10 +1,12 @@
 # Bonsai City Save Format
 
+<!-- doc-claims: mixed | audited: 2026-09-18 -->
+
 ## Identity
 
 - **Save format:** `bonsai-city`
-- **Current format version:** 3
-- **Current engine save version:** 3
+- **Current format version:** 4
+- **Current engine save version:** 4
 - **Supported map sizes:** 64×64, 96×96, and 128×128 (the SC2K-native size)
 
 The format name and version are pinned by the simulation core
@@ -22,13 +24,13 @@ Three numbers mean three different things and must never be conflated:
 | `rulesetVersion` | simulation semantics | simulation core |
 | `indexedDbVersion` | browser physical store layout | AI System 6 shell |
 
-## v3 fields
+## v4 fields
 
 `serialize()` emits plain JSON-compatible values:
 
 | Field | Meaning |
 | --- | --- |
-| `format` / `version` | `bonsai-city` / 3 |
+| `format` / `version` | `bonsai-city` / 4 |
 | `name` | city name (display only, no translation) |
 | `seed` | initial integer seed |
 | `rngState` | current 32-bit PRNG state |
@@ -45,6 +47,7 @@ Three numbers mean three different things and must never be conflated:
 | `sc2Sidecar` | optional preservation side-table for an imported `.sc2` city (raw MISC bytes and unmodeled segments), or `null` |
 | `facilities` | power, water, transport, and public-service facilities; a record may carry its own `w`/`h` (save rule 3.1: a coal plant records the SC2K 4×4 pad, a record without one is an older 2×2 plant and keeps that size) |
 | `history` | bounded 120-month city history |
+| `view`, `budgetHistory`, `militaryBase` | v4 additions: the saved camera (`panX`/`panY`/`zoom`), the bounded month-by-month funding history, and the military-base lifecycle (0 none, 1 offered, 2 refused, 3 army, 4 air, 5 navy, 6 missile) |
 | `nextCommandSequence` / `pendingCommands` | deterministic command ordering |
 
 Derived networks (`powered`, `watered`, road access, coverage, traffic),
@@ -74,24 +77,25 @@ Rules:
   migrated, never overwritten).
 - `formatVersion`, `rulesetVersion`, and `indexedDbVersion` bumps are
   independent and each requires its own contract/test update.
-- Save rule 3.1 (facility footprints) is additive inside v3: `deserialize`
-  keeps a record's `w`/`h` when present and `footprintOf` answers the
-  legacy size for a record without one, so no envelope version moves and an
-  old city loads byte-for-byte. The troubled example checkpoint was re-pinned
-  because its recipe now builds the 4×4 pad.
+- Save rule 3.1 (facility footprints) stayed additive inside v3 and moved no
+  envelope version: `deserialize` keeps a record's `w`/`h` when present and
+  `footprintOf` answers the legacy size for a record without one, so an old
+  city loads byte-for-byte. The troubled example checkpoint was re-pinned
+  because its recipe now builds the 4×4 pad. v4 exists for the camera, the
+  funding history and the military-base lifecycle instead.
 
 ## Envelope
 
-`encodeSave` wraps the v3 engine payload in an envelope:
+`encodeSave` wraps the v4 engine payload in an envelope:
 
 ```json
 {
   "format": "bonsai-city",
-  "formatVersion": 3,
+  "formatVersion": 4,
   "metadata": { "cityId": "…", "name": "…", "createdAt": "…", "updatedAt": "…" },
-  "engine": { "rulesetVersion": 3, "fixedTickHz": 20, "ticksPerDay": 5, "daysPerMonth": 25 },
+  "engine": { "rulesetVersion": 4, "fixedTickHz": 20, "ticksPerDay": 5, "daysPerMonth": 25 },
   "simulation": { "seed": "...", "rng": { "algorithm": "mulberry32-v1", "state": [0] } },
-  "payload": { "format": "bonsai-city", "version": 3, "…": "the v3 engine save" },
+  "payload": { "format": "bonsai-city", "version": 4, "…": "the v4 engine save" },
   "integrity": { "algorithm": "SHA-256", "canonicalization": "sorted-json-v1", "digest": "..." }
 }
 ```
@@ -101,12 +105,14 @@ JSON of everything except `integrity`, and rejects tampered saves. `migrateSave`
 is the pure chain; v1 maps its fixed 64×64 state into the independent v2
 layers and converts `tick` to `tick * 5`; v2 gains the SC2K-model layers
 zero-filled (with `waterKind` derived from `water`) and the default founding
-year 1900. Newer versions are rejected explicitly.
+year 1900; v3 gains the saved camera, the funding history and the military-base
+lifecycle with safe defaults, and bumps `rulesetVersion` to 4. Newer versions
+are rejected explicitly.
 Canonicalization is sorted keys, arrays in order, no whitespace — stable across
 Node and browsers so a checkpoint hash is portable.
 
 The in-memory `createCityRepository` (create/list/get/put/remove) remains the
-test adapter. The shell persists v3 envelopes in the existing dedicated
+test adapter. The shell persists v4 envelopes in the existing dedicated
 `bonsaiCities` IndexedDB store through the shared write-fence helper.
 Canonical serialization, integrity work, and large import parsing use the
 dedicated save Worker when available. A bounded timeout/error path falls back
@@ -117,7 +123,7 @@ to the same direct codec; worker and fallback output are byte-identical.
 City saves live in the dedicated `bonsaiCities` store and never reuse the GPL
 Micropolis `cities` store for Bonsai state. Import validates format, version,
 structure, and integrity before assigning a new city id; it never overwrites
-an existing record. The v3 record envelope does not require an IndexedDB
+an existing record. The v4 record envelope does not require an IndexedDB
 schema bump.
 
 The one crossing of that boundary is deliberate and one module wide: Bonsai
@@ -139,7 +145,7 @@ trip); both build their fixtures by running the vendored engine at test time.
 
 ### Inbound — `bonsai-micropolis-codec.js`
 
-A Micropolis `cities` record (or its bare `saveData`) becomes a v3 payload.
+A Micropolis `cities` record (or its bare `saveData`) becomes a v4 payload.
 The classic 120×100 map embeds centred in the 128-square; the apron is salt
 water. Roads, rails, and power lines carry by tile family, including the
 crossings; a bridge lands as water with the network on top. Nine-tile zone
@@ -208,3 +214,5 @@ centre) come back as engine defaults and are named in the decode warnings.
 Interop with files written by other programs is unverified by design: no
 city file of any origin is committed, and the contract's fixtures are
 engine-built.
+
+<!-- claim-check: apps/desktop/app/features/bonsai-city-sim.js (SAVE_VERSION = 4, ENGINE_RULESET_VERSION = 4, migrateEngineV3To4) | tests/features/city-simulator-foundation.test.mjs reads the constant instead of pinning a literal -->

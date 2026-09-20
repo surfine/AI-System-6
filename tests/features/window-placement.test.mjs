@@ -116,7 +116,7 @@ const newWindow = {
 const placementRuntime = Function("environment", `
   const {
     document, getComputedStyle, writerMode, isPortraitDocumentFlow,
-    centeredSystemWindowNames, writingLayoutWindowNames,
+    isCenteredSystemWindow, writingLayoutWindowNames,
     isAssistantSidecarWindow, isDeskAccessoryPlacementWindow,
     getDesktopAvoidanceInsets, writingSpineAlignedTopForWindow,
     clampNumber, setInlineStyleValue
@@ -139,7 +139,9 @@ const placementRuntime = Function("environment", `
   }),
   writerMode: false,
   isPortraitDocumentFlow: () => false,
-  centeredSystemWindowNames: new Set(),
+  // Which windows own their placement is a registry property now; this
+  // scenario has none of them, which is what the empty set used to say.
+  isCenteredSystemWindow: () => false,
   writingLayoutWindowNames: new Set(),
   isAssistantSidecarWindow: () => false,
   isDeskAccessoryPlacementWindow: () => false,

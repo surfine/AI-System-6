@@ -28,11 +28,11 @@ test.assertNotIncludes(projectCdWindow, "audit-capsule", "the cancelled audit ca
 
 test.assertIncludes(exportImport, "async function downloadSelectedProjectCdItem", "Download has one explicit selected-file coordinator");
 test.assertIncludes(exportImport, "async function printSelectedProjectCdItem", "Print has one explicit selected-file coordinator");
-test.assertIncludes(exportImport, "function confirmProjectCdExportAfterReview", "review state is checked only at the export boundary");
+test.assertIncludes(exportImport, "function noteProjectCdExportReviewState", "review state is checked only at the export boundary");
 test.assertIncludes(exportImport, 'item.sourceKind !== "markdown"', "non-manuscript Project CD files do not receive an irrelevant Review Desk warning");
-test.assertIncludes(exportImport, 'showSystemModal(t("project_cd_review_reminder", item.title), "confirm")', "an unfinished manuscript gets one lightweight confirmation");
-test.assertMatches(exportImport, /downloadSelectedProjectCdItem[\s\S]*downloadProjectCdItem\(item\)/, "confirmed Download creates the selected real file");
-test.assertMatches(exportImport, /printSelectedProjectCdItem[\s\S]*printSelectedProjectCdPdf\(\)/, "confirmed Print enters the real PDF path");
+test.assertIncludes(exportImport, 'pushSystemNotification(t("project_cd_review_reminder", item.title)', "an unfinished manuscript gets one non-blocking note");
+test.assertMatches(exportImport, /downloadSelectedProjectCdItem[\s\S]*downloadProjectCdItem\(item\)/, "Download creates the selected real file");
+test.assertMatches(exportImport, /printSelectedProjectCdItem[\s\S]*printSelectedProjectCdPdf\(\)/, "Print enters the real PDF path");
 test.assertIncludes(exportImport, "reviewDeskComplete:", "new manuscript burns retain real Review Desk evidence");
 test.assertNotIncludes(exportImport, "projectCdDelivery", "Project CD no longer persists a second delivery workflow");
 test.assertNotIncludes(exportImport, "deliveryPreparation", "Project CD no longer records a redundant preparation state");

@@ -1,7 +1,7 @@
 {
-  "note": "Sized against the snapshot the release builds. maxBytes carries 64 KiB of headroom because a release compiles its commit hash into two generated files (and into anything that embeds them), so the same tree is a few hundred bytes larger inside a release than in a working checkout; without the headroom the budget trips on its own stamp.",
-  "maxFiles": 4935,
-  "maxBytes": 129585244,
-  "maxAssetFiles": 3710,
-  "maxAssetBytes": 85077402
+  "note": "Sized against the snapshot the release builds. maxBytes carries 64 KiB of headroom because a release compiles its commit hash into two generated files (and into anything that embeds them), so the same tree is a few hundred bytes larger inside a release than in a working checkout; without the headroom the budget trips on its own stamp. Raised once, 2026-09-20, for One More Tune: the quiz's module, stylesheet, deck tooling and its proof photograph entered the public source in this release for the first time (seven files, ~616 KiB). That is the application's own source, which the public tree exists to carry, not build output that belongs outside it — and the raise comes with headroom rather than sitting exactly on the new measurement.",
+  "maxFiles": 4960,
+  "maxBytes": 130600000,
+  "maxAssetFiles": 3711,
+  "maxAssetBytes": 85093786
 }

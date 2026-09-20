@@ -215,6 +215,7 @@ const systemIconPaths = {
     <path class="classic-ink" d="M25.6 3.5h3.8v3.8h-3.8z" />
     <path class="classic-ink" d="M27.5 13c2.2 0 3.3 1.2 3.3 2.5s-1.1 1.8-3.3 1.8-3.3-.5-3.3-1.8S25.3 13 27.5 13z" />
   `,
+  oneMoreTune: `<path d="M8 6h4v20H8zM13 4h12v24H13zM16 22V11l7-2v11"/><circle class="classic-ink" cx="16" cy="22" r="2.3"/><circle class="classic-ink" cx="23" cy="20" r="2.3"/>`,
   liquidCover: `
     <path d="M4 6h24v20H4z" />
     <path d="M9 21a5 5 0 0 1 10 0" />
@@ -633,6 +634,10 @@ const classicOnlyModernFallbackIconId = {
   // brush stroke, three paint dabs), not a reproduction of any native
   // resource, and not yet reviewed per era.
   clioPaint: true,
+  // One More Tune's card-and-quaver is the same case: invented object art with
+  // no reviewed era family. It shows its Classic line art in every appearance
+  // rather than being promoted into the 56-object vocabulary unreviewed.
+  oneMoreTune: true,
 };
 
 // Opt-in "line-art everywhere": when enabled, every non-Classic appearance

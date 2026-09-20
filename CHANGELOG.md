@@ -1,5 +1,7 @@
 # AI System 6 Changelog
 
+<!-- doc-claims: historical | audited: 2026-09-18 -->
+
 This changelog is a product-level narrative, not a commit-by-commit ledger. It
 is reconstructed from the git history that starts on 2026-05-18. Entries are
 grouped around product changes rather than every internal commit.

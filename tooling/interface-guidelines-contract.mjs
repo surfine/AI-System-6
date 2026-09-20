@@ -266,6 +266,25 @@ const dynamicWindowSources = Object.freeze({
     cssPrefixes: Object.freeze(["clio-paint-"]),
     iconId: "clioPaint",
   }),
+  oneMoreTune: Object.freeze({
+    sourceKind: "lazy",
+    openCommand: "open-one-more-tune",
+    ensure: "loadLazyWindowModule",
+    mountPath: "app/features/one-more-tune.js#installOneMoreTuneWindow",
+    cssPrefixes: Object.freeze(["one-more-tune-"]),
+    iconId: "oneMoreTune",
+  }),
+  // The film the reveal points at, in a window of its own: same application,
+  // same module, second window. Its command is the quiz's own "watch it here",
+  // because that button — not a menu item on the desk — is what opens it.
+  oneMoreTuneFilm: Object.freeze({
+    sourceKind: "lazy",
+    openCommand: "one-more-tune-play-film",
+    ensure: "loadLazyWindowModule",
+    mountPath: "app/features/one-more-tune.js#installOneMoreTuneFilmWindow",
+    cssPrefixes: Object.freeze(["one-more-tune-"]),
+    iconId: "oneMoreTune",
+  }),
   todo: Object.freeze({
     sourceKind: "lazy",
     openCommand: "open-todo-da",
@@ -472,6 +491,10 @@ const windowInterfaceContracts = Object.freeze({
   soundscape: creativeLab(),
   endfieldTerminal: creativeLab(),
   bureaucracyMeme: creativeLab(),
+  oneMoreTune: creativeLab(),
+  // The film window is the same lab: a summoned surface for one thing (the
+  // original), with the desk's own chrome around the player.
+  oneMoreTuneFilm: creativeLab(),
   micropolis: creativeLab(),
   openttd: creativeLab(),
   bonsaiCity: creativeLab(),

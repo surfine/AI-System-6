@@ -56,7 +56,14 @@ const securityHeaders = Object.freeze([
   "X-Frame-Options: DENY",
   "Cross-Origin-Resource-Policy: same-origin",
   "Permissions-Policy: camera=(), geolocation=(), microphone=(self), payment=(), usb=()",
-  "Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; worker-src 'self' blob:; frame-src 'self' https://challenges.cloudflare.com; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
+  // The quiz's sound is a store preview fetched from Apple's CDN (One More
+  // Tune's questions *are* the music), so this policy carries the same two
+  // hosts the host's own nginx policy does: connect-src for the Web Audio
+  // fetch, media-src for the media element WebKit falls back to. Without them
+  // the quiz opened on this deployment and played nothing at all, which is a
+  // music game that cannot be played. They are the only cross-origin hosts
+  // beyond Turnstile and YouTube's embed.
+  "Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://challenges.cloudflare.com https://www.youtube.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://audio-ssl.itunes.apple.com https://itunes.apple.com; media-src 'self' data: https://audio-ssl.itunes.apple.com; worker-src 'self' blob:; frame-src 'self' https://challenges.cloudflare.com https://www.youtube-nocookie.com; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
 ]);
 
 /** The full `_headers` file contents. */

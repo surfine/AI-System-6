@@ -345,10 +345,14 @@ function projectCdItemReviewRecorded(item) {
   return item?.metadata?.reviewDeskComplete === true || item?.metadata?.workflowState === "final";
 }
 
-async function confirmProjectCdExportAfterReview(item) {
-  if (!item) return false;
-  if (item.sourceKind !== "markdown" || projectCdItemReviewRecorded(item)) return true;
-  return showSystemModal(t("project_cd_review_reminder", item.title), "confirm");
+// Exporting an item whose review never reached the desk is not a loss: the
+// manuscript stays where it is and the Project CD stays editable. The note is
+// worth keeping, so it rides the notification list instead of stopping the
+// export the writer just asked for.
+function noteProjectCdExportReviewState(item) {
+  if (!item) return;
+  if (item.sourceKind !== "markdown" || projectCdItemReviewRecorded(item)) return;
+  pushSystemNotification(t("project_cd_review_reminder", item.title), { state: "running" });
 }
 
 async function downloadSelectedProjectCdItem() {
@@ -357,7 +361,7 @@ async function downloadSelectedProjectCdItem() {
     setStatus(t("select_find_path_first"));
     return false;
   }
-  if (!await confirmProjectCdExportAfterReview(item)) return false;
+  noteProjectCdExportReviewState(item);
   downloadProjectCdItem(item);
   return true;
 }
@@ -401,7 +405,7 @@ async function printSelectedProjectCdItem() {
     setStatus(t("select_find_path_first"));
     return false;
   }
-  if (!await confirmProjectCdExportAfterReview(item)) return false;
+  noteProjectCdExportReviewState(item);
   return printSelectedProjectCdPdf();
 }
 
@@ -1872,6 +1876,7 @@ async function openSharedProjectDisk(route) {
       await saveDeskState();
     }
     await handleAction("open-teachtext-manuscript");
+    showSharedDiskManuscriptAsReading();
     return;
   }
 
@@ -1898,6 +1903,18 @@ async function openSharedProjectDisk(route) {
   // from a shared link has only a manuscript. This is the command behind
   // Writing > Go To > Manuscript, and it syncs the linked document first.
   await handleAction("open-teachtext-manuscript");
+  showSharedDiskManuscriptAsReading();
+}
+
+// A shared link is sent to be read, so it lands on the rendered article from
+// its first line. The manuscript command previews only when the writing route
+// owns the manuscript; a disk whose route state says otherwise, or a desk that
+// did not reach the Writing view, would leave the visitor in the Markdown
+// source. Preview is a view: the text is untouched and Edit returns to it.
+function showSharedDiskManuscriptAsReading() {
+  if (typeof showTeachTextPreview !== "function") return;
+  if (!teachTextPreviewEl?.classList.contains("is-hidden")) return;
+  showTeachTextPreview({ focus: false, preserveScroll: false });
 }
 
 async function previewProjectBackupFile() {

@@ -1,5 +1,7 @@
 # Development
 
+<!-- doc-claims: mixed | audited: 2026-09-18 -->
+
 This guide describes the supported public-source workflow. For product and
 interaction rules, read [Architecture](ARCHITECTURE.md) and the
 [Design Contract](design/DESIGN.md).
@@ -49,9 +51,10 @@ directory and really runs `npm ci`, `npm run build`, and `npm test` there.
 
 ### The loop you actually work in
 
-The 334 contracts are about 210 CPU-seconds together. Paying that for a module
-you touched is the single largest cost of a small change, so pick the run that
-matches the work:
+The contracts (`node tooling/verify-features.mjs --list` prints the current
+count, 361 at the last audit) are about 210 CPU-seconds together. Paying that
+for a module you touched is the single largest cost of a small change, so pick
+the run that matches the work:
 
 | Command | What it runs | Cost |
 | --- | --- | --- |
@@ -102,9 +105,10 @@ test when a bug exposed a missing invariant, or when a feature creates a new
 boundary. Prefer testing observable structure or behavior over implementation
 spelling.
 
-The Chromium and WebKit smoke is a release condition. Broader Playwright tests
-remain diagnostics, and no browser probe replaces a deterministic product
-contract.
+The Chromium and WebKit static smoke runs in CI on every change
+(`.github/workflows/ci.yml`, one job per engine); a release adds the eight-stop
+`verify:walk` on top of it. Broader browser probes remain diagnostics, and no
+browser probe replaces a deterministic product contract.
 
 ## Assets and generated files
 
@@ -176,8 +180,9 @@ Pad actually use.
 
   `chatFiles`, `chatFolders`, `scraps`, `trash` and `imageAttachments` are on
   the trust list: each joined it when the comparison in
-  `tests/e2e/scan-shadow.spec.mjs` showed every writer there reporting, with
-  the run's deliberate unreported edit still caught. `projects` is not on the
+  `app/core/persistence-scan-shadow.js` (loaded lazily by the check that uses
+  it, so it is not part of the boot payload) showed every writer there
+  reporting, with the run's deliberate unreported edit still caught. `projects` is not on the
   list — the outline claim, DocMap, the dictionary and the Finder labels still
   write that record in place — so it keeps the full scan and an unreported edit
   there is still caught. The instrument names the two cases apart, so a miss on
@@ -186,9 +191,12 @@ Pad actually use.
 
 ### What the two pilots cost to maintain
 
-Measured on the two applications this framework work was proved against, so the
-next person can tell a regression from a rounding error. Counts are of the
-source file; bytes are what a first open actually requests.
+Measured once, on the two applications this framework work was proved against,
+so the next person can tell a regression from a rounding error. Counts are of
+the source file; bytes are what a first open actually requested then. They are
+a dated comparison, not a live pin: re-measure a stylesheet with
+`npm run verify:floppy` (it prints each lazy sheet) and a script from its
+`lazyRuntimePaths` entry before calling a difference a regression.
 
 | | ClioPaint | Translation Pad |
 | --- | --- | --- |
@@ -207,8 +215,9 @@ window closes is also one file for the application's own content, plus
 which is the split the framework is supposed to keep.
 
 The startup side is unchanged by application work: the desk ships
-`app.bundle.js` (1,959,019 B) and `styles.bundle.css` (728,131 B), against a
-Floppy budget of 2,954,112 B for the whole core. Development-only instruments
+`app.bundle.js` and `styles.bundle.css` (their current sizes are the first two
+lines of `npm run verify:floppy`), against a Floppy budget of 2,954,624 B for
+the whole core. Development-only instruments
 do not live in that payload - the save-plan shadow comparison, for instance,
 ships as a lazy file that the check using it loads
 (`app/core/persistence-scan-shadow.js`).
@@ -240,3 +249,5 @@ edit — is held by the record feed.
 6. Explain risk, verification, and visual evidence in the pull request.
 
 See [CONTRIBUTING.md](../CONTRIBUTING.md) for community and review expectations.
+
+<!-- claim-check: node tooling/verify-features.mjs --list (361 contracts) | npm run verify:floppy (budget + bundle sizes) | .github/workflows/ci.yml | apps/desktop/app/core/persistence-scan-shadow.js -->

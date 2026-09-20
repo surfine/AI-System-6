@@ -10,11 +10,6 @@
   "orientation": "any",
   "background_color": "#b6b6b6",
   "theme_color": "#000000",
-  "shortcuts": [
-    { "name": "ClioTalk", "short_name": "ClioTalk", "url": "/?open=cliotalk" },
-    { "name": "Quick Draft", "short_name": "Quick Draft", "url": "/?open=quick-draft" },
-    { "name": "Lightroom", "short_name": "Lightroom", "url": "/?open=lightroom" }
-  ],
   "icons": [
     { "src": "/assets/app-icon/app-icon-192.png", "sizes": "192x192", "type": "image/png" },
     { "src": "/assets/app-icon/app-icon-512.png", "sizes": "512x512", "type": "image/png" },
@@ -40,6 +35,13 @@
       "short_name": "Lightroom",
       "description": "Look at a draft instead of writing it.",
       "url": "/?open=lightroom",
+      "icons": [{ "src": "/assets/app-icon/app-icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "One More Tune",
+      "short_name": "One More Tune",
+      "description": "Hear a piece of Apple ad music and name where it was used.",
+      "url": "/?launch=one-more-tune",
       "icons": [{ "src": "/assets/app-icon/app-icon-192.png", "sizes": "192x192", "type": "image/png" }]
     }
   ]

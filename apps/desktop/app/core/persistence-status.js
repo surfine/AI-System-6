@@ -374,7 +374,11 @@ function settingsSnapshotPayload() {
     remember: rememberInput.checked,
     modernFonts: modernFontsInput.checked,
     classicLineIcons: classicLineIconsInput.checked,
-    theme: getCurrentTheme(),
+    // The writer's own Appearance, never a preview: Theme Lab, an
+    // `?appearance=` deep link and One More Tune's era visits all switch the
+    // screen with `persist:false`, and a desk record written from the preview
+    // would make the visit the writer's saved choice on the next launch.
+    theme: getCommittedTheme(),
     liquidTintLevel: liquidTintLevelInput ? Number(liquidTintLevelInput.value) : 0.5,
     soundEffects: soundEffectsInput.checked,
     menuClock: menuClockInput.checked,
@@ -417,7 +421,10 @@ function settingsSnapshotPayload() {
     activeProjectId,
     startupProjectId,
     startupProjectPinned,
-    workspaceProfile,
+    // A launch takeover visits the desk; the record keeps the writer's profile.
+    workspaceProfile: typeof workspaceProfileForDeskState === "function"
+      ? workspaceProfileForDeskState()
+      : workspaceProfile,
     startupEnvironment,
     startupOpenMode,
     startupSelectedApplicationAction,
@@ -468,6 +475,7 @@ async function switchLanguage() {
   // context from the record, so its labels are generated and have to be drawn
   // again. `typeof`, because the module is lazy.
   if (typeof renderHoldThought === "function") renderHoldThought();
+  if (typeof renderOneMoreTune === "function") renderOneMoreTune();
   scheduleWorkspaceRender({
     readerTabs: true,
     projectReferences: true,
@@ -2191,6 +2199,7 @@ function applySettings(settings) {
   if (typeof settings.startupProjectPinned === "boolean") startupProjectPinned = settings.startupProjectPinned;
   workspaceProfileWasRestored = Object.prototype.hasOwnProperty.call(settings, "workspaceProfile");
   workspaceProfile = normalizeWorkspaceProfile(settings.workspaceProfile);
+  workspaceProfileTransientFrom = "";
   syncWorkspaceProfileDom();
   if (settings.startupEnvironment === "finder" || settings.startupEnvironment === "multifinder") {
     startupEnvironment = settings.startupEnvironment;
@@ -3234,7 +3243,7 @@ function friendlyErrorDetail(error) {
 // Lives in this core module (not a lazy feature file) so every lazy route
 // surface — Outline, Section Drafts, and any future one — can call it
 // without needing another lazy module loaded first.
-async function reportWritingRouteModelFailure(error, taskLabel) {
+function reportWritingRouteModelFailure(error, taskLabel) {
   const detail = friendlyErrorDetail(error);
   const headline = currentLanguage === "zh"
     ? `「${taskLabel}」没有完成。`
@@ -3242,21 +3251,11 @@ async function reportWritingRouteModelFailure(error, taskLabel) {
   const message = [headline, detail].filter(Boolean).join(" ");
   setStatus(message);
   const offline = typeof modelReadyForRequests === "function" && !modelReadyForRequests();
-  try {
-    if (offline) {
-      const openControl = await showSystemModal(
-        currentLanguage === "zh"
-          ? `${message}\n\n要现在打开控制面板接一个模型吗？`
-          : `${message}\n\nOpen Control Panel to connect a model?`,
-        "confirm",
-      );
-      if (openControl === "yes") handleAction("open-control");
-      return;
-    }
-    await showSystemModal(message, "alert");
-  } catch {
-    // Keep the status text if the modal cannot open.
-  }
+  // The answer the writer needs is where to fix it, so the notification carries
+  // both the reason and the way to Control Panel.
+  pushSystemNotification(message, offline
+    ? { state: "failed", windowName: "control", actionLabelKey: "open" }
+    : { state: "failed" });
 }
 
 function classifyLmStudioError(error, response = null) {

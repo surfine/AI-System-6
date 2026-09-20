@@ -1,5 +1,7 @@
 # Bonsai City Architecture
 
+<!-- doc-claims: verified | audited: 2026-09-18 -->
+
 ## Three layers
 
 ```text

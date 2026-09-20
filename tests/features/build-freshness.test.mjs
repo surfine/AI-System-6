@@ -25,6 +25,14 @@ function makeContext({
   const reloads = [];
   const requests = [];
   const storage = new Map(attempted ? [["ai-system6-build-reload", attempted]] : []);
+  const listeners = new Map();
+  const listenerFor = (type) => listeners.get(type) || [];
+  const document = {
+    visibilityState: "visible",
+    addEventListener: (type, handler) => {
+      listeners.set(type, [...listenerFor(type), handler]);
+    },
+  };
   const sandbox = {
     console,
     AISystem6Capabilities: {
@@ -45,14 +53,20 @@ function makeContext({
       setItem: (key, value) => storage.set(key, value),
     },
     AISystem6BuildInfo: { build: running },
-    addEventListener: () => {},
+    document,
+    addEventListener: (type, handler) => {
+      listeners.set(type, [...listenerFor(type), handler]);
+    },
   };
   // The module is a classic script: it is invoked as `(window)`, and every name
   // it touches is that same object.
   sandbox.window = sandbox;
   const context = vm.createContext(sandbox);
   vm.runInContext(source, context);
-  return { api: context.AISystem6BuildFreshness, reloads, storage, requests };
+  const fire = async (type) => {
+    for (const handler of listenerFor(type)) await handler({ type });
+  };
+  return { api: context.AISystem6BuildFreshness, reloads, storage, requests, document, fire };
 }
 
 test.assert(typeof (await makeContext()).api?.checkForNewerBuild === "function", "the check is reachable for a contract to run");
@@ -98,6 +112,31 @@ test.assert(typeof (await makeContext()).api?.checkForNewerBuild === "function",
   const { api, reloads } = await makeContext({ running: "", deployed: "20260917.9" });
   test.assert(await api.checkForNewerBuild() === "no-running-build", "a page that cannot name its own build stays put");
   test.assert(reloads.length === 0, "and does not reload");
+}
+
+// A page added to the Home Screen is suspended rather than reloaded, so the
+// load-time check never runs again. The owner's report — a menu bar still
+// wearing the system material two releases after the fix shipped — came from a
+// page in exactly that state.
+{
+  const { reloads, document, fire } = await makeContext({ running: "20260917.4", deployed: "20260917.9" });
+  document.visibilityState = "hidden";
+  await fire("visibilitychange");
+  test.assert(reloads.length === 0, "going to the background is not a reason to ask the deployment anything");
+  document.visibilityState = "visible";
+  await fire("visibilitychange");
+  test.assert(reloads.length === 1, "coming back to the foreground reloads a page the deployment moved on from");
+}
+{
+  const { reloads, fire } = await makeContext({ running: "20260917.9", deployed: "20260917.9" });
+  await fire("load");
+  await fire("visibilitychange");
+  test.assert(reloads.length === 0, "a current page is left alone on both triggers");
+}
+{
+  const { reloads, fire } = await makeContext({ running: "20260917.4", deployed: "20260917.9", attempted: "20260917.4" });
+  await fire("visibilitychange");
+  test.assert(reloads.length === 0, "and the attempt guard still holds, so a resumed page cannot loop either");
 }
 
 test.finish();

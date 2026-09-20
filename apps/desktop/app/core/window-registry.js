@@ -30,6 +30,7 @@ const windowRegistry = Object.freeze({
   about: {
     app: "system",
     mobileOverlay: true,
+    centered: true,
     onOpen: () => renderAboutMacintosh(),
   },
   alarmClock: {
@@ -355,6 +356,34 @@ const windowRegistry = Object.freeze({
     sidebar: true,
     onOpen: () => renderNotificationCenter(),
   },
+  oneMoreTune: {
+    app: "oneMoreTune",
+    builtByModule: true,
+    width: 680,
+    lazy: {
+      ensure: () => ensureOneMoreTuneModule(),
+      attach: () => window.AISystem6OneMoreTune?.attach?.(),
+    },
+  },
+  // The original film, watched where a desktop watches things: in a window of
+  // its own, centered on the work area, rather than in a slab inside the quiz's
+  // own pane. It is the same application (one MultiFinder entry, one lifecycle,
+  // one lazy module) and a second window.
+  oneMoreTuneFilm: {
+    app: "oneMoreTune",
+    builtByModule: true,
+    centered: true,
+    // Load, then build — the same shape the SideAsk pad uses, and for the same
+    // reason: a module that is only loaded leaves a registered window nobody
+    // ever built. The width is the stylesheet's (880px there), not a second
+    // copy of the number here.
+    lazy: {
+      ensure: async () => {
+        await ensureOneMoreTuneModule();
+        window.AISystem6OneMoreTune?.installFilmWindow?.();
+      },
+    },
+  },
   openttd: {
     app: "openttd",
     builtByModule: true,
@@ -578,6 +607,14 @@ function registeredWindowWidth(name) {
 
 function isMobileOverlayWindow(name) {
   return getWindowRecord(name)?.mobileOverlay === true;
+}
+
+// A centered window sits in the middle of the work area instead of taking a
+// cascade slot: About, and the film One More Tune opens. It is a property of the
+// window, so it is declared here with the rest of them rather than kept as a
+// second list inside the manager.
+function isCenteredWindow(name) {
+  return getWindowRecord(name)?.centered === true;
 }
 
 function sidebarWindowNames() {

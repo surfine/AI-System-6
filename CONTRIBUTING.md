@@ -1,5 +1,7 @@
 # Contributing to AI System 6
 
+<!-- doc-claims: verified | audited: 2026-09-18 -->
+
 Thank you for helping build an AI computer whose work stays visible. AI System
 6 values focused changes, historical evidence, executable contracts, and an
 interface that remains quiet under pressure.
@@ -97,3 +99,5 @@ surface before opening the pull request. CI runs the same sequence on Node.js
 By contributing, you agree that your contribution is licensed under the
 project's [MIT License](LICENSE) and that you will follow the
 [Code of Conduct](CODE_OF_CONDUCT.md).
+
+<!-- claim-check: npm run verify:quick, verify:changed, verify:docs | SECURITY.md for reporting -->

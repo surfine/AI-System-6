@@ -1,5 +1,7 @@
 # Standalone launch links — one link, straight into a feature
 
+<!-- doc-claims: verified | audited: 2026-09-18 -->
+
 > Design proposal · 2026-09-04 · status: decided for 1.0.52, implementation in
 > progress
 >
@@ -148,9 +150,18 @@ one-shot boot URL, so nothing needs a queue):
    copies in sync.
 3. **Boot.** The normal boot/workspace-profile sequence runs first
    (`document.body.dataset.appReady === "ready"`).
-4. **Confirm (writing profile only).** If the session was left in the Writing
-   view, a system confirm asks before switching to the desktop profile; the
-   default action is Cancel so an external link cannot silently move a writer.
+4. **Desk visit (writing profile only).** If the session was left in the
+   Writing view, the link moves it to the desk and says so once in the status
+   line. There is no confirm dialog: the link is the visitor's own click, the
+   writing route keeps every window and document it had, and the move is
+   transient — the desk record still stores the profile the writer chose, so
+   their next session opens on their work.
+
+   A window that navigates to the link hands the write lease back as it goes
+   (`releaseWriteLease({ unload: true })`), so the arriving window claims the
+   desk directly instead of waiting on a window that has already left. The same
+   link opened beside the writer in a second tab is the ordinary handoff, which
+   was already silent.
 5. **Open.** `runStandaloneLaunchIntent()` dispatches the registered lazy
    command through the existing `handleAction` (module loader included) and,
    for `mode=fullscreen`, polls briefly for the route’s own window and applies
@@ -187,10 +198,13 @@ Web + shared core:
       `apps/server/server/routes/go.js`, and the Cloudflare Pages function
       `functions/go/[route].js` — both 302 to
       `/?launch=<route>&mode=fullscreen`.
-- [x] Writing-profile guard: system confirm dialog (default Cancel) before
-      switching to the desktop profile and launching.
-- [x] i18n copy in `translations-en/zh` (`launch_switch_to_desktop`,
-      `launch_open_desktop`, `launch_cancelled`).
+- [x] Writing-profile takeover: switch to the desktop profile and launch.
+      `workspaceProfileForDeskState()` keeps the writer's own profile in the
+      desk record while the link's visit is on screen, so the next launch opens
+      their manuscript again.
+- [x] i18n copy in `apps/desktop/app/data/translations-en.js` and
+      `apps/desktop/app/data/translations-zh.js` (`launch_switched_to_desktop`,
+      the status line that reports the move).
 - [x] Payload unchanged on boot: routes are lazy feature commands and the
       short-link handlers are server/edge code, not new bundle bytes.
 
@@ -227,9 +241,10 @@ Verification:
 2. Scheme `aisystem6://launch?route=…&mode=…`; web param `?launch=…`.
 3. Route set: seven routes in §6 (incl. `time-machine`, `liquid-cover`).
 4. Analytics: none; extra query parameters ignored.
-5. Writing-profile behaviour: deep links land in the **desktop** profile, but
-   a session left in the Writing view first sees a system confirm dialog
-   (default Cancel).
+5. Writing-profile behaviour: deep links land in the **desktop** profile. A
+   session left in the Writing view moves there without a dialog — the switch
+   is transient (the desk record keeps `writing`, so the writer's next launch
+   opens their manuscript) and reports itself in the status line.
 6. Both web and macOS ship in 1.0.52; web is the lead channel, macOS scheme
    (`aisystem6://`) follows in the same release.
 

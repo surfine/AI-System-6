@@ -3,11 +3,13 @@
   <!-- The disabled check: same glyph, grey. 10.6 redraws the disabled control
        instead of fading the enabled one, so this is its own colour rather than
        the enabled mark at lower opacity. Frame 5 of Quaqua 9.1
-       CheckBox.icons.png - the checked control with the flat grey well - puts
+       CheckBox.icons.png - the checked control with the near-white well - puts
        its mark on the same pixels as frame 2's, which is why only the stroke
-       colour moves here. (This used to name frame 6; frame 6 is an empty well,
-       so the provenance was wrong even though the grey art was right.) The
-       stroke is lighter than the enabled twin (1.55 against 1.8) because the
-       reference's grey mark covers fewer pixels. -->
-  <path d="M3.6 4.2 6.8 9 12.2 0.2" fill="none" stroke="#7a7a7a" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+       colour and width move here. (This used to name frame 6; frame 6 is an
+       empty well, so the provenance was wrong even though the grey art was
+       right.) The geometry follows the enabled twin, which the 2026-09-19
+       fidelity run measured one pixel right of where this file used to sit;
+       its stroke stays lighter than the enabled twin (1.9 against 2) because
+       the capture's grey mark covers fewer pixels. -->
+  <path d="M4.6 4.4 7.8 9.2 11.9 1.2" fill="none" stroke="#7a7a7a" stroke-width="1.9" stroke-linecap="butt" stroke-linejoin="round"/>
 </svg>

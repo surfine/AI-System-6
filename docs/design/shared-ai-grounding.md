@@ -1,5 +1,7 @@
 # Shared AI grounding — one evidence contract, many surfaces
 
+<!-- doc-claims: verified | audited: 2026-09-18 -->
+
 > 2026-09-04 · implementation note for the Endfield Terminal × ClioTalk/SideAsk
 > work.
 

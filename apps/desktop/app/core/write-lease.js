@@ -40,6 +40,7 @@ let leaseState = { writer: false, readOnly: false, claimedAt: 0, mode: "readonly
 let heartbeatTimer = null;
 let broadcastChannel = null;
 let takeoverInFlight = null;
+let documentIsUnloading = false;
 const leaseListeners = new Set();
 
 function readStoredLease() {
@@ -322,6 +323,10 @@ async function ownsPersistentWriteFence(expectedFence) {
 }
 
 async function acquireWriteLease() {
+  // A document on its way out must not claim the pen: Chromium fires
+  // visibilitychange after pagehide, so the resume path of the page that is
+  // already leaving used to claim the lease straight back.
+  if (documentIsUnloading) return { writer: false, readOnly: true };
   const existing = currentStoredLease();
   if (
     existing
@@ -399,16 +404,22 @@ async function forceTakeOverWriteLease() {
   }
 }
 
-async function releaseWriteLease() {
+// `unload` is the page going away rather than handing the pen to another
+// window. Such a page cannot wait for an IndexedDB transaction, so its lease is
+// removed before that await — otherwise the next instance found a fresh claim
+// by a window that no longer existed and asked the writer about it.
+async function releaseWriteLease({ unload = false } = {}) {
+  if (unload) documentIsUnloading = true;
   stopHeartbeat();
   const expectedFence = { ownerId: instanceId, epoch: Number(leaseState.epoch) || 0 };
+  // Delete only a lease that is still stored under this instance. A late
+  // pagehide after a takeover must never remove the new owner's lease.
+  if (unload && storedLeaseBelongsToMe()) removeStoredLease();
   try {
     if (expectedFence.epoch > 0) await releasePersistentWriteFence(expectedFence);
   } catch (error) {
     console.warn("Persistent write fence release failed.", error);
   }
-  // Delete only a lease that is still stored under this instance. A late
-  // pagehide after a takeover must never remove the new owner's lease.
   if (storedLeaseBelongsToMe()) removeStoredLease();
   setWriter(false);
   post({ type: "released", instanceId });
@@ -440,6 +451,18 @@ function requestSafeTakeover() {
       resolve(result);
     };
     takeoverInFlight.timeoutId = setTimeout(() => {
+      // Silence may be the writer leaving rather than refusing. A lease nobody
+      // holds any more is the "no fresh owner" this function already claims
+      // without asking; a writer that is still there keeps the dialog.
+      const latest = currentStoredLease();
+      if (!latest || !leaseIsFresh(latest) || latest.instanceId === instanceId) {
+        forceTakeOverWriteLease()
+          .then((claimed) => settle(claimed.writer
+            ? { ok: true, writer: true }
+            : { ok: false, reason: "claim-failed" }))
+          .catch(() => settle({ ok: false, reason: "claim-failed" }));
+        return;
+      }
       settle({ ok: false, reason: "timeout" });
     }, TAKEOVER_TIMEOUT_MS);
     takeoverInFlight.resolve = settle;
@@ -619,9 +642,13 @@ function initWriteLease() {
     broadcastChannel = null;
     window.addEventListener("storage", handleStorageEvent);
   }
-  window.addEventListener("pagehide", () => releaseWriteLease());
+  window.addEventListener("pagehide", () => releaseWriteLease({ unload: true }));
   window.addEventListener("pageshow", (event) => {
-    if (event.persisted) reconcileWriteLease();
+    if (!event.persisted) return;
+    // Back from BFCache is the same document coming back to life, so the unload
+    // guard has to lift or it refuses its own pen for the rest of the session.
+    documentIsUnloading = false;
+    reconcileWriteLease();
   });
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState !== "visible") return;

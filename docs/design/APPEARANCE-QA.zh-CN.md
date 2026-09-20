@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/design/APPEARANCE-QA.md -->
-<!-- source-sha256: 71fe7611812df0436cf82e541bd1e4d809ba004d4f8da593c91537325f6cc67c -->
+<!-- source-sha256: 9de5c24998b68004674983431815285124983702b889eda862bab0450e004a80 -->
 
 英文版为准。本文档仅供人类参考。
 
@@ -115,8 +115,10 @@ System Preferences General 面板）里没有推按钮、文本框、对话框�
 `sidebar-inactive` 固定的是未选中的 Downloads 切片，fixture 显示的却是选中态；
 `checkbox-checked` 与 `radio-checked` 比的是 GTK 克隆字形，不是原生 10.10 美术。
 
-Yosemite 是当前公开的 fidelity 债务：19 个 specimen 中有 13 个未达到 floor
-（11 个可量测差距，加 2 个无法用 clone reference 证明原生 10.10 像素的标记比较）。
+Yosemite 是当前公开的 fidelity 债务：它的大多数 specimen 未达到 floor，分成上表
+区分的两类——可量测差距，以及无法用 clone reference 证明原生 10.10 像素的标记
+比较。请读上表的计数，不要读这里：那张表由各 manifest 推导，而这句话曾在一个
+manifest 修订之后仍写着 19 个 specimen。
 它的窗口与控件 reference 已是 10.10 原生截图；只剩复选框、单选框和标题按钮
 字形仍在比 GTK 仿制资源。System 6 与
 Liquid Glass 没有历史截图 target，继续使用各自的设计契约加回归基线；不为它们

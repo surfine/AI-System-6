@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/MCP.md -->
-<!-- source-sha256: 79516c3d4a1bae7b896a7c5cac9acbf9e6373c922d19108893b565a23f8013ce -->
+<!-- source-sha256: 961381d9ed774878935bb7a48be483790f14eba17b920979831332cfabb794e6 -->
 
 > 英文版为准 ・ 仅供人类参考
 

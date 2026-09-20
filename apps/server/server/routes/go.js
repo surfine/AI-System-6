@@ -15,6 +15,7 @@ const LAUNCH_ROUTES = new Map([
   ["time-machine", "open-time-machine"],
   ["liquid-cover", "open-liquid-cover"],
   ["cmf-studio", "open-cmf-studio"],
+  ["one-more-tune", "open-one-more-tune"],
   ["dtk", "open-shared-disk-dtk"],
 ]);
 

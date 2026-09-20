@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/city-simulator/ARCHITECTURE.md -->
-<!-- source-sha256: eedae1a54d1722bd43e75573e83faab16a9eda8aec24fa430e2211f15c051589 -->
+<!-- source-sha256: cb1b5c23e32a04430f84b05ce19e48f8abc402a7bf04b94413a73c3a90e37cb5 -->
 
 > 英文版为准 ・ 仅供人类参考
 

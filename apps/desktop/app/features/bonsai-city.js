@@ -2610,7 +2610,7 @@ window.AISystem6BonsaiCityLoaded = true;
   // playing. Every warning code the codec emits gets a line, and an unknown
   // code shows itself rather than disappearing, so a new code can never go
   // silently unreported.
-  async function reportMicropolisImport(warnings, introKey = "bonsai_micropolis_report_intro") {
+  function reportMicropolisImport(warnings, introKey = "bonsai_micropolis_report_intro") {
     const codes = Array.isArray(warnings) ? warnings : [];
     if (!codes.length) return;
     const lines = codes.map((code) => {
@@ -2618,7 +2618,9 @@ window.AISystem6BonsaiCityLoaded = true;
       const text = t(`bonsai_micropolis_note_${name.replace(/-/g, "_")}`, Number(count) || 0);
       return `• ${text}`;
     });
-    await showSystemModal(`${t(introKey)}\n${lines.join("\n")}`, "alert");
+    // The report is a receipt for work that already finished, not a decision:
+    // it reads in the notification list instead of stopping the read.
+    pushSystemNotification(`${t(introKey)}\n${lines.join("\n")}`);
   }
 
   // The way back. Bonsai summons Micropolis cities and can send a city

@@ -1,5 +1,5 @@
 <!-- canonical-source: CONTRIBUTING.md -->
-<!-- source-sha256: c748716aacff2e341981a3f447de77e4b97c4f952a7351ad1a64c3a933d34b0e -->
+<!-- source-sha256: 666153358c68f559fdab9954f1a773e5fefc7933069fae9082687710794150c8 -->
 
 > 英文版为准 ・ 仅供人类参考
 

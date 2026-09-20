@@ -1,5 +1,7 @@
 # Architecture
 
+<!-- doc-claims: verified | audited: 2026-09-18 -->
+
 AI System 6 is a local-first browser desktop with a small stateless Node.js
 server. Its architecture favors visible state, plain source, deterministic
 builds, and narrow boundaries over framework machinery.
@@ -162,3 +164,5 @@ Open an architecture issue before introducing:
 
 The point is not to freeze the system. It is to make architectural cost visible
 before it becomes maintenance debt.
+
+<!-- claim-check: tests/features/repository-layout.test.mjs | apps/desktop/assets/themes (six appearances) | .github/workflows/ci.yml (chromium + webkit smoke jobs) -->

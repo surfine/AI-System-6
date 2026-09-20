@@ -11,6 +11,15 @@ const workspaceCapabilityStudio = "studio";
 let workspaceProfile = workspaceProfileWriting;
 let workspaceProfileWasRestored = false;
 
+// A desk record normally stores the profile on screen. An external `?launch=`
+// link is the one exception: it visits the desk for the app it names, so the
+// profile it left is held here. `` means the desk is the writer's own choice.
+let workspaceProfileTransientFrom = "";
+
+function workspaceProfileForDeskState() {
+  return workspaceProfileTransientFrom || workspaceProfile;
+}
+
 // The File Floppy is not on this list. A dropped file mounts it and its icon
 // appears in every profile, so withholding the window made the desktop promise
 // something it then refused to open.
@@ -165,7 +174,7 @@ function refreshWorkspaceProfileSurfaces() {
 }
 
 async function activateWorkspaceProfile(value, options = {}) {
-  const nextProfile = setWorkspaceProfile(value, { persist: false });
+  const nextProfile = setWorkspaceProfile(value, { persist: false, transient: options.transient === true });
   hideWorkspaceDisallowedWindows();
   if (
     nextProfile === workspaceProfileDesktop
@@ -275,9 +284,14 @@ async function exitWritingStudio() {
 }
 
 function setWorkspaceProfile(value, options = {}) {
+  const previousProfile = workspaceProfile;
   const nextProfile = normalizeWorkspaceProfile(value);
   const changed = nextProfile !== workspaceProfile;
   workspaceProfile = nextProfile;
+  // A transient change is a visit, not a move; every ordinary change drops it.
+  workspaceProfileTransientFrom = options.transient === true
+    ? (workspaceProfileTransientFrom || previousProfile)
+    : "";
   syncWorkspaceProfileDom();
   if (changed && options.persist !== false && typeof saveDeskState === "function") {
     saveDeskState();

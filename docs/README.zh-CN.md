@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/README.md -->
-<!-- source-sha256: 334876f5e85037cbc783bd0b853f57d6fced11e90f59af720aea43050b4f8adc -->
+<!-- source-sha256: 31249471b62544b3b01291b5667ad80663ede0353f9674030600c1b529e890b4 -->
 
 > 英文版为准 ・ 仅供人类参考
 
@@ -14,6 +14,7 @@
 - [开发指南](DEVELOPMENT.zh-CN.md)——本地设置、命令、测试、生成文件与贡献流程。
 - [Desk Port：MCP](MCP.zh-CN.md)——Model Context Protocol 服务的设计提案：让其他
   agent 读取路线、提出建议，但永远不能提交。
+- [MCP 访客桥](MCP-GUEST-BRIDGE.zh-CN.md) —— 已交付的访客面：外部代理可以读什么、提议什么，以及绝不提交什么。
 - [本地与云端](LOCAL-AND-CLOUD.zh-CN.md) —— 哪项能力跑在这台 Mac、哪项跑在站点，以及决定它的规则。
 - [参与贡献](../CONTRIBUTING.zh-CN.md)——issue 与 pull request 要求。
 - [安全策略](../SECURITY.zh-CN.md)——支持版本与私密报告方式。

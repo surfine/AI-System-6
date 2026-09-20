@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/design/shared-ai-grounding.md -->
-<!-- source-sha256: 31ecb094557fae95125710b2ffca49e4e1f4c59e7701375c019d6f10f3a4d99e -->
+<!-- source-sha256: 8a5dce58c5bb281cbc5cd526793cb24cfb10a06318c28dc71cda537fb3ffdb7b -->
 <!-- 英文版为准，本文件仅供人类参考 -->
 
 # 共享 AI 证据契约 —— 一份证据，多个界面

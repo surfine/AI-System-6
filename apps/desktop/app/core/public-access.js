@@ -260,6 +260,8 @@
   window.AISystem6PublicAccess = {
     getCapabilities: loadCapabilities,
     ensureSession: ensurePublicSession,
+    /** Read-only probe: is there already a verified session? Never opens the modal. */
+    hasSession: () => hasValidSession(),
     verifyExternalSession,
     nativeFetch,
   };

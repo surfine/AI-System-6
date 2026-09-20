@@ -1,5 +1,5 @@
 <!-- canonical-source: CHANGELOG.md -->
-<!-- source-sha256: 6b441f7bbcc5f8074506c17cb21499788411903bc91113bdcdbcc5fc2968b907 -->
+<!-- source-sha256: a0564f896b7025db7a3882d20c5c852ef90a85066a28b4aa15a1f90fa778d8e3 -->
 
 # AI System 6 中文更新日志
 

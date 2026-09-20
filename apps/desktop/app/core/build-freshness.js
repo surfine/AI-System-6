@@ -72,10 +72,26 @@
     runningBuild,
   });
 
+  function checkQuietly() {
+    return checkForNewerBuild().catch(() => {});
+  }
+
   // After load, so the check never competes with the desk's own first paint.
   if (typeof global.addEventListener === "function") {
-    global.addEventListener("load", () => {
-      checkForNewerBuild().catch(() => {});
-    }, { once: true });
+    global.addEventListener("load", checkQuietly, { once: true });
+  }
+
+  // A page on the Home Screen is suspended, not reloaded: on a phone it can sit
+  // on the build it was opened with for days, because `load` never fires again
+  // and the worker keeps answering navigations from the shell it cached. Coming
+  // back to the foreground is the only moment such a page gets — and it is the
+  // moment this was reported from, a menu bar still wearing the system material
+  // two releases after the fix that took it off shipped to both deployments.
+  // The attempt guard is unchanged: this adds one reload per build, never a
+  // loop, and it stays quiet while the page is going the other way.
+  if (typeof global.document?.addEventListener === "function") {
+    global.document.addEventListener("visibilitychange", () => {
+      if (global.document.visibilityState === "visible") return checkQuietly();
+    });
   }
 })(window);

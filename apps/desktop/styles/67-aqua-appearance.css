@@ -69,10 +69,14 @@ body[data-theme="aqua"] {
   --titlebar-content-padding-inline: 7px;
   --titlebar-title-weight: 400;
   --titlebar-title-text-shadow: 0 1px 0 rgba(255, 255, 255, 0.82);
-  /* True Jaguar lamp: a 14px circle (unscaled Quaqua capture). The element
-     equals the lamp so the border-radius clip IS the lamp silhouette; no
-     layer can paint square shoulders outside it. */
-  --traffic-light-size: 14px;
+  /* True Jaguar lamp, measured on the native 10.2 captures (the 1024x768
+     full-screen desktop and the Finder window agree): a 13px crystal disc -
+     near-black top rim, pale sheen, dark red body brightening to a pink-white
+     glow - with a separate contact shadow below it, drawn as a box-shadow
+     that follows the clip. Quaqua's 14px ball folded that shadow into a
+     softer sphere. Disc + shadow match the capture's footprint to 2/255;
+     the 2x art shrinks back to its native pixels. */
+  --traffic-light-size: 13px;
   /* Project constraint: Close (red) sits at the left edge, Zoom (green) at
      the right edge of the title bar. The lamps are glossy spheres with a
      white top-left highlight, a colored body, a dark rim, and a soft
@@ -93,7 +97,7 @@ body[data-theme="aqua"] {
      under Retina scaling and loses the gloss. */
   --traffic-light-close-bg: url("./assets/themes/aqua/lamp-close.png");
   --traffic-light-resize-bg: url("./assets/themes/aqua/lamp-zoom.png");
-  --traffic-light-sprite-size: 14px 14px;
+  --traffic-light-sprite-size: 13px 13px;
   --select-control-min-height: 20px;
   --select-control-padding: 1px 27px 1px 9px;
   --select-control-border: 1px solid #00005f;
@@ -1943,6 +1947,7 @@ body[data-theme="aqua"] .window > .title-bar {
 body[data-theme="aqua"] .title-bar > :is(.close-box, .resize-box) {
   width: var(--traffic-light-size);
   height: var(--traffic-light-size);
+  box-shadow: 0 2px 2px #000b;
   background-position: center;
   background-size: var(--traffic-light-sprite-size);
   /* The lamp tile is smaller than the box; without this the repeat wraps

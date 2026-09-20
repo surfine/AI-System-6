@@ -1,15 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg width="14" height="14" viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg">
-  <!-- The 10.6 check, drawn the size the capture draws it: Quaqua 9.1
-       CheckBox.icons.png frame 2, whose well sits at x2..15 y2..15. The left
-       arm starts at (5.5, 6.5), the vertex sits at (8.5, 10.5) - two thirds of
-       the way down - and the right arm crosses the top edge at about x12 and
-       carries on two pixels above the box. The shared painter draws a tick at
-       12px, so those three points are scaled to this viewBox: the shape, the
-       vertex and the reach are the capture's, and the arm stops at the image's
-       top edge instead of crossing it because a background image is clipped to
-       its control. The previous path (16-unit box) ended at y2.5 of a 14px
-       well: the arm stopped an eighth of the way down and read as a small V in
-       the middle of the box. -->
-  <path d="M3.6 4.2 6.8 9 12.2 0.2" fill="none" stroke="#101010" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- The 10.6 check, drawn from the capture's own pixels: Quaqua 9.1
+       CheckBox.icons.png frame 2, the blue checked well. The 2026-09-19
+       fidelity run measured this mark against that frame's glyph mask and
+       found the path this file carried sat one pixel left of the capture,
+       with a round cap that made the tip two pixels wide where the capture
+       draws one: markMismatch 0.545 against the specimen's 0.375 ceiling. The
+       three points below put the vertex and both arm ends on the capture's
+       mask, and the butt cap is what keeps the tip at the capture's width.
+       The arm reaches the well's top edge and stops there, because a
+       background image is clipped to its control. -->
+  <path d="M4.6 4.4 7.8 9.2 11.9 1.2" fill="none" stroke="#101010" stroke-width="2" stroke-linecap="butt" stroke-linejoin="round"/>
 </svg>

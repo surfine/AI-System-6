@@ -11,8 +11,9 @@
 //   3. Cache names are keyed on the same stamp, so activating a new build
 //      drops every older cache rather than growing without limit.
 //
-// Nothing here takes over silently. The new worker waits; the page shows the
-// System 6 dialog and only then sends "skip-waiting". A cached answer is never
+// Nothing here takes over on its own. The new worker waits; the page sends
+// "skip-waiting" once the page on screen is this worker's own build, so a
+// running page is never served by a worker for a build it is not. A cached answer is never
 // reported as a network answer, and `/api/` never enters a cache at all.
 
 "use strict";
@@ -196,7 +197,7 @@ async function precacheStartupSet() {
 }
 
 self.addEventListener("install", (event) => {
-  // No skipWaiting(): a new build waits until the writer says to restart.
+  // No skipWaiting(): a new build waits until a page of the same build adopts it.
   event.waitUntil(precacheShell().then(precacheStartupSet));
 });
 

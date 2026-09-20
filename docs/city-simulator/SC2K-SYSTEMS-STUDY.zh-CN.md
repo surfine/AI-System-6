@@ -1,7 +1,7 @@
 # SC2K 系统 —— 干净房间学习记录（学到的，不是抄的）
 
 <!-- canonical-source: docs/city-simulator/SC2K-SYSTEMS-STUDY.md -->
-<!-- source-sha256: cd7d2bd67bde92825c02da0fc601300c007cdc19a6a2b5691e7dca83d5492013 -->
+<!-- source-sha256: 82792f82f37c7704656d4ea2f6e9c2fb357e43ea6626d5df2c434378cb44502c -->
 
 > 英文版为准 ・ 仅供人类参考
 

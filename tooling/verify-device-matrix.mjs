@@ -68,6 +68,15 @@ export const SWEEP_VIEWPORTS = Object.freeze([
   { name: "iphone-14pro-portrait", width: 393, height: 852, touch: true },
   { name: "iphone-air-portrait", width: 420, height: 912, touch: true },
   { name: "iphone-air-landscape", width: 912, height: 420, touch: true },
+  // iPhone 18 Pro and 18 Pro Max, held sideways: the two edges of the landscape
+  // band. 874x402 is the SHORTEST landscape screen of any current phone, 18px
+  // less than the Air, so it is where a tall sheet or palette first runs off
+  // the bottom. 956x440 is the WIDEST, 44px past the Air, and it had been
+  // asserted as a phone by the predicate test without the layout ever being
+  // measured there. Apple's own figures: 2622x1206 and 2868x1320 at 460 ppi,
+  // which Safari reports at 3x.
+  { name: "iphone-18pro-landscape", width: 874, height: 402, touch: true },
+  { name: "iphone-18promax-landscape", width: 956, height: 440, touch: true },
   // iPhone Duo. The outer display is what people meet with the device closed:
   // 466x678, wider and shorter than any phone this matrix had, and the first
   // cell where the system puts its own controls down one SIDE. The inner
@@ -78,6 +87,14 @@ export const SWEEP_VIEWPORTS = Object.freeze([
   { name: "iphone-duo-inner-landscape", width: 890, height: 626, touch: true },
   { name: "ipad-portrait", width: 820, height: 1180, touch: true },
   { name: "ipad-landscape", width: 1180, height: 820, touch: true },
+  // iPad mini (A17 Pro, 8.3-inch, 2266x1488 at 326 ppi, which Safari reports
+  // at 2x). Upright it is the WIDEST screen the phone flow runs on -- 744px,
+  // under the 860px line -- so an 8.3-inch tablet gets the one-page phone
+  // layout, and that had only ever been checked for desk geometry. Sideways it
+  // is the SMALLEST touch desk, 1133x744: narrower and 76px shorter than the
+  // iPad cell, so it is where a desk window first stops fitting under a finger.
+  { name: "ipad-mini-portrait", width: 744, height: 1133, touch: true },
+  { name: "ipad-mini-landscape", width: 1133, height: 744, touch: true },
   // A Mac has a mouse. Handing this cell a touch context would make it match
   // the coarse-pointer rules and prove the phone layout twice instead of
   // proving the desk once.
@@ -93,7 +110,20 @@ export const DESK_VIEWPORTS = Object.freeze([
   // desk geometry rather than paying another full sweep.
   { name: "iphone-duo-outer-landscape", width: 678, height: 466, touch: true },
   { name: "iphone-duo-inner-portrait", width: 626, height: 890, touch: true },
-  { name: "ipad-mini-portrait", width: 744, height: 1133, touch: true },
+  // The same two phones upright sit inside the band the swept portrait cells
+  // already bracket (393 to 466 wide), so they take the desk checks only.
+  // iPhone 13 mini: the narrowest phone this product still has to fit, in both
+  // directions. Its landscape is 812 wide, which the width-keyed rules used to
+  // hand the desk layout in a 375px-tall viewport.
+  { name: "iphone-13mini-portrait", width: 375, height: 812, touch: true },
+  { name: "iphone-13mini-landscape", width: 812, height: 375, touch: true },
+  { name: "iphone-18pro-portrait", width: 402, height: 874, touch: true },
+  { name: "iphone-18promax-portrait", width: 440, height: 956, touch: true },
+  // The iPad mini upright is also swept above. It stays here under its own
+  // name because the two lists run different checks: this one owns the
+  // reading measure, and 744px is the widest column the phone flow ever sets
+  // text in. Cell names key the baseline, so the same geometry cannot share one.
+  { name: "ipad-mini-portrait-desk", width: 744, height: 1133, touch: true },
   { name: "ipad-13-landscape", width: 1366, height: 1024, touch: true },
   // iPad Split View, Stage Manager and Slide Over. 795x820 is the one that
   // matters most: it is the only size where a container query saying "side

@@ -1,5 +1,5 @@
 <!-- canonical-source: SECURITY.md -->
-<!-- source-sha256: d18a80f67c440697e43ab49134a7ba8d476413a7e873a234bea45a7e83055963 -->
+<!-- source-sha256: 7f47a2c49e583194bdab664f698893e5b95c4d8cc740181a566b43bf63080e3e -->
 
 > 英文版为准 ・ 仅供人类参考
 

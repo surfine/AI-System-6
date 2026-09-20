@@ -62,7 +62,53 @@ the future of tidal energy remains bright.`;
 // Each proof names the window to shoot and the setup that fills it with real
 // content. The first group runs offline: no model, no network. The second
 // group needs a local model, because the work it shows is the model working.
+/**
+ * One round, played one question deep, photographed in one appearance.
+ *
+ * The face a person sees after the answer arrives: the stage they heard it on,
+ * the record it turned out to be, and — because the reveal visits the card's
+ * own era — the desk wearing that era for the length of the look. The shot
+ * waits for that paint rather than catching the window mid-rebuild.
+ */
+async function setupOneMoreTuneProof(page, theme) {
+  await page.evaluate(() => {
+    handleAction("open-one-more-tune");
+  });
+  await page.waitForSelector('[data-window="oneMoreTune"]:not(.is-hidden)', { timeout: 20000 });
+  // Each proof plays its own round: the previous shot left one open, and the
+  // face only offers "Start a round" when no round is in the air.
+  await page.evaluate(() => {
+    if (typeof endOneMoreTuneRound === "function") endOneMoreTuneRound();
+  });
+  await page.waitForTimeout(500);
+  await page.click('[data-one-more-tune-view="challenge"]');
+  await page.waitForTimeout(400);
+  await page.click('[data-one-more-tune-command="one-more-tune-start-round"]');
+  await page.waitForTimeout(3000);
+  await page.click("[data-one-more-tune-submit]");
+  await page.waitForTimeout(2200);
+  await page.evaluate((wanted) => {
+    if (window.AISystem6Theme.getCurrentTheme() !== wanted) {
+      window.AISystem6Theme.applyTheme(wanted, { persist: false, announce: false });
+    }
+  }, theme);
+  // Classic repaints the whole desk (its 1-bit repaint is the heaviest of the
+  // six); the shot waits longer than the other eras need, or it catches the
+  // window between two paints and photographs an empty frame.
+  await page.waitForTimeout(theme === "classic" ? 2800 : 1600);
+}
+
 const PROOFS = [
+  {
+    id: "one-more-tune-2026",
+    maxWidth: 1000,
+    window: "oneMoreTune",
+    label: "One More Tune",
+    caption: "The same round under Liquid Glass: the stage, the record, and the era the card belongs to — the reveal visits it, so the desk wears it.",
+    async setup(page) {
+      await setupOneMoreTuneProof(page, "liquid-glass");
+    },
+  },
   {
     id: "slides",
     maxWidth: 1000,

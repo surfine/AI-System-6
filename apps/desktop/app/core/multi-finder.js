@@ -26,6 +26,7 @@ const multiFinderAppLabels = {
   clioChart: "ClioChart",
   clioProject: "ClioProject",
   clioPaint: "ClioPaint",
+  oneMoreTune: "One More Tune",
   liquidCover: "Cover Glass",
   cmfStudio: "CMF Studio",
   imagePromptStudio: "Image Prompt Studio",

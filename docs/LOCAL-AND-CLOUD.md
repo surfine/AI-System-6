@@ -1,5 +1,7 @@
 # Local and cloud: which track does a capability run on
 
+<!-- doc-claims: verified | audited: 2026-09-18 -->
+
 AI System 6 runs in two places at once, and that is a product decision rather
 than an accident of packaging. The desk, your projects and the writing route
 are local: they are yours, they work on a plane, and nothing leaves the machine
@@ -83,3 +85,5 @@ Three questions, in this order. The first one that answers yes wins.
 - The app is useful with no network at all: every stop of the writing route
   reaches its own surface, and the ones that need a model say so in one
   sentence.
+
+<!-- claim-check: apps/desktop/app/features/cloud-model.js (connectSharedAiOnFirstRun, mac target) | functions/api/capabilities.js -->

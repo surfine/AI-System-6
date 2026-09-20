@@ -1,5 +1,7 @@
 # AI System 6 Documentation
 
+<!-- doc-claims: verified | audited: 2026-09-18 -->
+
 This directory is the public map of the system. Start with the smallest document
 that owns your question.
 
@@ -11,6 +13,7 @@ that owns your question.
   files, and contribution workflow.
 - [Desk Port: MCP](MCP.md) — design proposal for a Model Context Protocol
   server that lets other agents read the route and propose, never commit.
+- [MCP Guest Bridge](MCP-GUEST-BRIDGE.md) — the shipped guest surface: what an outside agent may read, propose, and never commit.
 - [Local and cloud](LOCAL-AND-CLOUD.md) — which capability runs on this Mac and which on the site, and the rule that decides.
 - [Contributing](../CONTRIBUTING.md) — issue and pull request expectations.
 - [Security](../SECURITY.md) — supported versions and private reporting.
@@ -46,3 +49,5 @@ accepted-source icon archives do not belong to this public documentation tree.
 Completed plans and closeout reports are not documentation: durable decisions
 must graduate into an owning contract, test, or runbook before the temporary
 document is removed.
+
+<!-- claim-check: npm run verify:docs | every relative link in this map resolves -->

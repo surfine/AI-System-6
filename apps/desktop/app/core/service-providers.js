@@ -414,6 +414,26 @@
     },
   });
 
+  // One More Tune's round authority. One registration for its three routes
+  // rather than three: admitting an application is what the System Floppy
+  // Budget pays for, and the window names only which route it is calling.
+  // `credits` and `media` take the id the question's path already carries, so a
+  // question's own material never needs a second route table.
+  const oneMoreTuneRoutes = { round: 1, answer: 1, report: 1, credits: 1, media: 1 };
+  window.AISystem6Capabilities?.registerServiceProvider?.("oneMoreTune.api", {
+    id: "same-origin-node",
+    request(input = {}) {
+      const route = String(input.route || "");
+      if (!oneMoreTuneRoutes[route]) return Promise.reject(new Error("unknown route"));
+      const suffix = /^[A-Za-z0-9_-]{16,}$/.test(String(input.id || "")) ? `/${input.id}` : "";
+      return sameOriginNode.request({
+        url: `/api/one-more-tune/${route}${suffix}`,
+        init: input.init,
+        signal: input.signal,
+      });
+    },
+  });
+
   window.AISystem6SameOriginProviders = Object.freeze({
     activate(enabledNames) {
       const names = enabledNames || [
@@ -445,6 +465,7 @@
         "system.version",
         "quickDraft.thesis",
         "bureaucracyMeme.captions",
+        "oneMoreTune.api",
         "agent.executorReply",
         "agent.executorToken",
         "mcp.client",

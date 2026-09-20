@@ -44,6 +44,25 @@ const selfAuthenticatedPaths = new Set([
   "/api/cloud/embeddings",
 ]);
 
+// A short list of its own, because "no session" and "no limits" are different
+// things. The quiz's three routes belong here: a challenge link is sent to be
+// played, and the person opening it has no session yet, so asking them to prove
+// they are a person is a door in front of the whole point of a shared round.
+// What the authority hands out is a session-scoped question with opaque tokens
+// and no answer, and the deck it draws from is already public in the browser —
+// so the session check buys nothing here. The address window still applies:
+// without a session there is no per-session bucket to charge, and a caller who
+// asks for a hundred rounds a minute is a caller to slow down.
+const sessionFreePaths = new Set([
+  "/api/one-more-tune/round",
+  "/api/one-more-tune/answer",
+  "/api/one-more-tune/report",
+  // The question's own sound, relayed by this host when the reader's network
+  // cannot reach the store's CDN. Asking somebody to pass a challenge before
+  // they may hear question one is the same door this list already refuses.
+  "/api/one-more-tune/preview",
+]);
+
 class TtlLruWindows {
   constructor(maxEntries, ttlMs) {
     this.maxEntries = maxEntries;
@@ -543,7 +562,7 @@ async function runWithPublicGuard(req, res, handler) {
 
   const session = sessionFromRequest(req)
     || (macSharedPaths.has(pathname) ? macSharedSessionFromRequest(req) : null);
-  if (!session) {
+  if (!session && !sessionFreePaths.has(pathname)) {
     sendJson(res, 401, {
       error: "Verification required",
       code: "verification_required",
@@ -551,7 +570,7 @@ async function runWithPublicGuard(req, res, handler) {
     return;
   }
 
-  if (!consumeFixedWindow(generalWindows, session.nonce, 120, 60 * 1000)) {
+  if (session && !consumeFixedWindow(generalWindows, session.nonce, 120, 60 * 1000)) {
     sendJson(res, 429, { error: "Request rate limit exceeded", code: "rate_limited" }, {
       "Retry-After": "5",
     });
@@ -591,12 +610,14 @@ async function runWithPublicGuard(req, res, handler) {
         : group === "reader" ? 4
           : Infinity;
   const sessionLimit = group ? (group === "cloud" ? 2 : 1) : Infinity;
-  const sessionKey = `${session.nonce}:${group}`;
+  // A session-free caller has no bucket of its own to charge, so it is bounded
+  // by the group ceiling and by the address window above and nothing else.
+  const sessionKey = session ? `${session.nonce}:${group}` : "";
   if (
     group
     && (
       (activeByGroup.get(group) || 0) >= globalLimit
-      || (activeBySession.get(sessionKey) || 0) >= sessionLimit
+      || (sessionKey && (activeBySession.get(sessionKey) || 0) >= sessionLimit)
     )
   ) {
     sendJson(res, 429, { error: "Server is at its concurrency limit", code: "busy" }, {
@@ -607,16 +628,18 @@ async function runWithPublicGuard(req, res, handler) {
 
   if (group) {
     activeByGroup.set(group, (activeByGroup.get(group) || 0) + 1);
-    activeBySession.set(sessionKey, (activeBySession.get(sessionKey) || 0) + 1);
+    if (sessionKey) activeBySession.set(sessionKey, (activeBySession.get(sessionKey) || 0) + 1);
   }
   try {
     await handler();
   } finally {
     if (group) {
       activeByGroup.set(group, Math.max(0, (activeByGroup.get(group) || 1) - 1));
-      const next = Math.max(0, (activeBySession.get(sessionKey) || 1) - 1);
-      if (next) activeBySession.set(sessionKey, next);
-      else activeBySession.delete(sessionKey);
+      if (sessionKey) {
+        const next = Math.max(0, (activeBySession.get(sessionKey) || 1) - 1);
+        if (next) activeBySession.set(sessionKey, next);
+        else activeBySession.delete(sessionKey);
+      }
     }
   }
 }

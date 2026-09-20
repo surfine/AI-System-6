@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/design/HIG.md -->
-<!-- source-sha256: 193290f6d7d4288e9ba0aa2fd0b9c022c226e69dfdd755863c2bf66cab0c0dfb -->
+<!-- source-sha256: 27517c1f3b4090c065bbb2d7f5ecefce85ca6d8f7567bd2542b92c993016633e -->
 
 # AI System 6 人机界面指南
 

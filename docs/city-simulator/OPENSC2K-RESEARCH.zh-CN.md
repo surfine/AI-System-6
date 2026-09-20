@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/city-simulator/OPENSC2K-RESEARCH.md -->
-<!-- source-sha256: e307bc6e6dd09b8039bf43706d4258a9337d860f9e3bd662a568c800fd6fd7e9 -->
+<!-- source-sha256: 7591b1e326860cc53afa9cf18a4e1a50159df64acb172580bde63f91156d56f3 -->
 
 > 英文版为准 ・ 仅供人类参考
 

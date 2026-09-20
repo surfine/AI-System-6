@@ -28,6 +28,25 @@ test.assertIncludes(profile, 'let workspaceProfile = workspaceProfileWriting', "
 test.assertMatches(runtime, /if \(!clioOnboardingCompleted\) \{[\s\S]*setWorkspaceProfile\(workspaceProfileDesktop, \{ persist: false \}\)[\s\S]*openFirstRunClioTalk\(\)/, "opens first-run ClioTalk on the Desktop without changing the legacy profile default");
 test.assertIncludes(profile, "applyDeploymentWorkspaceDefault", "derives the first-run public default from existing deployment capabilities");
 test.assertMatches(profile, /workspaceProfileWasRestored[\s\S]*public_deployment[\s\S]*workspaceProfileDesktop/, "preserves an explicit user profile before applying the public Desktop default");
+// A standalone launch link visits the desk to open the app it names. The visit
+// is on screen; the profile the writer chose is what the record keeps, so the
+// next session opens their manuscript rather than a desk they never picked.
+test.assertIncludes(profile, "workspaceProfileForDeskState", "the desk record asks the profile policy what to store");
+test.assertMatches(
+  profile,
+  /workspaceProfileTransientFrom = options\.transient === true[\s\S]*: "";/,
+  "only a launch takeover holds back the stored profile, and an ordinary change clears the visit",
+);
+test.assertMatches(
+  persistence,
+  /workspaceProfile: typeof workspaceProfileForDeskState === "function"[\s\S]*workspaceProfileForDeskState\(\)/,
+  "the desk record stores the writer's own profile while the launch takeover is on screen",
+);
+test.assertMatches(
+  persistence,
+  /workspaceProfile = normalizeWorkspaceProfile\(settings\.workspaceProfile\);\s*\n\s*workspaceProfileTransientFrom = "";/,
+  "a restored profile is never reported through a visit left over from an earlier launch",
+);
 test.assertIncludes(profile, "workspaceCapabilityStudio", "classifies studio-only surfaces centrally");
 test.assertMatches(profile, /workspaceCapabilityForWindow[\s\S]*studioWindowNames/, "owns window classification");
 test.assertMatches(profile, /workspaceCapabilityForAction[\s\S]*studioActionNames/, "owns action classification");

@@ -413,6 +413,8 @@ body.use-liquid-glass .menu-bar {
      flat gray and drop their glyphs. */
   --glass-lamp-close: var(--glass-lamp-inactive);
   --glass-lamp-zoom: var(--glass-lamp-inactive);
+  --lamp-lo: var(--glass-lamp-inactive);
+  --lamp-rim: #ababae;
   --glass-lamp-mark-opacity: 0;
   /* An era whose lamps are sprites cannot go grey by swapping a colour token:
      the art carries the colour. Yosemite flattens the sprite instead, which is
@@ -1156,6 +1158,12 @@ select:focus {
     top: calc(var(--menu-bar-height) + var(--safe-area-top) + 12px);
     width: min(430px, calc(100vw - 24px));
     height: auto;
+    /* A desktop floor would beat the cap below, because min-height wins over
+       max-height when they disagree. Get Info declares 380px, so on an iPhone
+       18 Pro held sideways (402px tall, 354px to spare under the menu bar) both
+       Info windows ran 14px off the bottom -- and on the Air they only fit by
+       4px. On a phone the pane scrolls instead. */
+    min-height: 0;
     max-width: calc(100vw - 24px);
     max-height: calc(
       100vh
@@ -2139,7 +2147,16 @@ body.use-modern-fonts .mde-surface * {
    outranks foundation's border-bottom shorthand -- so an appearance that sets
    --menu-bar-border never reached the screen. Hand the menu bar its own colour
    back; appearances that declare nothing still resolve to ink. */
+/* The same trap on the fill, found 2026-09-18 and older than the border one:
+   the grouped `background: var(--paper)` above outranks foundation's
+   `.menu-bar { background: var(--menu-bar-bg) }`, so NO appearance's menu bar
+   material ever reached the screen -- Aqua's pinstripes computed to
+   `background-image: none`, and Liquid Glass painted a flat 50% white where its
+   own token is a gradient stack. Measured in five appearances; Platinum looked
+   right only because its paper and its bar are the same grey. Appearances that
+   declare no bar of their own still resolve to paper. */
 .menu-bar {
+  background: var(--menu-bar-bg, var(--paper));
   border-bottom-color: var(--menu-bar-border-color, var(--ink));
 }
 

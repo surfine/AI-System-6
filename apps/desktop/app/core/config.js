@@ -238,6 +238,7 @@ window.AISystem6Config = (() => {
       "clioStage",
       "liquidCover",
       "clioPaint",
+      "oneMoreTune",
       "quickDraft",
       "cmfStudio",
       "soundscape",
@@ -279,6 +280,7 @@ window.AISystem6Config = (() => {
       "clioChart",
       "liquidCover",
       "clioPaint",
+      "oneMoreTune",
       "quickDraft",
       "cmfStudio",
       "soundscape",
@@ -562,6 +564,7 @@ const ensureClioChartModule = createLazyModuleLoader("AISystem6ClioChartLoaded",
 // contract executes, so it stays a separate file rather than folding in.
 const ensureClioProjectModule = createLazyModuleLoader("AISystem6ClioProjectWindowLoaded", ["app/core/application-shell.js", "app/core/clio-project.js", "app/features/clio-project-window.js"]);
 const ensureClioPaintModule = createLazyModuleLoader("AISystem6ClioPaintLoaded", ["app/core/application-shell.js", "app/features/clio-paint.js"], false, ["styles.clio-paint.css"]);
+const ensureOneMoreTuneModule = createLazyModuleLoader("AISystem6OneMoreTuneLoaded", ["app/core/application-shell.js", "app/features/one-more-tune.js"], false, ["styles.one-more-tune.css"]);
 const ensureTodoDaModule = createLazyModuleLoader("AISystem6TodoDaLoaded", ["app/core/application-shell.js", "app/features/todo-da.js"]);
 const ensureSideAskPadModule = createLazyModuleLoader("AISystem6SideAskPadLoaded", ["app/core/application-shell.js", "app/features/sideask-pad.js"]);
 const ensureLiquidCoverModule = createLazyModuleLoader("AISystem6LiquidCoverLoaded", ["app/core/application-shell.js", "app/features/image-prompt-runtime.js", "app/features/liquid-cover.js"], false, ["styles.liquid-cover.css"]);
