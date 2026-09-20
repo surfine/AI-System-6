@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
-import { resolve } from "node:path";
+import { existsSync, mkdirSync } from "node:fs";
+import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { runCachedGenerator } from "./lib/generated-assets-cache.mjs";
 import { repositoryRoot } from "./lib/paths.mjs";
@@ -109,7 +109,21 @@ export function buildPreapp({ root = repositoryRoot, force = false, publicOnly =
   const started = performance.now();
   for (const generator of preappGenerators(root, { publicOnly })) {
     const stepStarted = performance.now();
+    // A generator writes into the directories its own outputs name, and it
+    // expects the tree to have them. A release's public self-test is a COPY of
+    // the public snapshot, and a copy that arrives without one asset directory
+    // costs the whole release forty seconds into a generator that would have
+    // succeeded: measured 2026-09-20, bonsai-atlas died with ENOENT on
+    // apps/desktop/assets/bonsai/atlas-north.png, while the same tree built
+    // cleanly on its own from the same snapshot. Making the directories the
+    // outputs already declare removes that whole class of failure for one
+    // mkdir per generator.
+    const outputDirectories = new Set(
+      (generator.outputs || [])
+        .map((output) => resolve(root, dirname(output)))
+    );
     const run = () => {
+      outputDirectories.forEach((directory) => mkdirSync(directory, { recursive: true }));
       const result = spawnSync(process.execPath, [generator.script], { cwd: root, stdio: "inherit" });
       if (result.error) console.error(result.error.message);
       return result.status ?? 1;

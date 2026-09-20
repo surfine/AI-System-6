@@ -1164,6 +1164,30 @@
      other, so a full-bleed landscape app needs both horizontal insets too. */
   --safe-area-left: env(safe-area-inset-left, 0px);
   --safe-area-right: env(safe-area-inset-right, 0px);
+  /* --- Who owns a corner ---------------------------------------------------
+     The desk draws six eras, and each one owns the corners INSIDE the screen:
+     System 6 is square, Liquid Glass is a soft 16px, and --surface-radius is
+     how every sheet says so. The corners AT the display edge are not the
+     era's to draw. There the display's own curve is the corner, and a surface
+     that rounds that edge itself draws a second, smaller radius inside the
+     device's — 16px inside a 55px corner, which is the mismatch the owner
+     saw on an iPhone and named "圆角适配没做好".
+
+     Apple asks a full-bleed interface to "accommodate the corner radius,
+     sensor housing, and features like Dynamic Island" (HIG, Layout › Phone),
+     and the same document describes the system's own masking as matching
+     "the curvature of other rounded interface elements throughout the system
+     and the bezel of the physical device itself" (HIG, App icons). The honest
+     way to be concentric with a bezel is not to carry a table of device radii
+     — that table is stale the day Apple ships a phone — but to leave the edge
+     square and let the display clip it: concentric on every device, including
+     the ones nobody has measured.
+
+     --edge-radius is that corner, and it is the one value every surface that
+     reaches an edge reads, so the rule lives in one place instead of in each
+     phone block. A surface nested inside such a shell subtracts its own
+     distance from the edge, the way Apple's concentric geometry does. */
+  --edge-radius: 0px;
   /* The menu bar's own height, so each theme sets the value in one place and
      the portrait rule can add the status-bar inset on top of it. */
   --menu-bar-inline-padding: 8px;

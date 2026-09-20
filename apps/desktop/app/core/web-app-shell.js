@@ -200,23 +200,70 @@ async function keepApplicationShell() {
 // was right for exactly one era. Each appearance owns --menu-bar-bg, and some
 // of them make it a gradient, so the colour is read off the bar the browser
 // actually painted rather than restated as six literals here.
+//
+// The value has to be OPAQUE, and that is the part that was wrong. Two eras
+// paint their bar with a translucent fill (Yosemite's 0.9 white, Liquid Glass's
+// 0.9 white over its sheen), and this function handed those straight to the
+// meta tag: `theme-color: rgba(248, 248, 248, 0.9)` is not a theme colour a
+// browser accepts. Chrome and iOS drop it, so the host falls back to its own
+// chrome — which on iOS 26 is a Liquid Glass strip that samples whatever is
+// behind it. That is the soft band the owner photographed above the menu bar
+// in the installed app, and no era on this desk can reproduce it, because the
+// desk paints an opaque bar in the other four. Compositing the bar's own fill
+// over the desk gives the colour the strip should actually be, opaque, for
+// every era including the translucent ones.
 
-function isOpaqueCssColor(value) {
-  const match = /^rgba?\(([^)]+)\)$/i.exec(String(value || "").trim());
-  if (!match) return false;
-  const parts = match[1].split(/[,\/\s]+/).filter(Boolean);
-  return parts.length < 4 || Number.parseFloat(parts[3]) > 0;
+const CSS_HEX = /^#([0-9a-f]{3,8})$/i;
+
+/** A CSS colour as numbers, or null when this is not one this desk writes. */
+function parseCssColor(value) {
+  const text = String(value || "").trim();
+  const functional = /^rgba?\(([^)]+)\)$/i.exec(text);
+  if (functional) {
+    const parts = functional[1].split(/[,\/\s]+/).filter(Boolean);
+    const [r, g, b] = parts.slice(0, 3).map((part) => Number.parseFloat(part));
+    const alpha = parts.length < 4 ? 1 : Number.parseFloat(parts[3]);
+    if (![r, g, b, alpha].every(Number.isFinite)) return null;
+    return { r, g, b, a: Math.max(0, Math.min(1, alpha)) };
+  }
+  const hex = CSS_HEX.exec(text);
+  if (!hex) return null;
+  const digits = hex[1];
+  const wide = digits.length >= 6 ? digits.slice(0, 6) : digits.split("").map((d) => d + d).join("");
+  const value_ = Number.parseInt(wide, 16);
+  if (!Number.isFinite(value_)) return null;
+  return { r: (value_ >> 16) & 255, g: (value_ >> 8) & 255, b: value_ & 255, a: 1 };
+}
+
+/** The bar's fill as it reads on screen: its own colour over what is beneath. */
+function opaqueOver(color, background) {
+  const mix = (front, back) => Math.round(front * color.a + back * (1 - color.a));
+  return `rgb(${mix(color.r, background.r)}, ${mix(color.g, background.g)}, ${mix(color.b, background.b)})`;
+}
+
+function deskBehindChrome() {
+  const desk = document.querySelector(".desktop");
+  const painted = desk ? parseCssColor(window.getComputedStyle(desk).backgroundColor) : null;
+  if (painted && painted.a > 0) return painted;
+  return { r: 255, g: 255, b: 255, a: 1 };
 }
 
 function menuBarChromeColor() {
   const bar = document.querySelector(".menu-bar");
   if (!bar) return "";
   const style = window.getComputedStyle(bar);
-  if (isOpaqueCssColor(style.backgroundColor)) return style.backgroundColor;
   // A gradient leaves background-color transparent; its first stop is the
-  // colour the bar reads as at the top edge, where the chrome meets it.
+  // colour the bar reads as at the top edge, where the chrome meets it. That
+  // first stop is the one to use, whether the fill came from a colour or a
+  // gradient — and a translucent one is composited, never passed through.
   const stop = String(style.backgroundImage || "").match(/rgba?\([^)]*\)|#[0-9a-f]{3,8}\b/i);
-  return stop ? stop[0] : "";
+  const own = parseCssColor(style.backgroundColor);
+  const candidate = own && own.a > 0 ? own : parseCssColor(stop ? stop[0] : "");
+  if (!candidate) return "";
+  if (candidate.a >= 1) {
+    return `rgb(${Math.round(candidate.r)}, ${Math.round(candidate.g)}, ${Math.round(candidate.b)})`;
+  }
+  return opaqueOver(candidate, deskBehindChrome());
 }
 
 function syncThemeColorMeta() {

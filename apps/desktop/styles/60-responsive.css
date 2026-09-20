@@ -1200,7 +1200,11 @@ select:focus {
     max-width: none;
     max-height: none;
     border-width: 0;
-    border-radius: var(--surface-radius);
+    /* A system page runs the whole width and reaches the true bottom edge, so
+       its two lower corners meet the display's own — the display owns those
+       (see --edge-radius). The two upper corners sit under the menu bar, which
+       is inside the screen, so they stay the era's. */
+    border-radius: var(--surface-radius) var(--surface-radius) var(--edge-radius) var(--edge-radius);
     transform: none;
     display: flex;
     flex-direction: column;
@@ -1212,6 +1216,18 @@ select:focus {
     min-height: 0;
     overflow: auto;
     scroll-padding-bottom: var(--safe-area-bottom);
+  }
+
+  /* A full-screen surface has nothing to resize, and the corner its grabber
+     would sit in belongs to the display (see --edge-radius). Every era draws a
+     grabber of its own — System 6's double square, Platinum's grooves, Aqua's
+     wedge, Liquid Glass's arc — and on a phone each was painted into a corner
+     that is no longer the window's, so the mark sat in the one place the
+     display is already curving. The eras keep their resize controls everywhere
+     a resize is real; a surface that covers the screen is not one. */
+  body:not(.is-writer-mode) .window.is-mobile-fullscreen:not(.is-collapsed) .grow-box,
+  body:not(.is-writer-mode) .window.is-mobile-system-page:not(.is-collapsed) .grow-box {
+    display: none;
   }
 
   body:not(.is-writer-mode) .system-help-window.is-mobile-system-page > .system-help-pane {
@@ -1725,7 +1741,12 @@ body.is-writer-mode .system-help-window .system-help-pane {
     aspect-ratio: auto;
     margin: 0;
     border-width: 0;
-    border-radius: var(--surface-radius);
+    /* Same ownership as the system page above: the shell reaches the display's
+       side and bottom edges, so those corners are the display's, and the ones
+       under the menu bar are the era's. Liquid Glass used to draw its 16px in
+       all four, which put a small rounded corner inside the phone's much larger
+       one at the bottom of the screen. */
+    border-radius: var(--surface-radius) var(--surface-radius) var(--edge-radius) var(--edge-radius);
     transform: none;
     display: flex;
     flex-direction: column;
@@ -3127,7 +3148,10 @@ input[type="radio"] {
     min-width: 0;
     margin: 0;
     border-width: 0;
-    border-radius: var(--surface-radius);
+    /* Landscape is the same ownership as portrait (see the portrait shell):
+       the lower edge is the display's, whatever the safe-area insets are on
+       the sides. */
+    border-radius: var(--surface-radius) var(--surface-radius) var(--edge-radius) var(--edge-radius);
     transform: none;
     aspect-ratio: auto;
   }

@@ -38,6 +38,11 @@ body.use-liquid-glass {
   --system-select-control-font-weight: 400;
   --window-bg: var(--glass-surface);
   --window-radius: var(--r-xl);
+  /* The resize grabber belongs to the corner it sits in: it keeps this gap
+     from the window's edge, and its arc takes whatever radius is left, so the
+     two curves are concentric instead of crossing. */
+  --grow-box-arc-inset: 4px;
+  --grow-box-arc-radius: calc(var(--window-radius) - var(--grow-box-arc-inset));
   --container-radius: var(--r-xl);
   --window-shadow: var(--system-shadow);
   /* The whole appearance read flat because of this one number. 4px is a
@@ -2453,13 +2458,19 @@ body.use-liquid-glass .grow-box {
 body.use-liquid-glass .grow-box::before {
   content: "";
   position: absolute;
-  right: 4px;
-  bottom: 4px;
-  width: 14px;
-  height: 14px;
+  right: var(--grow-box-arc-inset);
+  bottom: var(--grow-box-arc-inset);
+  width: var(--grow-box-arc-radius);
+  height: var(--grow-box-arc-radius);
   border-right: 3px solid rgba(16, 17, 20, 0.42);
   border-bottom: 3px solid rgba(16, 17, 20, 0.42);
-  border-radius: 0 0 14px 0;
+  /* The grabber is part of the corner it lives in, so it is drawn concentric
+     with the window's own radius instead of a radius of its own: Apple's own
+     nesting rule is outer radius minus the gap, and here that is the window's
+     corner minus the one inset. It used to be a flat 14px, which crossed the
+     window's curve — measured on an iPhone shell whose corner had left the
+     era's hands (see --edge-radius), where the arc read as a stray stroke. */
+  border-radius: 0 0 var(--grow-box-arc-radius) 0;
   box-shadow: 1px 1px 0 rgba(255, 255, 255, 0.42);
 }
 

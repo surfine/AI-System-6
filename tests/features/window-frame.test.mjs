@@ -287,6 +287,19 @@ test.assertNotMatches(responsive, /html:lang\(zh-Hans\) \.title-bar h1,\nhtml:la
 test.assertMatches(windows, /\.title-bar h1,\n\.title-bar h2 \{[^}]*align-self: center/, "Classic window titles share the title-bar vertical center");
 test.assertMatches(windows, /\.close-box,\n\.resize-box \{[^}]*align-self: center/, "Classic close and zoom hit targets share the title-bar vertical center");
 test.assertMatches(liquid, /body\.use-liquid-glass \.close-box,\nbody\.use-liquid-glass \.resize-box \{[^}]*align-self: center;[^}]*margin: 0;/, "Liquid close and zoom lamps use grid centering instead of a manual top offset");
+
+// The grabber is part of the corner it lives in, so it follows the corner
+// system rather than a number of its own. Two halves: where the corner belongs
+// to the display there is nothing to grab, and where the corner belongs to the
+// window the arc is concentric with it. Reported from the owner's phone, where
+// a 14px arc crossed a corner the window no longer rounded at all.
+test.assertMatches(responsive, /\.window\.is-mobile-fullscreen:not\(\.is-collapsed\) \.grow-box,\s*\n\s*body:not\(\.is-writer-mode\) \.window\.is-mobile-system-page:not\(\.is-collapsed\) \.grow-box \{\s*\n\s*display: none;/,
+  "a full-screen phone surface offers no resize control, in any era's grammar");
+test.assertIncludes(liquid, "--grow-box-arc-inset: 4px;", "the Liquid Glass arc keeps one inset from the window edge");
+test.assertIncludes(liquid, "--grow-box-arc-radius: calc(var(--window-radius) - var(--grow-box-arc-inset));",
+  "and takes the radius the window's own corner leaves it, so the two curves are concentric");
+test.assertMatches(liquid, /body\.use-liquid-glass \.grow-box::before \{[\s\S]{0,420}width: var\(--grow-box-arc-radius\);[\s\S]{0,900}border-radius: 0 0 var\(--grow-box-arc-radius\) 0;/,
+  "which is the size and the curve the arc is actually drawn at");
 test.assertIncludes(foundation, "--system-titlebar-control-focus-outline: 0", "Classic title-bar controls do not expose a browser-coloured focus rectangle around the full hit target");
 test.assertIncludes(foundation, "--system-titlebar-control-focus-shadow: none", "Classic title-bar focus does not manufacture a second oversized frame");
 test.assertIncludes(windows, "--system-titlebar-control-art-offset-x: var(--system-titlebar-close-art-offset-x)", "The close box sits at the native leading inset while retaining its larger hit target");
