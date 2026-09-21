@@ -1236,7 +1236,7 @@ function oneMoreTuneMusicRow(card) {
 function oneMoreTuneRoundStage(question) {
   return `<div class="darkplayer">
           <div class="vinyl" aria-hidden="true"></div>
-          <div class="playerhead"><span><span class="era-mark" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span> <span data-i18n="one_more_tune_listen_first">LISTEN FIRST</span></span><span>ONE MORE TUNE</span></div>
+          <div class="playerhead"><span><span class="era-mark" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span> <span data-i18n="one_more_tune_listen_first">LISTEN FIRST</span></span></div>
           <button class="playbutton" type="button" data-one-more-tune-command="one-more-tune-hear" aria-label="${oneMoreTuneEscape(t("one_more_tune_hear"))}"><span><span class="triangle" aria-hidden="true"></span></span></button>
           <div class="playerfoot"><span class="mono">${question.everHeard ? String(question.heard).padStart(2, "0") + " ×" : "— : —"}</span><div class="trackline" aria-hidden="true"></div></div>
         </div>`;
@@ -3903,7 +3903,7 @@ function renderOneMoreTuneChallenge(body) {
     const count = oneMoreTuneChallengePool().length || oneMoreTuneRoundPool().length;
     body.innerHTML = `
       <section class="one-more-tune-study one-more-tune-challenge-idle">
-        <div class="sectiontag"><span class="eyebrow">ONE MORE TUNE · AN UNOFFICIAL APPLE MUSIC QUIZ</span><span class="tag on" data-i18n="one_more_tune_tag_ten">Ten a round</span></div>
+        <div class="sectiontag"><span class="eyebrow">AN UNOFFICIAL APPLE MUSIC QUIZ</span><span class="tag on" data-i18n="one_more_tune_tag_ten">Ten a round</span></div>
         <h1>${t("one_more_tune_hero_line")}</h1>
         <p class="intro">${t("one_more_tune_hero_intro")}</p>
         <div class="featureline"><span data-i18n="one_more_tune_feature_ten">Every round is ten</span><span data-i18n="one_more_tune_feature_untimed">No clock</span><span data-i18n="one_more_tune_feature_reveal">The reveal opens the original</span></div>
@@ -4615,7 +4615,6 @@ function renderOneMoreTuneSources(body) {
         <footer class="page-footer">
           <div>
             <div data-i18n="one_more_tune_footer_left">One More Tune · an unofficial fan project</div>
-            <div data-i18n="one_more_tune_footer_note">An unofficial fan project.</div>
           </div>
           <div>
             <div data-i18n="one_more_tune_footer_index">Selection index: AppleMusic.info and the sources listed row by row.</div>

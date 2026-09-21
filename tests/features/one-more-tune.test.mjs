@@ -1205,7 +1205,7 @@ for (const key of [
   "one_more_tune_sources_all_units", "one_more_tune_sources_all_states", "one_more_tune_sources_settled",
   "one_more_tune_sources_unsettled", "one_more_tune_sources_anchored", "one_more_tune_sources_linked",
   "one_more_tune_sources_entries", "one_more_tune_sources_empty",
-  "one_more_tune_footer_left", "one_more_tune_footer_note", "one_more_tune_footer_index", "one_more_tune_footer_play",
+  "one_more_tune_footer_left", "one_more_tune_footer_index", "one_more_tune_footer_play",
 ]) {
   test.assertIncludes(en, `${key}:`, `English has the catalogue sentence ${key}`);
   test.assertIncludes(zh, `${key}:`, `Chinese has the catalogue sentence ${key}`);

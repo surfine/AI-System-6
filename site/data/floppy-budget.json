@@ -1,6 +1,6 @@
 {
-  "measuredAt": "2026-09-21T08:27:10.007Z",
-  "bytes": 2954029,
+  "measuredAt": "2026-09-21T08:43:54.083Z",
+  "bytes": 2954101,
   "budgetBytes": 2954624,
   "twoFloppyBytes": 2949120,
   "gate": "npm run verify:floppy"
