@@ -45,11 +45,20 @@ const jsonPath = optionValue("--json");
 const onlyTheme = optionValue("--theme");
 
 const IPHONE_UA = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1";
+const IPAD_UA = "Mozilla/5.0 (iPad; CPU OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1";
 const APPEARANCES = ["classic", "platinum", "aqua", "snow-leopard", "yosemite", "liquid-glass"];
 
-// The shapes a phone is held in, with the insets iOS reports for each. Portrait
-// and landscape report different sides: the notch moves to a side when the
-// phone is turned, and the home indicator keeps the bottom.
+// Every shape this desk is asked to fill, with the insets the platform reports
+// for each. Portrait and landscape report different sides: the notch moves to a
+// side when a phone is turned, the home indicator keeps the bottom, and a watch
+// reports nothing at all because its whole screen is a curve the system owns.
+//
+// The rule this measures is the same on each of them — a surface that meets the
+// display edge does not round that edge — so a shape is only interesting here
+// if something on it reaches an edge. That is what makes iPad, watch and Mac
+// worth measuring rather than assuming: the phone flow runs on iPad upright and
+// on a watch, the desk runs on iPad sideways and on a Mac, and only the second
+// keeps its windows off the glass.
 const SHAPES = [
   { name: "iphone-18pro-portrait", width: 402, height: 874, insets: { top: "59px", bottom: "34px", left: "0px", right: "0px" } },
   { name: "iphone-18pro-landscape", width: 874, height: 402, insets: { top: "0px", bottom: "21px", left: "59px", right: "59px" } },
@@ -57,7 +66,23 @@ const SHAPES = [
   { name: "iphone-13mini-portrait", width: 375, height: 812, insets: { top: "50px", bottom: "34px", left: "0px", right: "0px" } },
   { name: "iphone-13mini-landscape", width: 812, height: 375, insets: { top: "0px", bottom: "21px", left: "50px", right: "50px" } },
   { name: "iphone-duo-outer-portrait", width: 466, height: 678, insets: { top: "47px", bottom: "0px", left: "0px", right: "83px" } },
+  // A watch is the smallest glass this desk has ever been asked to fill, and it
+  // reports no safe area: the display's curve is the whole margin. It runs the
+  // one-page flow, so the same shells reach the same edges.
+  { name: "watch-45mm", width: 396, height: 484, insets: {}, userAgent: "watch" },
+  { name: "watch-41mm", width: 368, height: 448, insets: {}, userAgent: "watch" },
+  { name: "watch-ultra", width: 410, height: 502, insets: {}, userAgent: "watch" },
+  // iPad: upright it is inside the one-page band (820 < 860), so windows fill
+  // the screen; sideways it runs the desk. Both are measured for that reason.
+  { name: "ipad-11-portrait", width: 820, height: 1180, insets: {}, userAgent: "ipad" },
+  { name: "ipad-11-landscape", width: 1180, height: 820, insets: {}, userAgent: "ipad" },
+  // A Mac's windows never touch the glass — they float inside a desktop — so
+  // the only corner at an edge is the menu bar's, and a square one is right.
+  { name: "mac-13-inch", width: 1280, height: 800, insets: {}, userAgent: "mac" },
 ];
+
+const WATCH_UA = "Mozilla/5.0 (Apple Watch; CPU watchOS 11_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1";
+const USER_AGENTS = { iphone: IPHONE_UA, ipad: IPAD_UA, watch: WATCH_UA, mac: undefined };
 
 const findings = [];
 const server = await startAppServer(resolve(dirname(fileURLToPath(import.meta.url)), ".."));
@@ -67,9 +92,9 @@ try {
     const context = await browser.newContext({
       viewport: { width: shape.width, height: shape.height },
       deviceScaleFactor: 2,
-      isMobile: true,
-      hasTouch: true,
-      userAgent: IPHONE_UA,
+      isMobile: shape.userAgent !== "mac",
+      hasTouch: shape.userAgent !== "mac",
+      userAgent: USER_AGENTS[shape.userAgent || "iphone"],
       locale: "zh-CN",
     });
     await context.addInitScript((insets) => {
@@ -138,5 +163,5 @@ if (findings.length) {
   process.exit(1);
 }
 const cells = SHAPES.length * APPEARANCES.filter((name) => !onlyTheme || name === onlyTheme).length;
-console.log(`OK  display corners: ${cells} cell(s) across ${SHAPES.length} phone shape(s) round only the corners the era owns.`);
+console.log(`OK  display corners: ${cells} cell(s) across ${SHAPES.length} shape(s) round only the corners the era owns.`);
 process.exit(0);

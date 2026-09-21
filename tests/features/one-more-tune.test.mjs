@@ -1212,6 +1212,23 @@ for (const key of [
 }
 test.assertIncludes(source, 'id="one-more-tune-source-search"',
   "the catalogue is searchable, the way the research mock's table is");
+
+// ---- The wrist --------------------------------------------------------------
+//
+// A watch is the smallest glass this quiz runs on, and the plan for it is
+// docs/design/FORM-FACTORS.md: a shorter quiz, not a smaller one. What the
+// layout owes that plan has to be in the sheet, because the sheet is where a
+// layout decision lives. Measured at 396x484 and 368x448, both engines: a round
+// starts, the sound plays, nothing scrolls, and all four answers are on screen.
+const omtStyles = read("styles/97-one-more-tune.css");
+test.assertMatches(omtStyles, /@media \(max-width: 430px\) and \(max-height: 520px\) \{[\s\S]{0,2400}\.one-more-tune-window \.brand \{\s*\n\s*display: none;/,
+  "on a watch the masthead stands down — the window title already names the app");
+test.assertMatches(omtStyles, /@media \(max-width: 430px\) and \(max-height: 520px\) \{[\s\S]{0,2400}\.one-more-tune-tabs \.system-tab \{\s*\n\s*min-height: 44px;/,
+  "the tab row stays, and grows to a thumb, because it is the only way between faces");
+test.assertMatches(omtStyles, /@media \(max-width: 430px\) and \(max-height: 520px\) \{[\s\S]{0,4000}height: auto;\s*\n\s*min-height: 0;\s*\n\s*padding: 4px 12px 2px;/,
+  "and the header stops reserving a desktop masthead's 98px, which is what kept the last two answers off a 41mm screen");
+test.assertMatches(omtStyles, /@media \(max-width: 430px\) and \(max-height: 520px\) \{[\s\S]{0,4000}> \.choices \{\s*\n\s*grid-template-columns: 1fr 1fr;/,
+  "the four answers sit two by two, the one shape that fits four labels under a question this short");
 test.assertIncludes(source, "oneMoreTuneSourceQuery",
   "and the search has state of its own rather than borrowing the shelf's");
 test.assertIncludes(source, 'class="page-footer"',

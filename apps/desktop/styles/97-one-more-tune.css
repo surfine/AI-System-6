@@ -1842,3 +1842,87 @@ body[data-theme="classic"] .one-more-tune-window .playbutton { background:var(--
   .one-more-tune-window .vinyl { width:min(200px,42%) }
   .one-more-tune-window .playbutton { width:56px;height:56px;padding:4px }
 }
+
+/* ---------------------------------------------------------------------------
+   Watch. The smallest glass this quiz has been asked to fill: 368-410px wide,
+   448-502px tall, no safe area to report because the whole screen is a curve
+   the system owns. It runs the one-page flow, and the answer at this size is
+   not a smaller desktop but a shorter one — the wrist plan is written down in
+   docs/design/FORM-FACTORS.md. Two things change here.
+
+   The masthead stands down. The window title above it already names the app,
+   and the wordmark was a fifth of a 484px screen before the first question:
+   on a wrist that is the whole first impression spent on a logo.
+
+   The tab row stays — it is the only way between the three faces — but grows
+   to a thumb. 28px is a tab strip on a desk; it is not a target a finger can
+   hit on a watch, and a quiz whose navigation cannot be hit is a quiz that
+   cannot be played. */
+@media (max-width: 430px) and (max-height: 520px) {
+  .one-more-tune-window .top {
+    /* The header's 98px is a desktop masthead's height and it survives the
+       wordmark being hidden, which cost the smallest watch its last two
+       answers. Auto lets the tab row alone decide. */
+    height: auto;
+    min-height: 0;
+    padding: 4px 12px 2px;
+    gap: 8px;
+  }
+  .one-more-tune-window .brand {
+    display: none;
+  }
+  .one-more-tune-window .one-more-tune-tabs {
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .one-more-tune-window .one-more-tune-tabs .system-tab {
+    min-height: 44px;
+    padding: 0 4px;
+    font-size: 13px;
+  }
+  .one-more-tune-window .one-more-tune-pane {
+    padding: 6px 10px 8px;
+  }
+  /* The question face on a wrist. The four answers have to fit under the
+     question, so they sit two by two — the same shape the sideways phone uses
+     for the same reason — and every other row gives up what it can: the stage
+     is capped at half its phone height, the section tag keeps its progress but
+     loses its padding, and the answers keep a thumb's height. */
+  .one-more-tune-window .one-more-tune-face.one-more-tune-step-challenge {
+    gap: 4px;
+    padding: 0;
+  }
+  .one-more-tune-window .one-more-tune-face.one-more-tune-step-challenge > .sectiontag {
+    min-height: 16px;
+    padding: 0 2px;
+    font-size: 10px;
+  }
+  .one-more-tune-window .one-more-tune-face.one-more-tune-step-challenge > .darkplayer {
+    aspect-ratio: 2 / 1;
+    min-height: 0;
+    max-height: 118px;
+    padding: 6px 10px;
+  }
+  .one-more-tune-window .one-more-tune-face.one-more-tune-step-challenge > .one-more-tune-ask {
+    gap: 4px;
+  }
+  .one-more-tune-window .one-more-tune-face.one-more-tune-step-challenge > .one-more-tune-ask > .questionlabel {
+    margin: 0;
+    font-size: 12px;
+  }
+  .one-more-tune-window .one-more-tune-face.one-more-tune-step-challenge > .one-more-tune-ask > .choices {
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+  }
+  .one-more-tune-window .one-more-tune-face.one-more-tune-step-challenge > .one-more-tune-ask > .choices > .choice {
+    min-height: 44px;
+    max-height: none;
+    padding: 4px 8px;
+    gap: 6px;
+    font-size: 12px;
+  }
+  .one-more-tune-window .one-more-tune-face.one-more-tune-step-challenge > .playstate {
+    min-height: 14px;
+    font-size: 10px;
+  }
+}

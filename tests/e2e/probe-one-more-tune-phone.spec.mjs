@@ -35,6 +35,16 @@ const HEIGHTS = [
   { height: 874, insets: true, label: "874 with the notch" },
   { height: 780, insets: true, label: "780 one Safari bar" },
   { height: 745, insets: true, label: "745 both bars" },
+  // A watch is the smallest glass this quiz has been asked to fill, and the
+  // one shape whose plan is a shorter quiz rather than a smaller one. It gets
+  // the same four rules as a phone — the sound starts by itself, nothing
+  // scrolls, every control is on screen, the round result fits — because those
+  // are the rules that decide whether the game can be played at all. What
+  // changes at this size is the layout's own answer: the masthead stands down
+  // and the tab row grows to a thumb (see the watch band in the quiz sheet, and
+  // docs/design/FORM-FACTORS.md for what the wrist keeps).
+  { width: 396, height: 484, insets: false, label: "watch 45mm" },
+  { width: 368, height: 448, insets: false, label: "watch 41mm" },
 ];
 
 const failures = [];
@@ -107,11 +117,11 @@ async function geometry(page) {
 
 try {
   for (const [engine, launcher] of [["chromium", chromium], ["webkit", webkit]]) {
-    for (const { height, insets, label } of HEIGHTS) {
+    for (const { width = 402, height, insets, label } of HEIGHTS) {
       const browser = await launcher.launch(engine === "chromium" ? { args: ["--autoplay-policy=no-user-gesture-required"] } : {});
       const context = await browser.newContext({
         baseURL,
-        viewport: { width: 402, height },
+        viewport: { width, height },
         deviceScaleFactor: 3,
         isMobile: true,
         hasTouch: true,
