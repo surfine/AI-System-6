@@ -40,7 +40,7 @@ window.AISystem6Admissions = (() => {
     liquidCover: { app: "liquidCover", load: ensureLiquidCoverModule, command: "open-liquid-cover" , multiFinder: "Cover Glass" , applicationGroup: "create", appLabel: "liquid_cover_label", appIcon: "liquidCover", appIconClass: "tools-icon", appDesc: "app_desc_cover_glass" },
     memoryCards: { app: "accessories", load: ensureMemoryCardsModule, command: "open-memory-cards" },
     micropolis: { app: "micropolis", load: ensureMicropolisModule, command: "open-micropolis" , multiFinder: "Micropolis" , applicationGroup: "games", appLabel: "micropolis_label", appIcon: "micropolis", appDesc: "app_desc_micropolis" },
-    oneMoreTune: { app: "oneMoreTune", load: ensureOneMoreTuneModule, command: "open-one-more-tune" , multiFinder: "One More Tune" , applicationGroup: "extras", appLabel: "one_more_tune_label", appIcon: "oneMoreTune", appIconClass: "tools-icon", appDesc: "app_desc_one_more_tune" },
+    oneMoreTune: { app: "oneMoreTune", load: ensureOneMoreTuneModule, command: "open-one-more-tune" , multiFinder: "One More Tune" , applicationGroup: "extras", appLabel: "one_more_tune_label", appIcon: "oneMoreTune", appIconClass: "tools-icon", appDesc: "app_desc_one_more_tune", repaint: "renderOneMoreTune" },
     openttd: { app: "openttd", load: ensureOpenTTDModule, command: "open-openttd" , multiFinder: "OpenTTD" , applicationGroup: "games", appLabel: "openttd_label", appIcon: "openttd", appDesc: "app_desc_openttd" },
     projectDisks: { app: "finder", load: ensureSharedProjectDisksModule, command: "open-demo-disks" },
     soundscape: { app: "soundscape", load: ensureSoundscapeModule, command: "open-soundscape" , multiFinder: "Soundscape" , applicationGroup: "create", appLabel: "soundscape_label", appIcon: "soundscape", appIconClass: "tools-icon", appDesc: "app_desc_soundscape" },
@@ -54,6 +54,15 @@ window.AISystem6Admissions = (() => {
     return WINDOWS[String(name || "")] || null;
   }
 
+  // An admitted window repaints itself on the language switch through the render
+  // function its own module installs. The names live here so the list of who has
+  // to repaint is declared beside the window rather than in a chain inside the
+  // status module — and a window that forgets it fails a contract instead of
+  // leaving the old language on screen.
+  function repaintHooks() {
+    return Object.values(WINDOWS).map((row) => row.repaint).filter(Boolean);
+  }
+
   // Commands that open something already in the table under another name, or a
   // window whose loader is not an application of its own: one id, one loader,
   // no second registration to forget.
@@ -64,6 +73,15 @@ window.AISystem6Admissions = (() => {
     "open-sideask-pad": ensureSideAskPadModule,
     "open-docmap": ensureDocMapModule,
   };
+
+  // Every command the table admits: the windows' openers and the aliases that
+  // share another window's loader. The availability map fills from this, so a
+  // lazy command is answerable the moment its row exists. Built once at load,
+  // because the map asks on every menu redraw.
+  const COMMANDS = Object.freeze([...new Set([
+    ...Object.values(WINDOWS).map((row) => row.command),
+    ...Object.keys(ALIASES),
+  ].filter(Boolean))]);
 
   // The MultiFinder list names an admitted application exactly once; the map in
   // multi-finder.js spreads this instead of keeping its own copy of the names.
@@ -128,6 +146,8 @@ window.AISystem6Admissions = (() => {
   return Object.freeze({
     applicationItems,
     appDescriptionKeys,
+    repaintHooks,
+    commands: COMMANDS,
     multiFinderLabels,
     registerOpeners,
     openerEntries,

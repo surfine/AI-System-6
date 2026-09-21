@@ -44,10 +44,11 @@ test.assertIncludes(
   'the mounted Project Hard Disk keeps "open-project-disks", so the desk icon and Finder row are unchanged',
 );
 test.assertIncludes(
-  read("app/core/window-manager.js"),
-  '"open-demo-disks": true',
-  "the File row reports its availability instead of staying black by omission",
+  read("app/core/app-admissions.js"),
+  'command: "open-demo-disks"',
+  "the File row is admitted, so the availability pass answers for it",
 );
+test.assertIncludes(read("app/core/window-manager.js"), "AISystem6Admissions?.commands", "the availability pass reads the admission table");
 
 // 2. The command is lazy: one line in the eager registry, the work in the disk
 //    module that the launch links already load.

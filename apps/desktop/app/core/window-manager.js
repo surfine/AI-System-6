@@ -2432,7 +2432,6 @@ function getActionAvailability() {
     // module, so there is no state to read before the click. Ungated, the row
     // would stay black without ever being asked — the contract menu-availability
     // keeps on purpose.
-    "open-demo-disks": true,
     "open-project-disk": !!selectedProject,
     "rename-project-disk": !!selectedProject,
     "duplicate-project-disk": !!selectedProject,
@@ -2638,7 +2637,6 @@ function getActionAvailability() {
     "open-hold-thought": true,
     "resume-my-place": typeof hasHeldPlace === "function" && hasHeldPlace(),
     "toggle-balloon-help": true,
-    "open-system-help": true,
     "open-help-folder": true,
     "open-system-concepts-docmap": true,
     "open-system-concepts-clio-stage": true,
@@ -2647,8 +2645,6 @@ function getActionAvailability() {
     // Reading every project at once needs projects to read. A desk with none
     // would open a window that can only say so.
     "open-project-overview": Array.isArray(projects) && projects.length > 0,
-    "open-dictionary": true,
-    "open-docmap": true,
     "open-claim-check": true,
     // Writing-route navigation needs a mounted Project Hard Disk: every one of
     // these surfaces is a view of one project's document. With no project the
@@ -2685,12 +2681,10 @@ function getActionAvailability() {
     "run-claim-check-section": teachTextCanReview && hasClaimSections,
     "previous-claim-section": hasClaimSections,
     "next-claim-section": hasClaimSections,
-    "open-find-path": true,
     "focus-search-query": winName === "findPath",
     "synthesize-search-results": winName === "findPath" && findPathResults.length > 0,
     "copy-search-result-markdown": winName === "findPath" && selectedFindPathIndex !== null,
     "insert-search-result": winName === "findPath" && selectedFindPathIndex !== null,
-    "open-find-file": true,
     "open-selected-find-file": selectedFindFileIndex !== null,
     "reveal-selected-find-file": selectedFindFileIndex !== null,
     "open-rebuild-flow": true,
@@ -2752,9 +2746,16 @@ function getActionAvailability() {
     // darkroom's two contextual menus never both apply and the bar stays at
     // five.
     "lightroom-document": winName === "lightroom" && lightroomHasBody && lightroomView !== "listen",
-    "lightroom-listen": winName === "lightroom" && lightroomView === "listen",
-    "open-theme-lab": true
+    "lightroom-listen": winName === "lightroom" && lightroomView === "listen"
   };
+  // A lazy command answers for itself once its admission row exists: the row is
+  // the declaration that the window, its loader and its opener are real, so the
+  // map does not need a hand-written `true` beside every one of them (seven of
+  // them used to live above). Filled only where nothing has answered yet, so an
+  // eager command's own isAvailable and every conditional row above keep theirs.
+  window.AISystem6Admissions?.commands?.forEach((command) => {
+    if (availability[command] === undefined) availability[command] = true;
+  });
   // Explicit runtime commands supply their own availability. Reader has moved
   // off the hard-coded action map, so these rows are still grey/black in the
   // menu without window-manager.js knowing Reader's internals.

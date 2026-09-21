@@ -475,7 +475,14 @@ async function switchLanguage() {
   // context from the record, so its labels are generated and have to be drawn
   // again. `typeof`, because the module is lazy.
   if (typeof renderHoldThought === "function") renderHoldThought();
-  if (typeof renderOneMoreTune === "function") renderOneMoreTune();
+  // Every other window that has to repaint names its renderer in the admission
+  // table (see app/core/app-admissions.js), so a new window declares this beside
+  // the rest of what it needs instead of adding a line here. holdThought is not
+  // admitted yet; its line above moves into the table when it does.
+  window.AISystem6Admissions?.repaintHooks?.().forEach((name) => {
+    const render = window[name];
+    if (typeof render === "function") render();
+  });
   scheduleWorkspaceRender({
     readerTabs: true,
     projectReferences: true,

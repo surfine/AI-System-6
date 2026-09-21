@@ -498,13 +498,20 @@ const ensureDarkroomModule = createLazyModuleLoader("AISystem6DarkroomStore", [
 const ensureContextGistModule = createLazyModuleLoader("AISystem6ContextGist", ["app/core/context-gist.js"]);
 const ensureDocMapSourcePolicyModule = createLazyModuleLoader("AISystem6DocMapSourcePolicy", ["app/core/docmap-source-policy.js"]);
 const ensureUserRecoveryMessagesModule = createLazyModuleLoader("AISystem6UserRecoveryMessages", ["app/core/user-recovery-messages.js"]);
-// Empty loader: nothing calls it, and its file is loaded by the Micropolis and
-// Bonsai City loaders below. Kept, not deleted — see
-// internal/agents/DEBT-AUDIT.zh-CN.md for the evidence and the removal list.
-const ensureCityDemandGauge = createLazyModuleLoader("AISystem6CityDemandGaugeLoaded", ["app/features/city-demand-gauge.js"]);
- const ensureBonsaiSc2000Reader = createLazyModuleLoader("AISystem6BonsaiSc2000ReaderLoaded", ["app/features/bonsai-sc2000-reader.js"]);
-const ensureBonsaiLargeDatReader = createLazyModuleLoader("AISystem6BonsaiLargeDatReaderLoaded", ["app/features/bonsai-large-dat-reader.js"]);
-const ensureBonsaiSc2kPalette = createLazyModuleLoader("AISystem6BonsaiSc2kPaletteLoaded", ["app/features/bonsai-sc2k-palette.js"]);
+// Five loaders used to sit here with nothing on the other end. They are gone,
+// and their files are declared as unbundled rather than pretending to be lazy:
+//   ensureCityDemandGauge — its file is already named by the Micropolis and
+//     Bonsai City loaders below, so the loader was pure weight;
+//   ensureBonsaiSc2000Reader / ensureBonsaiLargeDatReader /
+//     ensureBonsaiSc2kPalette — the SC2000.DAT / LARGE.DAT / PAL_MSTR.BMP readers,
+//     written and tested but wired to nothing;
+//   ensureScanShadowModule — the save-plan shadow instrument, whose guard in
+//     persistence-status.js reads window.AISystem6ScanShadow only to find it
+//     absent and whose e2e probe no longer exists.
+// internal/agents/DEBT-AUDIT.zh-CN.md holds the per-item evidence, and
+// tests/features/orphan-sources.test.mjs carries the reasons. Wiring any of
+// them is the same one-line loader it was before, now without a do-nothing
+// version of it shipping in the meantime.
 const ensureTeachtextWritingModule = createLazyModuleLoader("AISystem6TeachtextWriting", ["app/features/teachtext-writing.js"]);
 const ensureDocumentRolePolicyModule = createLazyModuleLoader("AISystem6DocumentRolePolicy", ["app/core/document-role-policy.js"]);
 const ensureMarkdownParser = createLazyModuleLoader("marked", ["app/vendor/marked.umd.js"]);
@@ -543,11 +550,6 @@ const ensureProjectPeekModule = createLazyModuleLoader("AISystem6ProjectPeekLoad
 // The backup schema and the assembler that reads it travel with an export or
 // a restore, not with every boot.
 const ensureProjectDiskBackupModule = createLazyModuleLoader("AISystem6ProjectDiskBackupLoaded", ["app/core/project-disk-backup.js"]);
-// The save-plan shadow comparison: a development instrument, loaded by the
-// check that uses it rather than carried by every desk.
-// Development instrument nothing loads: the guard in persistence-status.js reads
-// window.AISystem6ScanShadow only to find it absent. Same note, same decision.
-const ensureScanShadowModule = createLazyModuleLoader("AISystem6ScanShadow", ["app/core/persistence-scan-shadow.js"]);
 const ensureVideoTranscriptModule = createLazyModuleLoader("AISystem6VideoTranscriptLoaded", ["app/features/video-transcript.js"]);
 const ensureVideoDocMapModule = createLazyModuleLoader("AISystem6VideoDocMapLoaded", ["app/features/video-docmap.js"]);
 const ensureFindPathModule = createLazyModuleLoader("AISystem6FindPathLoaded", ["app/features/findpath.js"]);

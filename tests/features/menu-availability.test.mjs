@@ -115,6 +115,12 @@ const runtimeCommandIds = new Set(
 const gated = new Set([
   ...availabilityBlock.matchAll(/^\s{4}"([a-z0-9-]+)":/gm),
   ...runtimeCommandIds,
+  // The availability map fills from the admission table at runtime, so every
+  // command the table admits is gated: the row is the declaration that the
+  // window, its loader and its opener exist. Seven hand-written `true` rows moved
+  // into the table, and this is the same claim read from its new address.
+  ...[...read("app/core/app-admissions.js").matchAll(/command: "([a-z0-9-]+)"/g)].map((match) => match[1]),
+  ...[...read("app/core/app-admissions.js").matchAll(/^\s+"([a-z0-9-]+)": ensure\w+/gm)].map((match) => match[1]),
 ].map((value) => (typeof value === "string" ? value : value[1])));
 test.assert(gated.size > 200, "getActionAvailability() answers for the menu actions");
 test.assert(runtimeCommandIds.size > 0, "registered runtime commands answer for their menu rows");

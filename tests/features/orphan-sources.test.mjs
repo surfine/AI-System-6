@@ -35,6 +35,14 @@ const DECLARED_UNBUNDLED = {
     "Endfield grounding core, loaded lazily through ensureLazySystemModule(\"app/core/endfield-grounding.js\", ...) from app/core/actions.js and app/core/chat-messages.js. It is not named by a createLazyModuleLoader in config.js or an index.html script tag, so the static manifest cannot list it; the runtime loader string is the only reachable path and must not be bundled.",
   "app/content/shared-disks-panel.js":
     "The window and its list for the demonstration project disks. tooling/build-shared-project-disks.mjs appends this file to app/content/shared-project-disks.js, so the panel ships inside the generated disk module the launch links already fetch — reachable without a manifest row, and deliberately not in the boot bundle (it would spend floppy bytes on a window most boots never open).",
+  "app/features/bonsai-sc2000-reader.js":
+    "SC2000.DAT container reader, clean-room and tested (tests/features/bonsai-sc2000-reader.test.mjs). The loader that named it had no caller anywhere in the tree, so the loader is gone and the file is declared unbundled: the lane is unwired, not lazy. Wiring it is one createLazyModuleLoader the day the Bonsai import lane starts reading containers.",
+  "app/features/bonsai-large-dat-reader.js":
+    "LARGE.DAT sprite reader, clean-room and tested. Same story as the SC2000 container reader beside it: its loader named it and nothing called the loader, so the file is declared unbundled rather than shipped behind a loader nobody reaches.",
+  "app/features/bonsai-sc2k-palette.js":
+    "PAL_MSTR.BMP palette reader, clean-room and tested: it turns the large-dat reader's output into pixel buffers. Unwired with its two siblings, declared here for the same reason.",
+  "app/core/persistence-scan-shadow.js":
+    "The save-plan shadow comparison: a development instrument whose guard in app/core/persistence-status.js reads window.AISystem6ScanShadow only to find the module absent, and whose e2e probe (tests/e2e/scan-shadow.spec.mjs) no longer exists. Its loader is gone rather than shipping an instrument nothing loads.",
 };
 
 const listed = new Set(
