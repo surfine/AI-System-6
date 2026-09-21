@@ -1556,6 +1556,27 @@ body.is-writer-mode .system-help-window .system-help-pane {
   }
 }
 
+/* A Mac's menu bar is 20-28px because a pointer is precise; a finger is not. On
+   a touch device this bar is the desk's navigation — File, Edit, Study, the
+   app's own menus and the three controls at its right end — and 20-28px sits
+   below the floor this product's own gate cites for window chrome (WCAG 2.2's
+   24px, held at 40 for a title bar). The theme owns --menu-bar-height, so the
+   theme's token is raised where the pointer is coarse: the bar, the windows
+   below it, the dialogs and the popovers that hang from it move together,
+   instead of one number per consumer. A fine pointer changes nothing. */
+@media (hover: none) and (pointer: coarse) {
+  body[data-theme]:not(.is-writer-mode) {
+    --menu-bar-height: max(var(--system-menu-height), 44px);
+    --menu-popover-top: calc(var(--menu-bar-height) + var(--safe-area-top));
+  }
+
+  body[data-theme]:not(.is-writer-mode) .menu-bar
+    :is(.menu > button, .project-switcher-button, .multifinder-button, .notification-center-button) {
+    height: calc(var(--menu-bar-height) - 2px);
+    line-height: calc(var(--menu-bar-height) - 2px);
+  }
+}
+
 @media (max-width: 1100px) {
   body.is-writer-mode .assistant-window .messages,
   body.is-writer-mode .assistant-window.is-desklet .messages {

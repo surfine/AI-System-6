@@ -111,10 +111,15 @@ touch minimum, and no corner at a display edge is drawn twice.
 - The desk's launcher at watch size: its second row is clipped, so on a wrist
   the launcher is reachable only through what fits. A glance has no launcher,
   which is why this is a plan item rather than a layout fix.
-- The menu bar's targets: 22-28px at every size, on every touch device, because
-  it is a Mac menu bar by design. That is a desk-wide decision rather than a
-  watch-shaped one, so the wrist band leaves it alone and this release changed
-  only the quiz's own navigation.
+- The menu bar's targets: 20-28px rows on every touch device until this release,
+  which is below even WCAG 2.2's 24px floor — and the bar's own controls sat
+  directly above a window's close and zoom boxes, so a missed tap could close a
+  window. A coarse pointer now raises the theme's own token to
+  `max(--system-menu-height, 44px)`, which moves the bar, the windows below it,
+  the dialogs and the popovers together; a Mac keeps its 24 and 22, because a
+  pointer does not need the room. The quiz's own tab row grew with it: 28px to
+  44 upright, 24 to 36 sideways, where height is the scarcest thing the product
+  has.
 - Haptics: a watch companion would answer a correct answer with a tap on the
   wrist, and the web side has no haptics. When the companion exists, the round
   payload should carry what it needs to decide that.

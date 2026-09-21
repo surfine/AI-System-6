@@ -1103,6 +1103,14 @@
   .one-more-tune-window .top { height:auto;flex-wrap:wrap;row-gap:10px }
   .one-more-tune-window .brand { flex:1 1 100%;font-size:20px }
   .one-more-tune-window .one-more-tune-tabs { flex:1 1 100%;gap:14px;justify-content:space-between }
+  /* The three faces of the quiz are its only navigation, and on a touch screen
+     they were a 28px strip: a row of labels a finger can miss, between the
+     reader and the only way to change which face they are looking at. The strip
+     takes the touch minimum on a coarse pointer and keeps its compact height
+     where a pointer is precise. */
+  @media (hover: none) and (pointer: coarse) {
+    .one-more-tune-window .one-more-tune-tabs .system-tab { min-height:44px;display:flex;align-items:center }
+  }
   .one-more-tune-window .nav a { display:none }
   .one-more-tune-window .nav .tag { font-size:9px }
   .one-more-tune-window .collection-head { display:block;padding:34px 0 36px }
@@ -1749,7 +1757,10 @@ body[data-theme="classic"] .one-more-tune-window .playbutton { background:var(--
   .one-more-tune-window .brand { font-size:17px;letter-spacing:-.6px;gap:8px }
   .one-more-tune-window .brandmark { height:16px }
   .one-more-tune-window .one-more-tune-tabs { gap:14px }
-  .one-more-tune-window .one-more-tune-tabs .system-tab { min-height:24px;font-size:12px;padding:0 }
+  /* Sideways is the tightest layout in the product, so the tabs take what the
+     height budget can spare rather than the full thumb: 24 was the floor this
+     product's own gate cites, and a finger still misses at the floor. */
+  .one-more-tune-window .one-more-tune-tabs .system-tab { min-height:36px;display:flex;align-items:center;font-size:12px;padding:0 }
   .one-more-tune-window .details-bar { min-height:20px;padding:0 14px;font-size:11px }
   .one-more-tune-window .one-more-tune-pane { padding:6px 12px 8px }
 
@@ -1792,7 +1803,7 @@ body[data-theme="classic"] .one-more-tune-window .playbutton { background:var(--
     align-content:stretch;
   }
   .one-more-tune-window .one-more-tune-face.one-more-tune-step-challenge > .one-more-tune-ask > .choices > .choice {
-    min-height:0;
+    min-height:40px;
     max-height:none;
     font-size:12px;
     padding:6px 10px;

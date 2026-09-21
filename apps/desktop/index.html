@@ -13,22 +13,22 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <!-- Repainted at runtime; the appearance owns the colour. -->
     <meta name="theme-color" content="#000000" />
-    <link rel="apple-touch-icon" href="assets/app-icon/app-icon-180.png?v=20260920.6" />
-    <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png?v=20260920.6" />
-    <link rel="manifest" href="assets/app-icon/manifest.json?v=20260920.6" />
-    <script src="app/core/theme-registry.js?v=20260920.6"></script>
-    <link rel="stylesheet" href="styles.bundle.css?v=20260920.6" />
+    <link rel="apple-touch-icon" href="assets/app-icon/app-icon-180.png?v=20260920.8" />
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png?v=20260920.8" />
+    <link rel="manifest" href="assets/app-icon/manifest.json?v=20260920.8" />
+    <script src="app/core/theme-registry.js?v=20260920.8"></script>
+    <link rel="stylesheet" href="styles.bundle.css?v=20260920.8" />
     <!-- The bundle sits at the end of a ~340 KB body; this starts its download
          beside the stylesheet, under the same build stamp. -->
-    <link rel="preload" as="script" href="app.bundle.js?v=20260920.6" />
+    <link rel="preload" as="script" href="app.bundle.js?v=20260920.8" />
   </head>
   <body class="is-booting">
-    <script src="app/core/theme-body-init.js?v=20260920.6"></script>
+    <script src="app/core/theme-body-init.js?v=20260920.8"></script>
     <!-- A window-level error/unhandledrejection net, registered before
-         app.bundle.js loads, so a top-level crash in the bundle (a
-         temporal-dead-zone ReferenceError, say) still shows the Sad Mac
-         recovery screen rather than a blank page. app/core/boot-safety-net.js. -->
-    <script src="app/core/boot-safety-net.js?v=20260920.6"></script>
+         app.bundle.js loads, so a top-level crash in the bundle (a TDZ
+         ReferenceError, say) still shows the Sad Mac recovery screen, not a
+         blank page — app/core/boot-safety-net.js. -->
+    <script src="app/core/boot-safety-net.js?v=20260920.8"></script>
     <header class="menu-bar" aria-label="System menu" data-i18n-aria-label="system_menu">
       <div class="menu">
         <button class="apple" aria-label="Apple menu" data-i18n-aria-label="apple_menu" data-balloon-help="balloon_apple_menu">
@@ -48,21 +48,19 @@
           <!-- The Start section keeps items in every workspace profile, so its
                closing rule is not the writing route's to hide. -->
           <hr />
-          <!-- One command, one way back, and the accessory they share. Holding
-               a thought captures where you were, what you were reading and what
-               was on the clipboard before it opens anything, so Escape a
-               keystroke later costs nothing. The middle row names where it
-               would take you, which is the reminder itself. -->
+          <!-- One command, one way back. Holding a thought captures where you were,
+               what you were reading and the clipboard before it opens anything,
+               so Escape a keystroke later costs nothing; the middle row names
+               where it would take you, which is the reminder. -->
           <div class="menu-section-label" data-i18n="apple_menu_place">Your Place</div>
           <button data-action="hold-that-thought" data-i18n="hold_that_thought">Hold That Thought</button>
           <button data-action="resume-my-place" data-i18n="held_place_resume">Where I Left Off</button>
           <button data-action="open-hold-thought" data-i18n="held_thought_pile_open">Held Thoughts…</button>
           <hr />
           <div class="menu-section-label" data-i18n="apple_menu_writing_da">Writing DA</div>
-          <!-- The order is the moment you reach for each one: catch a thought,
-               say it instead of typing it, ask about what is in front of you,
-               carry it across, see what was copied, stop safely. This menu is the
-               one place the group is seen whole. -->
+          <!-- The order is the moment you reach for each: catch a thought, say it,
+               ask about what is in front of you, carry it across, see what was
+               copied, stop safely — the one place the group is seen whole. -->
           <button data-action="open-note-pad" data-i18n="note_pad">Note Pad</button>
           <button data-action="open-dictation" data-i18n="dictation_pad">Dictation Pad</button>
           <button data-action="open-sideask-pad" data-i18n="sideask">SideAsk</button>
@@ -86,13 +84,21 @@
           <button data-action="open-control" data-i18n="control_panel">Control Panel</button>
           <button data-action="open-find-file" data-i18n="find_file">Find File</button>
           <button data-action="open-system-status" data-i18n="system_status">System Status</button>
-          <!-- MultiFinder's contribution to the Apple menu: the eras whose Apple menu owned the open-application list keep it here (Apple's 1987 MultiFinder guide, checked on the current one), so the switch list and the application verbs live here when the right end is an indicator rather than a menu. Drawn by renderMultiFinderMenu(); empty in the Mac OS X eras. -->
+          <!-- MultiFinder's contribution to the Apple menu: the eras whose Apple menu
+           owned the open-application list keep it here (Apple's 1987 MultiFinder
+           guide), so the switch list and the application verbs live here when
+           the right end is an indicator, not a menu. Drawn by
+           renderMultiFinderMenu(); empty in the Mac OS X eras. -->
           <div id="apple-multifinder-apps" class="apple-multifinder-apps is-hidden"></div>
           <hr class="apple-multifinder-about-separator" />
           <button class="apple-multifinder-about-item" data-action="open-about-multifinder" data-i18n="about_multifinder">About MultiFinder...</button>
         </div>
       </div>
-      <!-- The bold application menu is Mac OS X only: Apple's Aqua HIG (June 2002, p.54) calls it "new in Mac OS X". Classic and platinum hide it - there the whole bar belongs to the front application. About and Control Panel are the system's rows and stay; the application's verbs render into the section below, named after whichever application is in front. -->
+      <!-- The bold application menu is Mac OS X only: Apple's Aqua HIG (June
+           2002, p.54) calls it "new in Mac OS X". Classic and platinum hide it -
+           there the whole bar belongs to the front application. About and
+           Control Panel stay; the application's verbs render into the section
+           below, named after the application in front. -->
       <div class="menu menu-bar-current-app">
         <button type="button" aria-haspopup="menu"><strong id="current-app-menu-label">Finder</strong></button>
         <div class="menu-popover">
@@ -485,10 +491,9 @@
              first message rather than after it. -->
         <div class="details-bar assistant-details-bar">
           <span class="clio-tally" id="clio-tally" hidden></span>
-          <span class="clio-status-host" data-status-host data-status-home aria-live="polite"><!-- No data-i18n: setStatus owns this line's text. The element used to
-               carry data-i18n="ready", so applyLanguage() rewrote it to the
-               translated "Ready" behind setStatus's back — a second, silent
-               declaration of what the line says. --><span id="status" hidden></span></span>
+          <span class="clio-status-host" data-status-host data-status-home aria-live="polite"><!-- No data-i18n: setStatus owns this line. It used to carry
+               data-i18n="ready", so applyLanguage() rewrote it to the translated
+               "Ready" behind setStatus's back — a second, silent declaration. --><span id="status" hidden></span></span>
           <span id="quick-draft-cliotalk-hint" class="quick-draft-cliotalk-hint is-hidden"></span>
           <div class="sideask-mode-strip" id="sideask-mode-strip" hidden>
             <button class="sideask-source-link" id="sideask-source-link" type="button" data-action="focus-sideask-source">
@@ -622,11 +627,10 @@
           <button class="resize-box hidden" aria-label="Zoom" data-i18n-aria-label="zoom" disabled aria-hidden="true"></button>
         </div>
         <div class="window-pane settings control-settings">
-          <!-- One tablist, six era presentations: the harness stays the shared
-               horizontal tab sheet; each appearance re-clothes it through
-               control-chooser tokens (Classic renders it as the System 4-6 cdev
-               icon rail). The icon spans stay in the shared DOM, hidden where an
-               era shows text-only tabs. -->
+          <!-- One tablist, six presentations: each appearance re-clothes the shared
+               sheet through control-chooser tokens (Classic renders it as the
+               System 4-6 cdev icon rail); the icon spans stay in the DOM, hidden
+               where an era shows text-only tabs. -->
           <div class="system-tabs control-chooser" role="tablist" aria-label="Control Panel section" data-i18n-aria-label="control_panel_sections">
             <button class="system-tab" id="control-tab-local" type="button" role="tab" aria-selected="false" aria-controls="control-panel-local" data-control-tab="local"><span class="sys-icon" data-system-icon="localModel" aria-hidden="true"></span><span class="control-chooser-label" data-i18n="control_connection">Local Model</span></button>
             <button class="system-tab is-active" id="control-tab-cloud" type="button" role="tab" aria-selected="true" aria-controls="control-panel-cloud" data-control-tab="cloud"><span class="sys-icon" data-system-icon="cloudModel" aria-hidden="true"></span><span class="control-chooser-label" data-i18n="cloud_model">Cloud Model</span></button>
@@ -969,8 +973,8 @@
             </label>
           </section>
           <!-- Guests: agents that reach the desk over MCP on this Mac. Each is
-               approved once by name; the list is the writer's standing answer
-               (privilege, revoke, forget), rendered by the lazy guest-tools module. -->
+               approved once by name, and the list is the writer's standing
+               answer (privilege, revoke, forget) — the lazy guest-tools module. -->
           <section class="control-section chooser-section chooser-guests-section" aria-labelledby="chooser-guests-title">
             <h3 id="chooser-guests-title" data-i18n="guests">Guests</h3>
             <p class="hint control-status" data-i18n="chooser_guests_note">Guest agents connect through MCP on this Mac. Each one is approved by name; a guest reads and proposes, and nothing enters the manuscript until you adopt it.</p>
@@ -1251,8 +1255,8 @@
       </section>
 
       <!-- 文字亮室 — the darkroom. It develops a document; Quick Draft writes one.
-           The paper stays where the writing happens and this window looks at it,
-           so the two are side by side rather than one replacing the other. -->
+           The paper stays where the writing happens, so the two sit side by
+           side. -->
       <section class="window draft-desk-window is-hidden" data-window="quickDraft" aria-labelledby="quick-draft-title">
         <div class="title-bar">
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
@@ -2048,9 +2052,8 @@
       </section>
 
       <!-- Find / Change. Modeless on purpose: MacWrite's was, and a writer needs
-           to keep looking at the text while stepping through matches. It edits
-           whichever writing surface was last in front, named in its own status
-           row so the target is never a guess. -->
+           to see the text while stepping through matches. It edits whichever
+           writing surface was last in front, named in its status row. -->
       <section class="window find-change-window is-hidden" data-window="findChange" aria-labelledby="find-change-title">
         <div class="title-bar">
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
@@ -3005,16 +3008,15 @@
         </div>
       </section>
 
-      <!-- Hold That Thought. Two modes on one small window: catching is four
-           lines of context and two questions, picking up is a pile with a list
-           on it. The mode row borrows the Alarm Clock's figure - equal cells,
-           dividers, the current one inverted - as a layout only. These modes
-           are verbs with no native glyph, and inventing 1-bit art for them
-           would be drawing from memory. -->
+      <!-- Hold That Thought. Two modes: catching is four lines of context and two
+           questions, picking up is a pile with a list. The mode row borrows the
+           Alarm Clock's figure — equal cells, dividers, the current one
+           inverted — as layout only: these are verbs with no native glyph, and
+           art for them would be drawn from memory. -->
       <!-- Looking inside a disk you have not mounted. Read-only on purpose: it
-           answers "which project did I file that in?" and no other question.
-           The list-over-detail figure is the one Hold That Thought's pile uses,
-           because both are going through something rather than working in it. -->
+           answers "which project did I file that in?" and nothing else. The
+           list-over-detail figure is Hold That Thought's; both go through
+           something rather than work in it. -->
       <section class="window clipboard-window is-hidden" data-window="clipboard" aria-labelledby="clipboard-title">
         <div class="title-bar">
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
@@ -3477,7 +3479,7 @@
       </section>
     </main>
 
-    <script src="app/generated/build-info.js?v=20260920.6"></script>
-    <script src="app.bundle.js?v=20260920.6"></script>
+    <script src="app/generated/build-info.js?v=20260920.8"></script>
+    <script src="app.bundle.js?v=20260920.8"></script>
   </body>
 </html>

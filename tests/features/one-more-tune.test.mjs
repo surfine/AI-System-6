@@ -1229,6 +1229,14 @@ test.assertMatches(omtStyles, /@media \(max-width: 430px\) and \(max-height: 520
   "and the header stops reserving a desktop masthead's 98px, which is what kept the last two answers off a 41mm screen");
 test.assertMatches(omtStyles, /@media \(max-width: 430px\) and \(max-height: 520px\) \{[\s\S]{0,4000}> \.choices \{\s*\n\s*grid-template-columns: 1fr 1fr;/,
   "the four answers sit two by two, the one shape that fits four labels under a question this short");
+// The three faces are the quiz's only navigation. On a touch screen they were a
+// 28px strip — a row a finger can miss, between the reader and the only way to
+// change which face they are looking at. Measured after: 44px upright, 36px
+// sideways, where height is the scarcest thing the product has.
+test.assertMatches(omtStyles, /@media \(hover: none\) and \(pointer: coarse\) \{\s*\n\s*\.one-more-tune-window \.one-more-tune-tabs \.system-tab \{ min-height:44px;/,
+  "the quiz's own tabs take the touch minimum where the pointer is coarse");
+test.assertMatches(omtStyles, /\.one-more-tune-tabs \.system-tab \{ min-height:36px;/,
+  "and what the sideways layout can spare rather than the floor it used to sit on");
 test.assertIncludes(source, "oneMoreTuneSourceQuery",
   "and the search has state of its own rather than borrowing the shelf's");
 test.assertIncludes(source, 'class="page-footer"',
