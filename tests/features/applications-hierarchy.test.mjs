@@ -4,7 +4,7 @@
 // and handlers; file behaviors (Alias, Clipping, Stationery, Label, Droplet)
 // never appear as top-level applications.
 
-import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
+import { admittedApplicationGroup, createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("applications-hierarchy");
 const app = read("app.js");
@@ -13,6 +13,16 @@ const windowManager = read("app/core/window-manager.js");
 const desktopRuntime = read("app/core/desktop-runtime.js");
 const translationsEn = read("app/data/translations-en.js");
 const translationsZh = read("app/data/translations-zh.js");
+const admissions = read("app/core/app-admissions.js");
+
+// The rows themselves moved into the admission table (one line per window now
+// declares that it is listed, where, and under which label), so "this folder
+// keeps this action" is read from there, and each branch is asserted to draw
+// from the table rather than from a second copy.
+const listedGroup = admittedApplicationGroup;
+for (const [folder, group] of [["create", "create"], ["Extras", "extras"], ["root", "root"]]) {
+  test.assertIncludes(app, `applicationItems?.("${group}")`, `the ${folder} branch draws its rows from the admission table`);
+}
 
 test.assertIncludes(app, "applicationsFolderPathDefinitions", "the folder hierarchy has one source of truth");
 test.assertIncludes(app, '["create", { labelKey: "applications_create"', "the Create folder is declared");
@@ -33,7 +43,11 @@ for (const action of [
   "open-scrapbook",
   "open-docmap",
 ]) {
-  test.assertIncludes(rootBlock, `action: "${action}"`, `root keeps ${action}`);
+  const fromTable = listedGroup(action) === "root";
+  test.assert(
+    fromTable || rootBlock.includes(`action: "${action}"`),
+    `root keeps ${action} (${fromTable ? "from the admission table" : "in its own markup"})`,
+  );
 }
 for (const action of ["open-rebuild-flow", "play-writing-demo"]) {
   test.assertNotIncludes(rootBlock, `action: "${action}"`, `${action} stays in Extras instead of the root Applications view`);
@@ -42,13 +56,17 @@ test.assertNotIncludes(rootBlock, "getDropletItems", "Droplets are drop tools, n
 
 const createBlock = app.slice(app.indexOf('applicationsFinderPath === "create"'), app.indexOf("], location);", app.indexOf('applicationsFinderPath === "create"')));
 for (const action of ["open-clio-stage", "open-clio-chart", "open-liquid-cover", "open-cmf-studio", "open-soundscape"]) {
-  test.assertIncludes(createBlock, `action: "${action}"`, `Create keeps ${action}`);
+  test.assert(listedGroup(action) === "create", `Create keeps ${action} (from the admission table)`);
 }
 
 const extrasBlock = app.slice(app.indexOf('applicationsFinderPath === "extras"'), app.indexOf("], location);", app.indexOf('applicationsFinderPath === "extras"')));
 test.assertNotIncludes(extrasBlock, 'action: "open-quick-draft"', "Quick Draft is a root application, not an Extras child");
 for (const action of ["open-endfield-terminal", "open-bureaucracy-meme", "open-time-machine", "open-rebuild-flow", "play-writing-demo"]) {
-  test.assertIncludes(extrasBlock, `action: "${action}"`, `Extras keeps ${action}`);
+  const fromTable = listedGroup(action) === "extras";
+  test.assert(
+    fromTable || extrasBlock.includes(`action: "${action}"`),
+    `Extras keeps ${action} (${fromTable ? "from the admission table" : "in its own markup"})`,
+  );
 }
 // Puzzle and Memory Cards are Desk Accessories: they live in the Apple menu
 // (Utility DA), not in the Applications folder's Extras lab.

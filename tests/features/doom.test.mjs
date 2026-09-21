@@ -7,7 +7,7 @@ import { createHash, webcrypto } from "node:crypto";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import vm from "node:vm";
-import { createFeatureTest, desktopRoot, exists, read, readAppSurface, windowApp } from "../helpers/feature-test-harness.mjs";
+import { admittedApplicationGroup, createFeatureTest, desktopRoot, exists, read, readAppSurface, windowApp } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("doom");
 const index = read("index.html");
@@ -62,9 +62,9 @@ test.assertNotIncludes(index, 'data-window="doom"', "the DOOM window frame stays
 test.assertIncludes(host, 'windowName: "doom"', "the lazy module declares its managed window identity");
 test.assertIncludes(host, "AISystem6ApplicationShell.createWindow", "the lazy module installs its frame through the shared six-appearance shell");
 test.assertNotIncludes(index, 'data-action="open-doom"', "the dynamic Games folder avoids a duplicate boot-time launcher");
-test.assertIncludes(appJs, 'action: "open-doom"', "the dynamic Games folder includes DOOM");
+test.assert(admittedApplicationGroup("open-doom") === "games", "the dynamic Games folder includes DOOM");
 test.assertIncludes(read("app/features/doom.js"), '"open-doom":{handler:()=>openWindow("doom")', "every launcher enters through openWindow");
-test.assertIncludes(multiFinder, 'doom: "DOOM"', "MultiFinder labels the app");
+test.assertIncludes(read("app/core/app-admissions.js"), 'multiFinder: "DOOM"', "MultiFinder labels the app from the admission table");
 test.assert(windowApp("doom") === "doom", "the window declares its own app id");
 test.assertIncludes(host, 'AISystem6RegisterApplicationMenuSet?.("doom"', "the lazy module registers its menu set");
 test.assertNotIncludes(menus, "const doomMenus", "DOOM menu declarations stay off the startup floppy");

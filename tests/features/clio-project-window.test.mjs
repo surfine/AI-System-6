@@ -45,7 +45,7 @@ test.assert(record.app === "clioProject", "and it declares its own application i
 test.assert(record.builtByModule === true, "the markup is built by the module, not shipped in index.html on every boot");
 test.assert(!!record.lazy, "the registry knows the window arrives lazily");
 
-test.assertIncludes(multiFinder, 'clioProject: "ClioProject"', "MultiFinder can name the running application");
+test.assertIncludes(read("app/core/app-admissions.js"), 'multiFinder: "ClioProject"', "MultiFinder can name the running application from the admission table");
 test.assertMatches(
   windowManager,
   /mobileFullScreenAppIds = new Set\(\[(?:(?!\]\))[\s\S])*"clioProject"/,
@@ -53,7 +53,7 @@ test.assertMatches(
 );
 test.assertIncludes(menus, "clioProject: clioProjectMenus", "the application owns a menu set, following ClioChart's pattern");
 test.assertIncludes(html, 'data-action="open-clio-project"', "Applications lists the opener beside the other Clio- applications");
-test.assertIncludes(actions, '"open-clio-project",{ensure:ensureClioProjectModule}', "the opener is a lazy command, so the first click loads the module");
+test.assertIncludes(read("app/core/app-admissions.js"), '"open-clio-project"', "the opener is admitted with its loader, so the first click loads the module");
 
 // ---- The naming law ---------------------------------------------------------
 //

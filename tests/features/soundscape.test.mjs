@@ -1,4 +1,4 @@
-import { createFeatureTest, read, windowApp } from "../helpers/feature-test-harness.mjs";
+import { admittedApplicationGroup, createFeatureTest, read, windowApp } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("soundscape");
 const source = read("app/features/soundscape.js");
@@ -27,12 +27,12 @@ const zh = read("app/data/translations-zh.js");
 // Application identity and lazy loading.
 test.assertIncludes(html, 'data-window="soundscape"', "Soundscape has a real System 6 window");
 test.assertIncludes(html, 'data-action="open-soundscape"', "Applications has a static Soundscape launcher");
-test.assertIncludes(app, 'action: "open-soundscape"', "dynamic Applications listings include Soundscape");
+test.assert(admittedApplicationGroup("open-soundscape") === "create", "dynamic Applications listings include Soundscape");
 test.assert(windowApp("soundscape") === "soundscape", "the window owns a MultiFinder application");
 test.assertIncludes(menus, "soundscape: soundscapeMenus", "Soundscape owns its menu set");
 test.assertIncludes(source, '"open-soundscape"', "the launcher opens the System 6 window through its registered command");
 test.assertIncludes(source, "SOUNDSCAPE_COMMAND_NAMES", "the Soundscape menu commands are registered with the application");
-test.assertIncludes(actions, 'registerLazyCommand?.("open-soundscape",{ensure:ensureSoundscapeModule})', "the launcher loads Soundscape before dispatching");
+test.assertIncludes(read("app/core/app-admissions.js"), '"open-soundscape"', "the launcher loads Soundscape before dispatching");
 test.assertIncludes(runtimeManifest, '"app/features/soundscape.js"', "the module is a lazy runtime path");
 test.assertNotIncludes(html, 'src="app/features/soundscape.js"', "the lazy feature does not inflate startup");
 // The stylesheet travels with the module: Soundscape is summoned, and every

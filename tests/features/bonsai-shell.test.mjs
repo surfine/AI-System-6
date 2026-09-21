@@ -3,7 +3,7 @@
 // pauses when hidden, and persists through the shared write-fence helper.
 
 import vm from "node:vm";
-import { createFeatureTest, read, windowApp } from "../helpers/feature-test-harness.mjs";
+import { admittedApplicationGroup, createFeatureTest, read, windowApp } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("bonsai-shell");
 
@@ -171,11 +171,11 @@ test.assertIncludes(read("app/core/wireup.js"), "function wireTitleBarChrome(", 
 test.assertIncludes(read("app/core/wireup.js"), 'win.querySelectorAll(".title-bar").forEach((bar) => wireTitleBarChrome(bar))', "wireWindowChrome hands module-built title bars to it");
 
 const actions = read("app/core/actions.js");
-test.assertIncludes(actions, "\"open-bonsai-city\"", "the open action is registered");
-test.assertIncludes(actions, "ensureBonsaiCityModule", "the open action routes through the lazy loader");
+test.assertIncludes(read("app/core/app-admissions.js"), "\"open-bonsai-city\"", "the open action is registered in the admission table");
+test.assertIncludes(read("app/core/app-admissions.js"), "ensureBonsaiCityModule", "the open action routes through the lazy loader the admission table names");
 
 const finder = read("app.js");
-test.assertIncludes(finder, "action: \"open-bonsai-city\"", "Applications lists Bonsai City");
+test.assert(admittedApplicationGroup("open-bonsai-city") === "games", "Applications lists Bonsai City (from the admission table)");
 test.assertIncludes(shellSource, "showFirstHint", "a fresh city greets the player with a gentle first-run hint");
 test.assertIncludes(shellSource, "dismissFirstHint", "the first-run hint fades after the player's first move");
 test.assertIncludes(shellSource, "AISystem6BonsaiTranslations", "the shell falls back to Bonsai's frozen translation snapshot");
@@ -187,7 +187,7 @@ test.assertIncludes(windowManager, "mobileImmersiveAppIds", "the window particip
 test.assertIncludes(windowManager, "writerMode && !writerModeCompatible", "opening Bonsai leaves the writing-only desktop mode before immersive layout");
 
 const multiFinder = read("app/core/multi-finder.js");
-test.assertIncludes(multiFinder, "bonsaiCity: \"Bonsai City\"", "MultiFinder labels the application");
+test.assertIncludes(read("app/core/app-admissions.js"), 'multiFinder: "Bonsai City"', "MultiFinder labels the application from the admission table");
 test.assert(windowApp("bonsaiCity") === "bonsaiCity", "the window maps to the application identity");
 
 const projectDisk = read("app/features/project-disk.js");

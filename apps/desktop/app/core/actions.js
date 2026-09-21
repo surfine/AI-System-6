@@ -1652,54 +1652,38 @@ function runShortcut(event) {
 }
 
 window.AISystem6Runtime?.registerApplication({id:"keyCaps",windowName:"keyCaps",commands:{"open-key-caps":{handler:()=>openWindow("keyCaps"),isAvailable:()=>!0}}});
-window.AISystem6Runtime?.registerLazyCommand?.("open-memory-cards",{ensure:ensureMemoryCardsModule});
-window.AISystem6Runtime?.registerLazyCommand?.("open-alarm-clock",{ensure:ensureAlarmClockModule});
-window.AISystem6Runtime?.registerLazyCommand?.("open-translation-pad",{ensure:ensureTranslationPadModule});
-window.AISystem6Runtime?.registerLazyCommand?.("open-bureaucracy-meme",{ensure:ensureBureaucracyMemeModule});
-window.AISystem6Runtime?.registerLazyCommand?.("open-endfield-terminal",{ensure:ensureEndfieldTerminalModule});
-window.AISystem6Runtime?.registerLazyCommand?.("open-find-path",{ensure:ensureFindPathModule});
-window.AISystem6Runtime?.registerLazyCommand?.("open-find-file",{ensure:ensureFindPathModule});
-window.AISystem6Runtime?.registerLazyCommand?.("open-time-machine",{ensure:ensureTimeMachineModule});
-window.AISystem6Runtime?.registerLazyCommand?.("open-dictionary",{ensure:ensureDictionaryHelpModule});
-window.AISystem6Runtime?.registerLazyCommand?.("open-system-help",{ensure:ensureDictionaryHelpModule});
-window.AISystem6Runtime?.registerLazyCommand?.("open-soundscape",{ensure:ensureSoundscapeModule});
-window.AISystem6Runtime?.registerLazyCommand?.("open-cmf-studio",{ensure:ensureCmfStudioModule});
 window.AISystem6DirectCmfEntry = () => handleAction("open-cmf-studio");
-window.AISystem6Runtime?.registerLazyCommand?.("open-image-prompt-studio",{ensure:ensureImagePromptStudioModule});
-window.AISystem6Runtime?.registerLazyCommand?.("open-openttd",{ensure:ensureOpenTTDModule});
-window.AISystem6Runtime?.registerLazyCommand?.("open-doom",{ensure:ensureDoomModule});
-window.AISystem6Runtime?.registerLazyCommand?.("open-micropolis",{ensure:ensureMicropolisModule});
-window.AISystem6Runtime?.registerLazyCommand?.("open-bonsai-city",{ensure:ensureBonsaiCityModule});
-window.AISystem6Runtime?.registerLazyCommand?.("open-clio-stage",{ensure:ensureClioStageModule});
-window.AISystem6Runtime?.registerLazyCommand?.("open-liquid-cover",{ensure:ensureLiquidCoverModule});
-window.AISystem6Runtime?.registerLazyCommand?.("open-clio-chart",{ensure:ensureClioChartModule});
 window.AISystem6Runtime?.registerLazyCommand?.("see-as-chart",{ensure:ensureClioChartModule});
-window.AISystem6Runtime?.registerLazyCommand?.("open-clio-project",{ensure:ensureClioProjectModule});
 window.AISystem6Runtime?.registerLazyCommand?.("clio-project-reset-layout",{ensure:ensureClioProjectModule});
-window.AISystem6Runtime?.registerLazyCommand?.("open-clio-paint",{ensure:ensureClioPaintModule});
-window.AISystem6Runtime?.registerLazyCommand?.("open-one-more-tune",{ensure:ensureOneMoreTuneModule});
-window.AISystem6Runtime?.registerLazyCommand?.("open-todo-da",{ensure:ensureTodoDaModule});
-window.AISystem6Runtime?.registerLazyCommand?.("open-sideask-pad",{ensure:ensureSideAskPadModule});
-window.AISystem6Runtime?.registerLazyCommand?.("open-theme-lab",{ensure:ensureThemeLabModule});
-window.AISystem6Runtime?.registerLazyCommand?.("open-quick-draft",{ensure:ensureQuickDraftModule});
-window.AISystem6Runtime?.registerLazyCommand?.("open-docmap",{ensure:ensureDocMapModule});
-window.AISystem6Runtime?.registerCommand?.("open-about",{handler:()=>openWindow("about"),isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("peek-project-disk",{handler:async({peekProjectId=""}={})=>{await ensureProjectPeekModule();await openProjectPeek(peekProjectId);},isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-project-overview",{handler:async()=>{await ensureProjectPeekModule();await openProjectOverview();},isAvailable:()=>!0});
-window.AISystem6Runtime?.registerCommand?.("open-applications",{handler:()=>openWindow("applications"),isAvailable:()=>!0});
-window.AISystem6Runtime?.registerCommand?.("open-help-folder",{handler:()=>openWindow("helpFolder"),isAvailable:()=>!0});
-window.AISystem6Runtime?.registerCommand?.("open-chooser",{handler:()=>openWindow("chooser"),isAvailable:()=>!0});
-window.AISystem6Runtime?.registerCommand?.("open-rag",{handler:()=>openWindow("rag"),isAvailable:()=>!0});
-window.AISystem6Runtime?.registerCommand?.("open-context-panel",{handler:()=>openWindow("contextPanel"),isAvailable:()=>!0});
-window.AISystem6Runtime?.registerCommand?.("open-image-manager",{handler:()=>openWindow("imageManager"),isAvailable:()=>!0});
-window.AISystem6Runtime?.registerCommand?.("open-model-meter",{handler:()=>openWindow("modelMeter"),isAvailable:()=>!0});
-window.AISystem6Runtime?.registerCommand?.("open-system-status",{handler:()=>openWindow("systemStatus"),isAvailable:()=>!0});
-window.AISystem6Runtime?.registerCommand?.("open-notification-center",{handler:()=>openWindow("notificationCenter"),isAvailable:()=>!0});
-window.AISystem6Runtime?.registerCommand?.("open-project-cd",{handler:()=>openWindow("projectCd"),isAvailable:()=>!0});
-window.AISystem6Runtime?.registerCommand?.("open-import-utility",{handler:()=>openWindow("importUtility"),isAvailable:()=>!0});
-window.AISystem6Runtime?.registerCommand?.("open-trash",{handler:()=>openWindow("trash"),isAvailable:()=>!0});
-window.AISystem6Runtime?.registerCommand?.("open-control",{handler:()=>openWindow("control"),isAvailable:()=>!0});
-window.AISystem6Runtime?.registerCommand?.("open-assistant",{handler:()=>openWindow("assistant"),isAvailable:()=>!0});
+// Every lazy opener comes from one table (app/core/app-admissions.js): the
+// window, the command it answers to and the loader that opens it are declared
+// there, and this is the one call that puts them in the registry.
+window.AISystem6Admissions?.registerOpeners?.();
+
+// A command whose whole job is to open a window is one shape, so it is one
+// registration loop rather than sixteen lines that differ only in their
+// strings. The ids are unchanged: the menus, desk icons and Help Balloons
+// dispatch exactly these. Adding the next such window is one entry here.
+Object.entries({
+  "open-about":"about",
+  "open-applications":"applications",
+  "open-help-folder":"helpFolder",
+  "open-chooser":"chooser",
+  "open-rag":"rag",
+  "open-context-panel":"contextPanel",
+  "open-image-manager":"imageManager",
+  "open-model-meter":"modelMeter",
+  "open-system-status":"systemStatus",
+  "open-notification-center":"notificationCenter",
+  "open-project-cd":"projectCd",
+  "open-import-utility":"importUtility",
+  "open-trash":"trash",
+  "open-control":"control",
+  "open-assistant":"assistant",
+  "open-control-strip-modules":"controlStripModules",
+}).forEach(([commandId,windowName])=>window.AISystem6Runtime?.registerCommand?.(commandId,{handler:()=>openWindow(windowName),isAvailable:()=>!0}));
 window.AISystem6Runtime?.registerCommand?.("open-project-info",{handler:openProjectInfo,isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-file-info",{handler:openFileInfo,isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-project-disks",{handler:()=>{openWindow("projects");if(!isProjectMounted)setStatus(t("no_project_mounted"));},isAvailable:()=>!0});
@@ -1712,9 +1696,11 @@ window.AISystem6Runtime?.registerCommand?.("open-guide-promo",{handler:()=>windo
 window.AISystem6Runtime?.registerCommand?.("open-about-multifinder",{handler:showAboutMultiFinder,isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("replay-clio-introduction",{handler:()=>openClioIntroduction({replay:true}),isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-clio-model-settings",{handler:openModelSettings,isAvailable:()=>!0});
-window.AISystem6Runtime?.registerCommand?.("open-read-me",{handler:()=>openSystemFolderDocument("readMe"),isAvailable:()=>!0});
-window.AISystem6Runtime?.registerCommand?.("open-flow-readme",{handler:()=>openSystemFolderDocument("flow"),isAvailable:()=>!0});
-window.AISystem6Runtime?.registerCommand?.("open-memory-readme",{handler:()=>openSystemFolderDocument("memory"),isAvailable:()=>!0});
+// The 说明 folder's four documents are one shape — a key, an id, and the same
+// opener — so they are one registration rather than four near-identical lines.
+// "shared" is the demonstration-disk page the window's own button opens.
+Object.entries({"open-read-me":"readMe","open-flow-readme":"flow","open-memory-readme":"memory","open-demo-disks-readme":"shared"})
+  .forEach(([commandId,documentKey])=>window.AISystem6Runtime?.registerCommand?.(commandId,{handler:()=>openSystemFolderDocument(documentKey),isAvailable:()=>!0}));
 window.AISystem6Runtime?.registerCommand?.("open-system-concepts-docmap",{handler:openSystemConceptDocMap,isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-system-concepts-clio-stage",{handler:openSystemConceptClioStage,isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-text-document",{handler:openTextDocumentFromDisk,isAvailable:()=>!0});
@@ -1779,7 +1765,6 @@ window.AISystem6Runtime?.registerCommand?.("open-guest-reviews",{handler:async()
 window.AISystem6Runtime?.registerCommand?.("open-project-backup",{handler:openProjectBackupPanel,isAvailable:()=>!0});
 // "open-project-disks" is already taken by the mounted Project Hard Disk, so
 // the demonstration list gets its own id rather than shadowing that row.
-window.AISystem6Runtime?.registerLazyCommand?.("open-demo-disks",{ensure:ensureSharedProjectDisksModule});
 // Saying "not openable" is the whole answer; it needs no OK button.
 window.AISystem6Runtime?.registerCommand?.("open-system-file-system",{handler:()=>setStatus(t("system_file_not_openable")),isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-system-file-finder",{handler:()=>setStatus(t("system_file_not_openable")),isAvailable:()=>!0});
@@ -1830,7 +1815,6 @@ window.AISystem6Runtime?.registerCommand?.("open-chat-file",{
 });
 // The explainer still has to be readable: it rides a notification instead.
 window.AISystem6Runtime?.registerCommand?.("open-droplet",{handler:({dropletId=""}={})=>{const command=typeof getScriptableCommand==="function"?getScriptableCommand(dropletId):null;const name=command&&typeof dropletName==="function"?dropletName(command):t("droplet");pushSystemNotification(t("droplet_open_explainer",name));},isAvailable:()=>!0});
-window.AISystem6Runtime?.registerCommand?.("open-control-strip-modules",{handler:()=>openWindow("controlStripModules"),isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-control-strip-module",{handler:({controlStripModuleId})=>{ensureControlStripModulesFolderModule().then(()=>window.AISystem6ControlStripModulesFolder?.openModule?.(controlStripModuleId)).catch(error=>console.warn("Control Strip Modules folder unavailable.",error));},isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-ai-connection-settings",{handler:()=>handleAction("open-cloud-ai-settings"),isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-selected-find-file",{handler:async()=>{await ensureFindPathModule();openSelectedFindFileResult();},isAvailable:()=>!0});

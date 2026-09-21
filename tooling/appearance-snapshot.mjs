@@ -153,7 +153,20 @@ async function newPage(browser, cell) {
 }
 
 async function settle(page, themeId, profile) {
-  await page.waitForFunction(() => document.body.dataset.appReady === "ready", null, { timeout: 20000 });
+  // A capture that never becomes ready used to report only "Timeout 20000ms
+  // exceeded", which names neither what the page was waiting for nor what state
+  // it was stuck in. From the mark-optics lane's stash: keep the same wait, and
+  // on timeout say what the desk thought it was doing.
+  try {
+    await page.waitForFunction(() => ["ready", "error"].includes(document.body.dataset.appReady), null, { timeout: 20000 });
+  } catch (error) {
+    const timeoutState = await page.evaluate(() => ({
+      appReady: document.body.dataset.appReady || "",
+      bootStatus: document.querySelector("#boot-status")?.textContent || "",
+      bootHidden: document.querySelector("#boot-screen")?.hidden === true,
+    }));
+    throw new Error(`${error.message}; desk state: ${JSON.stringify(timeoutState)}`);
+  }
   // The route windows do not exist in the desktop profile — that is the
   // profile contract, not a defect. Working-tier cells need the writing one.
   if (profile === "writing") {

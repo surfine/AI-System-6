@@ -13,22 +13,22 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <!-- Repainted at runtime; the appearance owns the colour. -->
     <meta name="theme-color" content="#000000" />
-    <link rel="apple-touch-icon" href="assets/app-icon/app-icon-180.png?v=20260921.2" />
-    <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png?v=20260921.2" />
-    <link rel="manifest" href="assets/app-icon/manifest.json?v=20260921.2" />
-    <script src="app/core/theme-registry.js?v=20260921.2"></script>
-    <link rel="stylesheet" href="styles.bundle.css?v=20260921.2" />
+    <link rel="apple-touch-icon" href="assets/app-icon/app-icon-180.png?v=20260922.1" />
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png?v=20260922.1" />
+    <link rel="manifest" href="assets/app-icon/manifest.json?v=20260922.1" />
+    <script src="app/core/theme-registry.js?v=20260922.1"></script>
+    <link rel="stylesheet" href="styles.bundle.css?v=20260922.1" />
     <!-- The bundle sits at the end of a ~340 KB body; this starts its download
          beside the stylesheet, under the same build stamp. -->
-    <link rel="preload" as="script" href="app.bundle.js?v=20260921.2" />
+    <link rel="preload" as="script" href="app.bundle.js?v=20260922.1" />
   </head>
   <body class="is-booting">
-    <script src="app/core/theme-body-init.js?v=20260921.2"></script>
+    <script src="app/core/theme-body-init.js?v=20260922.1"></script>
     <!-- A window-level error/unhandledrejection net, registered before
          app.bundle.js loads, so a top-level crash (a TDZ ReferenceError, say)
          still shows the Sad Mac recovery screen, not a blank page —
          app/core/boot-safety-net.js. -->
-    <script src="app/core/boot-safety-net.js?v=20260921.2"></script>
+    <script src="app/core/boot-safety-net.js?v=20260922.1"></script>
     <header class="menu-bar" aria-label="System menu" data-i18n-aria-label="system_menu">
       <div class="menu">
         <button class="apple" aria-label="Apple menu" data-i18n-aria-label="apple_menu" data-balloon-help="balloon_apple_menu">
@@ -84,20 +84,20 @@
           <button data-action="open-control" data-i18n="control_panel">Control Panel</button>
           <button data-action="open-find-file" data-i18n="find_file">Find File</button>
           <button data-action="open-system-status" data-i18n="system_status">System Status</button>
-          <!-- MultiFinder's contribution to the Apple menu: eras whose Apple menu
-           owned the open-application list keep it here (Apple's 1987 MultiFinder
-           guide), so the switch list and the application verbs live here when
-           the right end is an indicator. renderMultiFinderMenu() draws it;
-           empty in the Mac OS X eras. -->
+<!-- MultiFinder's contribution to the Apple menu: eras whose Apple menu owned the
+           open-application list keep it here (Apple's 1987 MultiFinder guide), so
+           the switch list and the application verbs live here while the right end is
+           an indicator. renderMultiFinderMenu() draws it, and it is empty in the
+           Mac OS X eras. -->
           <div id="apple-multifinder-apps" class="apple-multifinder-apps is-hidden"></div>
           <hr class="apple-multifinder-about-separator" />
           <button class="apple-multifinder-about-item" data-action="open-about-multifinder" data-i18n="about_multifinder">About MultiFinder...</button>
         </div>
       </div>
-      <!-- The bold application menu is Mac OS X only: Aqua HIG (June 2002, p.54)
-           calls it "new in Mac OS X". Classic and platinum hide it - there the
-           bar belongs to the front application. About and Control Panel stay;
-           the application's verbs render below, named after it. -->
+<!-- The bold application menu is Mac OS X only: Aqua HIG (June 2002, p.54) calls
+           it "new in Mac OS X". Classic and platinum hide it - the bar belongs to
+           the front application there. About and Control Panel stay; the
+           application's verbs render below, named after it. -->
       <div class="menu menu-bar-current-app">
         <button type="button" aria-haspopup="menu"><strong id="current-app-menu-label">Finder</strong></button>
         <div class="menu-popover">
@@ -509,10 +509,10 @@
             <span id="clio-chat-file-name" data-i18n="clio_chat_file_waiting">Chat file on first message</span>
             <small id="clio-chat-file-path"></small>
           </button>
-<!-- A temporary conversation is the one case where "save" means
-               something, so its escape hatch lives here and not only in a menu:
-               the boundary is reversible, so nobody has to decide whether a
-               conversation is worth keeping before starting one. -->
+<!-- A temporary conversation is the one case where "save" means something, so its
+               escape hatch lives here and not only in a menu: the boundary is
+               reversible, so nobody must decide whether a conversation is worth
+               keeping before starting one. -->
           <button class="btn mini-btn clio-keep-temporary is-hidden" id="clio-keep-temporary" type="button" data-action="save-conversation" data-i18n="save_as_conversation_file">Save as Conversation File…</button>
         </div>
         <div class="messages-stage">
@@ -626,10 +626,10 @@
           <button class="resize-box hidden" aria-label="Zoom" data-i18n-aria-label="zoom" disabled aria-hidden="true"></button>
         </div>
         <div class="window-pane settings control-settings">
-          <!-- One tablist, six presentations: each appearance re-clothes the shared
-               sheet through control-chooser tokens (Classic renders it as the
-               System 4-6 cdev icon rail); the icon spans stay in the DOM, hidden
-               where an era shows text-only tabs. -->
+<!-- One tablist, six presentations: each appearance re-clothes the shared sheet
+               through control-chooser tokens (Classic draws it as the System 4-6 cdev
+               icon rail); the icon spans stay in the DOM, hidden where an era shows
+               text-only tabs. -->
           <div class="system-tabs control-chooser" role="tablist" aria-label="Control Panel section" data-i18n-aria-label="control_panel_sections">
             <button class="system-tab" id="control-tab-local" type="button" role="tab" aria-selected="false" aria-controls="control-panel-local" data-control-tab="local"><span class="sys-icon" data-system-icon="localModel" aria-hidden="true"></span><span class="control-chooser-label" data-i18n="control_connection">Local Model</span></button>
             <button class="system-tab is-active" id="control-tab-cloud" type="button" role="tab" aria-selected="true" aria-controls="control-panel-cloud" data-control-tab="cloud"><span class="sys-icon" data-system-icon="cloudModel" aria-hidden="true"></span><span class="control-chooser-label" data-i18n="cloud_model">Cloud Model</span></button>
@@ -1721,10 +1721,10 @@
         </div>
       </section>
 
-      <!-- The burn is the end of the writing route, so the receipt is stated
-           in the Get Info shape: labelled facts about one object, nothing that
-           grades the work. openFinishingReceipt() builds the rows, because a
-           fact with no stored source is left out, not estimated. -->
+<!-- The burn is the end of the writing route, so the receipt is stated in the Get
+           Info shape: labelled facts about one object, nothing that grades the work.
+           openFinishingReceipt() builds the rows, because a fact with no stored
+           source is left out, not estimated. -->
       <section class="window page-setup-window is-hidden" data-window="pageSetup" aria-labelledby="page-setup-title">
         <div class="title-bar">
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
@@ -3007,11 +3007,10 @@
         </div>
       </section>
 
-      <!-- Hold That Thought. Two modes: catching is four lines of context and two
-           questions, picking up is a pile with a list. The mode row borrows the
-           Alarm Clock's figure — equal cells, dividers, the current one
-           inverted — as layout only: verbs with no native glyph, whose art would
-           be drawn from memory. -->
+<!-- Hold That Thought. Two modes: catching is four lines of context and two
+           questions, picking up is a pile with a list. The mode row borrows the Alarm
+           Clock's figure — equal cells, dividers, the current one inverted — as layout
+           only: verbs with no native glyph, whose art would be drawn from memory. -->
       <!-- Looking inside a disk you have not mounted. Read-only on purpose: it
            answers "which project did I file that in?" and nothing else. The
            list-over-detail figure is Hold That Thought's; both go through
@@ -3478,7 +3477,7 @@
       </section>
     </main>
 
-    <script src="app/generated/build-info.js?v=20260921.2"></script>
-    <script src="app.bundle.js?v=20260921.2"></script>
+    <script src="app/generated/build-info.js?v=20260922.1"></script>
+    <script src="app.bundle.js?v=20260922.1"></script>
   </body>
 </html>

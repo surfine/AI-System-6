@@ -42,7 +42,7 @@ test.assertIncludes(
   'createLazyModuleLoader("AISystem6OneMoreTuneLoaded", ["app/core/application-shell.js", "app/features/one-more-tune.js"], false, ["styles.one-more-tune.css"])',
   "one loader names the shell, the module, and its stylesheet together"
 );
-test.assertIncludes(actions, '"open-one-more-tune",{ensure:ensureOneMoreTuneModule}', "the opener is a lazy command, so the first click loads the module");
+test.assertIncludes(read("app/core/app-admissions.js"), '"open-one-more-tune"', "the opener is admitted with its loader, so the first click loads the module");
 test.assertIncludes(source, "window.AISystem6OneMoreTuneLoaded = true;", "the module installs its loaded flag");
 
 const styleBundle = lazyStyleBundles.find((bundle) => bundle.id === "one-more-tune");
@@ -58,7 +58,7 @@ test.assert(!!record.lazy, "the registry knows the window arrives lazily");
 test.assertIncludes(source, "function installOneMoreTuneWindow()", "the module builds its own window");
 test.assertNotIncludes(html, 'data-window="oneMoreTune"', "the window is not duplicated as static markup in index.html");
 
-test.assertIncludes(multiFinder, 'oneMoreTune: "One More Tune"', "MultiFinder can name the running application");
+test.assertIncludes(read("app/core/app-admissions.js"), 'multiFinder: "One More Tune"', "MultiFinder can name the running application from the admission table");
 test.assertMatches(
   windowManager,
   /mobileFullScreenAppIds = new Set\(\[(?:(?!\]\))[\s\S])*"oneMoreTune"/,

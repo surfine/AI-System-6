@@ -65,6 +65,12 @@ answeredActions.add("open-calculator");
 answeredActions.add("open-puzzle");
 answeredActions.add("open-writing-bell");
 answeredActions.add("open-key-caps");
+// One table plus one loop counts as a handler source too: actions.js registers
+// its open-window commands from an object literal of ids, so the ids are the
+// keys of that table (see the shared loop right after open-project-overview).
+for (const block of actions.matchAll(/Object\.entries\(\{([\s\S]*?)\}\)\s*\.forEach\([\s\S]{0,240}?registerCommand/g)) {
+  for (const [, id] of block[1].matchAll(/"([a-z0-9-]+)":/g)) answeredActions.add(id);
+}
 answeredActions.add("open-memory-cards");
 answeredActions.add("open-alarm-clock");
 answeredActions.add("open-translation-pad");

@@ -1,3 +1,4 @@
+import { globSync } from "node:fs";
 import { createAppBootVm } from "../helpers/app-boot-vm.mjs";
 import { createFeatureTest, read, windowRegistryRecords } from "../helpers/feature-test-harness.mjs";
 import { windowInterfaceRegistry } from "../../tooling/interface-guidelines-contract.mjs";
@@ -53,6 +54,30 @@ Object.entries(records).forEach(([name, record]) => {
 // which is a plausible wrong answer — the worst kind.
 [...staticWindows].forEach((name) => {
   test.assert(!!records[name], `${name} has markup, so it has a record`);
+});
+
+// The same rule for windows no markup carries. A module that builds its own
+// frame names the window in source, so a name a person can see has to be in the
+// registry before the frame exists. The demonstration-disk window was built,
+// opened and shipped without a record: it borrowed the "finder" fallback, and
+// every instrument that walks the registry — appearance coverage, the HIG
+// inventory, screenshot coverage — could not see it. Literal names are read
+// from source here; a name assembled from a constant is caught by the built-DOM
+// check after the lazy load below, which is why both exist.
+const literalModuleWindows = new Set();
+for (const path of globSync("apps/desktop/app/**/*.js").filter((p) => !p.includes("/vendor/"))) {
+  const source = read(path.replace("apps/desktop/", ""));
+  for (const pattern of [
+    /setAttribute\(\s*["']data-window["']\s*,\s*["']([A-Za-z0-9_-]+)["']/g,
+    /data-window=["']([A-Za-z0-9_-]+)["']/g,
+    /\bwindowName:\s*["']([A-Za-z0-9_-]+)["']/g,
+  ]) {
+    for (const match of source.matchAll(pattern)) literalModuleWindows.add(match[1]);
+  }
+}
+test.assert(literalModuleWindows.size > 0, "module-built windows name themselves in source");
+[...literalModuleWindows].sort().forEach((name) => {
+  test.assert(!!records[name], `${name} is built by a module, so it has a record`);
 });
 
 // Aliases route somewhere real.
@@ -117,6 +142,22 @@ for (const name of lazyWindowNames) {
   await vmw.run(`windowRegistry[${JSON.stringify(name)}].lazy.ensure()`);
 }
 test.assert(true, `every one of ${lazyWindowNames.length - canvasBackedWindows.size} headless-testable lazy windows' real module loads through its real ensure() without throwing`);
+
+// And what those modules actually built. This is the invariant
+// window-registry.js states — "the gate makes the fallback unused" — measured
+// on the DOM instead of trusted: a frame whose name is not in the registry is a
+// window with no owning application and no instrument watching it.
+const builtWithoutRecord = JSON.parse(vmw.run(`
+  JSON.stringify([...document.querySelectorAll(".window[data-window]")]
+    .map((win) => win.dataset.window)
+    .filter((name) => !windowRegistry[name]))
+`));
+test.assert(
+  builtWithoutRecord.length === 0,
+  builtWithoutRecord.length === 0
+    ? "every window the lazy modules built is a window the registry knows"
+    : `built but unregistered: ${builtWithoutRecord.join(", ")}. Add a window-registry record (and its interface contract) so the window has an owning application and the appearance/HIG instruments can reach it.`,
+);
 
 const hookReferenceErrors = JSON.parse(vmw.run(`
   JSON.stringify((() => {

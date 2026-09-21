@@ -61,14 +61,14 @@ const runtime = require("../../apps/desktop/app/features/image-prompt-runtime.js
   test.assert(studio.includes('"open-image-prompt-studio"'), "the studio registers its open command");
   test.assert(studio.includes("canUseReferenceImage"), "the studio checks whether the current model can read images");
   test.assert(studio.includes("ips_ref_unavailable_cloud"), "the studio disables reference images on text-only cloud models");
-  test.assert(actions.includes('registerLazyCommand?.("open-image-prompt-studio"'), "the lazy open command is registered");
+  test.assert(read("app/core/app-admissions.js").includes('"open-image-prompt-studio"'), "the lazy open command is admitted through the shared table");
   test.assert(!cover.includes("image.generate"), "Cover Glass no longer calls the BYOK image proxy");
   test.assert(!cover.includes("generateBg"), "Cover Glass no longer owns in-app image generation");
   test.assert(studio.includes('id="ips-sideask"'), "the studio exposes a SideAsk entry");
   test.assert(studio.includes('arrangeWindowAssistantSplit("imagePromptStudio")'), "the studio opens SideAsk against itself");
   test.assert(studio.includes("wiredWindow"), "the studio does not re-bind listeners on restore");
   test.assert(windowApp("imagePromptStudio") === "imagePromptStudio", "the studio has its own app id instead of falling back to Finder");
-  test.assert(multiFinder.includes("imagePromptStudio: \"Image Prompt Studio\""), "the studio has a MultiFinder app label");
+  test.assert(read("app/core/app-admissions.js").includes('multiFinder: "Image Prompt Studio"'), "the studio has a MultiFinder app label in the admission table");
   test.assert(windowApp("imagePromptStudio") === "imagePromptStudio", "window manager maps the studio to its SideAsk source window");
   test.assert(windowManager.includes('if (appId === "imagePromptStudio") return t("image_prompt_studio_label")'), "SideAsk source chrome names the studio");
   test.assert(chatMessages.includes('anchor === "imagePromptStudio"'), "SideAsk context knows the studio anchor");

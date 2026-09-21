@@ -3,7 +3,7 @@
 // inside an iframe; the desktop side stays a thin lazy chrome module. The
 // game must never touch the boot bundles or the floppy budget.
 
-import { createFeatureTest, exists, read, readAppSurface, windowApp } from "../helpers/feature-test-harness.mjs";
+import { admittedApplicationGroup, createFeatureTest, exists, read, readAppSurface, windowApp } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("openttd");
 const index = read("index.html");
@@ -38,10 +38,10 @@ const menus = read("app/data/menus.js");
 test.assertNotIncludes(index, 'data-window="openttd"', "OpenTTD window frame stays off the startup disk");
 test.assertIncludes(openttd, 'data-window="openttd"', "the lazy module installs the OpenTTD window frame");
 test.assertNotIncludes(index, 'data-action="open-openttd"', "the dynamic Games folder avoids a duplicate boot-time launcher");
-test.assertIncludes(appJs, 'action: "open-openttd"', "Applications folder dynamic list includes OpenTTD");
+test.assert(admittedApplicationGroup("open-openttd") === "games", "Applications folder dynamic list includes OpenTTD");
 test.assertIncludes(appJs, '"open-applications-folder-path:games"', "the Games folder is reachable from the Applications root");
 test.assertIncludes(appJs, '["games", { labelKey: "applications_games", parentPath: "" }]', "the Games folder is a defined Applications path");
-test.assertIncludes(app, 'openttd: "OpenTTD"', "MultiFinder labels the app");
+test.assertIncludes(read("app/core/app-admissions.js"), 'multiFinder: "OpenTTD"', "MultiFinder labels the app from the admission table");
 test.assert(windowApp("openttd") === "openttd", "window maps to its own app id");
 test.assertIncludes(openttd, '"open-openttd":{handler:()=>openWindow("openttd")', "action opens the window through its registered command");
 const lazyBlock = manifest.slice(manifest.indexOf("lazyRuntimePaths"));

@@ -104,7 +104,7 @@ test.assertIncludes(
   "await ensureDictionaryHelpModule();",
   "Dictionary and System Help restore their behavior module as well as their data"
 );
-test.assertIncludes(actions, 'registerLazyCommand?.("open-system-help",{ensure:ensureDictionaryHelpModule})', "System Help actions load their behavior before calling its entrypoint");
+test.assertIncludes(read("app/core/app-admissions.js"), '"open-system-help": ensureDictionaryHelpModule', "System Help actions load their behavior before calling its entrypoint");
 test.assertIncludes(dictionaryHelp, '"open-system-help":{handler:()=>openSystemHelpEntry', "System Help opens through its registered runtime command");
 test.assertMatches(
   selectionServices,

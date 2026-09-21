@@ -579,6 +579,7 @@ const applicationDescriptionKeys = Object.freeze({
   "open-openttd": "app_desc_openttd",
   "open-doom": "app_desc_doom",
   "open-bonsai-city": "app_desc_bonsai_city",
+  ...window.AISystem6Admissions?.appDescriptionKeys?.(),
 });
 
 function withStaticFinderMetadata(items, location) {
@@ -771,13 +772,22 @@ function getSystemPromptFinderItems() {
   );
 }
 
+// The 说明 folder's documents: one label key, one opener command, one glyph.
+// They are data because they are the same row four times — and because the
+// folder is re-rendered from this list, so the demonstration-disk page appears
+// by being here rather than by a second copy in index.html's first markup.
+const helpFolderDocuments = [
+  ["read_me", "open-read-me", "document"],
+  ["flow_readme", "open-flow-readme", "document"],
+  ["memory_readme", "open-memory-readme", "document"],
+  ["shared_readme", "open-demo-disks-readme", "projectDisk"],
+];
+
 function getHelpFolderItems() {
   return withStaticFinderMetadata([
     { name: t("replay_clio_introduction"), iconId: "document", icon: "doc-icon", action: "replay-clio-introduction", kind: t("system_component") },
     { name: t("system_help"), iconId: "systemHelp", icon: "doc-icon", action: "open-system-help", kind: t("system_component") },
-    { name: t("read_me"), iconId: "document", icon: "doc-icon", action: "open-read-me", kind: t("system_component") },
-    { name: t("flow_readme"), iconId: "document", icon: "doc-icon", action: "open-flow-readme", kind: t("system_component") },
-    { name: t("memory_readme"), iconId: "document", icon: "doc-icon", action: "open-memory-readme", kind: t("system_component") },
+    ...helpFolderDocuments.map(([labelKey, action, iconId]) => ({ name: t(labelKey), iconId, icon: "doc-icon", action, kind: t("system_component") })),
     { name: t("concepts_docmap"), iconId: "docMap", icon: "doc-icon", action: "open-system-concepts-docmap", kind: t("system_component") },
     { name: t("concepts_clio_stage"), iconId: "clioStage", icon: "doc-icon", action: "open-system-concepts-clio-stage", kind: t("system_component") },
   ], t("help_folder"));
@@ -787,30 +797,17 @@ function getApplicationsItems() {
   const location = applicationsFolderLocationPath();
   if (applicationsFinderPath === "create") {
     return withStaticFinderMetadata([
-      { name: t("clio_stage_label"), iconId: "clioStage", icon: "tools-icon", action: "open-clio-stage", type: "application", kind: t("application") },
-      { name: t("clio_chart_label"), iconId: "clioChart", icon: "tools-icon", action: "open-clio-chart", type: "application", kind: t("application") },
-      { name: t("clio_project_label"), iconId: "clioProject", icon: "tools-icon", action: "open-clio-project", type: "application", kind: t("application") },
-      { name: t("clio_paint_label"), iconId: "clioPaint", icon: "tools-icon", action: "open-clio-paint", type: "application", kind: t("application") },
-      { name: t("liquid_cover_label"), iconId: "liquidCover", icon: "tools-icon", action: "open-liquid-cover", type: "application", kind: t("application") },
-      { name: t("cmf_studio_label"), iconId: "cmfStudio", icon: "tools-icon", action: "open-cmf-studio", type: "application", kind: t("application") },
-      { name: t("image_prompt_studio_label"), iconId: "imagePromptStudio", action: "open-image-prompt-studio", type: "application", kind: t("application") },
-      { name: t("soundscape_label"), iconId: "soundscape", icon: "tools-icon", action: "open-soundscape", type: "application", kind: t("application") },
+      ...window.AISystem6Admissions?.applicationItems?.("create"),
     ], location);
   }
   if (applicationsFinderPath === "games") {
     return withStaticFinderMetadata([
-      { name: t("micropolis_label"), iconId: "micropolis", action: "open-micropolis", type: "application", kind: t("application") },
-      { name: t("openttd_label"), iconId: "openttd", action: "open-openttd", type: "application", kind: t("application") },
-      { name: t("doom_label"), iconId: "doom", action: "open-doom", type: "application", kind: t("application") },
-      { name: t("bonsai_city_label"), iconId: "bonsaiCity", action: "open-bonsai-city", type: "application", kind: t("application") },
+      ...window.AISystem6Admissions?.applicationItems?.("games"),
     ], location);
   }
   if (applicationsFinderPath === "extras") {
     return withStaticFinderMetadata([
-      { name: t("endfield_terminal_label"), iconId: "endfieldTerminal", icon: "tools-icon", action: "open-endfield-terminal", type: "application", kind: t("application") },
-      { name: t("bureaucracy_meme_label"), iconId: "bureaucracyMeme", icon: "tools-icon", action: "open-bureaucracy-meme", type: "application", kind: t("application") },
-      { name: t("one_more_tune_label"), iconId: "oneMoreTune", icon: "tools-icon", action: "open-one-more-tune", type: "application", kind: t("application") },
-      { name: t("time_machine_label"), iconId: "timeMachine", icon: "tools-icon", action: "open-time-machine", type: "application", kind: t("application") },
+      ...window.AISystem6Admissions?.applicationItems?.("extras"),
       { name: t("rebuild_article"), iconId: "rebuildArticle", icon: "tools-icon", action: "open-rebuild-flow", type: "application", kind: t("application"), workspaceCapability: workspaceCapabilityStudio },
       { name: t("guide_play_demo"), iconId: "writingDemo", icon: "teachtext-icon", action: "play-writing-demo", type: "application", kind: t("application"), workspaceCapability: workspaceCapabilityStudio },
       { name: t("guide_play_teaser_demo"), iconId: "writingDemo", icon: "teachtext-icon", action: "play-teaser-demo", type: "application", kind: t("application") },
@@ -820,11 +817,10 @@ function getApplicationsItems() {
   // Stationery Pad, Finder Label and Droplet stay file/menu/drop behaviors and
   // are not listed as top-level applications.
   return withStaticFinderMetadata([
+    ...window.AISystem6Admissions?.applicationItems?.("root"),
     { name: t("writing_studio"), iconId: "writingStudio", icon: "writing-studio-icon", action: "open-writing-studio", type: "application", kind: t("application"), workspaceProfiles: [workspaceProfileDesktop] },
-    { name: t("quick_draft_label"), iconId: "quickDraft", icon: "teachtext-icon", action: "open-quick-draft", type: "application", kind: t("application") },
     { name: t("assistant_label"), iconId: "assistant", icon: "app-icon", action: "open-assistant", type: "application", kind: t("application") },
     { name: t("reader_label"), iconId: "reader", icon: "reader-desk-icon", action: "open-reader", type: "application", kind: t("application") },
-    { name: t("searcher_label"), iconId: "searcher", icon: "tools-icon", action: "open-find-path", type: "application", kind: t("application") },
     { name: t("teachtext_label"), iconId: "teachText", icon: "teachtext-icon", action: "open-teachtext", type: "application", kind: t("application") },
     { name: t("scrapbook_label"), iconId: "scrapbook", icon: "folder-icon", action: "open-scrapbook", type: "application", kind: t("application") },
     { name: t("docmap_label"), iconId: "docMap", icon: "folder-icon", action: "open-docmap", type: "application", kind: t("application") },

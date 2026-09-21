@@ -76,6 +76,23 @@ export function exists(path) {
 // call a hook makes without also pinning where the hook lives.
 let windowRegistryCache = null;
 
+/**
+ * Which Applications folder a command is listed in, read from the admission
+ * table (app/core/app-admissions.js) — the one place a listed window declares
+ * its folder, its label and the icon it draws. An empty string means the window
+ * is not listed in the Applications folder at all (a desk accessory, an alias of
+ * a listed window, or a window that opens from somewhere else).
+ */
+export function admittedApplicationGroup(command) {
+  const wanted = String(command || "");
+  if (!wanted) return "";
+  const source = read("app/core/app-admissions.js");
+  const row = source
+    .split("\n")
+    .find((line) => line.includes(`command: "${wanted}"`) && line.includes("applicationGroup:"));
+  return row ? (/applicationGroup: "([a-z]+)"/.exec(row)?.[1] || "") : "";
+}
+
 export function windowRegistryRecords() {
   if (windowRegistryCache) return windowRegistryCache;
   const source = read("app/core/window-registry.js");

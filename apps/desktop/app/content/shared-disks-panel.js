@@ -12,8 +12,13 @@
 // measured against the floppy budget, so a window that costs nothing until it
 // is opened is the only honest way to add one. It reuses the Import Utility's
 // row classes and the standard window chrome; no new stylesheet is needed.
+//
+// installDemoDisksPanel() is the mount symbol the interface registry points at
+// (tooling/interface-guidelines-contract.mjs), the same shape every other
+// module-built window uses, so the appearance and HIG instruments can mount
+// this window the way they mount theirs.
 
-window.AISystem6DemoDisksPanel = (() => {
+function installDemoDisksPanel() {
   const APP_ID = "projectDisks";
   const WINDOW_NAME = "projectDisks";
   const TITLE_ID = "project-disks-title";
@@ -103,7 +108,9 @@ window.AISystem6DemoDisksPanel = (() => {
     const name = document.createElement("b");
     name.textContent = bundle?.project?.name || route;
     const line = document.createElement("small");
-    line.textContent = summary(bundle);
+    // The row is one line, so the name and the subject need a mark between
+    // them: without it the two read as one run-on word.
+    line.textContent = ` · ${summary(bundle)}`;
     label.append(name, line);
     row.append(icon, label);
 
@@ -284,4 +291,6 @@ window.AISystem6DemoDisksPanel = (() => {
   });
 
   return Object.freeze({ open, renderWindow, renderInline, disks });
-})();
+}
+
+window.AISystem6DemoDisksPanel = installDemoDisksPanel();

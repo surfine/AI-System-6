@@ -407,6 +407,23 @@ const windowRegistry = Object.freeze({
     app: "finder",
     onOpen: () => renderProjectCd(),
   },
+  // The demonstration disks are a window the panel builds once its own module
+  // loads (app/content/shared-project-disks.js), so this record names the
+  // loader and the panel instead of a markup id. Without the row the window
+  // borrowed the "finder" fallback and stayed invisible to every instrument
+  // that walks the registry.
+  projectDisks: {
+    app: "finder",
+    builtByModule: true,
+    // attach builds the frame and draws the list; it must not call open(),
+    // because open() opens the window through the manager and the manager
+    // runs attach — that pair re-entered itself and starved the page.
+    lazy: {
+      ensure: () => ensureSharedProjectDisksModule(),
+      attach: () => window.AISystem6DemoDisksPanel?.renderWindow?.(),
+      appearanceAttach: () => window.AISystem6DemoDisksPanel?.renderWindow?.(),
+    },
+  },
   projectInfo: {
     app: "finder",
   },

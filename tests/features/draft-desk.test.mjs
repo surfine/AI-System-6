@@ -44,7 +44,7 @@ const feature = [coordinator, intake, editor, composition, ai, handoff].join("\n
 test.assert(quickWindowStart > 0 && quickWindowEnd > quickWindowStart, "Draft Desk has one named System 6 window");
 test.assertIncludes(html, 'data-action="open-quick-draft"', "the existing Finder entry opens Draft Desk");
 test.assertIncludes(handoff, '"open-quick-draft"', "the lazy handoff keeps the existing open route");
-test.assertIncludes(actions, 'registerLazyCommand?.("open-quick-draft"', "the open route is wired through a lazy runtime command");
+test.assertIncludes(read("app/core/app-admissions.js"), '"open-quick-draft"', "the open route is admitted through the shared table");
 test.assertMatches(config, /ensureQuickDraftModule[\s\S]*"app\/features\/draft-desk\.js"[\s\S]*"app\/features\/quick-draft-handoff\.js"/, "the clean coordinator owns the lazy chain");
 
 // 文字亮室 shares the lazy module with Quick Draft, so a cold open of the

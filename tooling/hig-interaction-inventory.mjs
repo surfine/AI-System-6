@@ -419,6 +419,35 @@ export function inspectJavaScriptSource(source, file = "fixture.js") {
       });
     }
 
+    // A command table driven by one loop is still a command source:
+    //   Object.entries({ "open-trash": "trash", … })
+    //     .forEach(([id, windowName]) => registerCommand?.(id, { handler: () => openWindow(windowName) }))
+    // actions.js consolidated sixteen near-identical open-window commands into
+    // this shape. Reading it as "no handler" would report sixteen live commands
+    // as dead, which is exactly what a table like this exists to prevent.
+    if (node.type === "CallExpression" && memberName(node.callee) === "forEach") {
+      const container = node.callee.object;
+      const entriesCall = container?.type === "CallExpression" && memberName(container.callee) === "entries"
+        ? container
+        : null;
+      const table = entriesCall ? resolveNode(entriesCall.arguments[0], bindings) : null;
+      // The loop body is asked, not its source text: nodeSource() is capped at
+      // 180 characters, and the table above the callback is longer than that.
+      let registers = false;
+      walkAst(node, (child) => {
+        if (registers) return;
+        if (child.type === "CallExpression" && ["registerCommand", "registerLazyCommand"].includes(memberName(child.callee))) {
+          registers = true;
+        }
+      });
+      if (table?.type === "ObjectExpression" && registers) {
+        for (const property of table.properties) {
+          const action = property.type === "Property" ? propertyName(property) : "";
+          if (action) actionHandlers.push(Object.freeze({ action, handler: nodeSource(source, node), location: sourceLocation(file, property) }));
+        }
+      }
+    }
+
     if (node.type === "CallExpression" && node.callee.type === "Identifier" && ["openWindow", "closeWindow"].includes(node.callee.name)) {
       const windowName = staticString(node.arguments[0]);
       if (windowName) windowCalls.push(Object.freeze({ operation: node.callee.name, windowName, location: sourceLocation(file, node), handler: nodeSource(source, node) }));

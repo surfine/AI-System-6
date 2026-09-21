@@ -37,6 +37,7 @@ export const coreFiles = [
 
 export const appModulePaths = [
   "app/core/config.js",
+  "app/core/app-admissions.js",
   "app/core/humanizer-guidance.js",
   "app/core/system-integrity-guidance.js",
   "app/core/model-roles.js",

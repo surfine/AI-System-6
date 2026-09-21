@@ -1,4 +1,4 @@
-import { createFeatureTest, read, windowApp } from "../helpers/feature-test-harness.mjs";
+import { admittedApplicationGroup, createFeatureTest, read, windowApp } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("workspace-profile");
 const profile = read("app/core/workspace-profile.js");
@@ -74,9 +74,12 @@ test.assertNotIncludes(html, 'data-action="quit-writing-studio"', "Writing Flow 
 test.assertIncludes(html, 'id="finder-writing-studio-toggle"', "Finder single-task desktop has one Writing Studio toggle icon");
 test.assertIncludes(menus, 'menuItem("print-current", "print")', "TeachText File menu exposes the shared print action");
 test.assertIncludes(html, 'data-workspace-capability="studio"', "studio-only DOM surfaces use the shared visibility marker");
-test.assertMatches(app, /writing_studio[\s\S]*open-writing-studio[\s\S]*quick_draft_label[\s\S]*open-quick-draft[\s\S]*assistant_label[\s\S]*open-assistant/, "Applications keeps Writing Studio, independent Quick Draft, then ClioTalk on the desktop bridge");
+// The root's listed applications now come from the admission table in one
+// spread (Quick Draft among them), and the root's own markup keeps Writing
+// Studio and ClioTalk after it — the desktop bridge order the profile needs.
+test.assertMatches(app, /applicationItems\?\.\("root"\)[\s\S]*writing_studio[\s\S]*assistant_label/, "Applications keeps the table's rows, then Writing Studio and ClioTalk on the desktop bridge");
 test.assertMatches(app, /open-writing-studio[\s\S]*workspaceProfiles: \[workspaceProfileDesktop\]/, "Writing Studio launcher appears only on the desktop");
-test.assertMatches(app, /quick_draft_label[\s\S]*action: "open-quick-draft"[\s\S]*type: "application"/, "Quick Draft is a root Applications item");
+test.assert(admittedApplicationGroup("open-quick-draft") === "root", "Quick Draft is a root Applications item (admitted and listed by the table)");
 test.assertNotMatches(profile, /const studioWindowNames = new Set\(\[[^\]]*"quickDraft"/, "Quick Draft is available outside the writing workspace");
 test.assertNotMatches(profile, /const studioActionNames = new Set\(\[[^\]]*"open-quick-draft"/, "Quick Draft launches directly from the Desktop profile");
 test.assertMatches(html, /desktop-app-icon[\s\S]*data-action="open-quick-draft"[\s\S]*data-system-icon="quickDraft"/, "the Desktop has a direct Quick Draft application icon");

@@ -11,6 +11,7 @@
 // committed elsewhere.
 import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 import { createAppBootVm } from "../helpers/app-boot-vm.mjs";
+import { windowInterfaceRegistry } from "../../tooling/interface-guidelines-contract.mjs";
 
 const test = createFeatureTest("demo-disks-panel");
 
@@ -52,7 +53,12 @@ test.assertIncludes(
 //    module that the launch links already load.
 test.assertIncludes(
   actions,
-  'registerLazyCommand?.("open-demo-disks",{ensure:ensureSharedProjectDisksModule})',
+  "registerOpeners",
+  "the boot hands the openers to the shared admission table",
+);
+test.assertIncludes(
+  read("app/core/app-admissions.js"),
+  '"open-demo-disks"',
   "the disks command loads the shared-disk module instead of shipping itself",
 );
 
@@ -122,6 +128,31 @@ test.assertIncludes(readmeZh, "https://system6.aaronlau.me/go/dtk", "中文 READ
 test.assertIncludes(readme, "tooling/build-shared-project-disks.mjs", "README 告诉开发者登记处");
 test.assertIncludes(readmeZh, "tests/features/launch-intent.test.mjs", "中文 README 指出守着源盘与发布副本的契约");
 
+// 8b. The window is a first-class window and the page is in the folder a person
+//     looks in. Both registries have to agree: window-registry.test.mjs fails on
+//     a record without an interface contract, and the appearance/HIG/screenshot
+//     instruments read the interface registry, so the two rows are one decision.
+const windowRegistry = read("app/core/window-registry.js");
+const interfaceContract = windowInterfaceRegistry.projectDisks;
+test.assertIncludes(windowRegistry, "projectDisks: {", "窗口在运行时注册表里有记录");
+test.assertIncludes(windowRegistry, "ensureSharedProjectDisksModule()", "注册表的懒加载指向磁盘模块");
+test.assert(!!interfaceContract, "接口表里有这一扇窗口");
+test.assert(
+  interfaceContract?.mountPath === "app/content/shared-disks-panel.js#installDemoDisksPanel",
+  "接口表指向面板的挂载符号",
+);
+test.assert(interfaceContract?.openCommand === "open-demo-disks", "接口表声明真实开启命令");
+test.assert(
+  interfaceContract?.cssPrefixes?.includes("project-disks-"),
+  "接口表声明 CSS 归属前缀",
+);
+test.assert(
+  interfaceContract?.appearanceProbe?.sampleSelector === ".project-disks-window .import-row",
+  "外观探针取一行列表，而不是所有窗口共用的面板",
+);
+test.assertIncludes(read("app.js"), '["shared_readme", "open-demo-disks-readme", "projectDisk"]', "说明文件夹列出这一篇");
+test.assertIncludes(actions, '"open-demo-disks-readme":"shared"', "说明文件夹的行打开同一篇文档");
+
 // 9. Then boot the desk. The rows above are the shape; this is the wiring. The
 //    failure this catches is the one the id nearly caused: registerLazyCommand()
 //    throws on a duplicate id, and the throw happens at the top of the eager
@@ -185,6 +216,10 @@ test.assert(
   "a row carries the project's own name and the subject line from its question sheet",
 );
 test.assert(
+  paneText().includes("未来通车之后 · 2020 年 DTK 的遗迹报告"),
+  "the name and the subject are separated, so a row does not read as one run-on word",
+);
+test.assert(
   vmw.run('document.querySelectorAll(".backup-preview-section .import-row").length') === 2
     && !vmw.run('document.querySelector(".backup-preview-section").textContent.includes("演示盘")'),
   "the Import Utility gets the same two rows without the window's introduction",
@@ -212,3 +247,7 @@ test.assert(
 );
 
 test.finish();
+// A real boot leaves unrelated background work in flight (the window manager's
+// own scheduling among it), and test.finish() does not exit on success — the
+// same line window-registry.test.mjs carries for the same reason.
+process.exit(0);

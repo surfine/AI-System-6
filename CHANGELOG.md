@@ -1299,6 +1299,24 @@ landscape sweep) stay open and are tracked in the 1.0.52 closeout.
   images, and local WebM fold-video export.
 - MacBook Neo uses the same continuous hinge interaction for its open pose.
 
+## Public Beta 1.0.55 - 2026-09-22 update
+
+- **File › Open Demonstration Project Disks…** lists the two disks that ship
+  with the application. It opens a small window that shows each disk's own
+  subject line and hands it to the same import path a shared link uses; the
+  Import Utility's Project backup section carries the same rows, and the 说明
+  folder lists the page that explains where the disks come from.
+- **A project disk a person opens by hand now opens.** Both source disks in
+  `internal/` had drifted: their own counts said four files while they held
+  eleven, and their digests were taken over those counts, so choosing the file
+  in the Import Utility produced "backup content has changed". The rule now
+  lives in one module shared by the generator, a new restamp tool
+  (`npm run disks:restamp`) and a contract that asks the app's own validator.
+- **The first slice of the admission cost is paid.** Sixteen commands that only
+  open a window, and the four help documents, are now one table each instead of
+  near-identical lines in several files: the boot payload fell by 1,155 bytes
+  while adding a File row, a help entry and a window registry record.
+
 ## Public Beta 1.0.55 - 2026-09-12
 
 - CMF Studio's interactive colorways are lit by the official product scene's

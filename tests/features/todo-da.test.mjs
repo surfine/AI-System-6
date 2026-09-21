@@ -76,7 +76,7 @@ test.assertIncludes(zh, 'todo_da: "待办"', "Chinese names it 待办");
 
 // The Apple menu's Utility DA group carries the entry.
 test.assertIncludes(html, '<button data-action="open-todo-da" data-i18n="todo_da">', "the Apple menu lists To Do");
-test.assertIncludes(actions, '"open-todo-da",{ensure:ensureTodoDaModule}', "opening it is a lazy command");
+test.assertIncludes(read("app/core/app-admissions.js"), '"open-todo-da"', "opening it is admitted with its loader, so the first click loads the module");
 
 // ---- No cap, never auto-dropped, executed -----------------------------------
 const slice = accessories.slice(

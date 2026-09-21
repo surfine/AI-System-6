@@ -1,5 +1,5 @@
 import vm from "node:vm";
-import { createFeatureTest, read, windowApp } from "../helpers/feature-test-harness.mjs";
+import { admittedApplicationGroup, createFeatureTest, read, windowApp } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("clio-chart");
 const source = read("app/features/clio-chart.js");
@@ -231,7 +231,7 @@ test.assert(windowApp("clioChart") === "clioChart", "the window maps to its own 
 test.assertIncludes(menus, "clioChart: clioChartMenus", "the application owns a menu set");
 test.assertIncludes(menus, 'menuItem("see-as-chart", "clio_chart_see_as_chart")', "TeachText carries the menu twin of the in-body button");
 test.assertIncludes(source, '"open-clio-chart"', "the open action is registered in the lazy module");
-test.assertIncludes(actions, 'registerLazyCommand?.("open-clio-chart"', "the open action is wired through a lazy runtime command");
+test.assertIncludes(read("app/core/app-admissions.js"), '"open-clio-chart"', "the open action is admitted through the shared table");
 test.assertIncludes(html, 'id="teachtext-chart-owner"', "TeachText shows who owns the table block");
 
 ["clio_chart_title", "clio_chart_label", "clio_chart_see_as_chart", "clio_chart_not_measured", "clio_chart_rollup_note"].forEach((key) => {
@@ -466,7 +466,7 @@ test.assertIncludes(chartSource, "function clioChartTemplatePresets()", "the rev
 test.assertNotIncludes(chartSource, "renderClioChartChooser", "there is no in-window template chooser");
 test.assertIncludes(chartSource, 'openClioChartTemplate({ id: "blank", builtIn: true })', "the window opens with a blank comparison already on the grid");
 test.assertIncludes(menus, 'submenu("clio_chart_new_from_template"', "the presets live in File > New");
-test.assertIncludes(app, 'action: "open-clio-chart"', "ClioChart is a real entry in the Applications folder");
+test.assert(admittedApplicationGroup("open-clio-chart") === "create", "ClioChart is a real entry in the Applications folder");
 ["cpu-gpu", "gaming", "battery-power", "noise-heat", "display", "rating", "blank"].forEach((id) => {
   test.assertIncludes(chartSource, `id: "${id}"`, `the ${id} preset exists`);
 });

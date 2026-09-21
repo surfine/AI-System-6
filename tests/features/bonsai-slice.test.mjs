@@ -4,7 +4,7 @@
 
 import vm from "node:vm";
 import { webcrypto } from "node:crypto";
-import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
+import { admittedApplicationGroup, createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("bonsai-slice");
 
@@ -105,6 +105,6 @@ const windowManager = read("app/core/window-manager.js");
 test.assertIncludes(windowManager, "appId === \"bonsaiCity\"", "closing the window saves and stops the loop");
 
 const finder = read("app.js");
-test.assertIncludes(finder, "action: \"open-bonsai-city\"", "the slice launches from Applications");
+test.assert(admittedApplicationGroup("open-bonsai-city") === "games", "the slice launches from Applications (listed by the admission table)");
 
 test.finish();

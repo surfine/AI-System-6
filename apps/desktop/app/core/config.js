@@ -498,7 +498,10 @@ const ensureDarkroomModule = createLazyModuleLoader("AISystem6DarkroomStore", [
 const ensureContextGistModule = createLazyModuleLoader("AISystem6ContextGist", ["app/core/context-gist.js"]);
 const ensureDocMapSourcePolicyModule = createLazyModuleLoader("AISystem6DocMapSourcePolicy", ["app/core/docmap-source-policy.js"]);
 const ensureUserRecoveryMessagesModule = createLazyModuleLoader("AISystem6UserRecoveryMessages", ["app/core/user-recovery-messages.js"]);
- const ensureCityDemandGauge = createLazyModuleLoader("AISystem6CityDemandGaugeLoaded", ["app/features/city-demand-gauge.js"]);
+// Empty loader: nothing calls it, and its file is loaded by the Micropolis and
+// Bonsai City loaders below. Kept, not deleted — see
+// internal/agents/DEBT-AUDIT.zh-CN.md for the evidence and the removal list.
+const ensureCityDemandGauge = createLazyModuleLoader("AISystem6CityDemandGaugeLoaded", ["app/features/city-demand-gauge.js"]);
  const ensureBonsaiSc2000Reader = createLazyModuleLoader("AISystem6BonsaiSc2000ReaderLoaded", ["app/features/bonsai-sc2000-reader.js"]);
 const ensureBonsaiLargeDatReader = createLazyModuleLoader("AISystem6BonsaiLargeDatReaderLoaded", ["app/features/bonsai-large-dat-reader.js"]);
 const ensureBonsaiSc2kPalette = createLazyModuleLoader("AISystem6BonsaiSc2kPaletteLoaded", ["app/features/bonsai-sc2k-palette.js"]);
@@ -542,6 +545,8 @@ const ensureProjectPeekModule = createLazyModuleLoader("AISystem6ProjectPeekLoad
 const ensureProjectDiskBackupModule = createLazyModuleLoader("AISystem6ProjectDiskBackupLoaded", ["app/core/project-disk-backup.js"]);
 // The save-plan shadow comparison: a development instrument, loaded by the
 // check that uses it rather than carried by every desk.
+// Development instrument nothing loads: the guard in persistence-status.js reads
+// window.AISystem6ScanShadow only to find it absent. Same note, same decision.
 const ensureScanShadowModule = createLazyModuleLoader("AISystem6ScanShadow", ["app/core/persistence-scan-shadow.js"]);
 const ensureVideoTranscriptModule = createLazyModuleLoader("AISystem6VideoTranscriptLoaded", ["app/features/video-transcript.js"]);
 const ensureVideoDocMapModule = createLazyModuleLoader("AISystem6VideoDocMapLoaded", ["app/features/video-docmap.js"]);

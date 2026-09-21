@@ -36,7 +36,7 @@ test.assertIncludes(
   'createLazyModuleLoader("AISystem6ClioPaintLoaded", ["app/core/application-shell.js", "app/features/clio-paint.js"], false, ["styles.clio-paint.css"])',
   "one loader names the shell, the module, and its stylesheet together"
 );
-test.assertIncludes(actions, '"open-clio-paint",{ensure:ensureClioPaintModule}', "the opener is a lazy command, so the first click loads the module");
+test.assertIncludes(read("app/core/app-admissions.js"), '"open-clio-paint"', "the opener is admitted with its loader, so the first click loads the module");
 test.assertIncludes(source, "window.AISystem6ClioPaintLoaded = true;", "the module installs its loaded flag");
 
 const clioPaintStyleBundle = lazyStyleBundles.find((bundle) => bundle.id === "clio-paint");
@@ -52,7 +52,7 @@ test.assert(!!record.lazy, "the registry knows the window arrives lazily");
 test.assertIncludes(source, 'function installClioPaintWindow()', "the module builds its own window, following ClioProject's pattern");
 test.assertNotIncludes(html, 'data-window="clioPaint"', "the window is not duplicated as static markup in index.html");
 
-test.assertIncludes(multiFinder, 'clioPaint: "ClioPaint"', "MultiFinder can name the running application");
+test.assertIncludes(read("app/core/app-admissions.js"), 'multiFinder: "ClioPaint"', "MultiFinder can name the running application from the admission table");
 test.assertMatches(
   windowManager,
   /mobileFullScreenAppIds = new Set\(\[(?:(?!\]\))[\s\S])*"clioPaint"/,
