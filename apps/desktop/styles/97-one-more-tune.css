@@ -1936,4 +1936,33 @@ body[data-theme="classic"] .one-more-tune-window .playbutton { background:var(--
     min-height: 14px;
     font-size: 10px;
   }
+
+  /* The reveal face has the same problem the question face had, and the same
+     answer: the stage gives up its desktop height, the record box loses its
+     padding and its small print, and the way onward lands inside the screen
+     instead of under it. Measured before: on a 396x484 wrist the record box
+     ended at 504 and the Next button was below it, with nothing scrollable. */
+  .one-more-tune-window .one-more-tune-round-reveal > .darkplayer {
+    aspect-ratio: 2 / 1;
+    min-height: 0;
+    max-height: 104px;
+    padding: 6px 10px;
+  }
+  .one-more-tune-window .one-more-tune-round-reveal > .darkplayer .vinyl {
+    height: 60px;
+  }
+  .one-more-tune-window .one-more-tune-round-reveal > .darkplayer .playbutton {
+    width: 34px;
+    height: 34px;
+  }
+  .one-more-tune-window .one-more-tune-round-reveal .revealbox {
+    padding: 6px 8px;
+  }
+  .one-more-tune-window .one-more-tune-round-reveal .revealbox h3 {
+    font-size: 14px;
+  }
+  .one-more-tune-window .one-more-tune-round-reveal .revealbox p {
+    margin: 2px 0 6px;
+    font-size: 11px;
+  }
 }

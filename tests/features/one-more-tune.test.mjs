@@ -1237,6 +1237,16 @@ test.assertMatches(omtStyles, /@media \(hover: none\) and \(pointer: coarse\) \{
   "the quiz's own tabs take the touch minimum where the pointer is coarse");
 test.assertMatches(omtStyles, /\.one-more-tune-tabs \.system-tab \{ min-height:36px;/,
   "and what the sideways layout can spare rather than the floor it used to sit on");
+// The reveal is the face a round spends its time on after the answer lands, and
+// on a 396x484 wrist its record box ended at 504 with the Next button under it
+// and nothing scrollable: the way onward was off the screen entirely. The
+// challenge face had already learned this; the reveal now gives up the same
+// desktop stage height and the same box padding. Measured after: nothing
+// clipped, no pane scroll, on the wrist and on every phone cell the probe runs.
+test.assertMatches(omtStyles, /@media \(max-width: 430px\) and \(max-height: 520px\) \{[\s\S]{0,4000}\.one-more-tune-round-reveal > \.darkplayer \{\s*\n\s*aspect-ratio: 2 \/ 1;/,
+  "the wrist reveal takes the stage height the screen can spare");
+test.assertMatches(omtStyles, /@media \(max-width: 430px\) and \(max-height: 520px\) \{[\s\S]{0,4000}\.one-more-tune-round-reveal \.revealbox p \{\s*\n\s*margin: 2px 0 6px;/,
+  "and its record box loses the padding a desktop reveal can afford");
 test.assertIncludes(source, "oneMoreTuneSourceQuery",
   "and the search has state of its own rather than borrowing the shelf's");
 test.assertIncludes(source, 'class="page-footer"',

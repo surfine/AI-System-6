@@ -126,3 +126,10 @@ touch minimum, and no corner at a display edge is drawn twice.
 - The 45mm display's Digital Crown is the platform's navigation for switching
   screens; the web page cannot read it, so the glance's three faces stay on
   screen instead of behind a crown.
+- The reveal face on a sideways phone: measured, its record box and its tail
+  need about 120-140px more than a 402px-high screen's pane has, so that one
+  face scrolls inside itself while the question and the round result do not.
+  Nothing is unreachable — the pane scrolls, and the Study menu carries the way
+  onward as well — but "one screen" is not yet true there, and it is the last
+  face where it is not. The wrist had the same defect and does not any more (see
+  the watch band: nothing clipped, no pane scroll at 396x484).
