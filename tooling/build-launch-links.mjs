@@ -37,6 +37,7 @@ export const LAUNCH_ROUTES = Object.freeze([
   "time-machine",
   "liquid-cover",
   "dtk",
+  "ipad1",
   "cmf-studio",
   "one-more-tune",
 ]);

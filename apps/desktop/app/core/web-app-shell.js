@@ -213,26 +213,22 @@ async function keepApplicationShell() {
 // over the desk gives the colour the strip should actually be, opaque, for
 // every era including the translucent ones.
 
-const CSS_HEX = /^#([0-9a-f]{3,8})$/i;
-
-/** A CSS colour as numbers, or null when this is not one this desk writes. */
+/**
+ * A CSS colour as numbers, or null.
+ *
+ * Only the `rgb()`/`rgba()` form is read: this parses what
+ * `getComputedStyle` hands back, and a browser always serializes a computed
+ * colour that way, whatever the sheet wrote. The hex branch that stood here
+ * first could never run — and the boot budget is counted in bytes.
+ */
 function parseCssColor(value) {
-  const text = String(value || "").trim();
-  const functional = /^rgba?\(([^)]+)\)$/i.exec(text);
-  if (functional) {
-    const parts = functional[1].split(/[,\/\s]+/).filter(Boolean);
-    const [r, g, b] = parts.slice(0, 3).map((part) => Number.parseFloat(part));
-    const alpha = parts.length < 4 ? 1 : Number.parseFloat(parts[3]);
-    if (![r, g, b, alpha].every(Number.isFinite)) return null;
-    return { r, g, b, a: Math.max(0, Math.min(1, alpha)) };
-  }
-  const hex = CSS_HEX.exec(text);
-  if (!hex) return null;
-  const digits = hex[1];
-  const wide = digits.length >= 6 ? digits.slice(0, 6) : digits.split("").map((d) => d + d).join("");
-  const value_ = Number.parseInt(wide, 16);
-  if (!Number.isFinite(value_)) return null;
-  return { r: (value_ >> 16) & 255, g: (value_ >> 8) & 255, b: value_ & 255, a: 1 };
+  const match = /^rgba?\(([^)]+)\)$/i.exec(String(value || "").trim());
+  if (!match) return null;
+  const parts = match[1].split(/[,\/\s]+/).filter(Boolean);
+  const [r, g, b] = parts.slice(0, 3).map((part) => Number.parseFloat(part));
+  const alpha = parts.length < 4 ? 1 : Number.parseFloat(parts[3]);
+  if (![r, g, b, alpha].every(Number.isFinite)) return null;
+  return { r, g, b, a: Math.max(0, Math.min(1, alpha)) };
 }
 
 /** The bar's fill as it reads on screen: its own colour over what is beneath. */

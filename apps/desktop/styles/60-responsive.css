@@ -1204,7 +1204,7 @@ select:focus {
        its two lower corners meet the display's own — the display owns those
        (see --edge-radius). The two upper corners sit under the menu bar, which
        is inside the screen, so they stay the era's. */
-    border-radius: var(--surface-radius) var(--surface-radius) var(--edge-radius) var(--edge-radius);
+    border-radius: var(--edge-shape);
     transform: none;
     display: flex;
     flex-direction: column;
@@ -1225,9 +1225,28 @@ select:focus {
      that is no longer the window's, so the mark sat in the one place the
      display is already curving. The eras keep their resize controls everywhere
      a resize is real; a surface that covers the screen is not one. */
-  body:not(.is-writer-mode) .window.is-mobile-fullscreen:not(.is-collapsed) .grow-box,
-  body:not(.is-writer-mode) .window.is-mobile-system-page:not(.is-collapsed) .grow-box {
+  .is-mobile-fullscreen .grow-box,
+  .is-mobile-system-page .grow-box {
     display: none;
+  }
+
+  /* ClioTalk's composer is its shell's last row, so its own bottom edge is the
+     display's edge exactly when nothing holds it up: with a home indicator the
+     safe area does (34px), and with none — iPhone Duo's outer display, or a
+     phone held sideways — the composer reaches the curve, and the display owns
+     those two corners. Both were measured in Liquid Glass with the composer's
+     16px arcs sitting inside the display's own corner; the phone shapes with a
+     home indicator were right as they were, which is why this is the composer's
+     own rule and not a blanket one.
+
+     The multiplied inset is a presence test rather than a length: any inset at
+     all restores the era's radius, and zero leaves the corner to the display.
+     Scoped to the phone's own full-screen states, so a narrow desktop window
+     never reads it. */
+  :is(body.mobile-app-foreground, body.mobile-landscape-shell) .window.is-mobile-fullscreen .composer {
+    border-radius: var(--surface-radius) var(--surface-radius)
+      min(var(--surface-radius), var(--safe-area-bottom) * 1000)
+      min(var(--surface-radius), var(--safe-area-bottom) * 1000);
   }
 
   body:not(.is-writer-mode) .system-help-window.is-mobile-system-page > .system-help-pane {
@@ -1746,7 +1765,7 @@ body.is-writer-mode .system-help-window .system-help-pane {
        under the menu bar are the era's. Liquid Glass used to draw its 16px in
        all four, which put a small rounded corner inside the phone's much larger
        one at the bottom of the screen. */
-    border-radius: var(--surface-radius) var(--surface-radius) var(--edge-radius) var(--edge-radius);
+    border-radius: var(--edge-shape);
     transform: none;
     display: flex;
     flex-direction: column;
@@ -3151,7 +3170,7 @@ input[type="radio"] {
     /* Landscape is the same ownership as portrait (see the portrait shell):
        the lower edge is the display's, whatever the safe-area insets are on
        the sides. */
-    border-radius: var(--surface-radius) var(--surface-radius) var(--edge-radius) var(--edge-radius);
+    border-radius: var(--edge-shape);
     transform: none;
     aspect-ratio: auto;
   }

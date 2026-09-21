@@ -19,6 +19,7 @@ export const SHIP_REQUIRED_CHECKS = Object.freeze([
   "appearance-snapshot",
   "appearance-token-tables",
   "device-matrix",
+  "display-corners",
 ]);
 
 /**
@@ -73,6 +74,17 @@ export const SHIP_GATES = Object.freeze([
     args: ["tooling/appearance-token-check.mjs", "--verify"],
     quiet: true,
     costHintMs: 8_000,
+  },
+  {
+    // Who owns a corner: the display, or the era. The phone shapes are what
+    // make this a measurement rather than a reading of the stylesheet — the
+    // surface that takes the display's curve is the one whose box reaches the
+    // screen edge, and which boxes do that depends on the shape and the insets.
+    name: "display-corners",
+    args: ["tooling/verify-display-corners.mjs"],
+    lane: "batch",
+    quiet: true,
+    costHintMs: 60_000,
   },
   {
     // Geometry and reachability on a phone, at three real device sizes and in

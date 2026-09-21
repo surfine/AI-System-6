@@ -293,7 +293,7 @@ test.assertMatches(liquid, /body\.use-liquid-glass \.close-box,\nbody\.use-liqui
 // to the display there is nothing to grab, and where the corner belongs to the
 // window the arc is concentric with it. Reported from the owner's phone, where
 // a 14px arc crossed a corner the window no longer rounded at all.
-test.assertMatches(responsive, /\.window\.is-mobile-fullscreen:not\(\.is-collapsed\) \.grow-box,\s*\n\s*body:not\(\.is-writer-mode\) \.window\.is-mobile-system-page:not\(\.is-collapsed\) \.grow-box \{\s*\n\s*display: none;/,
+test.assertMatches(responsive, /\.is-mobile-fullscreen \.grow-box,\s*\n\s*\.is-mobile-system-page \.grow-box \{\s*\n\s*display: none;/,
   "a full-screen phone surface offers no resize control, in any era's grammar");
 test.assertIncludes(liquid, "--grow-box-arc-inset: 4px;", "the Liquid Glass arc keeps one inset from the window edge");
 test.assertIncludes(liquid, "--grow-box-arc-radius: calc(var(--window-radius) - var(--grow-box-arc-inset));",

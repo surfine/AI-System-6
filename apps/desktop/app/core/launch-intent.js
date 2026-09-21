@@ -36,6 +36,7 @@ window.AISystem6LaunchIntent = {
       // in the Writing view: the disk is a finished trip along the writing
       // route, and only that view shows the route it was written on.
       dtk: { command: "open-shared-disk-dtk", window: "teachText", profile: "writing" },
+      ipad1: { command: "open-shared-disk-ipad1", window: "teachText", profile: "writing" },
     };
     const param = (name) => {
       const match = String(search || "").match(new RegExp(`[?&]${name}=([^&#]+)`, "i"));

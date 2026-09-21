@@ -17,6 +17,7 @@ const LAUNCH_ROUTES = new Map([
   ["cmf-studio", "open-cmf-studio"],
   ["one-more-tune", "open-one-more-tune"],
   ["dtk", "open-shared-disk-dtk"],
+  ["ipad1", "open-shared-disk-ipad1"],
 ]);
 
 /**

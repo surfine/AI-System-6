@@ -1732,6 +1732,7 @@ window.AISystem6Runtime?.registerCommand?.("open-teachtext",{handler:openTeachTe
 // part, loaded inside the handler -- and the reference is an arrow so it is
 // resolved when the command runs, not when this line is evaluated.
 window.AISystem6Runtime?.registerCommand?.("open-shared-disk-dtk",{handler:()=>openSharedProjectDisk("dtk"),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-shared-disk-ipad1",{handler:()=>openSharedProjectDisk("ipad1"),isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-finishing-receipt",{handler:()=>openFinishingReceiptForSelection(),isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-clio-attachment-picker",{handler:beginClioTalkAttachmentPicker,isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-clio-image-picker",{handler:openClioImagePicker,isAvailable:()=>!0});

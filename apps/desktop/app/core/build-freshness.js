@@ -83,28 +83,18 @@
    * an older page, not a page that never comes back.
    */
   function settleShell(timeoutMs = 3000) {
-    const worker = global.navigator?.serviceWorker?.controller;
+    const serviceWorker = global.navigator?.serviceWorker;
+    const worker = serviceWorker?.controller;
     if (!worker || typeof worker.postMessage !== "function") return Promise.resolve(false);
+    // One listener, one timer, and no bookkeeping between them: a promise
+    // settles once, so whichever of the two answers first is the answer, and
+    // the other is a no-op. The boot budget is counted in bytes.
     return new Promise((resolve) => {
-      let done = false;
-      const finish = (value) => {
-        if (done) return;
-        done = true;
-        global.clearTimeout?.(timer);
-        global.navigator.serviceWorker.removeEventListener?.("message", onMessage);
-        resolve(value);
-      };
-      const onMessage = (event) => {
-        if (event.data?.type === "shell-refreshed") finish(true);
-        if (event.data?.type === "shell-refresh-failed") finish(false);
-      };
-      const timer = global.setTimeout(() => finish(false), timeoutMs);
-      try {
-        global.navigator.serviceWorker.addEventListener("message", onMessage);
-        worker.postMessage({ type: "refresh-shell" });
-      } catch {
-        finish(false);
-      }
+      serviceWorker.addEventListener("message", (event) => {
+        if (event.data?.type === "shell-refreshed") resolve(true);
+      }, { once: true });
+      global.setTimeout(() => resolve(false), timeoutMs);
+      worker.postMessage({ type: "refresh-shell" });
     });
   }
 

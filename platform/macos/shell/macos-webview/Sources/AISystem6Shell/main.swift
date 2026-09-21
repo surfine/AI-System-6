@@ -139,7 +139,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
     // Keep in sync with launch-intent.js route table and the /go redirectors.
     let allowedRoutes = [
       "endfield-terminal", "bonsai-city", "micropolis", "openttd", "doom",
-      "time-machine", "liquid-cover", "dtk",
+      "time-machine", "liquid-cover", "dtk", "ipad1",
     ]
     guard
       let incoming = URLComponents(url: url, resolvingAgainstBaseURL: false),

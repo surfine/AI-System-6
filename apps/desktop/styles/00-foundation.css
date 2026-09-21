@@ -1188,6 +1188,10 @@
      phone block. A surface nested inside such a shell subtracts its own
      distance from the edge, the way Apple's concentric geometry does. */
   --edge-radius: 0px;
+  /* The shape those corners make together: the era's radius on the two
+     sides that are inside the screen, the display's on the two that meet
+     it. One token, so the three phone shells name the same value. */
+  --edge-shape: var(--surface-radius) var(--surface-radius) var(--edge-radius) var(--edge-radius);
   /* The menu bar's own height, so each theme sets the value in one place and
      the portrait rule can add the status-bar inset on top of it. */
   --menu-bar-inline-padding: 8px;
