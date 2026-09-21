@@ -1081,7 +1081,21 @@
   .one-more-tune-window .one-more-tune-round-reveal > .darkplayer { grid-area:stage;align-self:center;min-height:clamp(160px,26vh,280px);max-height:34vh }
   .one-more-tune-window .one-more-tune-round-reveal > .reveal { grid-area:record;min-width:0 }
   .one-more-tune-window .one-more-tune-round-reveal > .revealbox { margin-top:0;padding:13px 15px }
-  .one-more-tune-window .one-more-tune-round-reveal > .one-more-tune-round-tail { grid-area:tail;display:flex;flex-direction:column;justify-content:flex-end;gap:12px;min-height:0 }
+  /* The single-column reveal: the tail sits under the record box, and a
+     flex-end column with min-height:0 can be squeezed below its own two rows —
+     at which point it overflows UPWARD, over the box, and the two content links
+     land on the song line. That is the overlap the owner photographed at 590px
+     wide and 710px wide, in two different appearances. Nothing is below the tail
+     to pin it to here, so it starts at its own top and can only overflow
+     downward, which a scrolling pane can answer. */
+  .one-more-tune-window .one-more-tune-round-reveal > .one-more-tune-round-tail {
+    grid-area:tail;
+    display:flex;
+    flex-direction:column;
+    justify-content:flex-start;
+    gap:12px;
+    min-height:auto;
+  }
   .one-more-tune-window .one-more-tune-round-tail > .previewnote { margin:0 }
   .one-more-tune-window .collection-head p { font-size:14px }
   .one-more-tune-window .choices { grid-template-columns:1fr }
@@ -1089,6 +1103,50 @@
   .one-more-tune-window .media iframe { height:300px }
   /* The learning mock narrows both grids before it touches anything else. */
   .one-more-tune-window .unit-grid, .one-more-tune-window .library-grid { grid-template-columns:repeat(2,minmax(0,1fr)) }
+}
+
+/* Below this the reveal's two columns stop being two columns. Measured at
+   590px wide: the stage was 171x178 — taller than it is wide, a black slab —
+   and the record box beside it had no room for its own text, which is what the
+   owner photographed. The question face already stacks at this width; the
+   reveal follows it, and the stage takes the width the face actually has. */
+/* A credit line that wraps to three lines costs a pane its last control — the
+   Duo's inner display measured 17px of scroll on the reveal with one long
+   credit, and nothing else. Two lines carry the song, the artist and the film;
+   the sources face has the whole credit. */
+@container (max-width: 900px) {
+  .one-more-tune-window .one-more-tune-round-reveal .revealbox p {
+    display:-webkit-box;
+    -webkit-line-clamp:2;
+    -webkit-box-orient:vertical;
+    overflow:hidden;
+  }
+}
+
+@container (max-width: 700px) {
+  .one-more-tune-window .one-more-tune-round-reveal {
+    display:grid;
+    grid-template-columns:minmax(0,1fr);
+    grid-template-areas:
+      "tag"
+      "stage"
+      "record"
+      "tail";
+    grid-template-rows:auto auto minmax(0,1fr) auto;
+    row-gap:8px;
+  }
+  .one-more-tune-window .one-more-tune-round-reveal > .darkplayer {
+    justify-self:stretch;
+    align-self:stretch;
+    aspect-ratio:16 / 9;
+    /* The record and the way onward are the face's content; the stage is the
+       picture that goes with them, so it is the row that yields. Measured: with
+       min-height:0 the stage collapsed to 59px of a 544px row when the pane was
+       shorter than the face's content, and a 59px band of black is not a stage. */
+    min-height:120px;
+    max-height:30vh;
+    width:auto;
+  }
 }
 
 @container (max-width: 600px) {
@@ -1753,6 +1811,109 @@ body[data-theme="classic"] .one-more-tune-window .playbutton { background:var(--
   /* The masthead gives back its slack first: at 402px of height the header was
      244px of the window, which is more than half of the screen before a single
      question. One compact row is enough for a wordmark and four words. */
+
+  /* The idle face on a sideways phone. Stacked, the hero and the ways came to
+     500px of content in a 250px pane: measured 265-330px of scroll on every
+     landscape iPhone, with both ways in — Start a round and Open that set —
+     under the fold. The desk already draws this face as two columns; a sideways
+     phone has the width for exactly that, and needs the height it saves. */
+  .one-more-tune-window .one-more-tune-challenge-idle {
+    display:grid;
+    grid-template-columns:minmax(0,1fr) minmax(230px,.75fr);
+    grid-template-areas:
+      "tag tag"
+      "hero ways"
+      "intro ways"
+      "features ways";
+    column-gap:18px;
+    row-gap:6px;
+    align-content:center;
+    padding:0;
+  }
+  .one-more-tune-window .one-more-tune-challenge-idle .sectiontag { grid-area:tag;min-height:16px }
+  .one-more-tune-window .one-more-tune-challenge-idle h1 { grid-area:hero;font-size:23px;letter-spacing:-.7px;margin:0 }
+  .one-more-tune-window .one-more-tune-challenge-idle .intro {
+    grid-area:intro;
+    margin:0;
+    font-size:12px;
+    display:-webkit-box;
+    -webkit-line-clamp:2;
+    -webkit-box-orient:vertical;
+    overflow:hidden;
+  }
+  .one-more-tune-window .one-more-tune-challenge-idle .featureline { grid-area:features;font-size:11px;gap:10px }
+  .one-more-tune-window .one-more-tune-challenge-idle .toolbar {
+    grid-area:ways;
+    flex-direction:column;
+    align-items:stretch;
+    gap:6px;
+    margin:0;
+    padding:8px 10px;
+  }
+  .one-more-tune-window .one-more-tune-challenge-idle .toolbar .btn { min-height:32px;padding:5px 10px;font-size:12px;justify-content:center }
+  .one-more-tune-window .one-more-tune-challenge-idle .toolbar .linkbutton { margin:0 }
+  .one-more-tune-window .one-more-tune-challenge-idle .one-more-tune-challenge-input { width:100%;min-height:28px }
+
+  /* The reveal shares its right column with a stage, and a 402px screen has no
+     room for the desk's stacked shape: the links and the point note go on one
+     line, the two buttons on the next. Measured before: 84-164px of scroll on
+     every landscape iPhone, and the way onward under the fold on two of them. */
+  .one-more-tune-window .one-more-tune-round-reveal > .one-more-tune-round-tail {
+    display:flex;
+    flex-direction:row;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:flex-start;
+    gap:8px 12px;
+    padding-bottom:0;
+  }
+  .one-more-tune-window .one-more-tune-round-tail > .previewnote { margin:0 }
+  .one-more-tune-window .one-more-tune-round-tail > .toolbar { margin:0 }
+  .one-more-tune-window .one-more-tune-round-reveal .revealbox { padding:6px 10px }
+  .one-more-tune-window .one-more-tune-round-reveal .revealbox h3 { font-size:14px;margin:2px 0 }
+  .one-more-tune-window .one-more-tune-round-reveal .revealbox p {
+    margin:0;
+    font-size:11px;
+    display:-webkit-box;
+    -webkit-line-clamp:2;
+    -webkit-box-orient:vertical;
+    overflow:hidden;
+  }
+
+  /* What is left after the columns: the idle face's three selling points and
+     its two-line hero are the parts a 375px screen cannot afford, and the
+     record box's second line of song credit is the part a landscape reveal
+     cannot. Each is still on the desk — the features line on the shelf, the
+     full credit in the sources face — so nothing is lost, only deferred. */
+  .one-more-tune-window .one-more-tune-challenge-idle .featureline { display:none }
+  .one-more-tune-window .one-more-tune-challenge-idle h1 { font-size:20px;letter-spacing:-.5px }
+  .one-more-tune-window .one-more-tune-challenge-idle .toolbar { padding:6px 8px;gap:4px }
+  .one-more-tune-window .one-more-tune-challenge-idle .toolbar .btn { min-height:28px;padding:4px 9px;font-size:11px }
+  .one-more-tune-window .one-more-tune-challenge-idle .one-more-tune-challenge-input { min-height:26px;font-size:11px }
+  .one-more-tune-window .one-more-tune-challenge-idle .sectiontag { min-height:18px;font-size:10px }
+  .one-more-tune-window .one-more-tune-round-reveal > .sectiontag { min-height:18px;font-size:10px }
+  .one-more-tune-window .one-more-tune-round-reveal .revealbox { padding:4px 8px }
+  .one-more-tune-window .one-more-tune-round-reveal .revealbox h3 { font-size:13px;margin:0 }
+  .one-more-tune-window .one-more-tune-round-reveal .revealbox p {
+    -webkit-line-clamp:1;
+  }
+  .one-more-tune-window .one-more-tune-round-tail { gap:6px 10px }
+  .one-more-tune-window .one-more-tune-round-tail .btn { min-height:28px;padding:4px 10px;font-size:11px }
+  .one-more-tune-window .one-more-tune-round-tail .previewnote { font-size:10px }
+
+  /* The pane's own padding and the faces' row gaps are the last 20px of a
+     375px screen: measured 25px of scroll on the 13 mini's idle and 18px on the
+     Air's reveal after the trims above, with nothing clipped either way. */
+  .one-more-tune-window .one-more-tune-pane { padding:4px 10px 6px }
+  .one-more-tune-window .one-more-tune-round-reveal { row-gap:4px }
+  .one-more-tune-window .one-more-tune-challenge-idle { row-gap:4px }
+
+  @media (max-height: 392px) {
+    /* The shortest landscape phone: the idle face's eyebrow is the one line it
+       can give up, because the window title names the app and the intro on the
+       same face explains the game. */
+    .one-more-tune-window .one-more-tune-challenge-idle .sectiontag { display:none }
+  }
   .one-more-tune-window .top { height:auto;flex-wrap:nowrap;gap:12px;padding:6px 16px 4px }
   .one-more-tune-window .brand { font-size:17px;letter-spacing:-.6px;gap:8px }
   .one-more-tune-window .brandmark { height:16px }

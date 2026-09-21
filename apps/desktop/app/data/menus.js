@@ -96,22 +96,17 @@ const specialMenu = (appItems = []) => menu("special", "menu_special", [
 
 // Finder's File menu holds only verbs that make sense for *any* selected
 // object. Two other kinds of verb used to live here and made it 32 rows long:
+// kind-specific verbs (install a Skill, promote a draft) moved to Get Info,
+// where openFileInfo() already branches by kind, and task lifecycle verbs went
+// to their own Task menu, whose grey/black pattern reads as information only
+// because those rows sit together.
 //
-//   - kind-specific verbs (install a Skill, accept a suggestion, promote a
-//     draft). System 6 has no contextual menus — the native home for "what
-//     this particular object can do" is its Get Info window, which
-//     openFileInfo() already branches by kind. They moved there.
-//   - task lifecycle verbs. Those went to their own Task menu, which appears
-//     only when the project actually contains a Task Config, because their
-//     mutually exclusive grey/black pattern is what says which step a task is
-//     on — and that reads as information only when they sit together.
-//
-// The last group is the exception that proves the rule: Insert and Eject take
-// no selection at all. They are volume verbs, and System 6's Finder kept Eject
-// in File (with Get Info and Duplicate), so its opposite belongs beside it
-// rather than in Special. The 1992 HIG asks for exactly this shape when a
-// feature is either on or off: two rows naming opposite actions, set off by a
-// divider, instead of one row with a conditional checkmark.
+// Insert and Eject are the exception that proves the rule: no selection at
+// all, because they are volume verbs, and the Finder's own Eject sits in File.
+// The 1992 HIG asks for that shape when a feature is either on or off — two
+// rows naming opposite actions instead of one conditional checkmark. Open
+// Demonstration Project Disks is the third kind: it names no object because it
+// opens a window listing the disks that ship with the application.
 const finderMenus = [
   menu("file", "menu_file", [
     menuItem("new-folder", "new_folder", "new-folder"),
@@ -133,6 +128,7 @@ const finderMenus = [
     menuItem("insert-text-disk", "insert_file_floppy_menu"),
     menuItem("eject-menu-selection", "eject", "eject"),
     menuSeparator,
+    menuItem("open-demo-disks", "open_demo_disks"),
     menuItem("open-project-overview", "project_overview"),
   ]),
   menu("edit", "menu_edit", editBasics),
@@ -411,12 +407,11 @@ const quickDraftMenus = [
   ]),
   menu("edit", "menu_edit", editWithWriting),
   // Quick Draft is where the writing happens; looking at it happens in 文字亮室.
-  // The grain, composite and listen views were reachable from here too, and they
-  // were not duplicates -- they drive Quick Draft's OWN display mode, so this
-  // removes real views rather than tidying repeats. That is the point: the split
+  // The grain, composite and listen views drove Quick Draft's OWN display mode,
+  // so removing them removes real views rather than tidying repeats: the split
   // says write here, look there, and leaving three ways to look inside the
-  // writing window was the split only two-thirds done. The paper itself stays,
-  // and the way across is one row instead of three.
+  // writing window was the split only two-thirds done. The paper stays, and the
+  // way across is one row instead of three.
   menu("view", "menu_view", [
     menuItem("quick-draft-view-body", "quick_draft_display_body"),
     menuItem("open-lightroom", "lightroom_title"),

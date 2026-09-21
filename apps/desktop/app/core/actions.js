@@ -1777,6 +1777,9 @@ window.AISystem6Runtime?.registerCommand?.("open-review-desk",{handler:()=>openR
 // unavailable, so the notification falls back to opening the receipt itself.
 window.AISystem6Runtime?.registerCommand?.("open-guest-reviews",{handler:async()=>{await openReviewDesk("guests");await ensureGuestToolsModule();window.AISystem6GuestTools?.renderGuestReviews?.();const win=getWindow("reviewDesk");if(win&&!win.classList.contains("is-hidden"))return;const latest=(window.AISystem6RunReceipts?.queryReceipts?.({limit:50,includeRunning:!0})||[]).find((file)=>String(file.runReceipt?.sourceAppId||"").startsWith("guest:"));if(latest)await window.AISystem6ApplicationRegistry?.openProjectObject?.(latest,"open");},isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-project-backup",{handler:openProjectBackupPanel,isAvailable:()=>!0});
+// "open-project-disks" is already taken by the mounted Project Hard Disk, so
+// the demonstration list gets its own id rather than shadowing that row.
+window.AISystem6Runtime?.registerLazyCommand?.("open-demo-disks",{ensure:ensureSharedProjectDisksModule});
 // Saying "not openable" is the whole answer; it needs no OK button.
 window.AISystem6Runtime?.registerCommand?.("open-system-file-system",{handler:()=>setStatus(t("system_file_not_openable")),isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-system-file-finder",{handler:()=>setStatus(t("system_file_not_openable")),isAvailable:()=>!0});

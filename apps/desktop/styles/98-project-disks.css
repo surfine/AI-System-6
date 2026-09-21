@@ -1,0 +1,19 @@
+/* The demonstration-disk window.
+
+   The window is built at runtime by the panel that rides
+   app/content/shared-project-disks.js, so its geometry ships in this lazy sheet
+   rather than in the boot payload's 10-windows.css — the same route every other
+   runtime-built window takes. Nothing here styles the list inside it: those
+   rows reuse the Import Utility's .import-row grid on purpose, so a third disk
+   needs no CSS at all. */
+.project-disks-window {
+  left: 148px;
+  top: 60px;
+  width: min(420px, calc(100vw - 48px));
+  height: min(360px, calc(100vh - 96px));
+  max-height: calc(100vh - 72px);
+}
+
+.project-disks-window .window-pane {
+  overflow: auto;
+}

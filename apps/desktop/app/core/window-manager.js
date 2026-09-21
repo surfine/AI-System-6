@@ -2427,6 +2427,12 @@ function getActionAvailability() {
       && currentFinderSelection.virtual !== true,
     "new-project-disk": true,
     "open-project-disks": true,
+    // The demonstration list is a window of its own: opening it is valid in
+    // every profile and every desk state, and the list it draws is a lazy
+    // module, so there is no state to read before the click. Ungated, the row
+    // would stay black without ever being asked — the contract menu-availability
+    // keeps on purpose.
+    "open-demo-disks": true,
     "open-project-disk": !!selectedProject,
     "rename-project-disk": !!selectedProject,
     "duplicate-project-disk": !!selectedProject,

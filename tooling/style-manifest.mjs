@@ -154,6 +154,15 @@ export const lazyStyleBundles = [
     loader: "app/core/config.js",
     sources: ["styles/97-one-more-tune.css"],
   },
+  // The demonstration-disk window is built at runtime by the panel that rides
+  // the generated shared-disks module, so its geometry follows the module:
+  // four declarations a boot that never opens the list should not download.
+  {
+    id: "project-disks",
+    output: "styles.project-disks.css",
+    loader: "app/core/config.js",
+    sources: ["styles/98-project-disks.css"],
+  },
 ];
 
 // Every stylesheet the product ships, eager or lazy. Checks that reason about
@@ -203,6 +212,7 @@ export const styleLayerByPath = Object.freeze({
   "styles/94-bonsai.css": "bonsai",
   "styles/96-clio-paint.css": "clio-paint",
   "styles/97-one-more-tune.css": "one-more-tune",
+  "styles/98-project-disks.css": "project-disks",
 });
 
 // Layer order = eager files in bundle order, then lazy sheets in declaration

@@ -33,7 +33,9 @@ THERE ARE FOUR MORE INSIDE. NO MODEL REQUIRED TO LOOK AROUND.</sub>
 
 **OPEN A SINGLE WINDOW:** [CMF Studio](https://system6.aaronlau.me/go/cmf-studio) · [Bonsai City](https://system6.aaronlau.me/go/bonsai-city) · [Endfield Terminal](https://system6.aaronlau.me/go/endfield-terminal) · [Time Machine](https://system6.aaronlau.me/go/time-machine) · [OpenTTD](https://system6.aaronlau.me/go/openttd) · [DOOM](https://system6.aaronlau.me/go/doom)
 
-<sub>EVERY APP HAS ONE SHAREABLE ADDRESS, <code>/go/&lt;app-id&gt;</code>. THE DESK OPENS AROUND IT.</sub>
+**OR OPEN A WHOLE FINISHED DISK:** [After the Bridge Opens](https://system6.aaronlau.me/go/dtk) · [Why the First iPad Had Only 256MB](https://system6.aaronlau.me/go/ipad1)
+
+<sub>EVERY APP HAS ONE SHAREABLE ADDRESS, <code>/go/&lt;app-id&gt;</code>. THE DESK OPENS AROUND IT. THE TWO DEMONSTRATION PROJECT DISKS USE THE SAME ADDRESS RULE, AND <b>FILE › OPEN DEMONSTRATION PROJECT DISKS…</b> LISTS THEM.</sub>
 
 </div>
 
@@ -65,6 +67,14 @@ THERE ARE FOUR MORE INSIDE. NO MODEL REQUIRED TO LOOK AROUND.</sub>
 - **Every app has one address.** `/go/cmf-studio`, `/go/bonsai-city`,
   `/go/doom` and the rest are the single way to hand somebody one window; the
   old bare directories are retired on the server by the installer itself.
+- **A finished project travels as a disk, not as a screenshot.** `/go/dtk` and
+  `/go/ipad1` mount a whole Project Hard Disk: question sheet, outline,
+  section drafts, manuscript, review record. The reader gets their own
+  editable copy, and **File › Open Demonstration Project Disks…** lists them so
+  nobody has to keep the link. Adding a third means one entry in
+  `tooling/build-shared-project-disks.mjs`, one route in the three
+  `LAUNCH_ROUTES` tables, and `tests/features/launch-intent.test.mjs` will
+  insist the source disk and the shipped copy stay equal.
 - **The public site can host a guest.** Turn the bridge on and another agent
   connects to your desk over the internet, through an invitation that names
   it, under the same tool contract, permissions and Review Desk approvals as
@@ -282,7 +292,7 @@ is a mockup, because a script re-shoots all of it from the running app.
 ## Built under a 1988 constraint
 
 ```text
-boot-critical payload   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,954,076 bytes
+boot-critical payload   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,953,940 bytes
 two 1.44 MB floppies    ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  2,949,120 bytes
 heavy tools             load lazily, from a third disk
 ```

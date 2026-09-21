@@ -74,7 +74,11 @@ const ONE_MORE_TUNE_EVENT_LIMIT = 500;
 // 3: the ladder is retired and the schedule is ts-fsrs's own. The key keeps its
 // v02 name so the migration above can find what a person already did; the
 // version inside is what a reader has to trust.
-const ONE_MORE_TUNE_STATE_VERSION = 3;
+// 4: a round in progress is remembered — the set, the question it reached and
+// the mode — so leaving the page (closing a wrist, switching apps, answering a
+// message) does not throw the ten away. Lifeline's wrist loop is the model: the
+// story waits for you, and coming back continues it rather than starting over.
+const ONE_MORE_TUNE_STATE_VERSION = 4;
 
 // One round is ten questions, untimed, one submission each, a point a question.
 //
@@ -341,7 +345,8 @@ function oneMoreTuneBlankCardRecord() {
 function oneMoreTuneMigrateState(parsed) {
   if (!parsed || typeof parsed !== "object") return null;
   const version = Number(parsed.v);
-  if (version !== 2 && version !== ONE_MORE_TUNE_STATE_VERSION) return null;
+  if (version !== 2 && version !== 3 && version !== ONE_MORE_TUNE_STATE_VERSION) return null;
+  if (version === 3) return { ...parsed, v: ONE_MORE_TUNE_STATE_VERSION, round: null };
   if (version === ONE_MORE_TUNE_STATE_VERSION) return parsed;
   const cards = {};
   for (const [cardId, record] of Object.entries(parsed.cards || {})) {
@@ -359,6 +364,7 @@ function oneMoreTuneBlankState() {
     cards: {},
     events: [],
     settings: { newPerDay: 5, dueBatch: 10 },
+    round: null,
   };
 }
 
@@ -531,7 +537,27 @@ function oneMoreTuneNormalizeState(parsed) {
     cards,
     events: Array.isArray(readable.events) ? readable.events.slice(-ONE_MORE_TUNE_EVENT_LIMIT) : [],
     settings: { ...blank.settings, ...readable.settings },
+    round: oneMoreTuneReadableRound(readable.round),
   };
+}
+
+/**
+ * A stored round cursor, or null.
+ *
+ * Only what a resume needs: which set, which question, and which mode. The
+ * questions themselves are rebuilt from the set id — the deck is on this
+ * device, so a set id plus a deck version is enough to name the same ten, which
+ * is the property the share link already relies on.
+ */
+function oneMoreTuneReadableRound(value) {
+  if (!value || typeof value !== "object") return null;
+  const setId = String(value.setId || "");
+  const deckVersion = Number(value.deckVersion || 0);
+  const index = Number(value.index || 0);
+  const mode = String(value.mode || "");
+  if (!setId || !Number.isFinite(deckVersion) || deckVersion <= 0) return null;
+  if (!Number.isInteger(index) || index < 0) return null;
+  return { setId, deckVersion, index, mode, startedAt: Number(value.startedAt || 0) };
 }
 
 function writeOneMoreTuneState() {
@@ -3206,9 +3232,11 @@ function oneMoreTuneOpenPracticeRound(cards) {
   return { mode: "practice", questions, origin: "local" };
 }
 
-function oneMoreTuneAdoptRound(round) {
+function oneMoreTuneAdoptRound(round, { index = 0 } = {}) {
   stopOneMoreTuneAudio();
   clearOneMoreTuneNowPlaying();
+  const questions = round.questions || [];
+  const start = Number.isInteger(index) && index >= 0 && index < questions.length ? index : 0;
   oneMoreTuneRound = {
     startedAt: Date.now(),
     mode: round.mode,
@@ -3216,11 +3244,57 @@ function oneMoreTuneAdoptRound(round) {
     token: round.roundToken || "",
     setId: round.setId || "",
     deckVersion: round.deckVersion || 0,
-    index: 0,
-    questions: round.questions,
+    index: start,
+    questions,
   };
   oneMoreTuneView = "challenge";
+  oneMoreTuneRememberRound();
   renderOneMoreTune();
+}
+
+/**
+ * Keep the round's place on this device.
+ *
+ * Lifeline's loop is the model: the wrist raises, the message is read, one
+ * decision is made, the wrist drops — and the story waits. Nothing here is
+ * server state: a set id and a deck version already name the same ten questions
+ * for everyone, which is what the share link relies on, so the cursor needs no
+ * more than the question it reached. Written on every move (start, advance,
+ * answer) and cleared when the round is over or refused as stale.
+ */
+function oneMoreTuneRememberRound() {
+  const state = oneMoreTuneStateNow();
+  if (!oneMoreTuneRound?.setId) {
+    state.round = null;
+    writeOneMoreTuneState();
+    return;
+  }
+  state.round = {
+    setId: oneMoreTuneRound.setId,
+    deckVersion: Number(oneMoreTuneRound.deckVersion || 0),
+    index: oneMoreTuneRound.index,
+    mode: oneMoreTuneRound.mode,
+    startedAt: oneMoreTuneRound.startedAt,
+  };
+  writeOneMoreTuneState();
+}
+
+function oneMoreTuneForgetRound() {
+  const state = oneMoreTuneStateNow();
+  if (!state.round) return;
+  state.round = null;
+  writeOneMoreTuneState();
+}
+
+/** The stored round, when this deck can still build the set it names. */
+function oneMoreTuneResumableRound() {
+  const stored = oneMoreTuneStateNow().round;
+  if (!stored) return null;
+  const deckVersion = Number(ONE_MORE_TUNE_DECK_VERSION || 0);
+  if (deckVersion && stored.deckVersion && stored.deckVersion !== deckVersion) return null;
+  // A round that reached its end is not a round to come back to.
+  if (stored.index >= ONE_MORE_TUNE_ROUND_SIZE) return null;
+  return stored;
 }
 
 /**
@@ -3671,6 +3745,10 @@ function advanceOneMoreTuneRound() {
   stopOneMoreTuneAudio();
   clearOneMoreTuneNowPlaying();
   oneMoreTuneRound.index += 1;
+  // The place moves with the person: a round that reached its tenth question
+  // is finished rather than paused, so the cursor goes with it.
+  if (oneMoreTuneRound.index >= oneMoreTuneRound.questions.length) oneMoreTuneForgetRound();
+  else oneMoreTuneRememberRound();
   renderOneMoreTune();
   autoPlayOneMoreTuneQuestion();
 }
@@ -3680,6 +3758,7 @@ function endOneMoreTuneRound() {
   stopOneMoreTuneAudio();
   clearOneMoreTuneNowPlaying();
   oneMoreTuneRound = null;
+  oneMoreTuneForgetRound();
   renderOneMoreTune();
 }
 
@@ -3859,7 +3938,15 @@ async function openOneMoreTuneChallenge(code) {
     setStatus(t("one_more_tune_challenge_code_bad"));
     return;
   }
-  const index = parts.length > 3 ? Number.parseInt(parts[3], 10) : -1;
+  const explicit = parts.length > 3 ? Number.parseInt(parts[3], 10) : -1;
+  // A link that names a set with no question in it resumes the round this
+  // device already reached into, rather than starting the same ten again. That
+  // is the wrist's loop: a shared round comes back to the message, the wrist
+  // raises, and the round is where it was left.
+  const stored = oneMoreTuneResumableRound();
+  const index = Number.isInteger(explicit) && explicit >= 0
+    ? explicit
+    : (stored && stored.setId === parts[2] ? stored.index : -1);
   setStatus(t("one_more_tune_round_opening"));
   const round = await oneMoreTuneOpenServerRound({
     // The whole code travels, not just its middle: the version in it is what
@@ -3869,11 +3956,14 @@ async function openOneMoreTuneChallenge(code) {
     questionIndex: Number.isInteger(index) ? index : -1,
   });
   if (!round) {
+    // The set it names is gone or stale: a cursor pointing at it would only
+    // offer a round that cannot open again.
+    oneMoreTuneForgetRound();
     setStatus(t("one_more_tune_challenge_code_gone"));
     renderOneMoreTune();
     return;
   }
-  oneMoreTuneAdoptRound(round);
+  oneMoreTuneAdoptRound(round, { index });
 }
 
 async function reportOneMoreTuneQuestion() {
@@ -3901,6 +3991,14 @@ function renderOneMoreTuneChallenge(body) {
     // Every card the player can see plays; where its sound comes from is not
     // the player's business, so the start screen names none of it.
     const count = oneMoreTuneChallengePool().length || oneMoreTuneRoundPool().length;
+    // A round this device already reached into comes first, as a round rather
+    // than a start button: Lifeline's wrist raises, the story is where it was
+    // left, and the decision is one tap. Starting a fresh ten stays available
+    // beside it, and starting one clears the remembered place.
+    const resumable = oneMoreTuneResumableRound();
+    const resumeLine = resumable
+      ? `<button class="btn default" type="button" data-one-more-tune-command="one-more-tune-resume-round">${oneMoreTuneEscape(t("one_more_tune_continue_round").replace("{n}", String(resumable.index + 1)))}</button>`
+      : "";
     body.innerHTML = `
       <section class="one-more-tune-study one-more-tune-challenge-idle">
         <div class="sectiontag"><span class="eyebrow">AN UNOFFICIAL APPLE MUSIC QUIZ</span><span class="tag on" data-i18n="one_more_tune_tag_ten">Ten a round</span></div>
@@ -3908,7 +4006,8 @@ function renderOneMoreTuneChallenge(body) {
         <p class="intro">${t("one_more_tune_hero_intro")}</p>
         <div class="featureline"><span data-i18n="one_more_tune_feature_ten">Every round is ten</span><span data-i18n="one_more_tune_feature_untimed">No clock</span><span data-i18n="one_more_tune_feature_reveal">The reveal opens the original</span></div>
         <div class="toolbar">
-          <button class="btn" type="button" data-one-more-tune-command="one-more-tune-start-round"${count ? "" : " disabled"} data-i18n="one_more_tune_start_round">Start a round</button>
+          ${resumeLine}
+          <button class="btn${resumable ? " light" : ""}" type="button" data-one-more-tune-command="one-more-tune-start-round"${count ? "" : " disabled"} data-i18n="one_more_tune_start_round">Start a round</button>
           <label class="linkbutton" for="one-more-tune-challenge-input" data-i18n="one_more_tune_challenge_code_label">Sent a set?</label>
           <input id="one-more-tune-challenge-input" class="one-more-tune-challenge-input" type="text" autocomplete="off" spellcheck="false"
             data-i18n-placeholder="one_more_tune_challenge_code_placeholder" placeholder="OMT.1.xxxxxxxx" />
@@ -4785,6 +4884,14 @@ function runOneMoreTuneCommand(action) {
     return void openOneMoreTuneChallenge(input?.value || "");
   }
   if (action === "one-more-tune-round-next") return void advanceOneMoreTuneRound();
+  if (action === "one-more-tune-resume-round") {
+    const stored = oneMoreTuneResumableRound();
+    if (!stored) {
+      renderOneMoreTune();
+      return;
+    }
+    return void openOneMoreTuneChallenge(`OMT.${stored.deckVersion || 1}.${stored.setId}`);
+  }
   // The promise goes back to the caller: the retry waits on the round, and a
   // caller that wants to know when the answer is in needs something to wait on.
   if (action === "one-more-tune-answer-retry") return retryOneMoreTuneAnswer();

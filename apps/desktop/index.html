@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <!-- viewport-fit=cover: the desk reaches under the notch; safe-area insets in styles keep chrome out. -->
+<!-- viewport-fit=cover: the desk reaches under the notch; safe-area insets keep chrome out. -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>AI System 6</title>
     <!-- On the iOS home screen this runs standalone, with no browser chrome. -->
@@ -13,22 +13,22 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <!-- Repainted at runtime; the appearance owns the colour. -->
     <meta name="theme-color" content="#000000" />
-    <link rel="apple-touch-icon" href="assets/app-icon/app-icon-180.png?v=20260920.9" />
-    <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png?v=20260920.9" />
-    <link rel="manifest" href="assets/app-icon/manifest.json?v=20260920.9" />
-    <script src="app/core/theme-registry.js?v=20260920.9"></script>
-    <link rel="stylesheet" href="styles.bundle.css?v=20260920.9" />
+    <link rel="apple-touch-icon" href="assets/app-icon/app-icon-180.png?v=20260921.2" />
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png?v=20260921.2" />
+    <link rel="manifest" href="assets/app-icon/manifest.json?v=20260921.2" />
+    <script src="app/core/theme-registry.js?v=20260921.2"></script>
+    <link rel="stylesheet" href="styles.bundle.css?v=20260921.2" />
     <!-- The bundle sits at the end of a ~340 KB body; this starts its download
          beside the stylesheet, under the same build stamp. -->
-    <link rel="preload" as="script" href="app.bundle.js?v=20260920.9" />
+    <link rel="preload" as="script" href="app.bundle.js?v=20260921.2" />
   </head>
   <body class="is-booting">
-    <script src="app/core/theme-body-init.js?v=20260920.9"></script>
+    <script src="app/core/theme-body-init.js?v=20260921.2"></script>
     <!-- A window-level error/unhandledrejection net, registered before
-         app.bundle.js loads, so a top-level crash in the bundle (a TDZ
-         ReferenceError, say) still shows the Sad Mac recovery screen, not a
-         blank page — app/core/boot-safety-net.js. -->
-    <script src="app/core/boot-safety-net.js?v=20260920.9"></script>
+         app.bundle.js loads, so a top-level crash (a TDZ ReferenceError, say)
+         still shows the Sad Mac recovery screen, not a blank page —
+         app/core/boot-safety-net.js. -->
+    <script src="app/core/boot-safety-net.js?v=20260921.2"></script>
     <header class="menu-bar" aria-label="System menu" data-i18n-aria-label="system_menu">
       <div class="menu">
         <button class="apple" aria-label="Apple menu" data-i18n-aria-label="apple_menu" data-balloon-help="balloon_apple_menu">
@@ -45,13 +45,13 @@
           <button data-action="replay-clio-introduction" data-i18n="replay_clio_introduction">Replay Clio Introduction</button>
           <button data-action="open-system-help" data-i18n="system_help" data-balloon-help="balloon_system_help">System Help</button>
           <button data-workspace-capability="studio" data-action="guide-start-route" data-i18n="guide_start_route">Start Writing Route</button>
-          <!-- The Start section keeps items in every workspace profile, so its
-               closing rule is not the writing route's to hide. -->
+<!-- The Start section keeps items in every workspace profile, so its
+               closing rule is not the route's to hide. -->
           <hr />
           <!-- One command, one way back. Holding a thought captures where you were,
                what you were reading and the clipboard before it opens anything,
-               so Escape a keystroke later costs nothing; the middle row names
-               where it would take you, which is the reminder. -->
+               so Escape later costs nothing; the middle row names where it
+               would take you. -->
           <div class="menu-section-label" data-i18n="apple_menu_place">Your Place</div>
           <button data-action="hold-that-thought" data-i18n="hold_that_thought">Hold That Thought</button>
           <button data-action="resume-my-place" data-i18n="held_place_resume">Where I Left Off</button>
@@ -60,7 +60,7 @@
           <div class="menu-section-label" data-i18n="apple_menu_writing_da">Writing DA</div>
           <!-- The order is the moment you reach for each: catch a thought, say it,
                ask about what is in front of you, carry it across, see what was
-               copied, stop safely — the one place the group is seen whole. -->
+               copied, stop safely — the one place the group is whole. -->
           <button data-action="open-note-pad" data-i18n="note_pad">Note Pad</button>
           <button data-action="open-dictation" data-i18n="dictation_pad">Dictation Pad</button>
           <button data-action="open-sideask-pad" data-i18n="sideask">SideAsk</button>
@@ -84,21 +84,20 @@
           <button data-action="open-control" data-i18n="control_panel">Control Panel</button>
           <button data-action="open-find-file" data-i18n="find_file">Find File</button>
           <button data-action="open-system-status" data-i18n="system_status">System Status</button>
-          <!-- MultiFinder's contribution to the Apple menu: the eras whose Apple menu
+          <!-- MultiFinder's contribution to the Apple menu: eras whose Apple menu
            owned the open-application list keep it here (Apple's 1987 MultiFinder
            guide), so the switch list and the application verbs live here when
-           the right end is an indicator, not a menu. Drawn by
-           renderMultiFinderMenu(); empty in the Mac OS X eras. -->
+           the right end is an indicator. renderMultiFinderMenu() draws it;
+           empty in the Mac OS X eras. -->
           <div id="apple-multifinder-apps" class="apple-multifinder-apps is-hidden"></div>
           <hr class="apple-multifinder-about-separator" />
           <button class="apple-multifinder-about-item" data-action="open-about-multifinder" data-i18n="about_multifinder">About MultiFinder...</button>
         </div>
       </div>
-      <!-- The bold application menu is Mac OS X only: Apple's Aqua HIG (June
-           2002, p.54) calls it "new in Mac OS X". Classic and platinum hide it -
-           there the whole bar belongs to the front application. About and
-           Control Panel stay; the application's verbs render into the section
-           below, named after the application in front. -->
+      <!-- The bold application menu is Mac OS X only: Aqua HIG (June 2002, p.54)
+           calls it "new in Mac OS X". Classic and platinum hide it - there the
+           bar belongs to the front application. About and Control Panel stay;
+           the application's verbs render below, named after it. -->
       <div class="menu menu-bar-current-app">
         <button type="button" aria-haspopup="menu"><strong id="current-app-menu-label">Finder</strong></button>
         <div class="menu-popover">
@@ -110,8 +109,8 @@
       </div>
       <span id="app-menu-slot" hidden></span>
       <div class="menu-spacer"></div>
-      <!-- A guest at the desk shows here the way a mounted AppleShare volume
-           did; it opens Chooser, where the writer can change or revoke it. -->
+<!-- A guest shows here the way a mounted AppleShare volume did; it opens
+           Chooser, where the writer can change or revoke it. -->
       <button id="guest-indicator" class="guest-indicator is-hidden" type="button" data-action="open-chooser" aria-label="Guest at the desk" data-i18n-aria-label="guests">
         <span class="sys-icon" data-system-icon="chooser" aria-hidden="true"></span>
         <span id="guest-indicator-label"></span>
@@ -486,14 +485,14 @@
           <button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button>
           <button class="shade-box" aria-label="Collapse" data-i18n-aria-label="collapse"></button>
         </div>
-        <!-- Info bar: this window's Finder header. Counts on the left, the
-             file this conversation lives in on the right, visible before the
-             first message rather than after it. -->
+<!-- Info bar: this window's Finder header. Counts on the left, the file
+             this conversation lives in on the right, shown before the first
+             message rather than after it. -->
         <div class="details-bar assistant-details-bar">
           <span class="clio-tally" id="clio-tally" hidden></span>
-          <span class="clio-status-host" data-status-host data-status-home aria-live="polite"><!-- No data-i18n: setStatus owns this line. It used to carry
-               data-i18n="ready", so applyLanguage() rewrote it to the translated
-               "Ready" behind setStatus's back — a second, silent declaration. --><span id="status" hidden></span></span>
+          <span class="clio-status-host" data-status-host data-status-home aria-live="polite"><!-- No data-i18n: setStatus owns this line. With data-i18n="ready",
+               applyLanguage() rewrote it to the translated "Ready" behind
+               setStatus's back — a second, silent declaration. --><span id="status" hidden></span></span>
           <span id="quick-draft-cliotalk-hint" class="quick-draft-cliotalk-hint is-hidden"></span>
           <div class="sideask-mode-strip" id="sideask-mode-strip" hidden>
             <button class="sideask-source-link" id="sideask-source-link" type="button" data-action="focus-sideask-source">
@@ -510,9 +509,9 @@
             <span id="clio-chat-file-name" data-i18n="clio_chat_file_waiting">Chat file on first message</span>
             <small id="clio-chat-file-path"></small>
           </button>
-          <!-- A temporary conversation is the one case where "save" means
+<!-- A temporary conversation is the one case where "save" means
                something, so its escape hatch lives here and not only in a menu:
-               the boundary is reversible, and nobody has to decide whether a
+               the boundary is reversible, so nobody has to decide whether a
                conversation is worth keeping before starting one. -->
           <button class="btn mini-btn clio-keep-temporary is-hidden" id="clio-keep-temporary" type="button" data-action="save-conversation" data-i18n="save_as_conversation_file">Save as Conversation File…</button>
         </div>
@@ -645,8 +644,8 @@
             <details class="control-diagnostics" id="local-manual-connection">
               <summary data-i18n="advanced_settings">Advanced Settings…</summary>
             <!-- Step 1: connect. Provider and endpoint fold into Advanced once
-                 the connection is up — you don't re-read an address you're
-                 already connected to. -->
+                 connected — you don't re-read an address you're already
+                 connected to. -->
             <div class="local-connect-fields" data-local-phase="setup">
               <label class="control-field" for="local-provider">
                 <span data-i18n="local_provider">Provider</span>
@@ -677,8 +676,8 @@
               <p class="hint control-status" id="local-browser-permission-status" data-i18n="local_browser_permission_waiting">Browser access: checked when you connect.</p>
             </details>
 
-            <!-- Step 2: choose and load a model. Hidden until connected, where
-                 these pickers are empty and cannot do anything. -->
+<!-- Step 2: choose and load a model. Hidden until connected, where
+                 these pickers are empty and inert. -->
             <div class="local-model-fields" data-local-phase="connected" hidden>
               <label class="control-field" for="model">
                 <span data-i18n="chat_model_cpu">Chat Model</span>
@@ -833,9 +832,9 @@
                 <label for="keep-screen-awake" data-i18n="keep_screen_awake" data-balloon-help="balloon_keep_screen_awake">Keep Screen Awake</label>
               </div>
 
-              <!-- The Finder's own setting, in the place the Finder keeps it:
-                 unmounted volumes are not drawn on the desk unless asked for.
-                 The menu-bar project switcher is the way back to them. -->
+          <!-- The Finder's setting, in the place the Finder keeps it: unmounted
+                 volumes are not drawn on the desk unless asked for. The menu-bar
+                 project switcher leads back to them. -->
               <div class="field-row">
                 <input id="show-unmounted-disks" type="checkbox" />
                 <label for="show-unmounted-disks" data-i18n="show_unmounted_disks" data-balloon-help="balloon_show_unmounted_disks">Show unmounted project disks on the desktop</label>
@@ -972,9 +971,9 @@
               </select></div>
             </label>
           </section>
-          <!-- Guests: agents that reach the desk over MCP on this Mac. Each is
+<!-- Guests: agents that reach the desk over MCP on this Mac. Each is
                approved once by name, and the list is the writer's standing
-               answer (privilege, revoke, forget) — the lazy guest-tools module. -->
+               answer (privilege, revoke, forget) — lazy guest-tools. -->
           <section class="control-section chooser-section chooser-guests-section" aria-labelledby="chooser-guests-title">
             <h3 id="chooser-guests-title" data-i18n="guests">Guests</h3>
             <p class="hint control-status" data-i18n="chooser_guests_note">Guest agents connect through MCP on this Mac. Each one is approved by name; a guest reads and proposes, and nothing enters the manuscript until you adopt it.</p>
@@ -982,17 +981,17 @@
             <p id="chooser-guest-empty" class="hint control-status" data-i18n="chooser_guests_empty">No guest has asked to connect yet.</p>
             <p id="chooser-guest-bridge" class="hint control-status" data-i18n="guest_bridge_offline">Guest bridge: not connected (loopback only).</p>
             <p class="hint control-status"><span data-i18n="chooser_guest_hint">Connect Claude Code:</span> <code id="chooser-guest-command">claude mcp add --transport http ais6 http://127.0.0.1:4173/mcp</code></p>
-            <!-- An invitation names this desk, so a guest that reaches the
-                 site over the internet lands here and nowhere else. Giving the
-                 desk a new name revokes every invitation at once. -->
+          <!-- An invitation names this desk, so a guest reaching the site
+                 over the internet lands here and nowhere else. Renaming the desk
+                 revokes every invitation at once. -->
             <div class="button-row">
               <button class="btn" type="button" id="chooser-guest-invite" data-i18n="guest_invite">Invite a Guest...</button>
               <button class="btn" type="button" id="chooser-guest-rotate" data-i18n="guest_rotate_desk">New Desk Name</button>
             </div>
             <p id="chooser-guest-invitation" class="hint control-status" hidden></p>
           </section>
-          <!-- Servers: MCP servers this desk asks. The other direction of the
-               same window. Whatever a server answers lands on the File Floppy;
+<!-- Servers: MCP servers this desk asks. The other direction of the
+               same window. Whatever a server answers lands on the File Floppy,
                rendered by the lazy MCP servers module. -->
           <section class="control-section chooser-section chooser-servers-section" aria-labelledby="chooser-servers-title">
             <h3 id="chooser-servers-title" data-i18n="mcp_servers">Servers</h3>
@@ -1724,7 +1723,7 @@
 
       <!-- The burn is the end of the writing route, so the receipt is stated
            in the Get Info shape: labelled facts about one object, nothing that
-           grades the work. Rows are built by openFinishingReceipt() because a
+           grades the work. openFinishingReceipt() builds the rows, because a
            fact with no stored source is left out, not estimated. -->
       <section class="window page-setup-window is-hidden" data-window="pageSetup" aria-labelledby="page-setup-title">
         <div class="title-bar">
@@ -2051,7 +2050,7 @@
         </div>
       </section>
 
-      <!-- Find / Change. Modeless on purpose: MacWrite's was, and a writer needs
+      <!-- Find / Change. Modeless on purpose: MacWrite's was; a writer needs
            to see the text while stepping through matches. It edits whichever
            writing surface was last in front, named in its status row. -->
       <section class="window find-change-window is-hidden" data-window="findChange" aria-labelledby="find-change-title">
@@ -2408,7 +2407,7 @@
         <div class="details-bar app-status-bar teachtext-details-bar">
           <span class="status-bar-leading" id="question-count">0 questions</span>
           <span class="status-bar-context linked-manuscript-title" id="question-manuscript-title">Untitled</span>
-          <!-- Open Flow moved to Writing > Go To: a permanent row for one jump button was chrome the menu already carried, so this trailing slot carries the route status instead of a duplicate. -->
+      <!-- Open Flow moved to Writing > Go To: a permanent row for one jump button was chrome the menu already carried, so this slot carries the route status instead. -->
           <div class="status-bar-trailing window-status-strip" aria-live="polite"><span class="window-status-slot" data-status-host></span></div>
         </div>
         <div class="window-pane teachtext-surface-pane question-sheet-pane">
@@ -3011,8 +3010,8 @@
       <!-- Hold That Thought. Two modes: catching is four lines of context and two
            questions, picking up is a pile with a list. The mode row borrows the
            Alarm Clock's figure — equal cells, dividers, the current one
-           inverted — as layout only: these are verbs with no native glyph, and
-           art for them would be drawn from memory. -->
+           inverted — as layout only: verbs with no native glyph, whose art would
+           be drawn from memory. -->
       <!-- Looking inside a disk you have not mounted. Read-only on purpose: it
            answers "which project did I file that in?" and nothing else. The
            list-over-detail figure is Hold That Thought's; both go through
@@ -3341,8 +3340,8 @@
             <dd id="info-file-modified">--</dd>
           </dl>
           <!-- What this particular object can do. System 6 has no contextual
-               menus, so kind-specific verbs belong to the object's Get Info
-               window, not to Finder's File menu. Populated by openFileInfo(). -->
+               menus, so kind-specific verbs belong to Get Info, not to Finder's
+               File menu. Populated by openFileInfo(). -->
           <div class="button-row info-kind-actions" id="info-kind-actions" hidden></div>
           <div class="button-row">
             <button class="btn" type="button" id="info-download-markdown" data-i18n="download_md">Download .md</button>
@@ -3436,8 +3435,8 @@
           <span class="sys-icon sys-icon-desktop" data-system-icon="fileFloppy" aria-hidden="true"></span>
           <span data-i18n="file_floppy">File Floppy</span>
         </button>
-        <!-- Icons pair by lane: the route beside its project disk, the short
-             lane beside the light table. Same DOM order in every era. -->
+<!-- Icons pair by lane: the route beside its project disk, the short
+             lane beside the light table, same DOM order in every era. -->
         <button class="desktop-icon desktop-app-icon" id="finder-writing-studio-toggle" type="button" data-balloon-help="balloon_writing_studio">
           <span class="sys-icon sys-icon-desktop" data-system-icon="writingStudio" aria-hidden="true"></span>
           <span id="finder-writing-studio-toggle-label">Writing Studio</span>
@@ -3462,8 +3461,8 @@
           <span class="sys-icon sys-icon-desktop" data-system-icon="applications" aria-hidden="true"></span>
           <span data-i18n="applications">Applications</span>
         </button>
-        <!-- The desktop is the current working set. The complete application
-             catalogue remains in Applications and MultiFinder. -->
+<!-- The desktop is the current working set. The complete catalogue
+             remains in Applications and MultiFinder. -->
         <button class="desktop-icon is-mounted-disk" data-drag-type="mounted-disk" draggable="true" type="button" data-open="textDisk" id="mounted-text-disk" hidden data-balloon-help="balloon_text_disk">
           <span class="sys-icon sys-icon-desktop" data-system-icon="fileFloppy" aria-hidden="true"></span>
           <span data-i18n="mounted_text_disk">File Floppy</span>
@@ -3479,7 +3478,7 @@
       </section>
     </main>
 
-    <script src="app/generated/build-info.js?v=20260920.9"></script>
-    <script src="app.bundle.js?v=20260920.9"></script>
+    <script src="app/generated/build-info.js?v=20260921.2"></script>
+    <script src="app.bundle.js?v=20260921.2"></script>
   </body>
 </html>

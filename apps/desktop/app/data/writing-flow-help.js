@@ -21,6 +21,12 @@ window.AISystem6WritingFlowHelpData = (() => {
       directAnswer: "Only a confirmed project object is durable; temporary views and model output remain temporary.",
       boundary: "Normal Chats are saved files, but their replies still do not become manuscript text automatically.",
     }),
+    shared: Object.freeze({
+      question: "What are the demonstration project disks?",
+      stuckPoint: "A finished piece is usually passed around as a file or a screenshot, so the route that produced it disappears.",
+      directAnswer: "Two disks ship with the application; /go/dtk and /go/ipad1 open them, and each becomes an ordinary editable project on this computer.",
+      boundary: "Nothing is imported until someone opens a disk on purpose, and the disks carry the writers' own working material rather than a polished showcase.",
+    }),
   });
 
   const documents = Object.freeze({
@@ -57,6 +63,10 @@ The writer remains part of the work. Personal observation, uncertainty, an awkwa
 
 If you are preparing the piece for another person, team, client, audience, or editor, let the Question Sheet name the real recipient first. AI System 6 defaults toward fewer, clearer handoffs, not more variants.
 
+## Demonstration project disks
+
+Two disks ship with the application, so the way a piece travels from a question sheet to a manuscript stays visible. Their addresses are \`system6.aaronlau.me/go/<route>\`; **File › Open Demonstration Project Disks…**, the Write to Project Hard Disk window, and the help page "Demonstration Project Disks" all lead to them.
+
 Close this document when you are ready. Nothing here creates a project or chooses the next step for you.`,
       zh: `# 说明文件
 
@@ -87,6 +97,10 @@ Reader、Scrapbook、Searcher、DocMap、ClioChart、ClioStage 和 ClioTalk 都�
 AI 可以帮助阅读、整理、起草、改写和审校。它的回答仍是对话材料，直到你明确保存、摘录、插入、确认“使用结果”或导出。屏幕上出现过，和电脑已经保存，是两种状态。
 
 写作者始终是作品的一部分。粗糙表达、个人碎事、犹豫、吐槽和多样的缺陷，只要承载真实判断，就不该被漂洗掉，也不该让模型变成你的嘴替。
+
+## 演示用项目硬盘
+
+随应用发布的两块盘，能让一篇作品从问题单走到正文的过程看得见。地址是 \`system6.aaronlau.me/go/<route>\`；**File 菜单的「打开演示用项目硬盘…」**、「写入项目硬盘」窗口，以及说明文件夹里的「演示用项目硬盘」这一篇，都会带你到它们。
 
 如果这份作品要交给另一个人、团队、客户、观众或编辑，先让问题单说清真实接收者是谁。AI System 6 默认偏向更少、更清楚的交付，而不是更多版本。
 
@@ -237,6 +251,48 @@ The practical rule is short: if something matters, put it in a visible project o
 浏览器存储属于这台设备上的当前浏览器。清理网站数据、更换浏览器或换设备前，应先导出**项目备份**。备份才是明确的可携带副本；旁边的服务不是隐藏的云备份。
 
 实际规则很短：重要的东西要放进看得见的项目对象，并等到保存回执出现。`,
+    }),
+    shared: Object.freeze({
+      en: `# Demonstration Project Disks
+
+Two project disks ship with the application, so the way a finished piece travels from a question sheet to a manuscript stays visible. Their addresses are \`https://system6.aaronlau.me/go/<route>\`, and anyone can pass one on.
+
+## What happens when you open one
+
+- The disk is checked first. If its checksum or version history does not hold, the import stops cleanly instead of leaving half a project behind.
+- What passes becomes an ordinary project on this computer. It comes back from the Project Hard Disk list like any other project, and it stays editable.
+- Opening the same disk again reuses the copy you already have; the row's button reads "Open existing" from then on.
+
+## The two disks
+
+- \`/go/dtk\` — *After the Bridge Opens*: six years of a 2020 Developer Transition Kit, from being lent out to a server that no longer recognises it.
+- \`/go/ipad1\` — *Why the First iPad Had Only 256MB*: from a blurry childhood video to the 2010 specification sheet.
+
+## What is inside
+
+The question sheet, the outline, the section drafts, the manuscript and the review record are all there, so you can walk back up the route. This is not a read-only showcase; your copy is yours to change, and you can export it as a backup at any time.
+
+A disk that arrives as a file from another computer goes in through the Project backup section of the Write to Project Hard Disk window. The address and the file are two doors to the same room.`,
+      zh: `# 演示用项目硬盘
+
+这两块盘随应用发布，用来看清一篇作品是怎么从问题单走到正文的。它们的地址是 \`https://system6.aaronlau.me/go/<route>\`，谁都可以把它转给别人。
+
+## 打开之后会发生什么
+
+- 先检查这块盘有没有被改过。校验或版本历史不过关，就直接干净退出，不会留下一个半截的项目。
+- 通过之后，它成为这台电脑上的一个普通项目；回到桌面，从「项目硬盘」的列表里就能再打开它，可以照常修改，也能随时导出成备份。
+- 再打开同一块盘，用的是你已经有的那一份，不会多出一份副本；那一行的按钮也会变成「打开已有的」。
+
+## 现在有哪两块
+
+- \`/go/dtk\`《未来通车之后》：一台 2020 年 DTK 的六年，从借出、撤场到服务器不再承认它。
+- \`/go/ipad1\`《初代 iPad 为什么只有 256MB》：从童年一段模糊视频，追到 2010 年的那张配置表。
+
+## 盘里有什么
+
+问题单、大纲、分节草稿、正文、审校记录都在里面，可以沿着路线一层层往回看。这不是只读的展示页；你拿到的是一份可以照常修改的副本。
+
+从另一台电脑拿来的是文件，用「写入项目硬盘」窗口里的「项目备份」导入它。地址和文件，是进同一个房间的两扇门。`,
     }),
   });
 

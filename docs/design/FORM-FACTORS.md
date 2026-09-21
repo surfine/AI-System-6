@@ -87,24 +87,33 @@ poster is a phone-shaped artifact and a link on a wrist has nowhere to go. Free
 text of any kind, and with it the challenge-code entry: a wrist has no keyboard.
 The desktop launcher, the MultiFinder and the menu bar — a glance has no menus.
 
-**How it is delivered.** watchOS has no browser: there is no Safari on the
-Watch, and a web page cannot be the watch app. So the wrist is a companion, and
-this repository's contribution is two things it can actually be held to. First,
-the glance layout: the page already renders at watch size without breaking
-(one window, no page scroll, no sideways scroll), and its own band in the quiz
-sheet now stands the masthead down, lets the header stop reserving a desktop
-masthead's height, grows the tab row from a 28px strip to a thumb, and sets the
-four answers two by two — the shape the sideways phone already uses for the same
-reason. Measured after the change, both engines: a round starts at 396x484 and
-368x448, the sound plays, nothing scrolls, and all four answers are on screen. Second, the API: the round endpoints the
-phone flow uses (`/api/one-more-tune/round`, `/answer`) take a challenge id and
-a question index and return no answer key, which is exactly what a companion
-needs and all it may have.
+**How it is delivered.** There is no Safari app on the Watch and no address bar
+anywhere on it, and a third-party watch app cannot be a web page — but the
+system's own message and mail views do open links, in a web view the crown
+scrolls. So a shared round is playable on the wrist *through this page*, today,
+without a companion: `/go/one-more-tune` in a message, one tap, and the quiz is
+the watch app for that minute. (The owner corrected an earlier draft of this
+file that claimed the Watch could not open a page at all. It can; it just cannot
+type a URL.) What a companion would add is the part a web view cannot give — a
+complication, a notification, haptics — and the round API it would use already
+exists: `/api/one-more-tune/round` and `/answer` take a challenge id and a
+question index and return no answer key.
 
-**What is not claimed.** No watchOS build exists. The plan above is the contract
-for one, and the web side is held to the part of it that can be measured today:
-the shapes render, nothing scrolls sideways, targets at watch size meet the
-touch minimum, and no corner at a display edge is drawn twice.
+That makes the glance layout the delivery path rather than a rehearsal for one,
+and it is measured as such: arriving from a link at 396x484, in Chromium and
+WebKit, the quiz window comes to the front, the question sounds, nothing is
+clipped and nothing scrolls. The band in the quiz sheet is what makes that true
+— the masthead stands down, the header stops reserving a desktop masthead's
+height, the tab row grows from a 28px strip to a thumb, the four answers sit two
+by two, and the reveal's stage gives up the height its record box needs.
+
+**What is not claimed.** No watchOS app exists — no complication, no
+notification, no haptics, and no way to type a challenge code on a wrist: a web
+view has no keyboard, so a round arrives as a link or not at all. The plan above
+is the contract for that app, and the web side is held to the part of it that
+can be measured today: a shared link opens and plays at watch size, the shapes
+render, nothing scrolls sideways, targets there meet the touch minimum, and no
+corner at a display edge is drawn twice.
 
 ## Open items
 

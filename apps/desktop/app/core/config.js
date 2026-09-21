@@ -656,7 +656,7 @@ const ensureWritingDemoModule = createLazyModuleLoader("AISystem6WritingDemoLoad
 // travel as their own lazy content module rather than in the boot bundle.
 const ensureSharedProjectDisksModule = createLazyModuleLoader("AISystem6SharedProjectDisksLoaded", [
   "app/content/shared-project-disks.js",
-]);
+], false, ["styles.project-disks.css"]);
 
 // A lazy window/command whose module failed to load this session: keyed by
 // action id, valued with the already-rendered failure message (so the menu

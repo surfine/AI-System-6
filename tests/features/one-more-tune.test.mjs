@@ -1237,6 +1237,46 @@ test.assertMatches(omtStyles, /@media \(hover: none\) and \(pointer: coarse\) \{
   "the quiz's own tabs take the touch minimum where the pointer is coarse");
 test.assertMatches(omtStyles, /\.one-more-tune-tabs \.system-tab \{ min-height:36px;/,
   "and what the sideways layout can spare rather than the floor it used to sit on");
+// ---- The reveal between the phone and the desk ------------------------------
+//
+// The owner photographed two defects in one face at ~590px and ~710px wide: the
+// two content links drawn over the song line, and a stage that had become a
+// 171x178 black slab (taller than it is wide) squeezed into a two-column grid
+// that no longer had room for two columns.
+//
+// The tail was a flex-end column with min-height:0, so a pane shorter than the
+// face's content squeezed it below its own two rows and it overflowed UPWARD,
+// over the record box. Measured after: no meaningful overlap at 590, 650, 700,
+// 710, 820, 960 or 1100 wide. Below 700 the reveal stacks like the question
+// face and the stage takes the width the face has (544x143 at 590, where it was
+// 171x178), with a floor so a short pane cannot collapse it to a band.
+test.assertMatches(omtStyles, /@container \(max-width: 700px\) \{\s*\n\s*\.one-more-tune-window \.one-more-tune-round-reveal \{\s*\n\s*display:grid;\s*\n\s*grid-template-columns:minmax\(0,1fr\);/,
+  "below 700 the reveal is one column, like the question face");
+test.assertMatches(omtStyles, /@container \(max-width: 700px\) \{[\s\S]{0,1800}\.one-more-tune-round-reveal > \.darkplayer \{[\s\S]{0,600}min-height:120px;/,
+  "and its stage takes the face's width with a floor under it");
+test.assertMatches(omtStyles, /@container \(max-width: 850px\) \{[\s\S]{0,3200}\.one-more-tune-round-tail \{[\s\S]{0,700}justify-content:flex-start;/,
+  "the stacked tail starts at its own top, so its two rows cannot overflow upward into the record box");
+// ---- Every iPhone, held sideways -------------------------------------------
+//
+// The owner asked for one screen on all of them: the 5.4-inch mini, the 6.9-inch
+// Pro Max and the Duo, portrait and landscape alike. Measured before: the idle
+// face scrolled 265-330px on every landscape iPhone with both ways in under the
+// fold, and the reveal scrolled 84-164px with its way onward clipped. Both faces
+// now take the shape a wide, short screen can afford — the idle puts the hero
+// and the ways side by side (the shape the desk already uses), the reveal puts
+// its links and its buttons on one line each — and the parts a 375px screen
+// cannot hold are named: the three selling points, the second line of the hero.
+// Measured after, on a fixed set so the content is identical: 812x375, 874x402,
+// 912x420, 956x440 and the Duo's 890x626, all four faces, nothing clipped, no
+// page scroll, no pane scroll.
+test.assertMatches(omtStyles, /@media \(orientation: landscape\) and \(max-height: 560px\) and \(max-width: 1000px\) \{[\s\S]{0,4000}\.one-more-tune-challenge-idle \{\s*\n\s*display:grid;\s*\n\s*grid-template-columns:minmax\(0,1fr\) minmax\(230px,\.75fr\);/,
+  "a sideways phone's idle face is two columns, hero beside ways");
+test.assertMatches(omtStyles, /@media \(orientation: landscape\) and \(max-height: 560px\) and \(max-width: 1000px\) \{[\s\S]{0,6000}\.one-more-tune-challenge-idle \.featureline \{ display:none \}/,
+  "and gives up the three selling points it cannot hold");
+test.assertMatches(omtStyles, /@media \(orientation: landscape\) and \(max-height: 560px\) and \(max-width: 1000px\) \{[\s\S]{0,6000}\.one-more-tune-round-reveal > \.one-more-tune-round-tail \{[\s\S]{0,400}flex-direction:row;/,
+  "a sideways reveal puts its links and buttons on one line each");
+test.assertMatches(omtStyles, /@container \(max-width: 900px\) \{[\s\S]{0,400}line-clamp:2;/,
+  "and a credit that would wrap to three lines is capped where the window is narrow");
 // The reveal is the face a round spends its time on after the answer lands, and
 // on a 396x484 wrist its record box ended at 504 with the Next button under it
 // and nothing scrollable: the way onward was off the screen entirely. The
@@ -1894,5 +1934,31 @@ test.assertIncludes(source, "question.localAnswer || oneMoreTuneCardIdForReveal(
   test.assertIncludes(source, 'event?.detail?.committed === true) oneMoreTuneEraVisitTheme = ""',
     "a deliberate Appearance change ends the visit rather than being undone by it");
 }
+
+
+// ---- The round waits for you ------------------------------------------------
+//
+// Lifeline's wrist loop is the model: the wrist raises, one decision is made,
+// the wrist drops, and the story is where it was left. Measured before this:
+// answering a question and reloading lost the round entirely — the quiz opened
+// on its idle face with "Start a round", and the ten answered so far were gone.
+// A set id plus a deck version already names the same ten questions for
+// everyone (that is what the share link relies on), so the cursor needs no
+// server state: which set, which question, which mode.
+test.assertMatches(source, /const ONE_MORE_TUNE_STATE_VERSION = 4;/,
+  "the progress record carries a version that has a round cursor in it");
+test.assertMatches(source, /function oneMoreTuneReadableRound\(value\) \{/,
+  "a stored cursor is read back as data rather than trusted");
+test.assertMatches(source, /function oneMoreTuneRememberRound\(\) \{[\s\S]{0,600}state\.round = \{/,
+  "every move writes the place it reached");
+test.assertMatches(source, /if \(oneMoreTuneRound\.index >= oneMoreTuneRound\.questions\.length\) oneMoreTuneForgetRound\(\);/,
+  "and a round that reached its tenth question is finished rather than paused");
+test.assertMatches(source, /oneMoreTuneAdoptRound\(round, \{ index \}\);/,
+  "a link that names a set resumes the question this device reached");
+test.assertMatches(source, /data-one-more-tune-command="one-more-tune-resume-round"/,
+  "the idle face offers the round in progress before it offers a new one");
+test.assertIncludes(source, "one_more_tune_continue_round", "with its own sentence");
+test.assertIncludes(en, "one_more_tune_continue_round:", "in English");
+test.assertIncludes(zh, "one_more_tune_continue_round:", "and in Chinese");
 
 test.finish();

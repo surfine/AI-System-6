@@ -43,6 +43,7 @@ const desktopEntryFiles = new Set([
   "styles.clio-chart.css",
   "styles.clio-paint.css",
   "styles.one-more-tune.css",
+  "styles.project-disks.css",
   "styles.soundscape.css",
   "styles.liquid-cover.css",
   "styles.image-prompt-studio.css",

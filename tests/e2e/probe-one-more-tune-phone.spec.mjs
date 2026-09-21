@@ -115,6 +115,60 @@ async function geometry(page) {
   });
 }
 
+// ---- A link opened on a wrist ---------------------------------------------
+//
+// watchOS has no Safari and no address bar, but the system's message and mail
+// views do open links, in a web view the crown scrolls. So a shared round is
+// playable on the watch through this page — not through a companion that does
+// not exist yet. The owner corrected an earlier draft of docs/design/
+// FORM-FACTORS.md that said the Watch could not open a page at all, and this is
+// the measurement behind the correction: from the link, at 396x484, in both
+// engines, the quiz comes to the front, the question sounds, nothing is clipped
+// and nothing scrolls.
+for (const [engine, launcher] of [["chromium", chromium], ["webkit", webkit]]) {
+  const browser = await launcher.launch(engine === "chromium" ? { args: ["--autoplay-policy=no-user-gesture-required"] } : {});
+  try {
+    const context = await browser.newContext({
+      viewport: { width: 396, height: 484 },
+      deviceScaleFactor: 3,
+      isMobile: true,
+      hasTouch: true,
+      userAgent: IPHONE_UA,
+      locale: "zh-CN",
+    });
+    const page = await context.newPage();
+    await page.goto(`${baseURL}/?launch=one-more-tune`, { waitUntil: "domcontentloaded", timeout: 60_000 });
+    await page.waitForFunction(() => document.body?.dataset.appReady === "ready", undefined, { timeout: 60_000 });
+    await page.waitForTimeout(4_000);
+    const landed = await page.evaluate(() => {
+      const win = document.querySelector('[data-window="oneMoreTune"]');
+      return {
+        open: !!win && !win.classList.contains("is-hidden"),
+        startVisible: !!document.querySelector('[data-one-more-tune-command="one-more-tune-start-round"]'),
+      };
+    });
+    check(landed.open && landed.startVisible, `${engine} watch link: a shared link opens the quiz on a wrist-sized screen`);
+    const startButton = page.locator('[data-one-more-tune-command="one-more-tune-start-round"]').first();
+    if (await startButton.count()) {
+      await startButton.click().catch(() => {});
+      await page.waitForTimeout(4_000);
+      const round = await page.evaluate(() => ({
+        heard: (() => { try { return oneMoreTuneQuestion()?.heard || 0; } catch { return 0; } })(),
+        mediaFailed: (() => { try { return oneMoreTuneQuestion()?.mediaFailed === true; } catch { return false; } })(),
+        pageScroll: document.scrollingElement.scrollHeight - window.innerHeight,
+        clipped: [...document.querySelectorAll('[data-window="oneMoreTune"] button, [data-window="oneMoreTune"] .choice')]
+          .filter((el) => el.getBoundingClientRect().height > 0)
+          .filter((el) => el.getBoundingClientRect().bottom > window.innerHeight + 1).length,
+      }));
+      check(round.heard > 0 && !round.mediaFailed, `${engine} watch link: and the question sounds by itself (heard=${round.heard})`);
+      check(round.pageScroll <= 0 && round.clipped === 0, `${engine} watch link: with nothing off the screen (scroll=${round.pageScroll}, clipped=${round.clipped})`);
+    }
+    await context.close();
+  } finally {
+    await browser.close();
+  }
+}
+
 try {
   for (const [engine, launcher] of [["chromium", chromium], ["webkit", webkit]]) {
     for (const { width = 402, height, insets, label } of HEIGHTS) {

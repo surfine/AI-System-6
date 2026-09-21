@@ -1,5 +1,5 @@
 <!-- canonical-source: README.md -->
-<!-- source-sha256: beea61fd1fba04ec7475156c7bf3a99b1d697f7f6dc3503ee73bbd7fd1c47956 -->
+<!-- source-sha256: 6e5e9803c3b63b56ad67d01f9a7b19c8204c08a52aedb7f32e26338efb9294b0 -->
 
 > 英文版为准 / 仅供人类参考
 
@@ -36,7 +36,9 @@
 
 **直接打开一个窗口：** [配色工作台](https://system6.aaronlau.me/go/cmf-studio) · [盆景城市](https://system6.aaronlau.me/go/bonsai-city) · [终末地终端](https://system6.aaronlau.me/go/endfield-terminal) · [时间机器](https://system6.aaronlau.me/go/time-machine) · [OpenTTD](https://system6.aaronlau.me/go/openttd) · [DOOM](https://system6.aaronlau.me/go/doom)
 
-<sub>每个应用都有唯一一个可分享的地址 <code>/go/&lt;app-id&gt;</code>。桌面围绕它打开。</sub>
+**或者打开一整块写完之后留下的盘：** [未来通车之后](https://system6.aaronlau.me/go/dtk) · [初代 iPad 为什么只有 256MB](https://system6.aaronlau.me/go/ipad1)
+
+<sub>每个应用都有唯一一个可分享的地址 <code>/go/&lt;app-id&gt;</code>。桌面围绕它打开；两块演示用项目硬盘用的是同一条地址规则，<b>File 菜单的「打开演示用项目硬盘…」</b>会把它们列出来。</sub>
 
 </div>
 
@@ -65,6 +67,7 @@
   原始壁纸一个按钮就能恢复，折叠视频在你的机器上渲染完成。
 - **每个应用只有一个地址。** `/go/cmf-studio`、`/go/bonsai-city`、`/go/doom`
   等是把这个窗口交给别人的唯一方式；服务器上那些旧的裸目录由安装器自己退役。
+- **写完之后的作品以整块盘旅行，不是截图。** `/go/dtk` 和 `/go/ipad1` 挂载的是一整块项目硬盘：问题单、大纲、分节草稿、正文、审校记录。读者拿到的是自己能改的副本；**File 菜单的「打开演示用项目硬盘…」**会把它们列出来，所以没有人必须一直留着那条链接。加第三块盘＝在 `tooling/build-shared-project-disks.mjs` 加一条登记、在三张 `LAUNCH_ROUTES` 表里加一条路由，`tests/features/launch-intent.test.mjs` 会盯着源盘和发布出去的副本保持一致。
 - **公网可以接待一位访客。** 打开访客桥之后，另一个 agent 可以经由指名你这张
   桌面的邀请，从互联网连上来；工具契约、权限和在审校台等待你确认的方式，
   与你在 Mac 上使用时完全一致。
@@ -264,7 +267,7 @@ System 6.0.8 资源和实际观察到的 Macintosh 行为出发；后面几个�
 ## 在一个 1988 年的约束下建造
 
 ```text
-启动关键载荷            ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,954,076 字节
+启动关键载荷            ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,953,940 字节
 两张 1.44 MB 软盘       ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  2,949,120 字节
 重型工具                按需懒加载，从第三张盘上来
 ```

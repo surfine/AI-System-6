@@ -337,7 +337,10 @@ async function shareActiveProjectDisk() {
 function openProjectBackupPanel() {
   openWindow("importUtility");
   const backupSection = document.querySelector(".backup-preview-section");
-  if (backupSection) backupSection.open = true;
+  if (backupSection) {
+    backupSection.open = true;
+    ensureSharedProjectDisksModule?.();
+  }
   projectBackupFileButton?.focus();
 }
 

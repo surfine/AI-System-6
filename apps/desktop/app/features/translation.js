@@ -1241,6 +1241,7 @@ function systemFolderDocumentTitleKey(documentKey) {
     readMe: "read_me",
     flow: "flow_readme",
     memory: "memory_readme",
+    shared: "shared_readme",
   }[documentKey] || "read_me";
 }
 
