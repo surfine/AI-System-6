@@ -11,18 +11,18 @@
     <!-- Let the system choose status glyph contrast. -->
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="theme-color" content="#000000" />
-    <link rel="apple-touch-icon" href="assets/app-icon/app-icon-180.png?v=20260922.4" />
-    <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png?v=20260922.4" />
-    <link rel="manifest" href="assets/app-icon/manifest.json?v=20260922.4" />
-    <script src="app/core/theme-registry.js?v=20260922.4"></script>
-    <link rel="stylesheet" href="styles.bundle.css?v=20260922.4" />
+    <link rel="apple-touch-icon" href="assets/app-icon/app-icon-180.png?v=20260922.5" />
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png?v=20260922.5" />
+    <link rel="manifest" href="assets/app-icon/manifest.json?v=20260922.5" />
+    <script src="app/core/theme-registry.js?v=20260922.5"></script>
+    <link rel="stylesheet" href="styles.bundle.css?v=20260922.5" />
     <!-- Preload the application while parsing the desktop. -->
-    <link rel="preload" as="script" href="app.bundle.js?v=20260922.4" />
+    <link rel="preload" as="script" href="app.bundle.js?v=20260922.5" />
   </head>
   <body class="is-booting">
-    <script src="app/core/theme-body-init.js?v=20260922.4"></script>
+    <script src="app/core/theme-body-init.js?v=20260922.5"></script>
     <!-- Register crash recovery before the application bundle. -->
-    <script src="app/core/boot-safety-net.js?v=20260922.4"></script>
+    <script src="app/core/boot-safety-net.js?v=20260922.5"></script>
     <header class="menu-bar" aria-label="System menu" data-i18n-aria-label="system_menu">
       <div class="menu">
         <button class="apple" aria-label="Apple menu" data-i18n-aria-label="apple_menu" data-balloon-help="balloon_apple_menu">
@@ -1075,7 +1075,7 @@
           <h2 id="help-folder-title" data-i18n="help_folder">Help Folder</h2>
         </div>
         <div class="details-bar">
-          <span data-i18n="seven_items">7 items</span>
+          <span data-i18n="eight_items">8 items</span>
           <div class="view-controls" data-view-window="helpFolder" aria-label="View" data-i18n-aria-label="view_controls">
             <button class="view-btn is-active" type="button" data-view="icon" aria-label="Icon view" data-i18n-aria-label="view_icon"></button>
             <button class="view-btn" type="button" data-view="list" aria-label="List view" data-i18n-aria-label="view_list"></button>
@@ -1607,7 +1607,7 @@
           <h2 id="disk-title" data-i18n="startup_disk">Startup Disk</h2>
         </div>
         <div class="details-bar">
-          <span data-i18n="seven_items">7 items</span>
+          <span data-i18n="eight_items">8 items</span>
           <div class="view-controls" data-view-window="disk" aria-label="View" data-i18n-aria-label="view_controls">
             <button class="view-btn is-active" type="button" data-view="icon" aria-label="Icon view" data-i18n-aria-label="view_icon"></button>
             <button class="view-btn" type="button" data-view="list" aria-label="List view" data-i18n-aria-label="view_list"></button>
@@ -1631,6 +1631,10 @@
             <span class="sys-icon" data-system-icon="projectDisk" aria-hidden="true"></span>
             <span data-i18n="project_disk">Project Hard Disk</span>
           </button>
+          <button class="finder-item" data-action="open-demo-disks">
+            <span class="sys-icon" data-system-icon="projectDisk" aria-hidden="true"></span>
+            <span data-i18n="demo_disks_title">Demonstration Project Disks</span>
+          </button>
           <button class="finder-item" data-action="open-project-cd">
             <span class="sys-icon" data-system-icon="projectDisc" aria-hidden="true"></span>
             <span data-i18n="project_cd">Project CD</span>
@@ -1644,6 +1648,24 @@
             <span data-i18n="trash">Trash</span>
           </button>
         </div>
+      </section>
+
+<!-- The disks that ship with the application: a Finder folder on the Startup
+           Disk, drawn from the index module by getDemonstrationDiskItems (app.js),
+           one row per disk, opened by the command a /go/<route> link runs. -->
+      <section class="window finder-window project-disks-window is-hidden" data-window="projectDisks" aria-labelledby="project-disks-title">
+        <div class="title-bar" data-standard-controls>
+          <h2 id="project-disks-title" data-i18n="demo_disks_title">Demonstration Project Disks</h2>
+        </div>
+        <div class="details-bar">
+          <span data-i18n="zero_items">0 items</span>
+          <div class="view-controls" data-view-window="projectDisks" aria-label="View" data-i18n-aria-label="view_controls">
+            <button class="view-btn is-active" type="button" data-view="icon" aria-label="Icon view" data-i18n-aria-label="view_icon"></button>
+            <button class="view-btn" type="button" data-view="list" aria-label="List view" data-i18n-aria-label="view_list"></button>
+          </div>
+          <span data-i18n="startup_disk">Startup Disk</span>
+        </div>
+        <div class="window-pane finder-grid project-disks-grid window-frame-scroller"></div>
       </section>
 
       <section class="window project-cd-window is-hidden" data-window="projectCd" aria-labelledby="project-cd-title">
@@ -3375,9 +3397,9 @@
       </section>
     </main>
 
-    <script src="app/generated/build-info.js?v=20260922.4"></script>
+    <script src="app/generated/build-info.js?v=20260922.5"></script>
     <template id="standard-window-controls"><button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button><button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button><button class="shade-box" aria-label="Collapse" data-i18n-aria-label="collapse"></button></template>
-    <script src="app.bundle.js?v=20260922.4"></script>
+    <script src="app.bundle.js?v=20260922.5"></script>
 
   </body>
 </html>

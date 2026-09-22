@@ -339,7 +339,9 @@ function openProjectBackupPanel() {
   const backupSection = document.querySelector(".backup-preview-section");
   if (backupSection) {
     backupSection.open = true;
-    ensureSharedProjectDisksModule?.();
+    // The rows, not the backups: choosing a backup file is when the ready-made
+    // disks are worth showing, and that list is ~20 KB rather than 3.7 MB.
+    ensureSharedProjectDisksIndexModule?.();
   }
   projectBackupFileButton?.focus();
 }

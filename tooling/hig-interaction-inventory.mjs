@@ -246,9 +246,13 @@ function commandEntries(commandsNode, bindings) {
   return [];
 }
 
-function assignmentDataAttribute(node) {
+function assignmentDataAttribute(node, bindings) {
   if (node.type !== "AssignmentExpression") return null;
-  const value = staticString(node.right);
+  // Resolve through the file's own bindings: a window built by a lazy module
+  // usually names itself once (`const WINDOW_NAME = "projectDisks"`) and then
+  // sets the attribute from that constant. Reading only literals reported five
+  // live windows as unregistered.
+  const value = staticString(resolveNode(node.right, bindings));
   if (!value || node.left.type !== "MemberExpression") return null;
   const leaf = memberName(node.left);
   if (node.left.object?.type === "MemberExpression" && memberName(node.left.object) === "dataset") {
@@ -260,10 +264,10 @@ function assignmentDataAttribute(node) {
   return null;
 }
 
-function setAttributeDataAttribute(node) {
+function setAttributeDataAttribute(node, bindings) {
   if (node.type !== "CallExpression" || memberName(node.callee) !== "setAttribute") return null;
-  const attribute = staticString(node.arguments[0]);
-  const value = staticString(node.arguments[1]);
+  const attribute = staticString(resolveNode(node.arguments[0], bindings));
+  const value = staticString(resolveNode(node.arguments[1], bindings));
   if (!markupAttributes.includes(attribute) || !value) return null;
   return { attribute, value };
 }
@@ -418,6 +422,7 @@ export function inspectJavaScriptSource(source, file = "fixture.js") {
   const applications = [];
   const actionHandlers = [];
   const dynamicActionFamilies = [];
+  const runtimeWindows = [];
   const shortcuts = [];
   const menuCommands = [];
   const windowCalls = [];
@@ -435,10 +440,25 @@ export function inspectJavaScriptSource(source, file = "fixture.js") {
       }
     }
 
-    const assignmentRecord = assignmentDataAttribute(node);
+    const assignmentRecord = assignmentDataAttribute(node, bindings);
     if (assignmentRecord) markup.push(Object.freeze({ ...assignmentRecord, ownerWindow: "", tagName: "dynamic", location: sourceLocation(file, node) }));
-    const setAttributeRecord = setAttributeDataAttribute(node);
+    const setAttributeRecord = setAttributeDataAttribute(node, bindings);
     if (setAttributeRecord) markup.push(Object.freeze({ ...setAttributeRecord, ownerWindow: "", tagName: "dynamic", location: sourceLocation(file, node) }));
+
+    // A window a lazy module builds for itself:
+    //   ApplicationShell.createWindow({ windowName: "controlStripModules", … })
+    // The shell then sets its own data-window attribute, so nothing in the
+    // source says "data-window=…" and the audit read the registry entry as an
+    // orphan. The shell is the production path for every module-owned window,
+    // so its call is a declaration like any other.
+    if (node.type === "CallExpression" && memberName(node.callee) === "createWindow") {
+      const descriptor = resolveNode(node.arguments[0], bindings);
+      if (descriptor?.type === "ObjectExpression") {
+        const windowName = staticString(resolveNode(objectProperty(descriptor, "windowName")?.value, bindings))
+          || staticString(resolveNode(objectProperty(descriptor, "name")?.value, bindings));
+        if (windowName) runtimeWindows.push(Object.freeze({ windowName, location: sourceLocation(file, node) }));
+      }
+    }
 
     if (node.type === "CallExpression" && memberName(node.callee) === "registerApplication") {
       const descriptor = resolveNode(node.arguments[0], bindings);
@@ -566,6 +586,7 @@ export function inspectJavaScriptSource(source, file = "fixture.js") {
     applications: Object.freeze(applications),
     actionHandlers: Object.freeze(actionHandlers),
     dynamicActionFamilies: Object.freeze(dynamicActionFamilies),
+    runtimeWindows: Object.freeze(runtimeWindows),
     shortcuts: Object.freeze(shortcuts),
     menuCommands: Object.freeze(menuCommands),
     windowCalls: Object.freeze(windowCalls),
@@ -752,6 +773,10 @@ export async function buildHigInteractionAudit({
   for (const { scan } of scans) for (const application of scan.applications) if (application.windowName) {
     if (!windowDeclarations.has(application.windowName)) windowDeclarations.set(application.windowName, []);
     windowDeclarations.get(application.windowName).push(application.location);
+  }
+  for (const { scan } of scans) for (const window of scan.runtimeWindows || []) {
+    if (!windowDeclarations.has(window.windowName)) windowDeclarations.set(window.windowName, []);
+    windowDeclarations.get(window.windowName).push(window.location);
   }
 
   const handlerByAction = new Map();

@@ -164,7 +164,7 @@ function hideWorkspaceDisallowedWindows() {
 }
 
 function refreshWorkspaceProfileSurfaces() {
-  ["finder", "helpFolder", "applications", "disk", "controlStripModules"].forEach((name) => {
+  ["finder", "helpFolder", "applications", "disk", "projectDisks", "controlStripModules"].forEach((name) => {
     if (typeof renderStaticFinderWindow === "function") renderStaticFinderWindow(name);
   });
   if (typeof updateMenuState === "function") updateMenuState();

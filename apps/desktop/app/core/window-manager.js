@@ -69,6 +69,7 @@ const finderCascadeWindowNames = new Set([
   "disk",
   "helpFolder",
   "applications",
+  "projectDisks",
   "projects",
   "documents",
   "projectCd",
@@ -1147,6 +1148,7 @@ const mobileFinderPageWindowNames = new Set([
   "helpFolder",
   "applications",
   "disk",
+  "projectDisks",
   "projectCd",
   "projects",
   "documents",
@@ -1416,6 +1418,7 @@ const finderParentWindowNames = new Map([
   ["finder", "disk"],
   ["helpFolder", "disk"],
   ["applications", "disk"],
+  ["projectDisks", "disk"],
   ["documents", "disk"],
   ["importUtility", "disk"],
   ["rag", "disk"],
@@ -1456,11 +1459,6 @@ const mobileDialogWindowNames = new Set([
   // write, done -- not a Finder page to browse. As a finder-page it took the
   // full-bleed work-area frame and filled a portrait screen.
   "importUtility",
-  // The demonstration-disk list is the same shape of task — read two rows, open
-  // one, done — so it takes the dialog frame on a phone instead of falling into
-  // the desktop geometry, which put a 420px window at left:148 and left it half
-  // off the screen (measured by verify:device-matrix in every phone viewport).
-  "projectDisks",
   // Insert File Floppy is the same shape of task -- choose files, insert,
   // done. Its frame has a close box only, no zoom and no shade box, and its
   // pane is a file picker, not a place to browse.
@@ -2097,6 +2095,7 @@ const finderContentFitWindowNames = new Set([
   "helpFolder",
   "applications",
   "disk",
+  "projectDisks",
   "projects",
   "documents",
   "projectCd",

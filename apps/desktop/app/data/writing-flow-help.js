@@ -24,7 +24,7 @@ window.AISystem6WritingFlowHelpData = (() => {
     shared: Object.freeze({
       question: "What are the demonstration project disks?",
       stuckPoint: "A finished piece is usually passed around as a file or a screenshot, so the route that produced it disappears.",
-      directAnswer: "Thirty-four disks ship with the application; /go/dtk, /go/ipad1, /go/m5ipad and /go/iphone17 open them, and each becomes an ordinary editable project on this computer.",
+      directAnswer: "Thirty-four disks ship with the application; the Startup Disk holds a folder that lists them, /go/dtk and /go/ipad1 open single ones, and each becomes an ordinary editable project on this computer.",
       boundary: "Nothing is imported until someone opens a disk on purpose, and the disks carry the writers' own working material rather than a polished showcase.",
     }),
   });
@@ -255,13 +255,13 @@ The practical rule is short: if something matters, put it in a visible project o
     shared: Object.freeze({
       en: `# Demonstration Project Disks
 
-Two project disks ship with the application, so the way a finished piece travels from a question sheet to a manuscript stays visible. Their addresses are \`https://system6.aaronlau.me/go/<route>\`, and anyone can pass one on.
+Thirty-four project disks ship with the application, so the way a finished piece travels from a question sheet to a manuscript stays visible. They are a folder on the Startup Disk, beside the writer's own Project Hard Disk; the File menu opens the same folder. Each disk also has an address of its own, \`https://system6.aaronlau.me/go/<route>\`, which anyone can pass on.
 
 ## What happens when you open one
 
 - The disk is checked first. If its checksum or version history does not hold, the import stops cleanly instead of leaving half a project behind.
 - What passes becomes an ordinary project on this computer. It comes back from the Project Hard Disk list like any other project, and it stays editable.
-- Opening the same disk again reuses the copy you already have; the row's button reads "Open existing" from then on.
+- Opening the same disk again reuses the copy you already have instead of adding a second one.
 
 ## The thirty-four disks
 
@@ -307,13 +307,13 @@ The question sheet, the outline, the section drafts, the manuscript and the revi
 A disk that arrives as a file from another computer goes in through the Project backup section of the Write to Project Hard Disk window. The address and the file are two doors to the same room.`,
       zh: `# 演示用项目硬盘
 
-这两块盘随应用发布，用来看清一篇作品是怎么从问题单走到正文的。它们的地址是 \`https://system6.aaronlau.me/go/<route>\`，谁都可以把它转给别人。
+这三十四块盘随应用发布，用来看清一篇作品是怎么从问题单走到正文的。它们是启动磁盘上的一个文件夹，就放在作者自己那块项目硬盘旁边；文件菜单打开的是同一个文件夹。每块盘另有一个自己的地址 \`https://system6.aaronlau.me/go/<route>\`，谁都可以把它转给别人。
 
 ## 打开之后会发生什么
 
 - 先检查这块盘有没有被改过。校验或版本历史不过关，就直接干净退出，不会留下一个半截的项目。
 - 通过之后，它成为这台电脑上的一个普通项目；回到桌面，从「项目硬盘」的列表里就能再打开它，可以照常修改，也能随时导出成备份。
-- 再打开同一块盘，用的是你已经有的那一份，不会多出一份副本；那一行的按钮也会变成「打开已有的」。
+- 再打开同一块盘，用的是你已经有的那一份，不会多出一份副本。
 
 ## 现在有哪三十四块
 

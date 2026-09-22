@@ -35,7 +35,7 @@ THERE ARE FOUR MORE INSIDE. NO MODEL REQUIRED TO LOOK AROUND.</sub>
 
 **OR OPEN A WHOLE FINISHED DISK:** [After the Bridge Opens](https://system6.aaronlau.me/go/dtk) · [Why the First iPad Had Only 256MB](https://system6.aaronlau.me/go/ipad1) · [M5 iPad Pro](https://system6.aaronlau.me/go/m5ipad) · [iPhone 17e, Pale Pink](https://system6.aaronlau.me/go/iphone17e) · [Toward One Piece of Glass](https://system6.aaronlau.me/go/bongo) · [Glass and Where It Comes From](https://system6.aaronlau.me/go/glass) · [iPad Pro 9.7](https://system6.aaronlau.me/go/ipad97) · [iPhone Air MagSafe Battery](https://system6.aaronlau.me/go/airbattery) · [iPhone 17 Pro Max](https://system6.aaronlau.me/go/pm17) · [Project Sympathy](https://system6.aaronlau.me/go/sympathy) · [The Ceramic Apple Watch](https://system6.aaronlau.me/go/ceramic) · [Mac Pro (2019)](https://system6.aaronlau.me/go/macpro19) · [iPhone Pocket](https://system6.aaronlau.me/go/pocket) · [iPhone 6s Plus](https://system6.aaronlau.me/go/iphone6sp) · [MagSafe Leather Sleeve](https://system6.aaronlau.me/go/sleeve) · [iPhone 12 Pro Max](https://system6.aaronlau.me/go/pm12) · [iPhone 17](https://system6.aaronlau.me/go/iphone17) · [CDMA iPhone 4](https://system6.aaronlau.me/go/cdma4) · [Portless Apple Watch](https://system6.aaronlau.me/go/noport) · [touch 2 Engineering Board](https://system6.aaronlau.me/go/touch2) · [iPhone Air](https://system6.aaronlau.me/go/airact) · [iPhone 4S Demo Unit](https://system6.aaronlau.me/go/ip4sdemo) · [Transparent Air Prototypes](https://system6.aaronlau.me/go/airtrans) · [Apple T2 Network Card](https://system6.aaronlau.me/go/t2nic) · [MagSafe Prototypes](https://system6.aaronlau.me/go/mgscrap) · [iPhone 16 Prototype](https://system6.aaronlau.me/go/ip16p) · [iPad Air 4 Prototype](https://system6.aaronlau.me/go/ipada4) · [WWDC2099](https://system6.aaronlau.me/go/ios19) · [Studio Display](https://system6.aaronlau.me/go/sd) · [Magic Keyboard (USB-C)](https://system6.aaronlau.me/go/mkb) · [iPad mini (A17 Pro)](https://system6.aaronlau.me/go/mini7) · [MacBook Neo](https://system6.aaronlau.me/go/mbneo) · [M5 MacBook Air](https://system6.aaronlau.me/go/m5mba) · [iPhone 11 Pro Max](https://system6.aaronlau.me/go/pm11)
 
-<sub>EVERY APP HAS ONE SHAREABLE ADDRESS, <code>/go/&lt;app-id&gt;</code>. THE DESK OPENS AROUND IT. THE THIRTY-FOUR DEMONSTRATION PROJECT DISKS USE THE SAME ADDRESS RULE, AND <b>FILE › OPEN DEMONSTRATION PROJECT DISKS…</b> LISTS THEM.</sub>
+<sub>EVERY APP HAS ONE SHAREABLE ADDRESS, <code>/go/&lt;app-id&gt;</code>. THE DESK OPENS AROUND IT. THE THIRTY-FOUR DEMONSTRATION PROJECT DISKS USE THE SAME ADDRESS RULE, AND THE <b>DEMONSTRATION PROJECT DISKS</b> FOLDER ON THE STARTUP DISK (OR <b>FILE › OPEN DEMONSTRATION PROJECT DISKS…</b>) LISTS EVERY ONE.</sub>
 
 </div>
 
@@ -69,9 +69,12 @@ THERE ARE FOUR MORE INSIDE. NO MODEL REQUIRED TO LOOK AROUND.</sub>
   old bare directories are retired on the server by the installer itself.
 - **A finished project travels as a disk, not as a screenshot.** `/go/dtk`,
   `/go/ipad1`, `/go/m5ipad`, `/go/iphone17`, `/go/iphone17e`, `/go/bongo`, `/go/glass`, `/go/ipad97`, `/go/airbattery`, `/go/pm17`, `/go/sympathy`, `/go/ceramic`, `/go/macpro19`, `/go/pocket`, `/go/iphone6sp`, `/go/sleeve`, `/go/pm12` and `/go/pm11` mount a whole Project Hard Disk: question sheet, outline,
-  section drafts, manuscript, review record. The reader gets their own
-  editable copy, and **File › Open Demonstration Project Disks…** lists them so
-  nobody has to keep the link. Adding a third means one entry in
+  section drafts, manuscript, review record. The reader gets their own editable
+  copy, and the set lives in one **Demonstration Project Disks** folder on the
+  Startup Disk, which is the same window the File menu opens: every disk is
+  named, Get Info answers what it is in the writer's own words from the question
+  sheet, and the folder itself costs a 16 KB list rather than the 3.7 MB of
+  manuscripts behind it. Adding a third means one entry in
   `tooling/build-shared-project-disks.mjs`, one route in the three
   `LAUNCH_ROUTES` tables, and `tests/features/launch-intent.test.mjs` will
   insist the source disk and the shipped copy stay equal.
@@ -88,7 +91,11 @@ THERE ARE FOUR MORE INSIDE. NO MODEL REQUIRED TO LOOK AROUND.</sub>
   playable by ear anywhere; the phone layout keeps a round on one screen.
   A second game, Relay, asks who took the handoff instead: six presenter
   clues per round, each one opened costing a point, and the answer kept on the
-  server until you choose.
+  server until you choose. A third, Next Act, asks what a keynote line was
+  doing and which chapter followed it: ten written questions a round, no sound
+  at all, and every answer opens its explanation and the transcript position it
+  rests on — including the cases where one phrase has two checked uses and the
+  first explanation would otherwise hand over the second question.
 
 Every beta has [its own release notes](https://github.com/surfine/AI-System-6/releases).
 
@@ -298,7 +305,7 @@ is a mockup, because a script re-shoots all of it from the running app.
 ## Built under a 1988 constraint
 
 ```text
-boot-critical payload   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,945,088 bytes
+boot-critical payload   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,948,224 bytes
 two 1.44 MB floppies    ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  2,949,120 bytes
 heavy tools             load lazily, from a third disk
 ```

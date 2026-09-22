@@ -223,6 +223,43 @@ function tdiDocumentStackHost(container) {
     .find((host) => host.dataset.tdiStackFor === container.id) || null;
 }
 
+/**
+ * Keyboard alternative to dragging a tab.
+ *
+ * Reordering open documents was drag-only: the stack and the strip both bind
+ * dragstart/drop and nothing else, so a person who cannot drag had no way to
+ * put the tabs in the order they wanted. It was the one entry in the
+ * interaction audit's drag queue with no alternative anywhere in the product.
+ * Option-Left and Option-Right on the focused tab move it one place, which is
+ * exactly what dropping it on its neighbour does.
+ */
+function bindTabReorderKeys(handle, tab, visibleTabs, onMove) {
+  if (typeof onMove !== "function" || !handle) return;
+  handle.setAttribute("aria-keyshortcuts", "Alt+ArrowLeft Alt+ArrowRight");
+  handle.addEventListener("keydown", (event) => {
+    if (!event.altKey || (event.key !== "ArrowLeft" && event.key !== "ArrowRight")) return;
+    const index = visibleTabs.indexOf(tab);
+    const target = visibleTabs[event.key === "ArrowLeft" ? index - 1 : index + 1];
+    if (!target) return;
+    event.preventDefault();
+    onMove(tab.id, target.id);
+    // The stack and the strip both rebuild from the new order, so the node the
+    // key was pressed on is gone. Put focus back on the tab that moved, or the
+    // second press goes nowhere.
+    requestAnimationFrame(() => {
+      const moved = document.querySelector(`[data-document-tab-id="${CSS.escape(tab.id)}"] .tdi-stack-open`)
+        || document.querySelector(`button.tdi-tab[data-document-tab-id="${CSS.escape(tab.id)}"]`);
+      // The popover closes when it is rebuilt, and a row inside a closed
+      // <details> has no box, so a focus() there is silently dropped. Open the
+      // rebuilt stack first: the person is mid-move, and a tab list that shut
+      // itself between two presses would make the shortcut useless.
+      const stack = moved?.closest("details.tdi-document-stack");
+      if (stack && !stack.open) stack.open = true;
+      moved?.focus();
+    });
+  });
+}
+
 function renderTdiDocumentStack(container, tabs, options = {}) {
   const host = tdiDocumentStackHost(container);
   if (!host) return;
@@ -329,6 +366,7 @@ function renderTdiDocumentStack(container, tabs, options = {}) {
       event.preventDefault();
       target.focus();
     });
+    bindTabReorderKeys(open, tab, visibleTabs, onMove);
 
     const close = document.createElement("button");
     close.type = "button";
@@ -490,6 +528,7 @@ function renderTdiTabStrip(container, tabs, options = {}) {
       });
     }
     wrap.append(button, close);
+    bindTabReorderKeys(button, tab, visibleTabs, onMove);
     container.append(wrap);
   });
 }

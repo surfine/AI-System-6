@@ -16,11 +16,14 @@ const replacements = [
   ['<html lang="en">', '<html lang="zh-CN">'],
   ['<title>AI System 6 - A writing desk that keeps your voice yours</title>', '<title>AI System 6 - 让作品仍然像你写的</title>'],
   ['content="A local-first writing desk where sources, questions, drafts, review, and handoff stay visible, and AI output never becomes your work until you choose to keep it."', 'content="一张本地优先的写作桌，让来源、问题、草稿、审校与交付始终可见；AI 输出只有在你明确留下以后，才会成为作品的一部分。"'],
-  ['<link rel="canonical" href="https://aisystem6.pages.dev/">', '<link rel="canonical" href="https://aisystem6.pages.dev/zh-CN.html">'],
+  // The served URL, not the file name: Pages redirects /zh-CN.html to /zh-CN,
+  // and a canonical that points at a redirect is a front door that tells
+  // crawlers to look somewhere else. Same for the social card's og:url.
+  ['<link rel="canonical" href="https://aisystem6.pages.dev/">', '<link rel="canonical" href="https://aisystem6.pages.dev/zh-CN">'],
   ['content="AI System 6 - Keep your voice, sources, and judgment visible"', 'content="AI System 6 - 把你的语言、来源与判断留在明处"'],
   ['content="A local-first writing desk where AI helps without quietly becoming the writer."', 'content="一张本地优先的写作桌，让 AI 帮忙，却不让它悄悄变成写作者。"'],
   ['content="AI System 6. Six Macintosh-era icons on a timeline from 1988 to 2026."', 'content="AI System 6：六个 Macintosh 时代的图标排列在 1988 至 2026 年的时间线上。"'],
-  ['<meta property="og:url" content="https://aisystem6.pages.dev/">', '<meta property="og:url" content="https://aisystem6.pages.dev/zh-CN.html">'],
+  ['<meta property="og:url" content="https://aisystem6.pages.dev/">', '<meta property="og:url" content="https://aisystem6.pages.dev/zh-CN">'],
 
   ['Starting AI System 6&hellip;', '正在启动 AI System 6&hellip;'],
   ['Startup Disk</span>', '启动磁盘</span>'],
@@ -54,7 +57,7 @@ const replacements = [
   ['Show Balloons', '显示气球帮助'],
   ['Read Me&hellip;', '说明文件&hellip;'],
   ['Live&nbsp;System', '运行中系统'],
-  ['<a class="menu-link" href="zh-CN.html" lang="zh-CN">简体中文</a>', '<a class="menu-link" href="index.html" lang="en">English</a>'],
+  ['<a class="menu-link" href="zh-CN" lang="zh-CN">简体中文</a>', '<a class="menu-link" href="index.html" lang="en">English</a>'],
 
   ['YOUR WORDS SHOULD<br>STILL SOUND LIKE YOU.', '写到最后，<br>仍然应该像你。'],
   ['AI System 6 keeps sources, questions, drafts, review, and handoff in visible places. The model may help, but it never quietly takes the pen.', 'AI System 6 把来源、问题、草稿、审校与交付分别放在看得见的位置。模型可以帮忙，却不能悄悄接过笔。'],
@@ -111,6 +114,8 @@ const replacements = [
   ['One More Tune: an unofficial quiz about the music Apple put in its ads. You hear the phrase, you name the thing it sold, and the desk tells you the rest.', 'One More Tune：一个非官方的问答游戏，题目是苹果广告里的音乐。你听到那一段，说出它卖的是什么，剩下的桌面讲给你听。'],
   ['Every question plays itself: the sound is the question, so the tap that started the round is the only tap it wants. The reveal opens the original, and it visits the era the card belongs to. The whole desk changes appearance for the length of the look, then gives yours back.', '每一题都会自己出声：声音就是题目，所以开始那一局的那一下，就是它唯一需要的一下。揭晓会打开原片，并且造访这张卡所属的时代。整张桌面会在你看的这段时间里换成那个时代，然后把你的还给你。'],
   ['A second game, Relay, follows the people Apple put on stage: six handoffs from a keynote, a clue that costs a point each time you open one, and the presenter\'s name kept on the server until you choose.', '第二种玩法「接棒」跟着的是苹果请上台的那些人：一场发布会里的六次交接，每开一条线索扣一分，主讲人的名字留在服务器上，直到你作答。'],
+  ['A third, Next Act, asks what a keynote line was doing and which chapter followed it: ten written questions a round, nothing to listen to, and every answer opens the explanation and the transcript position behind it.', '第三种玩法「下一幕」问的是一句台词当时在做什么、接着进入哪一章：一轮十道纯文字题，没有任何要听的东西，每题答后打开解释和它依据的文字稿位置。'],
+  ['That same payload carries thirty-four finished project disks: one folder on the Startup Disk, the window the File menu opens, and an editable copy on your own machine when you open one. Browsing the folder reads a 16&nbsp;KB list of names, not the manuscripts behind them.', '同一份载荷里还装着三十四块写完的项目硬盘：它们是启动磁盘上的一个文件夹，也就是 File 菜单打开的那个窗口；打开哪一块，就在你自己机器上得到一份可改的副本。翻这个文件夹读的是 16&nbsp;KB 的清单，不是它背后的正文。'],
   ['The reveal: the stage, the record, the era.', '揭晓：舞台、出处，和那个时代。'],
   ['Photographed from the running desktop. The sound is a promotional store preview, relayed by the desk\'s own host when a network cannot reach the store.', '截自运行中的桌面。声音是商店的推广试听；网络到不了商店时，由桌面自己的主机帮它转发。'],
   ['Play a Round', '玩一局'],
@@ -182,7 +187,7 @@ const replacements = [
   ['>Issues</a>', '>问题反馈</a>'],
   ['MIT licensed. AI System 6 is an independent project and is not affiliated with or endorsed by Apple&nbsp;Inc.', '采用 MIT 许可。AI System 6 是独立项目，与 Apple&nbsp;Inc. 没有关联，也未获其背书。'],
   ['It is now safe to shut down AI System 6.', '现在可以安全地关闭 AI System 6。'],
-  ['<a href="zh-CN.html" lang="zh-CN">简体中文</a>', '<a href="index.html" lang="en">English</a>'],
+  ['<a href="zh-CN" lang="zh-CN">简体中文</a>', '<a href="index.html" lang="en">English</a>'],
 ];
 
 function buildChinesePage() {

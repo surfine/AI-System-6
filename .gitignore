@@ -75,6 +75,7 @@ internal/evidence/drafts/theme-lab-fidelity-cache/
 # gate is a local release condition (verify:ship), like the fidelity cache.
 internal/evidence/drafts/appearance-baseline/
 internal/evidence/drafts/appearance-current/
+internal/evidence/drafts/appearance-retry/
 internal/evidence/drafts/appearance-noise/
 tests/appearance-snapshot.json
 internal/evidence/drafts/theme-lab-fidelity/

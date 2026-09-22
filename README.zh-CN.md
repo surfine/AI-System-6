@@ -1,5 +1,5 @@
 <!-- canonical-source: README.md -->
-<!-- source-sha256: 99f4643513cd4ea9d6445895b10fd9285ddf07369b2d47ebf635f2ec1753b240 -->
+<!-- source-sha256: 88355cbd8bacc9acadee997a53d3329e36cfdf1998349d5bb7991a0ab07fdf6b -->
 
 > 英文版为准 / 仅供人类参考
 
@@ -38,7 +38,7 @@
 
 **或者打开一整块写完之后留下的盘：** [未来通车之后](https://system6.aaronlau.me/go/dtk) · [初代 iPad 为什么只有 256MB](https://system6.aaronlau.me/go/ipad1) · [M5 iPad Pro](https://system6.aaronlau.me/go/m5ipad) · [iPhone 17e 浅粉色](https://system6.aaronlau.me/go/iphone17e) · [走向一整块玻璃](https://system6.aaronlau.me/go/bongo) · [玻璃与他们的产地](https://system6.aaronlau.me/go/glass) · [iPad Pro 9.7](https://system6.aaronlau.me/go/ipad97) · [iPhone Air MagSafe 电池](https://system6.aaronlau.me/go/airbattery) · [iPhone 17 Pro Max](https://system6.aaronlau.me/go/pm17) · [Project Sympathy](https://system6.aaronlau.me/go/sympathy) · [陶瓷 Apple Watch](https://system6.aaronlau.me/go/ceramic) · [Mac Pro (2019)](https://system6.aaronlau.me/go/macpro19) · [iPhone Pocket](https://system6.aaronlau.me/go/pocket) · [iPhone 6s Plus](https://system6.aaronlau.me/go/iphone6sp) · [MagSafe 皮革保护套](https://system6.aaronlau.me/go/sleeve) · [iPhone 12 Pro Max](https://system6.aaronlau.me/go/pm12) · [iPhone 17 标准版](https://system6.aaronlau.me/go/iphone17) · [CDMA iPhone 4](https://system6.aaronlau.me/go/cdma4) · [无接口 Apple Watch](https://system6.aaronlau.me/go/noport) · [touch 2 工程板](https://system6.aaronlau.me/go/touch2) · [iPhone Air](https://system6.aaronlau.me/go/airact) · [iPhone 4S Demo](https://system6.aaronlau.me/go/ip4sdemo) · [透明探索版 Air](https://system6.aaronlau.me/go/airtrans) · [T2 网卡](https://system6.aaronlau.me/go/t2nic) · [MagSafe 废案](https://system6.aaronlau.me/go/mgscrap) · [iPhone 16 工程机](https://system6.aaronlau.me/go/ip16p) · [iPad Air 4 工程机](https://system6.aaronlau.me/go/ipada4) · [WWDC2099](https://system6.aaronlau.me/go/ios19) · [Studio Display](https://system6.aaronlau.me/go/sd) · [Magic Keyboard](https://system6.aaronlau.me/go/mkb) · [iPad mini (A17 Pro)](https://system6.aaronlau.me/go/mini7) · [MacBook Neo](https://system6.aaronlau.me/go/mbneo) · [M5 MacBook Air](https://system6.aaronlau.me/go/m5mba) · [iPhone 11 Pro Max](https://system6.aaronlau.me/go/pm11)
 
-<sub>每个应用都有唯一一个可分享的地址 <code>/go/&lt;app-id&gt;</code>。桌面围绕它打开；三十四块演示用项目硬盘用的是同一条地址规则，<b>File 菜单的「打开演示用项目硬盘…」</b>会把它们列出来。</sub>
+<sub>每个应用都有唯一一个可分享的地址 <code>/go/&lt;app-id&gt;</code>。桌面围绕它打开；三十四块演示用项目硬盘用的是同一条地址规则，<b>启动磁盘上的「演示用项目硬盘」文件夹（File 菜单的同一项）</b>会把它们全部列出来。</sub>
 
 </div>
 
@@ -67,7 +67,7 @@
   原始壁纸一个按钮就能恢复，折叠视频在你的机器上渲染完成。
 - **每个应用只有一个地址。** `/go/cmf-studio`、`/go/bonsai-city`、`/go/doom`
   等是把这个窗口交给别人的唯一方式；服务器上那些旧的裸目录由安装器自己退役。
-- **写完之后的作品以整块盘旅行，不是截图。** `/go/dtk` 和 `/go/ipad1` 挂载的是一整块项目硬盘：问题单、大纲、分节草稿、正文、审校记录。读者拿到的是自己能改的副本；**File 菜单的「打开演示用项目硬盘…」**会把它们列出来，所以没有人必须一直留着那条链接。加一块新盘＝在 `tooling/build-shared-project-disks.mjs` 加一条登记、在三张 `LAUNCH_ROUTES` 表里加一条路由，`tests/features/launch-intent.test.mjs` 会盯着源盘和发布出去的副本保持一致。
+- **写完之后的作品以整块盘旅行，不是截图。** `/go/dtk`、`/go/ipad1` 等挂载的是一整块项目硬盘：问题单、大纲、分节草稿、正文、审校记录。读者拿到的是自己能改的副本；三十四块盘收在启动磁盘的**「演示用项目硬盘」文件夹**里，也就是 File 菜单打开的那一个窗口——每块盘都有自己的名字，「简介」里用作者写在问题单上的话说明它是什么，而打开这个文件夹读的是 16KB 的清单，不是背后 3.7MB 的正文。加一块新盘＝在 `tooling/build-shared-project-disks.mjs` 加一条登记、在三张 `LAUNCH_ROUTES` 表里加一条路由，`tests/features/launch-intent.test.mjs` 会盯着源盘和发布出去的副本保持一致。
 - **公网可以接待一位访客。** 打开访客桥之后，另一个 agent 可以经由指名你这张
   桌面的邀请，从互联网连上来；工具契约、权限和在审校台等待你确认的方式，
   与你在 Mac 上使用时完全一致。
@@ -77,7 +77,10 @@
   用的是商店试听；网络到不了商店时，由这张桌面自己的主机转发同一个文件，所以
   任何地方都能靠耳朵玩；手机版把一局控制在一屏之内。
   第二种玩法「接棒」问的是另一件事：这一棒由谁接手——每轮六条主讲人线索，
-  每开一条扣一分，答案留在服务器上，直到你作答。
+  每开一条扣一分，答案留在服务器上，直到你作答。第三种玩法「下一幕」问的
+  是台词当时在做什么、接着进入哪一章：一轮十道纯文字题，完全不播声音，每题
+  答后打开解释和它依据的文字稿位置——包括同一句话有两种已核对用法的时候，
+  前一道的说明不会顺手把后一道的答案送出去。
 
 每个测试版都有自己的[发布说明](https://github.com/surfine/AI-System-6/releases)。
 
@@ -272,7 +275,7 @@ System 6.0.8 资源和实际观察到的 Macintosh 行为出发；后面几个�
 ## 在一个 1988 年的约束下建造
 
 ```text
-启动关键载荷            ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,945,088 字节
+启动关键载荷            ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,948,224 字节
 两张 1.44 MB 软盘       ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  2,949,120 字节
 重型工具                按需懒加载，从第三张盘上来
 ```

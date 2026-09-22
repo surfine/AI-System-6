@@ -288,6 +288,7 @@ let oneMoreTuneView = "shelf";
 let oneMoreTuneSession = null;
 let oneMoreTuneRound = null;
 let oneMoreTuneKeynoteRound = null;
+let oneMoreTuneLineRound = null;
 let oneMoreTuneUndo = null;
 let oneMoreTuneQuery = "";
 let oneMoreTuneFilter = "all";
@@ -2384,6 +2385,7 @@ function installOneMoreTuneWindow() {
             <button class="system-tab" type="button" role="tab" aria-selected="false" data-one-more-tune-view="study" data-i18n="one_more_tune_view_study">Study</button>
             <button class="system-tab" type="button" role="tab" aria-selected="false" data-one-more-tune-view="challenge" data-i18n="one_more_tune_view_challenge">Challenge</button>
             <button class="system-tab" type="button" role="tab" aria-selected="false" data-one-more-tune-view="keynote" data-i18n="one_more_tune_view_keynote">Relay</button>
+            <button class="system-tab" type="button" role="tab" aria-selected="false" data-one-more-tune-view="line" data-i18n="one_more_tune_view_line">Next Act</button>
             <button class="system-tab" type="button" role="tab" aria-selected="false" data-one-more-tune-view="sources" data-one-more-tune-backstage hidden data-i18n="one_more_tune_view_sources">Sources</button>
           </nav>
         </header>`,
@@ -2449,6 +2451,7 @@ function renderOneMoreTune() {
   else if (oneMoreTuneView === "study") renderOneMoreTuneStudy(body);
   else if (oneMoreTuneView === "challenge") renderOneMoreTuneChallenge(body);
   else if (oneMoreTuneView === "keynote") renderOneMoreTuneKeynote(body);
+  else if (oneMoreTuneView === "line") renderOneMoreTuneLine(body);
   else renderOneMoreTuneSources(body);
   window.AISystem6TranslateWithin?.(body);
   hydrateSystemIcons?.(body);
@@ -4223,6 +4226,153 @@ function renderOneMoreTuneKeynote(body) {
 }
 
 /**
+ * One More Line: the keynote-line round.
+ *
+ * The window's third game, and a different task from the other two. The music
+ * round asks which advertisement a segment belonged to; the relay asks who
+ * took a hand-off, from clues opened one at a time; this one asks what a spoken
+ * line was doing and which chapter came after it. The research package behind
+ * it is explicit that those are separate jobs — "音乐记忆、人物原声辨认、发布史
+ * 知识和语境理解是不同任务" — so it is a round of its own rather than a third
+ * face of one score.
+ *
+ * Three of the package's rules are visible in this half:
+ *
+ *   1. NO UNREVIEWED AUDIO. There is no player on this face at all, and the
+ *      intro says why: the bank's items rest on written evidence, and the
+ *      recordings behind them have not been auditioned line by line.
+ *   2. READING IS NOT A MISS. 跳过 is offered beside the four answers, and a
+ *      skipped question still opens its note; the round result counts the first
+ *      answers apart from the skips instead of turning both into one number.
+ *   3. THE NOTE IS THE POINT. A reveal carries the line's explanation, the
+ *      source it rests on with its transcript position, and — where the same
+ *      phrase has a second checked use — the other use, named as the other use.
+ *      Two questions about one phrase never sit next to each other: the round
+ *      is ordered so that the first one cannot hand over the second.
+ *
+ * A round is ten questions of twelve, no timer, one submission each, a point a
+ * question. The answers live on the server; the browser holds tokens.
+ */
+function oneMoreTuneLineQuestion() {
+  return oneMoreTuneLineRound?.questions?.[oneMoreTuneLineRound.index] || null;
+}
+
+async function startOneMoreTuneLineRound() {
+  setStatus(t("one_more_tune_line_opening"));
+  try {
+    const payload = await oneMoreTuneRequestRoute(ONE_MORE_TUNE_ROUND_ROUTE, {
+      body: { domain: "keynote_context" },
+    });
+    const questions = Array.isArray(payload?.questions) ? payload.questions : [];
+    if (payload?.domain !== "keynote_context" || !questions.length) throw new Error("invalid line round");
+    oneMoreTuneLineRound = {
+      token: String(payload.roundToken || ""),
+      index: 0,
+      questions: questions.map((question) => ({ ...question, submitted: false, result: null })),
+      correct: 0,
+      skipped: 0,
+      maxPoints: Number(payload.maxPoints) || questions.length,
+    };
+    oneMoreTuneView = "line";
+    renderOneMoreTune();
+  } catch {
+    oneMoreTuneLineRound = null;
+    setStatus(t("one_more_tune_line_unavailable"));
+    renderOneMoreTune();
+  }
+}
+
+async function submitOneMoreTuneLine(action, value = "") {
+  const question = oneMoreTuneLineQuestion();
+  if (!question || question.submitted) return;
+  const body = {
+    domain: "keynote_context",
+    roundToken: oneMoreTuneLineRound.token,
+    questionToken: question.token,
+  };
+  if (action === "skip") body.action = "skip";
+  else body.choiceId = String(value || "");
+  try {
+    const result = await oneMoreTuneRequestRoute(ONE_MORE_TUNE_ANSWER_ROUTE, { body });
+    if (result.ok) {
+      question.submitted = true;
+      question.result = result;
+      if (result.correct) oneMoreTuneLineRound.correct += 1;
+      if (result.skipped) oneMoreTuneLineRound.skipped += 1;
+    }
+  } catch {
+    setStatus(t("one_more_tune_answer_failed"));
+  }
+  renderOneMoreTune();
+}
+
+function advanceOneMoreTuneLine() {
+  if (!oneMoreTuneLineRound) return;
+  oneMoreTuneLineRound.index += 1;
+  if (oneMoreTuneLineRound.index >= oneMoreTuneLineRound.questions.length) {
+    oneMoreTuneLineRound = { ...oneMoreTuneLineRound, done: true };
+  }
+  renderOneMoreTune();
+}
+
+function renderOneMoreTuneLine(body) {
+  const round = oneMoreTuneLineRound;
+  if (!round) {
+    body.innerHTML = `<section class="one-more-tune-study one-more-tune-line">
+      <div class="sectiontag"><span class="eyebrow">ONE MORE LINE</span><span class="tag on" data-i18n="one_more_tune_line_tag">Ten lines</span></div>
+      <h1 data-i18n="one_more_tune_line_title">What happens after the line?</h1>
+      <p class="intro" data-i18n="one_more_tune_line_intro">What a keynote line was doing, and which chapter followed it. Ten written questions a round, no clock, and every answer comes with its note and its source.</p>
+      <p class="notice" data-i18n="one_more_tune_line_audio_note">This edition uses written keynote evidence. No unreviewed voice recording is played, and a transcript position is not a playback second.</p>
+      <div class="toolbar"><button class="btn default" type="button" data-one-more-tune-command="one-more-tune-line-start" data-i18n="one_more_tune_line_start">Start the round</button></div>
+    </section>`;
+    return;
+  }
+  if (round.done) {
+    body.innerHTML = `<section class="one-more-tune-study one-more-tune-line">
+      <div class="sectiontag"><span class="eyebrow" data-i18n="one_more_tune_line_done">ROUND COMPLETE</span><span class="tag on">${round.correct} / ${round.maxPoints}</span></div>
+      <h1 data-i18n="one_more_tune_line_score_title">Ten lines, ten notes.</h1>
+      <p class="one-more-tune-score-line">${oneMoreTuneEscape(t("one_more_tune_line_score_line")
+        .replace("{right}", String(round.correct))
+        .replace("{max}", String(round.maxPoints))
+        .replace("{skipped}", String(round.skipped)))}</p>
+      <div class="toolbar"><button class="btn default" type="button" data-one-more-tune-command="one-more-tune-line-start" data-i18n="one_more_tune_line_again">Run it again</button></div>
+    </section>`;
+    return;
+  }
+  const question = oneMoreTuneLineQuestion();
+  if (!question) return;
+  const result = question.result;
+  const prompt = keynoteText(question.prompt);
+  const phrase = question.phrase ? String(question.phrase.form || "") : "";
+  const choices = Array.isArray(question.choices) ? question.choices : [];
+  const reveal = result?.reveal || null;
+  const answer = reveal ? keynoteText(reveal.answer) : "";
+  const explanation = reveal ? keynoteText(reveal.explanation) : "";
+  const phraseNote = reveal?.phraseNote ? keynoteText(reveal.phraseNote) : "";
+  const sourceLabel = reveal ? keynoteText(reveal.source?.label) : "";
+  const sourceLocator = reveal ? keynoteText(reveal.source?.locator) : "";
+  body.innerHTML = `<section class="one-more-tune-study one-more-tune-line">
+    <div class="sectiontag">
+      <span class="eyebrow">ONE MORE LINE · ${oneMoreTuneEscape(question.event?.name || "APPLE KEYNOTE")} · ${oneMoreTuneEscape(question.event?.date || "")}</span>
+      <span class="tag on">${round.index + 1} / ${round.questions.length}</span>
+    </div>
+    <div class="one-more-tune-line-card">
+    ${phrase ? `<p class="one-more-tune-line-quote"><q>${oneMoreTuneEscape(phrase)}</q></p>` : ""}
+    <h2>${oneMoreTuneEscape(prompt)}</h2>
+    ${!question.submitted ? `<div class="choices">${choices.map((choice, index) => `<button class="choice" type="button" data-one-more-tune-line-answer="${oneMoreTuneEscape(choice.id)}"><span class="letter">${String.fromCharCode(65 + index)}</span>${oneMoreTuneEscape(keynoteText(choice.text))}</button>`).join("")}</div>
+      <div class="toolbar one-more-tune-line-actions"><button class="textbtn" type="button" data-one-more-tune-line-skip="true" data-i18n="one_more_tune_skip">Skip</button></div>`
+      : `<div class="revealbox">
+        <h3>${result?.correct ? oneMoreTuneEscape(t("one_more_tune_correct")) : oneMoreTuneEscape(t("one_more_tune_line_answer").replace("{answer}", answer))}</h3>
+        <p>${oneMoreTuneEscape(explanation)}</p>
+        ${phraseNote ? `<p class="one-more-tune-line-note"><span class="eyebrow" data-i18n="one_more_tune_line_same_phrase">Same line, other use</span> ${oneMoreTuneEscape(phraseNote)}</p>` : ""}
+        <p class="one-more-tune-line-source"><span data-i18n="one_more_tune_line_source">Source</span> <a href="${oneMoreTuneEscape(reveal?.source?.url || "")}" target="_blank" rel="noopener noreferrer">${oneMoreTuneEscape(sourceLabel)}</a> <span class="eyebrow">${oneMoreTuneEscape(sourceLocator)}</span></p>
+      </div>
+      <div class="toolbar"><button class="btn default" type="button" data-one-more-tune-command="one-more-tune-line-next">${round.index + 1 < round.questions.length ? oneMoreTuneEscape(t("one_more_tune_next")) : oneMoreTuneEscape(t("one_more_tune_line_finish"))}</button></div>`}
+    </div>
+  </section>`;
+}
+
+/**
  * The answer the round would not take.
  *
  * The submission left, the round did not answer — a round that was evicted, a
@@ -4862,6 +5012,8 @@ const ONE_MORE_TUNE_COMMAND_NAMES = [
   "one-more-tune-keynote-start",
   "one-more-tune-keynote-hint",
   "one-more-tune-keynote-next",
+  "one-more-tune-line-start",
+  "one-more-tune-line-next",
   "one-more-tune-hear",
   "one-more-tune-round-next",
   "one-more-tune-answer-retry",
@@ -4984,6 +5136,8 @@ function runOneMoreTuneCommand(action) {
     return void submitOneMoreTuneKeynote("hint", hint?.dataset.oneMoreTuneHint || "");
   }
   if (action === "one-more-tune-keynote-next") return void advanceOneMoreTuneKeynote();
+  if (action === "one-more-tune-line-start") return startOneMoreTuneLineRound();
+  if (action === "one-more-tune-line-next") return void advanceOneMoreTuneLine();
   // One press for another ten. The fresh round shuffles a new set, and its
   // first question plays itself because this press is the gesture that opened
   // the audio in the first place.
@@ -5075,7 +5229,9 @@ function setOneMoreTuneBackstage(open) {
 }
 
 function setOneMoreTuneView(view) {
-  const views = oneMoreTuneBackstage() ? ["shelf", "study", "challenge", "keynote", "sources"] : ["shelf", "study", "challenge", "keynote"];
+  const views = oneMoreTuneBackstage()
+    ? ["shelf", "study", "challenge", "keynote", "line", "sources"]
+    : ["shelf", "study", "challenge", "keynote", "line"];
   oneMoreTuneView = views.includes(view) ? view : "shelf";
   stopOneMoreTuneFilm();
   stopOneMoreTuneAudio();
@@ -5119,6 +5275,10 @@ function handleOneMoreTuneClick(event) {
   if (answer) return void answerOneMoreTuneMatch(answer.dataset.oneMoreTuneAnswer);
   const keynoteAnswer = target.closest("[data-one-more-tune-keynote-answer]");
   if (keynoteAnswer) return void submitOneMoreTuneKeynote("answer", keynoteAnswer.dataset.oneMoreTuneKeynoteAnswer);
+  const lineAnswer = target.closest("[data-one-more-tune-line-answer]");
+  if (lineAnswer) return void submitOneMoreTuneLine("answer", lineAnswer.dataset.oneMoreTuneLineAnswer);
+  const lineSkip = target.closest("[data-one-more-tune-line-skip]");
+  if (lineSkip) return void submitOneMoreTuneLine("skip");
   const keynoteHint = target.closest("[data-one-more-tune-hint]");
   if (keynoteHint) return void submitOneMoreTuneKeynote("hint", keynoteHint.dataset.oneMoreTuneHint);
   // A catalogue row opens its own card's detail in place, the way the research

@@ -2,6 +2,7 @@ import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("static-finder-items");
 const app = read("app.js");
+const index = read("index.html");
 const runtime = read("app/core/desktop-runtime.js");
 const actions = read("app/core/actions.js");
 const windows = read("app/core/window-manager.js");
@@ -37,6 +38,16 @@ for (const iconId of ["systemFile", "finderApp", "multiFinderApp", "daHandler"])
 }
 test.assertIncludes(app, 'iconId: "systemFolder"', "Startup Disk gives the blessed System Folder a distinct icon");
 test.assertIncludes(app, 'iconId: "helpFolder"', "Startup Disk distinguishes Help Folder from System Folder");
+// The demonstration disks sit beside the writer's own Project Hard Disk, in the
+// place a new person looks first, and open the same panel the File menu opens.
+// The row carries no `type`: nothing is mounted until a disk is opened and
+// becomes an ordinary project, so calling it a volume would be a lie.
+test.assertMatches(
+  app,
+  /\{ name: t\("demo_disks_title"\), iconId: "projectDisk", icon: "project-disk-icon", action: "open-demo-disks" \}/,
+  "Startup Disk lists the demonstration disks next to the writer's own disk, without pretending to be a volume",
+);
+test.assertIncludes(index, 'data-action="open-demo-disks"', "the Startup Disk's first markup carries the same row");
 test.assertIncludes(app, 'sizeLabel: item.sizeLabel || t("built_in")', "virtual objects use an honest built-in size label");
 test.assertIncludes(app, "staticFinderBuildDate()", "modified dates derive from the real build stamp");
 test.assertIncludes(app, 'count.textContent = t("items_count", items.length)', "Finder count follows the filtered registry");

@@ -150,6 +150,7 @@ export const lazyRuntimePaths = [
   "app/features/video-docmap.js",
   "app/features/findpath.js",
   "app/content/rebuild-samples.js",
+  "app/content/shared-project-disks-index.js",
   "app/content/shared-project-disks.js",
   "app/features/writing-flow.js",
   "app/features/outline-claim.js",

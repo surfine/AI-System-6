@@ -1,0 +1,541 @@
+{
+  "schemaVersion": 1,
+  "mode": "keynote_context",
+  "title": { "zh": "下一幕", "en": "One More Line" },
+  "purpose": {
+    "zh": "发布会台词题：一句话当时对应什么场景，之后接的是哪一章。题目只使用已核对的文字证据，不播放未经审听的讲者原声。",
+    "en": "A keynote-line game: what a line was doing, and which chapter followed it. Every item rests on checked written evidence; no unauditioned voice recording is played."
+  },
+  "reviewNotes": [
+    {
+      "zh": "来源是六场发布会（2007、2020、2022、2023、2024、2026）的定向例句，不是历年全量字幕统计。",
+      "en": "Sources are targeted examples from six keynotes (2007, 2020, 2022, 2023, 2024, 2026), not a complete subtitle corpus."
+    },
+    {
+      "zh": "locator 是文字稿里的检索位置，不是可用的播放秒数。导航提示同样未与音频对齐。",
+      "en": "A locator is a position in a transcript, not a playback second. Navigation hints are likewise not audio-aligned."
+    },
+    {
+      "zh": "全部条目的 audioAuditioned 为 false：正式配音题要另取同一版本原声、逐句审听并确认使用范围之后才能开启。",
+      "en": "Every item has audioAuditioned false: an audio version needs the same-version recording, a line-by-line audition, and cleared usage before it can be turned on."
+    }
+  ],
+  "items": [
+    {
+      "id": "line-2007-starbucks-greeting",
+      "event": { "id": "evt_20070109", "date": "2007-01-09", "name": "Macworld 2007" },
+      "phrase": { "id": "P01", "form": "Good morning" },
+      "kind": "context",
+      "prompt": {
+        "zh": "2007 年的 Google Maps 演示里，电话刚接通时说 Good morning 的是哪一方？",
+        "en": "In the 2007 Google Maps demo, who says “Good morning” when the call connects?"
+      },
+      "options": [
+        { "id": "a", "zh": "Steve Jobs", "en": "Steve Jobs" },
+        { "id": "b", "zh": "星巴克接电话的店员", "en": "The barista who answers the phone" },
+        { "id": "c", "zh": "舞台上的演示搭档", "en": "The demo partner on stage" },
+        { "id": "d", "zh": "预录广告的旁白", "en": "A narrator in a pre-recorded ad" }
+      ],
+      "answerId": "b",
+      "explanation": {
+        "zh": "转存文字稿把这句话标成 Starbucks operator，也就是接电话的那位店员。Jobs 随后才开玩笑说要订 4,000 杯拿铁。发布会里出现的声音，不一定属于台上的主讲人。",
+        "en": "The archived transcript labels that voice as the Starbucks operator, the person answering the phone. Jobs then jokes about ordering 4,000 lattes. Not every voice in a keynote belongs to the host on stage."
+      },
+      "phraseNote": {
+        "zh": "这句问候在发布会开场也由台上主持人说过，所以听到它并不足以判断年份或说话的人。",
+        "en": "The same greeting also opens keynotes from the host on stage, so hearing it never settles a year or a speaker."
+      },
+      "source": {
+        "url": "https://allaboutstevejobs.com/videos/keynotes/macworld_2007",
+        "label": { "zh": "all about Steve Jobs · Macworld 2007 转存文字稿", "en": "all about Steve Jobs · Macworld 2007 archived transcript" },
+        "locator": { "zh": "转存稿标 01:13:13", "en": "archived transcript 01:13:13" },
+        "evidenceClass": "secondary_named_transcript",
+        "permanent": false
+      },
+      "sharedGroup": "2007-phone-call",
+      "researchIds": ["E002", "E001"],
+      "review": {
+        "method": "secondary_named_transcript_text_only",
+        "checkedOn": "2026-09-22",
+        "choicesReviewed": true,
+        "audioReviewed": false,
+        "audioAllowed": false,
+        "textDemoEnabled": true,
+        "productionEnabled": false
+      }
+    },
+    {
+      "id": "line-2024-one-more-thing-joke",
+      "event": { "id": "evt_20240610", "date": "2024-06-10", "name": "WWDC 2024" },
+      "phrase": { "id": "P03", "form": "One more thing" },
+      "kind": "same_line_two_uses",
+      "prompt": {
+        "zh": "WWDC24 开场影片里的 One more thing，在这里起什么作用？",
+        "en": "In the WWDC24 opening film, what is “One more thing” doing?"
+      },
+      "options": [
+        { "id": "a", "zh": "揭晓 Vision Pro", "en": "Revealing Vision Pro" },
+        { "id": "b", "zh": "引出新款 Mac", "en": "Introducing a new Mac" },
+        { "id": "c", "zh": "对团队作最后叮嘱", "en": "A last word of advice to the team" },
+        { "id": "d", "zh": "宣布散场", "en": "Announcing the end of the show" }
+      ],
+      "answerId": "c",
+      "explanation": {
+        "zh": "Craig 在开场影片里叮嘱团队玩得开心，这句之后并没有接着揭晓产品。同一个短语可以承担完全不同的作用，不能一看到它就预期新品。",
+        "en": "Craig is telling the team to have fun in the opening film, and no product reveal follows. The same phrase can carry a completely different job, so the words alone never promise a new product."
+      },
+      "phraseNote": {
+        "zh": "WWDC23 的 One more thing 确实用来引出 Apple Vision Pro。",
+        "en": "At WWDC23 the same phrase really did introduce Apple Vision Pro."
+      },
+      "source": {
+        "url": "https://developer.apple.com/videos/play/wwdc2024/101/",
+        "label": { "zh": "Apple · WWDC24 官方署名文字稿与章节", "en": "Apple · WWDC24 official named transcript and chapters" },
+        "locator": { "zh": "检索稿 L152–L153", "en": "transcript L152–L153" },
+        "evidenceClass": "official_named_transcript",
+        "permanent": false
+      },
+      "sharedGroup": "2024-opening-film",
+      "researchIds": ["E013"],
+      "review": {
+        "method": "official_named_transcript_text_only",
+        "checkedOn": "2026-09-22",
+        "choicesReviewed": true,
+        "audioReviewed": false,
+        "audioAllowed": false,
+        "textDemoEnabled": true,
+        "productionEnabled": false
+      }
+    },
+    {
+      "id": "line-2024-boom-mirroring",
+      "event": { "id": "evt_20240610", "date": "2024-06-10", "name": "WWDC 2024" },
+      "phrase": { "id": "P02", "form": "Boom" },
+      "kind": "context",
+      "prompt": {
+        "zh": "WWDC24 中，Craig 点开 Dock 图标后说 Boom，接着出现的是什么？",
+        "en": "At WWDC24, Craig clicks a Dock icon and says “Boom”. What appears?"
+      },
+      "options": [
+        { "id": "a", "zh": "iPhone Mirroring 窗口", "en": "An iPhone Mirroring window" },
+        { "id": "b", "zh": "Stage Manager 窗口组", "en": "A Stage Manager window set" },
+        { "id": "c", "zh": "新的 Mac 锁定屏幕", "en": "A new Mac lock screen" },
+        { "id": "d", "zh": "Vision Pro Home View", "en": "The Vision Pro Home View" }
+      ],
+      "answerId": "a",
+      "explanation": {
+        "zh": "官方文字稿把这声感叹放在 iPhone Mirroring 演示里：点开 Dock 图标、镜像窗口出现。它也说明 Boom 不是只有一位主讲人用过的词。",
+        "en": "The official transcript places that exclamation inside the iPhone Mirroring demo: a Dock icon is clicked and the mirrored window appears. It also shows “Boom” was never one presenter's word."
+      },
+      "phraseNote": {
+        "zh": "2007 年的解锁与 Safari 演示里，Steve Jobs 也用过这声感叹。",
+        "en": "Steve Jobs used the same exclamation in the 2007 unlock and Safari demos."
+      },
+      "source": {
+        "url": "https://developer.apple.com/videos/play/wwdc2024/101/",
+        "label": { "zh": "Apple · WWDC24 官方署名文字稿与章节", "en": "Apple · WWDC24 official named transcript and chapters" },
+        "locator": { "zh": "检索稿 L264", "en": "transcript L264" },
+        "evidenceClass": "official_named_transcript",
+        "permanent": false
+      },
+      "sharedGroup": "2024-mirroring-demo",
+      "researchIds": ["E011", "E009", "E010"],
+      "review": {
+        "method": "official_named_transcript_text_only",
+        "checkedOn": "2026-09-22",
+        "choicesReviewed": true,
+        "audioReviewed": false,
+        "audioAllowed": false,
+        "textDemoEnabled": true,
+        "productionEnabled": false
+      }
+    },
+    {
+      "id": "line-2023-one-more-thing-vision",
+      "event": { "id": "evt_20230605", "date": "2023-06-05", "name": "WWDC 2023" },
+      "phrase": { "id": "P03", "form": "One more thing" },
+      "kind": "same_line_two_uses",
+      "prompt": {
+        "zh": "WWDC23 的平台介绍结束后，Tim 用 One more thing 引出了哪款产品？",
+        "en": "After the platform tour at WWDC23, which product does Tim introduce with “One more thing”?"
+      },
+      "options": [
+        { "id": "a", "zh": "HomePod mini", "en": "HomePod mini" },
+        { "id": "b", "zh": "Apple Vision Pro", "en": "Apple Vision Pro" },
+        { "id": "c", "zh": "Mac Studio", "en": "Mac Studio" },
+        { "id": "d", "zh": "AirPods Max", "en": "AirPods Max" }
+      ],
+      "answerId": "b",
+      "explanation": {
+        "zh": "这一处确实承担新品揭晓的作用：软件平台汇总交回 Tim 之后，这句话把舞台交给 Apple Vision Pro。官方章节能帮助定位，但章节数字本身还不是原声剪辑的准确起点。",
+        "en": "Here the phrase really does the reveal: after the software platforms are summarised, it hands the stage to Apple Vision Pro. The official chapter helps you find the moment, but a chapter number is not yet an editing in-point."
+      },
+      "phraseNote": {
+        "zh": "WWDC24 开场影片里的那句是玩笑式叮嘱，没有接着揭晓产品。",
+        "en": "The one in the WWDC24 opening film is a joke, with no product behind it."
+      },
+      "source": {
+        "url": "https://developer.apple.com/videos/play/wwdc2023/101/",
+        "label": { "zh": "Apple · WWDC23 官方署名文字稿与章节", "en": "Apple · WWDC23 official named transcript and chapters" },
+        "locator": { "zh": "检索稿 L314–L318", "en": "transcript L314–L318" },
+        "evidenceClass": "official_named_transcript",
+        "permanent": false
+      },
+      "sharedGroup": "2023-vision-reveal",
+      "researchIds": ["E012"],
+      "review": {
+        "method": "official_named_transcript_text_only",
+        "checkedOn": "2026-09-22",
+        "choicesReviewed": true,
+        "audioReviewed": false,
+        "audioAllowed": false,
+        "textDemoEnabled": true,
+        "productionEnabled": false
+      }
+    },
+    {
+      "id": "line-2022-downstairs-ios",
+      "event": { "id": "evt_20220606", "date": "2022-06-06", "name": "WWDC 2022" },
+      "phrase": { "id": "P07", "form": "Let’s head downstairs" },
+      "kind": "next_act",
+      "prompt": {
+        "zh": "WWDC22，Craig 第一次说要下楼之后，开始介绍哪一个系统？",
+        "en": "At WWDC22, after Craig first says he is heading downstairs, which system comes next?"
+      },
+      "options": [
+        { "id": "a", "zh": "macOS Ventura", "en": "macOS Ventura" },
+        { "id": "b", "zh": "watchOS 9", "en": "watchOS 9" },
+        { "id": "c", "zh": "iOS 16", "en": "iOS 16" },
+        { "id": "d", "zh": "iPadOS 16", "en": "iPadOS 16" }
+      ],
+      "answerId": "c",
+      "explanation": {
+        "zh": "官方文字稿的顺序是下楼串场，接着开始 iOS 16。这句话到其他年份未必接同一个系统，所以它是一条现场线索，而不是固定答案。",
+        "en": "The official transcript goes from the downstairs hand-off straight into iOS 16. In another year the same line need not lead to the same system: it is a live cue, not a fixed answer."
+      },
+      "phraseNote": {
+        "zh": "WWDC23 又一次下楼，那一次接的是 iPadOS 17。",
+        "en": "WWDC23 heads downstairs again, and that time the next chapter is iPadOS 17."
+      },
+      "source": {
+        "url": "https://developer.apple.com/videos/play/wwdc2022/101/",
+        "label": { "zh": "Apple · WWDC22 官方署名文字稿", "en": "Apple · WWDC22 official named transcript" },
+        "locator": { "zh": "检索稿 L148", "en": "transcript L148" },
+        "evidenceClass": "official_named_transcript",
+        "permanent": false
+      },
+      "sharedGroup": "2022-downstairs",
+      "researchIds": ["E023"],
+      "review": {
+        "method": "official_named_transcript_text_only",
+        "checkedOn": "2026-09-22",
+        "choicesReviewed": true,
+        "audioReviewed": false,
+        "audioAllowed": false,
+        "textDemoEnabled": true,
+        "productionEnabled": false
+      }
+    },
+    {
+      "id": "line-2023-downstairs-ipados",
+      "event": { "id": "evt_20230605", "date": "2023-06-05", "name": "WWDC 2023" },
+      "phrase": { "id": "P07", "form": "Let’s head downstairs" },
+      "kind": "next_act",
+      "prompt": {
+        "zh": "WWDC23，iOS 介绍结束时又出现下楼串场。这次接到哪个章节？",
+        "en": "At WWDC23 the downstairs hand-off comes back after iOS. Which chapter does it lead into this time?"
+      },
+      "options": [
+        { "id": "a", "zh": "iPadOS 17", "en": "iPadOS 17" },
+        { "id": "b", "zh": "macOS Sonoma", "en": "macOS Sonoma" },
+        { "id": "c", "zh": "watchOS 10", "en": "watchOS 10" },
+        { "id": "d", "zh": "Audio & Home", "en": "Audio & Home" }
+      ],
+      "answerId": "a",
+      "explanation": {
+        "zh": "2023 年这处串场引出 iPadOS 17。它与 2022 年几乎相同的说法不能共用同一个答案，正因如此，考题问的是那一年的现场顺序。",
+        "en": "In 2023 this hand-off opens iPadOS 17. It cannot share an answer with the near-identical 2022 line, which is why the question asks about that year's running order."
+      },
+      "phraseNote": {
+        "zh": "2022 年的那次下楼接的是 iOS 16。",
+        "en": "The 2022 trip downstairs led into iOS 16."
+      },
+      "source": {
+        "url": "https://developer.apple.com/videos/play/wwdc2023/101/",
+        "label": { "zh": "Apple · WWDC23 官方署名文字稿与章节", "en": "Apple · WWDC23 official named transcript and chapters" },
+        "locator": { "zh": "检索稿 L218；章节锚点 34:32", "en": "transcript L218; chapter anchor 34:32" },
+        "evidenceClass": "official_named_transcript",
+        "permanent": false
+      },
+      "sharedGroup": "2023-downstairs",
+      "researchIds": ["E024"],
+      "review": {
+        "method": "official_named_transcript_text_only",
+        "checkedOn": "2026-09-22",
+        "choicesReviewed": true,
+        "audioReviewed": false,
+        "audioAllowed": false,
+        "textDemoEnabled": true,
+        "productionEnabled": false
+      }
+    },
+    {
+      "id": "line-2023-guitar-audio-home",
+      "event": { "id": "evt_20230605", "date": "2023-06-05", "name": "WWDC 2023" },
+      "phrase": { "id": "", "form": "" },
+      "kind": "next_act",
+      "prompt": {
+        "zh": "WWDC23 的吉他段落衔接的是哪一个主题？",
+        "en": "Which theme does the WWDC23 guitar segment lead into?"
+      },
+      "options": [
+        { "id": "a", "zh": "GarageBand 更新", "en": "A GarageBand update" },
+        { "id": "b", "zh": "Apple Music 订阅", "en": "Apple Music subscriptions" },
+        { "id": "c", "zh": "Audio & Home", "en": "Audio & Home" },
+        { "id": "d", "zh": "Logic Pro for Mac", "en": "Logic Pro for Mac" }
+      ],
+      "answerId": "c",
+      "explanation": {
+        "zh": "官方文字稿写明这一段接着是 Audio and Home，随后介绍 AirPods。片段里的吉他只是画面线索：只凭一件乐器就猜 GarageBand，是把道具当成了答案。",
+        "en": "The official transcript says the section that follows is Audio and Home, which then introduces AirPods. The guitar is only a visual cue: guessing GarageBand from an instrument turns a prop into an answer."
+      },
+      "phraseNote": {
+        "zh": "",
+        "en": ""
+      },
+      "source": {
+        "url": "https://developer.apple.com/videos/play/wwdc2023/101/",
+        "label": { "zh": "Apple · WWDC23 官方署名文字稿与章节", "en": "Apple · WWDC23 official named transcript and chapters" },
+        "locator": { "zh": "检索稿 L262；章节锚点 57:02", "en": "transcript L262; chapter anchor 57:02" },
+        "evidenceClass": "official_named_transcript",
+        "permanent": false
+      },
+      "sharedGroup": "2023-audio-handoff",
+      "researchIds": ["E016"],
+      "review": {
+        "method": "official_named_transcript_text_only",
+        "checkedOn": "2026-09-22",
+        "choicesReviewed": true,
+        "audioReviewed": false,
+        "audioAllowed": false,
+        "textDemoEnabled": true,
+        "productionEnabled": false
+      }
+    },
+    {
+      "id": "line-2020-lab-welcome",
+      "event": { "id": "evt_20200622", "date": "2020-06-22", "name": "WWDC 2020" },
+      "phrase": { "id": "P11", "form": "Welcome to our lab" },
+      "kind": "context",
+      "prompt": {
+        "zh": "WWDC2020，Tim 把介绍交给实验室之后，谁用实验室问候语开始技术讲解？",
+        "en": "At WWDC2020, after Tim hands over to the lab, who opens the technical section with the lab's greeting?"
+      },
+      "options": [
+        { "id": "a", "zh": "John Ternus", "en": "John Ternus" },
+        { "id": "b", "zh": "Craig Federighi", "en": "Craig Federighi" },
+        { "id": "c", "zh": "Johny Srouji", "en": "Johny Srouji" },
+        { "id": "d", "zh": "Andreas Wendker", "en": "Andreas Wendker" }
+      ],
+      "answerId": "c",
+      "explanation": {
+        "zh": "转存文字稿的讲者标签和 Tim 的交接都指向 Johny Srouji，主题是 Apple silicon。名字来自文字证据；这段原声还没有对齐审听，所以本窗不播放它。",
+        "en": "The archived transcript's speaker label and Tim's hand-off both point to Johny Srouji, on Apple silicon. The name rests on written evidence; the recording itself has not been auditioned, so this window does not play it."
+      },
+      "phraseNote": {
+        "zh": "",
+        "en": ""
+      },
+      "source": {
+        "url": "https://www.rev.com/transcripts/apple-2020-wwdc-keynote-transcript-ios-14-big-sur-announcements",
+        "label": { "zh": "Rev · WWDC2020 文字稿", "en": "Rev · WWDC2020 transcript" },
+        "locator": { "zh": "Rev 标 01:28:11", "en": "Rev transcript 01:28:11" },
+        "evidenceClass": "secondary_named_transcript",
+        "permanent": false
+      },
+      "sharedGroup": "2020-silicon-lab",
+      "researchIds": ["E031"],
+      "review": {
+        "method": "secondary_named_transcript_text_only",
+        "checkedOn": "2026-09-22",
+        "choicesReviewed": true,
+        "audioReviewed": false,
+        "audioAllowed": false,
+        "textDemoEnabled": true,
+        "productionEnabled": false
+      }
+    },
+    {
+      "id": "line-2023-safari-handoff",
+      "event": { "id": "evt_20230605", "date": "2023-06-05", "name": "WWDC 2023" },
+      "phrase": { "id": "P06", "form": "Back to you, Craig" },
+      "kind": "context",
+      "prompt": {
+        "zh": "WWDC23 的 Safari web apps 演示结束时，谁把话交回 Craig？",
+        "en": "At WWDC23, who hands the Safari web apps demo back to Craig?"
+      },
+      "options": [
+        { "id": "a", "zh": "Beth Dakin", "en": "Beth Dakin" },
+        { "id": "b", "zh": "Craig Federighi", "en": "Craig Federighi" },
+        { "id": "c", "zh": "Ron Huang", "en": "Ron Huang" },
+        { "id": "d", "zh": "Mike Rockwell", "en": "Mike Rockwell" }
+      ],
+      "answerId": "a",
+      "explanation": {
+        "zh": "官方文字稿先标出 Beth Dakin 的发言，演示结束后才把话交回 Craig。交接句属于交话的那个人：句子里面出现名字，不等于说话的人就是那个名字。",
+        "en": "The official transcript names Beth Dakin as the speaker, and the hand-back to Craig comes at the end. A hand-off belongs to the person giving it: a name inside the sentence is not the voice saying it."
+      },
+      "phraseNote": {
+        "zh": "",
+        "en": ""
+      },
+      "source": {
+        "url": "https://developer.apple.com/videos/play/wwdc2023/101/",
+        "label": { "zh": "Apple · WWDC23 官方署名文字稿与章节", "en": "Apple · WWDC23 official named transcript and chapters" },
+        "locator": { "zh": "检索稿 L255、L261", "en": "transcript L255, L261" },
+        "evidenceClass": "official_named_transcript",
+        "permanent": false
+      },
+      "sharedGroup": "2023-safari-handoff",
+      "researchIds": ["E021"],
+      "review": {
+        "method": "official_named_transcript_text_only",
+        "checkedOn": "2026-09-22",
+        "choicesReviewed": true,
+        "audioReviewed": false,
+        "audioAllowed": false,
+        "textDemoEnabled": true,
+        "productionEnabled": false
+      }
+    },
+    {
+      "id": "line-2024-sequoia-gag",
+      "event": { "id": "evt_20240610", "date": "2024-06-10", "name": "WWDC 2024" },
+      "phrase": { "id": "P08", "form": "crack marketing team" },
+      "kind": "context",
+      "prompt": {
+        "zh": "WWDC24 的市场团队出游笑话，最终引出了哪一个 macOS 名称？",
+        "en": "Which macOS name does the WWDC24 marketing-trip joke finally produce?"
+      },
+      "options": [
+        { "id": "a", "zh": "Sonoma", "en": "Sonoma" },
+        { "id": "b", "zh": "Ventura", "en": "Ventura" },
+        { "id": "c", "zh": "Sequoia", "en": "Sequoia" },
+        { "id": "d", "zh": "Monterey", "en": "Monterey" }
+      ],
+      "answerId": "c",
+      "explanation": {
+        "zh": "这是 Sequoia 的命名串场：一段夸张的市场团队出游故事，最后落在加州的那片巨杉。它适合学发布会怎么讲故事，不是苹果内部命名流程的考据结论。",
+        "en": "This is the Sequoia naming routine: an exaggerated marketing-trip story that lands on the California sequoias. It is a lesson in keynote storytelling, not a finding about Apple's internal naming process."
+      },
+      "phraseNote": {
+        "zh": "同一套命名玩笑在 WWDC26 再次出现，这次给出的地名是 Golden Gate；那里的原稿只用名字标签称呼接话的人。",
+        "en": "The same naming joke returns at WWDC26, this time producing Golden Gate — where the transcript labels the speaker by first name only."
+      },
+      "source": {
+        "url": "https://developer.apple.com/videos/play/wwdc2024/101/",
+        "label": { "zh": "Apple · WWDC24 官方署名文字稿与章节", "en": "Apple · WWDC24 official named transcript and chapters" },
+        "locator": { "zh": "检索稿 L261–L262；章节锚点 50:52", "en": "transcript L261–L262; chapter anchor 50:52" },
+        "evidenceClass": "official_named_transcript",
+        "permanent": false
+      },
+      "sharedGroup": "2024-naming-gag",
+      "researchIds": ["E025", "E026"],
+      "review": {
+        "method": "official_named_transcript_text_only",
+        "checkedOn": "2026-09-22",
+        "choicesReviewed": true,
+        "audioReviewed": false,
+        "audioAllowed": false,
+        "textDemoEnabled": true,
+        "productionEnabled": false
+      }
+    },
+    {
+      "id": "line-2023-only-apple",
+      "event": { "id": "evt_20230605", "date": "2023-06-05", "name": "WWDC 2023" },
+      "phrase": { "id": "P09", "form": "only Apple" },
+      "kind": "context",
+      "prompt": {
+        "zh": "WWDC23 开场里，Tim 使用 only Apple 一类表述时，正在强调什么？",
+        "en": "In the WWDC23 opening, what is Tim stressing with the “only Apple” kind of phrasing?"
+      },
+      "options": [
+        { "id": "a", "zh": "统一的产品价格", "en": "One price across the product line" },
+        { "id": "b", "zh": "硬件、软件与服务的整合", "en": "Hardware, software and services together" },
+        { "id": "c", "zh": "各地区相同的发布时刻", "en": "One launch moment in every region" },
+        { "id": "d", "zh": "开发者只能使用一种语言", "en": "Developers may use only one language" }
+      ],
+      "answerId": "b",
+      "explanation": {
+        "zh": "这段属于软硬件与服务整合的品牌表述。题目问的是他当时说了什么；广告措辞本身不是已经证明的排他性事实。",
+        "en": "This is brand language about hardware, software and services working together. The question asks what was said; promotional wording is not by itself a proven claim about exclusivity."
+      },
+      "phraseNote": {
+        "zh": "",
+        "en": ""
+      },
+      "source": {
+        "url": "https://developer.apple.com/videos/play/wwdc2023/101/",
+        "label": { "zh": "Apple · WWDC23 官方署名文字稿与章节", "en": "Apple · WWDC23 official named transcript and chapters" },
+        "locator": { "zh": "检索稿 L152", "en": "transcript L152" },
+        "evidenceClass": "official_named_transcript",
+        "permanent": false
+      },
+      "sharedGroup": "2023-host-opening",
+      "researchIds": ["E027"],
+      "review": {
+        "method": "official_named_transcript_text_only",
+        "checkedOn": "2026-09-22",
+        "choicesReviewed": true,
+        "audioReviewed": false,
+        "audioAllowed": false,
+        "textDemoEnabled": true,
+        "productionEnabled": false
+      }
+    },
+    {
+      "id": "line-2024-tv-film",
+      "event": { "id": "evt_20240610", "date": "2024-06-10", "name": "WWDC 2024" },
+      "phrase": { "id": "P04", "form": "Let’s take a look" },
+      "kind": "next_act",
+      "prompt": {
+        "zh": "WWDC24 的开场介绍里，Tim 请观众看一段影片。接下来的内容是什么？",
+        "en": "In the WWDC24 opening, Tim invites the audience to watch a film. What follows?"
+      },
+      "options": [
+        { "id": "a", "zh": "Apple TV+ 影视混剪", "en": "An Apple TV+ film montage" },
+        { "id": "b", "zh": "M4 芯片技术解说", "en": "An M4 chip technical walkthrough" },
+        { "id": "c", "zh": "iPad 工厂装配画面", "en": "iPad assembly-line footage" },
+        { "id": "d", "zh": "Mac 游戏性能演示", "en": "A Mac gaming demo" }
+      ],
+      "answerId": "a",
+      "explanation": {
+        "zh": "这是 Apple TV+ 介绍末尾的交接，接着播的是影视混剪。预告片里演员的台词要单独标记，不能继续算作 Tim 的发言。",
+        "en": "This is the hand-off at the end of the Apple TV+ section, and the montage plays next. Lines spoken by actors in that trailer are their own segment: they are not Tim's speech."
+      },
+      "phraseNote": {
+        "zh": "",
+        "en": ""
+      },
+      "source": {
+        "url": "https://developer.apple.com/videos/play/wwdc2024/101/",
+        "label": { "zh": "Apple · WWDC24 官方署名文字稿与章节", "en": "Apple · WWDC24 official named transcript and chapters" },
+        "locator": { "zh": "检索稿 L156", "en": "transcript L156" },
+        "evidenceClass": "official_named_transcript",
+        "permanent": false
+      },
+      "sharedGroup": "2024-host-opening",
+      "researchIds": ["E017"],
+      "review": {
+        "method": "official_named_transcript_text_only",
+        "checkedOn": "2026-09-22",
+        "choicesReviewed": true,
+        "audioReviewed": false,
+        "audioAllowed": false,
+        "textDemoEnabled": true,
+        "productionEnabled": false
+      }
+    }
+  ]
+}

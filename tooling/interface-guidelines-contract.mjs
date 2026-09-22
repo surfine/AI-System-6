@@ -285,17 +285,6 @@ const dynamicWindowSources = Object.freeze({
     cssPrefixes: Object.freeze(["one-more-tune-"]),
     iconId: "oneMoreTune",
   }),
-  // The panel that lists the demonstration disks rides the generated
-  // shared-disks module, so its mount symbol is the panel global that module
-  // installs rather than an installer under app/features/.
-  projectDisks: Object.freeze({
-    sourceKind: "lazy",
-    openCommand: "open-demo-disks",
-    ensure: "loadLazyWindowModule",
-    mountPath: "app/content/shared-disks-panel.js#installDemoDisksPanel",
-    cssPrefixes: Object.freeze(["project-disks-"]),
-    iconId: "projectDisk",
-  }),
   todo: Object.freeze({
     sourceKind: "lazy",
     openCommand: "open-todo-da",
@@ -414,9 +403,6 @@ const appearanceRepresentatives = Object.freeze({
   pageSetup: ".btn.default",
   modelMeter: ".meter-stats",
   liquidCover: ".liquid-cover-window .window-pane",
-  // The list is this window's whole reason to exist, so the probe samples a row
-  // rather than the pane every window shares.
-  projectDisks: ".project-disks-window .import-row",
 });
 
 // These ids name system infrastructure whose shorter id stem would swallow
@@ -529,12 +515,10 @@ const windowInterfaceContracts = Object.freeze({
   pageSetup: modalSurface("system", "specialized"),
   importUtility: modalSurface("system", "specialized"),
   projects: finderSurface("core"),
-  projectDisks: specializedUtility("utility", {
-    route: "system",
-    statusLayout: "compact",
-    referenceSurface: "finder",
-    rationale: "The demonstration-disk window lists the disks that ship with the application and hands each one to the Finder, so it reports a compact count rather than editing anything itself.",
-  }),
+  // The disks that ship with the application are a folder on the Startup Disk,
+  // so this page is Finder chrome -- count, view, selection, location -- and not
+  // a utility that happens to look like one.
+  projectDisks: finderSurface("system"),
   documents: finderSurface("core"),
   chatFile: specializedUtility("utility", {
     statusLayout: "compact",

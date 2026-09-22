@@ -1176,8 +1176,8 @@ for (const key of ["one_more_tune_preview_banner", "one_more_tune_youtube_banner
 }
 test.assertIncludes(source, 'data-one-more-tune-view="sources" data-one-more-tune-backstage hidden',
   "the 资料馆 tab is hidden unless the browser opened the backstage");
-test.assertMatches(source, /const views = oneMoreTuneBackstage\(\) \? \[[^\]]*"keynote", "sources"\] : \["shelf", "study", "challenge", "keynote"\];/,
-  "the relay is public while the research sources remain backstage");
+test.assertMatches(source, /const views = oneMoreTuneBackstage\(\)\s*\? \[[^\]]*"keynote", "line", "sources"\]\s*: \["shelf", "study", "challenge", "keynote", "line"\];/,
+  "both keynote games are public while the research sources remain backstage");
 test.assertNotMatches(source, /action: "one-more-tune-(sources|choose-audio|play)"/,
   "the research tools are not in the player's menus");
 

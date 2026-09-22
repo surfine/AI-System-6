@@ -1377,3 +1377,28 @@ landscape sweep) stay open and are tracked in the 1.0.52 closeout.
 - **The site and the README show seven appearance frames**, and the Liquid
   Glass icon family names its Golden Gate Beta 1 target in one place across
   both accepted build stages.
+- **The demonstration disks sit on the Startup Disk**, next to your own Project
+  Hard Disk: one row, the same panel the File menu opens, and the disks are
+  still not a volume — nothing is mounted until one is opened and becomes an
+  ordinary project.
+
+- **The demonstration disks became a folder, and reading the folder stopped
+  downloading the manuscripts.** The thirty-four disks that ship with the
+  application now live in one Finder page on the Startup Disk — count, icon and
+  list views, selection, Get Info, double click — instead of a small window a
+  module built; the File menu's row opens the same page, and a disk's own
+  question-sheet line is what Get Info shows about it. The list travels as its
+  own 16 KB module, so opening the folder no longer pulls the 3.7 MB of
+  manuscripts behind it (1:134); a disk's backup loads when a disk is opened.
+  Boot payload 2,946,313 → 2,948,224 bytes, which is 896 bytes under the
+  two-floppy line, so the next boot-side feature has to reclaim rather than add.
+- **One More Tune has a third game: 下一幕 / Next Act.** Ten written questions a
+  round about what a keynote line was doing and which chapter followed it, drawn
+  from the keynote-language research package: four options, no clock, a point a
+  question, and skipping allowed. The answer, the explanation and the source stay
+  on the server until a submission comes back; a skipped question still opens its
+  note; and two questions about one phrase (One more thing at WWDC23 and WWDC24,
+  heading downstairs in 2022 and 2023) are never adjacent, because the first
+  explanation would otherwise answer the second question. There is no audio in
+  this edition, and the window says so: the recordings behind these lines have
+  not been auditioned, so the audio version stays closed.

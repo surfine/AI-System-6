@@ -85,7 +85,14 @@ for (const file of siteTextFiles) {
   }
 }
 for (const reference of references) {
-  if (!reference.target.startsWith(`${siteRoot}${path.sep}`) || !existsSync(reference.target)) {
+  // Cloudflare Pages answers an extensionless path from the .html file beside
+  // it — /zh-CN serves zh-CN.html, which is why the Chinese page's own
+  // canonical names /zh-CN rather than the file that happens to hold it. The
+  // check follows the same rule the host does, or a correct link reads as
+  // broken for a file that is right there.
+  const cleanUrlTarget = `${reference.target}.html`;
+  const resolves = existsSync(reference.target) || existsSync(cleanUrlTarget);
+  if (!reference.target.startsWith(`${siteRoot}${path.sep}`) || !resolves) {
     fail(`${path.relative(root, reference.file)} has broken local reference: ${reference.raw}`);
   }
 }
@@ -174,7 +181,9 @@ if (index.indexOf('id="route"') < index.indexOf('id="argument"')
 
 for (const needle of [
   '<html lang="zh-CN">',
-  '<link rel="canonical" href="https://aisystem6.pages.dev/zh-CN.html">',
+  // The URL that answers 200. The file is still zh-CN.html; Pages redirects
+  // that name to /zh-CN, so the canonical has to name the final address.
+  '<link rel="canonical" href="https://aisystem6.pages.dev/zh-CN">',
   "写到最后",
   "模型可以帮忙，却不能悄悄接过笔",
   "审校台",

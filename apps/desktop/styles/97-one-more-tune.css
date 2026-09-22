@@ -449,6 +449,26 @@
 .one-more-tune-window .one-more-tune-keynote-actions { justify-content:space-between;align-items:center }
 .one-more-tune-window .one-more-tune-keynote .revealbox a { color:var(--ink);font-size:12px;text-decoration:underline;text-underline-offset:3px }
 
+/* One More Line: the keynote-line face. It shares the relay's study frame and
+   the quiz's choice grid, so only the parts that are its own get rules — the
+   quoted line, the note about a phrase's second use, and the source row. */
+.one-more-tune-window .one-more-tune-line { gap:14px;max-width:760px }
+.one-more-tune-window .one-more-tune-line h1,
+.one-more-tune-window .one-more-tune-line h2 { margin:0;max-width:44em }
+.one-more-tune-window .one-more-tune-line .intro { max-width:52em;margin:0 }
+/* The line itself is the one thing on this face that is a quotation, so it is
+   set apart from the question rather than folded into it: the words a presenter
+   said, then what we are asking about them. */
+.one-more-tune-window .one-more-tune-line-quote { margin:2px 0;padding:0 0 0 12px;border-left:2px solid var(--ink);font-family:Georgia,"Times New Roman",serif;font-size:19px }
+.one-more-tune-window .one-more-tune-line-quote q { quotes:"“" "”" "‘" "’" }
+.one-more-tune-window .one-more-tune-line-card { display:grid;gap:14px }
+.one-more-tune-window .one-more-tune-line .choices { margin-top:2px }
+.one-more-tune-window .one-more-tune-line-actions { justify-content:flex-end }
+.one-more-tune-window .one-more-tune-line-note { margin:0;padding:10px 12px;border:1px solid var(--separator);border-radius:var(--inset-radius);background:var(--surface-secondary);font-size:13px }
+.one-more-tune-window .one-more-tune-line-note .eyebrow { margin-right:6px }
+.one-more-tune-window .one-more-tune-line-source { margin:0;color:var(--omt-muted);font-size:12px }
+.one-more-tune-window .one-more-tune-line-source a { color:var(--ink);text-decoration:underline;text-underline-offset:3px }
+
 .one-more-tune-step-label {
   margin: 0;
   text-transform: uppercase;
@@ -505,12 +525,14 @@
 /* The two faces of one card keep the same place and size; the change is a
    short fade, not a three-dimensional flip. 180ms sits in the middle of the
    160-200ms the design brief asks for. */
-.one-more-tune-face {
+.one-more-tune-face,
+.one-more-tune-line-card {
   animation: one-more-tune-fade 180ms ease-out;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .one-more-tune-face {
+  .one-more-tune-face,
+  .one-more-tune-line-card {
     animation: none;
   }
 }

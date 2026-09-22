@@ -40,16 +40,18 @@ test.assert(
   "the window is focusable as a container, so Tab continues inside it",
 );
 
-// 2. Focus that is already inside the window is not stolen.
+// 2. Focus that is already inside the window is not stolen. The window holds no
+//    controls of its own -- it is a Finder page, so the focusable things in it
+//    are its items and its view buttons.
 await vmw.run(`(() => {
   const win = document.querySelector('.window[data-window="projectDisks"]');
-  const button = win.querySelector(".btn");
+  const button = win.querySelector(".view-btn");
   button.focus();
 })()`);
 await vmw.context.handleAction("open-demo-disks");
-await vmw.waitFor(() => vmw.run('document.activeElement?.className === "btn"'));
+await vmw.waitFor(() => vmw.run('document.activeElement?.classList.contains("view-btn") === true'));
 test.assert(
-  vmw.run('document.activeElement?.className === "btn"'),
+  vmw.run('document.activeElement?.classList.contains("view-btn") === true'),
   "reopening a window keeps the focus the person already had inside it",
 );
 

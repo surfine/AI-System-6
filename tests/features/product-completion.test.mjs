@@ -23,6 +23,7 @@ const teachtextAccessories = read("app/features/teachtext-accessories.js");
 const holdThought = read("app/features/hold-that-thought.js");
 const projectPeek = read("app/features/project-peek.js");
 const timeMachine = read("app/features/time-machine.js");
+const sharedDisksPanel = read("app/content/shared-disks-panel.js");
 const en = read("app/data/translations-en.js");
 const zh = read("app/data/translations-zh.js");
 
@@ -100,6 +101,11 @@ answeredActions.add("open-todo-da");
 answeredActions.add("open-dictation");
 answeredActions.add("clio-stage-docmap");
 answeredActions.add("open-docmap");
+// The demonstration-disks module is lazy: its command arrives with the module
+// the admission table's loader fetches, and both the Startup Disk row and the
+// File menu row dispatch that one id. The call shape is the ordinary
+// registerCommand one, so the id is read beside its handler either way.
+for (const [, id] of sharedDisksPanel.matchAll(/"([a-z0-9-]+)"\s*[:,]\s*\{\s*handler:/g)) answeredActions.add(id);
 for (const action of declaredActions) {
   test.assert(answeredActions.has(action), `the shell's ${action} reaches a handler`);
 }

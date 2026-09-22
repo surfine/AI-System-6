@@ -1,29 +1,38 @@
 // The demonstration project disks have to be findable by the two people who
 // need them: a reader who just met one of the disks, and a person walking the
 // Writing route who wants to see what a finished disk looks like. Findable
-// means a File-menu command, a window that lists them, the same list inside the
-// Import Utility, and a help page that answers "what is this?".
+// means the Startup Disk and the File menu both open a folder that lists them,
+// the Import Utility shows the same rows, and a help page answers "what is
+// this?".
 //
-// The rule that survives every refactor here is the boot budget: the window and
-// the list are lazy, so nothing about them may appear in the modules that are
-// measured against the floppy. A static window skeleton in index.html, or the
-// panel named in appModulePaths, would quietly spend bytes the budget already
-// committed elsewhere.
+// The form is the Finder's own. A disk is an object in a folder -- count, view
+// controls, selection, Get Info, double click -- because the earlier shape (a
+// small window with a private list and a private button) made this the one
+// collection in the product that did not behave like a folder.
+//
+// Two rules survive every refactor here. First, the boot budget: the folder is
+// markup, its rows are lazy, and neither the rows nor the backups may appear in
+// the modules measured against the floppy. Second, opening a folder is not the
+// same act as opening a disk: the list must not fetch thirty-four manuscripts
+// to draw thirty-four names.
 import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 import { createAppBootVm } from "../helpers/app-boot-vm.mjs";
-import { windowInterfaceRegistry } from "../../tooling/interface-guidelines-contract.mjs";
 
 const test = createFeatureTest("demo-disks-panel");
 
 const menus = read("app/data/menus.js");
 const actions = read("app/core/actions.js");
 const panel = read("app/content/shared-disks-panel.js");
-const generated = read("app/content/shared-project-disks.js");
+const index = read("app/content/shared-project-disks-index.js");
+const backups = read("app/content/shared-project-disks.js");
 const help = read("app/data/writing-flow-help.js");
 const translationsZh = read("app/data/translations-zh.js");
 const translationsEn = read("app/data/translations-en.js");
 const importWindow = read("app/features/export-import.js");
 const manifest = read("tooling/runtime-manifest.mjs");
+const app = read("app.js");
+const html = read("index.html");
+const registry = read("app/core/window-registry.js");
 const readme = read("README.md");
 const readmeZh = read("README.zh-CN.md");
 
@@ -50,107 +59,108 @@ test.assertIncludes(
 );
 test.assertIncludes(read("app/core/window-manager.js"), "AISystem6Admissions?.commands", "the availability pass reads the admission table");
 
-// 2. The command is lazy: one line in the eager registry, the work in the disk
-//    module that the launch links already load.
-test.assertIncludes(
-  actions,
-  "registerOpeners",
-  "the boot hands the openers to the shared admission table",
-);
-test.assertIncludes(
-  read("app/core/app-admissions.js"),
-  '"open-demo-disks"',
-  "the disks command loads the shared-disk module instead of shipping itself",
-);
+// 2. The command is lazy, and it loads the LIST rather than the backups: the
+//    folder has to be listable without fetching every manuscript in the set.
+test.assertIncludes(actions, "registerOpeners", "the boot hands the openers to the shared admission table");
+test.assertIncludes(read("app/core/app-admissions.js"), "load: ensureSharedProjectDisksIndexModule", "the disks command loads the index module, not the backups");
+test.assertIncludes(read("app/core/config.js"), '"app/content/shared-project-disks-index.js"', "the index has its own lazy loader");
+test.assertIncludes(read("app/core/config.js"), '["styles.project-disks.css"]', "the folder's own size ships with the list that needs it");
 
-// 3. The panel registers a real application with the window manager, so the
-//    window is openable, restorable and closeable like every other window.
-test.assertIncludes(panel, 'id: APP_ID', "the panel registers an application id");
-test.assertIncludes(panel, 'windowName: WINDOW_NAME', "the panel names its own window");
-test.assertIncludes(panel, '"open-demo-disks": { handler: open }', "the application owns the open command");
-
-// 4. The list is data, not a hand-kept roster: it reads the mounted disk module
-//    and never names a disk itself.
-test.assertIncludes(panel, "window.AISystem6SharedProjectDisks", "the list reads the published disks");
-test.assert(
-  !/["'](?:dtk|ipad1)["']/.test(panel),
-  "the panel names no disk: a third disk needs one build-table entry, not an edit here",
-);
+// 3. The folder is a Finder page in index.html, not a window a module builds.
+//    This is the assertion that inverts the old one: the page is ordinary
+//    markup precisely so the Finder's own chrome, placement, selection and Get
+//    Info apply to it.
 test.assertMatches(
-  panel,
-  /rightTime - leftTime[\s\S]{0,120}left\.index - right\.index/,
-  "newest first, and registration order when two disks share an export time",
+  html,
+  /<section class="window finder-window project-disks-window is-hidden" data-window="projectDisks"[\s\S]{0,900}?class="window-pane finder-grid project-disks-grid window-frame-scroller"/,
+  "the folder is a Finder window with a grid pane, not a bespoke window",
 );
+test.assertIncludes(html, 'data-view-window="projectDisks"', "the folder carries the shared view controls");
+test.assertIncludes(html, '<span data-i18n="demo_disks_title">', "the title rides the translation table like every other window");
+test.assert(
+  !panel.includes('document.createElement("section")') && !panel.includes('setAttribute("data-window"'),
+  "the module builds no window frame of its own",
+);
+test.assert(
+  !manifest.includes('"app/content/shared-disks-panel.js"'),
+  "the panel source stays out of the boot bundle and rides the generated list module",
+);
+test.assertIncludes(index, "window.AISystem6DemoDisksPanel", "the generator appends the panel to the list module");
 
-// 5. The three states the person actually meets: loading, list, and a failure
-//    they can retry without leaving the window.
-test.assertIncludes(panel, '"demo_disks_loading"', "the window says it is reading before the list arrives");
-test.assertIncludes(panel, '"demo_disks_failed"', "the window says so when the list cannot be read");
-test.assertIncludes(panel, '"demo_disks_retry"', "the failure state offers a retry");
-test.assertIncludes(panel, '"demo_disk_open_existing"', "an already-mounted disk offers its own copy");
+// 4. The list is data, not a hand-kept roster: the rows come from the generated
+//    index, each row IS one disk, and its action is the same command a
+//    /go/<route> link runs. Nothing here names a disk, so a thirty-fifth disk
+//    costs one registration and no edit in this window.
+test.assertIncludes(app, "window.AISystem6SharedProjectDisksIndex", "the folder reads the published index");
+test.assertMatches(app, /action: `open-shared-disk-\$\{route\}`/, "a row opens the disk through the route's own command");
+test.assert(
+  !/["'](?:dtk|ipad1|m5mba)["']/.test(app.slice(app.indexOf("function getDemonstrationDiskItems"), app.indexOf("function getDemonstrationDiskItems") + 1200)),
+  "the folder names no disk: a new disk needs one registration, not an edit here",
+);
+test.assert(
+  !/sizeLabel/.test(app.slice(app.indexOf("function getDemonstrationDiskItems"), app.indexOf("function getDemonstrationDiskItems") + 1200)),
+  "a disk reports the shared built-in size rather than a byte figure nobody measured",
+);
+test.assertIncludes(index, '"name":', "the index carries the project's own name");
+test.assertIncludes(index, '"subject":', "the index carries the writer's own subject line");
+// That the subject IS the writer's own line, rather than something the build
+// invented, needs both the source disk and the index, so it is asserted where
+// both exist: tests/features/shared-disk-sources.test.mjs.
+test.assert(
+  index.length * 50 < backups.length,
+  `opening the folder fetches the list, not the manuscripts (${index.length} vs ${backups.length} bytes)`,
+);
+test.assert(
+  !index.includes("documentTabs") && !index.includes("questionSheet"),
+  "the list module carries no manuscript and no question sheet, only what a row shows",
+);
+test.assertIncludes(actions, "open-shared-disk-${route}", "one row per route, so a new disk is a registration and not a second mechanism");
+for (const route of ["dtk", "ipad1"]) {
+  test.assertIncludes(index, `"${route}":`, `${route} is in the generated list`);
+}
 
-// 6. Same module, two doors: the Import Utility shows the rows without the
-//    window's introduction, and the window is built at runtime.
-test.assertIncludes(panel, "inlineSectionSelector", "the panel also renders into the Import Utility");
+// 5. Opening a row and opening the folder are different acts, and the module
+//    only owns what the Finder cannot: the command, and the Import Utility's
+//    copy of the rows. Both doors dispatch the same id.
+test.assertIncludes(panel, 'registerCommand?.("open-demo-disks"', "the module answers the File and Startup Disk rows");
+test.assertIncludes(panel, 'openWindow(WINDOW_NAME)', "and its answer is opening the Finder folder");
+test.assertIncludes(panel, "inlineSectionSelector", "the module also renders into the Import Utility");
 // The row is .import-row's own shape: icon | flexible label | trailing control.
 // .backup-preview-row re-cuts those columns for a preview with no button, so a
 // fourth child would drop into a 22px second row and squeeze the button.
 test.assertIncludes(panel, 'row.className = "import-row"', "the row reuses the Import Utility's row grid");
 test.assert(
-  panel.includes("row.append(icon, label)") && panel.includes("row.append(open)"),
+  panel.includes("row.append(icon, label)") && panel.includes('row.append(button('),
   "the row is icon, label and one control, which is what the three columns hold",
 );
 test.assertIncludes(
   importWindow,
-  "ensureSharedProjectDisksModule?.();",
-  "opening the backup panel loads the disk list",
+  "ensureSharedProjectDisksIndexModule?.();",
+  "opening the backup panel loads the disk list rather than the backups",
 );
-test.assert(
-  !read("index.html").includes('data-window="projectDisks"'),
-  "the window frame is created at runtime, not paid for in index.html",
-);
-test.assert(
-  !manifest.includes('"app/content/shared-disks-panel.js"'),
-  "the panel source stays out of the boot bundle and rides the generated disk module",
-);
-test.assertIncludes(generated, "window.AISystem6DemoDisksPanel", "the generator appends the panel to the disk module");
+test.assertIncludes(panel, '"demo_disk_open_existing"', "an already-mounted disk offers its own copy");
 
-// 7. The help page answers what the disks are, and the Read Me points at them.
+// 6. The help page answers what the disks are, and the Read Me points at them.
 test.assertIncludes(help, "# 演示用项目硬盘", "帮助文档有中文说明");
 test.assertIncludes(help, "system6.aaronlau.me/go/<route>", "帮助文档给出可转发的地址形式");
+test.assertIncludes(help, "启动磁盘上的一个文件夹", "中文说明指出它们在启动磁盘上");
 test.assertIncludes(help, "/go/dtk", "中文说明列出未来通车之后");
-test.assertIncludes(help, "/go/ipad1", "中文说明列出初代 iPad");
 test.assertIncludes(read("app/features/translation.js"), 'shared: "shared_readme"', "说明文档标题走既有的说明文件命名");
 
-// 8. The public README names the disks and tells a developer what adding a
+// 7. The public README names the disks and tells a developer what adding a
 //    third one costs.
 test.assertIncludes(readme, "https://system6.aaronlau.me/go/ipad1", "README 列出两块盘");
 test.assertIncludes(readmeZh, "https://system6.aaronlau.me/go/dtk", "中文 README 列出两块盘");
 test.assertIncludes(readme, "tooling/build-shared-project-disks.mjs", "README 告诉开发者登记处");
 test.assertIncludes(readmeZh, "tests/features/launch-intent.test.mjs", "中文 README 指出守着源盘与发布副本的契约");
 
-// 8b. The window is a first-class window and the page is in the folder a person
-//     looks in. Both registries have to agree: window-registry.test.mjs fails on
-//     a record without an interface contract, and the appearance/HIG/screenshot
-//     instruments read the interface registry, so the two rows are one decision.
-const windowRegistry = read("app/core/window-registry.js");
-const interfaceContract = windowInterfaceRegistry.projectDisks;
-test.assertIncludes(windowRegistry, "projectDisks: {", "窗口在运行时注册表里有记录");
-test.assertIncludes(windowRegistry, "ensureSharedProjectDisksModule()", "注册表的懒加载指向磁盘模块");
-test.assert(!!interfaceContract, "接口表里有这一扇窗口");
-test.assert(
-  interfaceContract?.mountPath === "app/content/shared-disks-panel.js#installDemoDisksPanel",
-  "接口表指向面板的挂载符号",
-);
-test.assert(interfaceContract?.openCommand === "open-demo-disks", "接口表声明真实开启命令");
-test.assert(
-  interfaceContract?.cssPrefixes?.includes("project-disks-"),
-  "接口表声明 CSS 归属前缀",
-);
-test.assert(
-  interfaceContract?.appearanceProbe?.sampleSelector === ".project-disks-window .import-row",
-  "外观探针取一行列表，而不是所有窗口共用的面板",
-);
+// 8. Both registries have to agree: window-registry.test.mjs fails on a record
+//    without an interface contract, and the appearance/HIG/screenshot
+//    instruments read the interface registry, so this row is one decision
+//    recorded twice. A Finder folder is a Finder surface there too.
+test.assertIncludes(registry, "projectDisks: {", "窗口在运行时注册表里有记录");
+test.assertIncludes(registry, "ensureSharedProjectDisksIndexModule()", "注册表的懒加载指向清单模块");
+test.assertIncludes(registry, 'onOpen: () => renderStaticFinderWindow("projectDisks")', "开窗时用 Finder 自己的画笔");
 test.assertIncludes(read("app.js"), '["shared_readme", "open-demo-disks-readme", "projectDisk"]', "说明文件夹列出这一篇");
 test.assertIncludes(actions, '"open-demo-disks-readme":"shared"', "说明文件夹的行打开同一篇文档");
 
@@ -163,11 +173,11 @@ const vmw = createAppBootVm();
 const lazyCommand = vmw.run('AISystem6Runtime.getLazyCommand("open-demo-disks")');
 test.assert(
   !!lazyCommand && typeof lazyCommand.ensure === "function",
-  "the boot registers the demonstration list as a lazy command, and does not throw doing it",
+  "the boot registers the demonstration folder as a lazy command, and does not throw doing it",
 );
 test.assert(
   vmw.run('AISystem6Runtime.getCommand("open-demo-disks") === null'),
-  "the handler itself arrives with the panel module, not with the boot bundle",
+  "the handler itself arrives with the list module, not with the boot bundle",
 );
 test.assert(
   vmw.run('getActionAvailability()["open-demo-disks"] === true'),
@@ -189,79 +199,89 @@ test.assert(
 );
 test.assert(
   !vmw.run('!!document.querySelector(\'.window[data-window="projectDisks"]:not(.is-hidden)\')'),
-  "and the demonstration list does not open in its place",
+  "and the demonstration folder does not open in its place",
 );
 
-// 10. Then run the panel itself in the same desk, with the published disks
-//     stubbed: this is the acceptance list a person walks by hand — the rows,
-//     the mounted switch, the failure state and its retry — executed instead.
-const paneText = () => vmw.run(
-  'document.querySelector(\'.window[data-window="projectDisks"] .window-pane\').textContent',
-);
-const windowRows = () => vmw.run(
-  'document.querySelectorAll(\'.window[data-window="projectDisks"] .import-row\').length',
-);
-vmw.run("window.AISystem6SharedProjectDisksLoaded = true");
-vmw.run(`window.AISystem6SharedProjectDisks = {
-  dtk: { exportedAt: "2026-09-21T12:00:00.000Z", project: { name: "未来通车之后", questionSheet: "## 主题\\n\\n- 2020 年 DTK 的遗迹报告" }, files: [], scraps: [] },
-  ipad1: { exportedAt: "2026-09-21T12:00:00.000Z", project: { name: "初代 iPad", questionSheet: "## 主题\\n\\n- 256MB 的由来" }, files: [], scraps: [] }
-};`);
-vmw.run(read("app/content/shared-disks-panel.js"));
-vmw.run("window.AISystem6DemoDisksPanel.open()");
+// 10. Then open the folder the way a person does, through its own command. This
+//     is the acceptance list run instead of walked: the rows, the count, the
+//     two views, the location, and the same rows inside the Import Utility.
+await vmw.context.handleAction("open-demo-disks");
+const itemCount = () => vmw.run('document.querySelectorAll(\'.window[data-window="projectDisks"] .finder-item\').length');
+const windowElement = vmw.windowElement("projectDisks");
 test.assert(
-  await vmw.waitFor(() => windowRows() === 2),
-  "the window lists both published disks once the module is in",
+  await vmw.waitFor(() => itemCount() === 34 && !windowElement.classList.contains("is-hidden")),
+  `the folder lists every published disk once it is open (${itemCount()})`,
 );
 test.assert(
-  paneText().includes("未来通车之后") && paneText().includes("2020 年 DTK 的遗迹报告"),
-  "a row carries the project's own name and the subject line from its question sheet",
+  vmw.run('document.querySelector(\'.window[data-window="projectDisks"] .details-bar > span:first-child\').textContent') === "34 items",
+  "the count reports what the folder holds, the way every Finder page does",
 );
 test.assert(
-  paneText().includes("未来通车之后 · 2020 年 DTK 的遗迹报告"),
-  "the name and the subject are separated, so a row does not read as one run-on word",
+  vmw.run('document.querySelector(\'.window[data-window="projectDisks"] .details-bar > span:last-child\').textContent') === "Startup Disk",
+  "the folder says where it lives",
 );
 test.assert(
-  vmw.run('document.querySelectorAll(".backup-preview-section .import-row").length') === 2
-    && !vmw.run('document.querySelector(".backup-preview-section").textContent.includes("演示盘")'),
-  "the Import Utility gets the same two rows without the window's introduction",
+  vmw.run('document.querySelector(\'.window[data-window="projectDisks"] .finder-item\').dataset.staticFinderAction') === "open-shared-disk-dtk",
+  "a row is the disk, and opening it runs that disk's own command",
 );
-vmw.run('projects.push({ id: "already-here", name: "未来通车之后" }); localStorage.setItem("aiSystem6SharedDisk:dtk", "already-here");');
-vmw.run("window.AISystem6DemoDisksPanel.renderWindow()");
 test.assert(
-  await vmw.waitFor(() => paneText().includes("Open existing")),
-  "a disk already on this computer offers its own copy instead of a second one",
+  vmw.run('document.querySelector(\'.window[data-window="projectDisks"] .finder-item .sys-icon\') !== null'),
+  "a row carries the Project Hard Disk art, not a generic document",
 );
-vmw.run("delete window.AISystem6SharedProjectDisks; window.AISystem6DemoDisksPanel.renderWindow();");
 test.assert(
-  await vmw.waitFor(() => paneText().includes("cannot be read right now")),
-  "a list that cannot be read says so in the window",
+  vmw.run('typeof AISystem6Runtime.getCommand("open-demo-disks") === "object"'),
+  "the real handler arrived with the module, which is what keeps the lazy row honest",
 );
-vmw.run(`window.AISystem6SharedProjectDisks = { dtk: { exportedAt: "2026-09-21T12:00:00.000Z", project: { name: "未来通车之后", questionSheet: "## 主题\\n\\n- 2020 年 DTK 的遗迹报告" }, files: [], scraps: [] } };`);
-// The VM's element has no click(), so the row's own listener is what runs.
-vmw.run(`(() => {
-  const buttons = document.querySelectorAll('.window[data-window="projectDisks"] .btn');
-  buttons[buttons.length - 1].dispatchEvent(new Event("click"));
-})()`);
+// Every row is openable, not just the two the marketing names: the route list in
+// actions.js and the generated index are two lists of one fact, and a disk that
+// was published without its command would be a row that clicks and does nothing.
+const unopenableRows = JSON.parse(vmw.run(`
+  JSON.stringify(Object.keys(window.AISystem6SharedProjectDisksIndex)
+    .filter((route) => !AISystem6Runtime.getCommand(\`open-shared-disk-\${route}\`)))
+`));
 test.assert(
-  await vmw.waitFor(() => windowRows() === 1),
-  "Try again reads the disks a second time and recovers the list",
+  unopenableRows.length === 0,
+  unopenableRows.length
+    ? `published disks with no command: ${unopenableRows.join(", ")}`
+    : "every published disk's row dispatches a command that exists",
 );
 
-// 11. The other way this window goes stale: the writer switches language. Every
-//     label it draws comes from t() and nothing rides data-i18n, so the window
-//     has to be named on the admission table's repaint list — the list
-//     persistence-status.js iterates. Measured in WebKit before this: with the
-//     window open, switchLanguage() left the title, the blurb and both buttons
-//     in Chinese while the rest of the desk followed the switch.
+// The folder is a Finder page in the Finder's own lists: it repaints on a view
+// change and on a language switch through the same code path as Help Folder.
+vmw.run('toggleViewMode("projectDisks", "list")');
+test.assert(
+  await vmw.waitFor(() => vmw.run('document.querySelectorAll(\'.window[data-window="projectDisks"] .finder-list-row\').length') === 34),
+  "list view is the same 34 disks in the shared list rows",
+);
+vmw.run('toggleViewMode("projectDisks", "icon")');
 vmw.run('currentLanguage = "en"');
 vmw.context.applyLanguage();
 test.assert(
-  await vmw.waitFor(() => paneText().includes("Each demonstration disk")),
-  "a language switch redraws the window's own copy instead of leaving the old language on screen",
+  await vmw.waitFor(() => vmw.run('document.querySelector(\'.window[data-window="projectDisks"] .details-bar > span:first-child\').textContent') === "34 items"),
+  "a language switch redraws the folder's count and title with the rest of the desk",
 );
 test.assert(
   vmw.run('document.querySelector(\'.window[data-window="projectDisks"] h2\').textContent === "Demonstration Project Disks"'),
-  "the title bar is drawn again as well, because its labels are generated rather than declared",
+  "the folder's title follows the language, which is why the markup declares it",
+);
+
+// The Import Utility's copy is the same list, painted with the rows the module
+// owns: a person already choosing a backup file should see that ready-made
+// disks exist, and the button says which kind of visit this is.
+const inlineRows = () => vmw.run('document.querySelectorAll(".backup-preview-section .import-row").length');
+test.assert(
+  await vmw.waitFor(() => inlineRows() === 34),
+  "the Import Utility gets the same 34 rows",
+);
+test.assert(
+  vmw.run('document.querySelector(".backup-preview-section").textContent.includes("Each demonstration disk")'),
+  "and one line saying what they are, without the folder's chrome",
+);
+vmw.run('projects.push({ id: "already-here", name: "未来通车之后" }); localStorage.setItem("aiSystem6SharedDisk:dtk", "already-here");');
+vmw.run("window.renderDemoDisksPanel()");
+test.assert(
+  await vmw.waitFor(() => vmw.run('document.querySelector(".backup-preview-section").textContent.includes("Open existing")')),
+  "a disk already on this computer offers its own copy instead of a second one",
 );
 test.assert(
   vmw.run('AISystem6Admissions.repaintHooks().includes("renderDemoDisksPanel")'),
@@ -269,11 +289,7 @@ test.assert(
 );
 test.assert(
   typeof vmw.context.renderDemoDisksPanel === "function",
-  "and the painter that row names is the one the panel module installs",
-);
-test.assert(
-  vmw.run('document.querySelectorAll(".backup-preview-section .import-row").length === 1'),
-  "the same switch reaches the Import Utility's copy of the list, which shares the painter",
+  "and the painter that row names is the one the module installs",
 );
 
 test.finish();

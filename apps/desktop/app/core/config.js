@@ -264,6 +264,7 @@ window.AISystem6Config = (() => {
       "finder",
       "helpFolder",
       "disk",
+      "projectDisks",
       "trash",
       "textDisk",
       "projects",
@@ -658,12 +659,16 @@ const ensureWritingDemoModule = createLazyModuleLoader("AISystem6WritingDemoLoad
   "app/data/evergreen-demo-corpus.js",
   "app/features/writing-demo.js",
 ]);
-// A shared launch link mounts a whole Project Hard Disk. The backups are
-// large and only a visitor who followed such a link ever needs them, so they
-// travel as their own lazy content module rather than in the boot bundle.
+// A shared launch link mounts a whole Project Hard Disk. The backups are large
+// and few visitors need one, so they travel as their own lazy module -- and the
+// folder that lists them reads a small one first: thirty-four rows should not
+// cost every manuscript in the set.
+const ensureSharedProjectDisksIndexModule = createLazyModuleLoader("AISystem6SharedProjectDisksIndexLoaded", [
+  "app/content/shared-project-disks-index.js",
+], false, ["styles.project-disks.css"]);
 const ensureSharedProjectDisksModule = createLazyModuleLoader("AISystem6SharedProjectDisksLoaded", [
   "app/content/shared-project-disks.js",
-], false, ["styles.project-disks.css"]);
+]);
 
 // A lazy window/command whose module failed to load this session: keyed by
 // action id, valued with the already-rendered failure message (so the menu

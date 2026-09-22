@@ -726,7 +726,11 @@ try {
     rmSync(current, { recursive: true, force: true });
     const results = await captureMatrix(browser, server.url, cells, current);
     const page = await browser.newPage();
+    const cellById = new Map(cells.map((cell) => [cell.id, cell]));
+    const retryDir = join(root, "internal/evidence/drafts/appearance-retry");
     let softDrift = 0;
+    let unstableRecovered = 0;
+    let unstable = 0;
     // A cell with no baseline entry is not a cell that matched. Count what was
     // actually compared, so the closing line cannot report cells it skipped as
     // cells it held. A cell id changes whenever a window, a width or an era is
@@ -762,7 +766,41 @@ try {
         softDrift += 1;
         continue;
       }
-      console.log(`  ! ${record.id} drifted ${diff.changed} px (${(diff.ratio * 100).toFixed(4)}%) maxDelta ${diff.maxDelta}`);
+      // Before calling it drift, ask whether this cell can be photographed the
+      // same way twice. One cell once reported 2,708 px with maxDelta 671 and
+      // then passed four runs in a row: the numbers were the capture's, not the
+      // product's. Shoot the cell again — a second context, the same tree — and
+      // compare the two fresh shots with each other.
+      rmSync(retryDir, { recursive: true, force: true });
+      const [again] = await captureMatrix(browser, server.url, [cellById.get(record.id)], retryDir);
+      const selfDiff = again && !again.missing
+        ? await diffPng(page, join(current, `${record.id}.png`), join(retryDir, `${record.id}.png`))
+        : null;
+      const selfUnstable = !selfDiff || selfDiff.sizeMismatch || selfDiff.changed >= MIN_CHANGED_PIXELS;
+      if (selfUnstable) {
+        // Two shots of the same tree disagree, so the earlier one cannot be
+        // held against anything. If this one agrees with the baseline, the cell
+        // held and the first shot was the outlier; otherwise the measurement
+        // itself is the finding, and it says so.
+        const againstBaseline = await diffPng(page, basePng, join(retryDir, `${record.id}.png`));
+        if (!againstBaseline.sizeMismatch && againstBaseline.changed < MIN_CHANGED_PIXELS) {
+          unstableRecovered += 1;
+          console.log(`  ~ ${record.id} passed on a second capture (the first shot was the outlier)`);
+          continue;
+        }
+        unstable += 1;
+        console.log(
+          `  ! ${record.id} is an unstable capture: two shots of the same tree differ by `
+            + `${selfDiff ? `${selfDiff.changed} px` : "a size change"}, and the second still differs from the baseline by `
+            + `${againstBaseline.sizeMismatch ? "a size change" : `${againstBaseline.changed} px`}`,
+        );
+        failed = true;
+        continue;
+      }
+      console.log(
+        `  ! ${record.id} drifted ${diff.changed} px (${(diff.ratio * 100).toFixed(4)}%) maxDelta ${diff.maxDelta}`
+          + ` — two captures of this cell agree, so the change is in the tree`,
+      );
       failed = true;
     }
     await page.close();
@@ -779,6 +817,7 @@ try {
     console.log(failed
       ? "Appearance snapshot: DRIFT"
       : `Appearance snapshot: ${compared} cells match (${softDrift} within tolerance ${PIXEL_TOLERANCE}`
+        + `${unstableRecovered ? `, ${unstableRecovered} passed on a second capture` : ""}`
         + `${newCells.length ? `, ${newCells.length} new and unverified: ${newCells.join(", ")}` : ""})`);
   }
 } finally {

@@ -550,7 +550,7 @@ const windowViewModes = { ...defaultWindowViewModes };
 let writingToolsViewMode = "icon";
 let systemFinderPath = "";
 let applicationsFinderPath = "";
-const finderContainerWindowNames = ["finder", "helpFolder", "applications", "disk", "controlStripModules"];
+const finderContainerWindowNames = ["finder", "helpFolder", "applications", "disk", "projectDisks", "controlStripModules"];
 const viewWindowNames = [...finderContainerWindowNames, "projects", "documents", "imageManager"];
 const printableDirectoryWindowNames = new Set([
   ...finderContainerWindowNames,
@@ -851,6 +851,11 @@ function getStartupDiskItems() {
     { name: t("help_folder"), iconId: "helpFolder", icon: "folder-icon", action: "open-help-folder", kind: t("folder_kind") },
     { name: t("applications"), iconId: "applications", icon: "applications-icon", action: "open-applications", kind: t("folder_kind") },
     { name: t("project_disk"), iconId: "projectDisk", icon: "project-disk-icon", action: "open-project-disks", type: "volume", kind: t("project_disk"), virtual: false },
+    // The disks that ship with the application, in the place a person looks
+    // first. They are not a volume — nothing is mounted until one is opened and
+    // becomes an ordinary project — so the row carries no type, only the
+    // project-disk family's art and the same command the File menu row uses.
+    { name: t("demo_disks_title"), iconId: "projectDisk", icon: "project-disk-icon", action: "open-demo-disks" },
     { name: t("project_cd"), iconId: "projectDisc", icon: "hard-disk-icon", action: "open-project-cd", type: "volume", kind: t("project_cd"), virtual: false, workspaceCapability: workspaceCapabilityStudio },
     {
       name: t(fileFloppyMounted ? "mounted_text_disk" : "mount_text_disk"),
@@ -870,8 +875,33 @@ function getStaticFinderItems(winName) {
   if (winName === "helpFolder") return filterWorkspaceItems(getHelpFolderItems());
   if (winName === "applications") return filterWorkspaceItems(getApplicationsItems());
   if (winName === "disk") return filterWorkspaceItems(getStartupDiskItems());
+  if (winName === "projectDisks") return filterWorkspaceItems(getDemonstrationDiskItems());
   if (winName === "controlStripModules") return filterWorkspaceItems(getControlStripModuleFinderItems());
   return filterWorkspaceItems(getSystemPromptFinderItems());
+}
+
+// The demonstration disks are a folder on the Startup Disk: each row IS one
+// disk, and its action is the command a /go/<route> link runs. Rows come from
+// the index module, so the backups arrive only when one is opened; the writer's
+// own subject line rides along as the description Get Info shows.
+function getDemonstrationDiskItems() {
+  const index = window.AISystem6SharedProjectDisksIndex || {};
+  return withStaticFinderMetadata(
+    Object.keys(index).map((route) => {
+      const disk = index[route] || {};
+      return {
+        name: disk.name || route,
+        iconId: "projectDisk",
+        icon: "project-disk-icon",
+        action: `open-shared-disk-${route}`,
+        kind: t("project_disk"),
+        description: disk.subject || "",
+        createdAt: disk.exportedAt || "",
+        updatedAt: disk.exportedAt || "",
+      };
+    }),
+    t("demo_disks_title")
+  );
 }
 
 // The Control Strip Modules folder is a visible System Folder object, not a
