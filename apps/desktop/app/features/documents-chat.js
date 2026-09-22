@@ -322,7 +322,7 @@ async function renameSelectedDocumentItem() {
       message: t("rename_folder_prompt"),
       defaultValue: displayFolderName(folder.name),
     });
-    if (!name?.trim()) return;
+    if (!name?.trim() || !isInActiveProject(folder) || !getProjectFolders().includes(folder)) return;
     const normalized = name.trim();
     const siblingExists = getProjectFolders().some((item) => {
       if (item.id === folder.id) return false;
@@ -351,7 +351,7 @@ async function renameSelectedDocumentItem() {
     message: t("rename_file_prompt"),
     defaultValue: file.name,
   });
-  if (!name?.trim()) return;
+  if (!name?.trim() || !isInActiveProject(file) || !getProjectFiles().includes(file)) return;
   file.name = name.trim();
   if (file.type === "chat") file.titleMode = "manual";
   file.updatedAt = new Date().toISOString();
@@ -3361,7 +3361,7 @@ async function runEditCommand(command) {
 }
 
 function saveCurrentWork() {
-  const activeWin = document.querySelector(".window.is-active:not(.is-hidden)");
+  const activeWin = resolveMenuContextWindow();
   if (activeWin?.dataset.window === "quickDraft") {
     // Draft Desk saves through its public durable API; the fallback flush
     // covers a partially-loaded module so ⌘S never no-ops.

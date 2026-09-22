@@ -12,17 +12,19 @@ const require = createRequire(import.meta.url);
 const deck = require("../apps/server/server/one-more-tune.js");
 
 const result = deck.validateBank();
+const previewCount = deck.loadDeck().cards.filter((card) => card.product && card.film && card.questionSound?.provider === "preview").length;
 const lines = [
   `deck version        ${result.deckVersion}`,
   `cards checked       ${result.checked}`,
-  `enabled for play    ${result.enabled.length}${result.enabled.length ? ` (${result.enabled.join(", ")})` : ""}`,
+  `reviewed blind cues ${result.enabled.length}${result.enabled.length ? ` (${result.enabled.join(", ")})` : ""}`,
+  `pinned previews     ${previewCount}`,
   `problems            ${result.problems.length}`,
 ];
 for (const problem of result.problems) lines.push(`  - ${problem}`);
 if (!result.enabled.length) {
   lines.push("");
-  lines.push("Nothing is enabled: no card has a reviewed asset, rights record and auditioned cue,");
-  lines.push("so no question may be asked as a blind listening one. That is this bank's true state.");
+  lines.push("No reviewed blind cues; casual rounds continue to use the pinned previews.");
+  lines.push("A pin count is not a live playback or recording-identity verification.");
 }
 process.stdout.write(`${lines.join("\n")}\n`);
 process.exit(result.problems.length ? 1 : 0);

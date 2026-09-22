@@ -212,7 +212,7 @@ async function switchProject(projectId, options = {}) {
   closeProjectScopedWindows();
   scheduleWorkspaceRender({ projectReferences: true, mountedTextDisk: true, menuState: true });
   resetAssistantForProject(project.name);
-  loadActiveProjectReferences();
+  await loadActiveProjectReferences();
   // The disk is mounted; give it back the desk it had. Startup Items open only
   // when this disk has no scene of its own yet.
   if (options.resumeScene !== false && typeof restoreWorkingSession === "function") {
@@ -1151,7 +1151,7 @@ function getActiveItem() {
   } else if (name === "scrapbook") {
     return scraps.find((scrap) => scrap.id === selectedScrapId && isInActiveProject(scrap));
   } else if (name === "projects") {
-    return getSelectedProjectRootItem();
+    return getSelectedProjectFinderItem();
   } else if (name === "trash") {
     const selected = typeof getSelectedTrashItem === "function" ? getSelectedTrashItem() : null;
     return selected ? getTrashItemFinderItem(selected) : getTrashRootFinderItem();

@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/design/FORM-FACTORS.md -->
-<!-- source-sha256: 9c936c1c57334fe87e809960b821d6541df8032bdde4f8214afc83a164006aea -->
+<!-- source-sha256: 5c766d56d3283221b368a482d289906ccf09e9248da247fc284830a31037cd70 -->
 <!-- 英文版为准，本文件仅供人类参考 -->
 
 # 形态：这张桌子落在哪些玻璃上
@@ -21,7 +21,7 @@ Apple 要求全出血界面「accommodate the corner radius, sensor housing, and
 | Mac（13 英寸起） | 那张桌子：浮动窗口、顶边菜单栏、指针与键盘 | 全部，包括同时开多个窗口 | — | 设备矩阵的桌面格；圆角工具 |
 | iPad 横屏 | 带手指的桌子：同样的窗口，可触摸，支持分屏与台前调度 | 全部；窗口是内嵌的，可以自由摆放 | 政策上没有丢弃 | 设备矩阵 `ipad-11-landscape`；圆角工具 |
 | iPad 竖屏 | 单页流程（820px 落在 860px 线内） | 每个应用，一次一个，占满屏幕 | 桌面启动器的第二个维度、MultiFinder 堆栈 | 设备矩阵 `ipad-11-portrait`、`ipad-mini-portrait` |
-| iPhone | 口袋里的桌子：一次一个应用，手机流程，刘海下的状态条 | 每个应用；桌面启动器与 MultiFinder 按需出现 | 并排的窗口 | 设备矩阵手机格；`tests/e2e/probe-one-more-tune-phone.spec.mjs` |
+| iPhone | 口袋里的桌子：一次一个应用，手机流程，刘海下的状态条 | 每个应用；桌面启动器与 MultiFinder 按需出现 | 并排的窗口 | 设备矩阵手机格；`tests/e2e/probe-one-more-tune-phone.spec.mjs`；主屏幕网页 App 用 `npm run verify:ios-standalone` |
 | Apple Watch | 一瞥，不是一张桌子 | 一道题、一段录音、三个答案、本局分数 | 见下方「手腕」 | 圆角工具（`watch-45mm`、`watch-41mm`、`watch-ultra`） |
 
 ## 每种显示器的圆角归属

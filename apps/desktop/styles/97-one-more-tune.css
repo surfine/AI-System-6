@@ -436,6 +436,19 @@
   margin: 0;
 }
 
+/* Keynote Relay uses the same paper, hairlines and choice controls as the
+   music challenge. Its staged clue stack gives the new mode a distinct rhythm
+   without introducing a second visual system. */
+.one-more-tune-window .one-more-tune-keynote { gap:14px;max-width:780px }
+.one-more-tune-window .one-more-tune-keynote h1,
+.one-more-tune-window .one-more-tune-keynote h2 { margin:0 }
+.one-more-tune-window .one-more-tune-keynote .intro { max-width:52em;margin:0 }
+.one-more-tune-window .one-more-tune-keynote-clues { display:grid;gap:8px;margin:2px 0 2px }
+.one-more-tune-window .one-more-tune-keynote-clue { display:flex;align-items:baseline;gap:12px;padding:12px 14px;border:1px solid var(--separator);border-radius:var(--inset-radius);background:var(--surface-secondary);font-size:14px }
+.one-more-tune-window .one-more-tune-keynote-clue .eyebrow { min-width:18px;color:var(--omt-muted) }
+.one-more-tune-window .one-more-tune-keynote-actions { justify-content:space-between;align-items:center }
+.one-more-tune-window .one-more-tune-keynote .revealbox a { color:var(--ink);font-size:12px;text-decoration:underline;text-underline-offset:3px }
+
 .one-more-tune-step-label {
   margin: 0;
   text-transform: uppercase;

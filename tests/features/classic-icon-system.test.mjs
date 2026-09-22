@@ -53,7 +53,7 @@ test.assert(source.icons.assistant.source32.art.some((operation) => operation[0]
   "ClioTalk authors the reply dash runs on the one-bit grid");
 test.assert(nativeReplicas.every((icon) => icon.referenceDiffPixels === 0), "every direct historical evidence replica is pixel-identical to its native resource");
 
-test.assert(Object.keys(completeFamily.icons).length === 56, "the smooth Classic runtime covers all 56 canonical objects");
+test.assert(Object.keys(completeFamily.icons).length === 59, "the smooth Classic runtime covers the base 56 and three supplemental applications");
 test.assert(completeFamily.schemaVersion === 2 && completeFamily.runtimeAsset === true,
   "the shipped Classic ledger is explicitly distinct from the exact evidence layer");
 test.assertIncludes(completeFamily.classicRetinaException, "Smooth vector", "Classic records the product-specific Retina SVG exception");

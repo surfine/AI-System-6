@@ -21,6 +21,11 @@ export const styleRuntimePaths = [
 // These files are outside the System Floppy Budget on purpose: the budget
 // measures what a boot must download, and this sheet is not part of a boot.
 export const lazyStyleBundles = [
+  { id: "nextstep", output: "styles.nextstep.css", loader: "app/core/theme-registry.js",
+    sources: ["styles/nextstep-shell.css", "styles/69-nextstep-appearance.css"] },
+  // An independent appearance is requested only when selected, including boot.
+  { id: "big-sur", output: "styles.big-sur.css", loader: "app/core/theme-registry.js",
+    sources: ["styles/68-big-sur-appearance.css"] },
   // The Draft Desk sheet dresses Quick Draft and 文字亮室, whose modules are
   // already lazy, and every one of its 250 selector parts is scoped to
   // draft-desk / quick-draft / lightroom / listen / darkroom (the only others
@@ -192,6 +197,9 @@ export const styleLayerByPath = Object.freeze({
   "styles/60-responsive.css": "responsive",
   "styles/65-appearance-themes.css": "appearance-themes",
   "styles/67-aqua-appearance.css": "aqua-appearance",
+  "styles/68-big-sur-appearance.css": "big-sur-appearance",
+  "styles/69-nextstep-appearance.css": "nextstep-appearance",
+  "styles/nextstep-shell.css": "nextstep-shell",
   "styles/70-liquid-glass.css": "liquid-glass",
   "styles/80-bureaucracy-meme.css": "bureaucracy-meme",
   "styles/85-liquid-cover.css": "liquid-cover",

@@ -58,9 +58,14 @@ test.assert(
   responsive.split(shellInset).length - 1 >= 2,
   "the shell and the composer both protect their interaction area on all three edges"
 );
-test.assertIncludes(
+// The claim is the branch, not the whitespace: the window that takes over is
+// raised and given the keyboard (focusIntoWindow), and with no window left the
+// desk owns the app id. Written as a pattern because the second half of the
+// handoff was added after this contract was, and pinning exact indentation made
+// that read as a regression.
+test.assertMatches(
   windowManager,
-  "if (next) {\n      focusWindow(next);\n    } else {\n      activeAppId = \"finder\";",
+  /if \(next\) \{[\s\S]{0,120}?focusWindow\(next\);[\s\S]{0,80}?focusIntoWindow\(next\);[\s\S]{0,60}?\} else \{[\s\S]{0,40}?activeAppId = "finder";/,
   "closing a mobile overlay reactivates the full-screen app so its title controls and menus keep working"
 );
 // The flow rules must be scoped away so the shell wins without a forced override.

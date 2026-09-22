@@ -65,7 +65,7 @@ test.assertMatches(
   "the phone shell covers the deck like its sibling applications"
 );
 test.assertIncludes(icons, "oneMoreTune: `", "a system icon is registered");
-test.assertMatches(icons, /classicOnlyModernFallbackIconId = \{[\s\S]*?oneMoreTune: true/, "invented object art shows its Classic line drawing in every appearance rather than joining the era vocabulary unreviewed");
+test.assertIncludes(icons, "bonsaiCity clioPaint clioProject oneMoreTune", "One More Tune participates in the authored era vocabulary");
 test.assert(windowInterfaceRegistry.oneMoreTune?.role === "creative-lab", "the interface guidelines register the deck as a creative lab");
 
 // ---- The deck, loaded as data ----------------------------------------------
@@ -789,8 +789,8 @@ test.assert(serverDeck.report().mode === "preview",
 // The YouTube route is a live lookup and does not belong in a milliseconds
 // contract; what belongs here is its shape. The provider order and the matching
 // rules are what decide whether a question could ever play the wrong recording.
-test.assertIncludes(serverSource, 'const mode = licensed.length ? "licensed" : wantsPreview ? "preview" : "youtube";',
-  "the round prefers a licensed asset, then the store preview, then the song's own video, and nothing after that");
+test.assertNotIncludes(serverSource, "const licensed = publishableCards();",
+  "an unrelated licensed card cannot divert pinned previews to the unfinished file route");
 test.assertIncludes(serverSource, "if (!title.includes(wanted)) continue;",
   "a song video is only accepted when its title names the song");
 test.assertIncludes(serverSource, "function channelCore(value) {",
@@ -1176,8 +1176,8 @@ for (const key of ["one_more_tune_preview_banner", "one_more_tune_youtube_banner
 }
 test.assertIncludes(source, 'data-one-more-tune-view="sources" data-one-more-tune-backstage hidden',
   "the 资料馆 tab is hidden unless the browser opened the backstage");
-test.assertMatches(source, /const views = oneMoreTuneBackstage\(\) \? \[[^\]]*"sources"\] : \["shelf", "study", "challenge"\];/,
-  "and the view cannot be reached around the hidden tab");
+test.assertMatches(source, /const views = oneMoreTuneBackstage\(\) \? \[[^\]]*"keynote", "sources"\] : \["shelf", "study", "challenge", "keynote"\];/,
+  "the relay is public while the research sources remain backstage");
 test.assertNotMatches(source, /action: "one-more-tune-(sources|choose-audio|play)"/,
   "the research tools are not in the player's menus");
 
@@ -1960,5 +1960,86 @@ test.assertMatches(source, /data-one-more-tune-command="one-more-tune-resume-rou
 test.assertIncludes(source, "one_more_tune_continue_round", "with its own sentence");
 test.assertIncludes(en, "one_more_tune_continue_round:", "in English");
 test.assertIncludes(zh, "one_more_tune_continue_round:", "and in Chinese");
+
+// v08 joins must never transfer metadata between artists or Chinese films.
+{
+  const { joinOneMoreTuneCards, foldOneMoreTuneText } = await import("../../tooling/lib/one-more-tune-join.mjs");
+  const card = { id: "R", song: "Wave", artist: "A", film: "影片甲", product: "Mac" };
+  const question = (id, artist, film) => ({ id, music: { title: "Wave", artist }, appearance: { title: film }, answer: { label: "Mac" } });
+  const joined = joinOneMoreTuneCards([card], [question("other-artist", "B", "影片甲"), question("other-film", "A", "影片乙"), question("right", "A", "影片甲")]);
+  test.assert(joined.byCard.get("R")?.id === "right", "artist and complete Unicode film disambiguate a shared title");
+  test.assert(foldOneMoreTuneText("影片甲") !== foldOneMoreTuneText("影片乙"), "Chinese identity survives normalization");
+  test.assert(joinOneMoreTuneCards([card], [question("a", "A", "影片甲"), question("b", "A", "影片甲")]).byCard.size === 0, "ambiguous matches remain unjoined");
+}
+{
+  const round = await serverDeck.startRound();
+  const question = round.questions[0];
+  const input = { roundToken: round.roundToken, questionToken: question.token };
+  test.assert(serverDeck.submitAnswer({ ...input, choiceToken: "foreign-token" }).code === "invalid_choice", "a foreign option is rejected before first-answer consumption");
+  const answer = serverDeck.submitAnswer({ ...input, choiceToken: question.choices[0].id });
+  test.assert(answer.ok && !answer.repeated, "the first valid answer survives an invalid request");
+  test.assert(serverDeck.submitAnswer({ ...input, choiceToken: question.choices[1].id }).repeated, "a retry keeps the first accepted answer");
+  const mutable = serverDeck.loadDeck();
+  const licensed = { ...mutable.cards[0], id: "SYNTH-LICENSED", enabled: true,
+    blindSource: { mappingVerified: true, deliveryScopeApproved: true, spoilerReviewPassed: true,
+      asset: { provider: "licensed_file", recordingVerified: true, durationSeconds: 30, noSpoilerPackagingVerified: true },
+      cue: { auditioned: true, startSeconds: 1, endSeconds: 10 },
+      rights: { reviewed: true, active: true, evidenceRef: "synthetic", creditsAvailableDuringPlay: true, grants: Object.fromEntries(serverDeck.RIGHTS_GRANTS.map((key) => [key, true])) } } };
+  mutable.cards.push(licensed);
+  try {
+    test.assert(serverDeck.publishableCards().some((card) => card.id === licensed.id), "the fixture really enters the licensed gate");
+    const mixed = await serverDeck.startRound();
+    test.assert(mixed.questions.length === 10 && mixed.questions.every((q) => q.media.provider === "preview" && q.media.endSeconds > q.media.startSeconds), "one licensed record cannot silence a preview round");
+  } finally { mutable.cards.pop(); }
+  for (let number = 1; number <= 30; number++) {
+    const current = await serverDeck.startRound({ challengeId: String(number) });
+    const groups = [];
+    let safe = current.questions.length === 10;
+    for (const q of current.questions) {
+      const answer = serverDeck.submitAnswer({ roundToken: current.roundToken, questionToken: q.token, skipped: true });
+      const card = mutable.cards.find((c) => c.id === answer.cardId);
+      groups.push(card.knowledgeGroup || card.id);
+      safe &&= q.choices.filter((c) => (card.excludedAnswerLabels || [card.product]).includes(c.label)).length === 1;
+    }
+    test.assert(safe && new Set(groups).size === groups.length, `set ${number} excludes alternative uses from distractors and repeats`);
+  }
+}
+
+// A flaky network during preparation must never delete a working runtime pin.
+{
+  const pinSource = readFileSync(new URL("../../tooling/pin-one-more-tune-sound.mjs", import.meta.url), "utf8")
+    .replace(/^#!.*\n/, "").replace(/^import .*;\n/gm, "").replaceAll("import.meta.url", '"file:///tooling/pin.mjs"');
+  const before = { version: 4, cards: [{ id: "OMT-001", song: "Song", artist: "Artist", film: "Film", product: "Mac", questionSound: { provider: "preview", url: "https://audio.example/old" } }] };
+  const written = new Map();
+  const pinContext = { readFileSync: () => JSON.stringify(before), writeFileSync: (path, value) => written.set(path, value),
+    copyFileSync() {}, renameSync() {}, createRequire: () => () => ({ resolvePreview: async () => null }),
+    dirname: () => "/tooling", join: (...parts) => parts.join("/"), fileURLToPath: (value) => value,
+    process: { argv: ["node", "pin", "--write"] }, console: { log() {} }, AbortSignal,
+    fetch: async () => { throw new Error("temporary outage"); } };
+  await vm.runInNewContext(`(async () => { ${pinSource} })()`, pinContext);
+  const saved = JSON.parse([...written.values()][0]);
+  test.assert(saved.cards[0].questionSound.url === before.cards[0].questionSound.url && saved.version === 4,
+    "failed refresh retains the last pin and does not change the question version");
+  test.assert(saved.cards[0].soundHealth.transport === "unconfirmed", "transport failure is recorded without claiming an audition");
+}
+
+// ---- Keynote Relay ---------------------------------------------------------
+const keynoteDeck = require("../../apps/server/server/one-more-tune-keynote.js");
+const keynoteBank = JSON.parse(readFileSync(new URL("../../apps/server/server/one-more-tune-keynote-bank.json", import.meta.url), "utf8"));
+test.assert(keynoteBank.items.length === 8, "the relay starts from eight authored presenter clues");
+test.assert(source.includes('data-one-more-tune-view="keynote"'), "the relay has a public tab");
+test.assertIncludes(source, "startOneMoreTuneKeynoteRound", "the relay opens through the existing service boundary");
+{
+  const relay = keynoteDeck.startRound();
+  test.assert(relay.domain === "keynote_person" && relay.questions.length === 6, "a relay round contains six distinct handoffs");
+  test.assert(relay.questions.every((question) => question.choices.length === 4 && question.clues.zh.length === 1), "the answer and unopened clues stay server-side");
+  const first = relay.questions[0];
+  const hinted = keynoteDeck.submitAnswer({ roundToken: relay.roundToken, questionToken: first.token, action: "hint", hintLevel: 1 });
+  test.assert(hinted.ok && hinted.question.clues.zh.length === 2 && hinted.question.availablePoints === 2, "opening a hint reveals one clue and costs one point");
+  test.assert(keynoteDeck.submitAnswer({ roundToken: relay.roundToken, questionToken: first.token, choiceToken: "foreign" }).code === "invalid_choice", "a foreign presenter token is rejected");
+  const answer = keynoteDeck.submitAnswer({ roundToken: relay.roundToken, questionToken: first.token, choiceToken: first.choices[0].id });
+  test.assert(answer.ok && answer.repeated === false && answer.reveal.sourceUrl, "a relay answer reveals the presenter story and official source");
+  test.assert(keynoteDeck.submitAnswer({ roundToken: relay.roundToken, questionToken: first.token, choiceToken: first.choices[1].id }).repeated === true, "relay submissions remain idempotent");
+}
 
 test.finish();

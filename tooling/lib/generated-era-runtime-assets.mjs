@@ -2,9 +2,12 @@ import { createHash } from "node:crypto";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { ICON_IDS } from "./icon-family-inventory.mjs";
+import { ADDED_APP_ICON_IDS } from "./added-app-icon-inventory.mjs";
 
 export const GENERATED_COMPATIBILITY_MANIFEST_ERAS = Object.freeze(["aqua", "snow-leopard", "yosemite"]);
-export const THEME_LAB_PACKAGED_ERAS = Object.freeze(["aqua", "snow-leopard", "yosemite", "liquid-glass"]);
+export const THEME_LAB_PACKAGED_ERAS = Object.freeze(["aqua", "snow-leopard", "yosemite", "big-sur", "liquid-glass", "nextstep"]);
+const COMPLETE_ICON_IDS = Object.freeze([...ICON_IDS, ...ADDED_APP_ICON_IDS]);
 const EXTENDED_ICON_IDS = Object.freeze([
   "micropolis", "openttd", "doom", "bonsaiCity", "lightroom", "imagePromptStudio",
 ]);
@@ -47,7 +50,9 @@ export function generatedEraCompatibilityManifestReport(repositoryRoot = resolve
       });
     }
 
-    if (entries.length !== 56) throw new Error(`${eraId}: expected 56 compatibility manifest entries, found ${entries.length}`);
+    if (entries.length !== COMPLETE_ICON_IDS.length || COMPLETE_ICON_IDS.some((id) => !Object.hasOwn(manifest, id))) {
+      throw new Error(`${eraId}: compatibility manifest must preserve the base 56 objects and include the three supplemental applications`);
+    }
     if (tiers.size !== 1) throw new Error(`${eraId}: compatibility manifest mixes tiers: ${[...tiers].join(", ")}`);
     const [tier] = tiers;
     const pattern = `assets/themes/${eraId}/icons/*-${tier}.png`;
@@ -59,7 +64,7 @@ export function generatedEraCompatibilityManifestReport(repositoryRoot = resolve
     const unexpectedNames = matchedNames.filter((name) => !manifestNames.includes(name) && !extensionNames.includes(name));
     const missingNames = manifestNames.filter((name) => !matchedNames.includes(name));
     if (unexpectedNames.length || missingNames.length) {
-      throw new Error(`${eraId}: ${pattern} does not match the 56 manifest assets plus the six reviewed extensions`);
+      throw new Error(`${eraId}: ${pattern} does not match the 59 manifest assets plus the six reviewed extensions`);
     }
 
     return {
@@ -84,11 +89,25 @@ export function themeLabPackagedAssetReport(repositoryRoot = resolve(moduleDirec
     const themeRoot = join(repositoryRoot, "apps/desktop/assets/themes", eraId);
     const familyPath = join(themeRoot, `${eraId}-icon-family.json`);
     const family = JSON.parse(readFileSync(familyPath, "utf8"));
+    const independentIds = eraId === "big-sur" ? COMPLETE_ICON_IDS : eraId === "nextstep" ? ADDED_APP_ICON_IDS : null;
+    if (independentIds) {
+      const declaredIds = Object.keys(family.icons || {});
+      if (declaredIds.length !== independentIds.length || independentIds.some((id) => !Object.hasOwn(family.icons || {}, id))) {
+        throw new Error(`${eraId}: expected exactly ${independentIds.length} independent icon families`);
+      }
+    }
     const files = [];
     const expectedNames = new Set();
 
     for (const [iconId, entry] of Object.entries(family.icons || {})) {
       const declared = eraId === "liquid-glass" ? entry.appearanceSizes : entry.sizes;
+      if (independentIds) {
+        const expected = [16, 32, 64, 128].map((size) => `icons/${iconId}-${size}.png`).sort();
+        const actual = Object.values(declared || {}).sort();
+        if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+          throw new Error(`${eraId}/${iconId}: independent artwork requires exactly 16/32/64/128 default-only PNG tiers`);
+        }
+      }
       for (const relativePath of Object.values(declared || {})) {
         const match = new RegExp(`^icons/${iconId}-(?:\\d+)(?:-(?:default|dark|clear))?\\.png$`).exec(relativePath);
         if (!match) throw new Error(`${eraId}/${iconId}: Theme Lab asset is not a same-object PNG: ${relativePath}`);
@@ -112,7 +131,7 @@ export function themeLabPackagedAssetReport(repositoryRoot = resolve(moduleDirec
       .sort();
     for (const name of packagedNames) {
       const extensionId = EXTENDED_ICON_IDS.find((id) => name.startsWith(`${id}-`));
-      if (!extensionId || expectedNames.has(name)) continue;
+      if (independentIds || !extensionId || expectedNames.has(name)) continue;
       expectedNames.add(name);
       const absolutePath = join(themeRoot, "icons", name);
       const bytes = readFileSync(absolutePath);
@@ -131,6 +150,11 @@ export function themeLabPackagedAssetReport(repositoryRoot = resolve(moduleDirec
     return {
       eraId,
       pattern: `apps/desktop/assets/themes/${eraId}/icons/*.png`,
+      ...(independentIds ? {
+        independentObjectCount: independentIds.length,
+        tiers: [16, 32, 64, 128],
+        ...(eraId === "nextstep" ? { fallbackEra: "classic", fallbackObjectCount: ICON_IDS.length } : {}),
+      } : {}),
       files: files.sort((left, right) => left.relativePath.localeCompare(right.relativePath)),
       bytes: files.reduce((sum, entry) => sum + entry.bytes, 0),
     };

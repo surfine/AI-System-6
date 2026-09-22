@@ -1,7 +1,7 @@
 // Cross-era icon continuity contract.
 //
-// One product object must stay the same thing across the six appearances while
-// every appearance owns independent artwork. Schema v2 locks semantic identity
+// One product object must stay the same thing across eight appearances, with
+// NeXTSTEP explicitly reusing Classic artwork outside its three new apps. Schema v2 locks semantic identity
 // plus one or two recognition anchors; it deliberately does not lock one physical
 // enclosure, composition, silhouette, or material across eras.
 //
@@ -108,11 +108,12 @@ for (const id of ["finderApp", "multiFinderApp"]) {
 test.assertIncludes(provenance.definitions.policy, "never upgrades historicalReviewStatus",
   "generated acceptance and historical validation remain separate states");
 const priorityIds = new Set(continuity.priorityCore16);
-test.assert(provenance.coverage.priorityCore16Count === 16 && provenance.coverage.iconCountPerEra === 56,
-  "the provenance matrix preserves the 16-priority / 40-pending review boundary");
+test.assert(provenance.coverage.priorityCore16Count === 16 && provenance.coverage.iconCountPerEra === 59
+  && provenance.coverage.baseIconCount === 56 && provenance.coverage.supplementalIconCount === 3,
+  "the provenance matrix preserves the base 56 and priority 16 while adding three applications");
 for (const era of ERAS) {
   const cells = provenance.eras[era].icons;
-  test.assert(Object.keys(cells).length === 56, `${era} provenance covers all 56 runtime objects`);
+  test.assert(Object.keys(cells).length === 59, `${era} provenance covers all 59 runtime objects`);
   for (const [id, cell] of Object.entries(cells)) {
     test.assert(cell.priorityCore16 === priorityIds.has(id), `${era}/${id} agrees with the priority-16 boundary`);
     test.assert(cell.runtimeAssetStatus === "mapped", `${era}/${id} identifies the runtime-mapped asset`);
@@ -133,6 +134,33 @@ for (const era of ERAS) {
     }
   }
 }
+
+const supplementalIds = ["clioPaint", "clioProject", "oneMoreTune"];
+test.assert(JSON.stringify(continuity.supplementalIconIds) === JSON.stringify(supplementalIds),
+  "the supplemental inventory contains only the three added applications");
+test.assert(provenance.coverage.eraCount === 8 && provenance.coverage.runtimeCells === 472,
+  "eight runtime appearances each map all 59 product objects");
+for (const era of continuity.runtimeEras) {
+  const entry = provenance.eras[era];
+  test.assert(entry.runtimeObjectCount === 59 && Object.keys(entry.icons).length === 59,
+    `${era} reports all 59 mapped objects`);
+  test.assert(entry.independentArtworkCount === (era === "nextstep" ? 3 : 59)
+    && entry.fallbackObjectCount === (era === "nextstep" ? 56 : 0),
+  `${era} distinguishes independent artwork from Classic compatibility fallback`);
+  for (const id of supplementalIds) {
+    const cell = entry.icons[id];
+    test.assert(cell.supplementalApplication && cell.provenanceClass === "C"
+      && cell.artworkCoverage === "independent-era-artwork" && cell.runtimeAssetEra === era
+      && cell.historicalReviewStatus === "pending",
+    `${era}/${id} records original era-adapted artwork without native historical approval`);
+  }
+}
+const nextstepFallback = Object.entries(provenance.eras.nextstep.icons)
+  .filter(([id]) => !supplementalIds.includes(id));
+test.assert(nextstepFallback.length === 56 && nextstepFallback.every(([, cell]) =>
+  cell.artworkCoverage === "classic-compatibility-fallback" && cell.runtimeAssetEra === "classic"
+  && cell.historicalReviewStatus === "pending"),
+"NeXTSTEP honestly reuses all 56 original Classic objects without inheriting their historical approval");
 
 for (const [theme, paths] of Object.entries(DOCMAP_ARTWORK)) {
   const family = JSON.parse(read(paths.family));

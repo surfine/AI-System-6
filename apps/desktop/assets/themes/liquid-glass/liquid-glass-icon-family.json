@@ -1,14 +1,14 @@
 {
   "schemaVersion": 2,
   "target": "macOS 27 Golden Gate Beta 1 Liquid Glass",
-  "generatedBy": "tooling/build-liquid-glass-imagegen-icons.mjs",
+  "generatedBy": "tooling/build-liquid-glass-imagegen-icons.mjs + tooling/build-liquid-glass-golden-gate-icons.mjs",
   "generationMode": "built-in Image Gen — one independent call per icon",
   "promptLedger": "icons/src/liquid-glass-imagegen-prompts.json",
   "referenceBoard": "internal/evidence/drafts/liquid-glass-imagegen/liquid-glass-imagegen-master-board.png",
   "sharedGeometryAcrossEras": false,
   "completeFamily": true,
   "runtimeAsset": true,
-  "completeFamilyMeaning": "All 56 runtime ids resolve to technically accepted artwork. Historical review is a separate per-icon state.",
+  "completeFamilyMeaning": "All 59 runtime ids resolve to technically accepted artwork. Golden Gate masking is a separate runtime correction; historical review remains per-icon and native evidence is not implied.",
   "generatedAcceptanceMeaning": "Authoring acceptance confirms source and technical quality; it never implies historical validation.",
   "runtimeSize": "contextual",
   "runtimeSizesByContext": {
@@ -360,6 +360,15 @@
           },
           "gridShape": "square"
         }
+      },
+      "goldenGate": {
+        "objectClass": "hardware",
+        "runtimeMask": "free-form",
+        "maskAppliedAt": "none",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "full-family-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     },
     "hardDisk": {
@@ -642,6 +651,15 @@
           },
           "gridShape": "landscape"
         }
+      },
+      "goldenGate": {
+        "objectClass": "hardware",
+        "runtimeMask": "free-form",
+        "maskAppliedAt": "none",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "core16-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     },
     "folder": {
@@ -924,6 +942,15 @@
           },
           "gridShape": "landscape"
         }
+      },
+      "goldenGate": {
+        "objectClass": "file",
+        "runtimeMask": "free-form",
+        "maskAppliedAt": "none",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "core16-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     },
     "document": {
@@ -1206,6 +1233,15 @@
           },
           "gridShape": "portrait"
         }
+      },
+      "goldenGate": {
+        "objectClass": "document",
+        "runtimeMask": "free-form",
+        "maskAppliedAt": "none",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "core16-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     },
     "applications": {
@@ -1488,6 +1524,15 @@
           },
           "gridShape": "landscape"
         }
+      },
+      "goldenGate": {
+        "objectClass": "file",
+        "runtimeMask": "free-form",
+        "maskAppliedAt": "none",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "full-family-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     },
     "trash": {
@@ -1770,6 +1815,15 @@
           },
           "gridShape": "portrait"
         }
+      },
+      "goldenGate": {
+        "objectClass": "hardware",
+        "runtimeMask": "free-form",
+        "maskAppliedAt": "none",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "core16-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     },
     "finderApp": {
@@ -2054,7 +2108,16 @@
         }
       },
       "metaphorKey": "target-era-finder-identity",
-      "blindMixStatus": "not-run"
+      "blindMixStatus": "not-run",
+      "goldenGate": {
+        "objectClass": "application",
+        "runtimeMask": "rounded-rect",
+        "maskAppliedAt": "runtime-css",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "core16-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
+      }
     },
     "fileFloppy": {
       "genre": "hardware",
@@ -2336,6 +2399,15 @@
           },
           "gridShape": "square"
         }
+      },
+      "goldenGate": {
+        "objectClass": "hardware",
+        "runtimeMask": "free-form",
+        "maskAppliedAt": "none",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "core16-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     },
     "assistant": {
@@ -2618,6 +2690,15 @@
           },
           "gridShape": "square"
         }
+      },
+      "goldenGate": {
+        "objectClass": "application",
+        "runtimeMask": "rounded-rect",
+        "maskAppliedAt": "runtime-css",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "core16-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     },
     "quickDraft": {
@@ -2900,6 +2981,15 @@
           },
           "gridShape": "square"
         }
+      },
+      "goldenGate": {
+        "objectClass": "document",
+        "runtimeMask": "free-form",
+        "maskAppliedAt": "none",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "full-family-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     },
     "writingStudio": {
@@ -3182,6 +3272,15 @@
           },
           "gridShape": "square"
         }
+      },
+      "goldenGate": {
+        "objectClass": "application",
+        "runtimeMask": "rounded-rect",
+        "maskAppliedAt": "runtime-css",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "full-family-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     },
     "projectDisk": {
@@ -3464,6 +3563,15 @@
           },
           "gridShape": "landscape"
         }
+      },
+      "goldenGate": {
+        "objectClass": "hardware",
+        "runtimeMask": "free-form",
+        "maskAppliedAt": "none",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "core16-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     },
     "projectDisc": {
@@ -3746,6 +3854,15 @@
           },
           "gridShape": "portrait"
         }
+      },
+      "goldenGate": {
+        "objectClass": "hardware",
+        "runtimeMask": "free-form",
+        "maskAppliedAt": "none",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "core16-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     },
     "cloudModel": {
@@ -4028,6 +4145,15 @@
           },
           "gridShape": "square"
         }
+      },
+      "goldenGate": {
+        "objectClass": "utility",
+        "runtimeMask": "rounded-rect",
+        "maskAppliedAt": "runtime-css",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "full-family-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     },
     "cloudModelOff": {
@@ -4310,6 +4436,15 @@
           },
           "gridShape": "square"
         }
+      },
+      "goldenGate": {
+        "objectClass": "utility",
+        "runtimeMask": "rounded-rect",
+        "maskAppliedAt": "runtime-css",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "full-family-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     },
     "questionSheet": {
@@ -4592,6 +4727,15 @@
           },
           "gridShape": "portrait"
         }
+      },
+      "goldenGate": {
+        "objectClass": "document",
+        "runtimeMask": "free-form",
+        "maskAppliedAt": "none",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "full-family-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     },
     "outline": {
@@ -4874,6 +5018,15 @@
           },
           "gridShape": "landscape"
         }
+      },
+      "goldenGate": {
+        "objectClass": "document",
+        "runtimeMask": "free-form",
+        "maskAppliedAt": "none",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "full-family-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     },
     "sectionDrafts": {
@@ -5156,6 +5309,15 @@
           },
           "gridShape": "portrait"
         }
+      },
+      "goldenGate": {
+        "objectClass": "document",
+        "runtimeMask": "free-form",
+        "maskAppliedAt": "none",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "full-family-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     },
     "manuscript": {
@@ -5438,6 +5600,15 @@
           },
           "gridShape": "portrait"
         }
+      },
+      "goldenGate": {
+        "objectClass": "document",
+        "runtimeMask": "free-form",
+        "maskAppliedAt": "none",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "full-family-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     },
     "reviewDesk": {
@@ -5720,6 +5891,15 @@
           },
           "gridShape": "portrait"
         }
+      },
+      "goldenGate": {
+        "objectClass": "application",
+        "runtimeMask": "rounded-rect",
+        "maskAppliedAt": "runtime-css",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "core16-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     },
     "searcher": {
@@ -6002,6 +6182,15 @@
           },
           "gridShape": "square"
         }
+      },
+      "goldenGate": {
+        "objectClass": "application",
+        "runtimeMask": "rounded-rect",
+        "maskAppliedAt": "runtime-css",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "core16-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     },
     "reader": {
@@ -6284,6 +6473,15 @@
           },
           "gridShape": "landscape"
         }
+      },
+      "goldenGate": {
+        "objectClass": "application",
+        "runtimeMask": "rounded-rect",
+        "maskAppliedAt": "runtime-css",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "full-family-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     },
     "timeMachine": {
@@ -6566,6 +6764,15 @@
           },
           "gridShape": "square"
         }
+      },
+      "goldenGate": {
+        "objectClass": "utility",
+        "runtimeMask": "rounded-rect",
+        "maskAppliedAt": "runtime-css",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "full-family-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     },
     "docMap": {
@@ -6891,6 +7098,15 @@
           1
         ],
         "layoutMode": "radial-mind-map"
+      },
+      "goldenGate": {
+        "objectClass": "application",
+        "runtimeMask": "rounded-rect",
+        "maskAppliedAt": "runtime-css",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "core16-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     },
     "clioStage": {
@@ -7173,6 +7389,15 @@
           },
           "gridShape": "square"
         }
+      },
+      "goldenGate": {
+        "objectClass": "application",
+        "runtimeMask": "rounded-rect",
+        "maskAppliedAt": "runtime-css",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "full-family-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     },
     "clioChart": {
@@ -7455,6 +7680,15 @@
           },
           "gridShape": "portrait"
         }
+      },
+      "goldenGate": {
+        "objectClass": "application",
+        "runtimeMask": "rounded-rect",
+        "maskAppliedAt": "runtime-css",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "full-family-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     },
     "liquidCover": {
@@ -7737,6 +7971,15 @@
           },
           "gridShape": "landscape"
         }
+      },
+      "goldenGate": {
+        "objectClass": "application",
+        "runtimeMask": "rounded-rect",
+        "maskAppliedAt": "runtime-css",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "full-family-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     },
     "cmfStudio": {
@@ -8019,6 +8262,15 @@
           },
           "gridShape": "square"
         }
+      },
+      "goldenGate": {
+        "objectClass": "application",
+        "runtimeMask": "rounded-rect",
+        "maskAppliedAt": "runtime-css",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "full-family-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     },
     "soundscape": {
@@ -8301,6 +8553,15 @@
           },
           "gridShape": "square"
         }
+      },
+      "goldenGate": {
+        "objectClass": "application",
+        "runtimeMask": "rounded-rect",
+        "maskAppliedAt": "runtime-css",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "full-family-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     },
     "scrapbook": {
@@ -8583,6 +8844,15 @@
           },
           "gridShape": "square"
         }
+      },
+      "goldenGate": {
+        "objectClass": "application",
+        "runtimeMask": "rounded-rect",
+        "maskAppliedAt": "runtime-css",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "core16-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     },
     "systemFolder": {
@@ -8865,6 +9135,15 @@
           },
           "gridShape": "square"
         }
+      },
+      "goldenGate": {
+        "objectClass": "file",
+        "runtimeMask": "free-form",
+        "maskAppliedAt": "none",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "full-family-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     },
     "helpFolder": {
@@ -9147,6 +9426,15 @@
           },
           "gridShape": "square"
         }
+      },
+      "goldenGate": {
+        "objectClass": "file",
+        "runtimeMask": "free-form",
+        "maskAppliedAt": "none",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "full-family-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     },
     "importUtility": {
@@ -9429,6 +9717,15 @@
           },
           "gridShape": "square"
         }
+      },
+      "goldenGate": {
+        "objectClass": "utility",
+        "runtimeMask": "rounded-rect",
+        "maskAppliedAt": "runtime-css",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "full-family-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     },
     "controlPanel": {
@@ -9711,6 +10008,15 @@
           },
           "gridShape": "square"
         }
+      },
+      "goldenGate": {
+        "objectClass": "utility",
+        "runtimeMask": "rounded-rect",
+        "maskAppliedAt": "runtime-css",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "core16-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     },
     "chooser": {
@@ -9993,6 +10299,15 @@
           },
           "gridShape": "landscape"
         }
+      },
+      "goldenGate": {
+        "objectClass": "utility",
+        "runtimeMask": "rounded-rect",
+        "maskAppliedAt": "runtime-css",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "full-family-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     },
     "systemHelp": {
@@ -10275,6 +10590,15 @@
           },
           "gridShape": "portrait"
         }
+      },
+      "goldenGate": {
+        "objectClass": "application",
+        "runtimeMask": "rounded-rect",
+        "maskAppliedAt": "runtime-css",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "full-family-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     },
     "dictionary": {
@@ -10557,6 +10881,15 @@
           },
           "gridShape": "square"
         }
+      },
+      "goldenGate": {
+        "objectClass": "application",
+        "runtimeMask": "rounded-rect",
+        "maskAppliedAt": "runtime-css",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "full-family-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     },
     "teachText": {
@@ -10839,6 +11172,15 @@
           },
           "gridShape": "square"
         }
+      },
+      "goldenGate": {
+        "objectClass": "application",
+        "runtimeMask": "rounded-rect",
+        "maskAppliedAt": "runtime-css",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "core16-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     },
     "writingDemo": {
@@ -11121,6 +11463,15 @@
           },
           "gridShape": "portrait"
         }
+      },
+      "goldenGate": {
+        "objectClass": "document",
+        "runtimeMask": "free-form",
+        "maskAppliedAt": "none",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "full-family-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     },
     "chatFile": {
@@ -11403,6 +11754,15 @@
           },
           "gridShape": "portrait"
         }
+      },
+      "goldenGate": {
+        "objectClass": "document",
+        "runtimeMask": "free-form",
+        "maskAppliedAt": "none",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "full-family-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     },
     "chatImport": {
@@ -11685,6 +12045,15 @@
           },
           "gridShape": "square"
         }
+      },
+      "goldenGate": {
+        "objectClass": "utility",
+        "runtimeMask": "rounded-rect",
+        "maskAppliedAt": "runtime-css",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "full-family-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     },
     "systemStatus": {
@@ -11967,6 +12336,15 @@
           },
           "gridShape": "landscape"
         }
+      },
+      "goldenGate": {
+        "objectClass": "utility",
+        "runtimeMask": "rounded-rect",
+        "maskAppliedAt": "runtime-css",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "full-family-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     },
     "contextPanel": {
@@ -12249,6 +12627,15 @@
           },
           "gridShape": "square"
         }
+      },
+      "goldenGate": {
+        "objectClass": "utility",
+        "runtimeMask": "rounded-rect",
+        "maskAppliedAt": "runtime-css",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "full-family-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     },
     "rebuildArticle": {
@@ -12531,6 +12918,15 @@
           },
           "gridShape": "square"
         }
+      },
+      "goldenGate": {
+        "objectClass": "utility",
+        "runtimeMask": "rounded-rect",
+        "maskAppliedAt": "runtime-css",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "full-family-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     },
     "bureaucracyMeme": {
@@ -12813,6 +13209,15 @@
           },
           "gridShape": "square"
         }
+      },
+      "goldenGate": {
+        "objectClass": "application",
+        "runtimeMask": "rounded-rect",
+        "maskAppliedAt": "runtime-css",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "full-family-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     },
     "endfieldTerminal": {
@@ -13095,6 +13500,15 @@
           },
           "gridShape": "square"
         }
+      },
+      "goldenGate": {
+        "objectClass": "utility",
+        "runtimeMask": "rounded-rect",
+        "maskAppliedAt": "runtime-css",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "full-family-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     },
     "documents": {
@@ -13377,6 +13791,15 @@
           },
           "gridShape": "square"
         }
+      },
+      "goldenGate": {
+        "objectClass": "file",
+        "runtimeMask": "free-form",
+        "maskAppliedAt": "none",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "full-family-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     },
     "alias": {
@@ -13659,6 +14082,15 @@
           },
           "gridShape": "portrait"
         }
+      },
+      "goldenGate": {
+        "objectClass": "document",
+        "runtimeMask": "free-form",
+        "maskAppliedAt": "none",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "full-family-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     },
     "systemFile": {
@@ -13941,6 +14373,15 @@
           },
           "gridShape": "portrait"
         }
+      },
+      "goldenGate": {
+        "objectClass": "document",
+        "runtimeMask": "free-form",
+        "maskAppliedAt": "none",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "full-family-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     },
     "multiFinderApp": {
@@ -14225,7 +14666,16 @@
         }
       },
       "metaphorKey": "current-finder-identity-plus-multiplicity",
-      "blindMixStatus": "not-run"
+      "blindMixStatus": "not-run",
+      "goldenGate": {
+        "objectClass": "application",
+        "runtimeMask": "rounded-rect",
+        "maskAppliedAt": "runtime-css",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "core16-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
+      }
     },
     "daHandler": {
       "genre": "utility",
@@ -14507,6 +14957,15 @@
           },
           "gridShape": "square"
         }
+      },
+      "goldenGate": {
+        "objectClass": "utility",
+        "runtimeMask": "rounded-rect",
+        "maskAppliedAt": "runtime-css",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "full-family-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     },
     "writingBell": {
@@ -14789,6 +15248,15 @@
           },
           "gridShape": "square"
         }
+      },
+      "goldenGate": {
+        "objectClass": "accessory",
+        "runtimeMask": "rounded-rect",
+        "maskAppliedAt": "runtime-css",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "full-family-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     },
     "trashFull": {
@@ -15071,6 +15539,15 @@
           },
           "gridShape": "portrait"
         }
+      },
+      "goldenGate": {
+        "objectClass": "hardware",
+        "runtimeMask": "free-form",
+        "maskAppliedAt": "none",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "full-family-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     },
     "control": {
@@ -15353,6 +15830,15 @@
           },
           "gridShape": "square"
         }
+      },
+      "goldenGate": {
+        "objectClass": "utility",
+        "runtimeMask": "rounded-rect",
+        "maskAppliedAt": "runtime-css",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "full-family-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     },
     "localModel": {
@@ -15635,6 +16121,15 @@
           },
           "gridShape": "square"
         }
+      },
+      "goldenGate": {
+        "objectClass": "utility",
+        "runtimeMask": "rounded-rect",
+        "maskAppliedAt": "runtime-css",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "full-family-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     },
     "controlStrip": {
@@ -15917,9 +16412,1111 @@
           },
           "gridShape": "landscape"
         }
+      },
+      "goldenGate": {
+        "objectClass": "utility",
+        "runtimeMask": "rounded-rect",
+        "maskAppliedAt": "runtime-css",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "full-family-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
+      }
+    },
+    "clioPaint": {
+      "genre": "application",
+      "semanticIdentity": "Drawing palette and brush",
+      "physicalMetaphor": "Drawing palette and brush",
+      "provenanceClass": "C",
+      "sourceKind": "original-generated-era-illustration",
+      "authoringMethod": "built-in image generation for large tiers and appearances; independently authored compact artwork",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "eraGrammarReview": "original-period-adaptation-reviewed",
+      "reviewStatus": "technically-clean",
+      "runtimeAsset": true,
+      "nativeReplica": false,
+      "referenceValidated": false,
+      "sourceNote": "Original AI System 6 application. Period grammar is adapted; no historical native counterpart is claimed.",
+      "sourceReferences": [
+        "apps/desktop/assets/themes/era-icon-reference.json"
+      ],
+      "sizes": {
+        "16": "icons/clioPaint-16-default.png",
+        "32": "icons/clioPaint-32-default.png",
+        "64": "icons/clioPaint-64-default.png",
+        "128": "icons/clioPaint-128-default.png"
+      },
+      "runtimeSha256": {
+        "16-default": "4db749379bf9d5aa092db2f3f4dcedf9d754f0e13bdb9337e60631ede262f59b",
+        "16-dark": "d9898f196654ec2d9e2c7355026523a3c4657a411569cb55212ac2da52d68706",
+        "16-clear": "31955e14d99178956f5794c3c8ac30437bcea7f9bb4f7c94fd362d7adfb1f8df",
+        "32-default": "7fb6fe4abc8eb77fcb2e08337e91b27bb16e8cc5243094bf512680177e6cdaa4",
+        "32-dark": "57a513a494b382c967fe7cef2638cce9a8295b0678e735f76fb7e5db7c8a09bf",
+        "32-clear": "ddf63195b1ca6323baea318257851f95790b04b199f868bdd91dba02603ffa1a",
+        "64-default": "bbc276fb951a7069cf4611970326237ef394d4e3b37b43b7cdadbf0fd1fdcb80",
+        "64-dark": "2c7aa1ca32a8d66998f46fcd89e5f0d90a981a876ca38b1be7332008b86f0a35",
+        "64-clear": "478cc84e8f1b5fe3ddb7505b82b009ad8d0bc7bbae56fb1788b3fb112792e152",
+        "128-default": "c0ebbfd5a9db9bd73e45f2260f17dae7d70b5983e2b9f092f11144c2b2a3717d",
+        "128-dark": "c9968b6040c5a2d971037270c214668026fc1ad3f2f86bfd43334a263563526c",
+        "128-clear": "0adef383062c76b4601bf41043dd8f79f9ebe18c1f245a5885789207f6212444"
+      },
+      "sizePolicy": "16 and 32 px have independent compact compositions with reduced detail; large default tiers use material masters where applicable.",
+      "label": "clioPaint",
+      "metrics": {
+        "16-default": {
+          "pixels": 110,
+          "bbox": {
+            "minX": 1,
+            "minY": 0,
+            "maxX": 13,
+            "maxY": 13
+          },
+          "sha256": "4db749379bf9d5aa092db2f3f4dcedf9d754f0e13bdb9337e60631ede262f59b",
+          "ink": {
+            "minX": 1,
+            "minY": 0,
+            "maxX": 13,
+            "maxY": 13,
+            "width": 13,
+            "height": 14
+          },
+          "gridShape": "square"
+        },
+        "16-dark": {
+          "pixels": 121,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 13,
+            "maxY": 14
+          },
+          "sha256": "d9898f196654ec2d9e2c7355026523a3c4657a411569cb55212ac2da52d68706",
+          "ink": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 13,
+            "maxY": 14,
+            "width": 13,
+            "height": 14
+          },
+          "gridShape": "square"
+        },
+        "16-clear": {
+          "pixels": 110,
+          "bbox": {
+            "minX": 1,
+            "minY": 0,
+            "maxX": 13,
+            "maxY": 13
+          },
+          "sha256": "31955e14d99178956f5794c3c8ac30437bcea7f9bb4f7c94fd362d7adfb1f8df",
+          "ink": {
+            "minX": 1,
+            "minY": 0,
+            "maxX": 13,
+            "maxY": 13,
+            "width": 13,
+            "height": 14
+          },
+          "gridShape": "square"
+        },
+        "32-default": {
+          "pixels": 394,
+          "bbox": {
+            "minX": 3,
+            "minY": 1,
+            "maxX": 27,
+            "maxY": 27
+          },
+          "sha256": "7fb6fe4abc8eb77fcb2e08337e91b27bb16e8cc5243094bf512680177e6cdaa4",
+          "ink": {
+            "minX": 3,
+            "minY": 1,
+            "maxX": 27,
+            "maxY": 27,
+            "width": 25,
+            "height": 27
+          },
+          "gridShape": "square"
+        },
+        "32-dark": {
+          "pixels": 445,
+          "bbox": {
+            "minX": 3,
+            "minY": 1,
+            "maxX": 27,
+            "maxY": 29
+          },
+          "sha256": "57a513a494b382c967fe7cef2638cce9a8295b0678e735f76fb7e5db7c8a09bf",
+          "ink": {
+            "minX": 3,
+            "minY": 1,
+            "maxX": 27,
+            "maxY": 29,
+            "width": 25,
+            "height": 29
+          },
+          "gridShape": "portrait"
+        },
+        "32-clear": {
+          "pixels": 394,
+          "bbox": {
+            "minX": 3,
+            "minY": 1,
+            "maxX": 27,
+            "maxY": 27
+          },
+          "sha256": "ddf63195b1ca6323baea318257851f95790b04b199f868bdd91dba02603ffa1a",
+          "ink": {
+            "minX": 3,
+            "minY": 1,
+            "maxX": 27,
+            "maxY": 27,
+            "width": 25,
+            "height": 27
+          },
+          "gridShape": "square"
+        },
+        "64-default": {
+          "pixels": 1877,
+          "bbox": {
+            "minX": 6,
+            "minY": 7,
+            "maxX": 58,
+            "maxY": 56
+          },
+          "sha256": "bbc276fb951a7069cf4611970326237ef394d4e3b37b43b7cdadbf0fd1fdcb80",
+          "ink": {
+            "minX": 6,
+            "minY": 7,
+            "maxX": 58,
+            "maxY": 56,
+            "width": 53,
+            "height": 50
+          },
+          "gridShape": "square"
+        },
+        "64-dark": {
+          "pixels": 1888,
+          "bbox": {
+            "minX": 6,
+            "minY": 7,
+            "maxX": 58,
+            "maxY": 56
+          },
+          "sha256": "2c7aa1ca32a8d66998f46fcd89e5f0d90a981a876ca38b1be7332008b86f0a35",
+          "ink": {
+            "minX": 6,
+            "minY": 7,
+            "maxX": 58,
+            "maxY": 56,
+            "width": 53,
+            "height": 50
+          },
+          "gridShape": "square"
+        },
+        "64-clear": {
+          "pixels": 1875,
+          "bbox": {
+            "minX": 6,
+            "minY": 7,
+            "maxX": 58,
+            "maxY": 56
+          },
+          "sha256": "478cc84e8f1b5fe3ddb7505b82b009ad8d0bc7bbae56fb1788b3fb112792e152",
+          "ink": {
+            "minX": 6,
+            "minY": 7,
+            "maxX": 58,
+            "maxY": 56,
+            "width": 53,
+            "height": 50
+          },
+          "gridShape": "square"
+        },
+        "128-default": {
+          "pixels": 7357,
+          "bbox": {
+            "minX": 11,
+            "minY": 14,
+            "maxX": 115,
+            "maxY": 114
+          },
+          "sha256": "c0ebbfd5a9db9bd73e45f2260f17dae7d70b5983e2b9f092f11144c2b2a3717d",
+          "ink": {
+            "minX": 11,
+            "minY": 14,
+            "maxX": 115,
+            "maxY": 114,
+            "width": 105,
+            "height": 101
+          },
+          "gridShape": "square"
+        },
+        "128-dark": {
+          "pixels": 7289,
+          "bbox": {
+            "minX": 12,
+            "minY": 14,
+            "maxX": 116,
+            "maxY": 114
+          },
+          "sha256": "c9968b6040c5a2d971037270c214668026fc1ad3f2f86bfd43334a263563526c",
+          "ink": {
+            "minX": 12,
+            "minY": 14,
+            "maxX": 116,
+            "maxY": 114,
+            "width": 105,
+            "height": 101
+          },
+          "gridShape": "square"
+        },
+        "128-clear": {
+          "pixels": 7237,
+          "bbox": {
+            "minX": 12,
+            "minY": 13,
+            "maxX": 116,
+            "maxY": 113
+          },
+          "sha256": "0adef383062c76b4601bf41043dd8f79f9ebe18c1f245a5885789207f6212444",
+          "ink": {
+            "minX": 12,
+            "minY": 13,
+            "maxX": 116,
+            "maxY": 113,
+            "width": 105,
+            "height": 101
+          },
+          "gridShape": "square"
+        }
+      },
+      "grid": {
+        "canvas": 128,
+        "shape": "square",
+        "fitted": 0.8203125,
+        "method": "measured-output-no-resampling"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 13,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5156,
+          "meanLum": 150.78,
+          "lumStd": 48.11,
+          "edgeEnergy": 107
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.4785,
+          "meanLum": 150.32,
+          "lumStd": 51.8,
+          "edgeEnergy": 308
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.4705,
+          "meanLum": 150.04,
+          "lumStd": 52.91,
+          "edgeEnergy": 432
+        }
+      },
+      "master": "internal/evidence/drafts/added-app-era-icons/masters/liquid-glass/clioPaint.png",
+      "masterSha256": "887d63c28ab18a6c2bc568b29d2a123b7b5c6e28efe0bb33775ac4473f0dcf9e",
+      "appearanceSizes": {
+        "16-default": "icons/clioPaint-16-default.png",
+        "16-dark": "icons/clioPaint-16-dark.png",
+        "16-clear": "icons/clioPaint-16-clear.png",
+        "32-default": "icons/clioPaint-32-default.png",
+        "32-dark": "icons/clioPaint-32-dark.png",
+        "32-clear": "icons/clioPaint-32-clear.png",
+        "64-default": "icons/clioPaint-64-default.png",
+        "64-dark": "icons/clioPaint-64-dark.png",
+        "64-clear": "icons/clioPaint-64-clear.png",
+        "128-default": "icons/clioPaint-128-default.png",
+        "128-dark": "icons/clioPaint-128-dark.png",
+        "128-clear": "icons/clioPaint-128-clear.png"
+      },
+      "appearancePolicy": "Dark and clear 64/128 variants are image-tool edits preserving the default composition; 16/32 variants have independent compact constructions.",
+      "goldenGate": {
+        "objectClass": "application",
+        "runtimeMask": "rounded-rect",
+        "maskAppliedAt": "runtime-css",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "full-family-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
+      }
+    },
+    "clioProject": {
+      "genre": "application",
+      "semanticIdentity": "Task cards and dependency links",
+      "physicalMetaphor": "Task cards and dependency links",
+      "provenanceClass": "C",
+      "sourceKind": "original-generated-era-illustration",
+      "authoringMethod": "built-in image generation for large tiers and appearances; independently authored compact artwork",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "eraGrammarReview": "original-period-adaptation-reviewed",
+      "reviewStatus": "technically-clean",
+      "runtimeAsset": true,
+      "nativeReplica": false,
+      "referenceValidated": false,
+      "sourceNote": "Original AI System 6 application. Period grammar is adapted; no historical native counterpart is claimed.",
+      "sourceReferences": [
+        "apps/desktop/assets/themes/era-icon-reference.json"
+      ],
+      "sizes": {
+        "16": "icons/clioProject-16-default.png",
+        "32": "icons/clioProject-32-default.png",
+        "64": "icons/clioProject-64-default.png",
+        "128": "icons/clioProject-128-default.png"
+      },
+      "runtimeSha256": {
+        "16-default": "6f62bd65d555d115615e91965ece2d5e3254be3739786e5d1864bcdd46773354",
+        "16-dark": "0425a69cd801e38ddefeaced95ce21b04fa6ec8533c6cf7927c7ade6143cecad",
+        "16-clear": "89c1a766b9983fb6ee371a0d4ff98f5fe15a23cfd12958419a6a3c914651ff76",
+        "32-default": "6981bf1eb297349bf7e92064f56c40f4a1d684d59269ab579ef7486703351179",
+        "32-dark": "d8daddc4eda44634bd913b3b86d9b02cbfca3a731df9038a182d30bd925aeda5",
+        "32-clear": "078d5d1408c9b09fec33c47174c844b082afc3044d9d5ed6b9cd57020cccf312",
+        "64-default": "7b1e072397a08f338d002530aa30e26f7fee5915eaed59ccd2de504f7b637383",
+        "64-dark": "4e81e35839e97c3b6cdc6fa47461c72f0bc035662208eaccdf57d88bfa1ce875",
+        "64-clear": "01a03c47c1e1772c41bdc2c4cf1d34e0931db97c908040f843c9f7c60d89a45b",
+        "128-default": "8aa083fe92cd9967ec304003fd945ee2452f9ab4674bac297faae03d29aeec4a",
+        "128-dark": "1966be6b85f3d799a5efb55327539fa231b61e1b92165ac06b610db516652b91",
+        "128-clear": "261f2d1d03991f36332c3864d6aab1c49453d8a51a9b0fff6cd3538b8c1d6461"
+      },
+      "sizePolicy": "16 and 32 px have independent compact compositions with reduced detail; large default tiers use material masters where applicable.",
+      "label": "clioProject",
+      "metrics": {
+        "16-default": {
+          "pixels": 93,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 15,
+            "maxY": 15
+          },
+          "sha256": "6f62bd65d555d115615e91965ece2d5e3254be3739786e5d1864bcdd46773354",
+          "ink": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 15,
+            "maxY": 15,
+            "width": 15,
+            "height": 15
+          },
+          "gridShape": "square"
+        },
+        "16-dark": {
+          "pixels": 92,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 15,
+            "maxY": 15
+          },
+          "sha256": "0425a69cd801e38ddefeaced95ce21b04fa6ec8533c6cf7927c7ade6143cecad",
+          "ink": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 15,
+            "maxY": 15,
+            "width": 15,
+            "height": 15
+          },
+          "gridShape": "square"
+        },
+        "16-clear": {
+          "pixels": 93,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 15,
+            "maxY": 15
+          },
+          "sha256": "89c1a766b9983fb6ee371a0d4ff98f5fe15a23cfd12958419a6a3c914651ff76",
+          "ink": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 15,
+            "maxY": 15,
+            "width": 15,
+            "height": 15
+          },
+          "gridShape": "square"
+        },
+        "32-default": {
+          "pixels": 333,
+          "bbox": {
+            "minX": 2,
+            "minY": 2,
+            "maxX": 30,
+            "maxY": 30
+          },
+          "sha256": "6981bf1eb297349bf7e92064f56c40f4a1d684d59269ab579ef7486703351179",
+          "ink": {
+            "minX": 2,
+            "minY": 2,
+            "maxX": 30,
+            "maxY": 30,
+            "width": 29,
+            "height": 29
+          },
+          "gridShape": "square"
+        },
+        "32-dark": {
+          "pixels": 333,
+          "bbox": {
+            "minX": 2,
+            "minY": 2,
+            "maxX": 30,
+            "maxY": 30
+          },
+          "sha256": "d8daddc4eda44634bd913b3b86d9b02cbfca3a731df9038a182d30bd925aeda5",
+          "ink": {
+            "minX": 2,
+            "minY": 2,
+            "maxX": 30,
+            "maxY": 30,
+            "width": 29,
+            "height": 29
+          },
+          "gridShape": "square"
+        },
+        "32-clear": {
+          "pixels": 333,
+          "bbox": {
+            "minX": 2,
+            "minY": 2,
+            "maxX": 30,
+            "maxY": 30
+          },
+          "sha256": "078d5d1408c9b09fec33c47174c844b082afc3044d9d5ed6b9cd57020cccf312",
+          "ink": {
+            "minX": 2,
+            "minY": 2,
+            "maxX": 30,
+            "maxY": 30,
+            "width": 29,
+            "height": 29
+          },
+          "gridShape": "square"
+        },
+        "64-default": {
+          "pixels": 1389,
+          "bbox": {
+            "minX": 6,
+            "minY": 10,
+            "maxX": 57,
+            "maxY": 52
+          },
+          "sha256": "7b1e072397a08f338d002530aa30e26f7fee5915eaed59ccd2de504f7b637383",
+          "ink": {
+            "minX": 6,
+            "minY": 10,
+            "maxX": 57,
+            "maxY": 52,
+            "width": 52,
+            "height": 43
+          },
+          "gridShape": "landscape"
+        },
+        "64-dark": {
+          "pixels": 1408,
+          "bbox": {
+            "minX": 6,
+            "minY": 10,
+            "maxX": 58,
+            "maxY": 52
+          },
+          "sha256": "4e81e35839e97c3b6cdc6fa47461c72f0bc035662208eaccdf57d88bfa1ce875",
+          "ink": {
+            "minX": 6,
+            "minY": 10,
+            "maxX": 58,
+            "maxY": 52,
+            "width": 53,
+            "height": 43
+          },
+          "gridShape": "landscape"
+        },
+        "64-clear": {
+          "pixels": 1386,
+          "bbox": {
+            "minX": 6,
+            "minY": 10,
+            "maxX": 57,
+            "maxY": 52
+          },
+          "sha256": "01a03c47c1e1772c41bdc2c4cf1d34e0931db97c908040f843c9f7c60d89a45b",
+          "ink": {
+            "minX": 6,
+            "minY": 10,
+            "maxX": 57,
+            "maxY": 52,
+            "width": 52,
+            "height": 43
+          },
+          "gridShape": "landscape"
+        },
+        "128-default": {
+          "pixels": 5471,
+          "bbox": {
+            "minX": 11,
+            "minY": 21,
+            "maxX": 115,
+            "maxY": 106
+          },
+          "sha256": "8aa083fe92cd9967ec304003fd945ee2452f9ab4674bac297faae03d29aeec4a",
+          "ink": {
+            "minX": 11,
+            "minY": 21,
+            "maxX": 115,
+            "maxY": 106,
+            "width": 105,
+            "height": 86
+          },
+          "gridShape": "landscape"
+        },
+        "128-dark": {
+          "pixels": 5467,
+          "bbox": {
+            "minX": 12,
+            "minY": 21,
+            "maxX": 116,
+            "maxY": 106
+          },
+          "sha256": "1966be6b85f3d799a5efb55327539fa231b61e1b92165ac06b610db516652b91",
+          "ink": {
+            "minX": 12,
+            "minY": 21,
+            "maxX": 116,
+            "maxY": 106,
+            "width": 105,
+            "height": 86
+          },
+          "gridShape": "landscape"
+        },
+        "128-clear": {
+          "pixels": 5324,
+          "bbox": {
+            "minX": 12,
+            "minY": 21,
+            "maxX": 115,
+            "maxY": 105
+          },
+          "sha256": "261f2d1d03991f36332c3864d6aab1c49453d8a51a9b0fff6cd3538b8c1d6461",
+          "ink": {
+            "minX": 12,
+            "minY": 21,
+            "maxX": 115,
+            "maxY": 105,
+            "width": 104,
+            "height": 85
+          },
+          "gridShape": "landscape"
+        }
+      },
+      "grid": {
+        "canvas": 128,
+        "shape": "landscape",
+        "fitted": 0.8203125,
+        "method": "measured-output-no-resampling"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.4414,
+          "meanLum": 198.12,
+          "lumStd": 29.96,
+          "edgeEnergy": 51
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.3662,
+          "meanLum": 199.4,
+          "lumStd": 34.57,
+          "edgeEnergy": 151
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.3611,
+          "meanLum": 199.48,
+          "lumStd": 35.05,
+          "edgeEnergy": 254
+        }
+      },
+      "master": "internal/evidence/drafts/added-app-era-icons/masters/liquid-glass/clioProject.png",
+      "masterSha256": "4c5a0dce9770a88e66a424b533deef8d486e4dd8604da6b054c5ec6ba5ea493d",
+      "appearanceSizes": {
+        "16-default": "icons/clioProject-16-default.png",
+        "16-dark": "icons/clioProject-16-dark.png",
+        "16-clear": "icons/clioProject-16-clear.png",
+        "32-default": "icons/clioProject-32-default.png",
+        "32-dark": "icons/clioProject-32-dark.png",
+        "32-clear": "icons/clioProject-32-clear.png",
+        "64-default": "icons/clioProject-64-default.png",
+        "64-dark": "icons/clioProject-64-dark.png",
+        "64-clear": "icons/clioProject-64-clear.png",
+        "128-default": "icons/clioProject-128-default.png",
+        "128-dark": "icons/clioProject-128-dark.png",
+        "128-clear": "icons/clioProject-128-clear.png"
+      },
+      "appearancePolicy": "Dark and clear 64/128 variants are image-tool edits preserving the default composition; 16/32 variants have independent compact constructions.",
+      "goldenGate": {
+        "objectClass": "application",
+        "runtimeMask": "rounded-rect",
+        "maskAppliedAt": "runtime-css",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "full-family-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
+      }
+    },
+    "oneMoreTune": {
+      "genre": "application",
+      "semanticIdentity": "Music knowledge study cards and note",
+      "physicalMetaphor": "Music knowledge study cards and note",
+      "provenanceClass": "C",
+      "sourceKind": "original-generated-era-illustration",
+      "authoringMethod": "built-in image generation for large tiers and appearances; independently authored compact artwork",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "eraGrammarReview": "original-period-adaptation-reviewed",
+      "reviewStatus": "technically-clean",
+      "runtimeAsset": true,
+      "nativeReplica": false,
+      "referenceValidated": false,
+      "sourceNote": "Original AI System 6 application. Period grammar is adapted; no historical native counterpart is claimed.",
+      "sourceReferences": [
+        "apps/desktop/assets/themes/era-icon-reference.json"
+      ],
+      "sizes": {
+        "16": "icons/oneMoreTune-16-default.png",
+        "32": "icons/oneMoreTune-32-default.png",
+        "64": "icons/oneMoreTune-64-default.png",
+        "128": "icons/oneMoreTune-128-default.png"
+      },
+      "runtimeSha256": {
+        "16-default": "a1ed396e884687119f3d94b0446874f233069d3f60e6f6bf0c9ab7d460d36a69",
+        "16-dark": "93ec966616099ac8e9c1a4cf13763d6a1acef7834e112e9aa11239c0191227b7",
+        "16-clear": "a1cf8eceeedf76f486b8d708bba361d079379f5ddf189be80f7e262b7bd04427",
+        "32-default": "06fc040956bb4a2694a33ac5bad087c5bfc4575d5cf9c083e784240df721a425",
+        "32-dark": "9fd7af217d2d0e95e777cdc17e7c76aaeeee9d30ea9f01e7dd3e085636238255",
+        "32-clear": "eff8b4e953fa4553fee5a21067233247ed1e7c726283594e762814705a4f0182",
+        "64-default": "09a2c99de3595c01c0eda9dcfa58023d70816bef2cb9e4dc4b2d1bbaa25ca90a",
+        "64-dark": "f599b47d78d5085413af183d4ce7d2555f947656a56527e5229b1b3985de1c87",
+        "64-clear": "2316da75385429052502250a946d146348916748862ab03f797b3081e25e6a9a",
+        "128-default": "6f10f5837ac4fa5129f171173d567cec22b9080eec57142edb7be0f353a1e0c9",
+        "128-dark": "b1b25fbb04f77650d8104c049e49cae86743bbb88fc0fecfa29801f645fa71bd",
+        "128-clear": "e0009f8241e1dc16142eab75209c604984ade04c7867e93d9ea6bc255a9fd374"
+      },
+      "sizePolicy": "16 and 32 px have independent compact compositions with reduced detail; large default tiers use material masters where applicable.",
+      "label": "oneMoreTune",
+      "metrics": {
+        "16-default": {
+          "pixels": 163,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 13,
+            "maxY": 14
+          },
+          "sha256": "a1ed396e884687119f3d94b0446874f233069d3f60e6f6bf0c9ab7d460d36a69",
+          "ink": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 13,
+            "maxY": 14,
+            "width": 13,
+            "height": 14
+          },
+          "gridShape": "square"
+        },
+        "16-dark": {
+          "pixels": 163,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 13,
+            "maxY": 14
+          },
+          "sha256": "93ec966616099ac8e9c1a4cf13763d6a1acef7834e112e9aa11239c0191227b7",
+          "ink": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 13,
+            "maxY": 14,
+            "width": 13,
+            "height": 14
+          },
+          "gridShape": "square"
+        },
+        "16-clear": {
+          "pixels": 163,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 13,
+            "maxY": 14
+          },
+          "sha256": "a1cf8eceeedf76f486b8d708bba361d079379f5ddf189be80f7e262b7bd04427",
+          "ink": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 13,
+            "maxY": 14,
+            "width": 13,
+            "height": 14
+          },
+          "gridShape": "square"
+        },
+        "32-default": {
+          "pixels": 611,
+          "bbox": {
+            "minX": 1,
+            "minY": 3,
+            "maxX": 27,
+            "maxY": 29
+          },
+          "sha256": "06fc040956bb4a2694a33ac5bad087c5bfc4575d5cf9c083e784240df721a425",
+          "ink": {
+            "minX": 1,
+            "minY": 3,
+            "maxX": 27,
+            "maxY": 29,
+            "width": 27,
+            "height": 27
+          },
+          "gridShape": "square"
+        },
+        "32-dark": {
+          "pixels": 609,
+          "bbox": {
+            "minX": 2,
+            "minY": 3,
+            "maxX": 27,
+            "maxY": 29
+          },
+          "sha256": "9fd7af217d2d0e95e777cdc17e7c76aaeeee9d30ea9f01e7dd3e085636238255",
+          "ink": {
+            "minX": 2,
+            "minY": 3,
+            "maxX": 27,
+            "maxY": 29,
+            "width": 26,
+            "height": 27
+          },
+          "gridShape": "square"
+        },
+        "32-clear": {
+          "pixels": 611,
+          "bbox": {
+            "minX": 1,
+            "minY": 3,
+            "maxX": 27,
+            "maxY": 29
+          },
+          "sha256": "eff8b4e953fa4553fee5a21067233247ed1e7c726283594e762814705a4f0182",
+          "ink": {
+            "minX": 1,
+            "minY": 3,
+            "maxX": 27,
+            "maxY": 29,
+            "width": 27,
+            "height": 27
+          },
+          "gridShape": "square"
+        },
+        "64-default": {
+          "pixels": 2091,
+          "bbox": {
+            "minX": 5,
+            "minY": 7,
+            "maxX": 57,
+            "maxY": 56
+          },
+          "sha256": "09a2c99de3595c01c0eda9dcfa58023d70816bef2cb9e4dc4b2d1bbaa25ca90a",
+          "ink": {
+            "minX": 5,
+            "minY": 7,
+            "maxX": 57,
+            "maxY": 56,
+            "width": 53,
+            "height": 50
+          },
+          "gridShape": "square"
+        },
+        "64-dark": {
+          "pixels": 2112,
+          "bbox": {
+            "minX": 5,
+            "minY": 7,
+            "maxX": 57,
+            "maxY": 56
+          },
+          "sha256": "f599b47d78d5085413af183d4ce7d2555f947656a56527e5229b1b3985de1c87",
+          "ink": {
+            "minX": 5,
+            "minY": 7,
+            "maxX": 57,
+            "maxY": 56,
+            "width": 53,
+            "height": 50
+          },
+          "gridShape": "square"
+        },
+        "64-clear": {
+          "pixels": 2156,
+          "bbox": {
+            "minX": 5,
+            "minY": 7,
+            "maxX": 58,
+            "maxY": 57
+          },
+          "sha256": "2316da75385429052502250a946d146348916748862ab03f797b3081e25e6a9a",
+          "ink": {
+            "minX": 5,
+            "minY": 7,
+            "maxX": 58,
+            "maxY": 57,
+            "width": 54,
+            "height": 51
+          },
+          "gridShape": "square"
+        },
+        "128-default": {
+          "pixels": 8374,
+          "bbox": {
+            "minX": 12,
+            "minY": 14,
+            "maxX": 116,
+            "maxY": 113
+          },
+          "sha256": "6f10f5837ac4fa5129f171173d567cec22b9080eec57142edb7be0f353a1e0c9",
+          "ink": {
+            "minX": 12,
+            "minY": 14,
+            "maxX": 116,
+            "maxY": 113,
+            "width": 105,
+            "height": 100
+          },
+          "gridShape": "square"
+        },
+        "128-dark": {
+          "pixels": 8430,
+          "bbox": {
+            "minX": 12,
+            "minY": 14,
+            "maxX": 116,
+            "maxY": 114
+          },
+          "sha256": "b1b25fbb04f77650d8104c049e49cae86743bbb88fc0fecfa29801f645fa71bd",
+          "ink": {
+            "minX": 12,
+            "minY": 14,
+            "maxX": 116,
+            "maxY": 114,
+            "width": 105,
+            "height": 101
+          },
+          "gridShape": "square"
+        },
+        "128-clear": {
+          "pixels": 8348,
+          "bbox": {
+            "minX": 12,
+            "minY": 14,
+            "maxX": 116,
+            "maxY": 113
+          },
+          "sha256": "e0009f8241e1dc16142eab75209c604984ade04c7867e93d9ea6bc255a9fd374",
+          "ink": {
+            "minX": 12,
+            "minY": 14,
+            "maxX": 116,
+            "maxY": 113,
+            "width": 105,
+            "height": 100
+          },
+          "gridShape": "square"
+        }
+      },
+      "grid": {
+        "canvas": 128,
+        "shape": "square",
+        "fitted": 0.8203125,
+        "method": "measured-output-no-resampling"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 6,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5703,
+          "meanLum": 191.05,
+          "lumStd": 50.58,
+          "edgeEnergy": 109
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5332,
+          "meanLum": 191.47,
+          "lumStd": 57.03,
+          "edgeEnergy": 296
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5306,
+          "meanLum": 191.43,
+          "lumStd": 57.85,
+          "edgeEnergy": 404
+        }
+      },
+      "master": "internal/evidence/drafts/added-app-era-icons/masters/liquid-glass/oneMoreTune.png",
+      "masterSha256": "3158047516a9f0fa64f28b8fdcc6c7108c93b40df6e7ad206274028d3a7a01fa",
+      "appearanceSizes": {
+        "16-default": "icons/oneMoreTune-16-default.png",
+        "16-dark": "icons/oneMoreTune-16-dark.png",
+        "16-clear": "icons/oneMoreTune-16-clear.png",
+        "32-default": "icons/oneMoreTune-32-default.png",
+        "32-dark": "icons/oneMoreTune-32-dark.png",
+        "32-clear": "icons/oneMoreTune-32-clear.png",
+        "64-default": "icons/oneMoreTune-64-default.png",
+        "64-dark": "icons/oneMoreTune-64-dark.png",
+        "64-clear": "icons/oneMoreTune-64-clear.png",
+        "128-default": "icons/oneMoreTune-128-default.png",
+        "128-dark": "icons/oneMoreTune-128-dark.png",
+        "128-clear": "icons/oneMoreTune-128-clear.png"
+      },
+      "appearancePolicy": "Dark and clear 64/128 variants are image-tool edits preserving the default composition; 16/32 variants have independent compact constructions.",
+      "goldenGate": {
+        "objectClass": "application",
+        "runtimeMask": "rounded-rect",
+        "maskAppliedAt": "runtime-css",
+        "nativeEvidence": "pending",
+        "provenance": "reference-adapted",
+        "reviewGate": "full-family-recorded",
+        "unresolved": "No verified Golden Gate single-icon asset; visual result is an Apple-guided adaptation."
       }
     }
   },
   "smallTierBuilder": "tooling/build-liquid-glass-optical-small-icons.mjs",
-  "smallTierPolicy": "32/16 px tiers are optically sharpened from each accepted 128 px runtime appearance without a generic inward inset; the 16 px alpha fringe is compacted for light-surface legibility."
+  "smallTierPolicy": "32/16 px tiers are optically sharpened from each accepted 128 px runtime appearance without a generic inward inset; the 16 px alpha fringe is compacted for light-surface legibility.",
+  "supplementalBuilder": "tooling/build-added-app-icons.mjs",
+  "supplementalIconIds": [
+    "clioPaint",
+    "clioProject",
+    "oneMoreTune"
+  ],
+  "correctionStage": "tooling/build-liquid-glass-golden-gate-icons.mjs",
+  "correctionEvidence": "internal/evidence/drafts/liquid-glass-golden-gate/golden-gate-icon-mask-matrix.json",
+  "runtimeDeliverableCount": 708,
+  "goldenGate": {
+    "target": "Golden Gate",
+    "officialSources": [
+      {
+        "title": "macOS 27 Golden Gate",
+        "url": "https://www.apple.com/os/macos/",
+        "role": "Golden Gate refraction, contrast, and interface icon direction"
+      },
+      {
+        "title": "Liquid Glass overview",
+        "url": "https://developer.apple.com/documentation/technologyoverviews/liquid-glass",
+        "role": "layered material and system effect boundary"
+      },
+      {
+        "title": "Adopting Liquid Glass",
+        "url": "https://developer.apple.com/documentation/TechnologyOverviews/adopting-liquid-glass",
+        "role": "simple bold layered icon construction and system masking"
+      },
+      {
+        "title": "Materials HIG",
+        "url": "https://developer.apple.com/design/human-interface-guidelines/materials",
+        "role": "material, contrast, and legibility constraints"
+      }
+    ],
+    "nativeSingleIconEvidence": "pending",
+    "provenanceRule": "Reference adaptation is recorded honestly; no pixel-level native Golden Gate replica is claimed.",
+    "maskRule": "application, utility, and accessory use the shared runtime rounded-rectangle mask; file, document, hardware, and trash objects remain free-form.",
+    "variants": [
+      "default",
+      "dark",
+      "clear"
+    ],
+    "sizes": [
+      128,
+      64,
+      32,
+      16
+    ]
+  },
+  "runtimeFamily": [
+    "startupDisk",
+    "hardDisk",
+    "folder",
+    "document",
+    "applications",
+    "trash",
+    "finderApp",
+    "fileFloppy",
+    "assistant",
+    "quickDraft",
+    "writingStudio",
+    "projectDisk",
+    "projectDisc",
+    "cloudModel",
+    "cloudModelOff",
+    "questionSheet",
+    "outline",
+    "sectionDrafts",
+    "manuscript",
+    "reviewDesk",
+    "searcher",
+    "reader",
+    "timeMachine",
+    "docMap",
+    "clioStage",
+    "clioChart",
+    "liquidCover",
+    "cmfStudio",
+    "soundscape",
+    "scrapbook",
+    "systemFolder",
+    "helpFolder",
+    "importUtility",
+    "controlPanel",
+    "chooser",
+    "systemHelp",
+    "dictionary",
+    "teachText",
+    "writingDemo",
+    "chatFile",
+    "chatImport",
+    "systemStatus",
+    "contextPanel",
+    "rebuildArticle",
+    "bureaucracyMeme",
+    "endfieldTerminal",
+    "documents",
+    "alias",
+    "systemFile",
+    "multiFinderApp",
+    "daHandler",
+    "writingBell",
+    "trashFull",
+    "control",
+    "localModel",
+    "controlStrip",
+    "clioPaint",
+    "clioProject",
+    "oneMoreTune"
+  ]
 }

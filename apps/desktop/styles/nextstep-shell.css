@@ -1,0 +1,187 @@
+/* Layout owned by lazy shell components. Shared window material stays in 69. */
+.nextstep-dock { position: fixed;
+  top: var(--menu-bar-height, 24px);
+  right: 0;
+  width: 64px;
+  max-height: calc(100dvh - var(--menu-bar-height, 24px));
+  overflow: auto;
+  overscroll-behavior: contain;
+  z-index: var(--z-control-strip);
+  background: var(--panel);
+}
+
+.nextstep-dock-tile { display: flex;
+  position: relative;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  padding: 4px;
+  background: var(--panel);
+  box-shadow: var(--system-shadow);
+}
+
+.nextstep-dock-tile[data-state="stopped"]::after { content: "…";
+  position: absolute;
+  bottom: 0;
+  left: 4px;
+}
+
+.nextstep-dock-tile[data-state="launching"] { background: var(--paper);
+}
+
+.nextstep-dock-tile[data-state="failed"]::after { content: "!";
+  position: absolute;
+  bottom: 0;
+  left: 4px;
+}
+
+.nextstep-dock details { font-size: var(--system-font-size);
+  overflow-wrap: anywhere;
+}
+
+.nextstep-dock details[open] { position: fixed;
+  right: 64px;
+  top: var(--menu-bar-height, 24px);
+  width: min(240px, calc(100vw - 64px));
+  max-height: 80dvh;
+  overflow: auto;
+  background: var(--panel);
+  box-shadow: var(--system-shadow);
+}
+
+.nextstep-dock details button { display: block;
+  width: 100%;
+  text-align: left;
+}
+
+.nextstep-menu-palette { position: fixed;
+  width: max-content;
+  min-width: 150px;
+  max-width: min(320px, calc(100vw - 64px));
+  max-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--ink);
+  background: var(--panel);
+  box-shadow: var(--system-shadow);
+  color: var(--ink);
+  font: 12px Helvetica, Arial, sans-serif;
+  z-index: var(--z-system-menu);
+}
+
+.nextstep-menu-palette[hidden] { display: none;
+}
+
+.nextstep-menu-palette > header { display: flex;
+  background: var(--system-titlebar-active-bg);
+  color: var(--titlebar-title-fg);
+  touch-action: none;
+}
+
+.nextstep-menu-palette > header button { padding: 3px 6px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: bold;
+  text-align: left;
+}
+
+.nextstep-menu-palette > header button:first-child { flex: 1;
+  cursor: move;
+}
+
+.nextstep-menu-palette > [role="menu"] { overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.nextstep-menu-palette [role="menuitem"] { display: block;
+  width: 100%;
+  min-height: 24px;
+  padding: 3px 8px;
+  border: 0;
+  border-radius: 0;
+  background: var(--panel);
+  color: var(--ink);
+  box-shadow: var(--system-shadow);
+  text-align: left;
+  font: inherit;
+}
+
+.nextstep-menu-palette [aria-haspopup="menu"]::after { content: "▸";
+  float: right;
+  margin-left: 20px;
+}
+
+.nextstep-menu-palette [role="menuitem"]:is(:hover, :focus-visible) { background: var(--paper);
+}
+
+.nextstep-menu-palette [role="menuitem"]:disabled { color: var(--system-disabled-fg);
+}
+
+.nextstep-file-viewer { display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  background: var(--panel);
+}
+
+.nextstep-file-viewer[hidden] { display: none;
+}
+
+.nextstep-finder-columns { display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 120px;
+  overflow-x: auto;
+  overscroll-behavior: contain;
+  background: var(--paper);
+}
+
+.nextstep-finder-column { flex: 0 0 180px;
+  overflow-y: auto;
+  scrollbar-width: none;
+  border-right: 1px solid var(--ink);
+}
+
+.nextstep-column-item { display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  min-height: 24px;
+  padding: 2px 4px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.nextstep-column-item.is-selected { background: var(--ink);
+  color: var(--paper);
+}
+
+.nextstep-column-item.is-stale { color: var(--system-disabled-fg);
+  text-decoration: line-through;
+}
+
+:is(.nextstep-shelf, .nextstep-finder-path) { display: flex;
+  flex: none;
+  gap: 6px;
+  padding: 4px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--ink);
+}
+
+.nextstep-shelf > div { flex: 0 0 100px;
+}
+
+.nextstep-finder-path > button { width: auto;
+  flex-shrink: 0;
+}

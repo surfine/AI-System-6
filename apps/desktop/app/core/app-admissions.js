@@ -42,7 +42,7 @@ window.AISystem6Admissions = (() => {
     micropolis: { app: "micropolis", load: ensureMicropolisModule, command: "open-micropolis" , multiFinder: "Micropolis" , applicationGroup: "games", appLabel: "micropolis_label", appIcon: "micropolis", appDesc: "app_desc_micropolis" },
     oneMoreTune: { app: "oneMoreTune", load: ensureOneMoreTuneModule, command: "open-one-more-tune" , multiFinder: "One More Tune" , applicationGroup: "extras", appLabel: "one_more_tune_label", appIcon: "oneMoreTune", appIconClass: "tools-icon", appDesc: "app_desc_one_more_tune", repaint: "renderOneMoreTune" },
     openttd: { app: "openttd", load: ensureOpenTTDModule, command: "open-openttd" , multiFinder: "OpenTTD" , applicationGroup: "games", appLabel: "openttd_label", appIcon: "openttd", appDesc: "app_desc_openttd" },
-    projectDisks: { app: "finder", load: ensureSharedProjectDisksModule, command: "open-demo-disks" },
+    projectDisks: { app: "finder", load: ensureSharedProjectDisksModule, command: "open-demo-disks", repaint: "renderDemoDisksPanel" },
     soundscape: { app: "soundscape", load: ensureSoundscapeModule, command: "open-soundscape" , multiFinder: "Soundscape" , applicationGroup: "create", appLabel: "soundscape_label", appIcon: "soundscape", appIconClass: "tools-icon", appDesc: "app_desc_soundscape" },
     themeLab: { app: "themeLab", load: ensureThemeLabModule, command: "open-theme-lab" , multiFinder: "Theme Lab" },
     timeMachine: { app: "timeMachine", load: ensureTimeMachineModule, command: "open-time-machine" , multiFinder: "Time Machine" , applicationGroup: "extras", appLabel: "time_machine_label", appIcon: "timeMachine", appIconClass: "tools-icon", appDesc: "app_desc_time_machine" },

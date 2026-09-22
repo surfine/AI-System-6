@@ -172,6 +172,32 @@ function listFilesRecursively(directory, predicate) {
   return result.sort();
 }
 
+/**
+ * The appearance ids a dynamic `set-theme-*` family is allowed to produce.
+ *
+ * Read from the boot-safe Appearance registry rather than from the menu, so
+ * the audit keeps its direction: the surface must name an appearance the
+ * registry really offers, and `releaseReady:false` entries stay out because
+ * the handler family is built from `getReleaseReadyThemes()`.
+ */
+function releaseReadyAppearanceIds(registryPath) {
+  let source;
+  try {
+    source = readFileSync(registryPath, "utf8");
+  } catch (error) {
+    return [];
+  }
+  const ids = [];
+  walkAst(parseJs(source), (node) => {
+    if (node.type !== "ObjectExpression") return;
+    const idProperty = node.properties.find((property) => property.type === "Property" && propertyName(property) === "id");
+    const readyProperty = node.properties.find((property) => property.type === "Property" && propertyName(property) === "releaseReady");
+    const id = idProperty ? staticString(idProperty.value) : "";
+    if (id && readyProperty?.value?.type === "Literal" && readyProperty.value.value === true) ids.push(id);
+  });
+  return [...new Set(ids)].sort();
+}
+
 function resolveBindings(ast) {
   const bindings = new Map();
   walkAst(ast, (node) => {
@@ -344,12 +370,54 @@ export function inspectRegistrySource(source, file = "tooling/interface-guidelin
   return Object.freeze({ entries: Object.freeze(entries), duplicates: Object.freeze(duplicates), nodesVisited });
 }
 
+/**
+ * Read one dynamic command family out of a spread: a prefix that all of its
+ * generated ids share, plus the expression that names the id list.
+ *
+ * Shape accepted, and nothing looser:
+ *   Object.fromEntries(<idSource>.map(({ id }) => [`prefix-${id}`, fn]))
+ * A handed-over static string (no interpolation) is already read as an
+ * ordinary handler key above, so this returns null for it.
+ */
+function dynamicCommandFamily(argument, bindings) {
+  const call = argument?.type === "SpreadElement" ? argument.argument : argument;
+  if (call?.type !== "CallExpression" || memberName(call.callee) !== "fromEntries") return null;
+  const mapCall = call.arguments[0];
+  if (mapCall?.type !== "CallExpression" || memberName(mapCall.callee) !== "map") return null;
+  const callback = mapCall.arguments[0];
+  const body = callback?.type === "ArrowFunctionExpression" ? callback.body : null;
+  if (body?.type !== "ArrayExpression") return null;
+  const key = body.elements[0];
+  if (key?.type !== "TemplateLiteral" || key.expressions.length !== 1) return null;
+  const prefix = key.quasis[0]?.value?.cooked || "";
+  if (!prefix) return null;
+  const suffix = key.quasis[1]?.value?.cooked || "";
+  if (suffix) return null;
+  const idSource = mapCall.callee.object;
+  return Object.freeze({
+    prefix,
+    idSource: idSource?.type === "CallExpression" && idSource.callee?.type === "MemberExpression"
+      ? sourceTextFor(idSource)
+      : "",
+  });
+}
+
+/** A readable one-line form of a call expression's callee, e.g. getReleaseReadyThemes(). */
+function sourceTextFor(node) {
+  if (node?.type !== "CallExpression") return "";
+  const callee = node.callee;
+  if (callee?.type !== "MemberExpression") return "";
+  const property = callee.property?.name || staticString(callee.property) || "";
+  return property ? `${property}()` : "";
+}
+
 export function inspectJavaScriptSource(source, file = "fixture.js") {
   const ast = parseJs(source);
   const bindings = resolveBindings(ast);
   const markup = [];
   const applications = [];
   const actionHandlers = [];
+  const dynamicActionFamilies = [];
   const shortcuts = [];
   const menuCommands = [];
   const windowCalls = [];
@@ -413,6 +481,18 @@ export function inspectJavaScriptSource(source, file = "fixture.js") {
         const object = resolveNode(child.right, bindings);
         if (object?.type !== "ObjectExpression") return;
         for (const property of object.properties) {
+          // A spread whose value is Object.fromEntries(<list>.map(...)) builds
+          // a whole family of command ids at runtime:
+          //   ...Object.fromEntries(window.AISystem6Theme.getReleaseReadyThemes()
+          //     .map(({ id }) => [`set-theme-${id}`, () => applyTheme(id)]))
+          // The keys are real, but their ids live in the registry rather than
+          // in this file. Record the static prefix and the location; the audit
+          // resolves the ids against that registry instead of guessing.
+          if (property.type === "SpreadElement") {
+            const family = dynamicCommandFamily(property.argument, bindings);
+            if (family) dynamicActionFamilies.push(Object.freeze({ ...family, location: sourceLocation(file, property) }));
+            continue;
+          }
           const action = property.type === "Property" ? propertyName(property) : "";
           if (action) actionHandlers.push(Object.freeze({ action, handler: nodeSource(source, property.value), location: sourceLocation(file, property) }));
         }
@@ -485,6 +565,7 @@ export function inspectJavaScriptSource(source, file = "fixture.js") {
     markup: Object.freeze(ownedMarkup),
     applications: Object.freeze(applications),
     actionHandlers: Object.freeze(actionHandlers),
+    dynamicActionFamilies: Object.freeze(dynamicActionFamilies),
     shortcuts: Object.freeze(shortcuts),
     menuCommands: Object.freeze(menuCommands),
     windowCalls: Object.freeze(windowCalls),
@@ -502,8 +583,9 @@ export function assertMeaningfulInventoryTraversal(scan) {
   return true;
 }
 
-export function findUnhandledSurfacedActions({ markup = [], scans = [] } = {}) {
+export function findUnhandledSurfacedActions({ markup = [], scans = [], actionFamilies = [] } = {}) {
   const handled = new Set();
+  const families = new Map(actionFamilies.map((family) => [family.prefix, new Set(family.ids)]));
   const surfaced = new Map();
   const addSurface = (action, location) => {
     if (!action) return;
@@ -525,7 +607,11 @@ export function findUnhandledSurfacedActions({ markup = [], scans = [] } = {}) {
   // splits it back off before dispatching. The prefix must itself be a
   // registered handler, so an unregistered verb is still reported.
   const resolves = (action) => handled.has(action)
-    || (action.includes(":") && handled.has(action.slice(0, action.indexOf(":"))));
+    || (action.includes(":") && handled.has(action.slice(0, action.indexOf(":"))))
+    // A family is only honoured when the ids come from the same registry that
+    // generates the handlers, so a menu row naming an appearance the registry
+    // does not offer is still reported.
+    || [...families.entries()].some(([prefix, ids]) => action.startsWith(prefix) && ids.has(action.slice(prefix.length)));
   return [...surfaced.entries()]
     .filter(([action]) => !resolves(action))
     .map(([action, locations]) => Object.freeze({ action, locations: Object.freeze(sortLocations(locations)) }))
@@ -849,7 +935,15 @@ export async function buildHigInteractionAudit({
     }));
   }
 
-  for (const { action, locations } of findUnhandledSurfacedActions({ markup: allMarkup, scans })) {
+  // A dynamic family is only resolved when the code really registers it and
+  // the ids come from a registry this audit can read. Otherwise the family
+  // list is empty and every surfaced id is judged on its own, as before.
+  const dynamicPrefixes = new Set(scans.flatMap(({ scan }) => (scan.dynamicActionFamilies || []).map((family) => family.prefix)));
+  const actionFamilies = dynamicPrefixes.has("set-theme-")
+    ? [{ prefix: "set-theme-", ids: releaseReadyAppearanceIds(join(appDirectory, "core", "theme-registry.js")) }]
+    : [];
+
+  for (const { action, locations } of findUnhandledSurfacedActions({ markup: allMarkup, scans, actionFamilies })) {
     findings.push(finding({
       id: `unhandled-action-${action.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}`,
       ruleId: "UNHANDLED_SURFACED_ACTION",

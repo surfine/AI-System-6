@@ -191,6 +191,9 @@ function avoidance({ display, spine, icons, margin = 18, spineGap = 18, iconGap 
         if (selector === ".desktop") return desktop;
         if (selector === ".writing-spine-panel") return spineElement;
         if (selector === ".spine-flow-toolbox") return null;
+        // The NeXTSTEP dock stands where the Classic launcher column does; a
+        // desk that is not wearing that appearance has no such element.
+        if (selector === ".nextstep-dock") return null;
         if (selector === ".icon-column") return iconElement;
         throw new Error(`the desk stub does not know the selector: ${selector}`);
       },

@@ -1301,7 +1301,22 @@ landscape sweep) stay open and are tracked in the 1.0.52 closeout.
 
 ## Public Beta 1.0.55 - 2026-09-22 update
 
-- **File › Open Demonstration Project Disks…** lists the two disks that ship
+- **Four demonstration disks now ship, and the two new ones are whole
+  projects.** `/go/m5ipad` (《M5 iPad Pro：是 Mac 的防线，还是 AI 交互的起点？》)
+  and `/go/iphone17e` (《iPhone 17e 浅粉色：其貌不扬，但很有料》) join
+  `/go/dtk` and `/go/ipad1`: question sheet, outline with six sections, six
+  section sketches, manuscript, review record and source lineage, written from
+  the material in `~/M5 iPad Pro`, `~/M5-iPad-Pro`, the WeChat exports and the
+  iPhone 17e corpus already in the tree. Adding a disk is one registry row plus
+  one string in a table — the four `open-shared-disk-*` commands became a table
+  and a loop, which is why this addition left the boot budget with more room
+  than before it.
+- **The demonstration-disk window takes the dialog frame on a phone, wraps its
+  rows, and follows a language switch.** Measured first: a 420px window at
+  left:148 ran off every phone viewport, a 607px row summary spilled to 880px in
+  a 372px window, and switching the language left the window fully in the old
+  one while the rest of the desk followed. All three are fixed and asserted.
+- **File › Open Demonstration Project Disks…** lists every disk that ships
   with the application. It opens a small window that shows each disk's own
   subject line and hands it to the same import path a shared link uses; the
   Import Utility's Project backup section carries the same rows, and the 说明
@@ -1342,3 +1357,26 @@ landscape sweep) stay open and are tracked in the 1.0.52 closeout.
   contracts follow the 70 records the app carries, the README gauge quotes the
   payload the gate measured, and the integration ledger records this release
   branch as merged.
+
+## Public Beta 1.0.55 - 2026-09-24 update
+
+- **Big Sur joins the desk as the seventh appearance.** It stands between
+  Yosemite and Liquid Glass, carries its own light / dark / follow-the-system
+  modes, and reuses Yosemite's semantic icon family rather than pretending to
+  be newly drawn artwork. Its sheet is a separate file the desk asks for only
+  when you pick it, so a boot pays nothing for it.
+- **NeXTSTEP 3.3 is in the build as the eighth appearance, behind an
+  experimental gate.** Minimise left and close right, key/main window states,
+  menus that belong to the application that owns them, a right-hand dock that
+  keeps running applications reachable, and a Shelf. It stays
+  `releaseReady:false` until the remaining acceptance items are recorded, so no
+  saved preference can hand it to you as your appearance.
+- **One More Tune has a second game and a sharper deck.** Keynote Relay asks
+  about the people Apple put on stage: six handoffs per round, hints that cost
+  points, and an answer key the server never hands to the client. The music
+  deck now records which question each card may be asked as, which sounding
+  clue it uses, and which labels are excluded as answers, so a round no longer
+  repeats a subject or offers a near-duplicate.
+- **The site and the README show seven appearance frames**, and the Liquid
+  Glass icon family names its Golden Gate Beta 1 target in one place across
+  both accepted build stages.

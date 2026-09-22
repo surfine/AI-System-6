@@ -1690,18 +1690,27 @@
 }
 
 .window.alarm-clock-window > .alarm-clock-title-bar .close-box {
-  align-self: center;
   justify-self: center;
+  /* The drawn mark stays the era's size; the element itself becomes the 44px
+     tap target, and the negatives keep the bar's height and column unchanged. */
+  width: 44px;
+  height: 44px;
+  margin: calc((var(--alarm-clock-close-size) - 44px)/2);
+  background: 0 0;
+}
+
+.window.alarm-clock-window > .alarm-clock-title-bar .close-box::before {
+  inset: 0;
+  margin: auto;
   width: var(--alarm-clock-close-size);
   height: var(--alarm-clock-close-size);
-  margin: 0;
+  opacity: 1;
   border: var(--alarm-clock-close-border);
   border-radius: var(--alarm-clock-close-radius);
   background: var(--alarm-clock-close-bg);
   box-shadow: var(--alarm-clock-close-shadow);
 }
 
-.window.alarm-clock-window > .alarm-clock-title-bar .close-box::before,
 .window.alarm-clock-window > .alarm-clock-title-bar .close-box::after {
   display: none;
 }
@@ -2433,7 +2442,7 @@ body.alarm-clock-ringing .alarm-clock-menu-icon {
 
 .memory-card {
   --card-color: #0b8ed8;
-  --card-ink: #ffffff;
+  --card-ink: #fff;
   --card-tilt: 0deg;
   --card-shift: 0px;
   aspect-ratio: 2 / 3;

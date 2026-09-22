@@ -141,12 +141,12 @@ function forgetWindowFromRunningApps(windowName) {
 }
 
 function visibleWindowsForApp(appId) {
-  return Array.from(document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden)"))
+  return Array.from(document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden):not(.is-minimized)"))
     .filter((win) => getWindowAppId(win) === appId);
 }
 
 function foregroundVisibleWindows() {
-  return Array.from(document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden)"))
+  return Array.from(document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden):not(.is-minimized)"))
     .filter((win) => !hiddenAppIds.has(getWindowAppId(win)));
 }
 
@@ -237,7 +237,10 @@ function applicationWindowOrder(appId = frontApplicationId()) {
   // desk's minimize, so a list that dropped those would lose the windows a
   // writer is most likely to be looking for. Front-most first, the order the
   // window switcher in 98.js used (z-index as a last-used proxy).
-  return visibleWindowsForApp(appId)
+  const visible = visibleWindowsForApp(appId);
+  const minimized = windowsForApp(appId).filter((win) => win.classList.contains("is-minimized")
+    && !win.classList.contains("is-hidden") && !win.classList.contains("is-app-hidden"));
+  return [...visible, ...minimized]
     .sort((a, b) => Number(b.style.zIndex || 0) - Number(a.style.zIndex || 0));
 }
 
@@ -269,6 +272,10 @@ function cycleApplicationWindows(direction = 1) {
   const frontName = windows.find((win) => win.classList.contains("is-active"))?.dataset.window || "";
   if (windowWalk.appId !== appId || windowWalk.names[windowWalk.index] !== frontName) {
     windowWalk = { appId, names: windows.map((win) => win.dataset.window), index: 0 };
+  }
+  if (windows.length === 1 && windows[0].classList.contains("is-minimized")) {
+    focusWindow(windows[0], true);
+    return true;
   }
   if (windows.length < 2) {
     // The application is named because a desk accessory in front does not own
@@ -353,6 +360,8 @@ function cycleToNextApp() {
 }
 
 function renderMultiFinderMenu() {
+  window.AISystem6NextstepShell?.syncMain();
+  window.AISystem6NextstepDock?.sync();
   if (activeAppId !== "accessories" && activeAppId !== "system") menuOwnerAppId = activeAppId;
   if (typeof renderAppMenuBar === "function") renderAppMenuBar(menuOwnerAppId);
   // MultiFinder-only, on every screen size. A phone presents apps full-screen
@@ -448,10 +457,15 @@ function unhideApp(appId, { expand = true } = {}) {
 
 function hideApp(appId = activeAppId, { preserveActive = false } = {}) {
   if (nonQuittableAppIds.has(appId)) return;
-  const windows = visibleWindowsForApp(appId);
+  const windows = windowsForApp(appId).filter((win) => !win.classList.contains("is-hidden"));
   if (!windows.length) return;
   hiddenAppIds.add(appId);
   windows.forEach((win) => {
+    if (getCurrentTheme() === "nextstep") {
+      win.classList.add("is-app-hidden");
+      win.classList.remove("is-active");
+      return;
+    }
     win.classList.add("is-collapsed");
     win.dataset.appHiddenCollapsed = "true";
     win.classList.remove("is-active");

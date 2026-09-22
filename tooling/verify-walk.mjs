@@ -62,6 +62,7 @@ import {
   reselectProjectThroughUi,
   waitForAutosave,
   walkIsNavigating,
+  walkReloadedRecently,
   writingMenuSubmenuClick,
 } from "./lib/walk-dom.mjs";
 
@@ -101,9 +102,14 @@ if (process.argv.includes("--help")) {
 
 mkdirSync(evidenceDir, { recursive: true });
 
+// Which stop is running right now, so a diagnostic that fires between stops
+// can say where the desk was instead of only what failed.
+let currentStop = "boot";
+
 /** Wrap one stop: name it, screenshot + diagnose on failure, keep going never. */
 async function runStop(page, passId, id, label, fn) {
   const startedAt = Date.now();
+  currentStop = `${passId}:${id}`;
   process.stdout.write(`\n[walk:${passId}] ${id} — ${label} …\n`);
   try {
     await fn();
@@ -126,6 +132,8 @@ async function runStop(page, passId, id, label, fn) {
         ? document.querySelector("#system-modal-message")?.textContent || "(open, no message)"
         : "(none)",
       outlineContent: (document.querySelector("#outline-content")?.value || "").slice(0, 200),
+      draftBody: (document.querySelector("#draft-body")?.value || "").slice(0, 200),
+      draftSectionLabel: document.querySelector("#draft-section-label")?.textContent || "",
       questionSheetContent: (document.querySelector("#question-sheet-body")?.value || "").slice(0, 200),
       projectOutline: (typeof getActiveProject === "function" ? String(getActiveProject()?.outline || "") : "(n/a)").slice(0, 200),
       localModelState: typeof localModelState !== "undefined" ? JSON.stringify(localModelState) : "(n/a)",
@@ -139,6 +147,7 @@ async function runStop(page, passId, id, label, fn) {
       + `status=${JSON.stringify(onScreen.status)}, modal=${JSON.stringify(onScreen.modalOpen)}, `
       + `workspaceProfile=${onScreen.workspaceProfile}\n`
       + `  outlineContent=${JSON.stringify(onScreen.outlineContent)}\n`
+      + `  draftBody=${JSON.stringify(onScreen.draftBody)} draftSectionLabel=${JSON.stringify(onScreen.draftSectionLabel)}\n`
       + `  questionSheetContent=${JSON.stringify(onScreen.questionSheetContent)}\n`
       + `  projectOutline=${JSON.stringify(onScreen.projectOutline)}\n`
       + `  localModelState=${onScreen.localModelState}\n`
@@ -190,6 +199,25 @@ function attachDiagnostics(page, sink, { modelPort = 0 } = {}) {
       return url === "lmstudio://";
     }
   };
+  // An embeddings attempt the browser cancelled, held until the pass ends.
+  // Chromium cancels these for reasons that are not the app giving up — a
+  // reload, a service-worker takeover, a superseded queue run — and the app
+  // answers by trying its next route. If an embeddings call to the same
+  // endpoint later succeeds, the work finished and the cancellation was an
+  // interruption, not a surrender; the message is dropped. One that is never
+  // followed by a success stays in the diagnostics, which is the case this
+  // gate exists to catch.
+  const pendingEmbeddingCancels = [];
+  page.on("response", (response) => {
+    if (!defaultLocalEndpoint(response.url())) return;
+    if (!String(response.url()).includes("/v1/embeddings")) return;
+    if (response.status() >= 400) return;
+    while (pendingEmbeddingCancels.length) {
+      const message = pendingEmbeddingCancels.pop();
+      const index = sink.indexOf(message);
+      if (index >= 0) sink.splice(index, 1);
+    }
+  });
   page.on("pageerror", (error) => {
     const message = String(error?.message || error);
     if (!message.includes("document is sandboxed and lacks the 'allow-same-origin' flag")) {
@@ -226,7 +254,23 @@ function attachDiagnostics(page, sink, { modelPort = 0 } = {}) {
     if (failed?.errorText === "net::ERR_ABORTED" && defaultLocalEndpoint(url) && walkIsNavigating(page)) {
       return;
     }
-    sink.push(`requestfailed: ${url} ${failed?.errorText || ""}`);
+    // The same abort, delivered after the reload finished. `question-sheet`
+    // types, asks for an outline and then reloads, and the embeddings request
+    // the derived-index queue had in flight is cancelled by that reload — but
+    // Chromium reported it once the new document was already ready, when the
+    // navigating flag had been cleared again.
+    if (failed?.errorText === "net::ERR_ABORTED" && defaultLocalEndpoint(url) && walkReloadedRecently(page)) {
+      return;
+    }
+    // Name the stop the walk was inside. Without it, "an embeddings request
+    // aborted somewhere in the eight stops" is all a reader can tell, and the
+    // honest fix depends entirely on which stop it was.
+    const sinceReload = page.__walkReloadedAt ? `${Date.now() - page.__walkReloadedAt}ms since reload` : "no reload yet";
+    const message = `requestfailed: ${url} ${failed?.errorText || ""} [during ${currentStop}; ${sinceReload}]`;
+    sink.push(message);
+    if (failed?.errorText === "net::ERR_ABORTED" && defaultLocalEndpoint(url) && String(url).includes("/v1/embeddings")) {
+      pendingEmbeddingCancels.push(message);
+    }
   });
 }
 
@@ -658,7 +702,12 @@ async function runDemoDiskWalk(browser, serverUrl) {
     // the middle of these two papers, which is what a person would do.
     { spine: "open-question-sheet", windowName: "questionSheet", label: "Question Sheet", selector: "#question-sheet-body", marker: "Developer Transition Kit", clickPoint: "center" },
     { spine: "open-outline", windowName: "outline", label: "Outline", selector: "#outline-content", marker: "试车" },
-    { spine: "open-section-drafts", windowName: "sectionDrafts", label: "Section Drafts", selector: "#draft-body", marker: "Developer Transition Kit" },
+    // A restored disk's manuscript owns its section text (`manuscriptOwnsDraft`
+    // in the backup), so this window shows the manuscript's own section 1
+    // (试车) read-only rather than the six stored drafts. The marker has to be
+    // something that section actually contains: its first paragraph names the
+    // 2005 machine, the bridge this article opens on.
+    { spine: "open-section-drafts", windowName: "sectionDrafts", label: "Section Drafts", selector: "#draft-body", marker: "Power Mac G5" },
     { spine: "open-teachtext", windowName: "teachText", label: "Manuscript", selector: "#teachtext-body", marker: "未来通车之后", clickPoint: "center" },
   ];
 
@@ -669,6 +718,19 @@ async function runDemoDiskWalk(browser, serverUrl) {
       // instead of the Question Sheet, so raise each stop explicitly instead
       // of assuming the entry surface.
       await ensureSpineWindowFrontmost(page, stop.windowName, stop.spine, stop.label);
+      // Raising the window and having its paper filled are two different
+      // events: reading straight after the click caught an empty #draft-body
+      // and reported it as "the demo disk's content is missing" while the
+      // content was there a moment later. Wait for the content, then assert.
+      await page.waitForFunction(
+        ({ selector, marker }) => {
+          const element = document.querySelector(selector);
+          const text = String(element?.value ?? element?.textContent ?? "");
+          return text.includes(marker);
+        },
+        { selector: stop.selector, marker: stop.marker },
+        { timeout: 15000 },
+      ).catch(() => {});
       const value = await page.inputValue(stop.selector);
       assert(value.includes(stop.marker), `${stop.label} did not render the demo disk's real content (expected to find "${stop.marker}")`);
       if (stop.windowName === "outline") await ensureOutlineTextViewVisible(page);

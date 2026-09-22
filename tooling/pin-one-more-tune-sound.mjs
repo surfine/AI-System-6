@@ -13,11 +13,11 @@
 //
 // A card that resolves to neither keeps `questionSound: null` and stays out of
 // every round. A pinned card keeps its pin while it still plays; a pin that has
-// stopped playing is resolved again. --refresh resolves every card afresh.
+// failed its transport check is resolved again; a failed lookup preserves the old pin. --refresh resolves every card afresh.
 //
 //   node tooling/pin-one-more-tune-sound.mjs [--write] [--refresh]
 
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync, renameSync, copyFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -29,43 +29,54 @@ const server = require(join(root, "apps/server/server/one-more-tune.js"));
 
 const write = process.argv.includes("--write");
 const refresh = process.argv.includes("--refresh");
-const deck = JSON.parse(readFileSync(deckPath, "utf8"));
+const original = readFileSync(deckPath, "utf8");
+const deck = JSON.parse(original);
+if (!Number.isInteger(deck.version) || new Set(deck.cards.map((card) => card.id)).size !== deck.cards.length) throw new Error("Invalid deck; nothing written");
+const originalPins = JSON.stringify(deck.cards.map((card) => card.questionSound));
 
 // A pin is only a pin once it has been fetched from here: the store must hand
 // back audio for the preview.
-async function previewPlays(url) {
+async function probePreviewTransport(url) {
   try {
-    const response = await fetch(url, { headers: { Range: "bytes=0-1023" } });
-    return (response.status === 200 || response.status === 206) && /audio|mp4|octet/.test(response.headers.get("content-type") || "");
+    const response = await fetch(url, { headers: { Range: "bytes=0-1023" }, signal: AbortSignal.timeout(10000) });
+    const ok = (response.status === 200 || response.status === 206) && /audio|mp4|octet/.test(response.headers.get("content-type") || "");
+    await response.body?.cancel();
+    return ok;
   } catch {
     return false;
   }
 }
 
-async function soundPlays(sound) {
-  if (sound?.provider === "preview") return previewPlays(sound.url);
+async function probeSoundTransport(sound) {
+  if (sound?.provider === "preview") return probePreviewTransport(sound.url);
   return false;
 }
 
-const counts = { preview: 0, none: 0, kept: 0, unsettled: 0, dropped: 0 };
+const counts = { preview: 0, none: 0, kept: 0, unsettled: 0, retainedAfterFailure: 0 };
 for (const card of deck.cards) {
+  const previous = card.questionSound;
   if (!card.product || !card.film) {
-    card.questionSound = null;
     counts.unsettled += 1;
     continue;
   }
   if (card.questionSound && !refresh) {
-    if (await soundPlays(card.questionSound)) {
+    if (await probeSoundTransport(card.questionSound)) {
       counts.kept += 1;
       continue;
     }
-    counts.dropped += 1;
-    console.log(`pin no longer plays: ${card.id} ${card.questionSound.provider}`);
+    console.log(`transport probe failed: ${card.id} ${card.questionSound.provider}`);
   }
   const preview = await server.resolvePreview(card);
-  if (preview && await previewPlays(preview.url)) {
+  if (preview && await probePreviewTransport(preview.url)) {
     card.questionSound = { provider: "preview", url: preview.url };
     counts.preview += 1;
+    continue;
+  }
+  // A transport/lookup failure does not prove the last successful pin is dead.
+  if (previous?.provider === "preview") {
+    card.questionSound = previous;
+    card.soundHealth = { transport: "unconfirmed", checkedAt: new Date().toISOString(), audioAuditioned: false };
+    counts.retainedAfterFailure += 1;
     continue;
   }
   card.questionSound = null;
@@ -75,7 +86,10 @@ for (const card of deck.cards) {
 
 console.log(JSON.stringify(counts));
 if (write) {
-  writeFileSync(deckPath, `${JSON.stringify(deck, null, 2)}\n`);
+  if (originalPins !== JSON.stringify(deck.cards.map((card) => card.questionSound))) deck.version += 1;
+  copyFileSync(deckPath, `${deckPath}.before`);
+  writeFileSync(`${deckPath}.staged`, `${JSON.stringify(deck, null, 2)}\n`);
+  renameSync(`${deckPath}.staged`, deckPath);
   console.log(`wrote ${deckPath}`);
 } else {
   console.log("dry run; pass --write to save");

@@ -94,7 +94,7 @@ const runtimeManifestNames = {
   "liquid-glass": "liquid-glass-icon-manifest.json",
 };
 const era32Bodies = new Map();
-const expectedRuntimeIconCount = 56;
+const expectedRuntimeIconCount = 59;
 for (const [theme, sizes] of Object.entries(eraSizes)) {
   const runtime = JSON.parse(read(`assets/themes/${theme}/${runtimeManifestNames[theme]}`));
   const family = JSON.parse(read(`assets/themes/${theme}/${theme}-icon-family.json`));
@@ -140,7 +140,7 @@ const themeLab = read("app/features/theme-lab.js");
 const iconWindow = {};
 vm.runInNewContext(icons, { window: iconWindow });
 const iconSetIds = iconWindow.AISystem6SystemIcons.ids;
-test.assert(iconSetIds.length === 62, `the shared painter exposes the 56 canonical objects, four distinct games, 文字亮室, and Image Prompt Studio (found ${iconSetIds.length})`);
+test.assert(iconSetIds.length === 65, `the shared painter exposes the 56 canonical objects, three supplemental applications, four distinct games, 文字亮室, and Image Prompt Studio (found ${iconSetIds.length})`);
 test.assert(iconSetIds.includes("hardDisk"), "the shared Theme Lab vocabulary no longer aliases hard disk to startup disk");
 test.assert(iconSetIds.includes("control"), "the shared Theme Lab vocabulary includes the distinct control utility icon");
 test.assertIncludes(themeLab, "appearanceIconIds()", "Theme Lab renders the painter-owned icon vocabulary");

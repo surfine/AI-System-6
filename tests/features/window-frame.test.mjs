@@ -490,7 +490,7 @@ for (const [win, selector] of [
 }
 test.assertMatches(
   frameBars,
-  /const next = win\.querySelector\(selector\);/,
+  /const next = window\.AISystem6FinderColumns\?\.frameHost\(win, axis\) \|\| win\.querySelector\(selector\);/,
   "The bars look their region up again rather than holding it"
 );
 test.assertMatches(

@@ -1,9 +1,12 @@
+import vm from "node:vm";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { createFeatureTest, exists, read, resolveProjectPath } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("extended-era-icons");
 const renderer = read("app/core/system-icons.js");
+const sandbox = { window: {} };
+vm.runInNewContext(renderer, sandbox);
 const extensions = [
   ["lightroom", "lightroom-icon-extension.json", "文字亮室"],
   ["imagePromptStudio", "image-prompt-studio-icon-extension.json", "Image Prompt Studio"],
@@ -16,7 +19,7 @@ function fileSha256(path) {
 for (const [iconId, manifestName, label] of extensions) {
   const manifest = JSON.parse(read(`assets/themes/${manifestName}`));
   test.assert(Object.keys(manifest.eras).length === 6, `${label} records all six appearance eras`);
-  test.assertIncludes(renderer, `"${iconId}"`, `${label} participates in the complete-era raster painter`);
+  test.assert(sandbox.window.AISystem6SystemIcons.ids.includes(iconId), `${label} participates in the complete-era raster painter`);
   test.assertNotIncludes(renderer, `${iconId}: "`, `${label} no longer borrows another application's modern icon`);
   for (const [era, entry] of Object.entries(manifest.eras)) {
     test.assert(exists(entry.source), `${label} retains its reviewed ${era} source master`);

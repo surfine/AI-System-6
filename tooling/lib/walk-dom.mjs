@@ -441,8 +441,25 @@ export function walkIsNavigating(page) {
   return page.__walkNavigating === true;
 }
 
+/**
+ * Whether this walk reloaded the page a moment ago.
+ *
+ * The flag above covers the abort that arrives while the reload is still in
+ * flight. It does not cover the other order: Chromium can deliver the
+ * `requestfailed` event for a request the reload cancelled AFTER the new
+ * document is ready and the flag has been cleared, and then the walk reports
+ * its own cancellation as the app giving up. The window is short and it only
+ * ever pardons the local model endpoint, so a genuine abort away from a
+ * reload still fails the pass.
+ */
+export function walkReloadedRecently(page, windowMs = 2500) {
+  const at = Number(page.__walkReloadedAt || 0);
+  return at > 0 && (Date.now() - at) <= windowMs;
+}
+
 export async function reloadApp(page) {
   page.__walkNavigating = true;
+  page.__walkReloadedAt = Date.now();
   try {
     await page.reload({ waitUntil: "domcontentloaded" });
     await page.waitForFunction(() => document.body.dataset.appReady === "ready", undefined, { timeout: 45000 });

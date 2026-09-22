@@ -287,6 +287,7 @@ let oneMoreTuneResources = null;
 let oneMoreTuneView = "shelf";
 let oneMoreTuneSession = null;
 let oneMoreTuneRound = null;
+let oneMoreTuneKeynoteRound = null;
 let oneMoreTuneUndo = null;
 let oneMoreTuneQuery = "";
 let oneMoreTuneFilter = "all";
@@ -953,6 +954,9 @@ function oneMoreTuneOptions(card, count = 4) {
     && oneMoreTuneAnswerable(other)
     && other.product !== card.product
     && other.id !== card.siblingOf
+    && other.siblingOf !== card.id
+    && !(card.knowledgeGroup && other.knowledgeGroup === card.knowledgeGroup)
+    && !(card.excludedAnswerLabels || []).includes(other.product)
     // Never the card's own recording under a second name: two labels for one
     // sound is a question with two right answers and one of them marked wrong.
     && !(oneMoreTuneRecordingKey(other) && oneMoreTuneRecordingKey(other) === oneMoreTuneRecordingKey(card)));
@@ -2379,6 +2383,7 @@ function installOneMoreTuneWindow() {
             <button class="system-tab is-active" type="button" role="tab" aria-selected="true" data-one-more-tune-view="shelf" data-i18n="one_more_tune_view_shelf">Card Shelf</button>
             <button class="system-tab" type="button" role="tab" aria-selected="false" data-one-more-tune-view="study" data-i18n="one_more_tune_view_study">Study</button>
             <button class="system-tab" type="button" role="tab" aria-selected="false" data-one-more-tune-view="challenge" data-i18n="one_more_tune_view_challenge">Challenge</button>
+            <button class="system-tab" type="button" role="tab" aria-selected="false" data-one-more-tune-view="keynote" data-i18n="one_more_tune_view_keynote">Relay</button>
             <button class="system-tab" type="button" role="tab" aria-selected="false" data-one-more-tune-view="sources" data-one-more-tune-backstage hidden data-i18n="one_more_tune_view_sources">Sources</button>
           </nav>
         </header>`,
@@ -2443,6 +2448,7 @@ function renderOneMoreTune() {
   if (oneMoreTuneView === "shelf") renderOneMoreTuneShelf(body);
   else if (oneMoreTuneView === "study") renderOneMoreTuneStudy(body);
   else if (oneMoreTuneView === "challenge") renderOneMoreTuneChallenge(body);
+  else if (oneMoreTuneView === "keynote") renderOneMoreTuneKeynote(body);
   else renderOneMoreTuneSources(body);
   window.AISystem6TranslateWithin?.(body);
   hydrateSystemIcons?.(body);
@@ -2800,8 +2806,10 @@ function oneMoreTuneOncePerAssociation(cards) {
     const sibling = String(card.siblingOf || "");
     const recording = oneMoreTuneRecordingKey(card);
     if (sibling && asked.has(sibling)) return false;
+    if (card.knowledgeGroup && asked.has(card.knowledgeGroup)) return false;
     if (recording && heard.has(recording)) return false;
     asked.add(card.id);
+    if (card.knowledgeGroup) asked.add(card.knowledgeGroup);
     if (recording) heard.add(recording);
     return true;
   });
@@ -4098,6 +4106,123 @@ function renderOneMoreTuneChallenge(body) {
 }
 
 /**
+ * Keynote Relay is a separate knowledge dimension: a short Apple event clue
+ * asks who handled a specific handoff. It deliberately has no audio player;
+ * the supplied research package has text evidence but no auditioned keynote
+ * clips, so this mode remains playable without pretending a voice track was
+ * reviewed. Hints reveal the next clue and reduce the three-point score.
+ */
+function keynoteText(value) {
+  const language = oneMoreTuneLanguage() === "zh" ? "zh" : "en";
+  return String(value?.[language] || value?.en || value?.zh || "");
+}
+
+function keynoteQuestion() {
+  return oneMoreTuneKeynoteRound?.questions?.[oneMoreTuneKeynoteRound.index] || null;
+}
+
+async function startOneMoreTuneKeynoteRound() {
+  setStatus(t("one_more_tune_keynote_opening"));
+  try {
+    const payload = await oneMoreTuneRequestRoute(ONE_MORE_TUNE_ROUND_ROUTE, {
+      body: { domain: "keynote_person" },
+    });
+    const questions = Array.isArray(payload?.questions) ? payload.questions : [];
+    if (payload?.domain !== "keynote_person" || questions.length !== 6) throw new Error("invalid keynote round");
+    oneMoreTuneKeynoteRound = {
+      token: String(payload.roundToken || ""),
+      index: 0,
+      questions: questions.map((question) => ({ ...question, submitted: false, result: null })),
+      total: 0,
+      maxPoints: Number(payload.maxPoints) || questions.length * 3,
+    };
+    oneMoreTuneView = "keynote";
+    renderOneMoreTune();
+  } catch {
+    oneMoreTuneKeynoteRound = null;
+    setStatus(t("one_more_tune_keynote_unavailable"));
+    renderOneMoreTune();
+  }
+}
+
+async function submitOneMoreTuneKeynote(action, value = "") {
+  const question = keynoteQuestion();
+  if (!question || question.submitted && action !== "hint") return;
+  const body = {
+    domain: "keynote_person",
+    roundToken: oneMoreTuneKeynoteRound.token,
+    questionToken: question.token,
+    action,
+  };
+  if (action === "hint") body.hintLevel = Number(value);
+  else body.choiceToken = String(value || "");
+  try {
+    const result = await oneMoreTuneRequestRoute(ONE_MORE_TUNE_ANSWER_ROUTE, { body });
+    if (action === "hint" && result.question) {
+      oneMoreTuneKeynoteRound.questions[oneMoreTuneKeynoteRound.index] = {
+        ...oneMoreTuneKeynoteRound.questions[oneMoreTuneKeynoteRound.index],
+        ...result.question,
+      };
+    } else if (result.ok) {
+      question.submitted = true;
+      question.result = result;
+      oneMoreTuneKeynoteRound.total += Number(result.points) || 0;
+    }
+  } catch {
+    setStatus(t("one_more_tune_answer_failed"));
+  }
+  renderOneMoreTune();
+}
+
+function advanceOneMoreTuneKeynote() {
+  if (!oneMoreTuneKeynoteRound) return;
+  oneMoreTuneKeynoteRound.index += 1;
+  if (oneMoreTuneKeynoteRound.index >= oneMoreTuneKeynoteRound.questions.length) {
+    const score = oneMoreTuneKeynoteRound.total;
+    oneMoreTuneKeynoteRound = { ...oneMoreTuneKeynoteRound, done: true, score };
+  }
+  renderOneMoreTune();
+}
+
+function renderOneMoreTuneKeynote(body) {
+  const round = oneMoreTuneKeynoteRound;
+  if (!round) {
+    body.innerHTML = `<section class="one-more-tune-study one-more-tune-keynote">
+      <div class="sectiontag"><span class="eyebrow">KEYNOTE RELAY</span><span class="tag on" data-i18n="one_more_tune_keynote_tag">Six handoffs</span></div>
+      <h1 data-i18n="one_more_tune_keynote_title">Who takes the stage?</h1>
+      <p class="intro" data-i18n="one_more_tune_keynote_intro">Follow a product through its Apple keynote handoff. Open clues one at a time, then pick the presenter.</p>
+      <p class="notice" data-i18n="one_more_tune_keynote_audio_note">This edition uses written keynote evidence. No unreviewed voice recording is played.</p>
+      <div class="toolbar"><button class="btn default" type="button" data-one-more-tune-command="one-more-tune-keynote-start" data-i18n="one_more_tune_keynote_start">Start the relay</button></div>
+    </section>`;
+    return;
+  }
+  if (round.done) {
+    body.innerHTML = `<section class="one-more-tune-study one-more-tune-keynote">
+      <div class="sectiontag"><span class="eyebrow" data-i18n="one_more_tune_keynote_done">RELAY COMPLETE</span><span class="tag on">${round.score} / ${round.maxPoints}</span></div>
+      <h1 data-i18n="one_more_tune_keynote_score_title">The handoff is yours.</h1>
+      <p class="intro">${oneMoreTuneEscape(t("one_more_tune_keynote_score_line").replace("{score}", String(round.score)).replace("{max}", String(round.maxPoints)))}</p>
+      <div class="toolbar"><button class="btn default" type="button" data-one-more-tune-command="one-more-tune-keynote-start" data-i18n="one_more_tune_keynote_again">Run it again</button></div>
+    </section>`;
+    return;
+  }
+  const question = keynoteQuestion();
+  if (!question) return;
+  const role = keynoteText(question.role);
+  const clues = Array.isArray(question.clues?.[oneMoreTuneLanguage()]) ? question.clues[oneMoreTuneLanguage()] : question.clues?.en || [];
+  const result = question.result;
+  body.innerHTML = `<section class="one-more-tune-study one-more-tune-keynote">
+    <div class="sectiontag"><span class="eyebrow">${oneMoreTuneEscape(question.event?.name || "APPLE KEYNOTE")} · ${oneMoreTuneEscape(question.event?.date || "")}</span><span class="tag on">${oneMoreTuneKeynoteRound.index + 1} / ${round.questions.length}</span></div>
+    <h2>${oneMoreTuneEscape(role)}</h2>
+    <p class="intro" data-i18n="one_more_tune_keynote_prompt">Which presenter takes this handoff?</p>
+    <div class="one-more-tune-keynote-clues">${clues.map((clue, index) => `<div class="one-more-tune-keynote-clue"><span class="eyebrow">${index + 1}</span><span>${oneMoreTuneEscape(clue)}</span></div>`).join("")}</div>
+    ${!question.submitted ? `<div class="toolbar one-more-tune-keynote-actions">
+      ${question.level < 2 ? `<button class="btn light" type="button" data-one-more-tune-command="one-more-tune-keynote-hint" data-one-more-tune-hint="${question.level + 1}">${oneMoreTuneEscape(t("one_more_tune_keynote_hint").replace("{points}", String(2 - question.level)))}</button>` : ""}
+      <span class="hint">${oneMoreTuneEscape(t("one_more_tune_keynote_points").replace("{points}", String(question.availablePoints)))}</span>
+    </div><div class="choices">${question.choices.map((choice, index) => `<button class="choice" type="button" data-one-more-tune-keynote-answer="${oneMoreTuneEscape(choice.id)}"><span class="letter">${String.fromCharCode(65 + index)}</span>${oneMoreTuneEscape(choice.label)}</button>`).join("")}</div>` : `<div class="revealbox"><h3>${result.correct ? oneMoreTuneEscape(t("one_more_tune_correct")) : oneMoreTuneEscape(t("one_more_tune_keynote_reveal").replace("{name}", result.reveal.answer))}</h3><p>${oneMoreTuneEscape(keynoteText(result.reveal.story))}</p><a href="${oneMoreTuneEscape(result.reveal.sourceUrl)}" target="_blank" rel="noopener noreferrer">${oneMoreTuneEscape(result.reveal.sourceLabel)}</a></div><div class="toolbar"><button class="btn default" type="button" data-one-more-tune-command="one-more-tune-keynote-next">${round.index + 1 < round.questions.length ? oneMoreTuneEscape(t("one_more_tune_next")) : oneMoreTuneEscape(t("one_more_tune_keynote_finish"))}</button></div>`}
+  </section>`;
+}
+
+/**
  * The answer the round would not take.
  *
  * The submission left, the round did not answer — a round that was evicted, a
@@ -4734,6 +4859,9 @@ const ONE_MORE_TUNE_COMMAND_NAMES = [
   "one-more-tune-undo",
   "one-more-tune-end-session",
   "one-more-tune-start-round",
+  "one-more-tune-keynote-start",
+  "one-more-tune-keynote-hint",
+  "one-more-tune-keynote-next",
   "one-more-tune-hear",
   "one-more-tune-round-next",
   "one-more-tune-answer-retry",
@@ -4850,6 +4978,12 @@ function runOneMoreTuneCommand(action) {
   // hands the promise back instead of swallowing it: a caller that wants to
   // act after the sound starts needs something to wait on.
   if (action === "one-more-tune-start-round") return startOneMoreTuneRound();
+  if (action === "one-more-tune-keynote-start") return startOneMoreTuneKeynoteRound();
+  if (action === "one-more-tune-keynote-hint") {
+    const hint = document.querySelector("[data-one-more-tune-hint]");
+    return void submitOneMoreTuneKeynote("hint", hint?.dataset.oneMoreTuneHint || "");
+  }
+  if (action === "one-more-tune-keynote-next") return void advanceOneMoreTuneKeynote();
   // One press for another ten. The fresh round shuffles a new set, and its
   // first question plays itself because this press is the gesture that opened
   // the audio in the first place.
@@ -4941,7 +5075,7 @@ function setOneMoreTuneBackstage(open) {
 }
 
 function setOneMoreTuneView(view) {
-  const views = oneMoreTuneBackstage() ? ["shelf", "study", "challenge", "sources"] : ["shelf", "study", "challenge"];
+  const views = oneMoreTuneBackstage() ? ["shelf", "study", "challenge", "keynote", "sources"] : ["shelf", "study", "challenge", "keynote"];
   oneMoreTuneView = views.includes(view) ? view : "shelf";
   stopOneMoreTuneFilm();
   stopOneMoreTuneAudio();
@@ -4983,6 +5117,10 @@ function handleOneMoreTuneClick(event) {
   }
   const answer = target.closest("[data-one-more-tune-answer]");
   if (answer) return void answerOneMoreTuneMatch(answer.dataset.oneMoreTuneAnswer);
+  const keynoteAnswer = target.closest("[data-one-more-tune-keynote-answer]");
+  if (keynoteAnswer) return void submitOneMoreTuneKeynote("answer", keynoteAnswer.dataset.oneMoreTuneKeynoteAnswer);
+  const keynoteHint = target.closest("[data-one-more-tune-hint]");
+  if (keynoteHint) return void submitOneMoreTuneKeynote("hint", keynoteHint.dataset.oneMoreTuneHint);
   // A catalogue row opens its own card's detail in place, the way the research
   // reader does: the checks stay with the row they belong to.
   const row = target.closest("[data-one-more-tune-source-row]");
@@ -5241,6 +5379,7 @@ function disposeOneMoreTune() {
   oneMoreTuneResources?.dispose("one-more-tune-disposed");
   oneMoreTuneSession = null;
   oneMoreTuneRound = null;
+  oneMoreTuneKeynoteRound = null;
   oneMoreTuneUndo = null;
   oneMoreTuneAudio = { context: null, buffers: new Map(), elements: new Map(), node: null, gate: null, stopTimer: null, playingCardId: "", wechatHooked: false };
 }

@@ -34,7 +34,9 @@ async function handleOneMoreTuneRound(req, res) {
   } catch {
     body = {};
   }
-  const round = await deck.startRound({
+  const round = body?.domain === "keynote_person"
+    ? require("../one-more-tune-keynote.js").startRound()
+    : await deck.startRound({
     challengeId: String(body?.challengeId || ""),
     questionIndex: Number.isInteger(body?.questionIndex) ? body.questionIndex : -1,
   });
@@ -70,8 +72,9 @@ async function handleOneMoreTuneAnswer(req, res) {
     sendJson(res, 400, { code: "one_more_tune_bad_request", error: "A JSON body is required." });
     return;
   }
-  const result = deck.submitAnswer(body || {});
-  sendJson(res, result.ok ? 200 : 404, result);
+  const authority = body?.domain === "keynote_person" ? require("../one-more-tune-keynote.js") : deck;
+  const result = authority.submitAnswer(body || {});
+  sendJson(res, result.ok ? 200 : result.code === "invalid_choice" ? 400 : 404, result);
 }
 
 async function handleOneMoreTuneReport(req, res) {

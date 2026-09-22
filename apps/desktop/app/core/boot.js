@@ -374,6 +374,8 @@ async function boot() {
     installWorkingSessionAutosave();
     installApplicationLifecycleWatch();
     await runBootSequence();
+    if (bootDebugTheme?.releaseReady === false && developmentPreviewAllowed) await window.AISystem6Theme.previewExperimentalTheme(bootDebugTheme.id);
+    await window.AISystem6Theme?.whenReady();
     document.body.dataset.appReady = "ready";
     // This timer fires after boot() has already returned, so nothing here is
     // inside boot()'s own try/catch any more — an uncaught throw in this

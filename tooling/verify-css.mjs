@@ -356,11 +356,12 @@ const APPEARANCE_FILE = "styles/65-appearance-themes.css";
 // The Aqua partial is a family-owned split of the Appearance layer (zero
 // visual diff by contract); its per-era recipes must be counted by the same
 // ratchet, otherwise Snow Leopard/Aqua selector walls grow invisibly.
-const APPEARANCE_FILES = [APPEARANCE_FILE, "styles/67-aqua-appearance.css"];
+const APPEARANCE_FILES = [APPEARANCE_FILE, "styles/67-aqua-appearance.css", "styles/68-big-sur-appearance.css", "styles/69-nextstep-appearance.css"];
 const THEME_FILES = new Set([
   LIQUID_FILE,
   APPEARANCE_FILE,
   "styles/67-aqua-appearance.css",
+  "styles/68-big-sur-appearance.css", "styles/69-nextstep-appearance.css",
   // Theme-scoped files that don't participate in twinning. Bureaucracy/meme
   // and Endfield Terminal are standalone surfaces, not base/theme pairs.
   "styles/80-bureaucracy-meme.css",
@@ -551,7 +552,9 @@ const APPEARANCE_THEME_IDS = Object.freeze([
   "aqua",
   "snow-leopard",
   "yosemite",
+  "big-sur",
   "liquid-glass",
+  "nextstep",
 ]);
 const appearanceSelectors = APPEARANCE_FILES.flatMap((relPath) =>
   extractSelectorLists(readFileSync(resolveProjectPath(relPath), "utf8"))
@@ -655,7 +658,7 @@ if (appearanceOrphans.length) {
 // may only decrease. A genuine system-level historical exception (for example
 // a Desk Accessory that is really a system component) goes into
 // budget.childAppSpecificAllowlist with a justification.
-const CHILD_THEME_IDS = ["platinum", "snow-leopard", "yosemite"];
+const CHILD_THEME_IDS = ["platinum", "snow-leopard", "yosemite", "big-sur"];
 const SHARED_WINDOW_PRIMITIVES = new Set([".window", ".window-pane"]);
 const childAppAllowlist = new Set(budget.childAppSpecificAllowlist || []);
 const childAppPrefixes = applicationCssPrefixes;
@@ -850,6 +853,7 @@ function countUnprefixedRules(relPath) {
 const APPEARANCE_GEOMETRY_FILES = [
   APPEARANCE_FILE,
   "styles/67-aqua-appearance.css",
+  "styles/68-big-sur-appearance.css", "styles/69-nextstep-appearance.css",
   LIQUID_FILE,
 ];
 
@@ -891,7 +895,10 @@ function eraTokenCoverage() {
     own.set(id, tokens);
   }
   const seen = new Map();
-  for (const tokens of own.values()) {
+  // Existing period roles stay stable when an era is added. A new era must
+  // answer them, but its optional choices cannot create debt in older eras.
+  for (const [id, tokens] of own) {
+    if (!(id in (budget.eraTokenCoverage?.missing || {})) && id !== budget.eraTokenCoverage?.baselineEra) continue;
     for (const name of tokens) seen.set(name, (seen.get(name) || 0) + 1);
   }
   const period = new Set([...seen].filter(([, count]) => count >= 2).map(([name]) => name));

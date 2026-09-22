@@ -121,6 +121,13 @@ const LANGUAGE_TABLES = {
   en: "app/data/translations-en.js",
 };
 
+// Only selected appearances with a separate stylesheet need another file.
+// Messages carry an appearance id; this worker owns the URL allowlist.
+const APPEARANCE_STYLES = Object.freeze({ "big-sur": "styles.big-sur.css", "nextstep": "styles.nextstep.css" });
+const APPEARANCE_MODULES = Object.freeze({ nextstep: [
+  "app/core/nextstep-shell.js", "app/core/nextstep-dock.js", "app/core/nextstep-menus.js", "app/features/finder-columns.js",
+] });
+
 // The System 6 typefaces. They carry no build stamp, and they are requested by
 // the stylesheet before this worker has claimed the first page, so they were
 // never in any cache: an offline start drew the whole desk in a fallback face.
@@ -251,6 +258,14 @@ self.addEventListener("message", (event) => {
   if (data?.type === "keep-language") {
     const path = LANGUAGE_TABLES[String(data.language || "").toLowerCase()];
     if (path) event.waitUntil(keepOne(SHELL_CACHE, stampedUrl(path), "default"));
+    return;
+  }
+  if (data?.type === "keep-appearance") {
+    const appearance = String(data.appearance || "");
+    if (Object.hasOwn(APPEARANCE_STYLES, appearance)) {
+      event.waitUntil(Promise.all([APPEARANCE_STYLES[appearance], ...(APPEARANCE_MODULES[appearance] || [])]
+        .map((path) => keepOne(SHELL_CACHE, stampedUrl(path), "default"))));
+    }
     return;
   }
   if (data?.type === "offline-report") {

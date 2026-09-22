@@ -22,6 +22,19 @@ Apple-derived rules come from the official macOS and HIG materials reviewed
 semantics, and accessible-control contracts. Do not copy Apple icons,
 screenshots, shaders, fonts, or private assets.
 
+### Golden Gate icon treatment
+
+Liquid Glass keeps the existing `liquid-glass` theme ID and records a Golden
+Gate correction for 59 runtime objects: the 56-object core plus ClioPaint,
+ClioProject, and One More Tune. Applications, utilities, and accessories
+receive one shared rounded-rectangle boundary at runtime. Folders, documents,
+disks, discs, and empty/full Trash remain free-form so their semantic
+silhouettes survive Finder and list views. The mask is not baked into source
+PNGs; runtime keeps `default`, `dark`, and `clear` only, with no tinted tier,
+dynamic blur, or refraction serialized into the asset family. Apple has not
+published a verifiable Golden Gate single-icon set for these objects, so the
+ledger marks them as reference adaptations with native evidence pending.
+
 ## Target Feel
 
 Liquid Glass controls should feel:

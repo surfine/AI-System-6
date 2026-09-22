@@ -250,7 +250,8 @@ Keep modern web traces out of system chrome; keep modern readability in content:
 ## Mobile and touch are formal acceptance
 
 Required viewports: 390×844 DPR3 coarse, 844×390 DPR3 coarse, 820×1180 DPR2
-coarse, 1180×820 DPR2 coarse, iOS standalone/home-screen safe area, soft keyboard
+coarse, 1180×820 DPR2 coarse, iOS standalone/home-screen safe area
+(`npm run verify:ios-standalone`, a real iPhone simulator), soft keyboard
 open/close, and rotation preserving state.
 
 Every high-frequency window must: open, close/return, scroll, input, run its

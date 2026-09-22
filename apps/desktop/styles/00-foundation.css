@@ -74,6 +74,8 @@
     inset -1px -1px 0 var(--shade-dark);
   --btn-default-active-bg: var(--btn-active-bg);
   --btn-default-active-fg: var(--btn-active-fg);
+  --control-footer-bg: #eeeeee;
+  --control-status-muted-fg: #555555;
   --control-status-border: var(--system-secondary-divider);
   --memory-transfer-note-bg: #f7f7f7;
   --memory-transfer-note-line: var(--ink);

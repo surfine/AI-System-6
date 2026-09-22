@@ -404,6 +404,9 @@ function choicesFor(card, cards, random = null) {
     && other.product && other.film
     && other.product !== card.product
     && other.id !== card.siblingOf
+    && other.siblingOf !== card.id
+    && !(card.knowledgeGroup && other.knowledgeGroup === card.knowledgeGroup)
+    && !(card.excludedAnswerLabels || []).includes(other.product)
     && !(recordingKey(other) && recordingKey(other) === recordingKey(card)));
   const sameKind = others.filter((other) => other.kind === card.kind);
   const rest = others.filter((other) => other.kind !== card.kind);
@@ -442,10 +445,11 @@ function setOrderFor(version, number, cards) {
     if (order.length >= ROUND_SIZE) break;
     const sibling = String(card.siblingOf || "");
     const recording = recordingKey(card);
-    if ((sibling && asked.has(sibling)) || (recording && heard.has(recording))) continue;
+    if ((sibling && asked.has(sibling)) || (card.knowledgeGroup && asked.has(card.knowledgeGroup)) || (recording && heard.has(recording))) continue;
     const optionCards = choicesFor(card, cards, random);
     if (optionCards.length !== 4) continue;
     asked.add(card.id);
+    if (card.knowledgeGroup) asked.add(card.knowledgeGroup);
     if (recording) heard.add(recording);
     order.push({ cardId: card.id, optionCardIds: optionCards.map((option) => option.id) });
   }
@@ -535,23 +539,12 @@ async function startNumberedRound({ version, number, allowPreview, allowYoutube,
       return { mode: "unavailable", code: "set_stale", cardId: entry.cardId, questions: [] };
     }
   }
-  const licensed = publishableCards();
-  // Best first: a reviewed licensed asset, then the store's own public preview
-  // of the recording, then the song's own video. Nothing after that.
-  //
-  // The preview comes before the video because of what each one can actually
-  // do. Apple publishes the preview through its documented search API and it is
-  // a plain audio URL, so it plays; the song's own video is a visible player
-  // that also prints the title — and measured on 2026-09-17, embedding these
-  // recordings returned error 150 even for a control video that embeds
-  // everywhere else, which is the "no compliant source" case the package says
-  // to keep as a reference rather than pretend is a working blind round. The
-  // owner's instruction is the other half of it: this quiz is promotional use
-  // of promotional material, and every surface that plays it says so.
-  const wantsPreview = !licensed.length && allowPreview;
-  const wantsSong = !licensed.length && allowYoutube;
-  if (!licensed.length && !wantsPreview && !wantsSong) return { mode: "unavailable", code: "no_sound", questions: [] };
-  const mode = licensed.length ? "licensed" : wantsPreview ? "preview" : "youtube";
+  // The file route is not implemented. An unrelated licensed record must never
+  // divert these pinned previews into its zero-duration placeholder.
+  const wantsPreview = allowPreview;
+  const wantsSong = allowYoutube;
+  if (!wantsPreview && !wantsSong) return { mode: "unavailable", code: "no_sound", questions: [] };
+  const mode = wantsPreview ? "preview" : "youtube";
   pruneRounds();
   const roundToken = token(16);
   const creditsPath = `/api/one-more-tune/credits/${token(16)}`;
@@ -568,8 +561,8 @@ async function startNumberedRound({ version, number, allowPreview, allowYoutube,
   // The label describes what was actually handed out, not what was hoped for,
   // and each question's own note says which source it ended up playing. A
   // round where nothing may play is not a round.
-  if (mode !== "licensed" && !obtainedPreview && !obtainedSong) return { mode: "unavailable", code: "no_sound", questions: [] };
-  const finalMode = mode === "licensed" ? "licensed" : obtainedPreview ? "preview" : "youtube";
+  if (!obtainedPreview && !obtainedSong) return { mode: "unavailable", code: "no_sound", questions: [] };
+  const finalMode = obtainedPreview ? "preview" : "youtube";
   // The cache is a convenience, not the identity: the number and the deck
   // version already name this set, and a restart throws away nothing a link
   // needs.
@@ -630,6 +623,7 @@ async function mintQuestion(card, optionCards, mode, { creditsPath, roundToken, 
     key: {
       cardId: card.id,
       optionCardIds: optionCards.map((option) => option.id),
+      choiceTokens: optionTokens.map((option) => option.id),
       correctToken: optionTokens.find((option) => option.cardId === card.id)?.id || "",
       chosenToken: "",
       submitted: false,
@@ -767,6 +761,9 @@ function submitAnswer({ roundToken, questionToken, choiceToken = "", skipped = f
   const question = round.questions.get(String(questionToken || ""));
   if (!question) return { ok: false, code: "question_not_found", error: "No such question in this round." };
   if (question.submitted) return { ok: true, repeated: true, ...question.result };
+  if (choiceToken && !question.choiceTokens.includes(choiceToken)) {
+    return { ok: false, code: "invalid_choice", error: "Choose one of this question’s options." };
+  }
   const card = cardById(question.cardId);
   if (!card) return { ok: false, code: "card_missing", error: "The deck no longer carries this card." };
   const outcome = skipped || !choiceToken ? "skipped" : "answered";
@@ -797,7 +794,7 @@ function report() {
     // cleared asset, then the store's public preview, then the song's own video.
     // The window prints the sentence that matches this, so the two layers have
     // to answer the same question the same way.
-    mode: licensed ? "licensed" : "preview",
+    mode: "preview",
   };
 }
 

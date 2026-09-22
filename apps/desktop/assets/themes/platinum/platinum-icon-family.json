@@ -4036,6 +4036,495 @@
           "bytes": 482
         }
       }
+    },
+    "clioPaint": {
+      "genre": "application",
+      "semanticIdentity": "Drawing palette and brush",
+      "physicalMetaphor": "Drawing palette and brush",
+      "provenanceClass": "C",
+      "sourceKind": "original-code-native-period-adaptation",
+      "authoringMethod": "independently authored era-specific SVG construction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "eraGrammarReview": "original-period-adaptation-reviewed",
+      "reviewStatus": "technically-clean",
+      "runtimeAsset": true,
+      "nativeReplica": false,
+      "referenceValidated": false,
+      "sourceNote": "Original AI System 6 application. Period grammar is adapted; no historical native counterpart is claimed.",
+      "sourceReferences": [
+        "apps/desktop/assets/themes/era-icon-reference.json"
+      ],
+      "sizes": {
+        "16": "icons/clioPaint-16.png",
+        "32": "icons/clioPaint-32.png",
+        "42": "icons/clioPaint-42.png",
+        "64": "icons/clioPaint-64.png",
+        "128": "icons/clioPaint-128.png"
+      },
+      "runtimeSha256": {
+        "16-default": "1c49a1311ab457db6c887f8cfc01a561a83b82639725085449e6d3759e00643e",
+        "32-default": "2270a28648b190d998bdde1292a0cd80d79ad6dfa88a18b4663bfdeb620712c0",
+        "42-default": "3169ffc95fab805e911d57b6d49c05ec7e133fbd4a81eed906121cea5ede7d24",
+        "64-default": "8c6266504edb88dc1b34f088192ab19b6121a4e55be0d8f414a60af1c08977b5",
+        "128-default": "324faadea49d7fc6d2e1a7f5e93864e64a64b2d1af6cd79c6bc7b88491d2ca60"
+      },
+      "sizePolicy": "16 and 32 px have independent compact compositions with reduced detail; large default tiers use material masters where applicable.",
+      "label": "clioPaint",
+      "metrics": {
+        "16": {
+          "pixels": 86,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 12,
+            "maxY": 12
+          },
+          "sha256": "1c49a1311ab457db6c887f8cfc01a561a83b82639725085449e6d3759e00643e",
+          "ink": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 12,
+            "maxY": 12,
+            "width": 12,
+            "height": 12
+          },
+          "gridShape": "square"
+        },
+        "32": {
+          "pixels": 310,
+          "bbox": {
+            "minX": 3,
+            "minY": 3,
+            "maxX": 25,
+            "maxY": 25
+          },
+          "sha256": "2270a28648b190d998bdde1292a0cd80d79ad6dfa88a18b4663bfdeb620712c0",
+          "ink": {
+            "minX": 3,
+            "minY": 3,
+            "maxX": 25,
+            "maxY": 25,
+            "width": 23,
+            "height": 23
+          },
+          "gridShape": "square"
+        },
+        "42": {
+          "pixels": 531,
+          "bbox": {
+            "minX": 3,
+            "minY": 3,
+            "maxX": 33,
+            "maxY": 33
+          },
+          "sha256": "3169ffc95fab805e911d57b6d49c05ec7e133fbd4a81eed906121cea5ede7d24",
+          "ink": {
+            "minX": 3,
+            "minY": 3,
+            "maxX": 33,
+            "maxY": 33,
+            "width": 31,
+            "height": 31
+          },
+          "gridShape": "square"
+        },
+        "64": {
+          "pixels": 1247,
+          "bbox": {
+            "minX": 5,
+            "minY": 5,
+            "maxX": 50,
+            "maxY": 51
+          },
+          "sha256": "8c6266504edb88dc1b34f088192ab19b6121a4e55be0d8f414a60af1c08977b5",
+          "ink": {
+            "minX": 5,
+            "minY": 5,
+            "maxX": 50,
+            "maxY": 51,
+            "width": 46,
+            "height": 47
+          },
+          "gridShape": "square"
+        },
+        "128": {
+          "pixels": 4971,
+          "bbox": {
+            "minX": 10,
+            "minY": 10,
+            "maxX": 101,
+            "maxY": 103
+          },
+          "sha256": "324faadea49d7fc6d2e1a7f5e93864e64a64b2d1af6cd79c6bc7b88491d2ca60",
+          "ink": {
+            "minX": 10,
+            "minY": 10,
+            "maxX": 101,
+            "maxY": 103,
+            "width": 92,
+            "height": 94
+          },
+          "gridShape": "square"
+        }
+      },
+      "grid": {
+        "canvas": 128,
+        "shape": "square",
+        "fitted": 0.734375,
+        "method": "measured-output-no-resampling"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.3438,
+          "meanLum": 129.98,
+          "lumStd": 69.25,
+          "edgeEnergy": 87
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.3271,
+          "meanLum": 133.03,
+          "lumStd": 82.23,
+          "edgeEnergy": 265
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.3282,
+          "meanLum": 132.68,
+          "lumStd": 83.24,
+          "edgeEnergy": 381
+        }
+      }
+    },
+    "clioProject": {
+      "genre": "application",
+      "semanticIdentity": "Task cards and dependency links",
+      "physicalMetaphor": "Task cards and dependency links",
+      "provenanceClass": "C",
+      "sourceKind": "original-code-native-period-adaptation",
+      "authoringMethod": "independently authored era-specific SVG construction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "eraGrammarReview": "original-period-adaptation-reviewed",
+      "reviewStatus": "technically-clean",
+      "runtimeAsset": true,
+      "nativeReplica": false,
+      "referenceValidated": false,
+      "sourceNote": "Original AI System 6 application. Period grammar is adapted; no historical native counterpart is claimed.",
+      "sourceReferences": [
+        "apps/desktop/assets/themes/era-icon-reference.json"
+      ],
+      "sizes": {
+        "16": "icons/clioProject-16.png",
+        "32": "icons/clioProject-32.png",
+        "42": "icons/clioProject-42.png",
+        "64": "icons/clioProject-64.png",
+        "128": "icons/clioProject-128.png"
+      },
+      "runtimeSha256": {
+        "16-default": "92b480b6efa8aa1d239de897608c46c8eff6c85d40e94d1c534f6b94a5ac412b",
+        "32-default": "30dbd5a82aa87d0c97b5ae42706a6ad1aacfac07c4151065f8d60280c177b354",
+        "42-default": "c47b26db22da80eaa59609cd72df34076c2d5466b109c13969600a022541a028",
+        "64-default": "c70177b0c3b523403b1e025e058fe56b9b1abec566b9e486bb05d142cd27fc09",
+        "128-default": "c418df49b2bdf8932a2e95b8c8edc6b790350a5688246dc653d6aeacffe03d9f"
+      },
+      "sizePolicy": "16 and 32 px have independent compact compositions with reduced detail; large default tiers use material masters where applicable.",
+      "label": "clioProject",
+      "metrics": {
+        "16": {
+          "pixels": 88,
+          "bbox": {
+            "minX": 0,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 13
+          },
+          "sha256": "92b480b6efa8aa1d239de897608c46c8eff6c85d40e94d1c534f6b94a5ac412b",
+          "ink": {
+            "minX": 0,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 13,
+            "width": 15,
+            "height": 13
+          },
+          "gridShape": "landscape"
+        },
+        "32": {
+          "pixels": 388,
+          "bbox": {
+            "minX": 0,
+            "minY": 2,
+            "maxX": 30,
+            "maxY": 29
+          },
+          "sha256": "30dbd5a82aa87d0c97b5ae42706a6ad1aacfac07c4151065f8d60280c177b354",
+          "ink": {
+            "minX": 0,
+            "minY": 2,
+            "maxX": 30,
+            "maxY": 29,
+            "width": 31,
+            "height": 28
+          },
+          "gridShape": "square"
+        },
+        "42": {
+          "pixels": 604,
+          "bbox": {
+            "minX": 1,
+            "minY": 3,
+            "maxX": 40,
+            "maxY": 39
+          },
+          "sha256": "c47b26db22da80eaa59609cd72df34076c2d5466b109c13969600a022541a028",
+          "ink": {
+            "minX": 1,
+            "minY": 3,
+            "maxX": 40,
+            "maxY": 39,
+            "width": 40,
+            "height": 37
+          },
+          "gridShape": "square"
+        },
+        "64": {
+          "pixels": 1453,
+          "bbox": {
+            "minX": 1,
+            "minY": 5,
+            "maxX": 61,
+            "maxY": 60
+          },
+          "sha256": "c70177b0c3b523403b1e025e058fe56b9b1abec566b9e486bb05d142cd27fc09",
+          "ink": {
+            "minX": 1,
+            "minY": 5,
+            "maxX": 61,
+            "maxY": 60,
+            "width": 61,
+            "height": 56
+          },
+          "gridShape": "square"
+        },
+        "128": {
+          "pixels": 5802,
+          "bbox": {
+            "minX": 2,
+            "minY": 10,
+            "maxX": 123,
+            "maxY": 121
+          },
+          "sha256": "c418df49b2bdf8932a2e95b8c8edc6b790350a5688246dc653d6aeacffe03d9f",
+          "ink": {
+            "minX": 2,
+            "minY": 10,
+            "maxX": 123,
+            "maxY": 121,
+            "width": 122,
+            "height": 112
+          },
+          "gridShape": "square"
+        }
+      },
+      "grid": {
+        "canvas": 128,
+        "shape": "square",
+        "fitted": 0.953125,
+        "method": "measured-output-no-resampling"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5,
+          "meanLum": 80.7,
+          "lumStd": 68.81,
+          "edgeEnergy": 89
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.4365,
+          "meanLum": 85.93,
+          "lumStd": 76.63,
+          "edgeEnergy": 289
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.4099,
+          "meanLum": 92.2,
+          "lumStd": 84.4,
+          "edgeEnergy": 372
+        }
+      }
+    },
+    "oneMoreTune": {
+      "genre": "application",
+      "semanticIdentity": "Music knowledge study cards and note",
+      "physicalMetaphor": "Music knowledge study cards and note",
+      "provenanceClass": "C",
+      "sourceKind": "original-code-native-period-adaptation",
+      "authoringMethod": "independently authored era-specific SVG construction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "eraGrammarReview": "original-period-adaptation-reviewed",
+      "reviewStatus": "technically-clean",
+      "runtimeAsset": true,
+      "nativeReplica": false,
+      "referenceValidated": false,
+      "sourceNote": "Original AI System 6 application. Period grammar is adapted; no historical native counterpart is claimed.",
+      "sourceReferences": [
+        "apps/desktop/assets/themes/era-icon-reference.json"
+      ],
+      "sizes": {
+        "16": "icons/oneMoreTune-16.png",
+        "32": "icons/oneMoreTune-32.png",
+        "42": "icons/oneMoreTune-42.png",
+        "64": "icons/oneMoreTune-64.png",
+        "128": "icons/oneMoreTune-128.png"
+      },
+      "runtimeSha256": {
+        "16-default": "9e4646ab901ec4a3a0e210c5415a145534002daab88d37d0258a88989fa9c026",
+        "32-default": "8a34346a15034aa1e72cb5c692a993ae909af4fdce7a0d5baf75a3a290531a50",
+        "42-default": "630899a10c78b40cc4b5bc61478caa40a74a0b3052ac70584442507a0a902c3b",
+        "64-default": "5fcdcacdbf67c92a9b0aa38d9d29782e0b675429f5b252da125514515d5efd1b",
+        "128-default": "7d58b33f863fe7c9b1786759f9e9c326462e2c822fb74e5a98bd134375e8d4be"
+      },
+      "sizePolicy": "16 and 32 px have independent compact compositions with reduced detail; large default tiers use material masters where applicable.",
+      "label": "oneMoreTune",
+      "metrics": {
+        "16": {
+          "pixels": 171,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 13,
+            "maxY": 14
+          },
+          "sha256": "9e4646ab901ec4a3a0e210c5415a145534002daab88d37d0258a88989fa9c026",
+          "ink": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 13,
+            "maxY": 14,
+            "width": 13,
+            "height": 14
+          },
+          "gridShape": "square"
+        },
+        "32": {
+          "pixels": 630,
+          "bbox": {
+            "minX": 3,
+            "minY": 3,
+            "maxX": 27,
+            "maxY": 28
+          },
+          "sha256": "8a34346a15034aa1e72cb5c692a993ae909af4fdce7a0d5baf75a3a290531a50",
+          "ink": {
+            "minX": 3,
+            "minY": 3,
+            "maxX": 27,
+            "maxY": 28,
+            "width": 25,
+            "height": 26
+          },
+          "gridShape": "square"
+        },
+        "42": {
+          "pixels": 1051,
+          "bbox": {
+            "minX": 5,
+            "minY": 5,
+            "maxX": 36,
+            "maxY": 38
+          },
+          "sha256": "630899a10c78b40cc4b5bc61478caa40a74a0b3052ac70584442507a0a902c3b",
+          "ink": {
+            "minX": 5,
+            "minY": 5,
+            "maxX": 36,
+            "maxY": 38,
+            "width": 32,
+            "height": 34
+          },
+          "gridShape": "square"
+        },
+        "64": {
+          "pixels": 2454,
+          "bbox": {
+            "minX": 7,
+            "minY": 7,
+            "maxX": 55,
+            "maxY": 58
+          },
+          "sha256": "5fcdcacdbf67c92a9b0aa38d9d29782e0b675429f5b252da125514515d5efd1b",
+          "ink": {
+            "minX": 7,
+            "minY": 7,
+            "maxX": 55,
+            "maxY": 58,
+            "width": 49,
+            "height": 52
+          },
+          "gridShape": "square"
+        },
+        "128": {
+          "pixels": 9814,
+          "bbox": {
+            "minX": 14,
+            "minY": 14,
+            "maxX": 111,
+            "maxY": 117
+          },
+          "sha256": "7d58b33f863fe7c9b1786759f9e9c326462e2c822fb74e5a98bd134375e8d4be",
+          "ink": {
+            "minX": 14,
+            "minY": 14,
+            "maxX": 111,
+            "maxY": 117,
+            "width": 98,
+            "height": 104
+          },
+          "gridShape": "square"
+        }
+      },
+      "grid": {
+        "canvas": 128,
+        "shape": "square",
+        "fitted": 0.8125,
+        "method": "measured-output-no-resampling"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6875,
+          "meanLum": 154.89,
+          "lumStd": 82.52,
+          "edgeEnergy": 139
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.6328,
+          "meanLum": 166.36,
+          "lumStd": 81.99,
+          "edgeEnergy": 334
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.6264,
+          "meanLum": 168.23,
+          "lumStd": 88.3,
+          "edgeEnergy": 380
+        }
+      }
     }
   },
   "reviewedCore": [
@@ -4141,5 +4630,11 @@
     "teachText",
     "docMap"
   ],
-  "priorityLineageMeaning": "Only explicitly reviewed v2 rows override the broad generated archive; per-object provenance never implies native replication or reference validation."
+  "priorityLineageMeaning": "Only explicitly reviewed v2 rows override the broad generated archive; per-object provenance never implies native replication or reference validation.",
+  "supplementalBuilder": "tooling/build-added-app-icons.mjs",
+  "supplementalIconIds": [
+    "clioPaint",
+    "clioProject",
+    "oneMoreTune"
+  ]
 }

@@ -158,7 +158,7 @@
 
 .message-content code {
   font-family: var(--mono-font);
-  background: #eeeeee;
+  background: #eee;
   padding: 1px 4px;
   border: 1px solid var(--ink);
   font-size: 12px;

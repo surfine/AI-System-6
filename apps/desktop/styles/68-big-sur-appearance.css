@@ -1,0 +1,465 @@
+/* Big Sur (macOS 11, 2020). Independent web adaptation of the system
+   surfaces described in WWDC20 session 10104. Measurements here are product
+   CSS pixels, not a claim of native pixel fidelity. Icons are deferred and
+   reuse Yosemite. No Liquid Glass painter or refraction is enabled. */
+html[data-theme="big-sur"],
+body[data-theme="big-sur"] {
+  color-scheme: light;
+  --theme-ui-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Segoe UI", sans-serif;
+  --theme-title-font: var(--theme-ui-font);
+  --system-readable-min: 13px;
+  --system-title-size: 13px;
+  --system-control-size: 13px;
+  --system-text-size: 13px;
+  --system-caption-size: 11px;
+  --system-menu-height: 25px;
+  --system-titlebar-height: 38px;
+  --system-titlebar-title-height: 24px;
+  --system-titlebar-font-size: 13px;
+  --system-titlebar-control-slot: 28px;
+  --system-titlebar-control-size: 24px;
+  --system-titlebar-control-margin-x: 0;
+  --system-titlebar-margin-y: 0;
+  --system-titlebar-padding-y: 0;
+  --system-titlebar-padding-x: 10px;
+  --system-titlebar-inactive-control-visibility: visible;
+  --system-titlebar-inactive-control-opacity: 1;
+  --system-titlebar-inactive-control-filter: grayscale(1);
+  --system-titlebar-inactive-title-color: var(--shade-dark);
+  --system-titlebar-active-bg: var(--toolbar-bg);
+  --system-titlebar-inactive-bg: var(--panel);
+  --system-titlebar-background-origin: border-box;
+  --system-titlebar-background-clip: border-box;
+  --system-control-min-height: 24px;
+  --system-button-min-height: 24px;
+  --system-button-padding-y: 3px;
+  --system-button-padding-x: 12px;
+  --control-footer-bg: var(--panel);
+  --control-status-muted-fg: var(--shade-dark);
+  --control-settings-columns: minmax(0, 1fr);
+  --control-settings-rows: none;
+  --control-chooser-area: auto;
+  --control-chooser-direction: row;
+  --control-chooser-gap: 4px;
+  --control-chooser-padding: 6px;
+  --control-chooser-border-bottom: var(--system-border);
+  --control-chooser-border-right: 0;
+  --control-chooser-item-flex: 1 1 0;
+  --control-chooser-item-radius: 6px;
+  --control-chooser-item-padding: 4px;
+  --control-chooser-active-bg: var(--sidebar-selection-bg);
+  --control-chooser-active-label-bg: transparent;
+  --control-chooser-active-label-fg: var(--ink);
+  --control-chooser-hover-bg: var(--panel);
+  --control-chooser-icon-size: 24px;
+  --settings-scrollbar-width: 10px;
+  --settings-scrollbar-track-bg: transparent;
+  --settings-scrollbar-track-edge: 0;
+  --settings-scrollbar-thumb-bg: var(--scrollbar-thumb);
+  --settings-scrollbar-thumb-border: 3px solid transparent;
+  --settings-scrollbar-thumb-radius: 5px;
+  --settings-scrollbar-thumb-shadow: none;
+  --view-switch-border: 0;
+  --view-switch-radius: 5px;
+  --view-switch-bg: var(--panel);
+  --view-switch-shadow: none;
+  --view-switch-thumb-radius: 4px;
+  --view-switch-thumb-bg: var(--surface-primary);
+  --view-switch-thumb-shadow: var(--control-shadow);
+  --view-switch-fg: var(--shade-dark);
+  --view-switch-active-fg: var(--ink);
+  --finder-navigation-border: var(--system-border);
+  --finder-navigation-bg: var(--toolbar-bg);
+  --ink: #242424;
+  --paper: #f5f5f5;
+  --panel: #ecebea;
+  --quiet-panel: #fafafa;
+  --shade: #c7c7c7;
+  --shade-dark: #656565;
+  --md-marker-ink: var(--shade-dark);
+  --rule: rgba(0, 0, 0, 0.15);
+  --separator: var(--rule);
+  --surface-primary: #ffffff;
+  --surface-secondary: var(--paper);
+  --surface-inset: var(--surface-primary);
+  --pane-bg: var(--surface-primary);
+  --window-bg: var(--paper);
+  --window-border: 1px solid rgba(0, 0, 0, 0.23);
+  --window-radius: 10px;
+  --window-shadow: 0 18px 42px rgba(0, 0, 0, 0.27), 0 0 0 0.5px rgba(255, 255, 255, 0.6);
+  --active-window-shadow: var(--window-shadow);
+  --inactive-window-shadow: 0 6px 18px rgba(0, 0, 0, 0.13);
+  --window-backdrop-filter: none;
+  --surface-backdrop-filter: none;
+  --titlebar-toolbar-backdrop-filter: none;
+  --toolbar-bg: #f0efee;
+  --toolbar-bg-inactive: var(--panel);
+  --toolbar-border: 1px solid var(--rule);
+  --toolbar-highlight: none;
+  --titlebar-border: 0;
+  --titlebar-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+  --titlebar-title-bg: transparent;
+  --titlebar-title-fg: var(--ink);
+  --sidebar-bg: rgba(235, 233, 232, 0.94);
+  --sidebar-backdrop-filter: blur(20px);
+  --selection-bg: #0069d9;
+  --selection-fg: #ffffff;
+  --sidebar-selection-bg: rgba(0, 0, 0, 0.1);
+  --sidebar-selection-fg: var(--ink);
+  --details-bar-bg: var(--paper);
+  --details-bar-border: var(--rule);
+  --system-border: 1px solid var(--rule);
+  --system-primary-divider: var(--system-border);
+  --system-secondary-divider: var(--system-border);
+  --system-shadow: 0 2px 8px rgba(0, 0, 0, 0.13);
+  --system-object-shadow: var(--system-shadow);
+  --system-inset: inset 0 1px 2px rgba(0, 0, 0, 0.07);
+  --system-disabled-fg: var(--shade-dark);
+  --control-bg: var(--surface-primary);
+  --control-radius: 5px;
+  --control-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  --control-active-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.12);
+  --control-focus-outline: 3px solid #80b5ed;
+  --system-focus-outline: var(--control-focus-outline);
+  --control-focus-offset: 2px;
+  --control-disabled-bg: var(--panel);
+  --control-disabled-field-bg: var(--paper);
+  --control-disabled-opacity: 0.65;
+  --btn-border-color: var(--rule);
+  --btn-radius: 5px;
+  --btn-bg: var(--surface-primary);
+  --btn-fg: var(--ink);
+  --btn-shadow: var(--control-shadow);
+  --btn-hover-bg: var(--quiet-panel);
+  --btn-hover-fg: var(--ink);
+  --btn-hover-shadow: var(--control-shadow);
+  --btn-active-bg: var(--panel);
+  --btn-active-fg: var(--ink);
+  --btn-active-shadow: var(--control-active-shadow);
+  --btn-default-bg: linear-gradient(#1685f6, #0067da);
+  --btn-default-fg: #ffffff;
+  --btn-default-text-shadow: none;
+  --btn-default-shadow: 0 1px 2px rgba(0, 0, 0, 0.16);
+  --btn-default-hover-bg: #0874e2;
+  --btn-default-hover-fg: #ffffff;
+  --btn-default-active-bg: #0058ba;
+  --btn-default-active-fg: #ffffff;
+  --field-bg: var(--surface-primary);
+  --field-focus-bg: var(--field-bg);
+  --field-border: 1px solid var(--rule);
+  --field-radius: 5px;
+  --field-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+  --field-control-padding: 4px 8px;
+  --field-focus-border: 1px solid #2686e8;
+  --field-focus-ring: 0 0 0 3px rgba(38, 134, 232, 0.4);
+  --select-radius: 5px;
+  --select-wrapper-arrow-display: block;
+  --system-select-control-min-height: 24px;
+  --system-select-control-padding: 3px 26px 3px 8px;
+  --system-select-control-border: var(--field-border);
+  --system-select-control-radius: 5px;
+  --system-select-control-bg: var(--btn-bg);
+  --system-select-control-shadow: var(--control-shadow);
+  --system-select-control-font-weight: 400;
+  --system-select-option-radius: 4px;
+  --system-select-option-bg: transparent;
+  --system-select-option-fg: var(--ink);
+  --system-select-option-active-bg: var(--selection-bg);
+  --system-select-option-active-fg: var(--selection-fg);
+  --choice-bg: var(--surface-primary);
+  --choice-border: 1px solid var(--shade);
+  --choice-radius: 3px;
+  --choice-shadow: var(--field-shadow);
+  --choice-checked-bg: var(--selection-bg);
+  --choice-checkmark-image: url("./assets/themes/yosemite/checkbox-check-white.svg");
+  --choice-checked-border-color: transparent;
+  --choice-checked-shadow: none;
+  --radio-bg: var(--choice-bg);
+  --radio-border: var(--choice-border);
+  --radio-shadow: var(--choice-shadow);
+  --radio-image: none;
+  --radio-focus-image: none;
+  --radio-checked-image: radial-gradient(circle, #fff 0 2px, transparent 2.5px), linear-gradient(var(--selection-bg), var(--selection-bg));
+  --radio-checked-focus-image: var(--radio-checked-image);
+  --system-check-size: 15px;
+  --system-radio-size: 15px;
+  --menu-bar-bg: rgba(248, 244, 242, 0.86);
+  --menu-bar-border-color: transparent;
+  --menu-bar-border: 0;
+  --menu-bar-shadow: 0 1px 0 rgba(0, 0, 0, 0.08);
+  --menu-panel-bg: rgba(248, 246, 245, 0.97);
+  --menu-panel-border: 1px solid rgba(0, 0, 0, 0.18);
+  --menu-panel-radius: 7px;
+  --menu-panel-padding: 5px;
+  --menu-panel-shadow: 0 10px 26px rgba(0, 0, 0, 0.24);
+  --menu-panel-backdrop-filter: blur(22px);
+  --menu-button-active-bg: rgba(0, 0, 0, 0.13);
+  --menu-button-active-fg: var(--ink);
+  --menu-item-active-bg: var(--selection-bg);
+  --menu-item-active-fg: var(--selection-fg);
+  --menu-item-line-height: 18px;
+  --modal-bg: var(--paper);
+  --modal-radius: 12px;
+  --desktop: #183465;
+  --desktop-surface: radial-gradient(ellipse at 85% 12%, #ffcb9c 0%, #fa9376 25%, transparent 55%), radial-gradient(ellipse at 10% 0%, #ed5372 0%, #b94673 28%, transparent 63%), linear-gradient(145deg, #593c80 18%, #345b9e 49%, #1878af 50%, #123a70 80%);
+  --desktop-label-bg: transparent;
+  --desktop-label-fg: #fff;
+  --desktop-label-text-shadow: 0 1px 3px #000;
+  --desktop-label-radius: 4px;
+  --desktop-label-selected-bg: var(--selection-bg);
+  --desktop-label-selected-fg: #fff;
+  --scrollbar-track: transparent;
+  --scrollbar-thumb: #999;
+  --scrollbar-width: 10px;
+  --scrollbar-track-border: 0;
+  --scrollbar-track-shadow: none;
+  --scrollbar-thumb-shadow: none;
+  --scrollbar-button-border: 0;
+  --scrollbar-button-shadow: none;
+  --window-frame-lane: 10px;
+  --window-frame-track-bg: transparent;
+  --window-frame-track-border: 0;
+  --window-frame-thumb-bg: var(--scrollbar-thumb);
+  --window-frame-thumb-bg-horizontal: var(--scrollbar-thumb);
+  --window-frame-thumb-border: 3px solid transparent;
+  --window-frame-thumb-radius: 6px;
+  --window-frame-arrow-bg: transparent;
+  --window-frame-arrow-ink: transparent;
+  --tab-radius: 5px;
+  --tab-overlap: 0;
+  --tab-bg: var(--panel);
+  --tab-hover-bg: var(--quiet-panel);
+  --tab-active-bg: var(--surface-primary);
+  --progress-height: 6px;
+  --progress-radius: 3px;
+  --progress-border-color: transparent;
+  --progress-bg: var(--panel);
+  --progress-fill-radius: 3px;
+  --progress-fill-bg: var(--selection-bg);
+  --progress-fill-shadow: none;
+  --balloon-help-bg: var(--menu-panel-bg);
+  --balloon-help-border: var(--system-border);
+  --balloon-help-radius: 5px;
+  /* Shared control roles; content retains its owning application's layout. */
+  --alarm-clock-close-size: 12px;
+  --app-toolbar-bg: var(--toolbar-bg);
+  --app-toolbar-border-bottom: var(--toolbar-border);
+  --choice-checked-bg-image: var(--choice-checkmark-image);
+  --control-strip-gauge: var(--selection-bg);
+  --control-strip-radius: 7px;
+  --control-strip-radius-mirrored: var(--control-strip-radius);
+  --control-strip-bg: var(--menu-panel-bg);
+  --control-strip-border: var(--system-border);
+  --control-strip-shadow: var(--system-shadow);
+  --control-strip-backdrop: var(--menu-panel-backdrop-filter);
+  --find-path-header-bg: var(--paper);
+  --find-path-header-border-bottom: var(--system-border);
+  --find-path-header-display: grid;
+  --find-path-header-padding: 4px 10px;
+  --find-path-query-bg: var(--field-bg);
+  --find-path-query-min-height: 26px;
+  --find-path-query-padding: 4px 8px;
+  --find-path-query-radius: var(--field-radius);
+  --find-path-relevance-display: block;
+  --find-path-result-align: baseline;
+  --find-path-result-column-gap: 10px;
+  --find-path-result-display: grid;
+  --find-path-result-padding: 6px 10px;
+  --menu-item-disabled-bg: transparent;
+  --menu-item-disabled-fg: var(--shade-dark);
+  --menu-item-disabled-opacity: 0.6;
+  --menu-item-min-height: 24px;
+  --menu-item-padding: 3px 20px 3px 24px;
+  --menu-separator-border-bottom: 1px solid var(--rule);
+  --menu-separator-margin: 4px 8px;
+  --progress-padding: 0px;
+  --scrap-list-bg: var(--sidebar-bg);
+  --scrap-list-border: var(--system-border);
+  --scrap-list-radius: 6px;
+  --scrap-list-shadow: none;
+  --scrap-list-item-bg: transparent;
+  --scrap-list-item-divider: 0;
+  --scrap-list-item-radius: 5px;
+  --scrap-list-item-selected-radius: 5px;
+  --scrap-list-item-selected-bg: var(--sidebar-selection-bg);
+  --scrap-list-item-selected-fg: var(--ink);
+  --scrap-list-item-selected-shadow: none;
+  --search-field-background: var(--field-bg);
+  --search-field-min-height: 26px;
+  --search-field-padding: 4px 8px;
+  --search-field-radius: 6px;
+  --select-control-bg-color: var(--btn-bg);
+  --select-control-bg-image: none;
+  --select-control-bg-position: right 8px center;
+  --select-control-bg-size: 8px 12px;
+  --select-control-border: var(--field-border);
+  --select-control-font-weight: 400;
+  --select-control-min-height: 24px;
+  --select-control-padding: 3px 26px 3px 8px;
+  --select-control-radius: 5px;
+  --select-control-shadow: var(--control-shadow);
+  --sidebar-bg-inactive: var(--panel);
+  --system-button-mini-font-size: 11px;
+  --system-button-mini-height: 18px;
+  --system-button-mini-padding-x: 7px;
+  --system-button-small-font-size: 12px;
+  --system-button-small-height: 22px;
+  --system-button-small-padding-x: 9px;
+  --system-select-arrow-bg: var(--selection-bg);
+  --system-select-arrow-height: 14px;
+  --system-select-arrow-right: 5px;
+  --system-select-arrow-top: 50%;
+  --system-select-arrow-transform: translateY(-50%);
+  --system-select-arrow-width: 14px;
+  --tab-active-fg: var(--ink);
+  --tab-active-height: 24px;
+  --tab-active-min-height: 24px;
+  --tab-active-shadow: var(--control-shadow);
+  --tab-border: 0;
+  --tab-height: 24px;
+  --tab-min-height: 24px;
+  --tab-padding: 3px 12px;
+  --tab-panel-bg: var(--paper);
+  --tab-panel-border: var(--system-border);
+  --tab-panel-margin-top: 8px;
+  --tab-panel-min-height: 0;
+  --tab-panel-padding: 12px;
+  --tab-panel-shadow: none;
+  --tab-shadow: none;
+  --tab-strip-border-bottom: 0;
+  --tab-strip-gap: 1px;
+  --tab-strip-padding: 2px;
+  --tdi-rail-padding: 6px;
+  --tdi-rail-bg: var(--sidebar-bg);
+  --tdi-rail-border: var(--system-border);
+  --tdi-rail-shadow: none;
+  --tdi-tabs-bg: transparent;
+  --tdi-tabs-border-bottom: 0;
+  --tdi-tab-bg: transparent;
+  --tdi-tab-border: 0;
+  --tdi-tab-border-bottom: 0;
+  --tdi-tab-shadow: none;
+  --tdi-tab-radius: 5px;
+  --tdi-tab-active-bg: var(--sidebar-selection-bg);
+  --tdi-tab-active-fg: var(--ink);
+  --tdi-tab-active-border: 0;
+  --tdi-tab-active-border-bottom: 0;
+  --tdi-tab-active-shadow: none;
+  --tdi-tab-active-unfocused-bg: var(--panel);
+  --tdi-tab-active-unfocused-fg: var(--ink);
+  --tdi-tab-active-unfocused-shadow: none;
+  --tdi-tab-close-active-bg: var(--panel);
+  --tdi-tab-close-active-fg: var(--ink);
+  --tdi-tab-close-active-shadow: none;
+  --titlebar-border-inactive: 0;
+  --titlebar-content-padding-inline: 10px;
+  --titlebar-title-text-shadow: none;
+  --traffic-light-close-bg: #ff5f57;
+  --traffic-light-resize-bg: #28c840;
+  --traffic-light-size: 12px;
+  --traffic-light-sprite-size: 12px 12px;
+}
+
+html[data-theme="big-sur"][data-color-mode="dark"],
+body[data-theme="big-sur"][data-color-mode="dark"] {
+  color-scheme: dark;
+  --ink: #f0f0f0;
+  --paper: #292929;
+  --panel: #333232;
+  --quiet-panel: #414141;
+  --shade: #686868;
+  --shade-dark: #b6b6b6;
+  --rule: rgba(255, 255, 255, 0.18);
+  --surface-primary: #202020;
+  --toolbar-bg: #383635;
+  --sidebar-bg: rgba(46, 43, 43, 0.96);
+  --sidebar-selection-bg: rgba(255, 255, 255, 0.17);
+  --window-border: 1px solid #111;
+  --window-shadow: 0 18px 42px rgba(0, 0, 0, 0.55), 0 0 0 0.5px rgba(255, 255, 255, 0.18);
+  --titlebar-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  --btn-bg: #626060;
+  --btn-hover-bg: #727070;
+  --btn-active-bg: #494747;
+  --field-bg: #1e1e1e;
+  --selection-bg: #0065cf;
+  --menu-bar-bg: rgba(31, 27, 35, 0.9);
+  --menu-panel-bg: rgba(48, 45, 47, 0.98);
+  --menu-panel-border: 1px solid rgba(255, 255, 255, 0.2);
+  --menu-button-active-bg: rgba(255, 255, 255, 0.16);
+  --desktop-surface: radial-gradient(ellipse at 90% 0%, #7d3c62 0%, transparent 60%), radial-gradient(ellipse at 0% 0%, #742c48 0%, transparent 62%), linear-gradient(145deg, #211e3c 25%, #153a68 50%, #0e5278 51%, #081e3b 90%);
+}
+
+/* Preserve the product's close-left / zoom-right semantics. The 12px lamps
+   sit inside separate 24px targets; no nonfunctional minimize lamp is drawn. */
+body[data-theme="big-sur"] .window > .title-bar {
+  grid-template-columns: var(--titlebar-gutter) minmax(0, 1fr) var(--titlebar-gutter);
+}
+body[data-theme="big-sur"] .title-bar :is(h1, h2) {
+  font-weight: 600;
+  text-shadow: none;
+}
+body[data-theme="big-sur"] .title-bar > :is(.close-box, .resize-box) {
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--big-sur-lamp) 0 5px, var(--big-sur-lamp-rim) 5px 6px, transparent 6px);
+}
+body[data-theme="big-sur"] .title-bar > .close-box {
+  --big-sur-lamp: #ff5f57;
+  --big-sur-lamp-rim: #e34840;
+}
+body[data-theme="big-sur"] .title-bar > .resize-box {
+  grid-column: 3;
+  --big-sur-lamp: #28c840;
+  --big-sur-lamp-rim: #1eaa2e;
+}
+body[data-theme="big-sur"] .title-bar > :is(.close-box, .resize-box)::before,
+body[data-theme="big-sur"] .title-bar > .close-box::after {
+  content: none;
+}
+body[data-theme="big-sur"] .title-bar > :is(.close-box, .resize-box):hover {
+  filter: brightness(0.85);
+}
+body[data-theme="big-sur"] .title-bar > :is(.close-box, .resize-box):focus-visible {
+  outline: var(--control-focus-outline);
+  outline-offset: 1px;
+}
+body[data-theme="big-sur"] :is(.menu-popover, .system-select-menu) :is(button, .system-select-option) {
+  border-radius: 4px;
+}
+body[data-theme="big-sur"] :is(select, .system-select-button) {
+  color: var(--ink);
+}
+body[data-theme="big-sur"] :is(select:not([multiple]), .system-select-button) {
+  background: var(--btn-bg);
+  border: var(--field-border);
+  border-radius: var(--select-radius);
+  box-shadow: var(--control-shadow);
+}
+@media (prefers-reduced-transparency: reduce) {
+  html[data-theme="big-sur"], body[data-theme="big-sur"] {
+    --sidebar-bg: var(--panel);
+    --sidebar-backdrop-filter: none;
+    --menu-bar-bg: var(--paper);
+    --menu-panel-bg: var(--paper);
+    --menu-panel-backdrop-filter: none;
+  }
+}
+@media (prefers-contrast: more) {
+  html[data-theme="big-sur"], body[data-theme="big-sur"] {
+    --rule: var(--shade-dark);
+    --window-border: 1px solid var(--ink);
+    --control-focus-outline: 3px solid var(--selection-bg);
+  }
+}
+
+/* Independent Big Sur artwork: exactly one visible semantic icon layer. */
+body[data-theme="big-sur"] .sys-icon { background: transparent; }
+body[data-theme="big-sur"] .sys-icon-svg > g { display: none; }
+body[data-theme="big-sur"] .sys-icon-svg > .sys-icon-big-sur { display: inline; }
+
+body[data-theme="big-sur"] :is(.system-modal, .startup-settings-modal, .finder-operation-modal) {
+  border: var(--window-border);
+  border-radius: var(--modal-radius);
+  background: var(--modal-bg);
+  box-shadow: var(--window-shadow);
+  color: var(--ink);
+}

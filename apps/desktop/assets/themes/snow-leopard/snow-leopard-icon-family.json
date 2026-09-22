@@ -2868,6 +2868,501 @@
         }
       },
       "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "clioPaint": {
+      "genre": "application",
+      "semanticIdentity": "Drawing palette and brush",
+      "physicalMetaphor": "Drawing palette and brush",
+      "provenanceClass": "C",
+      "sourceKind": "original-generated-era-illustration",
+      "authoringMethod": "built-in image generation for large tiers and appearances; independently authored compact artwork",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "eraGrammarReview": "original-period-adaptation-reviewed",
+      "reviewStatus": "technically-clean",
+      "runtimeAsset": true,
+      "nativeReplica": false,
+      "referenceValidated": false,
+      "sourceNote": "Original AI System 6 application. Period grammar is adapted; no historical native counterpart is claimed.",
+      "sourceReferences": [
+        "apps/desktop/assets/themes/era-icon-reference.json"
+      ],
+      "sizes": {
+        "16": "icons/clioPaint-16.png",
+        "32": "icons/clioPaint-32.png",
+        "64": "icons/clioPaint-64.png",
+        "128": "icons/clioPaint-128.png",
+        "512": "icons/clioPaint-512.png"
+      },
+      "runtimeSha256": {
+        "16-default": "d55b9bd41055f381bdb690e643ccf531c5fdfe2f5f3e2f31ab41cb07b90cadad",
+        "32-default": "f03b8ca98a4056ac5df770654c466e4baad6b0720f6009f120388075dbea7d7d",
+        "64-default": "351dab1b1f906614c6158fc387646904fef4761156f7010662165b56f131f0c7",
+        "128-default": "ca837203a9ccd2cdd4146d2b8444c1b779d3ba1bcb5766b35a98b7859912bc9b",
+        "512-default": "171dfc6e9a6edbfe060b76302708230c5e690cdf84654d11241685d76956fa58"
+      },
+      "sizePolicy": "16 and 32 px have independent compact compositions with reduced detail; large default tiers use material masters where applicable.",
+      "label": "clioPaint",
+      "metrics": {
+        "16": {
+          "pixels": 108,
+          "bbox": {
+            "minX": 2,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 13
+          },
+          "sha256": "d55b9bd41055f381bdb690e643ccf531c5fdfe2f5f3e2f31ab41cb07b90cadad",
+          "ink": {
+            "minX": 2,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 13,
+            "width": 13,
+            "height": 13
+          },
+          "gridShape": "square"
+        },
+        "32": {
+          "pixels": 395,
+          "bbox": {
+            "minX": 3,
+            "minY": 2,
+            "maxX": 29,
+            "maxY": 27
+          },
+          "sha256": "f03b8ca98a4056ac5df770654c466e4baad6b0720f6009f120388075dbea7d7d",
+          "ink": {
+            "minX": 3,
+            "minY": 2,
+            "maxX": 29,
+            "maxY": 27,
+            "width": 27,
+            "height": 26
+          },
+          "gridShape": "square"
+        },
+        "64": {
+          "pixels": 1794,
+          "bbox": {
+            "minX": 5,
+            "minY": 7,
+            "maxX": 57,
+            "maxY": 55
+          },
+          "sha256": "351dab1b1f906614c6158fc387646904fef4761156f7010662165b56f131f0c7",
+          "ink": {
+            "minX": 5,
+            "minY": 7,
+            "maxX": 57,
+            "maxY": 55,
+            "width": 53,
+            "height": 49
+          },
+          "gridShape": "square"
+        },
+        "128": {
+          "pixels": 7025,
+          "bbox": {
+            "minX": 11,
+            "minY": 16,
+            "maxX": 115,
+            "maxY": 112
+          },
+          "sha256": "ca837203a9ccd2cdd4146d2b8444c1b779d3ba1bcb5766b35a98b7859912bc9b",
+          "ink": {
+            "minX": 11,
+            "minY": 16,
+            "maxX": 115,
+            "maxY": 112,
+            "width": 105,
+            "height": 97
+          },
+          "gridShape": "square"
+        },
+        "512": {
+          "pixels": 109799,
+          "bbox": {
+            "minX": 48,
+            "minY": 62,
+            "maxX": 464,
+            "maxY": 449
+          },
+          "sha256": "171dfc6e9a6edbfe060b76302708230c5e690cdf84654d11241685d76956fa58",
+          "ink": {
+            "minX": 48,
+            "minY": 62,
+            "maxX": 464,
+            "maxY": 449,
+            "width": 417,
+            "height": 388
+          },
+          "gridShape": "square"
+        }
+      },
+      "grid": {
+        "canvas": 128,
+        "shape": "square",
+        "fitted": 0.8203125,
+        "method": "measured-output-no-resampling"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.4922,
+          "meanLum": 148.07,
+          "lumStd": 49.33,
+          "edgeEnergy": 105
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.4561,
+          "meanLum": 148.38,
+          "lumStd": 55.29,
+          "edgeEnergy": 321
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.4495,
+          "meanLum": 149.38,
+          "lumStd": 56.12,
+          "edgeEnergy": 459
+        }
+      },
+      "master": "internal/evidence/drafts/added-app-era-icons/masters/snow-leopard/clioPaint.png",
+      "masterSha256": "b9b1ae1b846b3acd75007ad655b0dfb6a138ed76e882ed1f517fb358108428d2"
+    },
+    "clioProject": {
+      "genre": "application",
+      "semanticIdentity": "Task cards and dependency links",
+      "physicalMetaphor": "Task cards and dependency links",
+      "provenanceClass": "C",
+      "sourceKind": "original-generated-era-illustration",
+      "authoringMethod": "built-in image generation for large tiers and appearances; independently authored compact artwork",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "eraGrammarReview": "original-period-adaptation-reviewed",
+      "reviewStatus": "technically-clean",
+      "runtimeAsset": true,
+      "nativeReplica": false,
+      "referenceValidated": false,
+      "sourceNote": "Original AI System 6 application. Period grammar is adapted; no historical native counterpart is claimed.",
+      "sourceReferences": [
+        "apps/desktop/assets/themes/era-icon-reference.json"
+      ],
+      "sizes": {
+        "16": "icons/clioProject-16.png",
+        "32": "icons/clioProject-32.png",
+        "64": "icons/clioProject-64.png",
+        "128": "icons/clioProject-128.png",
+        "512": "icons/clioProject-512.png"
+      },
+      "runtimeSha256": {
+        "16-default": "ffa1fe578fe65da3c421bead33cccda32b37747f078ec87c2c2502f663f2e80c",
+        "32-default": "b62a25a01297e14043cf875e24339e740b0215335aaba03f6d2d4e00b4593d98",
+        "64-default": "d0fe3404c2c949aa23a4bf36841d555c8fcaa534ad52079080e65abb6702d0b6",
+        "128-default": "9dd6e07fefe161a5d22f28eb69933d531dd1b265d63d6e24b9a9ee2ab76bafbe",
+        "512-default": "68b225690b2c83a498fd8cd938d32d9ccbbcc6b2446524938c26ef09fc7e68ae"
+      },
+      "sizePolicy": "16 and 32 px have independent compact compositions with reduced detail; large default tiers use material masters where applicable.",
+      "label": "clioProject",
+      "metrics": {
+        "16": {
+          "pixels": 86,
+          "bbox": {
+            "minX": 1,
+            "minY": 2,
+            "maxX": 15,
+            "maxY": 14
+          },
+          "sha256": "ffa1fe578fe65da3c421bead33cccda32b37747f078ec87c2c2502f663f2e80c",
+          "ink": {
+            "minX": 1,
+            "minY": 2,
+            "maxX": 15,
+            "maxY": 14,
+            "width": 15,
+            "height": 13
+          },
+          "gridShape": "landscape"
+        },
+        "32": {
+          "pixels": 327,
+          "bbox": {
+            "minX": 2,
+            "minY": 4,
+            "maxX": 30,
+            "maxY": 29
+          },
+          "sha256": "b62a25a01297e14043cf875e24339e740b0215335aaba03f6d2d4e00b4593d98",
+          "ink": {
+            "minX": 2,
+            "minY": 4,
+            "maxX": 30,
+            "maxY": 29,
+            "width": 29,
+            "height": 26
+          },
+          "gridShape": "square"
+        },
+        "64": {
+          "pixels": 1258,
+          "bbox": {
+            "minX": 6,
+            "minY": 12,
+            "maxX": 57,
+            "maxY": 51
+          },
+          "sha256": "d0fe3404c2c949aa23a4bf36841d555c8fcaa534ad52079080e65abb6702d0b6",
+          "ink": {
+            "minX": 6,
+            "minY": 12,
+            "maxX": 57,
+            "maxY": 51,
+            "width": 52,
+            "height": 40
+          },
+          "gridShape": "landscape"
+        },
+        "128": {
+          "pixels": 4849,
+          "bbox": {
+            "minX": 11,
+            "minY": 24,
+            "maxX": 115,
+            "maxY": 102
+          },
+          "sha256": "9dd6e07fefe161a5d22f28eb69933d531dd1b265d63d6e24b9a9ee2ab76bafbe",
+          "ink": {
+            "minX": 11,
+            "minY": 24,
+            "maxX": 115,
+            "maxY": 102,
+            "width": 105,
+            "height": 79
+          },
+          "gridShape": "landscape"
+        },
+        "512": {
+          "pixels": 75689,
+          "bbox": {
+            "minX": 48,
+            "minY": 98,
+            "maxX": 464,
+            "maxY": 413
+          },
+          "sha256": "68b225690b2c83a498fd8cd938d32d9ccbbcc6b2446524938c26ef09fc7e68ae",
+          "ink": {
+            "minX": 48,
+            "minY": 98,
+            "maxX": 464,
+            "maxY": 413,
+            "width": 417,
+            "height": 316
+          },
+          "gridShape": "landscape"
+        }
+      },
+      "grid": {
+        "canvas": 128,
+        "shape": "landscape",
+        "fitted": 0.8203125,
+        "method": "measured-output-no-resampling"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.3984,
+          "meanLum": 171.04,
+          "lumStd": 54.78,
+          "edgeEnergy": 63
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.3252,
+          "meanLum": 177.65,
+          "lumStd": 56.4,
+          "edgeEnergy": 138
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.3135,
+          "meanLum": 180.48,
+          "lumStd": 57.32,
+          "edgeEnergy": 193
+        }
+      },
+      "master": "internal/evidence/drafts/added-app-era-icons/masters/snow-leopard/clioProject.png",
+      "masterSha256": "2f286fe720c3edeb757cec0d9a27adfefa91f5ffc91ce3f568c536043bf1081c"
+    },
+    "oneMoreTune": {
+      "genre": "application",
+      "semanticIdentity": "Music knowledge study cards and note",
+      "physicalMetaphor": "Music knowledge study cards and note",
+      "provenanceClass": "C",
+      "sourceKind": "original-generated-era-illustration",
+      "authoringMethod": "built-in image generation for large tiers and appearances; independently authored compact artwork",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "eraGrammarReview": "original-period-adaptation-reviewed",
+      "reviewStatus": "technically-clean",
+      "runtimeAsset": true,
+      "nativeReplica": false,
+      "referenceValidated": false,
+      "sourceNote": "Original AI System 6 application. Period grammar is adapted; no historical native counterpart is claimed.",
+      "sourceReferences": [
+        "apps/desktop/assets/themes/era-icon-reference.json"
+      ],
+      "sizes": {
+        "16": "icons/oneMoreTune-16.png",
+        "32": "icons/oneMoreTune-32.png",
+        "64": "icons/oneMoreTune-64.png",
+        "128": "icons/oneMoreTune-128.png",
+        "512": "icons/oneMoreTune-512.png"
+      },
+      "runtimeSha256": {
+        "16-default": "30c417466afa6f3d9c96f7bf7822dfd055cb3c6d90ddf5693ab77a8f4d2575d7",
+        "32-default": "5fdcedc76830dd792727db82af836a2aeffa31be1c2d80c8b2c784dc0389fd6f",
+        "64-default": "91519cf66187f968d71c6bf4a59ffda8c5ad89d369d6d9e86046f14db6977cf4",
+        "128-default": "9edcf81d95dae7c8ff7d0ea1bb61704e5e1c67e55e188f91305be9bfdd3b2a8b",
+        "512-default": "611f5ddd27d2e3a23f329ee671b6bb08e81375d890bd9b7e3b9d8ed1bf9b0c48"
+      },
+      "sizePolicy": "16 and 32 px have independent compact compositions with reduced detail; large default tiers use material masters where applicable.",
+      "label": "oneMoreTune",
+      "metrics": {
+        "16": {
+          "pixels": 158,
+          "bbox": {
+            "minX": 1,
+            "minY": 2,
+            "maxX": 13,
+            "maxY": 14
+          },
+          "sha256": "30c417466afa6f3d9c96f7bf7822dfd055cb3c6d90ddf5693ab77a8f4d2575d7",
+          "ink": {
+            "minX": 1,
+            "minY": 2,
+            "maxX": 13,
+            "maxY": 14,
+            "width": 13,
+            "height": 13
+          },
+          "gridShape": "square"
+        },
+        "32": {
+          "pixels": 616,
+          "bbox": {
+            "minX": 1,
+            "minY": 3,
+            "maxX": 27,
+            "maxY": 29
+          },
+          "sha256": "5fdcedc76830dd792727db82af836a2aeffa31be1c2d80c8b2c784dc0389fd6f",
+          "ink": {
+            "minX": 1,
+            "minY": 3,
+            "maxX": 27,
+            "maxY": 29,
+            "width": 27,
+            "height": 27
+          },
+          "gridShape": "square"
+        },
+        "64": {
+          "pixels": 2053,
+          "bbox": {
+            "minX": 6,
+            "minY": 6,
+            "maxX": 57,
+            "maxY": 58
+          },
+          "sha256": "91519cf66187f968d71c6bf4a59ffda8c5ad89d369d6d9e86046f14db6977cf4",
+          "ink": {
+            "minX": 6,
+            "minY": 6,
+            "maxX": 57,
+            "maxY": 58,
+            "width": 52,
+            "height": 53
+          },
+          "gridShape": "square"
+        },
+        "128": {
+          "pixels": 8087,
+          "bbox": {
+            "minX": 12,
+            "minY": 12,
+            "maxX": 115,
+            "maxY": 116
+          },
+          "sha256": "9edcf81d95dae7c8ff7d0ea1bb61704e5e1c67e55e188f91305be9bfdd3b2a8b",
+          "ink": {
+            "minX": 12,
+            "minY": 12,
+            "maxX": 115,
+            "maxY": 116,
+            "width": 104,
+            "height": 105
+          },
+          "gridShape": "square"
+        },
+        "512": {
+          "pixels": 127235,
+          "bbox": {
+            "minX": 49,
+            "minY": 47,
+            "maxX": 462,
+            "maxY": 464
+          },
+          "sha256": "611f5ddd27d2e3a23f329ee671b6bb08e81375d890bd9b7e3b9d8ed1bf9b0c48",
+          "ink": {
+            "minX": 49,
+            "minY": 47,
+            "maxX": 462,
+            "maxY": 464,
+            "width": 414,
+            "height": 418
+          },
+          "gridShape": "square"
+        }
+      },
+      "grid": {
+        "canvas": 128,
+        "shape": "square",
+        "fitted": 0.8203125,
+        "method": "measured-output-no-resampling"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5508,
+          "meanLum": 197.53,
+          "lumStd": 54.52,
+          "edgeEnergy": 87
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5146,
+          "meanLum": 199.16,
+          "lumStd": 60.12,
+          "edgeEnergy": 242
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5113,
+          "meanLum": 198.95,
+          "lumStd": 61.45,
+          "edgeEnergy": 359
+        }
+      },
+      "master": "internal/evidence/drafts/added-app-era-icons/masters/snow-leopard/oneMoreTune.png",
+      "masterSha256": "ac837fc2dd66dce939adcab30f605b2271d4f2e5d60f118a8b7c98d95b8689fa"
     }
   },
   "reviewedCore": [
@@ -2951,5 +3446,11 @@
     "controlPanel",
     "teachText",
     "daHandler"
+  ],
+  "supplementalBuilder": "tooling/build-added-app-icons.mjs",
+  "supplementalIconIds": [
+    "clioPaint",
+    "clioProject",
+    "oneMoreTune"
   ]
 }

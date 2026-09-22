@@ -24,6 +24,7 @@ const MONO = {
   aqua: "monaco",
   "snow-leopard": "menlo",
   yosemite: "menlo",
+  "big-sur": "sf",
   "liquid-glass": "sf",
 };
 

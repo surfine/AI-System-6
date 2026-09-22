@@ -1204,3 +1204,11 @@
     min-height: 44px;
   }
 }
+
+/* In the landscape phone shell this window fills the screen. Its own 360px
+   floor then pushed the frame 2px past the bottom rail: the shell clears
+   height and max-height but not the floor under them. The fix lives here, in
+   the sheet that owns the value, so the boot payload pays nothing for it. */
+body.mobile-landscape-shell .bonsai-window.is-mobile-fullscreen:not(.is-collapsed) {
+  min-height: 0;
+}

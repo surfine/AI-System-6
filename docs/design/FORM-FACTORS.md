@@ -40,7 +40,7 @@ zero findings.
 | Mac (13-inch and up) | The desk: floating windows, a menu bar at the top edge, pointer and keyboard | Everything, including many windows at once | — | Device matrix desk cells; display corners |
 | iPad, sideways | The desk with a finger: the same windows, reachable by touch, split view and Stage Manager | Everything; windows are insets and can be arranged | Nothing by policy | Device matrix `ipad-11-landscape`; display corners |
 | iPad, upright | The one-page flow (820px is inside the 860px band) | Every application, one at a time, full screen | The desktop launcher's second dimension, the MultiFinder stack | Device matrix `ipad-11-portrait`, `ipad-mini-portrait` |
-| iPhone | The desk as a pocket device: one application at a time, the phone flow, the strip under the notch | Every application; the desk's launcher and MultiFinder on demand | Windows side by side | Device matrix phone cells; `tests/e2e/probe-one-more-tune-phone.spec.mjs` |
+| iPhone | The desk as a pocket device: one application at a time, the phone flow, the strip under the notch | Every application; the desk's launcher and MultiFinder on demand | Windows side by side | Device matrix phone cells; `tests/e2e/probe-one-more-tune-phone.spec.mjs`; `npm run verify:ios-standalone` for the home-screen web app |
 | Apple Watch | A glance, not a desk | One question, one recording, three answers, the round's score | See *The wrist* below | Display corners (`watch-45mm`, `watch-41mm`, `watch-ultra`) |
 
 ## Corner ownership, per display

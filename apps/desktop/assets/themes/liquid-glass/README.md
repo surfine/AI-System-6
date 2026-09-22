@@ -1,6 +1,8 @@
 # Liquid Glass icon family
 
-This directory ships the complete 56-object macOS Tahoe 26 family. Cross-era
+This directory ships the complete 59-object macOS 27 Golden Gate family. The
+56-object core and the ClioPaint, ClioProject, and One More Tune additions share
+the same Liquid Glass runtime contract. Cross-era
 continuity comes from each object's `semanticIdentity` plus one or two
 `identityAnchors` in
 [icon-system-continuity.json](../icon-system-continuity.json), not from a fixed
@@ -11,6 +13,14 @@ is not historical validation. The 40 ids outside `priorityCore16` remain
 historically pending until individually reviewed; per-object provenance and
 status live in
 [icon-provenance-matrix.json](../icon-provenance-matrix.json).
+
+Golden Gate correction is recorded in
+golden-gate-icon-mask-matrix.json.
+Applications, utilities, and accessories receive one shared **runtime** rounded
+rectangle mask; folders, documents, disks, discs, and both trash states remain
+free-form. The source PNGs stay transparent, with no baked blur, refraction,
+dynamic light, or tinted tier. No native Golden Gate single-icon asset is
+claimed where Apple has not published one.
 
 ## Actual runtime mapping
 
@@ -35,15 +45,15 @@ also cannot refract the live desktop behind them.
 
 ## Finder / MultiFinder — P0 closed
 
-Finder uses the approved ImageGen v2 Tahoe blue enclosure with a separate
+Finder uses the approved ImageGen v2 Golden Gate adaptation with a separate
 translucent face/profile panel and ink. Its independent `base`, `panel`, and
 `ink` sources recompose the authored identity, and its historical status is
-`reference-validated`. MultiFinder composes the current Tahoe Finder identity
+`reference-validated`. MultiFinder composes the current Golden Gate Finder adaptation
 with multiplicity; it is provenance class C and `historically-reviewed`, not a
 native replica. Both own direct 128/64/32/16 optical runtime assets across
 Default, Dark, and Clear.
 
-## ClioTalk — Tahoe cell closed
+## ClioTalk — Golden Gate adaptation recorded
 
 ClioTalk now uses a P-B layered glass conversation panel. Two distinct
 interlocutor marks form the conversation layer, while the provisional reply is
@@ -67,5 +77,6 @@ Finder-lineage overlay as the final runtime step. Running only
 the final Finder-lineage state. Regenerate the provenance matrix and lineage
 audit after review statuses change.
 
-Historical Tahoe captures remain evidence-only; no Apple artwork, screenshot
-crop, or traced Apple path ships as a product icon.
+Golden Gate official-source hashes and the 59-object audit boards live under
+`internal/evidence/drafts/liquid-glass-golden-gate/`. Apple artwork, screenshot
+crop, or traced Apple path never ships as a product icon.

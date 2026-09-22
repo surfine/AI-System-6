@@ -26,8 +26,16 @@ const THEME_IDS = Object.freeze([
   "aqua",
   "snow-leopard",
   "yosemite",
+  "big-sur",
   "liquid-glass",
+  "nextstep",
 ]);
+// NeXTSTEP 3.3 ships in the build but stays behind the experimental gate until
+// its own acceptance items are recorded (see
+// internal/evidence/drafts/nextstep/acceptance-ledger.zh-CN.md). It still has
+// to project into real applications exactly like the others — the assertion
+// below only stops treating "not release-ready" as a defect in itself.
+const EXPERIMENTAL_THEME_IDS = Object.freeze(["nextstep"]);
 
 const REGISTERED_WINDOWS = Object.freeze(Object.entries(windowInterfaceRegistry).map(([id, contract]) => Object.freeze({
   id,
@@ -328,13 +336,25 @@ try {
     systemFont: theme.systemFont,
     fontStrategy: theme.fontStrategy,
   })));
-  assert(JSON.stringify(registry.map(({ id }) => id)) === JSON.stringify(THEME_IDS), "Theme registry is not the canonical six-appearance timeline");
-  assert(registry.every(({ releaseReady }) => releaseReady !== false), "Every canonical appearance must be release-ready");
+  assert(JSON.stringify(registry.map(({ id }) => id)) === JSON.stringify(THEME_IDS), "Theme registry is not the canonical appearance timeline");
+  assert(
+    registry.every(({ id, releaseReady }) => releaseReady !== false || EXPERIMENTAL_THEME_IDS.includes(id)),
+    "Every appearance outside the experimental gate must be release-ready",
+  );
+  assert(
+    EXPERIMENTAL_THEME_IDS.every((id) => registry.some((theme) => theme.id === id && theme.releaseReady === false)),
+    "The experimental appearance is still gated instead of shipping as a saved preference",
+  );
 
   const results = [];
   for (const theme of registry) {
-    const projection = await page.evaluate((themeId) => {
-      const applied = window.AISystem6Theme.applyTheme(themeId, {
+    // applyTheme is asynchronous for an appearance whose stylesheet is not in
+    // the boot bundle: it returns a transaction that finishes once the sheet
+    // (and any interaction wait) is ready. Big Sur and NeXTSTEP both ship as
+    // separate sheets, so this has to await the same promise the product's own
+    // callers do, or the projection reads an undefined return value.
+    const projection = await page.evaluate(async (themeId) => {
+      const applied = await window.AISystem6Theme.applyTheme(themeId, {
         experimental: true,
         persist: false,
         announce: false,
@@ -526,7 +546,7 @@ try {
           assert(value.rect.width > 0 && value.rect.height > 0, `${theme.id}/${contract.id}: ${surface} has no rendered geometry`);
           assert(value.style.display !== "none" && value.style.visibility !== "hidden", `${theme.id}/${contract.id}: ${surface} is not visible`);
         }
-        if (["aqua", "snow-leopard", "yosemite", "liquid-glass"].includes(theme.id)
+        if (["aqua", "snow-leopard", "yosemite", "big-sur", "liquid-glass"].includes(theme.id)
           && snapshot.sampleModernSourceSize) {
           // The floor is the ICON's declared display size, not the sample
           // container's box. Most samples are a whole window pane, and measuring

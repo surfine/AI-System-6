@@ -143,6 +143,8 @@ const ALWAYS_AVAILABLE = new Map([
   ["set-theme-aqua", "Appearance choice is valid from every application"],
   ["set-theme-snow-leopard", "Appearance choice is valid from every application"],
   ["set-theme-yosemite", "Appearance choice is valid from every application"],
+  ["set-theme-big-sur", "Appearance choice is valid from every application"],
+  ["set-theme-nextstep", "Appearance choice is valid from every application"],
   ["set-theme-liquid-glass", "Appearance choice is valid from every application"],
   // Line spacing is a reading/writing preference, not a document action: it is
   // valid whenever the Writing menu is open, project or no project.

@@ -1,0 +1,708 @@
+/* NeXTSTEP 3.3 material adaptation. Evidence: NeXT's Release 3.3 Visual
+   Guide, chapters 1 and 4 (nextop.de mirror). Gray bevels and a black key
+   window title are documented; these CSS measurements are not native pixel
+   calibration. The shared Mac-style menu, Zoom and WindowShade semantics
+   remain intact. Dedicated NeXT icons and shell behavior are deferred. */
+html[data-theme="nextstep"],
+body[data-theme="nextstep"] {
+  color-scheme: light;
+  --theme-ui-font: Helvetica, Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+  --theme-title-font: var(--theme-ui-font);
+  --system-readable-min: 12px;
+  --system-title-size: 12px;
+  --system-control-size: 12px;
+  --system-text-size: 12px;
+  --system-caption-size: 11px;
+  --ink: #000000;
+  --paper: #ffffff;
+  --panel: #aaaaaa;
+  --quiet-panel: #eeeeee;
+  --shade: #888888;
+  --shade-dark: #555555;
+  --rule: #555555;
+  --separator: #555555;
+  --desktop: #555555;
+  --desktop-surface: #555555;
+  --surface-primary: #aaaaaa;
+  --surface-secondary: #cccccc;
+  --surface-inset: #ffffff;
+  --pane-bg: #aaaaaa;
+  --window-bg: #aaaaaa;
+  --window-border: 1px solid #000000;
+  --window-radius: 0px;
+  --window-shadow: 2px 2px 0 #222222;
+  --active-window-shadow: var(--window-shadow);
+  --inactive-window-shadow: var(--window-shadow);
+  --window-backdrop-filter: none;
+  --surface-backdrop-filter: none;
+  --system-border: 1px solid #555555;
+  --system-primary-divider: var(--system-border);
+  --system-secondary-divider: 1px solid #888888;
+  --system-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #555555;
+  --system-inset: inset 1px 1px 0 #555555, inset -1px -1px 0 #ffffff;
+  --system-object-shadow: var(--system-shadow);
+  --system-disabled-fg: #555555;
+  --system-titlebar-height: 24px;
+  --system-titlebar-title-height: 20px;
+  --system-titlebar-font-size: 12px;
+  --system-titlebar-control-slot: 26px;
+  --system-titlebar-control-size: 24px;
+  --system-titlebar-control-art-size: 13px;
+  --system-titlebar-close-art-offset-x: 5px;
+  --system-titlebar-resize-art-offset-x: 5px;
+  --system-titlebar-margin-y: 0px;
+  --system-titlebar-padding-y: 1px;
+  --system-titlebar-padding-x: 1px;
+  --system-titlebar-active-bg: #000000;
+  --system-titlebar-inactive-bg: #aaaaaa;
+  --system-titlebar-background-origin: border-box;
+  --system-titlebar-background-clip: border-box;
+  --system-titlebar-inactive-title-color: #333333;
+  --system-titlebar-inactive-control-visibility: visible;
+  --system-titlebar-control-focus-outline: 1px dotted #ffffff;
+  --titlebar-title-bg: transparent;
+  --titlebar-title-fg: #ffffff;
+  --titlebar-border: 1px solid #000000;
+  --titlebar-shadow: inset 1px 1px 0 #dddddd;
+  --toolbar-bg: #aaaaaa;
+  --toolbar-bg-inactive: #aaaaaa;
+  --toolbar-border: 1px solid #555555;
+  --app-toolbar-bg: var(--toolbar-bg);
+  --app-toolbar-border-bottom: var(--toolbar-border);
+  --sidebar-bg: #cccccc;
+  --sidebar-selection-bg: #ffffff;
+  --sidebar-selection-fg: #000000;
+  --selection-bg: #000000;
+  --selection-fg: #ffffff;
+  --details-bar-bg: #aaaaaa;
+  --details-bar-border: #555555;
+  --control-bg: #aaaaaa;
+  --control-radius: 0px;
+  --control-shadow: var(--system-shadow);
+  --control-active-shadow: var(--system-inset);
+  --control-focus-outline: 1px dotted #000000;
+  --control-focus-offset: 2px;
+  --system-focus-outline: var(--control-focus-outline);
+  --control-disabled-bg: #aaaaaa;
+  --control-disabled-field-bg: #cccccc;
+  --control-disabled-opacity: 1;
+  --btn-bg: #aaaaaa;
+  --btn-fg: #000000;
+  --btn-border-color: #000000;
+  --btn-radius: 0px;
+  --btn-shadow: var(--system-shadow);
+  --btn-hover-bg: #bbbbbb;
+  --btn-hover-fg: #000000;
+  --btn-hover-shadow: var(--system-shadow);
+  --btn-active-bg: #ffffff;
+  --btn-active-fg: #000000;
+  --btn-active-shadow: var(--system-inset);
+  --btn-default-bg: #aaaaaa;
+  --btn-default-fg: #000000;
+  --btn-default-shadow: var(--system-shadow), 0 0 0 1px #000000;
+  --btn-default-hover-bg: #bbbbbb;
+  --btn-default-hover-fg: #000000;
+  --btn-default-active-bg: #ffffff;
+  --btn-default-active-fg: #000000;
+  --system-button-min-height: 24px;
+  --system-button-padding-x: 12px;
+  --system-button-padding-y: 3px;
+  --field-bg: #ffffff;
+  --field-focus-bg: #ffffff;
+  --field-border: 1px solid #555555;
+  --field-radius: 0px;
+  --field-shadow: var(--system-inset);
+  --field-focus-border: 1px solid #000000;
+  --field-focus-ring: 0 0 0 1px #000000;
+  --select-radius: 0px;
+  --select-control-bg-color: #aaaaaa;
+  --select-control-bg-image: none;
+  --select-control-border: 1px solid #000000;
+  --select-control-radius: 0px;
+  --select-control-shadow: var(--system-shadow);
+  --system-select-control-bg: #aaaaaa;
+  --system-select-control-border: 1px solid #000000;
+  --system-select-control-radius: 0px;
+  --system-select-control-shadow: var(--system-shadow);
+  --system-select-option-active-bg: #ffffff;
+  --system-select-option-active-fg: #000000;
+  --choice-bg: #aaaaaa;
+  --choice-border: 1px solid #555555;
+  --choice-radius: 0px;
+  --choice-shadow: var(--system-inset);
+  --choice-checked-bg: #ffffff;
+  --menu-bar-bg: #aaaaaa;
+  --menu-bar-border: 1px solid #000000;
+  --menu-bar-shadow: var(--system-shadow);
+  --menu-panel-bg: #aaaaaa;
+  --menu-panel-border: 1px solid #000000;
+  --menu-panel-radius: 0px;
+  --menu-panel-padding: 2px;
+  --menu-panel-shadow: var(--system-shadow), 2px 2px 0 #222222;
+  --menu-panel-backdrop-filter: none;
+  --menu-button-active-bg: #ffffff;
+  --menu-button-active-fg: #000000;
+  --menu-item-active-bg: #ffffff;
+  --menu-item-active-fg: #000000;
+  --menu-item-disabled-fg: #555555;
+  --menu-item-disabled-opacity: 1;
+  --menu-item-min-height: 24px;
+  --menu-separator-border-bottom: 1px solid #555555;
+  --desktop-label-bg: #aaaaaa;
+  --desktop-label-fg: #000000;
+  --desktop-label-selected-bg: #ffffff;
+  --desktop-label-selected-fg: #000000;
+  --window-frame-track-bg: repeating-conic-gradient(#555555 0% 25%, #aaaaaa 0% 50%) 0 0 / 2px 2px;
+  --window-frame-track-border: 1px solid #555555;
+  --window-frame-thumb-bg: radial-gradient(circle at center, #555555 0 1px, #ffffff 1px 2px, transparent 2px), #aaaaaa;
+  --window-frame-thumb-border: 1px solid #ffffff;
+  --window-frame-thumb-radius: 0px;
+  --window-frame-arrow-bg: #aaaaaa;
+  --window-frame-arrow-ink: #000000;
+  --scrollbar-corner-bg: #aaaaaa;
+  --tab-bg: #aaaaaa;
+  --tab-active-bg: #cccccc;
+  --tab-active-fg: #000000;
+  --tab-shadow: var(--system-shadow);
+  --tab-active-shadow: var(--system-shadow);
+  --tab-panel-bg: #aaaaaa;
+  --tab-panel-shadow: var(--system-inset);
+  --tdi-tab-bg: #aaaaaa;
+  --tdi-tab-active-bg: #ffffff;
+  --tdi-tab-active-fg: #000000;
+  --tdi-tab-radius: 0px;
+  /* Shared application geometry retained; material roles rebound for this family. */
+  --alarm-clock-active-bg: var(--ink);
+  --alarm-clock-active-fg: var(--paper);
+  --alarm-clock-close-bg: var(--paper);
+  --alarm-clock-close-border: 1px solid var(--ink);
+  --alarm-clock-close-radius: 0px;
+  --alarm-clock-close-shadow: var(--system-shadow);
+  --alarm-clock-close-size: 10px;
+  --alarm-clock-divider: var(--system-border);
+  --alarm-clock-frame-border: var(--system-border);
+  --alarm-clock-frame-radius: 0px;
+  --alarm-clock-frame-shadow: var(--system-shadow);
+  --alarm-clock-lever-bg: transparent;
+  --alarm-clock-lever-fg: var(--ink);
+  --alarm-clock-lever-focus-outline: var(--system-focus-outline);
+  --alarm-clock-lever-hover-bg: transparent;
+  --alarm-clock-lever-radius: 0px;
+  --alarm-clock-lever-shadow: var(--system-shadow);
+  --alarm-clock-mode-active-shadow: var(--system-shadow);
+  --alarm-clock-mode-bg: var(--alarm-clock-surface-bg);
+  --alarm-clock-mode-divider: var(--alarm-clock-divider);
+  --alarm-clock-mode-hover-bg: var(--alarm-clock-surface-bg);
+  --alarm-clock-mode-radius: 0px;
+  --alarm-clock-readout-bg: var(--paper);
+  --alarm-clock-section-gap: 0px;
+  --alarm-clock-surface-bg: var(--paper);
+  --alarm-clock-title-bg: var(--paper);
+  --balloon-help-bg: var(--paper);
+  --balloon-help-border: var(--system-border);
+  --balloon-help-radius: 0px;
+  --balloon-help-shadow: var(--system-shadow);
+  --btn-active-border-color: var(--ink);
+  --btn-default-text-shadow: none;
+  --choice-checked-bg-image: none;
+  --choice-checkmark-image: url("./system.css-reference/icon/checkmark.svg");
+  --clio-composer-control-radius: 0px;
+  --clio-muted-copy: var(--shade-dark);
+  --clio-said-rule: 3px solid var(--ink);
+  --clio-slip-border: 1px dotted var(--shade-dark);
+  --clio-slip-kept-border: 1px solid var(--ink);
+  --clio-slip-kept-shadow: var(--system-shadow);
+  --clio-slip-kept-surface: var(--paper);
+  --clio-slip-mark-border: 1px dotted var(--shade-dark);
+  --clio-slip-mark-kept: var(--ink);
+  --clio-slip-radius: 0px;
+  --clio-slip-shadow: var(--system-shadow);
+  --clio-slip-surface: transparent;
+  --control-choice-hover-shadow: var(--system-shadow);
+  --control-chooser-active-bg: #ffffff;
+  --control-chooser-active-fg: var(--ink);
+  --control-chooser-active-label-bg: #ffffff;
+  --control-chooser-active-label-fg: #000000;
+  --control-chooser-active-shadow: var(--system-shadow);
+  --control-chooser-active-weight: inherit;
+  --control-chooser-area: 1 / 1 / span 2 / auto;
+  --control-chooser-bg: transparent;
+  --control-chooser-border-bottom: 0;
+  --control-chooser-border-right: var(--system-border);
+  --control-chooser-direction: column;
+  --control-chooser-gap: 10px;
+  --control-chooser-hover-bg: transparent;
+  --control-chooser-hover-fg: var(--ink);
+  --control-chooser-icon-display: block;
+  --control-chooser-icon-size: 32px;
+  --control-chooser-item-bg: transparent;
+  --control-chooser-item-border: 0;
+  --control-chooser-item-direction: column;
+  --control-chooser-item-fg: var(--ink);
+  --control-chooser-item-flex: 0 0 auto;
+  --control-chooser-item-gap: 4px;
+  --control-chooser-item-offset: 0px;
+  --control-chooser-item-padding: 6px 4px;
+  --control-chooser-item-radius: 0px;
+  --control-chooser-label-padding: 1px 3px;
+  --control-chooser-label-size: 11px;
+  --control-chooser-min-height: auto;
+  --control-chooser-padding: 0;
+  --control-settings-columns: 92px minmax(0, 1fr);
+  --control-settings-rows: minmax(auto, 1fr) auto;
+  --control-strip-active-bg: var(--ink);
+  --control-strip-active-fg: var(--paper);
+  --control-strip-active-shadow: var(--system-shadow);
+  --control-strip-bg: var(--paper);
+  --control-strip-border: 1px solid var(--ink);
+  --control-strip-divider: 1px solid var(--ink);
+  --control-strip-gauge: var(--ink);
+  --control-strip-gauge-bg: var(--paper);
+  --control-strip-grip: repeating-linear-gradient(to bottom, currentColor 0 2px, transparent 2px 4px) 50% 50% / 4px 100% no-repeat;
+  --control-strip-grip-inset: 6px 0;
+  --control-strip-hover-bg: var(--ink);
+  --control-strip-hover-fg: var(--paper);
+  --control-strip-hover-shadow: var(--system-shadow);
+  --control-strip-radius: 0px;
+  --control-strip-radius-mirrored: 0px;
+  --control-strip-shadow: var(--system-shadow);
+  --control-strip-thickness: var(--system-menu-height);
+  --control-strip-tile-height: calc(var(--control-strip-thickness) - 2px);
+  --control-strip-tile-margin: 0;
+  --control-strip-tile-radius: 0px;
+  --desktop-label-box-shadow: var(--system-shadow);
+  --desktop-label-radius: 0px;
+  --desktop-label-text-shadow: none;
+  --endfield-pane-bg: var(--panel);
+  --endfield-pane-bg-position: center, center, 45% 20%, center;
+  --endfield-pane-bg-repeat: repeat, repeat, no-repeat, no-repeat;
+  --endfield-pane-bg-size: 34px 34px, 34px 34px, max(1200px, 118vw) auto, auto;
+  --field-control-padding: 4px 8px;
+  --find-path-header-bg: var(--panel);
+  --find-path-header-border-bottom: 1px solid var(--shade-dark);
+  --find-path-header-display: none;
+  --find-path-header-padding: 3px 10px;
+  --find-path-query-bg: var(--field-bg);
+  --find-path-query-min-height: 26px;
+  --find-path-query-padding: 4px 8px;
+  --find-path-query-radius: 0px;
+  --find-path-relevance-display: none;
+  --find-path-result-align: baseline;
+  --find-path-result-border-bottom: 1px solid var(--shade);
+  --find-path-result-column-gap: 10px;
+  --find-path-result-display: grid;
+  --find-path-result-last-border-bottom: 0;
+  --find-path-result-padding: 10px 12px;
+  --find-path-result-selected-border-bottom: 1px solid var(--shade);
+  --find-path-results-bg: var(--paper);
+  --md-marker-ink: #767676;
+  --menu-bar-border-color: var(--ink);
+  --menu-check-left: 3px;
+  --menu-item-disabled-bg: var(--panel);
+  --menu-item-fg: var(--ink);
+  --menu-item-line-height: 16px;
+  --menu-item-padding: 1px 3px 1px 21px;
+  --menu-separator-margin: 2px 0;
+  --messages-bg: var(--paper);
+  --progress-bg: var(--panel);
+  --progress-border-color: var(--ink);
+  --progress-fill-active-bg: #555555;
+  --progress-fill-active-size: auto;
+  --progress-fill-bg: #555555;
+  --progress-fill-radius: 0px;
+  --progress-fill-shadow: var(--system-shadow);
+  --progress-height: 18px;
+  --progress-padding: 0px;
+  --progress-radius: 0px;
+  --progress-shadow: var(--system-shadow);
+  --radio-bg: transparent;
+  --radio-border: 0;
+  --radio-checked-focus-image: url("./system.css-reference/icon/radio-dot.svg"),
+    url("./system.css-reference/icon/radio-border-focused.svg");
+  --radio-checked-image: url("./system.css-reference/icon/radio-dot.svg"),
+    url("./system.css-reference/icon/radio-border.svg");
+  --radio-focus-image: url("./system.css-reference/icon/radio-border-focused.svg");
+  --radio-image: url("./system.css-reference/icon/radio-border.svg");
+  --radio-shadow: var(--system-shadow);
+  --scrap-list-bg: var(--paper);
+  --scrap-list-border: var(--system-border);
+  --scrap-list-item-bg: transparent;
+  --scrap-list-item-divider: var(--system-secondary-divider);
+  --scrap-list-item-selected-bg: var(--ink);
+  --scrap-list-item-selected-fg: var(--paper);
+  --scrap-list-item-selected-shadow: var(--system-shadow);
+  --scrap-list-radius: 0px;
+  --scrap-list-shadow: var(--system-shadow);
+  --scrapbook-list-display: none;
+  --scrapbook-mobile-pane-columns: 1fr;
+  --scrapbook-mobile-pane-rows: minmax(0, 1fr) auto auto;
+  --scrapbook-pager-display: grid;
+  --scrapbook-pane-columns: 1fr;
+  --scrapbook-pane-gap: 6px;
+  --scrapbook-pane-rows: minmax(0, 1fr) auto auto;
+  --scrollbar-button: var(--window-frame-arrow-bg);
+  --scrollbar-button-border: 1px solid #000000;
+  --scrollbar-button-shadow: var(--system-shadow);
+  --scrollbar-thumb: var(--window-frame-thumb-bg);
+  --scrollbar-thumb-shadow: var(--system-shadow);
+  --scrollbar-track: var(--window-frame-track-bg);
+  --scrollbar-track-border: 1px solid #000000;
+  --scrollbar-track-shadow: var(--system-shadow);
+  --scrollbar-width: var(--window-frame-lane);
+  --search-field-background: var(--field-bg);
+  --search-field-min-height: 26px;
+  --search-field-padding: 4px 8px;
+  --search-field-radius: 0px;
+  --select-control-bg-position: right 8px center;
+  --select-control-bg-size: 8px 12px;
+  --select-control-font-weight: 400;
+  --select-control-min-height: 24px;
+  --select-control-padding: 3px 26px 3px 8px;
+  --settings-scrollbar-lane-bg: var(--paper);
+  --sidebar-bg-inactive: var(--panel);
+  --system-button-mini-font-size: 10px;
+  --system-button-mini-height: 19px;
+  --system-button-mini-padding-x: 7px;
+  --system-button-small-font-size: 11px;
+  --system-button-small-height: 22px;
+  --system-button-small-padding-x: 9px;
+  --system-check-size: 13px;
+  --system-control-min-height: 26px;
+  --system-menu-height: 24px;
+  --system-radio-size: 12px;
+  --system-select-arrow-bg: var(--selection-bg);
+  --system-select-arrow-height: 14px;
+  --system-select-arrow-right: 5px;
+  --system-select-arrow-top: 50%;
+  --system-select-arrow-transform: translateY(-50%);
+  --system-select-arrow-width: 14px;
+  --system-select-control-font-weight: 700;
+  --system-select-control-min-height: 24px;
+  --system-select-control-padding: 3px 26px 3px 8px;
+  --system-titlebar-inactive-control-filter: none;
+  --system-titlebar-inactive-control-opacity: 1;
+  --tab-active-height: 25px;
+  --tab-active-min-height: 25px;
+  --tab-border: 0;
+  --tab-height: 23px;
+  --tab-hover-bg: var(--paper);
+  --tab-min-height: 23px;
+  --tab-overlap: 0px;
+  --tab-padding: 0 14px 3px;
+  --tab-panel-border: 1px solid #000000;
+  --tab-panel-margin-top: -4px;
+  --tab-panel-min-height: 31px;
+  --tab-panel-padding: 7px 10px 5px;
+  --tab-panel-radius: 0px;
+  --tab-radius: 0px;
+  --tab-strip-border-bottom: 0;
+  --tab-strip-gap: 0;
+  --tab-strip-padding: 0 10px;
+  --tdi-rail-bg: transparent;
+  --tdi-rail-border: 0;
+  --tdi-rail-padding: 0;
+  --tdi-rail-radius: 0px;
+  --tdi-rail-shadow: var(--system-shadow);
+  --tdi-tab-active-border: var(--tdi-tab-border);
+  --tdi-tab-active-border-bottom: var(--tdi-tab-border-bottom);
+  --tdi-tab-active-shadow: var(--system-shadow);
+  --tdi-tab-active-small-color: currentColor;
+  --tdi-tab-active-unfocused-bg: var(--paper);
+  --tdi-tab-active-unfocused-border: var(--tdi-tab-active-border);
+  --tdi-tab-active-unfocused-border-bottom: var(--tdi-tab-active-border-bottom);
+  --tdi-tab-active-unfocused-fg: var(--ink);
+  --tdi-tab-active-unfocused-shadow: var(--system-shadow);
+  --tdi-tab-active-unfocused-small-color: currentColor;
+  --tdi-tab-border: var(--system-border);
+  --tdi-tab-border-bottom: 0;
+  --tdi-tab-close-active-bg: var(--ink);
+  --tdi-tab-close-active-fg: var(--paper);
+  --tdi-tab-close-active-shadow: var(--system-shadow);
+  --tdi-tab-close-bg: var(--paper);
+  --tdi-tab-close-border: var(--system-border);
+  --tdi-tab-close-fg: var(--ink);
+  --tdi-tab-close-gutter: 10px;
+  --tdi-tab-close-hover-bg: var(--ink);
+  --tdi-tab-close-hover-fg: var(--paper);
+  --tdi-tab-close-hover-shadow: var(--system-shadow);
+  --tdi-tab-close-radius: 0px;
+  --tdi-tab-close-shadow: var(--system-shadow);
+  --tdi-tab-close-size: 18px;
+  --tdi-tab-height: 41px;
+  --tdi-tab-hover-bg: var(--shade);
+  --tdi-tab-hover-fg: var(--ink);
+  --tdi-tab-hover-shadow: var(--system-shadow);
+  --tdi-tab-min-height: 41px;
+  --tdi-tab-pressed-bg: var(--ink);
+  --tdi-tab-pressed-fg: var(--paper);
+  --tdi-tab-pressed-shadow: var(--system-shadow);
+  --tdi-tab-shadow: var(--system-shadow);
+  --tdi-tab-small-color: currentColor;
+  --tdi-tabs-bg: var(--shade);
+  --tdi-tabs-border-bottom: var(--system-border);
+  --tdi-tabs-gap: 3px;
+  --tdi-tabs-heading-border-bottom: 1px solid var(--ink);
+  --tdi-tabs-heading-fg: var(--ink);
+  --tdi-tabs-heading-font-size: 11px;
+  --tdi-tabs-heading-letter-spacing: normal;
+  --tdi-tabs-heading-padding: 4px 8px 2px;
+  --tdi-tabs-heading-text-transform: none;
+  --tdi-tabs-padding: 4px 6px 0;
+  --titlebar-border-inactive: 1px solid #555555;
+  --titlebar-content-padding-inline: 10px;
+  --titlebar-title-text-shadow: none;
+  --traffic-light-close-bg: var(--panel);
+  --traffic-light-resize-bg: var(--panel);
+  --traffic-light-size: 12px;
+  --traffic-light-sprite-size: 12px 12px;
+  --window-frame-lane: 16px;
+  --window-frame-thumb-bg-horizontal: var(--window-frame-thumb-bg);
+}
+
+/* Managed window controls follow the native left Miniaturize/right Close
+   order. Zoom and WindowShade remain available as shared commands. */
+body[data-theme="nextstep"] .title-bar {
+  background: var(--system-titlebar-inactive-bg);
+}
+body[data-theme="nextstep"] .window.is-active > .title-bar {
+  background: var(--system-titlebar-active-bg);
+}
+body[data-theme="nextstep"] .title-bar :is(h1, h2) {
+  justify-self: center;
+  text-align: center;
+}
+body[data-theme="nextstep"] .title-bar > :is(.close-box, .resize-box) {
+  background: #aaaaaa;
+  border: 1px solid #000000;
+  box-shadow: var(--system-shadow);
+}
+body[data-theme="nextstep"] .title-bar > :is(.close-box, .resize-box):active {
+  background: #ffffff;
+  box-shadow: var(--system-inset);
+}
+body[data-theme="nextstep"] :is(.system-modal, .startup-settings-modal, .finder-operation-modal) {
+  background: var(--panel);
+  border-radius: 0;
+  box-shadow: var(--system-shadow), 2px 2px 0 #222222;
+}
+
+/* 60-responsive retains hard-coded Classic painters for these shared
+   surfaces. Rebind them here without changing any other appearance. */
+body[data-theme="nextstep"] .desktop {
+  background: var(--desktop-surface);
+}
+body[data-theme="nextstep"] .title-bar :is(h1, h2) {
+  background: var(--titlebar-title-bg);
+  color: var(--system-titlebar-inactive-title-color);
+  margin-inline: 0;
+  line-height: var(--system-titlebar-title-height);
+}
+body[data-theme="nextstep"] .window.is-active > .title-bar :is(h1, h2) {
+  color: var(--titlebar-title-fg);
+}
+body[data-theme="nextstep"] :is(.btn, .file-picker-button) {
+  border-color: var(--btn-border-color);
+  border-radius: var(--btn-radius);
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  box-shadow: var(--btn-shadow);
+}
+body[data-theme="nextstep"] .btn.default {
+  background: var(--btn-default-bg);
+  color: var(--btn-default-fg);
+  box-shadow: var(--btn-default-shadow);
+}
+body[data-theme="nextstep"] .btn:is(.is-active, :active):not(:disabled):not(.is-disabled) {
+  background: var(--btn-active-bg);
+  color: var(--btn-active-fg);
+  box-shadow: var(--btn-active-shadow);
+}
+body[data-theme="nextstep"] .btn:is(:disabled, .is-disabled) {
+  background: var(--control-disabled-bg);
+  color: var(--system-disabled-fg);
+  box-shadow: none;
+}
+body[data-theme="nextstep"] :is(.menu-popover, .menu-sub-popover, .system-select-menu) {
+  background: var(--menu-panel-bg);
+  border-color: var(--rule);
+  box-shadow: var(--menu-panel-shadow);
+}
+body[data-theme="nextstep"] :is(input, textarea):not(.mde-input):not([type="checkbox"]):not([type="radio"]):not([type="range"]) {
+  background: var(--field-bg);
+  border-color: var(--rule);
+  box-shadow: var(--field-shadow);
+}
+body[data-theme="nextstep"] :is(select, .system-select-button) {
+  background-color: var(--btn-bg);
+  border-color: var(--btn-border-color);
+  border-radius: var(--btn-radius);
+  box-shadow: var(--btn-shadow);
+}
+body[data-theme="nextstep"] :is(.window-frame-thumb, .window-frame-arrow) {
+  box-shadow: var(--system-shadow);
+}
+
+/* Only the three newly authored apps own NeXTSTEP raster art. Other objects
+   retain their Classic painter, including its transport glyphs. */
+body[data-theme="nextstep"] .sys-icon-svg:has(> .sys-icon-nextstep) > g:not(.sys-icon-nextstep) { display: none; }
+body[data-theme="nextstep"] .sys-icon-svg > .sys-icon-nextstep { display: inline; }
+
+body[data-theme="nextstep"] .title-bar:has(> .nextstep-miniaturize) {
+  grid-template-columns: var(--system-titlebar-control-size) minmax(0, 1fr) var(--system-titlebar-control-size);
+}
+body[data-theme="nextstep"] .title-bar:has(> .nextstep-miniaturize) > :is(.resize-box, .shade-box) {
+  display: none;
+}
+body[data-theme="nextstep"] .title-bar:has(> .nextstep-miniaturize) > .close-box {
+  grid-column: 3;
+}
+body[data-theme="nextstep"] .nextstep-miniaturize {
+  grid-column: 1;
+  grid-row: 1;
+  width: var(--system-titlebar-control-size);
+  height: var(--system-titlebar-control-size);
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  background: var(--panel);
+  box-shadow: var(--system-shadow);
+}
+body[data-theme="nextstep"] .nextstep-miniaturize::before {
+  content: "";
+  display: block;
+  width: 50%;
+  height: 50%;
+  margin: auto;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+}
+body[data-theme="nextstep"] .nextstep-miniaturize:active {
+  background: var(--paper);
+  box-shadow: var(--system-inset);
+}
+
+
+
+
+
+
+
+
+
+body[data-theme="nextstep"] .icon-column {
+  display: none;
+}
+
+body[data-theme="nextstep"] .menu-bar {
+  display: none;
+}
+
+
+
+
+
+
+
+
+
+
+
+body[data-theme="nextstep"] .window-frame-bar.is-vertical {
+  left: 0;
+  right: auto;
+  bottom: calc(var(--window-frame-lane) + 8px);
+  border-left: 0;
+  border-right: var(--window-frame-track-border);
+}
+body[data-theme="nextstep"] .window-frame-bar.is-horizontal {
+  left: var(--window-frame-lane);
+  right: 0;
+  bottom: 8px;
+}
+body[data-theme="nextstep"] .window-frame-bar.is-vertical > .window-frame-track {
+  order: -1;
+}
+body[data-theme="nextstep"] .window-frame-bar.is-horizontal > .window-frame-track {
+  order: 1;
+}
+body[data-theme="nextstep"] .window .is-frame-margin {
+  border-left: var(--window-frame-reserve) solid transparent;
+  border-right: 0;
+}
+body[data-theme="nextstep"] .window .is-frame-tail {
+  border-bottom: calc(var(--window-frame-reserve) + 8px) solid transparent;
+}
+body[data-theme="nextstep"] .window-frame-bar.is-empty .window-frame-arrow {
+  visibility: hidden;
+}
+body[data-theme="nextstep"] .window:has(> .nextstep-resize-strip) > .grow-box {
+  display: none;
+}
+body[data-theme="nextstep"] .nextstep-resize-strip {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 8px;
+  display: grid;
+  grid-template-columns: 28px 1fr 28px;
+}
+body[data-theme="nextstep"] .nextstep-resize-strip > button {
+  padding: 0;
+  border: 1px solid var(--ink);
+  background: var(--panel);
+  box-shadow: var(--system-shadow);
+  cursor: nwse-resize;
+  touch-action: none;
+}
+body[data-theme="nextstep"] .nextstep-resize-strip > [data-resize-edge="left"] {
+  cursor: nesw-resize;
+}
+body[data-theme="nextstep"] .nextstep-resize-strip > [data-resize-edge="center"] {
+  cursor: ns-resize;
+}
+
+body[data-theme="nextstep"] .window.is-nextstep-main > .title-bar {
+  background: #555555;
+}
+body[data-theme="nextstep"] .window.is-nextstep-main > .title-bar :is(h1, h2) {
+  color: #ffffff;
+}
+body[data-theme="nextstep"] .title-bar:has(> .nextstep-miniaturize) > .close-box::before {
+  content: "×";
+  position: static;
+  display: block;
+  width: auto;
+  height: auto;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: bold 20px/20px Arial, sans-serif;
+  opacity: 1;
+  visibility: visible;
+}
+body[data-theme="nextstep"] .title-bar:has(> .nextstep-miniaturize) > .close-box::after {
+  display: none;
+}
+
+body[data-theme="nextstep"] .nextstep-columns-switch {
+  display: inline-block;
+}
+body[data-theme="nextstep"] .has-nextstep-columns #project-disk-grid {
+  display: none;
+}
+
+
+
+
+
+
+
+
+
+
+
+body[data-theme="nextstep"] .window-frame-bar.is-empty .window-frame-track {
+  background: var(--panel);
+}

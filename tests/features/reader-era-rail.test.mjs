@@ -22,7 +22,9 @@ test.assertIncludes(windows, ".status-bar-placard {", "the shared status recipe 
 test.assertIncludes(readerStyles, ".tdi-source-rail-label {", "the shared rail stylesheet owns the source-list heading recipe");
 test.assertIncludes(appearance, "--status-placard-shadow:", "Platinum supplies the inset placard material");
 test.assertIncludes(appearance, "--tdi-tab-active-bg: var(--selection-bg);", "Platinum reuses its native lavender list selection");
-test.assertIncludes(aqua, "--tdi-rail-shadow: inset 1px 1px 0 #ffffff, 2px 2px 4px", "Jaguar gives the fixed source rail Aqua drawer depth without motion");
+// Same drawer material as the sampled original; the white stops are written
+// in their shortest equivalent form (#fff) since the byte-reclaim pass.
+test.assertIncludes(aqua, "--tdi-rail-shadow: inset 1px 1px 0 #fff, 2px 2px 4px", "Jaguar gives the fixed source rail Aqua drawer depth without motion");
 test.assertIncludes(aqua, "--tdi-source-label-display: block;", "Snow Leopard reveals the compact source-list heading");
 test.assertIncludes(aqua, "--tdi-tab-active-bg: var(--sidebar-selection-bg);", "Snow Leopard reuses the measured source-list selection painter");
 test.assertNotMatches(appearance, /body\[data-theme="platinum"\][^{]*(?:tdi-source-rail|status-bar-placard)/, "Platinum remains token-only for the new Reader roles");

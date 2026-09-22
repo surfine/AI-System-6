@@ -58,6 +58,8 @@ const BASELINE_PATH = join(root, "internal/evidence/drafts/appearance-baseline/t
 const SHEET_PATHS = [
   "apps/desktop/styles/65-appearance-themes.css",
   "apps/desktop/styles/67-aqua-appearance.css",
+  "apps/desktop/styles/68-big-sur-appearance.css",
+  "apps/desktop/styles/69-nextstep-appearance.css",
   "apps/desktop/styles/70-liquid-glass.css",
 ];
 // A multiset over many elements can be long; past this it is stored hashed.

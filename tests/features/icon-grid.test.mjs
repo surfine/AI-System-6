@@ -1,3 +1,4 @@
+import { ADDED_APP_ICON_IDS } from "../../tooling/lib/added-app-icon-inventory.mjs";
 // Icon grid contract.
 //
 // A row of icons must read as one family. Before this grid existed the same
@@ -10,6 +11,7 @@ import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 import { ICON_GRID, OPTICAL_ALLOWANCE, shapeClass } from "../../tooling/lib/icon-grid.mjs";
 
 const test = createFeatureTest("icon-grid");
+const supplemental = new Set(ADDED_APP_ICON_IDS);
 const APPROVED_IDENTITY_FOOTPRINTS = new Set([
   "aqua/finderApp",
   "aqua/assistant",
@@ -53,9 +55,13 @@ for (const era of ERAS) {
       : painted === "portrait" ? ink.height
         : Math.max(ink.width, ink.height);
     const identityKey = `${era.theme}/${id}`;
-    if (!APPROVED_IDENTITY_FOOTPRINTS.has(identityKey)) fitted.push({ id, measured });
+    if (!supplemental.has(id) && !APPROVED_IDENTITY_FOOTPRINTS.has(identityKey)) fitted.push({ id, measured });
     const drift = Math.abs(measured - target) / target;
-    test.assert(APPROVED_IDENTITY_FOOTPRINTS.has(identityKey) ? measured <= 126 : drift <= 0.08,
+    // The new material masters use a 105 px longest-axis normalization,
+    // independently of the original shape-class grid. Keep that actual policy
+    // measurable without retrospectively claiming they used the old painter.
+    test.assert(supplemental.has(id) ? Math.abs(measured - 105) <= 1
+      : APPROVED_IDENTITY_FOOTPRINTS.has(identityKey) ? measured <= 126 : drift <= 0.08,
       `${era.theme}/${id} sits on the grid (${measured} against ${Math.round(target)}, ${Math.round(drift * 100)}% off)`);
     // The margin is the point of the grid: nothing may touch the canvas edge.
     test.assert(LIQUID_FULL_ENCLOSURES.has(identityKey)
@@ -90,7 +96,15 @@ for (const theme of ["platinum", "aqua", "snow-leopard", "yosemite", "liquid-gla
     test.assert(Boolean(entry.grid), `${theme}/${id} records where the grid placed it`);
     if (!entry.grid) continue;
     const identityKey = `${theme}/${id}`;
-    if (!LIQUID_FULL_ENCLOSURES.has(identityKey)) fitted.push(entry.grid.fitted);
+    if (!supplemental.has(id) && !LIQUID_FULL_ENCLOSURES.has(identityKey)) fitted.push(entry.grid.fitted);
+    if (supplemental.has(id)) {
+      // Native code-drawn Platinum objects retain their distinct proportions;
+      // the generated material masters have one measured 105/128 footprint.
+      test.assert(entry.grid.method === "measured-output-no-resampling"
+        && (theme === "platinum" ? entry.grid.fitted >= 0.7 && entry.grid.fitted <= 0.97
+          : Math.abs(entry.grid.fitted - 105 / 128) <= 1 / 128),
+      `${theme}/${id} preserves its independently authored, bounded optical footprint`);
+    }
     test.assert(LIQUID_FULL_ENCLOSURES.has(identityKey) ? entry.grid.fitted <= 1.01 : entry.grid.fitted <= 0.97,
       `${theme}/${id} keeps its approved outer-enclosure footprint inside its cell`);
     test.assert(["square", "portrait", "landscape"].includes(entry.grid.shape), `${theme}/${id} records a shape class`);

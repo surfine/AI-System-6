@@ -1419,14 +1419,19 @@ function requestedThemes() {
   const requested = [];
   for (let index = 0; index < args.length; index += 1) {
     const value = args[index] === "--theme" ? args[++index] : args[index].replace(/^--theme=/, "");
-    if (!THEMES[value]) throw new Error(`Unknown icon theme ${value}. Expected one of: ${Object.keys(THEMES).join(", ")}`);
+    if (!THEMES[value] && value !== "big-sur") throw new Error(`Unknown icon theme ${value}. Expected one of: ${[...Object.keys(THEMES), "big-sur"].join(", ")}`);
     requested.push(value);
   }
   return [...new Set(requested)];
 }
 
 const selectedThemes = requestedThemes();
-for (const theme of selectedThemes) await buildTheme(theme, THEMES[theme]);
+const legacyThemes = selectedThemes.filter((theme) => THEMES[theme]);
+for (const theme of legacyThemes) await buildTheme(theme, THEMES[theme]);
+if (selectedThemes.includes("big-sur")) {
+  const { buildBigSurIcons } = await import("./build-big-sur-icons.mjs");
+  await buildBigSurIcons();
+}
 
 // The broad legacy and measured core generators remain deterministic
 // reconstruction layers. Reapply the complete accepted generated family last
@@ -1487,9 +1492,20 @@ if (approvedPriorityThemes.length) {
 // canvas resampler from baking soft 32/16 px files back into the product.
 if (selectedThemes.includes("liquid-glass")) await import("./build-liquid-glass-optical-small-icons.mjs");
 
+// The original builders retain the accepted 56-object batches. Reapply the
+// supplemental applications only after all legacy overlays have finished so
+// none can replace the merged runtime manifests with an old 56-object map.
+const { buildAddedAppIcons } = await import("./build-added-app-icons.mjs");
+await buildAddedAppIcons({ eras: [...selectedThemes] });
+
+// Golden Gate is a runtime correction over the complete Liquid Glass family.
+// It records the 59-object mask matrix and proof boards after supplemental
+// applications have merged, while leaving authored PNG bytes untouched.
+if (selectedThemes.includes("liquid-glass")) await import("./build-liquid-glass-golden-gate-icons.mjs");
+
 // Contact sheets resolve after every authoring overlay so they show the exact
 // bytes users receive, including historically pending assets.
-for (const theme of selectedThemes) {
+for (const theme of legacyThemes) {
   const manifest = JSON.parse(readFileSync(join(root, "apps", "desktop", "assets", "themes", theme, THEMES[theme].manifest), "utf8"));
   await buildContactSheet(theme, manifest);
 }

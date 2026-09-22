@@ -53,7 +53,17 @@ import { appRuntimePaths } from "../../tooling/runtime-manifest.mjs";
 // appModulePaths alone and reported insertFileFloppyFromWindow — defined in
 // app.js — as a dangling reference purely because the harness left app.js
 // out, not because the app does.
-const sources = appRuntimePaths.map((path) => [path, read(path)]);
+// index.html loads a few classic scripts of its own BEFORE the concatenated
+// bundle — the Appearance registry, its synchronous body projection, and the
+// crash net. They are not part of app.bundle.js, so reading the manifest alone
+// left `window.AISystem6Theme` undefined here while production always has it;
+// boot-time code that asks the registry which appearances are releasable then
+// threw in this VM only. Read the order out of index.html instead of keeping a
+// second copy of it: what the page loads before the bundle is what this boots.
+const preBundlePaths = [...read("index.html").matchAll(/<script src="([^"?]+)/g)]
+  .map((match) => match[1])
+  .filter((path) => path !== "app.bundle.js");
+const sources = [...preBundlePaths, ...appRuntimePaths].map((path) => [path, read(path)]);
 
 function classList() {
   const values = new Set();

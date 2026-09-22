@@ -20,7 +20,7 @@ import {
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const require = createRequire(import.meta.url);
-const THEMES = Object.freeze(["classic", "platinum", "aqua", "snow-leopard", "yosemite", "liquid-glass"]);
+const THEMES = Object.freeze(["classic", "platinum", "aqua", "snow-leopard", "yosemite", "big-sur", "liquid-glass", "nextstep"]);
 // Theme Lab styles are dev-only: they are absent from the production bundle
 // and injected here by the verification tooling.
 const LAB_CSS = readFileSync(join(root, "apps/desktop/styles/66-theme-lab.css"), "utf8");
@@ -30,6 +30,9 @@ const LAB_CSS = readFileSync(join(root, "apps/desktop/styles/66-theme-lab.css"),
 const VIEWPORT = Object.freeze({ width: 1280, height: 1040 });
 const BASELINE_DIR = join(root, "tests", "visual", "theme-lab");
 const CURRENT_DIR = join(root, "internal", "evidence", "drafts", "theme-lab-current");
+// Where each board began inside its capture page. Written next to the PNGs so
+// a run-to-run difference can be told apart from a rule that moved.
+const captureGeometry = new Map();
 const CHANNEL_TOLERANCE = 10;
 const PIXEL_RATIO_TOLERANCE = 0.002;
 const MAX_CAPTURE_ATTEMPTS = 2;
@@ -202,7 +205,7 @@ async function captureTheme(browser, url, themeId) {
       document.querySelector("#liquid-glass-overlay")?.setAttribute("hidden", "");
       document.body.classList.remove("is-writer-mode", "is-cloud-active", "quick-draft-focus");
       for (const dialog of document.querySelectorAll("dialog[open]")) dialog.close();
-      for (const win of document.querySelectorAll(".window")) {
+      for (const win of document.querySelectorAll(".window[data-window]")) {
         win.classList.add("is-hidden");
         win.classList.remove("is-active");
       }
@@ -251,6 +254,16 @@ async function captureTheme(browser, url, themeId) {
         [data-window="themeLab"] {
           height: auto !important;
           max-height: none !important;
+          /* Pin the board's own origin. The window manager clamps a window's
+             top to the menu bar's bottom, and it runs again after the capture
+             pins the inline value: the lab window's top was caught doubling
+             (20 -> 40, 25 -> 50, 30 -> 60) between two reads of an unchanged
+             tree, which moves every pixel in the board while no rule changed.
+             An !important stylesheet declaration outranks the manager's inline
+             write, so the origin holds still for the whole capture. */
+          top: 0 !important;
+          left: 0 !important;
+          right: auto !important;
         }
         [data-window="themeLab"] .theme-lab-pane {
           overflow: visible !important;
@@ -296,7 +309,25 @@ async function captureTheme(browser, url, themeId) {
       el.style.right = "auto";
       el.style.transform = "none";
     });
-    await page.waitForTimeout(120);
+    // A fixed pause was not enough: the desk finishes dressing itself after
+    // the lab opens (a banner or the boot screen's last class lands late), and
+    // the window's own top moved 20px between two reads of an unchanged tree.
+    // Every pixel in the board rides on that origin, so wait for it to hold
+    // still instead of for a guessed number of milliseconds.
+    let previousBox = null;
+    for (let attempt = 0; attempt < 24; attempt += 1) {
+      const read = await target.evaluate((el) => {
+        const rect = el.getBoundingClientRect();
+        return { x: Math.round(rect.x), y: Math.round(rect.y), width: Math.round(rect.width), height: Math.round(rect.height) };
+      });
+      if (previousBox
+        && read.x === previousBox.x && read.y === previousBox.y
+        && read.width === previousBox.width && read.height === previousBox.height) {
+        break;
+      }
+      previousBox = read;
+      await page.waitForTimeout(80);
+    }
     const box = await target.evaluate((el) => {
       const r = el.getBoundingClientRect();
       return { x: Math.round(r.x), y: Math.round(r.y), width: Math.round(r.width), height: Math.round(r.height) };
@@ -304,6 +335,12 @@ async function captureTheme(browser, url, themeId) {
     if (!box || box.width <= 0 || box.height <= 0) {
       throw new Error(`Theme Lab has no box for ${themeId}`);
     }
+    // Record where the board actually started. The crop follows this box, so a
+    // capture that begins twelve pixels lower shows the whole board shifted
+    // while every rule inside it is identical — which is what a 20-38% pixel
+    // difference between two runs of an unchanged tree turned out to be. The
+    // sidecar makes that origin a measurement instead of a guess.
+    captureGeometry.set(themeId, box);
     // The Theme Lab window is absolutely positioned, so a tall evidence
     // section can extend beyond the document's scroll height. Expand only the
     // disposable capture page before full-page capture; otherwise the crop
@@ -315,7 +352,28 @@ async function captureTheme(browser, url, themeId) {
     }, box);
     const path = join(CURRENT_DIR, `${themeId}.png`);
     const fullPath = join(CURRENT_DIR, `${themeId}-full.png`);
+    // Park the pointer before the shot. Playwright leaves it at (0,0), which in
+    // the NeXTSTEP shell is a real menu item: the capture picked up its hover
+    // highlight and the board differed from its own baseline by 0.45% on every
+    // second run, always in the top strip.
+    await page.mouse.move(VIEWPORT.width - 4, VIEWPORT.height - 4);
+    await page.waitForTimeout(50);
     await page.screenshot({ path: fullPath, fullPage: true, animations: "disabled" });
+    // The shot itself is what finally requests the last webfonts, so a capture
+    // can land while a font is still a fallback: the prose in the rubric wraps
+    // into one more line, everything under it slides down about twelve pixels,
+    // and two runs of an unchanged tree disagree by 20-38%. The box was read
+    // before the paint; if it moved, this shot is not a measurement. Throwing
+    // hands it to the retry above instead of banking the race as a difference.
+    const settled = await target.evaluate((el) => {
+      const rect = el.getBoundingClientRect();
+      return { y: Math.round(rect.y), height: Math.round(rect.height) };
+    });
+    if (settled.y !== box.y || settled.height !== box.height) {
+      throw new Error(
+        `Theme Lab ${themeId}: the board moved during the shot (${box.y}/${box.height} -> ${settled.y}/${settled.height}); a webfont or image landed mid-capture`,
+      );
+    }
     // The full-page paint has now requested every webfont and control SVG. A
     // reference asset that failed here means this PNG was rendered with
     // fallback art, so refuse it rather than compare it against a baseline.
@@ -427,6 +485,10 @@ try {
     captured.push([themeId, path]);
   }
   const currentPaths = new Map(captured);
+  writeFileSync(
+    join(CURRENT_DIR, "geometry.json"),
+    `${JSON.stringify({ viewport: VIEWPORT, boxes: Object.fromEntries(captureGeometry) }, null, 2)}\n`,
+  );
 
   if (mode === "--update") {
     // Only the eras whose pixels actually moved are written. Rewriting a

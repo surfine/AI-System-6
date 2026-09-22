@@ -8,6 +8,7 @@
   "use strict";
 
   const STORAGE_KEY = "ai-system-6-theme";
+  const COLOR_MODE_STORAGE_KEY = "ai-system-6-color-mode";
   const LEGACY_LIQUID_KEY = "ai-system-6-liquid-glass";
   const DEFAULT_THEME_ID = "classic";
 
@@ -184,6 +185,32 @@
       }),
     }),
     Object.freeze({
+      id: "big-sur",
+      year: 2020,
+      label: "Big Sur",
+      labelKey: "theme_big_sur",
+      family: "liquid-glass",
+      recipeBase: "liquid-glass",
+      menuBarModel: "system-owned",
+      releaseReady: true,
+      systemFont: "SF Pro",
+      systemFontSize: 13,
+      fontStrategy: "theme",
+      overlay: "none",
+      colorModes: true,
+      capabilities: Object.freeze(["vibrancy", "translucent-sidebar", "traffic-lights"]),
+      authoring: freezeAuthoringMetadata({
+        tokenFile: "apps/desktop/styles/68-big-sur-appearance.css",
+        tokenSelector: 'html[data-theme="big-sur"],\nbody[data-theme="big-sur"]',
+        art: {
+          dir: "big-sur", ext: "png", tiers: [128, 64, 32, 16],
+          ordinary: 32, compact: 16, large: 128,
+          zoom: [[128, 128], [64, 128], [32, 96], [16, 64]],
+          appearances: ["default"],
+        },
+      }),
+    }),
+    Object.freeze({
       id: "liquid-glass",
       year: 2026,
       label: "Liquid Glass",
@@ -206,6 +233,34 @@
           zoom: [[128, 128], [64, 128], [32, 96], [16, 64]],
           variant: "-default",
           appearances: ["default", "dark", "clear"],
+        },
+      }),
+    }),
+    Object.freeze({
+      id: "nextstep",
+      year: 1995,
+      label: "NeXTSTEP",
+      labelKey: "theme_nextstep",
+      family: "nextstep",
+      recipeBase: null,
+      // Experimental until the NeXTSTEP shell passes its workflow gates.
+      menuBarModel: "application-owned",
+      releaseReady: false,
+      systemFont: "Helvetica",
+      systemFontSize: 12,
+      fontStrategy: "theme",
+      overlay: "none",
+      capabilities: Object.freeze(["solid-material", "grayscale-depth"]),
+      authoring: freezeAuthoringMetadata({
+        tokenFile: "apps/desktop/styles/69-nextstep-appearance.css",
+        tokenSelector: 'html[data-theme="nextstep"],\nbody[data-theme="nextstep"]',
+        // Most icons retain Classic art; Theme Lab resolves the three new apps
+        // to their authored NeXTSTEP supplement per object.
+        art: {
+          dir: "classic", ext: "svg", tiers: [32, 16],
+          ordinary: 32, compact: 16, large: 32,
+          zoom: [[32, 32], [32, 64], [32, 128], [32, 256]],
+          appearances: ["default"],
         },
       }),
     }),
@@ -244,13 +299,83 @@
     }
   }
 
-  let currentThemeId = readInitialTheme();
-  let committedThemeId = currentThemeId;
+  function normalizeColorMode(value) {
+    return ["light", "dark", "system"].includes(value) ? value : "system";
+  }
+
+  function readInitialColorMode() {
+    try { return normalizeColorMode(global.localStorage?.getItem(COLOR_MODE_STORAGE_KEY)); }
+    catch (error) { return "system"; }
+  }
+
+  const colorSchemeQuery = global.matchMedia?.("(prefers-color-scheme: dark)");
+  let currentColorMode = readInitialColorMode();
+  let committedColorMode = currentColorMode;
+  function getColorMode() { return currentColorMode; }
+  function getCommittedColorMode() { return committedColorMode; }
+  function getResolvedColorMode() {
+    return currentColorMode === "system" ? (colorSchemeQuery?.matches ? "dark" : "light") : currentColorMode;
+  }
+
+  function announceColorMode(source, committed, persisted) {
+    global.document?.dispatchEvent?.(new CustomEvent("ai-system6-colormodechange", {
+      detail: Object.freeze({ colorMode: currentColorMode, resolvedColorMode: getResolvedColorMode(),
+        committedColorMode, committed, persisted, source }),
+    }));
+  }
+
+  function applyColorMode(value, options = {}) {
+    const previous = currentColorMode;
+    const previousCommitted = committedColorMode;
+    currentColorMode = normalizeColorMode(value);
+    const committed = options.experimental !== true
+      && (options.commit === true || (options.commit !== false && options.persist !== false));
+    if (committed) committedColorMode = currentColorMode;
+    const persisted = committed && options.persist !== false;
+    if (persisted) {
+      try { global.localStorage?.setItem(COLOR_MODE_STORAGE_KEY, currentColorMode); }
+      catch (error) { /* Session preference still applies when storage is blocked. */ }
+    }
+    syncBody();
+    if (options.announce !== false && (previous !== currentColorMode || previousCommitted !== committedColorMode)) {
+      announceColorMode(String(options.source || "appearance"), committed, persisted);
+    }
+    return currentColorMode;
+  }
+
+  function restoreColorMode() {
+    return applyColorMode(committedColorMode, { commit: false, persist: false, source: "preview-restore" });
+  }
+
+  let committedThemeId = readInitialTheme();
+  let currentThemeId = committedThemeId === "nextstep" ? DEFAULT_THEME_ID : committedThemeId;
+  let appearanceGeneration = 0;
+  let pendingAppearance = null;
+  const appearanceStyles = new Map();
+  const appearanceStylePaths = { "big-sur": "styles.big-sur.css", nextstep: "styles.nextstep.css" };
+  const preparations = new Set();
+  let composing = false;
+  const interactionWaiters = new Set();
+  function settleInteractions() {
+    if (composing || global.document?.querySelector?.("dialog[open]")) return;
+    interactionWaiters.forEach((resolve) => resolve());
+    interactionWaiters.clear();
+  }
+  global.document?.addEventListener?.("compositionstart", () => { composing = true; });
+  global.document?.addEventListener?.("compositionend", () => { composing = false; settleInteractions(); });
+  global.document?.addEventListener?.("close", settleInteractions, true);
+  function waitForInteraction(theme) {
+    if (theme.id !== "nextstep" && currentThemeId !== "nextstep") return null;
+    if (!composing && !global.document?.querySelector?.("dialog[open]")) return null;
+    return new Promise((resolve) => interactionWaiters.add(resolve));
+  }
 
   function projectThemeToElement(element, theme) {
     if (!element) return;
     element.dataset.theme = theme.id;
     element.dataset.themeFamily = theme.family;
+    if (theme.colorModes) element.dataset.colorMode = getResolvedColorMode();
+    else delete element.dataset.colorMode;
     // The menu-bar model is projected, not derived from the family, because it
     // is a semantic fact the stylesheet and the runtime must agree on. CSS
     // reads it here; JS reads it through menuBarModel(). One source, two
@@ -267,8 +392,46 @@
     }
   }
 
+  // Preparation never projects a partial appearance. Failed requests are
+  // evicted so an offline/404 failure can be retried without reloading work.
+  function ensureAppearanceStyles(theme) {
+    const doc = global.document;
+    if (!appearanceStylePaths[theme.id] || !doc?.createElement || !doc.head) return null;
+    const existing = appearanceStyles.get(theme.id);
+    if (existing) return existing.ready ? null : existing.promise;
+    const link = doc.createElement("link");
+    link.id = `${theme.id}-appearance-styles`;
+    link.rel = "stylesheet";
+    link.setAttribute("blocking", "render");
+    const stamp = doc.querySelector('script[src*="theme-registry.js"]')?.src?.split("?")[1];
+    link.href = appearanceStylePaths[theme.id] + (stamp ? `?${stamp}` : "");
+    const entry = { ready: false, promise: null };
+    entry.promise = new Promise((resolve, reject) => {
+      const timeout = global.setTimeout(() => finish(false), 15000);
+      const finish = (loaded) => {
+        global.clearTimeout(timeout);
+        link.onload = link.onerror = null;
+        if (loaded) {
+          entry.ready = true;
+          doc.dispatchEvent(new CustomEvent("ai-system6-appearancestylesready"));
+          resolve();
+        } else {
+          appearanceStyles.delete(theme.id);
+          link.remove();
+          reject(new Error(`Appearance stylesheet unavailable: ${theme.id}`));
+        }
+      };
+      link.onload = () => finish(true);
+      link.onerror = () => finish(false);
+    });
+    appearanceStyles.set(theme.id, entry);
+    doc.head.appendChild(link);
+    return entry.promise;
+  }
+
   function syncBody() {
     const theme = byId.get(currentThemeId) || byId.get(DEFAULT_THEME_ID);
+    ensureAppearanceStyles(theme)?.catch(() => {});
     projectThemeToElement(global.document?.documentElement, theme);
     projectThemeToElement(global.document?.body, theme);
     return theme;
@@ -283,6 +446,35 @@
   }
 
   function applyTheme(value, options = {}) {
+    const generation = ++appearanceGeneration;
+    const id = options.experimental === true ? normalizeThemeId(value) : normalizeReleaseThemeId(value);
+    const theme = byId.get(id);
+    const resources = [waitForInteraction(theme), ensureAppearanceStyles(theme), ...Array.from(preparations, (prepare) => prepare(theme))].filter(Boolean);
+    const preparation = resources.length ? Promise.all(resources) : null;
+    if (!preparation) {
+      pendingAppearance = null;
+      return commitTheme(id, options);
+    }
+    const transaction = preparation.then(() => {
+      if (generation !== appearanceGeneration) return getTheme();
+      return commitTheme(id, options);
+    }).catch((error) => {
+      if (generation === appearanceGeneration) {
+        global.document?.dispatchEvent?.(new CustomEvent("ai-system6-appearanceerror", {
+          detail: Object.freeze({ themeId: id, error }),
+        }));
+      }
+      return getTheme();
+    }).finally(() => {
+      if (pendingAppearance === transaction) pendingAppearance = null;
+    });
+    pendingAppearance = transaction;
+    return transaction;
+  }
+
+  // Called only after preparation and generation validation. This is the sole
+  // writer of active/committed appearance and its stored preference.
+  function commitTheme(value, options = {}) {
     const previousId = currentThemeId;
     const previousCommittedId = committedThemeId;
     const experimental = options.experimental === true;
@@ -294,6 +486,7 @@
     currentThemeId = experimental ? normalizeThemeId(value) : normalizeReleaseThemeId(value);
     if (committed) committedThemeId = currentThemeId;
     const theme = syncBody();
+    if (previousId !== theme.id) global.AISystem6SystemIcons?.refresh?.();
     syncFontStrategy(options.modernFontPreference === true);
     const persisted = committed && options.persist !== false;
     if (persisted) {
@@ -376,6 +569,13 @@
   const api = Object.freeze({
     STORAGE_KEY,
     LEGACY_LIQUID_KEY,
+    COLOR_MODE_STORAGE_KEY,
+    normalizeColorMode,
+    applyColorMode,
+    getColorMode,
+    getCommittedColorMode,
+    getResolvedColorMode,
+    restoreColorMode,
     DEFAULT_THEME_ID,
     themes: registry,
     normalizeThemeId,
@@ -383,6 +583,8 @@
     readInitialTheme,
     applyTheme,
     previewExperimentalTheme,
+    whenReady: () => pendingAppearance || Promise.resolve(getTheme()),
+    registerPreparation: (prepare) => { preparations.add(prepare); return () => preparations.delete(prepare); },
     getCurrentTheme,
     getCommittedTheme,
     getTheme,
@@ -395,6 +597,14 @@
     syncBody,
     syncFontStrategy,
   });
+
+  const onSystemColorModeChange = () => {
+    if (currentColorMode !== "system") return;
+    syncBody();
+    announceColorMode("system", false, false);
+  };
+  if (colorSchemeQuery?.addEventListener) colorSchemeQuery.addEventListener("change", onSystemColorModeChange);
+  else colorSchemeQuery?.addListener?.(onSystemColorModeChange);
 
   global.AISystem6Theme = api;
   syncBody();

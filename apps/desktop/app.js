@@ -483,7 +483,20 @@ const {
 
 document.body.dataset.appReady = "booting";
 window.AISystem6Theme?.syncBody();
-const bootThemeId = getCurrentTheme();
+const bootThemeId = window.AISystem6Theme?.getCommittedTheme?.()
+  || (typeof getCurrentTheme === "function" ? getCurrentTheme() : "classic");
+document.addEventListener("ai-system6-appearanceerror", ({ detail }) => {
+  const message = t("lazy_load_failed", window.AISystem6Theme.getTheme(detail.themeId).label, detail.error.message);
+  if (typeof pushSystemNotification === "function") pushSystemNotification(message, { state: "failed" });
+  setStatus(message);
+});
+window.AISystem6Theme?.registerPreparation((theme) => theme.id === "nextstep" && (!window.AISystem6NextstepShellLoaded || !window.AISystem6NextstepDock || !window.AISystem6NextstepMenus || !window.AISystem6FinderColumns)
+  ? Promise.all([
+    ensureLazySystemModule("app/core/nextstep-shell.js", "AISystem6NextstepShellLoaded"),
+    ensureLazySystemModule("app/core/nextstep-dock.js", "AISystem6NextstepDock"),
+    ensureLazySystemModule("app/core/nextstep-menus.js", "AISystem6NextstepMenus"),
+    ensureLazySystemModule("app/features/finder-columns.js", "AISystem6FinderColumns"),
+  ]) : null);
 
 // Development surfaces are explicit only: an explicit capabilities flag, or
 // loopback hosts. An UNRESOLVED deployment profile is never treated as
@@ -1890,6 +1903,14 @@ function applyTheme(themeId, options = {}) {
     saveDesk: options.saveDesk !== false,
     source: options.source || "application",
   });
+  if (theme?.then) return theme.then((ready) => syncAppliedTheme(ready, options));
+  return syncAppliedTheme(theme, options);
+}
+
+function syncAppliedTheme(theme, options = {}) {
+  window.AISystem6NextstepShell?.sync();
+  window.AISystem6NextstepMenus?.sync();
+  window.AISystem6FinderColumns?.sync();
   const resolvedTheme = theme?.id || "classic";
   syncThemeLabEvidence(theme);
   if (appearanceThemeInput && appearanceThemeInput.value !== resolvedTheme) {
@@ -1907,6 +1928,7 @@ function applyTheme(themeId, options = {}) {
     window.AISystem6LiquidGlassOverlay?.setEnabled(false);
   }
   if (typeof syncLiquidTintVisibility === "function") syncLiquidTintVisibility();
+  if (typeof syncAppearanceColorModeControl === "function") syncAppearanceColorModeControl();
   // Finder icon geometry changes between eras (80 px in Classic, 118 px in
   // Liquid Glass). Refit every currently visible auto-sized Finder window
   // after the new CSS wins, otherwise a live appearance switch can clip the

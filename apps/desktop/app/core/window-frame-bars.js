@@ -66,18 +66,28 @@ function repeatWhileHeld(target, event, step) {
   const stop = () => {
     clearTimeout(timer);
     clearInterval(timer);
+    target.removeEventListener("pointerleave", stop);
+    target.removeEventListener("lostpointercapture", stop);
     target.removeEventListener("pointerup", stop);
     target.removeEventListener("pointercancel", stop);
     window.removeEventListener("pointerup", stop);
     window.removeEventListener("mouseup", stop);
+    window.removeEventListener("blur", stop);
+    window.removeEventListener("pointercancel", stop);
+    document.removeEventListener("ai-system6-themechange", stop);
   };
   timer = setTimeout(() => {
-    timer = setInterval(step, frameBarRepeatInterval);
+    timer = setInterval(() => target.isConnected ? step() : stop(), frameBarRepeatInterval);
   }, frameBarRepeatDelay);
+  target.addEventListener("pointerleave", stop);
+  target.addEventListener("lostpointercapture", stop);
   target.addEventListener("pointerup", stop);
   target.addEventListener("pointercancel", stop);
   window.addEventListener("pointerup", stop);
   window.addEventListener("mouseup", stop);
+  window.addEventListener("blur", stop);
+  window.addEventListener("pointercancel", stop);
+  document.addEventListener("ai-system6-themechange", stop);
   if (event.pointerId != null && target.setPointerCapture) {
     try {
       target.setPointerCapture(event.pointerId);
@@ -149,7 +159,7 @@ function installFrameBar(win, selector, axis) {
   }
 
   function measure() {
-    const next = win.querySelector(selector);
+    const next = window.AISystem6FinderColumns?.frameHost(win, axis) || win.querySelector(selector);
     if (!next) {
       bar.classList.add("is-empty");
       return;
@@ -190,17 +200,18 @@ function installFrameBar(win, selector, axis) {
 
   onFramePress(bar.querySelector(".is-up, .is-left"), (event) => {
     event.preventDefault();
-    repeatWhileHeld(event.currentTarget, event, () => scrollBy(-frameBarLineStep));
+    repeatWhileHeld(event.currentTarget, event, () => scrollBy(-(getCurrentTheme() === "nextstep" && event.altKey ? metrics().view * 0.9 : frameBarLineStep)));
   });
 
   onFramePress(bar.querySelector(".is-down, .is-right"), (event) => {
     event.preventDefault();
-    repeatWhileHeld(event.currentTarget, event, () => scrollBy(frameBarLineStep));
+    repeatWhileHeld(event.currentTarget, event, () => scrollBy(getCurrentTheme() === "nextstep" && event.altKey ? metrics().view * 0.9 : frameBarLineStep));
   });
 
   onFramePress(track, (event) => {
     if (event.target === thumb) return;
     event.preventDefault();
+    if (window.AISystem6NextstepShell?.frameTrack({ event, vertical, scroller, track, thumb })) return;
     const thumbRect = thumb.getBoundingClientRect();
     const forward = vertical ? event.clientY > thumbRect.bottom : event.clientX > thumbRect.right;
     const page = () => {
@@ -220,17 +231,21 @@ function installFrameBar(win, selector, axis) {
     const travel = Math.max(1, trackLength - size);
     const drag = (moveEvent) => {
       const moved = (vertical ? moveEvent.clientY : moveEvent.clientX) - startPointer;
-      const next = startOffset + (moved / travel) * (total - view);
+      const next = startOffset + (moved / travel) * (total - view) * (getCurrentTheme() === "nextstep" && moveEvent.altKey ? 0.1 : 1);
       if (vertical) scroller.scrollTop = next;
       else scroller.scrollLeft = next;
     };
     const stop = () => {
+      window.removeEventListener("blur", stop);
+      document.removeEventListener("ai-system6-themechange", stop);
       window.removeEventListener("pointermove", drag);
       window.removeEventListener("pointerup", stop);
       window.removeEventListener("pointercancel", stop);
       window.removeEventListener("mousemove", drag);
       window.removeEventListener("mouseup", stop);
     };
+    window.addEventListener("blur", stop);
+    document.addEventListener("ai-system6-themechange", stop);
     window.addEventListener("pointermove", drag);
     window.addEventListener("pointerup", stop);
     window.addEventListener("pointercancel", stop);

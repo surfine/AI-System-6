@@ -1807,7 +1807,7 @@ function getSelectedProjectRootItem() {
 }
 
 function getSelectedProjectFinderItem() {
-  return getSelectedProjectRootItem();
+  return window.AISystem6FinderColumns?.selectedItem() || getSelectedProjectRootItem();
 }
 
 function getCurrentFinderSelection() {
@@ -2073,6 +2073,7 @@ function attachCitationJumpHandler(root) {
 }
 
 function renderProjectDisks() {
+  window.AISystem6FinderColumns?.sync();
   ensureActiveProject();
   if (selectedFolderId !== "all" && !getProjectFolders().some((folder) => folder.id === selectedFolderId)) {
     selectedFolderId = "all";
@@ -2188,6 +2189,7 @@ function renderProjectDisks() {
 }
 
 function renderProjectReferences() {
+  window.AISystem6FinderColumns?.sync();
   updateProjectDiskActionVisibility();
 }
 

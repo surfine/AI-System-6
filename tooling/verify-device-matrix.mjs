@@ -569,7 +569,14 @@ const PROBE = `async (options) => {
   if (!hidden && options.touch) {
     const undersized = [];
     for (const selector of chromeSelectors) {
-      for (const control of win.querySelectorAll(selector)) {
+      // The window's OWN chrome only. A page may legitimately contain mock
+      // windows -- the Theme Lab renders sample windows inside its body -- and
+      // those samples are drawings of chrome, not chrome a finger has to hit.
+      // Measured 2026-09-23: a deep query flagged two sample close boxes that
+      // sit below the fold, so the gate asked elementFromPoint for a point
+      // outside the viewport and refused a tap nobody was ever offered.
+      const scoped = ":scope > .title-bar > " + selector + ", :scope > " + selector;
+      for (const control of win.querySelectorAll(scoped)) {
         if (!painted(control)) continue;
         // The hit region is the element's own box, plus any absolutely
         // positioned pseudo-element that extends BEYOND it with negative
@@ -581,6 +588,10 @@ const PROBE = `async (options) => {
         if (box.width === 0 || box.height === 0) continue;
         let hitWidth = box.width;
         let hitHeight = box.height;
+        // The insets of the expander actually being credited, so the hit test
+        // below asks about the region this loop is claiming rather than the
+        // element's own box.
+        let region = { left: box.left, top: box.top, right: box.right, bottom: box.bottom };
         for (const pseudo of ["::before", "::after"]) {
           const pseudoStyle = getComputedStyle(control, pseudo);
           if (!pseudoStyle || pseudoStyle.content === "none" || pseudoStyle.position !== "absolute") continue;
@@ -588,11 +599,55 @@ const PROBE = `async (options) => {
             const parsed = parseFloat(value);
             return Number.isFinite(parsed) && parsed < 0 ? -parsed : 0;
           };
-          hitWidth = Math.max(hitWidth, box.width + outward(pseudoStyle.left) + outward(pseudoStyle.right));
-          hitHeight = Math.max(hitHeight, box.height + outward(pseudoStyle.top) + outward(pseudoStyle.bottom));
+          const width = box.width + outward(pseudoStyle.left) + outward(pseudoStyle.right);
+          const height = box.height + outward(pseudoStyle.top) + outward(pseudoStyle.bottom);
+          if (width >= hitWidth && height >= hitHeight) {
+            region = {
+              left: box.left - outward(pseudoStyle.left),
+              top: box.top - outward(pseudoStyle.top),
+              right: box.right + outward(pseudoStyle.right),
+              bottom: box.bottom + outward(pseudoStyle.bottom),
+            };
+          }
+          hitWidth = Math.max(hitWidth, width);
+          hitHeight = Math.max(hitHeight, height);
         }
         if (hitWidth < minHit - 0.5 || hitHeight < minHit - 0.5) {
           undersized.push(selector + ":" + Math.round(hitWidth) + "x" + Math.round(hitHeight));
+          continue;
+        }
+        // A region that adds up is not the same as a region that answers a
+        // tap. Measured 2026-09-22: an alarm-clock close box with a transparent
+        // expander satisfied the sum above while three of its four edges
+        // belonged to other things -- a sibling painted over the right, the
+        // readout over the bottom, and the title bar clipped the top. The gate
+        // would have gone green over a region nobody can touch, so the region
+        // is asked to answer for itself: its centre always, and each edge a
+        // pixel inside when an expander is what earned the size.
+        const expanded = region.left < box.left - 0.5 || region.right > box.right + 0.5
+          || region.top < box.top - 0.5 || region.bottom > box.bottom + 0.5;
+        const samples = [[(box.left + box.right) / 2, (box.top + box.bottom) / 2]];
+        if (expanded) {
+          samples.push(
+            [region.left + 1, (region.top + region.bottom) / 2],
+            [region.right - 1, (region.top + region.bottom) / 2],
+            [(region.left + region.right) / 2, region.top + 1],
+            [(region.left + region.right) / 2, region.bottom - 1],
+          );
+        }
+        const owner = (x, y) => {
+          if (x < 0 || y < 0 || x > viewportWidth || y > viewportHeight) return null;
+          return document.elementFromPoint(x, y);
+        };
+        const dead = samples.filter(([x, y]) => {
+          const hit = owner(x, y);
+          return !(hit && (hit === control || control.contains(hit) || hit.contains(control)));
+        });
+        if (dead.length) {
+          undersized.push(
+            selector + ":" + Math.round(hitWidth) + "x" + Math.round(hitHeight)
+            + " region-refuses-tap(" + dead.length + "/" + samples.length + ")",
+          );
         }
       }
     }

@@ -40,6 +40,20 @@ function keepActiveLanguageTable() {
   });
 }
 
+// Conditional appearance CSS may arrive before the worker's first claim.
+// Keep only the selected appearance, without adding a download for other eras.
+function keepActiveAppearanceStyles() {
+  navigator.serviceWorker?.controller?.postMessage({
+    type: "keep-appearance",
+    appearance: document.documentElement.dataset.theme || "classic",
+  });
+}
+
+function watchAppearanceForShell() {
+  new MutationObserver(keepActiveAppearanceStyles)
+    .observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+}
+
 function watchLanguageForShell() {
   // applyLanguage() writes documentElement.lang, so the attribute is the one
   // signal that is true for every way the language can change — the Apple menu,
@@ -175,9 +189,12 @@ function watchApplicationShellMessages() {
     // never reloaded for it: this is just the first moment there is a (new)
     // worker to talk to.
     keepActiveLanguageTable();
+    keepActiveAppearanceStyles();
   });
   watchLanguageForShell();
+  watchAppearanceForShell();
   keepActiveLanguageTable();
+  keepActiveAppearanceStyles();
   // The misses that happened before this listener existed.
   navigator.serviceWorker.controller?.postMessage({ type: "offline-report" });
 }
@@ -270,9 +287,9 @@ function syncThemeColorMeta() {
   return color;
 }
 
-document.addEventListener("ai-system6-themechange", () => {
-  window.requestAnimationFrame(syncThemeColorMeta);
-});
+for (const event of ["ai-system6-themechange", "ai-system6-colormodechange", "ai-system6-appearancestylesready"]) {
+  document.addEventListener(event, () => window.requestAnimationFrame(syncThemeColorMeta));
+}
 
 
 // Listening costs nothing and has to happen before the first answer arrives;

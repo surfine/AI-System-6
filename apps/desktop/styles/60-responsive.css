@@ -2279,7 +2279,7 @@ body.use-modern-fonts .mde-surface * {
 }
 
 .window:not(.is-active) {
-  box-shadow: 2px 2px 0 #555555;
+  box-shadow: 2px 2px 0 #555;
 }
 
 .title-bar,
@@ -2583,7 +2583,7 @@ button:disabled {
   font-weight: 400;
   background: var(
     --control-disabled-bg,
-    repeating-linear-gradient(45deg, var(--paper) 0, var(--paper) 4px, #eeeeee 4px, #eeeeee 8px)
+    repeating-linear-gradient(45deg, var(--paper) 0, var(--paper) 4px, #eee 4px, #eee 8px)
   );
   box-shadow: none;
   /* Being unavailable dims the whole control, and the border is part of the

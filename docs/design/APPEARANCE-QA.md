@@ -2,7 +2,9 @@
 
 <!-- doc-claims: mixed | audited: 2026-09-18 -->
 
-AI System 6 release-supported Appearance surface is all six appearances:
+AI System 6 has seven release appearances and an eighth NeXTSTEP preview surface.
+The preview is intentionally kept out of the normal Appearance selector while
+its dedicated icon family is deferred.
 
 | Surface            | Classic / System 6 | Platinum | Aqua | Snow Leopard | Yosemite | Liquid Glass |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -22,9 +24,10 @@ AI System 6 release-supported Appearance surface is all six appearances:
 | Menu Bar           | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Phone Layout       | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 
-All six are release appearances (registry `releaseReady: true`) exposed in the
-Control Panel Appearance selector and the Special menu; none is gated behind a
-research switch. The four historical appearances are additionally held to
+The seven release appearances (registry `releaseReady: true`) are exposed in the
+Control Panel Appearance selector and the Special menu. NeXTSTEP has
+`releaseReady: false` and is available only on the loopback `debugTheme=nextstep`
+preview path until its icon work is authorized. The four historical appearances are additionally held to
 their pinned canonical references by `npm run verify:theme-lab:fidelity`, which
 checks two separate tiers: the recorded-run `tolerances` (regression) and the
 shared `FIDELITY_FLOOR` (absolute distance from the era target). Each specimen
@@ -162,3 +165,39 @@ no broken focus, no wrong icon, and no malformed window chrome.
 
 <!-- claim-check: npm run verify:theme-lab:fidelity — run 2026-09-19, all five boards exit 0 (platinum 12/20 met, aqua 17/18, snow-leopard 18/18, yosemite 5/17 with 10 gaps and 2 unreliable references, yosemite-2x 3/4). The run before that failed every board at the content fingerprint, because the fingerprint hashed the build stamp; tooling/theme-lab-fidelity.mjs now strips that query before hashing, and platinum still passed after the stamp moved to 20260919.1. Re-run the command before quoting these numbers. -->
 <!-- claim-check: npm run verify:appearance, verify:appearance-apps -->
+
+## Big Sur addition (2026-09-22)
+
+The seventh selectable era adds independent light/dark materials and a system
+color preference. Big Sur now owns 59 independent icon objects (the original 56
+plus ClioPaint, ClioProject, and One More Tune), replacing the Yosemite alias.
+The 236 PNGs provide four tiers: independent optical corrections at 16/32 px
+and Image Gen material-master outputs at 64/128 px. Source and delivery records
+are in [Big Sur icons](BIG-SUR-ICONS.md). The regression baseline in `tests/visual/theme-lab/`
+records the web adaptation, not native fidelity. WWDC20 session 10104 and the
+512 Pixels macOS 11 Light Blue / Finder Home captures informed the design.
+Their image scale and pixel tolerances have not been calibrated; historical
+fidelity remains unverified. The product keeps close-left / zoom-right actions
+and its existing window structures, rather than adding a decorative minimize
+action or rebuilding every application sidebar.
+
+The era sheet is loaded only when selected, including saved-theme boot, and
+retained by the service worker for subsequent offline starts. The seven release
+appearances retain their existing color behavior. New default surface tokens
+keep the preexisting Control Panel colors unchanged outside Big Sur.
+
+The Theme Lab capture instrument now hides only managed `.window[data-window]`
+windows. Its former `.window` sweep hid the nested chrome specimens as well.
+All seven lab baselines were captured with this correction; this fixture change
+is separate from the stable Classic/Liquid Applications computed comparison.
+The shared modern-family field recipe also excludes `.mde-input`: an opaque
+field fill was covering the manuscript highlight layer in Yosemite and Big Sur.
+Both eras now keep the text layer transparent and its typography aligned.
+
+NeXTSTEP preview evidence additionally covers its native-style window controls,
+key/main title state, floating and detachable menus, right Dock, mini windows,
+column Finder/Shelf, scroll-frame geometry, IME deferral, offline resources and
+cross-theme/session restoration. The preview still uses the explicit Classic
+fallback for icons; the three added-app artworks and item-by-item historical
+review remain pending. This delivery does not upgrade the earlier historical
+fidelity results or certify all icon families.

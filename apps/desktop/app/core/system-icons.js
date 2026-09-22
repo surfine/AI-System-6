@@ -625,25 +625,9 @@ const classicPlusSystemIconPaths = {
   `,
 };
 
-const classicOnlyModernFallbackIconId = {
-  // ClioProject is new object art with no reviewed era family yet. It shows
-  // its Classic line art in every appearance rather than joining the 56-object
-  // era vocabulary unreviewed; promoting it later means real per-era assets.
-  clioProject: true,
-  // Same reasoning for ClioPaint: fresh product-invented glyph (a board, a
-  // brush stroke, three paint dabs), not a reproduction of any native
-  // resource, and not yet reviewed per era.
-  clioPaint: true,
-  // One More Tune's card-and-quaver is the same case: invented object art with
-  // no reviewed era family. It shows its Classic line art in every appearance
-  // rather than being promoted into the 56-object vocabulary unreviewed.
-  oneMoreTune: true,
-};
-
 // Opt-in "line-art everywhere": when enabled, every non-Classic appearance
 // reuses the Classic one-bit SVG family instead of its own era painter. The
-// The compatibility table above is reserved for deliberate exceptions; this
-// flag extends the behavior to the whole semantic vocabulary so a user can
+// This flag extends the behavior to the whole semantic vocabulary so a user can
 // read the desk in a consistent 1-bit glyph language across appearances.
 let classicLineArtEverywhereEnabled = false;
 
@@ -660,8 +644,8 @@ function normalizeSystemIconId(iconId) {
   return systemIconPaths[raw] || completeEraSystemIconIds.has(raw) ? raw : "document";
 }
 
-// Complete renderer vocabulary: the canonical 56 objects plus six extended
-// application ids. Kept as one split string because this module is eager and
+// Complete renderer vocabulary: the canonical 56 objects, six extended
+// applications and three newly authored apps. Kept as one split string because this module is eager and
 // every extra array token spends the two-floppy startup budget.
 const completeEraSystemIconIds = new Set(("startupDisk hardDisk folder document applications trash finderApp fileFloppy "
   + "assistant quickDraft writingStudio projectDisk projectDisc cloudModel cloudModelOff questionSheet outline "
@@ -669,30 +653,26 @@ const completeEraSystemIconIds = new Set(("startupDisk hardDisk folder document 
   + "cmfStudio soundscape scrapbook systemFolder helpFolder importUtility controlPanel chooser systemHelp dictionary "
   + "teachText writingDemo chatFile chatImport systemStatus contextPanel rebuildArticle bureaucracyMeme "
   + "endfieldTerminal documents alias systemFile multiFinderApp daHandler writingBell trashFull control localModel "
-  + "controlStrip imagePromptStudio micropolis openttd doom lightroom bonsaiCity").split(" "));
+  + "controlStrip imagePromptStudio micropolis openttd doom lightroom bonsaiCity clioPaint clioProject oneMoreTune").split(" "));
+const supplementarySystemIconIds = new Set("clioPaint clioProject oneMoreTune".split(" "));
+const classicBigSurFallbackIds = new Set("imagePromptStudio micropolis openttd doom lightroom bonsaiCity".split(" "));
+const liquidGlassRoundedRectIconIds = new Set(("finderApp assistant writingStudio cloudModel cloudModelOff reviewDesk searcher reader timeMachine docMap clioStage clioChart liquidCover cmfStudio soundscape scrapbook importUtility controlPanel chooser systemHelp dictionary teachText chatImport systemStatus contextPanel rebuildArticle bureaucracyMeme endfieldTerminal multiFinderApp daHandler writingBell control localModel controlStrip clioPaint clioProject oneMoreTune").split(" "));
+function liquidGlassIconUsesRoundedRect(iconId) {
+  return liquidGlassRoundedRectIconIds.has(iconId);
+}
 
 // Theme Lab and other read-only inspection surfaces consume the vocabulary
 // from the painter itself. Keep a frozen array at the boundary: exposing the
 // mutable Set would let an inspector accidentally change which ids render.
-// Any future classic-only compatibility id stays a valid renderer input but
-// is intentionally omitted from the appearance atlas.
 const appearanceSystemIconIds = Object.freeze(
-  [...completeEraSystemIconIds].filter((id) => !classicOnlyModernFallbackIconId[id])
+  [...completeEraSystemIconIds]
 );
 window.AISystem6SystemIcons = Object.freeze({
   ids: appearanceSystemIconIds,
+  refresh: () => hydrateSystemIcons(),
 });
 
-const platinumCoreSystemIconIds = new Set([
-  "startupDisk", "hardDisk", "folder", "document", "applications", "trash", "finderApp", "fileFloppy",
-  "assistant", "quickDraft", "writingStudio", "projectDisk", "projectDisc", "cloudModel", "cloudModelOff", "questionSheet",
-  "outline", "sectionDrafts", "manuscript", "reviewDesk", "searcher", "reader", "timeMachine", "docMap", "clioStage",
-  "clioChart", "liquidCover", "cmfStudio", "soundscape", "scrapbook", "systemFolder", "helpFolder", "importUtility",
-  "controlPanel", "chooser", "systemHelp", "dictionary", "teachText", "writingDemo", "chatFile", "chatImport",
-  "systemStatus", "contextPanel", "rebuildArticle", "bureaucracyMeme", "endfieldTerminal", "documents", "alias",
-  "systemFile", "multiFinderApp", "daHandler", "writingBell", "trashFull", "control", "localModel", "controlStrip",
-  "micropolis", "openttd", "doom", "bonsaiCity", "lightroom", "imagePromptStudio", "clipboard",
-]);
+const platinumCoreSystemIconIds = new Set([...completeEraSystemIconIds, "clipboard"]);
 
 // Icon files are served with a long cache lifetime, and these hrefs sit inside
 // inline SVG rather than in the CSS bundle the build stamps. Without the build
@@ -703,17 +683,7 @@ function systemIconAssetUrl(path) {
   return build ? `${path}?v=${encodeURIComponent(build)}` : path;
 }
 
-function classicOnlyModernIconArt(iconId) {
-  if (!classicOnlyModernFallbackIconId[iconId]) return "";
-  const stem = systemIconEscape(iconId);
-  const art = systemIconAssetUrl(`assets/themes/classic/icons/${stem}-32.svg`);
-  return `<image class="sys-icon-era-raster" href="${art}" x="0" y="0" width="32" height="32" preserveAspectRatio="xMidYMid meet" />`;
-}
-
-// Reusable Classic line-art image for the "line-art everywhere" preference.
-// Unlike classicOnlyModernIconArt it covers the full semantic vocabulary, but
-// it still skips transport glyphs and other non-family ids that own no
-// classic SVG file.
+// Shared opt-in line art for all application ids; transport remains a UI glyph.
 function classicLineArtImage(iconId) {
   if (!completeEraSystemIconIds.has(iconId)) return "";
   const stem = systemIconEscape(iconId);
@@ -765,8 +735,6 @@ function platinumCoreSystemIconArt(iconId, sourceSize) {
     const lineArt = classicLineArtImage(iconId);
     if (lineArt) return lineArt;
   }
-  const classicOnlyArt = classicOnlyModernIconArt(iconId);
-  if (classicOnlyArt) return classicOnlyArt;
   if (!completeEraSystemIconIds.has(iconId) && !platinumCoreSystemIconIds.has(iconId)) return "";
   const fallbackStem = iconId === "startupDisk" ? "startup-disk"
     : iconId === "finderApp" ? "finder-app"
@@ -788,8 +756,6 @@ function completeEraRasterSystemIconArt(era, iconId, sourceSize) {
     const lineArt = classicLineArtImage(iconId);
     if (lineArt) return lineArt;
   }
-  const classicOnlyArt = classicOnlyModernIconArt(iconId);
-  if (classicOnlyArt) return classicOnlyArt;
   if (!completeEraSystemIconIds.has(iconId)) return "";
   const stem = systemIconEscape(iconId);
   const suffix = era === "liquid-glass" ? "-default" : "";
@@ -803,8 +769,6 @@ function liquidGlassSystemIconArt(iconId, sourceSize = 32) {
     const lineArt = classicLineArtImage(iconId);
     if (lineArt) return lineArt;
   }
-  const classicOnlyArt = classicOnlyModernIconArt(iconId);
-  if (classicOnlyArt) return classicOnlyArt;
   // `scrap` is a retired pre-Theme-Lab id kept for old saved workspaces. The
   // current 56-object contract calls the same object `scrapbook`.
   const assetId = iconId === "scrap" ? "scrapbook" : iconId;
@@ -844,7 +808,7 @@ function systemIconDisplaySize(options = {}, compactSourceSize = 32) {
   return Number(compactSourceSize) === 16 ? 17 : 34;
 }
 
-function systemIconModernSourceSize(options = {}, compactSourceSize = 32) {
+function systemIconModernSourceSize(options = {}, compactSourceSize = 32, tiers = [16, 32, 128]) {
   const requested = Number(options.modernSourceSize);
   if ([16, 32, 64, 128].includes(requested)) return requested;
   const requiredPixels = systemIconDisplaySize(options, compactSourceSize) * systemIconDevicePixelRatio();
@@ -853,7 +817,7 @@ function systemIconModernSourceSize(options = {}, compactSourceSize = 32) {
   // keeps a 17 px menu icon on the authored 16/32 compact artwork while
   // preventing Finder, list and welcome icons from being enlarged past their
   // physical source pixels on Retina displays.
-  return [16, 32, 128].find((size) => size >= requiredPixels * 0.9) || 128;
+  return tiers.find((size) => size >= requiredPixels * 0.9) || 128;
 }
 
 function systemIconSvg(iconId, options = {}) {
@@ -871,10 +835,18 @@ function systemIconSvg(iconId, options = {}) {
   const snowArt = completeEraRasterSystemIconArt("snow-leopard", id, modernSourceSize);
   const yosemiteArt = completeEraRasterSystemIconArt("yosemite", id, modernSourceSize);
   const paths = coreArt || classicPlusSystemIconPaths[id] || systemIconPaths[id] || systemIconPaths.document;
+  // Conditional families carry no href until selected. Dynamic icons use the
+  // same path; the registry refreshes existing icons on every era transition.
+  const era = window.AISystem6Theme?.getCurrentTheme?.();
+  const independent = era === "big-sur" || (era === "nextstep" && supplementarySystemIconIds.has(id));
+  const independentSourceSize = independent ? systemIconModernSourceSize(options, sourceSize, [16, 32, 64, 128]) : modernSourceSize;
+  const eraArt = independent ? (classicBigSurFallbackIds.has(id) ? paths
+    : completeEraRasterSystemIconArt(era, id, independentSourceSize)) : "";
   const liquidPaths = liquidGlassSystemIconArt(id, modernSourceSize);
   const maskClass = coreArt ? " has-classic-mask" : "";
   const platinumClass = platinumArt ? " has-platinum-core" : "";
-  return `<svg class="sys-icon-svg${maskClass}${platinumClass}" data-classic-source-size="${sourceSize}" data-platinum-source-size="${platinumSourceSize}" data-modern-display-size="${modernDisplaySize}" data-modern-source-size="${modernSourceSize}" viewBox="0 0 32 32" focusable="false" aria-hidden="true"><g class="sys-icon-classic">${paths}</g><g class="sys-icon-platinum-core">${platinumArt}</g><g class="sys-icon-aqua">${aquaArt}</g><g class="sys-icon-snow-leopard">${snowArt}</g><g class="sys-icon-yosemite">${yosemiteArt}</g><g class="sys-icon-liquid">${liquidPaths}</g></svg>`;
+  const liquidShapeClass = liquidGlassIconUsesRoundedRect(id) ? " liquid-glass-rounded" : "";
+  return `<svg class="sys-icon-svg${maskClass}${platinumClass}${liquidShapeClass}" data-classic-source-size="${sourceSize}" data-platinum-source-size="${platinumSourceSize}" data-modern-display-size="${modernDisplaySize}" data-modern-source-size="${independentSourceSize}" viewBox="0 0 32 32" focusable="false" aria-hidden="true"><g class="sys-icon-classic">${paths}</g><g class="sys-icon-platinum-core">${platinumArt}</g><g class="sys-icon-aqua">${aquaArt}</g><g class="sys-icon-snow-leopard">${snowArt}</g><g class="sys-icon-yosemite">${yosemiteArt}</g><g class="sys-icon-liquid">${liquidPaths}</g>${independent ? `<g class="sys-icon-${era}">${eraArt}</g>` : ""}</svg>`;
 }
 
 function renderSystemIcon(iconId, options = {}) {

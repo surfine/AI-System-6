@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/design/LIQUID-GLASS-CONTROLS.md -->
-<!-- source-sha256: aaccfc58a5747e10223b23059702650f1218c1af210ee5bbf83f0cef11840d44 -->
+<!-- source-sha256: 00b1fc5871eff3b3c81ff49a9e924588dceca6ff653bf7302baebf3bebf8bbb5 -->
 
 # Liquid Glass 控件体验规范
 
@@ -20,6 +20,15 @@ Liquid Glass 的目标是 **macOS 27 Golden Gate**。macOS 26 Tahoe 只是初代
 不再作为最终视觉目标。Apple 侧规则来自 2026-08-17 查阅的官方 macOS 与 HIG 材料；
 AI System 6 保留自己的 System 6 对象语法、overlay、动效语义和可访问控件契约。
 不得复制 Apple 图标、截图、shader、字体或私有资源。
+
+### Golden Gate 图标处理
+
+Liquid Glass 继续使用现有 `liquid-glass` 主题 ID，并为 59 个运行时对象记录 Golden Gate
+校正：56 个核心对象加上 ClioPaint、ClioProject 和 One More Tune。应用、工具与 accessory
+在运行时使用统一圆角矩形边界；文件夹、文档、磁盘、光盘以及废纸篓空／满状态保留自由
+轮廓，保证 Finder 和列表视图中的语义清晰。遮罩不烘焙进源 PNG；运行时只保留
+`default`、`dark`、`clear`，不序列化 tinted、动态模糊或折射。Apple 没有公开这些对象
+可核验的 Golden Gate 单枚原生图标，因此台账将其标为参考适配，原生证据保持 pending。
 
 ## 目标感受
 

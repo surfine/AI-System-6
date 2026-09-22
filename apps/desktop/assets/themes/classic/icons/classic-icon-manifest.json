@@ -54,5 +54,8 @@
   "trashFull": "trashFull-32.svg",
   "control": "control-32.svg",
   "localModel": "localModel-32.svg",
-  "controlStrip": "controlStrip-32.svg"
+  "controlStrip": "controlStrip-32.svg",
+  "clioPaint": "clioPaint-32.svg",
+  "clioProject": "clioProject-32.svg",
+  "oneMoreTune": "oneMoreTune-32.svg"
 }

@@ -31,5 +31,6 @@ export const SITE_ICON_ERAS = {
   aqua: { pattern: (name) => `aqua/icons/${name}-128.png`, ext: "png" },
   "snow-leopard": { pattern: (name) => `snow-leopard/icons/${name}-128.png`, ext: "png" },
   yosemite: { pattern: (name) => `yosemite/icons/${name}-128.png`, ext: "png" },
+  "big-sur": { pattern: (name) => `big-sur/icons/${name}-128.png`, ext: "png" },
   "liquid-glass": { pattern: (name) => `liquid-glass/icons/${name}-128-default.png`, ext: "png" },
 };

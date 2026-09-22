@@ -3873,6 +3873,17 @@ body.use-liquid-glass .sys-icon {
   padding: 0;
 }
 
+/* Golden Gate applies the rounded-rectangle boundary to applications and
+   tools at render time. Free-form Finder objects keep their hardware, paper,
+   folder, document, disc, and trash silhouettes. The 22% radius is a local
+   adaptation of the macOS mask geometry; it is deliberately not baked into
+   the source PNGs. */
+body.use-liquid-glass .sys-icon-svg.liquid-glass-rounded {
+  border-radius: 22%;
+  clip-path: inset(0 round 22%);
+  overflow: hidden;
+}
+
 body.use-liquid-glass :is(.menu-bar, .control-strip) .sys-icon,
 body.use-liquid-glass .finder-list-name-cell .sys-icon,
 body.use-liquid-glass .finder-list-row > span:first-child .sys-icon,
@@ -4484,7 +4495,7 @@ body.use-liquid-glass .btn.default.is-disabled:is(:hover, :focus-visible, :activ
   }
 }
 
-@media (prefers-reduced-transparency: reduce) {
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
   /* The hierarchy has to survive without the refraction: the well and the
      lens go opaque, and the value stays as readable as it was. */
   body.use-liquid-glass {
@@ -4502,5 +4513,41 @@ body.use-liquid-glass .btn.default.is-disabled:is(:hover, :focus-visible, :activ
 
   body.use-liquid-glass .assistant-window .message.assistant[data-reply-state="temporary"]:not(.clio-welcome) {
     border-style: solid;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Increase Contrast.
+
+   The system setting asks for a higher-contrast scheme. Until now this app
+   answered it with exactly the bytes it answers with by default: measured in
+   Chromium with `Emulation.setEmulatedMedia({ features: [{ name:
+   "prefers-contrast", value: "more" }] })`, every role below read what it reads
+   with the setting off — the same silence `prefers-reduced-transparency` used
+   to keep in this file. So this block is the answer, and it is deliberately
+   small: the two roles that carry meaning at a glance (a secondary divider, a
+   disabled label), plus the one thing that can never be made legible by
+   tweaking a colour — a control sitting on a translucent surface it cannot be
+   separated from. The glass era gives up its blur here and its labels keep
+   their opaque fills.
+
+   It is scoped to `body[data-theme]`, the same specificity the era blocks use,
+   and it lives in the last boot sheet, so it wins by order in all six eras
+   without editing one of them. It cannot reach the appearance instruments:
+   they run with the setting off. */
+@media (prefers-contrast: more) {
+  body[data-theme] {
+    /* A dotted 1px shade becomes a solid ink rule: the divider is the most
+       common non-text element here, and a dotted line never reaches the 3:1
+       that non-text content asks for across its whole length. */
+    --system-secondary-divider: 1px solid var(--ink);
+    /* Disabled ink at 7.4:1 on the era's paper instead of 5.7:1, so a disabled
+       label reads as disabled by weight and context rather than by being hard
+       to read. The blur this setting also asks for is dropped by the
+       reduced-transparency blocks above, which now match both settings.
+       Menu-item disabled ink is deliberately left to its era: it is the one
+       role that costs 30 boot bytes to reach, disabled controls are exempt from
+       the contrast floor, and the floppy reserve is a harder promise. */
+    --system-disabled-fg: #3f3f3f;
   }
 }

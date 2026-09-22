@@ -1,11 +1,11 @@
 <!-- canonical-source: docs/design/THEME-FAMILY-CONTRACT.md -->
-<!-- source-sha256: 0b79ce2f664d8a74ae3fc2bb64e865c092984b36e601c9008e08168fab995f75 -->
+<!-- source-sha256: 23d6dcff87c80c2ecdf6cbf0abd02b58f5891a22f1fedc2a87fac6b7f979af85 -->
 
 英文版为准。本文档仅供人类参考。
 
 # 主题家族契约
 
-AI System 6 只维护**三个外观家族**，而不是六套互相独立的主题。新增一个
+AI System 6 只维护**四个外观家族**，而不是八套互相独立的主题。新增一个
 app、面板、对话框或系统控件时，只针对共享对象语法和它所属的家族写一次，
 派生外观会自动获得对应时代。
 
@@ -13,7 +13,8 @@ app、面板、对话框或系统控件时，只针对共享对象语法和它�
 | --- | --- | --- |
 | Classic | Classic / System 6 | Platinum |
 | Aqua | Aqua | Snow Leopard |
-| Liquid Glass | Liquid Glass | Yosemite |
+| Liquid Glass | Liquid Glass | Yosemite、Big Sur |
+| NeXTSTEP | NeXTSTEP | — |
 
 本契约是每一次主题编辑的常设规则。它由注册表
 (`apps/desktop/app/core/theme-registry.js`)、CSS 预算
@@ -24,7 +25,7 @@ app、面板、对话框或系统控件时，只针对共享对象语法和它�
 
 `apps/desktop/app/core/theme-registry.js` 是主题元数据的唯一来源：
 
-- `family` 命名三个维护根（`classic`、`aqua`、`liquid-glass`）。
+- `family` 命名四个维护根（`classic`、`aqua`、`liquid-glass`、`nextstep`）。
 - `recipeBase` 命名父配方。子主题从父配方出发，只拥有显式增量：
   `classic → platinum`、`aqua → snow-leopard`、`liquid-glass → yosemite`。
   Aqua 与 Liquid Glass 各自是根。
@@ -201,8 +202,9 @@ platinum-cmf-toolbar
 ```text
 Classic 家族   ->  Classic + Platinum
 Aqua 家族      ->  Aqua + Snow Leopard
-Liquid Glass   ->  Liquid Glass + Yosemite
-共享内核       ->  全部六套
+Liquid Glass   ->  Liquid Glass + Yosemite + Big Sur
+NeXTSTEP       ->  NeXTSTEP
+共享内核       ->  全部八套
 ```
 
 Classic → Platinum 成对回归即 canonical fidelity 工具
@@ -274,5 +276,26 @@ npm run verify:features -- theme-lab-fidelity-contract   # fixture 与 floor 模
 `snapshot:css`（现已支持 `--theme platinum`）捕获共享表面集。Classic 与
 Platinum 用同一 label 成对运行，即父主题变更的机器可读前后对比。
 
-目标：开发者脑子里只有三个家族，绝大多数 app 只消费语义 token，再增加
+目标：开发者脑子里只有四个家族，绝大多数 app 只消费语义 token，再增加
 十个 app 也不需要再维护十份子主题补丁。
+
+## Big Sur（2020）
+
+Big Sur 是第七套可选外观，位于 Yosemite 与 Liquid Glass 之间。独立配方归属
+`68-big-sur-appearance.css`，不启用 Liquid Glass 皮肤，保留左侧关闭、右侧缩放操作。
+Big Sur 已有 59 个独立图标对象：原 56 项加 ClioPaint、ClioProject、One More Tune。
+16/32/64/128 像素共 236 张 PNG；16/32 像素采用独立光学校正稿，64/128 像素来自
+Image Gen 材质母稿，不再别名复用 Yosemite。详见 [Big Sur 图标](BIG-SUR-ICONS.md)。统一偏好
+`ai-system-6-color-mode` 支持 `light`、`dark`、`system`，只有 Big Sur 将解析值
+投影为 `data-color-mode`。既有外观、项目、文稿和窗口持久化不变。
+新增回归截图不代表已通过原生历史像素还原认证。
+
+## NeXTSTEP 材质适配
+
+NeXTSTEP 是第八套外观配方，目前作为实验预览提供。独立配方
+`69-nextstep-appearance.css` 与懒加载外壳按需加载。本轮基于 NeXT 3.3 指南实现灰阶、
+斜面控件、黑色活动标题栏、浮动菜单、Dock、最小化、滚动框和列式浏览；CSS 尺寸尚未
+经过原生截图像素校准。命令、文稿和持久化服务继续复用共享实现，并在外壳边界校验
+陈旧对象和跨项目数据。
+这三个新应用在八个时代均为原创适配设计，不是历史原生图标；逐项历史核验仍为 pending。
+运行时覆盖完整不代表既有历史审核范围已经扩大。

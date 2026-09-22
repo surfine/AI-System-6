@@ -1,5 +1,5 @@
 <!-- canonical-source: README.md -->
-<!-- source-sha256: 689d2818aa5abb02959edc224d1dee649adaf819d1fadde08724b488bcc99b59 -->
+<!-- source-sha256: cd60278d925c2e5caeaa856fd5d0d5f6f9437ef46b527b9c376fb5ce028981bd -->
 
 > 英文版为准 / 仅供人类参考
 
@@ -36,9 +36,9 @@
 
 **直接打开一个窗口：** [配色工作台](https://system6.aaronlau.me/go/cmf-studio) · [盆景城市](https://system6.aaronlau.me/go/bonsai-city) · [终末地终端](https://system6.aaronlau.me/go/endfield-terminal) · [时间机器](https://system6.aaronlau.me/go/time-machine) · [OpenTTD](https://system6.aaronlau.me/go/openttd) · [DOOM](https://system6.aaronlau.me/go/doom)
 
-**或者打开一整块写完之后留下的盘：** [未来通车之后](https://system6.aaronlau.me/go/dtk) · [初代 iPad 为什么只有 256MB](https://system6.aaronlau.me/go/ipad1)
+**或者打开一整块写完之后留下的盘：** [未来通车之后](https://system6.aaronlau.me/go/dtk) · [初代 iPad 为什么只有 256MB](https://system6.aaronlau.me/go/ipad1) · [M5 iPad Pro](https://system6.aaronlau.me/go/m5ipad) · [iPhone 17e 浅粉色](https://system6.aaronlau.me/go/iphone17e) · [走向一整块玻璃](https://system6.aaronlau.me/go/bongo) · [玻璃与他们的产地](https://system6.aaronlau.me/go/glass) · [iPad Pro 9.7](https://system6.aaronlau.me/go/ipad97) · [iPhone Air MagSafe 电池](https://system6.aaronlau.me/go/airbattery) · [iPhone 17 Pro Max](https://system6.aaronlau.me/go/pm17) · [Project Sympathy](https://system6.aaronlau.me/go/sympathy) · [陶瓷 Apple Watch](https://system6.aaronlau.me/go/ceramic) · [Mac Pro (2019)](https://system6.aaronlau.me/go/macpro19) · [iPhone Pocket](https://system6.aaronlau.me/go/pocket) · [iPhone 6s Plus](https://system6.aaronlau.me/go/iphone6sp) · [MagSafe 皮革保护套](https://system6.aaronlau.me/go/sleeve) · [iPhone 12 Pro Max](https://system6.aaronlau.me/go/pm12) · [iPhone 17 标准版](https://system6.aaronlau.me/go/iphone17) · [CDMA iPhone 4](https://system6.aaronlau.me/go/cdma4) · [无接口 Apple Watch](https://system6.aaronlau.me/go/noport) · [touch 2 工程板](https://system6.aaronlau.me/go/touch2) · [iPhone Air](https://system6.aaronlau.me/go/airact) · [iPhone 4S Demo](https://system6.aaronlau.me/go/ip4sdemo) · [透明探索版 Air](https://system6.aaronlau.me/go/airtrans) · [T2 网卡](https://system6.aaronlau.me/go/t2nic) · [MagSafe 废案](https://system6.aaronlau.me/go/mgscrap) · [iPhone 16 工程机](https://system6.aaronlau.me/go/ip16p) · [iPad Air 4 工程机](https://system6.aaronlau.me/go/ipada4) · [WWDC2099](https://system6.aaronlau.me/go/ios19) · [Studio Display](https://system6.aaronlau.me/go/sd) · [Magic Keyboard](https://system6.aaronlau.me/go/mkb) · [iPad mini (A17 Pro)](https://system6.aaronlau.me/go/mini7) · [MacBook Neo](https://system6.aaronlau.me/go/mbneo) · [M5 MacBook Air](https://system6.aaronlau.me/go/m5mba) · [iPhone 11 Pro Max](https://system6.aaronlau.me/go/pm11)
 
-<sub>每个应用都有唯一一个可分享的地址 <code>/go/&lt;app-id&gt;</code>。桌面围绕它打开；两块演示用项目硬盘用的是同一条地址规则，<b>File 菜单的「打开演示用项目硬盘…」</b>会把它们列出来。</sub>
+<sub>每个应用都有唯一一个可分享的地址 <code>/go/&lt;app-id&gt;</code>。桌面围绕它打开；三十四块演示用项目硬盘用的是同一条地址规则，<b>File 菜单的「打开演示用项目硬盘…」</b>会把它们列出来。</sub>
 
 </div>
 
@@ -51,7 +51,7 @@
 - [聊天是一个应用，不是整台计算机](#聊天是一个应用不是整台计算机)
 - [约束仍然容得下什么](#约束仍然容得下什么)
 - [它还能跑 DOOM](#它还能跑-doom)
-- [一张桌子，六个系统](#一张桌子六个系统)
+- [一张桌子，七个系统](#一张桌子七个系统)
 - [在一个 1988 年的约束下建造](#在一个-1988-年的约束下建造)
 - [自带模型](#自带模型)
 - [这个仓库如何让自己保持诚实](#这个仓库如何让自己保持诚实)
@@ -67,7 +67,7 @@
   原始壁纸一个按钮就能恢复，折叠视频在你的机器上渲染完成。
 - **每个应用只有一个地址。** `/go/cmf-studio`、`/go/bonsai-city`、`/go/doom`
   等是把这个窗口交给别人的唯一方式；服务器上那些旧的裸目录由安装器自己退役。
-- **写完之后的作品以整块盘旅行，不是截图。** `/go/dtk` 和 `/go/ipad1` 挂载的是一整块项目硬盘：问题单、大纲、分节草稿、正文、审校记录。读者拿到的是自己能改的副本；**File 菜单的「打开演示用项目硬盘…」**会把它们列出来，所以没有人必须一直留着那条链接。加第三块盘＝在 `tooling/build-shared-project-disks.mjs` 加一条登记、在三张 `LAUNCH_ROUTES` 表里加一条路由，`tests/features/launch-intent.test.mjs` 会盯着源盘和发布出去的副本保持一致。
+- **写完之后的作品以整块盘旅行，不是截图。** `/go/dtk` 和 `/go/ipad1` 挂载的是一整块项目硬盘：问题单、大纲、分节草稿、正文、审校记录。读者拿到的是自己能改的副本；**File 菜单的「打开演示用项目硬盘…」**会把它们列出来，所以没有人必须一直留着那条链接。加一块新盘＝在 `tooling/build-shared-project-disks.mjs` 加一条登记、在三张 `LAUNCH_ROUTES` 表里加一条路由，`tests/features/launch-intent.test.mjs` 会盯着源盘和发布出去的副本保持一致。
 - **公网可以接待一位访客。** 打开访客桥之后，另一个 agent 可以经由指名你这张
   桌面的邀请，从互联网连上来；工具契约、权限和在审校台等待你确认的方式，
   与你在 Mac 上使用时完全一致。
@@ -236,7 +236,7 @@ flowchart LR
 同一个 MultiFinder 里。它们证明这套约束装得下真正的软件；写作路线的可信，则来自可见对象、
 明确保存，以及每一件真正发生过的事都有回执。
 
-## 一张桌子。六个系统。
+## 一张桌子。七个系统。
 
 文件和打开的窗口留在原地。整台计算机在它们周围换了时代。
 
@@ -249,25 +249,28 @@ flowchart LR
   <tr>
     <td width="33%" align="center"><img src="site/img/frames/snow-leopard.webp" alt="Snow Leopard 外观"><br><code>2009 / SNOW LEOPARD</code></td>
     <td width="33%" align="center"><img src="site/img/frames/yosemite.webp" alt="Yosemite 外观"><br><code>2014 / YOSEMITE</code></td>
+    <td width="33%" align="center"><img src="site/img/frames/big-sur.webp" alt="Big Sur 外观"><br><code>2020 / BIG SUR</code></td>
+  </tr>
+  <tr>
     <td width="33%" align="center"><img src="site/img/frames/liquid-glass.webp" alt="Liquid Glass 外观"><br><code>2026 / LIQUID GLASS</code></td>
   </tr>
 </table>
 
-六帧画面，一台活的桌面，由 `npm run site:capture-frames` 拍下。System 6 从真实的
+七帧画面，一台活的桌面，由 `npm run site:capture-frames` 拍下。System 6 从真实的
 System 6.0.8 资源和实际观察到的 Macintosh 行为出发；后面几个时代各有独立的、
 适配 Retina 的图标家族。这里没有一张是摆拍，因为有一个脚本会从运行中的应用里
 把它们全部重拍一遍。
 
 <div align="center">
 
-[![AI System 6 用经典的虚线轮廓拖动窗口，并在六套外观之间切换](apps/desktop/assets/readme/hero-desktop.gif)](https://system6.aaronlau.me)
+[![AI System 6 用经典的虚线轮廓拖动窗口，桌面在不同外观之间切换](apps/desktop/assets/readme/hero-desktop.gif)](https://system6.aaronlau.me)
 
 </div>
 
 ## 在一个 1988 年的约束下建造
 
 ```text
-启动关键载荷            ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,953,611 字节
+启动关键载荷            ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,945,088 字节
 两张 1.44 MB 软盘       ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  2,949,120 字节
 重型工具                按需懒加载，从第三张盘上来
 ```
@@ -344,7 +347,7 @@ AI-System-6/
 
 <img src="site/img/themes/classic/hardDisk.svg" width="40" height="40" alt=""> <img src="site/img/themes/platinum/hardDisk.png" width="40" height="40" alt=""> <img src="site/img/themes/aqua/hardDisk.png" width="40" height="40" alt=""> <img src="site/img/themes/snow-leopard/hardDisk.png" width="40" height="40" alt=""> <img src="site/img/themes/yosemite/hardDisk.png" width="40" height="40" alt=""> <img src="site/img/themes/liquid-glass/hardDisk.png" width="40" height="40" alt="">
 
-<sub>一块硬盘。六个时代。同一份工作。</sub>
+<sub>一块硬盘。七个时代。同一份工作。</sub>
 
 如果 AI 写作工具应该放过你的嗓音，就 **[★ 给 AI System 6 加星](https://github.com/surfine/AI-System-6)**。
 

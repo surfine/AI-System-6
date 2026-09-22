@@ -54,5 +54,8 @@
   "trashFull": "icons/trashFull-128-default.png",
   "control": "icons/control-128-default.png",
   "localModel": "icons/localModel-128-default.png",
-  "controlStrip": "icons/controlStrip-128-default.png"
+  "controlStrip": "icons/controlStrip-128-default.png",
+  "clioPaint": "icons/clioPaint-128-default.png",
+  "clioProject": "icons/clioProject-128-default.png",
+  "oneMoreTune": "icons/oneMoreTune-128-default.png"
 }

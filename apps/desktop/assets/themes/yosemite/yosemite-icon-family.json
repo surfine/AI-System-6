@@ -2868,6 +2868,438 @@
         }
       },
       "sourceNote": "Owner-accepted yosemite imagegen redraw, full batch, 2026-09-01."
+    },
+    "clioProject": {
+      "genre": "application",
+      "semanticIdentity": "Task cards and dependency links",
+      "physicalMetaphor": "Task cards and dependency links",
+      "provenanceClass": "C",
+      "sourceKind": "original-generated-era-illustration",
+      "authoringMethod": "built-in image generation for large tiers and appearances; independently authored compact artwork",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "eraGrammarReview": "original-period-adaptation-reviewed",
+      "reviewStatus": "technically-clean",
+      "runtimeAsset": true,
+      "nativeReplica": false,
+      "referenceValidated": false,
+      "sourceNote": "Original AI System 6 application. Period grammar is adapted; no historical native counterpart is claimed.",
+      "sourceReferences": [
+        "apps/desktop/assets/themes/era-icon-reference.json"
+      ],
+      "sizes": {
+        "16": "icons/clioProject-16.png",
+        "32": "icons/clioProject-32.png",
+        "64": "icons/clioProject-64.png",
+        "128": "icons/clioProject-128.png"
+      },
+      "runtimeSha256": {
+        "16-default": "f2b45296cda44eabe30cd6229485f51afcd98a4c588c8f2e419720554d03bd98",
+        "32-default": "d28232c4f1a5594fe9cfb0f659feb761da782cdff6054bc3cc9aea38b4667cb9",
+        "64-default": "f8a71a3352d80426d6e1bd707cb902c699fcb22d45db0417bda6c797fa66dd43",
+        "128-default": "d11759b8a67fbc4a60da2094d14e01fbe01e4f438e5c617dd0bcfa2987dec8b4"
+      },
+      "sizePolicy": "16 and 32 px have independent compact compositions with reduced detail; large default tiers use material masters where applicable.",
+      "label": "clioProject",
+      "metrics": {
+        "16": {
+          "pixels": 73,
+          "bbox": {
+            "minX": 1,
+            "minY": 2,
+            "maxX": 14,
+            "maxY": 13
+          },
+          "sha256": "f2b45296cda44eabe30cd6229485f51afcd98a4c588c8f2e419720554d03bd98",
+          "ink": {
+            "minX": 1,
+            "minY": 2,
+            "maxX": 14,
+            "maxY": 13,
+            "width": 14,
+            "height": 12
+          },
+          "gridShape": "landscape"
+        },
+        "32": {
+          "pixels": 240,
+          "bbox": {
+            "minX": 2,
+            "minY": 5,
+            "maxX": 29,
+            "maxY": 27
+          },
+          "sha256": "d28232c4f1a5594fe9cfb0f659feb761da782cdff6054bc3cc9aea38b4667cb9",
+          "ink": {
+            "minX": 2,
+            "minY": 5,
+            "maxX": 29,
+            "maxY": 27,
+            "width": 28,
+            "height": 23
+          },
+          "gridShape": "landscape"
+        },
+        "64": {
+          "pixels": 1225,
+          "bbox": {
+            "minX": 6,
+            "minY": 12,
+            "maxX": 58,
+            "maxY": 52
+          },
+          "sha256": "f8a71a3352d80426d6e1bd707cb902c699fcb22d45db0417bda6c797fa66dd43",
+          "ink": {
+            "minX": 6,
+            "minY": 12,
+            "maxX": 58,
+            "maxY": 52,
+            "width": 53,
+            "height": 41
+          },
+          "gridShape": "landscape"
+        },
+        "128": {
+          "pixels": 4617,
+          "bbox": {
+            "minX": 11,
+            "minY": 24,
+            "maxX": 115,
+            "maxY": 103
+          },
+          "sha256": "d11759b8a67fbc4a60da2094d14e01fbe01e4f438e5c617dd0bcfa2987dec8b4",
+          "ink": {
+            "minX": 11,
+            "minY": 24,
+            "maxX": 115,
+            "maxY": 103,
+            "width": 105,
+            "height": 80
+          },
+          "gridShape": "landscape"
+        }
+      },
+      "grid": {
+        "canvas": 128,
+        "shape": "landscape",
+        "fitted": 0.8203125,
+        "method": "measured-output-no-resampling"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.3594,
+          "meanLum": 196.99,
+          "lumStd": 41.54,
+          "edgeEnergy": 28
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.3096,
+          "meanLum": 196.85,
+          "lumStd": 42.54,
+          "edgeEnergy": 109
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.3005,
+          "meanLum": 198.31,
+          "lumStd": 42.69,
+          "edgeEnergy": 254
+        }
+      },
+      "master": "internal/evidence/drafts/added-app-era-icons/masters/yosemite/clioProject.png",
+      "masterSha256": "71bbd93dd026ca0cf36722bf4609cccc2d569f5a1b00d65fd4541d4eb932e746"
+    },
+    "clioPaint": {
+      "genre": "application",
+      "semanticIdentity": "Drawing palette and brush",
+      "physicalMetaphor": "Drawing palette and brush",
+      "provenanceClass": "C",
+      "sourceKind": "original-generated-era-illustration",
+      "authoringMethod": "built-in image generation for large tiers and appearances; independently authored compact artwork",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "eraGrammarReview": "original-period-adaptation-reviewed",
+      "reviewStatus": "technically-clean",
+      "runtimeAsset": true,
+      "nativeReplica": false,
+      "referenceValidated": false,
+      "sourceNote": "Original AI System 6 application. Period grammar is adapted; no historical native counterpart is claimed.",
+      "sourceReferences": [
+        "apps/desktop/assets/themes/era-icon-reference.json"
+      ],
+      "sizes": {
+        "16": "icons/clioPaint-16.png",
+        "32": "icons/clioPaint-32.png",
+        "64": "icons/clioPaint-64.png",
+        "128": "icons/clioPaint-128.png"
+      },
+      "runtimeSha256": {
+        "16-default": "ef570cc15f25bce948a63d01dd2ba3122247448bd8c0fd55b95315ad3051f08f",
+        "32-default": "f5d6264acdaa8f63aa7a96f336ba7035db15420bab6486e88b616245b0c0d149",
+        "64-default": "60e7ae5301c7cf0ff012eec5e78ec0a01b3c868099af94d42370ca5b811e6cd7",
+        "128-default": "b5454291cd46edc4e7e25edbc54afdb7edd3fbe54a3d847d496b2911239b4be2"
+      },
+      "sizePolicy": "16 and 32 px have independent compact compositions with reduced detail; large default tiers use material masters where applicable.",
+      "label": "clioPaint",
+      "metrics": {
+        "16": {
+          "pixels": 124,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 13,
+            "maxY": 13
+          },
+          "sha256": "ef570cc15f25bce948a63d01dd2ba3122247448bd8c0fd55b95315ad3051f08f",
+          "ink": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 13,
+            "maxY": 13,
+            "width": 13,
+            "height": 13
+          },
+          "gridShape": "square"
+        },
+        "32": {
+          "pixels": 454,
+          "bbox": {
+            "minX": 2,
+            "minY": 1,
+            "maxX": 27,
+            "maxY": 27
+          },
+          "sha256": "f5d6264acdaa8f63aa7a96f336ba7035db15420bab6486e88b616245b0c0d149",
+          "ink": {
+            "minX": 2,
+            "minY": 1,
+            "maxX": 27,
+            "maxY": 27,
+            "width": 26,
+            "height": 27
+          },
+          "gridShape": "square"
+        },
+        "64": {
+          "pixels": 1881,
+          "bbox": {
+            "minX": 5,
+            "minY": 8,
+            "maxX": 57,
+            "maxY": 56
+          },
+          "sha256": "60e7ae5301c7cf0ff012eec5e78ec0a01b3c868099af94d42370ca5b811e6cd7",
+          "ink": {
+            "minX": 5,
+            "minY": 8,
+            "maxX": 57,
+            "maxY": 56,
+            "width": 53,
+            "height": 49
+          },
+          "gridShape": "square"
+        },
+        "128": {
+          "pixels": 7260,
+          "bbox": {
+            "minX": 12,
+            "minY": 16,
+            "maxX": 116,
+            "maxY": 112
+          },
+          "sha256": "b5454291cd46edc4e7e25edbc54afdb7edd3fbe54a3d847d496b2911239b4be2",
+          "ink": {
+            "minX": 12,
+            "minY": 16,
+            "maxX": 116,
+            "maxY": 112,
+            "width": 105,
+            "height": 97
+          },
+          "gridShape": "square"
+        }
+      },
+      "grid": {
+        "canvas": 128,
+        "shape": "square",
+        "fitted": 0.8203125,
+        "method": "measured-output-no-resampling"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 11,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5,
+          "meanLum": 161.04,
+          "lumStd": 50.22,
+          "edgeEnergy": 101
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.4678,
+          "meanLum": 159.53,
+          "lumStd": 55.81,
+          "edgeEnergy": 343
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.4632,
+          "meanLum": 159.63,
+          "lumStd": 57.4,
+          "edgeEnergy": 490
+        }
+      },
+      "master": "internal/evidence/drafts/added-app-era-icons/masters/yosemite/clioPaint.png",
+      "masterSha256": "39f504919a5703755fdfb1c0f1ad3906199148474b7bb250c91610ed38f647bc"
+    },
+    "oneMoreTune": {
+      "genre": "application",
+      "semanticIdentity": "Music knowledge study cards and note",
+      "physicalMetaphor": "Music knowledge study cards and note",
+      "provenanceClass": "C",
+      "sourceKind": "original-generated-era-illustration",
+      "authoringMethod": "built-in image generation for large tiers and appearances; independently authored compact artwork",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "eraGrammarReview": "original-period-adaptation-reviewed",
+      "reviewStatus": "technically-clean",
+      "runtimeAsset": true,
+      "nativeReplica": false,
+      "referenceValidated": false,
+      "sourceNote": "Original AI System 6 application. Period grammar is adapted; no historical native counterpart is claimed.",
+      "sourceReferences": [
+        "apps/desktop/assets/themes/era-icon-reference.json"
+      ],
+      "sizes": {
+        "16": "icons/oneMoreTune-16.png",
+        "32": "icons/oneMoreTune-32.png",
+        "64": "icons/oneMoreTune-64.png",
+        "128": "icons/oneMoreTune-128.png"
+      },
+      "runtimeSha256": {
+        "16-default": "1a12d953de12827ca1fb3e9e5f2fcf8395ef6de621f4f025321299b616bb37b6",
+        "32-default": "33a8d54408f84e8b43b2271c026218cf6fee7f66cd6443c11619fd897bb036af",
+        "64-default": "1a94ac414ee30d8e53e8c9e37210dbb0e326dd0c421291a6384215c7303273d5",
+        "128-default": "dd5422276138ef5b4662a7324c913825376c84e9956489159fcde03047297f26"
+      },
+      "sizePolicy": "16 and 32 px have independent compact compositions with reduced detail; large default tiers use material masters where applicable.",
+      "label": "oneMoreTune",
+      "metrics": {
+        "16": {
+          "pixels": 146,
+          "bbox": {
+            "minX": 1,
+            "minY": 2,
+            "maxX": 13,
+            "maxY": 14
+          },
+          "sha256": "1a12d953de12827ca1fb3e9e5f2fcf8395ef6de621f4f025321299b616bb37b6",
+          "ink": {
+            "minX": 1,
+            "minY": 2,
+            "maxX": 13,
+            "maxY": 14,
+            "width": 13,
+            "height": 13
+          },
+          "gridShape": "square"
+        },
+        "32": {
+          "pixels": 550,
+          "bbox": {
+            "minX": 2,
+            "minY": 4,
+            "maxX": 26,
+            "maxY": 29
+          },
+          "sha256": "33a8d54408f84e8b43b2271c026218cf6fee7f66cd6443c11619fd897bb036af",
+          "ink": {
+            "minX": 2,
+            "minY": 4,
+            "maxX": 26,
+            "maxY": 29,
+            "width": 25,
+            "height": 26
+          },
+          "gridShape": "square"
+        },
+        "64": {
+          "pixels": 2114,
+          "bbox": {
+            "minX": 7,
+            "minY": 6,
+            "maxX": 56,
+            "maxY": 57
+          },
+          "sha256": "1a94ac414ee30d8e53e8c9e37210dbb0e326dd0c421291a6384215c7303273d5",
+          "ink": {
+            "minX": 7,
+            "minY": 6,
+            "maxX": 56,
+            "maxY": 57,
+            "width": 50,
+            "height": 52
+          },
+          "gridShape": "square"
+        },
+        "128": {
+          "pixels": 8463,
+          "bbox": {
+            "minX": 14,
+            "minY": 12,
+            "maxX": 113,
+            "maxY": 116
+          },
+          "sha256": "dd5422276138ef5b4662a7324c913825376c84e9956489159fcde03047297f26",
+          "ink": {
+            "minX": 14,
+            "minY": 12,
+            "maxX": 113,
+            "maxY": 116,
+            "width": 100,
+            "height": 105
+          },
+          "gridShape": "square"
+        }
+      },
+      "grid": {
+        "canvas": 128,
+        "shape": "square",
+        "fitted": 0.8203125,
+        "method": "measured-output-no-resampling"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5742,
+          "meanLum": 196.22,
+          "lumStd": 60.25,
+          "edgeEnergy": 87
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5391,
+          "meanLum": 194.91,
+          "lumStd": 65.54,
+          "edgeEnergy": 203
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.534,
+          "meanLum": 195.07,
+          "lumStd": 65.85,
+          "edgeEnergy": 269
+        }
+      },
+      "master": "internal/evidence/drafts/added-app-era-icons/masters/yosemite/oneMoreTune.png",
+      "masterSha256": "f0a819ac3ce428fb1c16ffc1ad4d617787bd5b82d3ccdd66d10e25e93fd76a90"
     }
   },
   "reviewedCore": [
@@ -2951,5 +3383,11 @@
     "controlPanel",
     "teachText",
     "daHandler"
+  ],
+  "supplementalBuilder": "tooling/build-added-app-icons.mjs",
+  "supplementalIconIds": [
+    "clioPaint",
+    "clioProject",
+    "oneMoreTune"
   ]
 }

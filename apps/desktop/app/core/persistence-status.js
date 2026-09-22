@@ -3,6 +3,7 @@
 // Loaded before app.js as a classic script; shares the AI System 6 global scope.
 
 
+let nextstepFinderPreferences = { shelf: [] };
 const renderSignatureCache = new Map();
 const storageSnapshotCache = new Map();
 const storageRecordFingerprintCache = new Map();
@@ -349,6 +350,7 @@ window.AISystem6DeskPersistence = Object.freeze({
 
 function settingsSnapshotPayload() {
   return {
+    nextstepFinder: nextstepFinderPreferences,
     endpoint: endpointInput.value,
     localProvider: document.getElementById("local-provider")?.value || "lm-studio",
     localLmStudioConnectionEnabled,
@@ -1979,6 +1981,8 @@ async function loadDeskState() {
 }
 
 function applySettings(settings) {
+  nextstepFinderPreferences = settings.nextstepFinder && typeof settings.nextstepFinder === "object"
+    ? { shelf: Array.isArray(settings.nextstepFinder.shelf) ? settings.nextstepFinder.shelf : [] } : { shelf: [] };
   const localProviderEl = document.getElementById("local-provider");
   if (localProviderEl && settings.localProvider) localProviderEl.value = settings.localProvider;
   const savedEndpoint = String(settings.endpoint || "").trim();

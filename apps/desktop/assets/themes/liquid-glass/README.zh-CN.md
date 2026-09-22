@@ -1,16 +1,23 @@
 <!-- canonical-source: apps/desktop/assets/themes/liquid-glass/README.md -->
-<!-- source-sha256: c1d9993bcd61ef36910f3e5022ab2b11ff1903db66d7659397b050ff81ec35c5 -->
+<!-- source-sha256: 851e03c61f3886613deea0ac8faf1929749d3c37aea7f80ae9dcc31e0cc5b753 -->
 <!-- 英文版为准；本译文仅供人类参考。 -->
 
 # Liquid Glass 图标家族
 
-本目录发布完整的 56 对象 macOS Tahoe 26 家族。跨时代连续性来自
+本目录发布完整的 59 对象 macOS 27 Golden Gate 家族；其中包括 56 个核心对象与
+ClioPaint、ClioProject、One More Tune 三个新增应用。跨时代连续性来自
 [icon-system-continuity.json](../icon-system-continuity.json) 中每个对象的
 `semanticIdentity` 与一至两个 `identityAnchors`，而不是固定容器或物理隐喻。
 
 该家族拥有已接受的透明 ImageGen 主图，但创作验收不等于历史验证。
 `priorityCore16` 以外的 40 个 ID 在逐项复核前继续保持历史待审；逐对象来源与状态
 记录于 [icon-provenance-matrix.json](../icon-provenance-matrix.json)。
+
+Golden Gate 校正记录于
+golden-gate-icon-mask-matrix.json。
+应用、工具和 accessory 只在运行时使用共享圆角矩形遮罩；文件夹、文档、磁盘、光盘和
+废纸篓空／满状态保留自由轮廓。源 PNG 保持透明，不烘焙模糊、折射、动态光照或 tinted
+资源；Apple 没有公开的 Golden Gate 单枚原生图标，不作原生复刻声称。
 
 ## 实际运行时映射
 
@@ -31,13 +38,13 @@ Theme Lab 显示 16 个优先对象。其 16 px 提示图会正确读取
 
 ## Finder／MultiFinder — P0 已关闭
 
-Finder 使用已批准的 ImageGen v2 Tahoe 蓝色外壳、独立半透明面孔／侧脸面板与墨迹。
+Finder 使用已批准的 ImageGen v2 Golden Gate 适配版蓝色外壳、独立半透明面孔／侧脸面板与墨迹。
 其独立 `base`、`panel`、`ink` 源图层可重组出创作身份，历史状态为
-`reference-validated`。MultiFinder 以当前 Tahoe Finder 身份加“多个”构成；它是
+`reference-validated`。MultiFinder 以当前 Golden Gate Finder 适配版身份加“多个”构成；它是
 C 级来源、`historically-reviewed`，并不宣称为原生复刻。两者在 Default、Dark、
 Clear 下都拥有直接构成的 128/64/32/16 光学运行时资产。
 
-## ClioTalk — Tahoe cell 已关闭
+## ClioTalk — Golden Gate 适配已记录
 
 ClioTalk 现在采用 P-B layered glass conversation panel。两个不同的 interlocutor mark
 形成 conversation layer，provisional reply 是独立 source，而不是烘焙在 generic
@@ -58,5 +65,6 @@ npm run build:era-icons -- --theme liquid-glass
 只运行 `build:liquid-glass-imagegen-icons` 是中间的宽泛家族构建，不是 Finder 家谱
 终态。审核状态变化后，再生成来源矩阵与谱系审计。
 
-历史 Tahoe 截图仅作证据；产品图标不发布 Apple 图稿、截图裁片或描摹的 Apple
-路径。
+Golden Gate 官方来源哈希和 59 对象审核板位于
+`internal/evidence/drafts/liquid-glass-golden-gate/`；产品图标不发布 Apple 图稿、截图裁片或
+描摹的 Apple 路径。

@@ -348,7 +348,7 @@ body.is-resizing-tdi {
   background: var(--tdi-stack-count-bg);
   color: var(--tdi-stack-count-fg);
   font-family: var(--mono-font);
-  font-size: 9px;
+  font-size: 10px;
   font-variant-numeric: tabular-nums;
   line-height: 1;
   place-items: center;
@@ -435,7 +435,7 @@ body.is-resizing-tdi {
 .tdi-stack-open > small {
   color: inherit;
   font-family: var(--mono-font);
-  font-size: 9px;
+  font-size: 10px;
   opacity: 0.64;
 }
 
@@ -671,7 +671,7 @@ body.is-resizing-tdi {
 .tdi-tab-close.is-disabled {
   color: var(--shade-dark);
   background: var(--panel);
-  box-shadow: inset 1px 1px 0 var(--shade-dark), inset -1px -1px 0 #ffffff;
+  box-shadow: inset 1px 1px 0 var(--shade-dark), inset -1px -1px 0 #fff;
   cursor: default;
 }
 
@@ -745,7 +745,7 @@ body.is-resizing-tdi {
 
 .tdi-tab small {
   font-family: var(--mono-font);
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 400;
   color: var(--tdi-tab-small-color);
   opacity: 0.76;

@@ -1,0 +1,414 @@
+{
+  "schemaVersion": 1,
+  "mode": "text_clue_presenter",
+  "items": [
+    {
+      "id": "keynote-2023-air-announcement",
+      "event": {
+        "id": "evt_20230605",
+        "date": "2023-06-05",
+        "name": "WWDC 2023"
+      },
+      "role": {
+        "zh": "宣布新品",
+        "en": "Product reveal"
+      },
+      "clues": {
+        "zh": [
+          "Air 变大了。",
+          "新尺寸是 15 英寸。",
+          "谁揭晓新品，再把详述交出去？"
+        ],
+        "en": [
+          "Air grows.",
+          "A new 15-inch size.",
+          "Who reveals it before handing over?"
+        ]
+      },
+      "answer": "John Ternus",
+      "distractors": [
+        "Kate Bergeron",
+        "Jennifer Munn",
+        "Tim Cook"
+      ],
+      "story": {
+        "zh": "揭晓与详述分属两个人。",
+        "en": "The reveal and detailed tour had different presenters."
+      },
+      "sourceUrl": "https://developer.apple.com/videos/play/wwdc2023/101/",
+      "sourceLabel": "Apple · WWDC 23 Keynote",
+      "researchIds": [
+        "KEYNOTE-2023-macbook-air15-announcement",
+        "rel_76e3ec5fbb44"
+      ],
+      "review": {
+        "method": "official_named_transcript_text_only",
+        "checkedOn": "2026-09-22",
+        "locatorHint": "153–156",
+        "locatorIsPermanent": false,
+        "choicesReviewed": true,
+        "audioReviewed": false,
+        "audioAllowed": false
+      },
+      "sharedGroup": "keynote-2023-air"
+    },
+    {
+      "id": "keynote-2023-air-details",
+      "event": {
+        "id": "evt_20230605",
+        "date": "2023-06-05",
+        "name": "WWDC 2023"
+      },
+      "role": {
+        "zh": "讲解机身与音响",
+        "en": "Hardware tour"
+      },
+      "clues": {
+        "zh": [
+          "还是那台大号 Air。",
+          "这一棒讲轻薄与声音。",
+          "谁详述 11.5 毫米机身与六扬声器？"
+        ],
+        "en": [
+          "The larger Air.",
+          "Thinness meets sound.",
+          "Who details 11.5 mm and six speakers?"
+        ]
+      },
+      "answer": "Kate Bergeron",
+      "distractors": [
+        "John Ternus",
+        "Jennifer Munn",
+        "Tim Cook"
+      ],
+      "story": {
+        "zh": "这段接在新品揭晓之后。",
+        "en": "This tour followed the product reveal."
+      },
+      "sourceUrl": "https://developer.apple.com/videos/play/wwdc2023/101/",
+      "sourceLabel": "Apple · WWDC 23 Keynote",
+      "researchIds": [
+        "KEYNOTE-2023-macbook-air15-details",
+        "rel_8b2c80b53dde"
+      ],
+      "review": {
+        "method": "official_named_transcript_text_only",
+        "checkedOn": "2026-09-22",
+        "locatorHint": "156–161",
+        "locatorIsPermanent": false,
+        "choicesReviewed": true,
+        "audioReviewed": false,
+        "audioAllowed": false
+      },
+      "sharedGroup": "keynote-2023-air"
+    },
+    {
+      "id": "keynote-2023-m2-ultra",
+      "event": {
+        "id": "evt_20230605",
+        "date": "2023-06-05",
+        "name": "WWDC 2023"
+      },
+      "role": {
+        "zh": "介绍芯片",
+        "en": "Chip introduction"
+      },
+      "clues": {
+        "zh": [
+          "Mac Studio 的新力量。",
+          "两颗 Max 连成一颗。",
+          "谁在这一段介绍 M2 Ultra？"
+        ],
+        "en": [
+          "Mac Studio gains power.",
+          "Two Max dies connected.",
+          "Who introduces M2 Ultra here?"
+        ]
+      },
+      "answer": "Jennifer Munn",
+      "distractors": [
+        "John Ternus",
+        "Kate Bergeron",
+        "Mike Rockwell"
+      ],
+      "story": {
+        "zh": "同段也把话题带到 Mac Pro。",
+        "en": "The segment also reached Mac Pro."
+      },
+      "sourceUrl": "https://developer.apple.com/videos/play/wwdc2023/101/",
+      "sourceLabel": "Apple · WWDC 23 Keynote",
+      "researchIds": [
+        "KEYNOTE-2023-m2-ultra",
+        "rel_21bc11407246"
+      ],
+      "review": {
+        "method": "official_named_transcript_text_only",
+        "checkedOn": "2026-09-22",
+        "locatorHint": "166–173",
+        "locatorIsPermanent": false,
+        "choicesReviewed": true,
+        "audioReviewed": false,
+        "audioAllowed": false
+      },
+      "sharedGroup": "keynote-2023-m2-ultra"
+    },
+    {
+      "id": "keynote-2023-r1",
+      "event": {
+        "id": "evt_20230605",
+        "date": "2023-06-05",
+        "name": "WWDC 2023"
+      },
+      "role": {
+        "zh": "讲解传感器处理",
+        "en": "Sensor processing"
+      },
+      "clues": {
+        "zh": [
+          "戴在头上的电脑。",
+          "与 M2 搭档的另一颗芯片。",
+          "谁讲解 Vision Pro 的 R1？"
+        ],
+        "en": [
+          "A wearable computer.",
+          "Another chip alongside M2.",
+          "Who explains Vision Pro’s R1?"
+        ]
+      },
+      "answer": "Mike Rockwell",
+      "distractors": [
+        "Alan Dye",
+        "Richard Howarth",
+        "Tim Cook"
+      ],
+      "story": {
+        "zh": "这一棒深入传感器处理。",
+        "en": "This segment explored sensor processing."
+      },
+      "sourceUrl": "https://developer.apple.com/videos/play/wwdc2023/101/",
+      "sourceLabel": "Apple · WWDC 23 Keynote",
+      "researchIds": [
+        "KEYNOTE-2023-vision-pro-r1",
+        "rel_446cb7cc0bc3"
+      ],
+      "review": {
+        "method": "official_named_transcript_text_only",
+        "checkedOn": "2026-09-22",
+        "locatorHint": "372–380",
+        "locatorIsPermanent": false,
+        "choicesReviewed": true,
+        "audioReviewed": false,
+        "audioAllowed": false
+      },
+      "sharedGroup": "keynote-2023-r1"
+    },
+    {
+      "id": "keynote-2024-calculator-announcement",
+      "event": {
+        "id": "evt_20240610",
+        "date": "2024-06-10",
+        "name": "WWDC 2024"
+      },
+      "role": {
+        "zh": "引入计算器",
+        "en": "Calculator introduction"
+      },
+      "clues": {
+        "zh": [
+          "iPad 终于会算了。",
+          "接下来还有手写数学。",
+          "谁先宣布计算器，再交给别人演示？"
+        ],
+        "en": [
+          "iPad gains Calculator.",
+          "Handwritten mathematics follows.",
+          "Who announces it before the demo handoff?"
+        ]
+      },
+      "answer": "Craig Federighi",
+      "distractors": [
+        "Jenny Chen",
+        "Kelsey Peterson",
+        "Tim Cook"
+      ],
+      "story": {
+        "zh": "宣布者与动手演示者不同。",
+        "en": "The announcer and demonstrator were different people."
+      },
+      "sourceUrl": "https://developer.apple.com/videos/play/wwdc2024/101/",
+      "sourceLabel": "Apple · WWDC 24 Keynote",
+      "researchIds": [
+        "KEYNOTE-2024-ipad-calculator-announcement",
+        "rel_3d60b1962f63"
+      ],
+      "review": {
+        "method": "official_named_transcript_text_only",
+        "checkedOn": "2026-09-22",
+        "locatorHint": "251–253",
+        "locatorIsPermanent": false,
+        "choicesReviewed": true,
+        "audioReviewed": false,
+        "audioAllowed": false
+      },
+      "sharedGroup": "keynote-2024-calculator"
+    },
+    {
+      "id": "keynote-2024-math-notes",
+      "event": {
+        "id": "evt_20240610",
+        "date": "2024-06-10",
+        "name": "WWDC 2024"
+      },
+      "role": {
+        "zh": "演示手写数学",
+        "en": "Handwritten math demo"
+      },
+      "clues": {
+        "zh": [
+          "Apple Pencil 变成计算工具。",
+          "写下等号就出现结果。",
+          "谁用乒乓球演示变量与图表？"
+        ],
+        "en": [
+          "Pencil becomes a calculator.",
+          "An equals sign reveals results.",
+          "Who demonstrates table-tennis variables and graphs?"
+        ]
+      },
+      "answer": "Jenny Chen",
+      "distractors": [
+        "Craig Federighi",
+        "Kelsey Peterson",
+        "Cyrus Irani"
+      ],
+      "story": {
+        "zh": "乒乓球把算式变成了图。",
+        "en": "Table tennis turned equations into graphs."
+      },
+      "sourceUrl": "https://developer.apple.com/videos/play/wwdc2024/101/",
+      "sourceLabel": "Apple · WWDC 24 Keynote",
+      "researchIds": [
+        "KEYNOTE-2024-math-notes-demo",
+        "rel_adfd14075cfa"
+      ],
+      "review": {
+        "method": "official_named_transcript_text_only",
+        "checkedOn": "2026-09-22",
+        "locatorHint": "253–256",
+        "locatorIsPermanent": false,
+        "choicesReviewed": true,
+        "audioReviewed": false,
+        "audioAllowed": false
+      },
+      "sharedGroup": "keynote-2024-calculator"
+    },
+    {
+      "id": "keynote-2024-siri",
+      "event": {
+        "id": "evt_20240610",
+        "date": "2024-06-10",
+        "name": "WWDC 2024"
+      },
+      "role": {
+        "zh": "演示 Siri 交互",
+        "en": "Siri interaction demo"
+      },
+      "clues": {
+        "zh": [
+          "助手沿屏幕边缘发光。",
+          "说错地点，也能更正。",
+          "谁把 Muir Beach 改口为 Muir Woods？"
+        ],
+        "en": [
+          "The assistant glows around the screen.",
+          "A spoken location gets corrected.",
+          "Who changes Muir Beach to Muir Woods?"
+        ]
+      },
+      "answer": "Kelsey Peterson",
+      "distractors": [
+        "Craig Federighi",
+        "Jenny Chen",
+        "Cyrus Irani"
+      ],
+      "story": {
+        "zh": "这是当场展示的交互片段。",
+        "en": "This was an interaction shown at the event."
+      },
+      "sourceUrl": "https://developer.apple.com/videos/play/wwdc2024/101/",
+      "sourceLabel": "Apple · WWDC 24 Keynote",
+      "researchIds": [
+        "KEYNOTE-2024-siri-demo",
+        "rel_4c20a0d8030b"
+      ],
+      "review": {
+        "method": "official_named_transcript_text_only",
+        "checkedOn": "2026-09-22",
+        "locatorHint": "318–321",
+        "locatorIsPermanent": false,
+        "choicesReviewed": true,
+        "audioReviewed": false,
+        "audioAllowed": false
+      },
+      "sharedGroup": "keynote-2024-siri"
+    },
+    {
+      "id": "keynote-2024-genmoji",
+      "event": {
+        "id": "evt_20240610",
+        "date": "2024-06-10",
+        "name": "WWDC 2024"
+      },
+      "role": {
+        "zh": "介绍表情生成",
+        "en": "Generated emoji introduction"
+      },
+      "clues": {
+        "zh": [
+          "找不到合适的表情？",
+          "用文字描述一个。",
+          "谁介绍 Genmoji 的生成玩法？"
+        ],
+        "en": [
+          "No suitable emoji?",
+          "Describe one instead.",
+          "Who introduces Genmoji creation?"
+        ]
+      },
+      "answer": "Cyrus Irani",
+      "distractors": [
+        "Kelsey Peterson",
+        "Justin Titi",
+        "Sebastien Marineau-Mes"
+      ],
+      "story": {
+        "zh": "这一棒随后进入 Image Playground。",
+        "en": "Image Playground followed in the same segment."
+      },
+      "sourceUrl": "https://developer.apple.com/videos/play/wwdc2024/101/",
+      "sourceLabel": "Apple · WWDC 24 Keynote",
+      "researchIds": [
+        "KEYNOTE-2024-genmoji",
+        "rel_a8890b18a321"
+      ],
+      "review": {
+        "method": "official_named_transcript_text_only",
+        "checkedOn": "2026-09-22",
+        "locatorHint": "343–347",
+        "locatorIsPermanent": false,
+        "choicesReviewed": true,
+        "audioReviewed": false,
+        "audioAllowed": false
+      },
+      "sharedGroup": "keynote-2024-genmoji"
+    }
+  ],
+  "reviewNotes": {
+    "zh": "依据官方署名文字稿重写线索；同场干扰选项按具体段落排除。2020 未取得可核验官方署名正文，未选入。只核验发布会上的介绍或演示，不声称功能已交付。原研究包的原声题仍未启用。",
+    "sourcesOpened": [
+      "https://developer.apple.com/videos/play/wwdc2023/101/",
+      "https://developer.apple.com/videos/play/wwdc2024/101/",
+      "https://developer.apple.com/videos/play/wwdc2020/101/"
+    ]
+  }
+}

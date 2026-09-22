@@ -5,7 +5,7 @@
   "statusModel": {
     "authoring": "generated-draft and technically-clean describe production state only.",
     "historical": "pending, historically-reviewed, and reference-validated are separate historical states recorded per icon and era in icon-provenance-matrix.json.",
-    "familyCompleteness": "A 56-object runtime family can be complete while historical review remains pending.",
+    "familyCompleteness": "The shared 56-object family plus three supplemental applications can be runtime-complete while historical review remains pending.",
     "remaining40": "Every runtime id outside icon-system-continuity.json priorityCore16 remains pending until individually reviewed."
   },
   "evidencePriority": [
@@ -273,6 +273,57 @@
       "historicalReviewStatus": "mixed; accepted-imagegen is not Tahoe reference validation",
       "remaining40Status": "pending",
       "acceptance": "Every object must remain readable in Default, Dark, and Clear over varied backgrounds and must still look native to Tahoe 26 rather than generic glassmorphism."
+    },
+    "big-sur": {
+      "target": "macOS 11 Big Sur (2020)",
+      "referenceSizes": [
+        1024,
+        128,
+        32,
+        16
+      ],
+      "productSizes": [
+        128,
+        64,
+        32,
+        16
+      ],
+      "runtimeManifest": "big-sur/big-sur-icon-manifest.json",
+      "runtimeDefault": "59 independent objects; 16/32/64/128 PNG selected by context and device pixel ratio",
+      "runtimeFormat": "transparent sRGB PNG; one default appearance shared by light and dark backgrounds",
+      "sizePolicy": "16/32 independently composed optical SVG sources; 64/128 derived from image-generated material masters. No single masking or clipping shape is imposed on protruding tools.",
+      "light": "restrained upper lighting, material depth and soft neutral drop shadow",
+      "perspective": "front-facing rounded-square applications; tabbed folders, folded pages, storage hardware and trash retain object silhouettes",
+      "edge": "alpha antialiasing with clear outer margin; no universal Liquid Glass mask or tinted/dark variants",
+      "sources": [
+        "https://web.archive.org/web/20201223123443/https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/app-icon",
+        "https://web.archive.org/web/20201223162058/https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/document-icons/",
+        "https://www.apple.com/newsroom/2020/11/macos-big-sur-is-here/",
+        "internal/evidence/drafts/big-sur-icons/reference/manifest.json",
+        "internal/evidence/drafts/big-sur/reference/manifest.json"
+      ],
+      "authoringStatus": "59 original project assets, technically checked; generated masters are not historical evidence",
+      "historicalReviewStatus": "Per-object A/B/C and explicit pending statuses in historical-review.json and icon-provenance-matrix.json. Four direct counterpart reviews; no exact-pixel replica claim.",
+      "remaining40Status": "pending; the three supplemental original applications are also historical pending",
+      "acceptance": "Compare core16 and originals with pinned 2020 source figures; inspect all 59 on light/dark backgrounds at actual 16/32 and runtime DPR1/2. State pairs must remain distinct."
+    },
+    "nextstep": {
+      "target": "NeXTSTEP 3.3 adaptation",
+      "productSizes": [
+        128,
+        64,
+        32,
+        16
+      ],
+      "runtimeManifest": "nextstep/nextstep-icon-manifest.json",
+      "runtimeDefault": "ClioPaint, ClioProject and One More Tune own independent tile icons; original 56 objects fall back to Classic",
+      "runtimeFormat": "three original opaque gray beveled tile illustrations exported as transparent PNG",
+      "sources": [
+        "https://guidebookgallery.org/screenshots/nextstep33"
+      ],
+      "authoringStatus": "three supplemental original adaptations; no copied native app artwork",
+      "historicalReviewStatus": "pending; no native counterpart is claimed",
+      "acceptance": "Inspect the three application identities at compact and large sizes; do not describe the 56 Classic fallback objects as native NeXTSTEP artwork."
     }
   }
 }

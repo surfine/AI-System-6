@@ -141,6 +141,23 @@ function installDemoDisksPanel() {
     return list;
   }
 
+  // The title bar carries generated labels rather than data-i18n spans, so a
+  // language switch has to write them again (see renderDemoDisksPanel). Drawn
+  // here once so the build and the redraw cannot disagree.
+  function localizeChrome(win) {
+    const title = win.querySelector(`#${TITLE_ID}`);
+    if (title) title.textContent = t2("demo_disks_title", "演示用项目硬盘", "Demonstration Project Disks");
+    const labels = [
+      [".close-box", "close", "关闭", "Close"],
+      [".resize-box", "zoom", "缩放", "Zoom"],
+      [".shade-box", "collapse", "折叠", "Collapse"],
+    ];
+    labels.forEach(([selector, key, zh, en]) => {
+      const control = win.querySelector(selector);
+      if (control) control.setAttribute("aria-label", t2(key, zh, en));
+    });
+  }
+
   function windowFrame() {
     let win = document.querySelector(`.window[data-window="${WINDOW_NAME}"]`);
     if (win) return win;
@@ -153,23 +170,20 @@ function installDemoDisksPanel() {
     const close = document.createElement("button");
     close.className = "close-box";
     close.type = "button";
-    close.setAttribute("aria-label", t2("close", "关闭", "Close"));
     const title = document.createElement("h2");
     title.id = TITLE_ID;
-    title.textContent = t2("demo_disks_title", "演示用项目硬盘", "Demonstration Project Disks");
     const zoom = document.createElement("button");
     zoom.className = "resize-box";
     zoom.type = "button";
-    zoom.setAttribute("aria-label", t2("zoom", "缩放", "Zoom"));
     const shade = document.createElement("button");
     shade.className = "shade-box";
     shade.type = "button";
-    shade.setAttribute("aria-label", t2("collapse", "折叠", "Collapse"));
     bar.append(close, title, zoom, shade);
     const pane = document.createElement("div");
     pane.className = "window-pane";
     win.append(bar, pane);
     document.querySelector(".desk")?.append(win) || document.body.append(win);
+    localizeChrome(win);
     return win;
   }
 
@@ -186,8 +200,8 @@ function installDemoDisksPanel() {
     blurb.className = "hint";
     blurb.textContent = t2(
       "demo_disks_blurb",
-      "两块演示盘，是作者走完整条路线之后的现场。打开即在这台电脑上新建一份副本。",
-      "Two demonstration disks, the site each writer left after walking the whole route. Opening one makes a copy on this computer.",
+      "每块演示盘都是作者走完整条路线之后的现场。打开即在这台电脑上新建一份副本。",
+      "Each demonstration disk is the site its writer left after walking the whole route. Opening one makes a copy on this computer.",
     );
     const readme = button(
       t2("demo_disks_how", "这是怎么来的？", "How did these get here?"),
@@ -195,7 +209,14 @@ function installDemoDisksPanel() {
         if (typeof openSystemFolderDocument === "function") openSystemFolderDocument("shared");
       },
     );
-    container.append(blurb, readme);
+    // A button that fills the window reads as the primary action and collides
+    // with the two rows below it, which are what this window is for. Every other
+    // window puts its actions in a .button-row, where they take the width of
+    // their own labels; this one does the same, with no new CSS.
+    const actions = document.createElement("div");
+    actions.className = "button-row";
+    actions.append(readme);
+    container.append(blurb, actions);
 
     const published = window.AISystem6SharedProjectDisks;
     if (!published || typeof published !== "object" || !Object.keys(published).length) {
@@ -275,6 +296,23 @@ function installDemoDisksPanel() {
         renderInline();
       });
   }
+
+  // Everything this window shows is drawn from t(), not carried as data-i18n,
+  // so a language switch has to draw it again. The name is declared on the
+  // window's admission row (app/core/app-admissions.js) — the one place that
+  // says which windows repaint; persistence-status.js iterates that list.
+  //
+  // Only what is already on screen is redrawn: switching language must not
+  // build a window nobody opened.
+  function renderDemoDisksPanel() {
+    const win = document.querySelector(`.window[data-window="${WINDOW_NAME}"]`);
+    if (win) {
+      localizeChrome(win);
+      renderWindow();
+    }
+    renderInline();
+  }
+  window.renderDemoDisksPanel = renderDemoDisksPanel;
 
   const section = document.querySelector(inlineSectionSelector);
   if (section) section.addEventListener("toggle", renderInline);

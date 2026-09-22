@@ -1,11 +1,12 @@
 <!-- canonical-source: docs/design/APPEARANCE-QA.md -->
-<!-- source-sha256: 9de5c24998b68004674983431815285124983702b889eda862bab0450e004a80 -->
+<!-- source-sha256: b1e6a24d9874acba80d07c2f114955830bf08e51be1aa489a798f983fd401b00 -->
 
 英文版为准。本文档仅供人类参考。
 
 # 外观 QA 矩阵
 
-AI System 6 正式支持的外观面为全部六套：
+AI System 6 有七套正式外观，以及第八套 NeXTSTEP 预览外壳。由于专用图标仍按用户
+要求押后，预览暂不进入普通外观选择器。
 
 | 表面 | Classic / System 6 | Platinum | Aqua | Snow Leopard | Yosemite | Liquid Glass |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -25,8 +26,10 @@ AI System 6 正式支持的外观面为全部六套：
 | 菜单栏 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | 手机布局 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 
-六套都是正式外观（注册表 `releaseReady: true`），在 Control Panel 的
-Appearance 选择器与 Special 菜单中开放；没有任何一套被研究开关门控。四套
+七套正式外观（注册表 `releaseReady: true`）在 Control Panel 的
+Appearance 选择器与 Special 菜单中开放。NeXTSTEP 使用
+`releaseReady: false`，只能通过 loopback 的 `debugTheme=nextstep` 预览，等专用
+图标工作获准后再开放。四套
 历史外观还须通过 `npm run verify:theme-lab:fidelity` 对已 pin 的 canonical
 reference 校验。该命令检查两个互不混淆的层级：来自记录运行的 `tolerances`
 （回归层），以及共享的 `FIDELITY_FLOOR`（与时代目标的绝对差距层）。每个
@@ -132,3 +135,29 @@ Liquid Glass 正在通过现有主题 ID 与材质 token 重校到 macOS 27 Gold
 
 每个表面的 QA 标准：无裁切、无不清晰文字、无错误对比度、无坏焦点、无错误
 图标、无损坏的窗口边框。
+
+## Big Sur 新增外观（2026-09-22）
+
+第七套可选外观具有独立浅深色材质和跟随系统偏好。Big Sur 现有 59 个独立图标对象
+（原 56 项加 ClioPaint、ClioProject、One More Tune），已取代 Yosemite 别名。
+四档共 236 张 PNG：16/32 像素采用独立光学校正稿，64/128 像素来自 Image Gen 材质母稿。
+来源与交付记录见 [Big Sur 图标](BIG-SUR-ICONS.md)。`tests/visual/theme-lab/` 中的回归基线记录网页适配结果，
+不代表原生历史还原通过。设计参考 WWDC20 session 10104 和 512 Pixels macOS 11
+的 Light Blue、Finder Home 截图；原图比例和像素误差尚未校准，历史相似度未认证。
+产品保留左侧关闭、右侧缩放及现有窗口结构，不增设装饰性的最小化操作，
+也未重建各应用侧栏。
+
+本外观样式只在选用时加载（包括恢复已保存外观），由 Service Worker 留存供
+之后离线启动。七套正式外观保持原有颜色行为；新增默认表面参数保持其控制面板
+原有颜色不变。
+
+Theme Lab 截图工具现仅隐藏 `.window[data-window]` 管理窗口。原先隐藏全部
+`.window` 的做法误把嵌套窗口样本也藏掉。七套实验室基线按修正后的夹具重拍；
+这与 Classic／Liquid Applications 计算样式对照无变化是两组不同证据。
+共享现代家族输入框规则同时排除了 `.mde-input`：原先的不透明填色会盖住
+Yosemite 和 Big Sur 的文稿绘制层，现在两者都保持编辑层透明与字形对齐。
+
+NeXTSTEP 预览证据还覆盖原生式窗口按钮、key/main 标题状态、浮动与可分离菜单、右侧
+Dock、最小化窗口、列式 Finder/Shelf、滚动条、输入法切换、离线资源和跨外观／会话
+恢复。图标仍明确回退 Classic；三个新增应用的专用图标和逐项历史核验仍为 pending。
+本次交付不提升此前历史相似度结论，也不代表所有图标族已获历史审核通过。

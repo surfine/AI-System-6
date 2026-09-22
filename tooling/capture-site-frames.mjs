@@ -24,7 +24,7 @@ const outDir = path.join(root, "site", "img", "frames");
 const appUrl = process.env.APP_URL || "http://localhost:4173/";
 
 const VIEW = { width: 1440, height: 900 };
-const ERAS = ["classic", "platinum", "aqua", "snow-leopard", "yosemite", "liquid-glass"];
+const ERAS = ["classic", "platinum", "aqua", "snow-leopard", "yosemite", "big-sur", "liquid-glass"];
 
 const MANUSCRIPT_TITLE = "The Tide Comes In Twice";
 const MANUSCRIPT_BODY = `# The Tide Comes In Twice

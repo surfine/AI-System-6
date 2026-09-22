@@ -1,0 +1,535 @@
+{
+  "schemaVersion": 1,
+  "era": "big-sur",
+  "target": "macOS 11 Big Sur (2020)",
+  "icons": [
+    {
+      "id": "startupDisk",
+      "genre": "hardware",
+      "body": "drive",
+      "symbol": "startup",
+      "tone": "steel",
+      "label": "Startup Disk",
+      "subject": "one upright silver boot volume with shallow top perspective, restrained small dark system circle on its metal face and tiny green lower status lamp; unmistakable storage hardware"
+    },
+    {
+      "id": "hardDisk",
+      "genre": "hardware",
+      "body": "drive",
+      "symbol": "disk",
+      "tone": "steel",
+      "label": "Mounted local volume",
+      "subject": "one upright silver external storage volume with a shallow top perspective, pale brushed aluminum face, narrow lower front seam and tiny green status lamp, no brand, no app tile"
+    },
+    {
+      "id": "folder",
+      "genre": "file",
+      "body": "folder",
+      "symbol": "none",
+      "tone": "blue",
+      "label": "System folder",
+      "subject": "one native Big Sur cyan-blue folder, broad landscape silhouette, raised upper-left tab, rear sheet darker cyan and front flap brighter blue, faint horizontal fold near bottom, very subtle fibrous surface, no app tile behind"
+    },
+    {
+      "id": "document",
+      "genre": "document",
+      "body": "paper",
+      "symbol": "none",
+      "tone": "paper",
+      "label": "Generic document",
+      "subject": "one upright white document sheet with a folded upper-right corner and a few neutral gray text lines, subtly shaded paper and soft narrow shadow, no app tile"
+    },
+    {
+      "id": "applications",
+      "genre": "file",
+      "body": "folder",
+      "symbol": "applications",
+      "tone": "violet",
+      "label": "Applications folder",
+      "subject": "one Big Sur cyan-blue Applications FOLDER with a restrained embossed group of three small application tiles on the front flap, tab upper-left; it remains a landscape folder not an app launcher icon"
+    },
+    {
+      "id": "trash",
+      "genre": "hardware",
+      "body": "trash",
+      "symbol": "empty",
+      "tone": "steel",
+      "label": "Waste basket",
+      "subject": "one empty Big Sur translucent white frosted-plastic waste bin, gently tapered cylindrical body, elliptical open top with visible pale inner cavity, soft plastic shading, no wire mesh and no metal lattice, no app tile"
+    },
+    {
+      "id": "finderApp",
+      "genre": "application",
+      "body": "finder",
+      "symbol": "finder",
+      "tone": "blue",
+      "label": "Finder / system identity",
+      "subject": "the documented Big Sur Finder split face, blue left and pale right, thin continuous smile and short narrow navy eyes"
+    },
+    {
+      "id": "fileFloppy",
+      "genre": "hardware",
+      "body": "floppy",
+      "symbol": "floppy",
+      "tone": "steel",
+      "label": "File Floppy",
+      "subject": "one recognizable 3.5-inch floppy disk with matte charcoal plastic body, brushed metal sliding shutter and a small ivory paper label, authentic removable storage silhouette, no rounded app tile"
+    },
+    {
+      "id": "assistant",
+      "genre": "application",
+      "body": "correspondence",
+      "symbol": "assistant",
+      "tone": "blue",
+      "label": "ClioTalk",
+      "subject": "two distinguishable ivory correspondence sheets on a softly lit blue rounded-square ground, one solid foreground user sheet and a separate pale blue provisional reply sheet with a clearly dashed short lower edge and a small reply notch; calm paired dialogue without a robot, brain or sparkle"
+    },
+    {
+      "id": "quickDraft",
+      "genre": "document",
+      "body": "paper",
+      "symbol": "pencil",
+      "tone": "paper",
+      "label": "Quick Draft",
+      "subject": "one loose white folded-corner draft sheet with rough gray lines and a short ochre pencil at lower-right, no application background"
+    },
+    {
+      "id": "writingStudio",
+      "genre": "application",
+      "body": "typewriter",
+      "symbol": "writing",
+      "tone": "steel",
+      "label": "Writing Studio",
+      "subject": "a compact dark metal mechanical typewriter with a clean ivory manuscript emerging, on a warm off-white rounded-square background; keys simplify to a few broad rows"
+    },
+    {
+      "id": "projectDisk",
+      "genre": "hardware",
+      "body": "drive",
+      "symbol": "project",
+      "tone": "steel",
+      "label": "Project Hard Disk",
+      "subject": "one upright silver external project storage volume with shallow top perspective, a small blue project label on front and tiny status lamp; storage hardware, no app tile"
+    },
+    {
+      "id": "projectDisc",
+      "genre": "hardware",
+      "body": "disc",
+      "symbol": "project",
+      "tone": "rainbow",
+      "label": "Project CD",
+      "subject": "one iridescent optical compact disc partially inside a neat ivory protective sleeve with a restrained blue project tab; archival storage, no app tile"
+    },
+    {
+      "id": "cloudModel",
+      "genre": "utility",
+      "body": "server",
+      "symbol": "cloud",
+      "tone": "blue",
+      "label": "Cloud Model",
+      "subject": "a compact remote server unit paired with one active cloud-shaped status light, clearly a network model service rather than local hardware"
+    },
+    {
+      "id": "cloudModelOff",
+      "genre": "utility",
+      "body": "server",
+      "symbol": "cloudOff",
+      "tone": "gray",
+      "label": "Cloud Model Offline",
+      "subject": "the same compact remote server concept with an unlit cloud-shaped status light and one visibly unplugged network cable"
+    },
+    {
+      "id": "questionSheet",
+      "genre": "document",
+      "body": "paper",
+      "symbol": "question",
+      "tone": "paper",
+      "label": "Question Sheet",
+      "subject": "one white worksheet with a large centred question mark and two short blank response lines, no other text"
+    },
+    {
+      "id": "outline",
+      "genre": "document",
+      "body": "cards",
+      "symbol": "outline",
+      "tone": "paper",
+      "label": "Outline",
+      "subject": "one white folded-corner document sheet carrying three clearly indented heading bars and small hierarchy dots; no application background"
+    },
+    {
+      "id": "sectionDrafts",
+      "genre": "document",
+      "body": "paperStack",
+      "symbol": "sections",
+      "tone": "paper",
+      "label": "Section Drafts",
+      "subject": "three staggered white document sheets with distinct small blue section tabs and gray text blocks; no application background"
+    },
+    {
+      "id": "manuscript",
+      "genre": "document",
+      "body": "manuscript",
+      "symbol": "manuscript",
+      "tone": "paper",
+      "label": "Manuscript",
+      "subject": "one substantial ivory manuscript stack with a blue binding strip and subtle chapter lines, final long-form writing object, no application background"
+    },
+    {
+      "id": "reviewDesk",
+      "genre": "application",
+      "body": "review",
+      "symbol": "proof",
+      "tone": "red",
+      "label": "Review Desk",
+      "subject": "a white manuscript sheet on a muted warm-red rounded-square ground, one small glass magnifying lens and one clear red proofreading correction mark; a manuscript proofing application distinct from searching"
+    },
+    {
+      "id": "searcher",
+      "genre": "application",
+      "body": "search",
+      "symbol": "magnify",
+      "tone": "blue",
+      "label": "Searcher",
+      "subject": "a single large glass magnifying lens over a small ivory search-result sheet on a saturated blue rounded-square ground, a few clear result lines visible through lens"
+    },
+    {
+      "id": "reader",
+      "genre": "application",
+      "body": "book",
+      "symbol": "reader",
+      "tone": "blue",
+      "label": "Reader",
+      "subject": "an open reading book with one restrained highlighted passage block and a slim reading marker, no legible words"
+    },
+    {
+      "id": "timeMachine",
+      "genre": "utility",
+      "body": "clock",
+      "symbol": "archive",
+      "tone": "steel",
+      "label": "Time Machine",
+      "subject": "a compact archive drawer behind a round clock face with one restrained backward-history arrow"
+    },
+    {
+      "id": "docMap",
+      "genre": "application",
+      "body": "map",
+      "symbol": "none",
+      "tone": "blue",
+      "label": "DocMap",
+      "subject": "one ivory document whose three heading bars connect to a simple branching hierarchy of three nodes, on a muted cyan-blue rounded-square ground; DOCUMENT STRUCTURE, never geographic maps, folded maps, terrain or a location pin"
+    },
+    {
+      "id": "clioStage",
+      "genre": "application",
+      "body": "stage",
+      "symbol": "stage",
+      "tone": "blue",
+      "label": "ClioStage",
+      "subject": "a small presentation stage with side curtains, a blank projection screen, and one focused overhead light"
+    },
+    {
+      "id": "clioChart",
+      "genre": "application",
+      "body": "easel",
+      "symbol": "chart",
+      "tone": "blue",
+      "label": "ClioChart",
+      "subject": "a standing presentation easel carrying one simple bar-and-line chart with no labels or numbers"
+    },
+    {
+      "id": "liquidCover",
+      "genre": "application",
+      "body": "cover",
+      "symbol": "cover",
+      "tone": "blue",
+      "label": "Cover Glass",
+      "subject": "a landscape Bilibili-video cover artboard whose dominant visual is two large lines of glass typography: thick translucent title strokes with refractive edges over an abstract background color plane and one neutral geometric accent shape, plus a slim offset text/shape layer stack at one side; it is a glass-text cover compositor with SDF typography, material presets, multi-aspect editing, and explicit PNG/video export, never a person, face, character, anime silhouette, book, book cover, ordinary photo compositor, single glass sheet, or generic pane"
+    },
+    {
+      "id": "cmfStudio",
+      "genre": "application",
+      "body": "swatches",
+      "symbol": "swatches",
+      "tone": "rainbow",
+      "label": "CMF Studio",
+      "subject": "a fan of colour, material, and finish swatches with one metal chip, one fabric chip, and restrained colour samples"
+    },
+    {
+      "id": "soundscape",
+      "genre": "application",
+      "body": "speaker",
+      "symbol": "sound",
+      "tone": "violet",
+      "label": "Soundscape",
+      "subject": "one compact loudspeaker emitting two controlled waveform ribbons, clearly an audio environment tool"
+    },
+    {
+      "id": "scrapbook",
+      "genre": "application",
+      "body": "album",
+      "symbol": "scraps",
+      "tone": "gold",
+      "label": "Scrapbook",
+      "subject": "a bound album opened or angled to show one mounted photographic print, clearly an album rather than a notes page"
+    },
+    {
+      "id": "systemFolder",
+      "genre": "file",
+      "body": "folder",
+      "symbol": "gear",
+      "tone": "blue",
+      "label": "System Folder",
+      "subject": "one Big Sur cyan tabbed folder with a small embossed gear on its front"
+    },
+    {
+      "id": "helpFolder",
+      "genre": "file",
+      "body": "folder",
+      "symbol": "help",
+      "tone": "blue",
+      "label": "Help Folder",
+      "subject": "one Big Sur cyan tabbed folder with an embossed question mark on its front"
+    },
+    {
+      "id": "importUtility",
+      "genre": "utility",
+      "body": "inbox",
+      "symbol": "import",
+      "tone": "blue",
+      "label": "Import Utility",
+      "subject": "an inbox tray receiving one document sheet from above through a single downward arrow"
+    },
+    {
+      "id": "controlPanel",
+      "genre": "utility",
+      "body": "controlBoard",
+      "symbol": "sliders",
+      "tone": "steel",
+      "label": "Settings",
+      "subject": "a square pale brushed silver panel containing one large dark graphite concentric mechanical gear with a smaller secondary gear, true system-settings visual genre of Big Sur System Preferences; avoid a generic flat gear glyph"
+    },
+    {
+      "id": "chooser",
+      "genre": "utility",
+      "body": "network",
+      "symbol": "chooser",
+      "tone": "blue",
+      "label": "Chooser",
+      "subject": "two small desktop computers joined by one cable, with one machine visibly selected by a compact pointer tab"
+    },
+    {
+      "id": "systemHelp",
+      "genre": "application",
+      "body": "book",
+      "symbol": "help",
+      "tone": "blue",
+      "label": "System Help",
+      "subject": "a closed reference book with one large question mark on the cover and a single bookmark, no other text"
+    },
+    {
+      "id": "dictionary",
+      "genre": "application",
+      "body": "dictionary",
+      "symbol": "dictionary",
+      "tone": "gold",
+      "label": "Dictionary",
+      "subject": "a thick indexed reference book with stepped edge tabs and one bookmark, no letters or words"
+    },
+    {
+      "id": "teachText",
+      "genre": "application",
+      "body": "paperPen",
+      "symbol": "writing",
+      "tone": "blue",
+      "label": "TeachText",
+      "subject": "a white ruled manuscript sheet forming the rounded-square application background, with one precise graphite mechanical pencil descending diagonally from upper-right to lower-left and extending a little past the plate edge; real paper and steel material like Big Sur TextEdit grammar"
+    },
+    {
+      "id": "writingDemo",
+      "genre": "document",
+      "body": "paper",
+      "symbol": "play",
+      "tone": "paper",
+      "label": "Writing Demo",
+      "subject": "a document sheet with a single inset triangular play mark and two neutral writing lines, no text"
+    },
+    {
+      "id": "chatFile",
+      "genre": "document",
+      "body": "paper",
+      "symbol": "chat",
+      "tone": "paper",
+      "label": "Chat File",
+      "subject": "a document sheet carrying two small overlapping speech balloons, clearly a saved conversation file"
+    },
+    {
+      "id": "chatImport",
+      "genre": "utility",
+      "body": "inbox",
+      "symbol": "chat",
+      "tone": "blue",
+      "label": "Chat Import",
+      "subject": "an inbox tray receiving one speech balloon through a single downward arrow"
+    },
+    {
+      "id": "systemStatus",
+      "genre": "utility",
+      "body": "monitor",
+      "symbol": "status",
+      "tone": "steel",
+      "label": "System Status",
+      "subject": "a compact desktop monitor showing one simple activity trace beside three physical status lights, no numbers or text"
+    },
+    {
+      "id": "contextPanel",
+      "genre": "utility",
+      "body": "indexBox",
+      "symbol": "context",
+      "tone": "gold",
+      "label": "Context Panel",
+      "subject": "a small index-card box with three raised source cards and distinct coloured tabs, clearly curated context rather than a folder"
+    },
+    {
+      "id": "rebuildArticle",
+      "genre": "utility",
+      "body": "press",
+      "symbol": "rebuild",
+      "tone": "blue",
+      "label": "Rebuild Article",
+      "subject": "a compact tabletop printing press feeding one manuscript sheet through its rollers, clearly reconstructing a document"
+    },
+    {
+      "id": "bureaucracyMeme",
+      "genre": "application",
+      "body": "stamp",
+      "symbol": "forms",
+      "tone": "red",
+      "label": "Bureaucracy Meme",
+      "subject": "a red rubber office stamp pressed over a small stack of blank administrative forms, no seals or words"
+    },
+    {
+      "id": "endfieldTerminal",
+      "genre": "utility",
+      "body": "terminal",
+      "symbol": "terminal",
+      "tone": "green",
+      "label": "Endfield Terminal",
+      "subject": "a compact dark terminal monitor with one green prompt block and two short luminous command lines, no legible characters"
+    },
+    {
+      "id": "documents",
+      "genre": "file",
+      "body": "folder",
+      "symbol": "documents",
+      "tone": "blue",
+      "label": "Documents folder",
+      "subject": "one Big Sur cyan tabbed folder with an embossed folded-page symbol on its front"
+    },
+    {
+      "id": "alias",
+      "genre": "document",
+      "body": "paper",
+      "symbol": "alias",
+      "tone": "paper",
+      "label": "Alias",
+      "subject": "one folded-corner white document with a small curved black alias arrow at lower-left, no application background"
+    },
+    {
+      "id": "systemFile",
+      "genre": "document",
+      "body": "paper",
+      "symbol": "gear",
+      "tone": "paper",
+      "label": "System File",
+      "subject": "one folded-corner white document with a small graphite system gear, no application background"
+    },
+    {
+      "id": "multiFinderApp",
+      "genre": "application",
+      "body": "finderPair",
+      "symbol": "finder",
+      "tone": "blue",
+      "label": "MultiFinder",
+      "subject": "two overlapping Big Sur Finder face rounded-square panels, one slightly behind and above-right, blue left/pale right face relationship, restrained multiplicity not a collage"
+    },
+    {
+      "id": "daHandler",
+      "genre": "utility",
+      "body": "briefcase",
+      "symbol": "deskAccessory",
+      "tone": "blue",
+      "label": "Generic application",
+      "subject": "a generic desktop application object for the era, distinct from a document, folder, or settings panel"
+    },
+    {
+      "id": "writingBell",
+      "genre": "accessory",
+      "body": "bell",
+      "symbol": "bell",
+      "tone": "gold",
+      "label": "Writing Bell",
+      "subject": "a compact brass desk bell with one small pen-nib relief on its base, clearly a writing accessory"
+    },
+    {
+      "id": "trashFull",
+      "genre": "hardware",
+      "body": "trash",
+      "symbol": "full",
+      "tone": "steel",
+      "label": "Full Waste Basket",
+      "subject": "the same Big Sur frosted white tapered cylindrical waste bin, now holding a few crumpled pale paper sheets visibly above the elliptical rim; no mesh, no app tile"
+    },
+    {
+      "id": "control",
+      "genre": "utility",
+      "body": "controlBoard",
+      "symbol": "knobs",
+      "tone": "steel",
+      "label": "Control",
+      "subject": "a compact physical control board with two round knobs, one toggle, and one small indicator light"
+    },
+    {
+      "id": "localModel",
+      "genre": "utility",
+      "body": "chip",
+      "symbol": "none",
+      "tone": "steel",
+      "label": "Local Model",
+      "subject": "one processor chip mounted on a compact circuit board with short visible traces, clearly local compute rather than a cloud service"
+    },
+    {
+      "id": "controlStrip",
+      "genre": "utility",
+      "body": "strip",
+      "symbol": "none",
+      "tone": "steel",
+      "label": "Control Strip",
+      "subject": "a narrow horizontal strip containing four distinct physical control modules, including a slider, a status light, and two compact toggles"
+    },
+    {
+      "id": "clioPaint",
+      "genre": "application",
+      "body": "palette",
+      "tone": "gold",
+      "label": "ClioPaint",
+      "subject": "a warm ivory artist palette with three clearly separated saturated paint wells and one slim dark wooden paintbrush laid diagonally across the lower-right; it means bitmap painting and sketching"
+    },
+    {
+      "id": "clioProject",
+      "genre": "application",
+      "body": "dependencies",
+      "tone": "blue",
+      "label": "ClioProject",
+      "subject": "three small ivory task cards connected by clear right-angle dependency links, two on the left feeding one on the right, one restrained coral completion mark; project task dependencies, NOT a bar chart or calendar"
+    },
+    {
+      "id": "oneMoreTune",
+      "genre": "application",
+      "body": "musicCard",
+      "tone": "violet",
+      "label": "One More Tune",
+      "subject": "two offset physical music cards, the front lavender-white card carries one bold dark violet beamed musical note and a narrow colored spine; a personal music listening card collection, not a speaker or sound waveform"
+    }
+  ]
+}

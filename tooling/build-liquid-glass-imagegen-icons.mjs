@@ -330,7 +330,7 @@ const family = {
   sharedGeometryAcrossEras: false,
   completeFamily: true,
   runtimeAsset: true,
-  completeFamilyMeaning: "All 56 runtime ids resolve to technically accepted artwork. Historical review is a separate per-icon state.",
+  completeFamilyMeaning: "All 56 core runtime ids resolve to technically accepted artwork; the three supplemental applications merge in the later family stage. Historical review is a separate per-icon state.",
   generatedAcceptanceMeaning: "Authoring acceptance confirms source and technical quality; it never implies historical validation.",
   runtimeSize: "contextual",
   runtimeSizesByContext: { compactMenuList: 16, ordinary: 32, desktopLargeRetina: 128 },

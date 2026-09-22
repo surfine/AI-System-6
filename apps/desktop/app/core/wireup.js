@@ -34,6 +34,16 @@ function syncLiquidTintVisibility() {
   field.hidden = window.AISystem6Theme?.getCurrentTheme?.() !== "liquid-glass";
 }
 
+function syncAppearanceColorModeControl() {
+  const input = document.querySelector("#appearance-color-mode");
+  if (!input) return;
+  const registry = window.AISystem6Theme;
+  const field = input.closest(".appearance-color-mode-field");
+  if (field) field.hidden = registry?.getTheme?.().colorModes !== true;
+  input.value = registry?.getColorMode?.() || "system";
+  input.dispatchEvent(new Event("system-select-sync"));
+}
+
 function wireAppEvents() {
   installDesktopScrollLock();
   installHeldPlaceTracking();
@@ -1255,8 +1265,29 @@ function wireAppEvents() {
     // fingerprints.
     if (!win || chromeWiredWindows.has(win)) return;
     chromeWiredWindows.add(win);
+    const standardControls = document.getElementById("standard-window-controls");
+    win.querySelectorAll(".title-bar[data-standard-controls]").forEach((bar) => {
+      // The production document carries the shared template. Small boot/test
+      // harnesses can omit it; keep their existing chrome usable instead of
+      // aborting the entire application wiring pass.
+      if (!standardControls?.content) {
+        bar.removeAttribute("data-standard-controls");
+        return;
+      }
+      bar.append(standardControls.content.cloneNode(true));
+      bar.prepend(bar.querySelector(".close-box"));
+      bar.removeAttribute("data-standard-controls");
+      bar.querySelectorAll("[data-i18n-aria-label]").forEach((button) => button.setAttribute("aria-label", t(button.dataset.i18nAriaLabel)));
+    });
     win.dataset.app = getWindowAppId(win);
-    win.addEventListener("pointerdown", () => focusWindow(win));
+    win.addEventListener("pointerdown", (event) => {
+      if (getCurrentTheme() === "nextstep" && event.target.closest(".title-bar button")) {
+        event.preventDefault();
+        return;
+      }
+      focusWindow(win);
+    });
+    window.AISystem6NextstepShell?.wire(win);
     win.querySelectorAll(".title-bar").forEach((bar) => wireTitleBarChrome(bar));
 
     win.querySelector(".close-box")?.addEventListener("click", () => closeWindow(win.dataset.window));
@@ -1538,6 +1569,11 @@ function wireAppEvents() {
   modernFontsInput.addEventListener("change", applyModernFonts);
 
   appearanceThemeInput?.addEventListener("change", () => applyTheme(appearanceThemeInput.value));
+  document.querySelector("#appearance-color-mode")?.addEventListener("change", (event) => {
+    window.AISystem6Theme?.applyColorMode?.(event.target.value);
+  });
+  document.addEventListener("ai-system6-colormodechange", syncAppearanceColorModeControl);
+  syncAppearanceColorModeControl();
 
   liquidTintLevelInput?.addEventListener("input", () => {
     applyLiquidTintLevel();

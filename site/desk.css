@@ -155,6 +155,16 @@ html[data-theme="liquid-glass"] .scene-fine { color: #1c2733; }
 .js .scene { opacity: 0; }
 .js .scene.scene-in { opacity: 1; animation: scene-in 0.3s steps(5, end); }
 .js .hero-scene { opacity: 1; }
+
+/* Printing never scrolls, so the observer never fires and a scene that was
+   never scrolled past would print as a blank page. Measured with
+   emulateMedia({media:"print"}): 13 of 13 sections still at opacity 0, while
+   the same page without JavaScript is fully readable. Print and the reader
+   modes get the settled state, not the animation's start. */
+@media print {
+  .js .scene { opacity: 1 !important; animation: none !important; transform: none !important; }
+}
+
 @keyframes scene-in {
   from { opacity: 0.2; transform: translateY(14px); }
   to   { opacity: 1; transform: none; }
@@ -1291,3 +1301,25 @@ html[data-theme="liquid-glass"] { --sel-bg: rgba(40, 90, 200, 0.8); --gauge-fill
 .demo-window.has-proof { width: min(560px, 92%); }
 .imp-proof { margin: -2px 0 10px; border: 1px solid var(--win-border, var(--ink)); overflow: hidden; }
 .imp-proof img { display: block; width: 100%; height: auto; }
+
+/* Increase Contrast, for the same reason as the application's block of the
+   same name: measured with CDP media emulation, this page read identical
+   token values with the setting on and off. Borders are the page's structural
+   vocabulary (window frames, title bars, the menu bar, buttons), so they get
+   a defined contrasting edge, and the blur the Liquid Glass theme lays under
+   its windows is dropped rather than strengthened: a translucent panel with a
+   hard border is still translucent. Scoped to `html[data-theme]`, the same
+   specificity the theme blocks use, and late enough in the cascade to win by
+   order in every theme. */
+@media (prefers-contrast: more) {
+  :root,
+  html[data-theme] {
+    --win-border: #000;
+    --tbar-border: #000;
+    --bar-border: #000;
+    --btn-border: #000;
+    --win-blur: none;
+    --bar-blur: none;
+    --menu-blur: none;
+  }
+}

@@ -17,6 +17,8 @@ internal/archive/runtime-legacy/
 /apps/desktop/styles.clio-paint.css
 /apps/desktop/styles.one-more-tune.css
 /apps/desktop/styles.project-disks.css
+/apps/desktop/styles.big-sur.css
+/apps/desktop/styles.nextstep.css
 apps/desktop/app/vendor/markmap/*.js
 apps/desktop/app/vendor/embed-model/
 apps/desktop/app/vendor/embed/ort-wasm-simd-threaded*

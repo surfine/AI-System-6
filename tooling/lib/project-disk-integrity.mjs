@@ -28,6 +28,134 @@ export const SHARED_DISKS = Object.freeze([
     route: "ipad1",
     source: "internal/evidence/drafts/ipad1-256mb/初代 iPad 为什么只有 256MB Project Hard Disk Backup.json",
   },
+  {
+    route: "m5ipad",
+    source: "internal/evidence/drafts/m5ipad/M5 iPad Pro 深度体验 Project Hard Disk Backup.json",
+  },
+  {
+    route: "iphone17e",
+    source: "internal/evidence/drafts/iphone17e/iPhone 17e 浅粉色 Project Hard Disk Backup.json",
+  },
+  {
+    route: "bongo",
+    source: "internal/evidence/drafts/bongo/走向一整块玻璃 Project Hard Disk Backup.json",
+  },
+  {
+    route: "glass",
+    source: "internal/evidence/drafts/glass/玻璃与他们的产地 Project Hard Disk Backup.json",
+  },
+  {
+    route: "ipad97",
+    source: "internal/evidence/drafts/ipad97/iPad Pro 9.7 叛逆的另一种尺寸 Project Hard Disk Backup.json",
+  },
+  {
+    route: "airbattery",
+    source: "internal/evidence/drafts/airbattery/iPhone Air 专用 MagSafe 电池 Project Hard Disk Backup.json",
+  },
+  {
+    route: "pm17",
+    source: "internal/evidence/drafts/pm17/形式追随功能的一代 iPhone 17 Pro Max Project Hard Disk Backup.json",
+  },
+  {
+    route: "sympathy",
+    source: "internal/evidence/drafts/sympathy/Project Sympathy AirPods Max Project Hard Disk Backup.json",
+  },
+  {
+    route: "ceramic",
+    source: "internal/evidence/drafts/ceramic/陶瓷 Apple Watch Project Hard Disk Backup.json",
+  },
+  {
+    route: "macpro19",
+    source: "internal/evidence/drafts/macpro19/大学时的白月光 Mac Pro 2019 Project Hard Disk Backup.json",
+  },
+  {
+    route: "pocket",
+    source: "internal/evidence/drafts/pocket/iPhone Pocket Project Hard Disk Backup.json",
+  },
+  {
+    route: "iphone6sp",
+    source: "internal/evidence/drafts/iphone6sp/iPhone 6s Plus Project Hard Disk Backup.json",
+  },
+  {
+    route: "sleeve",
+    source: "internal/evidence/drafts/sleeve/MagSafe 皮革保护套 Project Hard Disk Backup.json",
+  },
+  {
+    route: "pm12",
+    source: "internal/evidence/drafts/pm12/iPhone 12 Pro Max Project Hard Disk Backup.json",
+  },
+  {
+    route: "pm11",
+    source: "internal/evidence/drafts/pm11/iPhone 11 Pro Max Project Hard Disk Backup.json",
+  },
+  {
+    route: "m5mba",
+    source: "internal/evidence/drafts/m5mba/M5 MacBook Air Project Hard Disk Backup.json",
+  },
+  {
+    route: "mbneo",
+    source: "internal/evidence/drafts/mbneo/MacBook Neo Project Hard Disk Backup.json",
+  },
+  {
+    route: "mini7",
+    source: "internal/evidence/drafts/mini7/iPad mini A17 Pro Project Hard Disk Backup.json",
+  },
+  {
+    route: "mkb",
+    source: "internal/evidence/drafts/mkb/Magic Keyboard Project Hard Disk Backup.json",
+  },
+  {
+    route: "sd",
+    source: "internal/evidence/drafts/sd/Studio Display Project Hard Disk Backup.json",
+  },
+  {
+    route: "ios19",
+    source: "internal/evidence/drafts/ios19/WWDC2099 Project Hard Disk Backup.json",
+  },
+  {
+    route: "ipada4",
+    source: "internal/evidence/drafts/ipada4/iPad Air 4 工程机 Project Hard Disk Backup.json",
+  },
+  {
+    route: "ip16p",
+    source: "internal/evidence/drafts/ip16p/iPhone 16 工程机 Project Hard Disk Backup.json",
+  },
+  {
+    route: "mgscrap",
+    source: "internal/evidence/drafts/mgscrap/MagSafe 废案 Project Hard Disk Backup.json",
+  },
+  {
+    route: "t2nic",
+    source: "internal/evidence/drafts/t2nic/T2 网卡 Project Hard Disk Backup.json",
+  },
+  {
+    route: "airtrans",
+    source: "internal/evidence/drafts/airtrans/透明探索版 Air Project Hard Disk Backup.json",
+  },
+  {
+    route: "ip4sdemo",
+    source: "internal/evidence/drafts/ip4sdemo/iPhone 4S Demo Project Hard Disk Backup.json",
+  },
+  {
+    route: "airact",
+    source: "internal/evidence/drafts/airact/iPhone Air Project Hard Disk Backup.json",
+  },
+  {
+    route: "touch2",
+    source: "internal/evidence/drafts/touch2/touch 2 工程板 Project Hard Disk Backup.json",
+  },
+  {
+    route: "noport",
+    source: "internal/evidence/drafts/noport/无接口 Apple Watch Project Hard Disk Backup.json",
+  },
+  {
+    route: "cdma4",
+    source: "internal/evidence/drafts/cdma4/CDMA iPhone 4 Project Hard Disk Backup.json",
+  },
+  {
+    route: "iphone17",
+    source: "internal/evidence/drafts/iphone17/iPhone 17 标准版 Project Hard Disk Backup.json",
+  },
 ]);
 
 // The nine collections a backup counts. validateBackup refuses a bundle whose

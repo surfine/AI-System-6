@@ -57,7 +57,15 @@ export function createBootContext(overrides = {}) {
       warn: (...args) => { consoleWarnings.push(args); },
     },
     document,
-    window: { location: { reload: syncNoop } },
+    window: {
+      location: { reload: syncNoop },
+      // boot() asks the Appearance registry to settle before it declares the
+      // desk ready, and the debug-theme path may preview an experimental
+      // appearance. Both live in a pre-bundle script this harness does not
+      // execute, so stand the shape up rather than letting a bare property
+      // read look like a boot failure.
+      AISystem6Theme: { whenReady: asyncNoop, previewExperimentalTheme: syncNoop },
+    },
     localStorage: { getItem: () => null, setItem: syncNoop, removeItem: syncNoop },
     // Fast, real timers: startupTaskWithTimeout races a resolved promise
     // against these, and the final maintenance block schedules one at 8000ms
@@ -72,6 +80,12 @@ export function createBootContext(overrides = {}) {
 
     // State boot() reads directly.
     currentLanguage: "en",
+    // Both are declared at the top of app.js in the real bundle, which loads
+    // after boot.js: the debug-appearance hook reads them as plain values, and
+    // referencing an undeclared identifier throws whether or not the branch is
+    // taken. Defaults reproduce a normal, non-development boot.
+    bootDebugTheme: null,
+    developmentPreviewAllowed: false,
     writerMode: false,
     clioOnboardingCompleted: true,
     localLmStudioConnectionEnabled: false,

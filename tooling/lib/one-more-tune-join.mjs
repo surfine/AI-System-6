@@ -7,8 +7,8 @@
 // shipped 73 panels of somebody else's reasons.
 //
 // The join is on content, and it refuses anything it cannot prove: exactly one
-// package entry whose song title folds to the card's, AND a product or a film
-// that agrees. A card that does not join gets nothing, which is the honest
+// package entry with the same song, artist and complete film title.
+// A card that does not join gets nothing, which is the honest
 // shape — better a card with no explanation than a card wearing another card's.
 //
 // Two tools read the package this way (the evidence panel and the link fill),
@@ -20,7 +20,7 @@ import { join } from "node:path";
 
 /** Case, accents and punctuation must not decide whether two titles are one. */
 export function foldOneMoreTuneText(value) {
-  return String(value ?? "").normalize("NFKD").toLowerCase().replace(/[^a-z0-9]+/g, "");
+  return String(value ?? "").normalize("NFKD").toLowerCase().replace(/\p{M}+/gu, "").replace(/[^\p{L}\p{N}]+/gu, "");
 }
 
 /** The package's questions, read from the directory the caller pointed at. */
@@ -29,7 +29,7 @@ export function readOneMoreTunePackageQuestions(packageDir) {
 }
 
 function agrees(a, b) {
-  return Boolean(a && b && (a === b || a.includes(b) || b.includes(a)));
+  return Boolean(a && b && a === b);
 }
 
 /**
@@ -48,18 +48,14 @@ export function joinOneMoreTuneCards(deck, questions) {
   const byQuestion = new Map();
   const unjoined = [];
   for (const card of deck) {
-    const candidates = byTitle.get(foldOneMoreTuneText(card.song)) || [];
+    const candidates = (byTitle.get(foldOneMoreTuneText(card.song)) || []).filter((question) =>
+      agrees(foldOneMoreTuneText(card.artist), foldOneMoreTuneText(question.music?.artist))
+      && agrees(foldOneMoreTuneText(card.film), foldOneMoreTuneText(question.appearance?.title)));
     if (candidates.length !== 1) {
       unjoined.push(card.id);
       continue;
     }
     const question = candidates[0];
-    const sameProduct = agrees(foldOneMoreTuneText(card.product), foldOneMoreTuneText(question.answer?.label));
-    const sameFilm = agrees(foldOneMoreTuneText(card.film), foldOneMoreTuneText(question.appearance?.title));
-    if (!sameProduct && !sameFilm) {
-      unjoined.push(card.id);
-      continue;
-    }
     byCard.set(card.id, question);
     byQuestion.set(question.id, card.id);
   }

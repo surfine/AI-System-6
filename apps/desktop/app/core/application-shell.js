@@ -106,6 +106,7 @@
     // new window only. Without it, a window built by its module loses the
     // scroll lanes and the frame margin the same window had in index.html.
     global.installWindowFrameBars?.();
+    global.AISystem6NextstepShell?.wire(win);
     return Object.assign(win, { applicationTitleBar: titleBar, applicationStatusBar: statusBar, applicationPane: pane });
   }
 

@@ -374,6 +374,7 @@ function runSelectionClip(context = getSelectionServiceContext()) {
     setStatus(t("select_text_first"));
     return;
   }
+  if (context.isCurrent && !context.isCurrent()) return;
   if (context.surface === "reader") {
     clipReaderSelection();
     return;
@@ -419,7 +420,10 @@ function runSelectionClip(context = getSelectionServiceContext()) {
 
 function runSelectionClipFile(context = getSelectionServiceContext()) {
   if (!context?.text) return setStatus(t("select_text_first"));
-  withFinderObjects(() => createClippingFromSelectionContext(context));
+  return withFinderObjects(() => {
+    if ((context.projectId && context.projectId !== activeProjectId) || (context.isCurrent && !context.isCurrent())) return;
+    return createClippingFromSelectionContext(context);
+  });
 }
 
 async function runSelectionFindSources(context = getSelectionServiceContext()) {
@@ -432,6 +436,7 @@ async function runSelectionFindSources(context = getSelectionServiceContext()) {
     return;
   }
   await ensureFindPathModule();
+  if (context.isCurrent && !context.isCurrent()) return;
   findPathQueryInput.value = context.text.replace(/\s+/g, " ").slice(0, 500);
   findPathResults.length = 0;
   selectedFindPathIndex = null;
@@ -514,10 +519,12 @@ function runSelectionAskAssistant(context = getSelectionServiceContext()) {
   setStatus(t("selection_sent_assistant"));
 }
 
-async function runSelectionServiceCommand(command) {
-  const context = getSelectionServiceContext() || lastSelectionServiceContext;
+async function runSelectionServiceCommand(command, snapshot) {
+  const context = snapshot || getSelectionServiceContext() || lastSelectionServiceContext;
+  if (context?.isCurrent && !context.isCurrent()) return;
   if (command === "lookup") {
     await ensureDictionaryHelpModule();
+    if (context?.isCurrent && !context.isCurrent()) return;
     return lookupSelectionTerm(context);
   }
   if (command === "find") return runSelectionFindSources(context);

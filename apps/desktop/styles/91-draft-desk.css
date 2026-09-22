@@ -1271,3 +1271,577 @@
     background-position: 165% 100%;
   }
 }
+
+/* --- The Quick Draft window's own rules, moved out of 50-apps.css
+   (2026-09-24). Every selector below is scoped to draft-desk / quick-draft /
+   lightroom / listen / darkroom, and this sheet is requested on the only
+   path that opens those windows, so a boot no longer pays for them. The
+   selectors and their relative order are unchanged, so the cascade inside
+   this sheet is the cascade the boot sheet had. --- */
+
+.quick-draft-title-display {
+  flex: 0 1 18rem;
+  min-width: 0;
+  overflow: hidden;
+  font-weight: bold;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.quick-draft-title-input {
+  flex: 1 1 12rem;
+  min-width: 8rem;
+  height: 22px;
+  font-weight: normal;
+}
+
+#quick-draft-stats,
+#quick-draft-save-state,
+#quick-draft-source-count,
+#quick-draft-status {
+  white-space: nowrap;
+}
+
+#quick-draft-stats {
+  justify-self: start;
+}
+
+#quick-draft-status {
+  justify-self: end;
+  min-width: 5.5rem;
+  max-width: min(22ch, 28vw);
+  overflow: hidden;
+  text-align: right;
+  text-overflow: ellipsis;
+}
+
+.quick-draft-intake,
+.quick-draft-editor {
+  display: grid;
+  gap: 8px;
+  min-height: 0;
+  align-content: start;
+}
+
+.quick-draft-intake {
+  grid-area: intake;
+  grid-template-rows: auto repeat(4, minmax(0, 1fr));
+  overflow: auto;
+  min-width: 0;
+}
+
+.quick-draft-editor {
+  grid-area: editor;
+  grid-template-rows: minmax(0, 1fr) auto;
+  align-content: stretch;
+  min-width: 0;
+  position: relative;
+}
+
+.quick-draft-editor textarea {
+  min-height: 0;
+  resize: none;
+}
+
+.quick-draft-editor textarea {
+  font: 15px/1.55 var(--ui-font);
+}
+
+.quick-draft-tools {
+  grid-area: tools;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+}
+
+.quick-draft-tools,
+.quick-draft-intake,
+.quick-draft-handoff {
+  padding: 6px;
+  border: var(--quick-draft-panel-border);
+  border-radius: var(--quick-draft-panel-radius);
+  background: var(--quick-draft-panel-bg);
+  box-shadow: var(--quick-draft-panel-shadow);
+}
+
+.quick-draft-tools:not([open]),
+.quick-draft-intake:not([open]),
+.quick-draft-handoff:not([open]) {
+  background: transparent;
+  padding: 4px 6px;
+}
+
+.quick-draft-tools[open],
+.quick-draft-intake[open],
+.quick-draft-handoff[open] {
+  display: grid;
+  gap: 8px;
+}
+
+.quick-draft-tools:not([open]) > :not(summary),
+.quick-draft-intake:not([open]) > :not(summary),
+.quick-draft-handoff:not([open]) > :not(summary) {
+  display: none;
+}
+
+.quick-draft-tools summary,
+.quick-draft-intake summary,
+.quick-draft-handoff summary {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: bold;
+}
+
+.quick-draft-source-summary {
+  margin-left: auto;
+  color: var(--shade-dark);
+  font-weight: normal;
+}
+
+.quick-draft-tools[open] summary,
+.quick-draft-intake[open] summary,
+.quick-draft-handoff[open] summary {
+  margin-bottom: 6px;
+}
+
+.quick-draft-first-day-subject {
+  grid-column: 1 / -1;
+}
+
+.quick-draft-source-map {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: start;
+  gap: 4px;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* The paper comes first in the source so it reads first and, on a phone,
+   the two drawers paint over it without a z-index of their own. Grid
+   placement puts the shelf back on the left. */
+
+/* The drawer close is a phone control; on a desk both regions are on screen. */
+
+/* Empty state, not a phase: the intake well and the body live on the same
+   paper and only one of them is on screen. */
+
+.quick-draft-versions-list {
+  min-height: 0;
+  overflow-y: auto;
+  font: 12px/1.4 var(--ui-font);
+  color: var(--shade-dark);
+}
+
+#quick-draft-save-state {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ink);
+  font: 13px/1.25 var(--title-font);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#quick-draft-protect-state:empty,
+#quick-draft-stack-state:empty {
+  display: none;
+}
+
+.quick-draft-ai-cards {
+  overflow: auto;
+}
+
+.quick-draft-ai-cards:not([open]) > :not(summary) {
+  display: none;
+}
+
+.quick-draft-ai-cards summary {
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.quick-draft-result-label {
+  display: block;
+  margin: 0 0 4px;
+  font-size: 12px;
+  color: var(--shade-dark);
+}
+
+.quick-draft-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.quick-draft-suggestion-chip {
+  max-width: 100%;
+  text-align: left;
+  white-space: normal;
+}
+
+.quick-draft-editor {
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+}
+
+.quick-draft-start-writing {
+  min-width: 9rem;
+}
+
+/* Compression grain: a read-only provenance view of the body. It reuses the
+   preview pane because a textarea cannot paint one span differently from
+   another — see the Quick Draft grain notes in the feature module. */
+.quick-draft-grain-readout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  padding-bottom: 6px;
+  margin-bottom: 10px;
+  border-bottom: var(--quick-draft-grain-border);
+  font-family: var(--ui-font);
+  font-size: 12px;
+}
+
+.quick-draft-grain-note {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: var(--quick-draft-grain-model-fg);
+}
+
+.quick-draft-grain-body {
+  margin: 0;
+  font: inherit;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.quick-draft-grain-author {
+  color: var(--quick-draft-grain-author-fg);
+}
+
+.quick-draft-grain-model {
+  color: var(--quick-draft-grain-model-fg);
+  text-decoration: var(--quick-draft-grain-model-decoration);
+  text-underline-offset: 3px;
+}
+
+/* Masked lines carry the adjustment-layer margin marker. The mask lives as
+   line ranges (a textarea cannot paint spans); in this read-only preview the
+   bar is the honest equivalent of the layer's mask. */
+.quick-draft-grain-line.is-masked {
+  box-shadow: inset 3px 0 0 var(--quick-draft-grain-mask-fg);
+}
+
+/* Protected lines are a property of the text, not a layer: they carry their
+   own margin bar, distinct from the per-layer mask and from provenance. */
+.quick-draft-grain-line.is-protected {
+  box-shadow: inset 6px 0 0 var(--quick-draft-protected-fg);
+}
+
+.quick-draft-grain-line.is-masked.is-protected {
+  box-shadow:
+    inset 3px 0 0 var(--quick-draft-grain-mask-fg),
+    inset 6px 0 0 var(--quick-draft-protected-fg);
+}
+
+.quick-draft-grain-generation {
+  margin-left: 3px;
+  padding: 0 3px;
+  border: var(--quick-draft-grain-generation-border);
+  color: var(--quick-draft-grain-model-fg);
+  font-family: var(--mono-font);
+  font-size: 10px;
+  font-style: normal;
+  vertical-align: 2px;
+  white-space: nowrap;
+}
+
+/* FatBits — the grain view zoomed in until one sentence is one cell. A list,
+   not a grid: sentences run from four characters to sixty, and a grid of those
+   is unreadable at any cell size. Colours and rules are the grain view's own
+   tokens, because this is the same canvas at a different magnification. */
+.quick-draft-fatbits {
+  /* Same measure as the writing windows. The page width is the editable box
+     width there, and a sentence cell is an editable box, so it uses the same
+     token rather than a second number that can drift away from it. */
+  max-width: var(--mde-page-width);
+  margin: 0 auto;
+  padding: 0;
+  list-style: none;
+}
+
+.quick-draft-fatbit {
+  display: grid;
+  grid-template-columns: 2.5em minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: baseline;
+  padding: 4px 2px;
+  border-bottom: var(--quick-draft-grain-border);
+}
+
+.quick-draft-fatbit-index,
+.quick-draft-fatbit-badge {
+  font-family: var(--ui-font);
+  font-size: 11px;
+  color: var(--quick-draft-grain-model-fg);
+}
+
+.quick-draft-fatbit-index {
+  text-align: right;
+}
+
+/* A cell is a field, and it has to read as one before it is clicked: the
+   TeachText editor's own paper, rule and inset, so the two surfaces say
+   "you can type here" the same way. */
+.quick-draft-fatbit-text {
+  overflow-wrap: anywhere;
+  padding: 2px 6px;
+  border: var(--teachtext-editor-border);
+  background: var(--teachtext-editor-bg);
+  box-shadow: var(--teachtext-editor-shadow);
+  cursor: text;
+}
+
+.quick-draft-fatbit-text:focus {
+  outline: var(--system-control-line) solid var(--ink);
+  outline-offset: 1px;
+}
+
+.quick-draft-fatbit-undo {
+  padding: 0 4px;
+  border: var(--quick-draft-grain-generation-border);
+  background: var(--paper);
+  color: var(--quick-draft-grain-model-fg);
+  font: inherit;
+  cursor: pointer;
+}
+
+.quick-draft-fatbit-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+/* The same left rule the unzoomed grain line uses for a protected line, so the
+   two magnifications say "locked" with one mark. */
+.quick-draft-fatbit.is-protected {
+  box-shadow: inset 6px 0 0 var(--quick-draft-protected-fg);
+}
+
+.quick-draft-fatbit-lock {
+  width: 7px;
+  height: 8px;
+  border: var(--system-control-line) solid var(--quick-draft-protected-fg);
+  border-top-width: 3px;
+}
+
+.quick-draft-grain-zoom {
+  margin-left: auto;
+}
+
+/* The history brush picks one source state and then paints from it, so the
+   picker sits above the cells rather than repeating inside every one. */
+.quick-draft-brush-picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: var(--mde-page-width);
+  margin: 0 auto 8px;
+  font-family: var(--ui-font);
+  font-size: 11px;
+}
+
+.quick-draft-brush-picker .select-wrap {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* The canvas frame. What falls outside it is still there and still readable —
+   cropping is the writer's decision, so the surface marks the edge and says
+   nothing more. */
+.quick-draft-canvas-note {
+  max-width: var(--mde-page-width);
+  margin: 0 auto 6px;
+  font-family: var(--ui-font);
+  font-size: 11px;
+  color: var(--quick-draft-grain-model-fg);
+}
+
+.quick-draft-fatbit.is-canvas-edge {
+  border-top: var(--system-control-line) dashed var(--ink);
+}
+
+.quick-draft-fatbit.is-outside-canvas .quick-draft-fatbit-index,
+.quick-draft-fatbit.is-outside-canvas .quick-draft-fatbit-text {
+  opacity: 0.55;
+}
+
+/* A citation badge names the source a sentence came from. It is not a lock
+   mark: the writer may still edit a quotation, and the model may not — two
+   different bans that must not wear one symbol. */
+.quick-draft-fatbit-cite {
+  padding: 0 3px;
+  border: var(--quick-draft-grain-generation-border);
+  font-style: normal;
+  color: var(--quick-draft-grain-model-fg);
+}
+
+.quick-draft-fatbit-brush {
+  padding: 0 4px;
+  border: var(--quick-draft-grain-generation-border);
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+
+/* The histogram — the same canvas zoomed out. Bars are drawn from a custom
+   property rather than a positioned inline style, so the geometry stays in the
+   stylesheet and the data stays in the markup. */
+.quick-draft-histograms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  max-width: var(--mde-page-width);
+  margin: 0 auto 10px;
+}
+
+.quick-draft-histogram {
+  flex: 1 1 200px;
+  min-width: 0;
+  margin: 0;
+}
+
+.quick-draft-histogram figcaption,
+.quick-draft-histogram-summary {
+  font-family: var(--ui-font);
+  font-size: 11px;
+  margin: 0;
+}
+
+.quick-draft-histogram-summary {
+  color: var(--quick-draft-grain-model-fg);
+  margin-top: 4px;
+}
+
+.quick-draft-histogram-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 96px;
+  margin: 4px 0 0;
+  padding: 0 0 14px;
+  list-style: none;
+  border-bottom: var(--quick-draft-grain-border);
+}
+
+.quick-draft-histogram-bar {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+}
+
+.quick-draft-histogram-column {
+  position: relative;
+  width: 100%;
+  height: var(--grain-bar-height, 0%);
+  background: var(--quick-draft-grain-swatch-author);
+}
+
+/* The model's share of a bar carries the same dither the legend swatch uses,
+   so one pattern means one thing at every magnification. */
+.quick-draft-histogram-model {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: var(--grain-bar-model, 0%);
+  background: var(--quick-draft-grain-swatch-model);
+}
+
+.quick-draft-histogram-tick {
+  position: absolute;
+  inset: 100% 0 auto 0;
+  font-family: var(--ui-font);
+  font-size: 10px;
+  text-align: center;
+  color: var(--quick-draft-grain-model-fg);
+}
+
+.quick-draft-grain-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin-top: 12px;
+  padding-top: 6px;
+  border-top: var(--quick-draft-grain-border);
+  font-family: var(--ui-font);
+  font-size: 12px;
+}
+
+.quick-draft-grain-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.quick-draft-grain-swatch {
+  width: 22px;
+  height: 9px;
+  border: var(--quick-draft-grain-border);
+  font-style: normal;
+}
+
+.quick-draft-grain-swatch.is-author {
+  background: var(--quick-draft-grain-swatch-author);
+}
+
+.quick-draft-grain-swatch.is-model {
+  background: var(--quick-draft-grain-swatch-model);
+}
+
+.quick-draft-grain-swatch.is-protected {
+  background: var(--quick-draft-protected-fg);
+}
+
+/* The stack order and the scope both stay on the closed row. */
+
+/* One layer reads as one row: switch and name, strength, disclosure. The
+   description and the scope line live behind the triangle, the way a Finder
+   list row opens. */
+
+.quick-draft-layer-detail {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding-left: 16px;
+}
+
+.quick-draft-layer-detail[hidden] {
+  display: none;
+}
+
+/* No hard cap: the label has to fit the bitmap face and the glass face. */
+
+.quick-draft-source-map {
+  min-height: 2rem;
+  padding-top: 4px;
+  border-top: var(--quick-draft-divider-border);
+}
+
+.compose-tools-quick-draft-import.is-hidden {
+  display: none;
+}
+
+.quick-draft-cliotalk-hint {
+  font-size: 11px;
+  color: var(--shade-dark);
+}
+
+.quick-draft-cliotalk-hint.is-hidden {
+  display: none;
+}

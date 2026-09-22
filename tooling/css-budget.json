@@ -28,7 +28,10 @@
     "styles/95-image-prompt-studio.css": 0,
     "styles/96-clio-paint.css": 0,
     "styles/97-one-more-tune.css": 0,
-    "styles/98-project-disks.css": 0
+    "styles/98-project-disks.css": 0,
+    "styles/68-big-sur-appearance.css": 0,
+    "styles/69-nextstep-appearance.css": 0,
+    "styles/nextstep-shell.css": 0
   },
   "_zIndexNote": "Ratchet over raw `z-index:` declarations per file (tooling/verify-css.mjs counts the literal property, not distinct token values — a component that shares an existing --z-* token still costs one count). It cannot reach 0: a menu must cover a window, a modal must cover the desk. Measured 2026-09-01 after two kinds of reduction: (1) budget catch-up — several files already carried fewer real declarations than their ratchet allowed from earlier cleanups that never lowered the number (00-foundation 9->8, 10-windows 13->12, 50-apps 8->6, 90-endfield-terminal 1->0 were pure bookkeeping, zero CSS changed); (2) seven real removals, each proven safe by CSS stacking mechanics, not by shaving: two redundant cascade restatements (60-responsive.css re-set .menu-bar and .menu-item-with-sub > .menu-sub-popover to the exact token 00-foundation.css already gives them — removing the restatement changes nothing, the base rule's value still applies), one redundant liquid-glass twin (70-liquid-glass.css .grow-box repeated the base 10-windows.css token verbatim), and four cases where an element already wins its stacking order for free (.spine-step-number and .spine-actions button in 10-windows.css, .tdi-tab-close in 20-reader-docmap.css, .image-manager-list-header in 50-apps.css — each is a positioned/sticky element whose only relevant sibling is non-positioned, and CSS2.1 painting order already puts positioned content above non-positioned in-flow content regardless of z-index value). Full layer map and the complete declaration-by-declaration disposition table live in the lane handoff for lane-css-zindex. Every number here may only fall. 2026-09-15 bump, 10 -> 12: the Writing Flow step number and its content diamond are two labels painted ON the icon, and they now say so with --z-local-control. The rule they replaced said “no stacking token needed here: an absolutely positioned descendant already paints over the button’s in-flow icon” — and a reader took that sentence as permission to move the number out of the icon’s way and into a reserved row above it. The layer is the requirement; two declarations state it. Both may fall again if the labels are ever folded into the icon markup itself.",
   "_zIndexFloorNote": "2026-09-02, after the lane above. 50-apps.css falls 5 -> 4: the typewriter band `.mde-surface.is-typewriter-mode::after` asked for --z-local-base, which is 0. For a positioned element, 0 and auto sort into the same painting step; the value only adds a stacking context, and a pseudo-element has no descendants to put in one. The band is also the last child in tree order, so it paints over the ink either way. That is a fifth case of the same kind the lane above removed four of. Every declaration that remains names a distinct layer through a --z-* token, and 30 of the 36 are the layer ladder itself: window-local control, chrome, overlay and popover; then toolbox, pinned, control strip, marquee, system menu, modal, balloon, boot and shutdown. The ratchet cannot reach 0, for the reason the note above gives: a menu must cover a window and a modal must cover the desk, and CSS has no way to say that without a number. The path down is not more deletions -- it is fewer layers. Two pairs are close enough to merge if a reader ever proves they never coexist: --z-system-modal-scrim with --z-system-modal, and --z-control-strip with --z-control-strip-menu. Each merge saves one token, not one declaration, so it does not move this counter at all; only removing a whole layered surface would.",
@@ -59,7 +62,10 @@
     "styles/95-image-prompt-studio.css": 0,
     "styles/96-clio-paint.css": 0,
     "styles/97-one-more-tune.css": 0,
-    "styles/98-project-disks.css": 0
+    "styles/98-project-disks.css": 0,
+    "styles/68-big-sur-appearance.css": 0,
+    "styles/69-nextstep-appearance.css": 0,
+    "styles/nextstep-shell.css": 2
   },
   "inlineLayoutStyles": {
     "_pattern": "element.style.{top,left,right,bottom,width,height,padding,margin,maxWidth,maxHeight,minWidth,minHeight} = ...",
@@ -77,7 +83,9 @@
     "aqua": 101,
     "snow-leopard": 62,
     "yosemite": 112,
-    "liquid-glass": 0
+    "liquid-glass": 0,
+    "big-sur": 23,
+    "nextstep": 48
   },
   "_bootThemeSurfaceNote": "2026-08-10 bump: per-era boot/shutdown surfaces added for Platinum (+5 appearance selectors) and Aqua/Snow Leopard (+16 theme selectors in 67). These re-skin the shared Happy Mac boot/shutdown harness per theme (same DOM/JS as Classic and Liquid Glass), not per-app churn; both files remain under the raised limits.",
   "_childAppNote": "Child+app-specific selector budget for the derived appearances (Platinum / Snow Leopard / Yosemite). Application prefixes come from windowInterfaceRegistry in tooling/interface-guidelines-contract.mjs, including dynamic and lazy windows, so a new app cannot evade the zero-debt ratchet by being absent from index.html. For a genuine system-level historical exception, add its class token (or 'themeId:token' for one child only) to childAppSpecificAllowlist and justify it in the commit.",
@@ -87,7 +95,8 @@
     "yosemite:.finder-item",
     "yosemite:.desktop-icon",
     "yosemite:.spine-actions",
-    "yosemite:.system-help-related-link"
+    "yosemite:.system-help-related-link",
+    "big-sur:.finder-operation-modal"
   ],
   "_omtEraNote": "2026-09-17: One More Tune owns one theme selector, and it re-values only the deck's own --omt-era-* tokens for the 1-bit appearance. The quiz dresses each card in the era it shipped alongside, and the six era colours are macOS's own accents; System 6 has no rainbow, so Classic swaps the seven token VALUES for seven dither patterns. The second selector is the play ring: a dither is not a valid colour stop, so a conic gradient cannot degrade into one and 1-bit takes a solid ring instead. Nothing else below the block knows which appearance is on, no shared chrome is touched, and the sheet is lazily loaded, so this is not the theme fork this budget guards against. It may only fall.",
   "themeSelectorsOutsideLiquid": {
@@ -97,7 +106,9 @@
     "styles/90-endfield-terminal.css": 11,
     "styles/60-responsive.css": 1,
     "styles/67-aqua-appearance.css": 190,
-    "styles/97-one-more-tune.css": 2
+    "styles/97-one-more-tune.css": 2,
+    "styles/68-big-sur-appearance.css": 24,
+    "styles/69-nextstep-appearance.css": 48
   },
   "_eraTokenCoverageNote": "What a seventh appearance owes. A token two eras set is a period decision; a token one era sets is that era's quirk. Coverage counts the first kind an era answers, following its recipeBase chain, and Theme Lab's Tokens tab shows the same list on screen so the number is a worklist rather than a score. The rule is asymmetric on purpose: an era with no entry here -- a NEW appearance -- must answer all of them, because arriving complete is the point of the gate; the six that predate it carry real debt and are ratcheted instead, each count may only fall. baselineEra is exempt because its values ARE the defaults the others override. Measured 2026-09-01 (sidebar tier 2: tdi-rail heading/hover/pressed/unfocused tokens, answered by all five eras) against period tokens. Lower a number when you answer tokens; never raise one.",
   "eraTokenCoverage": {
@@ -114,7 +125,9 @@
   "themeLabReplicaMentions": {
     "styles/65-appearance-themes.css": 269,
     "styles/67-aqua-appearance.css": 291,
-    "styles/70-liquid-glass.css": 7
+    "styles/70-liquid-glass.css": 7,
+    "styles/68-big-sur-appearance.css": 0,
+    "styles/69-nextstep-appearance.css": 0
   },
   "_appearanceGeometryNote": "Ratchet over the layout carried by the three appearance stylesheets. A declaration that recolors or re-materials cannot move anything, so its correctness is a token diff; a declaration that sets geometry makes that appearance a separate layout at that spot, and only an eye or a pixel snapshot can check it. Measured 2026-08-21: 848 geometry declarations out of 5,969 across the three files — that count, not the six appearances, is what multiplies the verification matrix. Both numbers may only shrink. DRAINING IS NOT A SWEEP. The obvious candidate — rewriting `border: 1px solid <color>` as border-color — was checked and rejected, though not for the reason first written here: base .btn draws `var(--system-control-line) solid`, and that token is 1.5px only under body.use-modern-fonts, which theme-registry.js applies when fontStrategy is \"modern\" (liquid-glass, always) or \"preference\" with the preference on (classic). Platinum is fontStrategy \"theme\" and can never carry that class, so Platinum's literal 1px is NOT the deliberate override the earlier note claimed. The conclusion stands and the rule generalises: the token resolves per appearance, so converting border to border-color blindly would silently change liquid-glass, and classic under modern fonts — the exact historical failure this budget exists to stop. Check the token for the appearance you are editing, never for appearances in general. Drain a site only when you are touching it anyway and can show the base rule it inherits; the honest form is usually a per-appearance token override, which this counter does not charge for. An era typeface or an era title-bar height is real geometry and stays. 'unprefixed' counts top-level rules in an appearance sheet that declare a real property with no appearance prefix: such a rule ships to all six appearances from inside a theme file, where neither this ratchet nor the twin audit can see that it does not belong. Rules that declare nothing but custom properties are exempt — the sprite-cell mappings are theme-independent data and a token lays nothing out.",
   "_appearanceGeometryFloorNote": "Why these numbers stop here. Measured 2026-09-02. The drop (65: 134 -> 126; 67: 171 -> 150 geometry and 10 -> 6 hairline) is catch-up, not new work: earlier lanes removed declarations and did not lower the number. No CSS changed for the catch-up itself. A search for exact restatements -- an appearance declaration that repeats a base rule verbatim -- found 16 in these two sheets, and every one of them is load-bearing. DO NOT DELETE THEM. (1) Twelve title-bar declarations: grid-column and justify-self on .close-box and .resize-box for aqua, snow-leopard and yosemite. They look like duplicates of .title-bar > .close-box in 10-windows.css, and they are duplicates on purpose. They say that Close stays at the leading edge and Zoom at the trailing edge, in the three eras whose own tradition puts three lamps together at the left. window-frame.test.mjs asserts each one by name; the duplicate IS the guard. The close-box pair also outranks .window.alarm-clock-window > .alarm-clock-title-bar .close-box in 30-surfaces.css, which asks for justify-self: center -- so in these three eras the Alarm Clock's close box sits at the leading edge, not centred. That is a live defect, not a reason to delete the guard; fix it in the Alarm Clock's own rule. (2) Two `.grow-box { border: 0 }` declarations (aqua, snow-leopard). The base .grow-box sets `border: 0` and THEN sets border-left and border-top to --window-frame-track-border in the same block, so the appearance shorthand is what removes that track hairline for these two eras. Delete it and two hairlines come back. The same twin in 70-liquid-glass.css is load-bearing for the same reason; an audit that calls it an easy twin is wrong. (3) Two `.btn { font-size: var(--system-control-size) }` declarations (platinum, aqua). At (0,2,0) they tie with .message-actions .btn, .reader-tabs .btn, .context-item .button-row .btn, .lc-align-grid .btn, .soundscape-style-strip .btn and the Bonsai gauge buttons, and they load later, so they currently replace those 10px and 11px context sizes. Delete them and button text shrinks on six surfaces in those two eras. THE PATH DOWN. What is left is one repeated recipe, not many separate decisions: `padding: var(--field-control-padding); border: var(--field-border); font-family: var(--theme-ui-font); font-size: var(--system-control-size)` is written again for each appearance, on fields, selects and select buttons. Move that recipe to the base sheet on the shared selector and let each appearance set only the token VALUES, which this counter does not charge for. That rewrites the cascade for all six appearances at once, including Classic, whose base padding is a literal 6px today -- so it needs the pixel net (npm run verify:appearance), not a static gate, and it belongs in its own task. MEASUREMENT ARTIFACT, left uncorrected on purpose: two of 65's 126 are the font-family and font-weight descriptors inside its @font-face block. The counter reads every brace block, so a descriptor is charged like a declaration, and an @font-face descriptor lays nothing out. The instrument was not changed, because lowering a number by changing what it counts is not a drain.",
@@ -133,6 +146,19 @@
       "geometry": 408,
       "hairline": 56,
       "unprefixed": 0
+    },
+    "styles/68-big-sur-appearance.css": {
+      "geometry": 8,
+      "hairline": 0,
+      "unprefixed": 0
+    },
+    "styles/69-nextstep-appearance.css": {
+      "geometry": 54,
+      "hairline": 4,
+      "unprefixed": 0
     }
-  }
+  },
+  "_bigSurNote": "Big Sur adds its own bounded painter: no priority or stacking exceptions, 23 selectors, 8 geometry declarations. finder-operation-modal is the shared system dialog service, not a Finder application subtheme; it receives the same border/radius/shadow as system-modal and startup-settings-modal. Older appearance budgets are unchanged.",
+  "_nextstepNote": "2026-09-22: user expanded the material-only task to the complete NeXTSTEP plan. New lazy shell components own their layout in nextstep-shell.css (Dock and palettes reuse z-control-strip/z-system-menu, zero priority overrides). The new 69 recipe now has 48 selectors, 54 geometry declarations and 4 hairlines for native left scrollers, arrow clustering, three-part resize strip, left miniaturize/right close and column-view selection. This is new required shell behavior rather than material drift; the seven existing appearance budgets are unchanged. Verify full cross-era window workflow and Classic/Liquid geometry snapshots before release. Icons remain deferred.",
+  "_bigSurIconNote": "2026-09-22: independent Big Sur icons add one scoped transparent-container rule. It removes the inherited Classic paper tile on dark Finder/desktop backgrounds; geometry and all other era budgets remain unchanged."
 }

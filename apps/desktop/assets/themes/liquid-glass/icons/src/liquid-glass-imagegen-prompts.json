@@ -9,7 +9,7 @@
     "internal/evidence/drafts/liquid-glass-reference/captures/macworld-21-icons/macos-15-26-disk-utility-icons.jpg",
     "internal/evidence/drafts/liquid-glass-reference/captures/512pixels/26-Tahoe-Finder-Home-scaled.png"
   ],
-  "commonPrompt": "Create one isolated macOS Tahoe 26 Liquid Glass system icon: thin optically clear glass, crisp restrained highlights, blue-silver edge refraction, subtle dimensional depth, premium Apple system-icon finish. Center the subject on a flat chroma-key canvas with no cast shadow outside the object, floor, scene, readable text, letters, watermark, border, or extra objects. Preserve a clean legible silhouette at 16–32 px; avoid thick acrylic, bubbly toy styling, excessive gloss, and Snow Leopard candy. Application icons may use a rounded-square enclosure; Finder objects, media, folders, documents, hardware, trash, and the Control Strip stay free-form.",
+  "commonPrompt": "Create one isolated macOS 27 Golden Gate Liquid Glass system icon adaptation: thin optically clear glass, crisp restrained highlights, blue-silver edge refraction, subtle dimensional depth, premium Apple system-icon finish. Center the subject on a flat chroma-key canvas with no cast shadow outside the object, floor, scene, readable text, letters, watermark, border, or extra objects. Preserve a clean legible silhouette at 16–32 px; avoid thick acrylic, bubbly toy styling, excessive gloss, and Snow Leopard candy. Application icons may use a rounded-square enclosure; Finder objects, media, folders, documents, hardware, trash, and the Control Strip stay free-form. This is an Apple-guided adaptation; do not claim a native Golden Gate single-icon replica.",
   "icons": [
     { "id": "startupDisk", "subject": "A free-form silver startup volume with a small blue illuminated power/start badge." },
     { "id": "hardDisk", "subject": "A free-form compact brushed-silver hard disk with a thin glass shell and one restrained status light." },
@@ -17,7 +17,7 @@
     { "id": "document", "subject": "A free-form translucent white document sheet with one folded corner and sparse dark content lines." },
     { "id": "applications", "subject": "A translucent blue-violet Applications folder containing a sparse four-app grid motif." },
     { "id": "trash", "subject": "An empty tapered clear-glass Macintosh wastebasket with a blue-silver rim and vertical ribs." },
-    { "id": "finderApp", "subject": "A launch-era Tahoe Finder identity: one blue rounded-square glass enclosure with a separate translucent light face/profile panel, two eyes, and one continuous smile crossing both fields." },
+    { "id": "finderApp", "subject": "A launch-era Golden Gate Finder adaptation: one blue rounded-square glass enclosure with a separate translucent light face/profile panel, two eyes, and one continuous smile crossing both fields." },
     { "id": "fileFloppy", "subject": "A free-form translucent silver 3.5-inch floppy disk with a dark shutter and label recess." },
     { "id": "assistant", "subject": "A rounded-square blue glass assistant tile with a solid user balloon and a clearly dashed reply balloon." },
     { "id": "quickDraft", "subject": "A free-form white glass paper sheet crossed by one blue writing pencil." },
@@ -60,7 +60,7 @@
     { "id": "documents", "subject": "A free-form translucent blue Documents folder with two visible white sheets." },
     { "id": "alias", "subject": "A free-form white document with a folded corner and one bold curved alias arrow." },
     { "id": "systemFile", "subject": "A free-form white system document carrying one compact silver gear." },
-    { "id": "multiFinderApp", "subject": "The current Tahoe Finder identity repeated with a clear period-plausible overlap to communicate concurrent Finder environments; multiplicity is required but no fixed computer chassis is allowed." },
+    { "id": "multiFinderApp", "subject": "The current Golden Gate Finder adaptation repeated with a clear period-plausible overlap to communicate concurrent Finder environments; multiplicity is required but no fixed computer chassis is allowed." },
     { "id": "daHandler", "subject": "A rounded-square blue utility tile with a compact glass desk-accessory briefcase." },
     { "id": "writingBell", "subject": "A free-form warm-gold writing bell with a clear glass dome and compact clapper." },
     { "id": "trashFull", "subject": "A tapered clear-glass wastebasket filled with exactly three visible pale crumpled paper shapes." },

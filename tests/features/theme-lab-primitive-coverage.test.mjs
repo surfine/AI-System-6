@@ -18,7 +18,11 @@ const lab = read("app/features/theme-lab.js");
 const index = read("index.html");
 const board = `${lab}\n${index}`;
 
-const table = design.slice(design.indexOf("These primitives carry all six appearances already"));
+// Anchor on the sentence, not on the number of appearances: the registry grew
+// from six to eight, and this contract is about the primitive list, not the
+// count. Slicing from the count word made a registry change look like a
+// missing table.
+const table = design.slice(design.indexOf("These primitives carry all"));
 const rows = table.slice(0, table.indexOf("\n\nThe reverse is the rule"));
 const primitives = [...rows.matchAll(/`(\.[a-z-]+)`/g)].map((match) => match[1]);
 

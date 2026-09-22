@@ -52,6 +52,13 @@ export const ERAS = [
     claim: L("Flat design changes the paint, not the promise made by the object.", "扁平设计改变外观，没有改变对象作出的承诺。"),
   },
   {
+    id: "big-sur", year: 2020, label: "Big Sur", ext: "png",
+    font: "SF Pro", alias: ["SF Pro Text", "SF Pro Display"],
+    substitutes: ["Segoe UI", "Roboto", "Noto Sans"],
+    role: L("A quieter frame", "安静的窗口"),
+    claim: L("Rounded windows and light or dark surfaces keep the same objects within reach.", "圆润窗口与浅深色表面，让同一组对象依旧触手可及。"),
+  },
+  {
     id: "liquid-glass", year: 2026, label: "Liquid Glass", ext: "png",
     font: "SF Pro", alias: ["SF Pro Text", "SF Pro Display"],
     substitutes: ["Segoe UI Variable Text", "Segoe UI", "Roboto", "Noto Sans"],
@@ -125,7 +132,7 @@ export function currentEra() {
 
 export function iconSrc(name, era) {
   const e = era || currentEra();
-  return `img/themes/${e.id}/${name}.${e.ext}`;
+  return `img/themes/${e.art || e.id}/${name}.${e.ext}`;
 }
 
 export function setEra(id, store) {

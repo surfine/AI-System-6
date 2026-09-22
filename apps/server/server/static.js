@@ -73,6 +73,8 @@ const exactPublicFiles = new Set([
   "styles.clio-paint.css",
   "styles.one-more-tune.css",
   "styles.project-disks.css",
+  "styles.big-sur.css",
+  "styles.nextstep.css",
   "styles.soundscape.css",
   "styles.liquid-cover.css",
   "styles.image-prompt-studio.css",

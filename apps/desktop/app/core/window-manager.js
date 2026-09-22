@@ -80,7 +80,7 @@ let quickDraftAssistantHome = null;
 let closingQuickDraftAssistantPair = false;
 
 function visibleLayeredWindows() {
-  return Array.from(document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden)"));
+  return Array.from(document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden):not(.is-minimized)"));
 }
 
 function compactWindowLayerStack() {
@@ -297,16 +297,28 @@ function clampWindowToViewport(win, margin = 16) {
   const vh = (window.innerHeight || document.documentElement.clientHeight) - keyboardInset;
   const horizontalMargin = Math.min(margin, Math.max(0, Math.floor((vw - r.width) / 2)));
   const verticalMargin = Math.min(margin, Math.max(0, Math.floor((vh - r.height) / 2)));
-  const maxH = Math.max(160, Math.round(vh - Math.max(verticalMargin, r.top) - verticalMargin));
+  // The menu bar is not part of the work area. Clamping to a plain margin put
+  // a short window's title bar under the bar, and the measured result was a
+  // close box whose centre belonged to the bar, not to the button: the window
+  // could neither be quit nor zoomed by touch.
+  const minTop = Math.max(
+    verticalMargin,
+    Math.round(document.querySelector(".menu-bar")?.getBoundingClientRect().bottom || 0),
+  );
+  const top = Math.max(r.top, minTop);
+  // The height is what fits below where the window actually is: raising the
+  // floor to the menu bar must not hand the window the bar's own height back,
+  // or a tall window grows past the bottom of the screen instead.
+  const maxH = Math.max(160, Math.round(vh - top - verticalMargin));
   if (r.height > maxH) {
     setInlineStyleValue(win, "height", maxH + "px");
     setInlineStyleValue(win, "max-height", maxH + "px");
     r = win.getBoundingClientRect();
   }
   const maxLeft = Math.max(horizontalMargin, vw - r.width - horizontalMargin);
-  const maxTop = Math.max(verticalMargin, vh - r.height - verticalMargin);
+  const maxTop = Math.max(minTop, vh - r.height - verticalMargin);
   const nextLeft = Math.min(Math.max(r.left, horizontalMargin), maxLeft);
-  const nextTop = Math.min(Math.max(r.top, verticalMargin), maxTop);
+  const nextTop = Math.min(top, maxTop);
   if (Math.abs(nextLeft - r.left) >= 0.5) setInlineStyleValue(win, "left", Math.round(nextLeft) + "px");
   if (Math.abs(nextTop - r.top) >= 0.5) setInlineStyleValue(win, "top", Math.round(nextTop) + "px");
 }
@@ -485,7 +497,7 @@ function placeNewWindowAvoidingVisibleWindows(win) {
   const workHeight = maxTop - minTop + height;
   if (width + gap >= workWidth || height + gap >= workHeight) return false;
 
-  const peers = Array.from(document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden):not(.is-collapsed)"))
+  const peers = Array.from(document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden):not(.is-minimized):not(.is-collapsed)"))
     .filter((peer) => peer !== win)
     .map((peer) => ({ peer, rect: peer.getBoundingClientRect() }))
     .filter(({ rect: peerRect }) => peerRect.width > 0 && peerRect.height > 0)
@@ -622,7 +634,7 @@ async function prepareFinderModeForApp(appId) {
   windowsToHide.forEach((win) => {
     if (win.dataset.window === "themeLab") window.AISystem6ThemeLab?.cleanup?.();
     win.classList.add("is-hidden");
-    win.classList.remove("is-app-hidden", "is-active");
+    win.classList.remove("is-app-hidden", "is-active", "is-minimized");
     delete win.dataset.appHiddenCollapsed;
     forgetWindowFromRunningApps(win.dataset.window);
   });
@@ -865,6 +877,17 @@ async function quitApp(appId = activeAppId) {
     return;
   }
 
+  if (appId === "teachText" && shouldPromptForTeachTextFileSave()) {
+    const result = await showSystemModal(teachTextUnsavedChangesMessage(), "save");
+    if (result === "cancel") return;
+    if (result === "yes") {
+      const saved = await saveTextDocument();
+      if (!saved) return;
+    } else {
+      setTeachTextStatus("saved");
+    }
+  }
+
   // Quitting is the total release: an application that declared onDispose
   // frees its engine, canvas, timers and audio here. The explicit game calls
   // below stay as the floor for a build whose lifecycle never registered.
@@ -891,16 +914,7 @@ async function quitApp(appId = activeAppId) {
     if (detached === false) return;
   }
 
-  if (appId === "teachText" && shouldPromptForTeachTextFileSave()) {
-    const result = await showSystemModal(teachTextUnsavedChangesMessage(), "save");
-    if (result === "cancel") return;
-    if (result === "yes") {
-      const saved = await saveTextDocument();
-      if (!saved) return;
-    } else {
-      setTeachTextStatus("saved");
-    }
-  }
+
 
   windowsForApp(appId).forEach((win) => {
     win.classList.add("is-hidden");
@@ -937,8 +951,33 @@ function installDesktopScrollLock() {
   resetDesktopScrollOffset();
 }
 
+/**
+ * Put the keyboard where the window is.
+ *
+ * Opening a window used to move no focus at all: document.activeElement stayed
+ * on <body>, so the next Tab walked the desk icons *behind* the window the
+ * person had just opened. Modals already move focus (core/modal.js); this is the
+ * same rule for ordinary windows, and it is what the guidelines ask for — focus
+ * tells people which object their input targets (Focus and selection), and a
+ * desktop app has to work with the keyboard alone (Accessibility › Speech).
+ *
+ * The window itself takes the focus rather than its first control. A container
+ * is reached in DOM order, so the next Tab lands inside this window instead of
+ * behind it, and nothing starts typing — or opens a phone keyboard — that the
+ * person did not ask for. A window that already holds the focus keeps it:
+ * raising a window someone is typing in must not steal the caret.
+ */
+function focusIntoWindow(win) {
+  if (!win?.focus || win.contains(document.activeElement)) return;
+  win.setAttribute("tabindex", "-1");
+  win.focus({ preventScroll: true });
+}
+
 function focusWindow(win, reveal=false) {
   if (!win) return;
+  const restoredMiniwindow = win.classList.contains("is-minimized");
+  win.classList.remove("is-minimized");
+  if (restoredMiniwindow) window.AISystem6NextstepShell?.restoreFocus(win);
   if (reveal && isPortraitDocumentFlow()) {
     revealWindowTitleInPortraitFlow(win);
   } else {
@@ -1336,8 +1375,8 @@ function replaceVisibleFinderLocation(targetWindowName) {
   // title bar. Skipping collapsed candidates here falls through to the
   // normal fit-to-content placement instead.
   const candidates = [
-    ...Array.from(document.querySelectorAll(".window[data-window].is-active:not(.is-hidden):not(.is-app-hidden):not(.is-collapsed)")),
-    ...Array.from(document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden):not(.is-collapsed)")),
+    ...Array.from(document.querySelectorAll(".window[data-window].is-active:not(.is-hidden):not(.is-app-hidden):not(.is-minimized):not(.is-collapsed)")),
+    ...Array.from(document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden):not(.is-minimized):not(.is-collapsed)")),
   ].filter((win) => mobileFinderPageWindowNames.has(win.dataset.window) && win.dataset.window !== targetWindowName);
 
   // The narrow work area holds exactly one page, so there a new location
@@ -1417,6 +1456,11 @@ const mobileDialogWindowNames = new Set([
   // write, done -- not a Finder page to browse. As a finder-page it took the
   // full-bleed work-area frame and filled a portrait screen.
   "importUtility",
+  // The demonstration-disk list is the same shape of task — read two rows, open
+  // one, done — so it takes the dialog frame on a phone instead of falling into
+  // the desktop geometry, which put a 420px window at left:148 and left it half
+  // off the screen (measured by verify:device-matrix in every phone viewport).
+  "projectDisks",
   // Insert File Floppy is the same shape of task -- choose files, insert,
   // done. Its frame has a close box only, no zoom and no shade box, and its
   // pane is a file picker, not a place to browse.
@@ -1736,7 +1780,7 @@ function mobileFullScreenTarget() {
   // this a maximize rather than a lock. So every app page takes it.
   if (!isPortraitDocumentFlow() && !isLandscapeDocumentFlow()) return null;
   const wins = Array.from(
-    document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden):not(.is-collapsed)")
+    document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden):not(.is-minimized):not(.is-collapsed)")
   ).filter((win) => (
     mobileWindowCanFillScreen(win)
     // Zooming or dragging the grow box restores a window down; it then stays a
@@ -2200,7 +2244,7 @@ function placeFinderCascadeWindow(win, options = {}) {
   const verticalStep = 26;
   const rowStep = 92;
   const columns = Math.max(1, Math.floor((maxLeft - baseLeft) / horizontalStep) + 1);
-  const openFinderWindows = Array.from(document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden)"))
+  const openFinderWindows = Array.from(document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden):not(.is-minimized)"))
     .filter((item) => item !== win && isFinderCascadeWindow(item));
   const index = openFinderWindows.length;
   const column = index % columns;
@@ -2794,6 +2838,7 @@ function invalidateMenuActionCache() {
 }
 
 function updateMenuState() {
+  window.AISystem6NextstepMenus?.sync();
   if (typeof renderAppMenuBar === "function") renderAppMenuBar(menuOwnerAppId || activeAppId);
   renderWritingSpineState();
   // Converges the status line on the writer after programmatic focus moves,
@@ -3153,7 +3198,7 @@ async function openWindowInner(name, options = {}, nestedOpen = false) {
   if (!win) return;
   const wasAlreadyOpen = !win.classList.contains("is-hidden") && !win.classList.contains("is-app-hidden");
   const sourceWindowForSingleTask = !isMultiFinderMode() && !skipFinderMode
-    ? document.querySelector(".window.is-active:not(.is-hidden):not(.is-app-hidden)")
+    ? document.querySelector(".window.is-active:not(.is-hidden):not(.is-app-hidden):not(.is-minimized)")
     : null;
   const targetAppId = getWindowAppId(name);
   const canOpen = skipFinderMode ? true : await prepareFinderModeForApp(targetAppId);
@@ -3302,6 +3347,10 @@ async function openWindowInner(name, options = {}, nestedOpen = false) {
 
   if (!skipFocus) {
     focusWindow(win);
+    // …and put the keyboard in it, so Tab continues inside the window the person
+    // just opened instead of walking the desk behind it. skipFocus is what a
+    // session restore passes, so a restored desk still opens with nothing focused.
+    focusIntoWindow(win);
     if (!["assistant", "about"].includes(name)) playSystemSound("open");
   }
   // Arrange the writing workspace AFTER focus raises the window: the mobile
@@ -3776,12 +3825,12 @@ function placeUtilityWindow(name, win) {
 }
 
 function visibleDeskAccessories() {
-  return Array.from(document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden)"))
+  return Array.from(document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden):not(.is-minimized)"))
     .filter(isDeskAccessoryPlacementWindow);
 }
 
 function visiblePortraitDeskAccessories() {
-  return Array.from(document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden):not(.is-collapsed)"))
+  return Array.from(document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden):not(.is-minimized):not(.is-collapsed)"))
     .filter((win) => getWindowAppId(win) === "accessories");
 }
 
@@ -3897,7 +3946,7 @@ function arrangePortraitDeskAccessories(frontWin = null) {
 function getTileCandidateWindows() {
   if (writerMode) return [];
   if (isNarrowViewport()) return [];
-  return Array.from(document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden)"))
+  return Array.from(document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden):not(.is-minimized)"))
     .filter((win) => {
       if (["about", "saveChat"].includes(win.dataset.window)) return false;
       if (isDeskAccessoryPlacementWindow(win)) return false;
@@ -3951,7 +4000,7 @@ function raiseVisibleDeskAccessorySidecars(frontWin = null) {
 }
 
 function deskAccessorySourceWindow(frontWin) {
-  return document.querySelector(".window.is-active:not(.is-hidden):not(.is-app-hidden):not(.is-collapsed)")
+  return document.querySelector(".window.is-active:not(.is-hidden):not(.is-app-hidden):not(.is-minimized):not(.is-collapsed)")
     || visibleWindowOrNull(getWindow("assistant"));
 }
 
@@ -4140,7 +4189,7 @@ function visibleSidecarAnchor(candidate) {
 }
 
 function getPreferredAssistantSidecarSource(name) {
-  const active = document.querySelector(".window.is-active:not(.is-hidden):not(.is-app-hidden):not(.is-collapsed)");
+  const active = document.querySelector(".window.is-active:not(.is-hidden):not(.is-app-hidden):not(.is-minimized):not(.is-collapsed)");
   if (name === "importUtility" || name === "rag") {
     return visibleSidecarAnchor(getWindow("projects"))
       || visibleSidecarAnchor(getWindow("assistant"))
@@ -4672,6 +4721,7 @@ async function closeWindow(name, force = false) {
 
   if (name === "themeLab") window.AISystem6ThemeLab?.cleanup?.();
   win.classList.add("is-hidden");
+  win.classList.remove("is-minimized");
   // 文字亮室 shows a view of the draft, so the window going away has to put the
   // view back. Closing it with ⌘W used to leave the display mode on "grain"
   // with no window to show one.
@@ -4761,17 +4811,23 @@ async function closeWindow(name, force = false) {
     }
   }
   delete win.dataset.returnWindowName;
+  // Closing the window the keyboard was in must not drop the focus on the floor:
+  // the window that takes over gets it, and with no window left the desk does,
+  // so the next Tab resumes where the person is looking.
   if (restoredSource) {
     focusWindow(restoredSource, true);
+    focusIntoWindow(restoredSource);
     activeAppId = getWindowAppId(restoredSource);
   } else {
-    const next = document.querySelector(".window.is-active:not(.is-hidden):not(.is-app-hidden)")
-      || Array.from(document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden)"))
+    const next = document.querySelector(".window.is-active:not(.is-hidden):not(.is-app-hidden):not(.is-minimized)")
+      || Array.from(document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden):not(.is-minimized)"))
         .sort((a, b) => Number(b.style.zIndex || 0) - Number(a.style.zIndex || 0))[0];
     if (next) {
       focusWindow(next);
+      focusIntoWindow(next);
     } else {
       activeAppId = "finder";
+      document.activeElement?.blur?.();
     }
   }
   syncMobileAppForeground();
@@ -4918,7 +4974,7 @@ function getDesktopAvoidanceInsets({ margin = 18, spineGap = 18, iconGap = 34 } 
   const desktopRect = desktop?.getBoundingClientRect();
   const spine = document.querySelector(".writing-spine-panel") || document.querySelector(".spine-flow-toolbox");
   const spineRect = spine?.getBoundingClientRect();
-  const iconColumn = document.querySelector(".icon-column");
+  const iconColumn = document.querySelector(".nextstep-dock") || document.querySelector(".icon-column");
   const iconRect = iconColumn?.getBoundingClientRect();
   const spineVisible = spine
     && !spine.classList.contains("is-hidden")
@@ -5025,7 +5081,7 @@ document.addEventListener("toggle", (event) => {
 
 function reflowWindowsAroundWritingSpine() {
   let changed = false;
-  document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden)").forEach((win) => {
+  document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden):not(.is-minimized)").forEach((win) => {
     changed = avoidWritingSpineOverlap(win) || changed;
   });
   if (changed) scheduleWorkingSessionSave?.();
@@ -5195,7 +5251,9 @@ function createWindowOutline(rect, win = null) {
   return outline;
 }
 
-function startWindowResize(event, win) {
+function startWindowResize(event, win, edge = "right") {
+  const originalStyle = win.getAttribute("style");
+  const originalZoom = win.dataset.zoomed;
   const portraitFlow = isPortraitDocumentFlow() && !writerMode && getWindowAppId(win) !== "accessories";
   if (!isResizableWindow(win) || (!portraitFlow && isNarrowViewport())) return;
   // Writing-mode split panes are CSS-owned fixed columns; a live resize would
@@ -5239,7 +5297,7 @@ function startWindowResize(event, win) {
   const desktopRect = desktop.getBoundingClientRect();
   const maxWidth = portraitFlow
     ? Math.max(minWidth, Math.min(desktopRect.width - 36, window.innerWidth - 36))
-    : Math.max(minWidth, desktopRect.right - rect.left - 18);
+    : Math.max(minWidth, edge === "left" ? rect.right - desktopRect.left - 18 : desktopRect.right - rect.left - 18);
   const maxHeight = portraitFlow
     ? Math.max(minHeight, window.innerHeight - 80)
     : Math.max(minHeight, desktopRect.bottom - rect.top - 18);
@@ -5268,11 +5326,14 @@ function startWindowResize(event, win) {
     } else {
       win.style.width = `${width}px`;
       win.style.height = `${height}px`;
+      if (edge === "left") win.style.left = `${rect.left - (getComputedStyle(win).position === "fixed" ? 0 : desktopRect.left) + startWidth - width}px`;
     }
   }
 
   function resizeWindow(moveEvent) {
-    let width = Math.min(maxWidth, Math.max(minWidth, startWidth + moveEvent.clientX - startX));
+    if (event.pointerId != null && moveEvent.pointerId != null && event.pointerId !== moveEvent.pointerId) return;
+    const dx = edge === "center" ? 0 : (moveEvent.clientX - startX) * (edge === "left" ? -1 : 1);
+    let width = Math.min(maxWidth, Math.max(minWidth, startWidth + dx));
     let height = Math.min(maxHeight, Math.max(minHeight, startHeight + moveEvent.clientY - startY));
     if (isAspectLockedWindow(win)) {
       const size = lockedAspectSize(win, width, height, { minWidth, minHeight, maxWidth, maxHeight });
@@ -5289,11 +5350,22 @@ function startWindowResize(event, win) {
   }
 
   function stopResize(stopEvent) {
+    if (event.pointerId != null && stopEvent?.pointerId != null && event.pointerId !== stopEvent.pointerId) return;
     window.removeEventListener("pointermove", resizeWindow);
     window.removeEventListener("pointerup", stopResize);
     window.removeEventListener("pointercancel", stopResize);
+    window.removeEventListener("blur", stopResize);
+    document.removeEventListener("ai-system6-themechange", stopResize);
     window.removeEventListener("mousemove", resizeWindow);
     window.removeEventListener("mouseup", stopResize);
+    if (["pointercancel", "blur", "ai-system6-themechange"].includes(stopEvent?.type)) {
+      outline?.remove();
+      if (originalStyle === null) win.removeAttribute("style");
+      else win.setAttribute("style", originalStyle);
+      if (originalZoom === undefined) delete win.dataset.zoomed;
+      else win.dataset.zoomed = originalZoom;
+      return;
+    }
     // A drag that emitted no move event still has to land where it was released.
     if ((stopEvent?.type === "pointerup" || stopEvent?.type === "mouseup")
       && typeof stopEvent.clientX === "number") {
@@ -5311,8 +5383,11 @@ function startWindowResize(event, win) {
   window.addEventListener("pointermove", resizeWindow);
   window.addEventListener("pointerup", stopResize);
   window.addEventListener("pointercancel", stopResize);
+  window.addEventListener("blur", stopResize);
+  document.addEventListener("ai-system6-themechange", stopResize);
   window.addEventListener("mousemove", resizeWindow);
   window.addEventListener("mouseup", stopResize);
+  return { move: resizeWindow, stop: stopResize };
 }
 
 // The desktop icon column wraps into a second column when it runs out of room,

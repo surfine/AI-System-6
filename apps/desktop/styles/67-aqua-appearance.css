@@ -112,13 +112,13 @@ body[data-theme="aqua"] {
       #8ebdec 40% 45%, #64a8f2 45% 50%, #6bb0f6 50% 55%,
       #73b7fd 55% 60%, #7cbfff 60% 65%, #86c9ff 65% 70%,
       #93d2ff 70% 75%, #a0dcff 75% 85%, #a9e6ff 85% 95%,
-      #bbffff 95% 100%),
+      #bff 95% 100%),
     linear-gradient(to bottom,
       #fcfcfc 0 5%, #f6f6f6 5% 10%, #f0f0f0 10% 15%,
-      #eeeeee 15% 35%, #e1e1e1 35% 45%, #e6e6e6 45% 50%,
+      #eee 15% 35%, #e1e1e1 35% 45%, #e6e6e6 45% 50%,
       #e9e9e9 50% 55%, #ececec 55% 60%, #efefef 60% 65%,
       #f3f3f3 65% 70%, #f6f6f6 70% 75%, #f8f8f8 75% 80%,
-      #fcfcfc 80% 90%, #ffffff 90% 100%);
+      #fcfcfc 80% 90%, #fff 90% 100%);
   --select-control-bg-position: right 5px center, right 18px top, right top, left top;
   --select-control-bg-size: 6px 14px, 1px 100%, 19px 100%, 100% 100%;
   --select-control-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92), 0 1px 2px rgba(0, 0, 0, 0.34);
@@ -132,8 +132,8 @@ body[data-theme="aqua"] {
   --system-select-control-radius: 4px;
   --system-select-control-bg:
     linear-gradient(#5f9bc1, #5f9bc1) right 18px top / 1px 100% no-repeat,
-    linear-gradient(to bottom, #dde1f4 0 5%, #bed4ef 5% 10%, #a6c8eb 10% 15%, #9ac1ea 15% 25%, #94bdea 25% 30%, #8ebbea 30% 40%, #8ebdec 40% 45%, #64a8f2 45% 50%, #6bb0f6 50% 55%, #73b7fd 55% 60%, #7cbfff 60% 65%, #86c9ff 65% 70%, #93d2ff 70% 75%, #a0dcff 75% 85%, #a9e6ff 85% 95%, #bbffff 95% 100%) right top / 19px 100% no-repeat,
-    linear-gradient(to bottom, #fcfcfc 0 5%, #f6f6f6 5% 10%, #f0f0f0 10% 15%, #eeeeee 15% 35%, #e1e1e1 35% 45%, #e6e6e6 45% 50%, #e9e9e9 50% 55%, #ececec 55% 60%, #efefef 60% 65%, #f3f3f3 65% 70%, #f6f6f6 70% 75%, #f8f8f8 75% 80%, #fcfcfc 80% 90%, #ffffff 90% 100%);
+    linear-gradient(to bottom, #dde1f4 0 5%, #bed4ef 5% 10%, #a6c8eb 10% 15%, #9ac1ea 15% 25%, #94bdea 25% 30%, #8ebbea 30% 40%, #8ebdec 40% 45%, #64a8f2 45% 50%, #6bb0f6 50% 55%, #73b7fd 55% 60%, #7cbfff 60% 65%, #86c9ff 65% 70%, #93d2ff 70% 75%, #a0dcff 75% 85%, #a9e6ff 85% 95%, #bff 95% 100%) right top / 19px 100% no-repeat,
+    linear-gradient(to bottom, #fcfcfc 0 5%, #f6f6f6 5% 10%, #f0f0f0 10% 15%, #eee 15% 35%, #e1e1e1 35% 45%, #e6e6e6 45% 50%, #e9e9e9 50% 55%, #ececec 55% 60%, #efefef 60% 65%, #f3f3f3 65% 70%, #f6f6f6 70% 75%, #f8f8f8 75% 80%, #fcfcfc 80% 90%, #fff 90% 100%);
   --system-select-control-shadow: var(--aqua-popup-frame);
   --system-select-control-font-weight: 400;
   --search-field-min-height: 22px;
@@ -151,14 +151,14 @@ body[data-theme="aqua"] {
   --find-path-result-display: grid;
   --find-path-result-align: baseline;
   --find-path-result-column-gap: 10px;
-  --find-path-results-bg: #ffffff;
+  --find-path-results-bg: #fff;
   --find-path-result-border-bottom: 0;
   --find-path-result-last-border-bottom: 0;
   --find-path-result-selected-border-bottom: 0;
   --find-path-result-even-bg: #edf3fe;
   --find-path-header-padding: 2px 10px;
   --find-path-header-border-bottom: 1px solid #b4b4b4;
-  --find-path-header-bg: linear-gradient(#ffffff, #e4e4e4);
+  --find-path-header-bg: linear-gradient(#fff, #e4e4e4);
   --find-path-query-min-height: var(--search-field-min-height);
   --find-path-query-padding: var(--search-field-padding);
   --find-path-query-radius: var(--search-field-radius);
@@ -167,7 +167,7 @@ body[data-theme="aqua"] {
   --progress-padding: 1px;
   --progress-border-color: #7b7b7b;
   --progress-radius: 999px;
-  --progress-bg: linear-gradient(#d1d1d1, #ffffff 48%, #c5c5c5);
+  --progress-bg: linear-gradient(#d1d1d1, #fff 48%, #c5c5c5);
   --progress-fill-radius: 999px;
   --progress-fill-bg: linear-gradient(#cdf3ff 0%, #64c9ff 42%, #138adb 50%, #086cc1 56%, #74d0ff 100%);
   --progress-fill-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.88);
@@ -176,7 +176,7 @@ body[data-theme="aqua"] {
   --progress-fill-active-bg: var(--progress-fill-bg);
   --progress-fill-active-size: 100% 100%;
   --ink: #171717;
-  --paper: #ffffff;
+  --paper: #fff;
   --panel: #e9e9e9;
   --quiet-panel: #fafafa;
   --shade: #c4c4c4;
@@ -192,11 +192,11 @@ body[data-theme="aqua"] {
   --system-primary-divider: 1px solid var(--rule);
   --system-secondary-divider: 1px solid var(--shade);
   --rule: #a5a5a5;
-  --pane-bg: #ffffff;
-  --messages-bg: #ffffff;
-  --settings-scrollbar-lane-bg: #ffffff;
+  --pane-bg: #fff;
+  --messages-bg: #fff;
+  --settings-scrollbar-lane-bg: #fff;
   --details-bar-bg:
-    repeating-linear-gradient(to bottom, #f1f1f1 0 1px, #ffffff 1px 2px, #f1f1f1 2px 3px, #eaeaea 3px 4px);
+    repeating-linear-gradient(to bottom, #f1f1f1 0 1px, #fff 1px 2px, #f1f1f1 2px 3px, #eaeaea 3px 4px);
   --details-bar-border: #7f7f7f;
   /* Abstracted from the 10.2 default wallpaper (512 Pixels 6k capture): the
      medium blue water with a lighter crest band. Measured vertical ramp, no
@@ -223,7 +223,7 @@ body[data-theme="aqua"] {
   --endfield-pane-bg-position: center, center, 45% 20%, center, center;
   --endfield-pane-bg-repeat: repeat, repeat, no-repeat, no-repeat, no-repeat;
   --window-bg:
-    repeating-linear-gradient(to bottom, #f1f1f1 0 1px, #ffffff 1px 2px, #f1f1f1 2px 3px, #eaeaea 3px 4px);
+    repeating-linear-gradient(to bottom, #f1f1f1 0 1px, #fff 1px 2px, #f1f1f1 2px 3px, #eaeaea 3px 4px);
   --window-border: 1px solid #8b8b8b;
   --window-radius: 8px 8px 2px 2px;
   /* Real 10.2 windows cast a dense contact shadow with a short falloff,
@@ -254,9 +254,9 @@ body[data-theme="aqua"] {
   /* Exact 21-row columns sampled from Jaguar's 2x22 title-bar sprite; the
      final source row is the #7f divider represented by --titlebar-border. */
   --system-titlebar-active-bg: linear-gradient(to bottom,
-    #ffffff 0 2px, #f1f1f1 2px 3px, #eaeaea 3px 4px,
+    #fff 0 2px, #f1f1f1 2px 3px, #eaeaea 3px 4px,
     #f0f0f0 4px 5px, #fefefe 5px 6px, #f0f0f0 6px 7px, #e9e9e9 7px 8px,
-    #efefef 8px 9px, #fdfdfd 9px 10px, #eeeeee 10px 11px, #e6e6e6 11px 12px,
+    #efefef 8px 9px, #fdfdfd 9px 10px, #eee 10px 11px, #e6e6e6 11px 12px,
     #ebebeb 12px 13px, #f8f8f8 13px 14px, #e8e8e8 14px 15px, #dfdfdf 15px 16px,
     #e4e4e4 16px 17px, #f0f0f0 17px 18px, #e1e1e1 18px 19px, #d8d8d8 19px 20px,
     #dedede 20px 21px);
@@ -281,23 +281,23 @@ body[data-theme="aqua"] {
   --titlebar-title-fg: #191919;
   --titlebar-border: 1px solid #7f7f7f;
   --titlebar-border-inactive: 1px solid #7f7f7f;
-  --titlebar-shadow: inset 0 1px 0 #ffffff;
-  --surface-primary: #ffffff;
+  --titlebar-shadow: inset 0 1px 0 #fff;
+  --surface-primary: #fff;
   --surface-secondary:
-    repeating-linear-gradient(to bottom, #f1f1f1 0 1px, #ffffff 1px 2px, #f1f1f1 2px 3px, #eaeaea 3px 4px);
-  --surface-inset: #ffffff;
+    repeating-linear-gradient(to bottom, #f1f1f1 0 1px, #fff 1px 2px, #f1f1f1 2px 3px, #eaeaea 3px 4px);
+  --surface-inset: #fff;
   --toolbar-bg:
-    repeating-linear-gradient(to bottom, #fafafa 0 1px, #ffffff 1px 2px, #fafafa 2px 3px, #e9e9e9 3px 4px);
+    repeating-linear-gradient(to bottom, #fafafa 0 1px, #fff 1px 2px, #fafafa 2px 3px, #e9e9e9 3px 4px);
   --toolbar-bg-inactive: var(--toolbar-bg);
   --toolbar-border: 1px solid #7f7f7f;
   --app-toolbar-bg: var(--toolbar-bg);
   --app-toolbar-border-bottom: 1px solid #c7c7c7;
-  --sidebar-bg: #ffffff;
-  --sidebar-bg-inactive: #ffffff;
+  --sidebar-bg: #fff;
+  --sidebar-bg-inactive: #fff;
   --selection-bg: #3479d4;
-  --selection-fg: #ffffff;
+  --selection-fg: #fff;
   --sidebar-selection-bg: var(--selection-bg);
-  --sidebar-selection-fg: #ffffff;
+  --sidebar-selection-fg: #fff;
   /* Jaguar Scrapbook keeps the object browser in an Aqua drawer rather than
      adopting the single-item System 6 page rail. */
   --scrapbook-list-display: block;
@@ -308,14 +308,14 @@ body[data-theme="aqua"] {
   --scrapbook-mobile-pane-columns: 1fr;
   --scrapbook-mobile-pane-rows: minmax(132px, 156px) minmax(0, 1fr) auto;
   --scrap-list-bg:
-    repeating-linear-gradient(to bottom, #f1f1f1 0 1px, #ffffff 1px 2px, #f1f1f1 2px 3px, #eaeaea 3px 4px);
+    repeating-linear-gradient(to bottom, #f1f1f1 0 1px, #fff 1px 2px, #f1f1f1 2px 3px, #eaeaea 3px 4px);
   --scrap-list-border: 1px solid #7f7f7f;
   --scrap-list-radius: 4px;
-  --scrap-list-shadow: inset 1px 1px 0 #ffffff, 2px 2px 4px rgba(0, 0, 0, 0.18);
+  --scrap-list-shadow: inset 1px 1px 0 #fff, 2px 2px 4px rgba(0, 0, 0, 0.18);
   --scrap-list-item-divider: 1px solid rgba(80, 80, 80, 0.24);
   --scrap-list-item-bg: linear-gradient(rgba(255, 255, 255, 0.82), rgba(229, 229, 229, 0.82));
   --scrap-list-item-selected-bg: linear-gradient(#73baff, #2778d8);
-  --scrap-list-item-selected-fg: #ffffff;
+  --scrap-list-item-selected-fg: #fff;
   --scrap-list-item-selected-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
   /* Jaguar document rails borrow the Aqua drawer: pinstripe metal around
      raised source rows, with the same blue selection used by native lists.
@@ -324,8 +324,8 @@ body[data-theme="aqua"] {
   --tdi-rail-border: 1px solid #7f7f7f;
   --tdi-rail-radius: 4px;
   --tdi-rail-bg:
-    repeating-linear-gradient(to bottom, #f1f1f1 0 1px, #ffffff 1px 2px, #f1f1f1 2px 3px, #eaeaea 3px 4px);
-  --tdi-rail-shadow: inset 1px 1px 0 #ffffff, 2px 2px 4px rgba(0, 0, 0, 0.22);
+    repeating-linear-gradient(to bottom, #f1f1f1 0 1px, #fff 1px 2px, #f1f1f1 2px 3px, #eaeaea 3px 4px);
+  --tdi-rail-shadow: inset 1px 1px 0 #fff, 2px 2px 4px rgba(0, 0, 0, 0.22);
   --tdi-tabs-gap: 3px;
   --tdi-tabs-padding: 0;
   --tdi-tabs-bg: transparent;
@@ -335,12 +335,12 @@ body[data-theme="aqua"] {
   --tdi-tab-border: 1px solid #7d7d7d;
   --tdi-tab-border-bottom: var(--tdi-tab-border);
   --tdi-tab-radius: 4px;
-  --tdi-tab-bg: linear-gradient(#ffffff, #e5e5e5);
-  --tdi-tab-shadow: inset 0 1px 0 #ffffff;
+  --tdi-tab-bg: linear-gradient(#fff, #e5e5e5);
+  --tdi-tab-shadow: inset 0 1px 0 #fff;
   --tdi-tab-active-border: 1px solid #0d4aa6;
   --tdi-tab-active-border-bottom: var(--tdi-tab-active-border);
   --tdi-tab-active-bg: linear-gradient(#73baff, #2778d8);
-  --tdi-tab-active-fg: #ffffff;
+  --tdi-tab-active-fg: #fff;
   --tdi-tab-active-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
   --tdi-tab-small-color: #5f5f5f;
   --tdi-tab-active-small-color: rgba(255, 255, 255, 0.86);
@@ -360,28 +360,28 @@ body[data-theme="aqua"] {
   --tdi-tab-active-unfocused-fg: #3f3f3f;
   --tdi-tab-active-unfocused-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
   --tdi-tab-active-unfocused-small-color: rgba(0, 0, 0, 0.55);
-  --tdi-tab-hover-bg: linear-gradient(#ffffff, #ececec);
-  --tdi-tab-hover-fg: #000000;
-  --tdi-tab-hover-shadow: inset 0 1px 0 #ffffff;
+  --tdi-tab-hover-bg: linear-gradient(#fff, #ececec);
+  --tdi-tab-hover-fg: #000;
+  --tdi-tab-hover-shadow: inset 0 1px 0 #fff;
   --tdi-tab-pressed-bg: linear-gradient(#5599e0, #1a5bb8);
-  --tdi-tab-pressed-fg: #ffffff;
+  --tdi-tab-pressed-fg: #fff;
   --tdi-tab-pressed-shadow: inset 0 2px 3px rgba(0, 63, 114, 0.35);
   --tdi-tab-close-size: 16px;
   --tdi-tab-close-gutter: 5px;
   --tdi-tab-close-border: 1px solid #767676;
   --tdi-tab-close-radius: 999px;
   --tdi-tab-close-bg: linear-gradient(#f9f9f9, #c9c9c9);
-  --tdi-tab-close-shadow: inset 0 1px 0 #ffffff;
+  --tdi-tab-close-shadow: inset 0 1px 0 #fff;
   --tdi-tab-close-active-bg: rgba(255, 255, 255, 0.82);
   --tdi-tab-close-active-fg: #1d4f8b;
-  --tdi-tab-close-active-shadow: inset 0 1px 0 #ffffff;
-  --tdi-tab-close-hover-bg: #ffffff;
+  --tdi-tab-close-active-shadow: inset 0 1px 0 #fff;
+  --tdi-tab-close-hover-bg: #fff;
   --tdi-tab-close-hover-fg: #173f70;
   --tdi-tab-close-hover-shadow: 0 0 0 2px rgba(52, 121, 212, 0.24);
   /* 10.2 desktop labels are shadowed white text straight on the wallpaper;
      selection paints the rounded blue pill. No System 6 paper tag. */
   --desktop-label-bg: transparent;
-  --desktop-label-fg: #ffffff;
+  --desktop-label-fg: #fff;
   --desktop-label-text-shadow: 0 1px 2px rgba(0, 10, 40, 0.85);
   --desktop-label-radius: 8px;
   --desktop-label-selected-bg: var(--selection-bg);
@@ -389,8 +389,8 @@ body[data-theme="aqua"] {
   --separator: #9b9b9b;
   --control-bg: linear-gradient(to bottom,
     #f6f6f6 0%, #ebebeb 37%, #d9d9d9 42%, #e3e3e3 53%,
-    #eeeeee 63%, #ffffff 89%, #fdfdfd 100%);
-  --control-shadow: inset 0 1px 0 #ffffff, 0 1px 1px rgba(0, 0, 0, 0.28);
+    #eee 63%, #fff 89%, #fdfdfd 100%);
+  --control-shadow: inset 0 1px 0 #fff, 0 1px 1px rgba(0, 0, 0, 0.28);
   --control-active-shadow: inset 0 2px 3px rgba(0, 63, 114, 0.45);
   /* Theme Family Contract: the keyboard ring. The base layer writes System 6's
      dotted ink ring, so every era that never answered wore it. Each era already
@@ -433,7 +433,7 @@ body[data-theme="aqua"] {
   --btn-disabled-bg: transparent;
   --control-choice-hover-shadow: 0 0 0 3px rgba(65, 157, 224, 0.45);
   --system-border: 1px solid #909090;
-  --system-inset: inset 0 1px 2px rgba(0, 0, 0, 0.3), inset 0 -1px 0 #ffffff;
+  --system-inset: inset 0 1px 2px rgba(0, 0, 0, 0.3), inset 0 -1px 0 #fff;
   --control-radius: 7px;
   --btn-border-color: rgba(39, 39, 39, 0.82);
   --btn-active-border-color: #00005f;
@@ -449,10 +449,10 @@ body[data-theme="aqua"] {
      native Jaguar captures and the 2002 HIG correct its Panther fallback. */
   --btn-bg: linear-gradient(to bottom,
     #f5f5f5 0 5%, #f4f4f4 5% 10%, #f0f0f0 10% 15%,
-    #eeeeee 15% 35%, #d9d9d9 35% 45%, #dedede 45% 50%,
+    #eee 15% 35%, #d9d9d9 35% 45%, #dedede 45% 50%,
     #e3e3e3 50% 55%, #e6e6e6 55% 60%, #e9e9e9 60% 65%,
-    #eeeeee 65% 70%, #f3f3f3 70% 75%, #f5f5f5 75% 80%,
-    #ffffff 80% 90%, #fcfcfc 90% 100%);
+    #eee 65% 70%, #f3f3f3 70% 75%, #f5f5f5 75% 80%,
+    #fff 80% 90%, #fcfcfc 90% 100%);
   --btn-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.96),
     0 1px 0 rgba(0, 0, 0, 0.42),
@@ -463,7 +463,7 @@ body[data-theme="aqua"] {
      for — the material stays the same, it just catches a little more light. */
   --aqua-btn-hover-veil: rgba(255, 255, 255, 0.3);
   --btn-hover-bg: linear-gradient(var(--aqua-btn-hover-veil), var(--aqua-btn-hover-veil)), var(--btn-bg);
-  --btn-hover-fg: #111111;
+  --btn-hover-fg: #111;
   --btn-hover-shadow: var(--btn-shadow);
   --btn-active-bg: linear-gradient(to bottom,
     #c7cae8 0 5%, #bfc8e8 5% 10%, #afc1e5 10% 15%,
@@ -486,7 +486,7 @@ body[data-theme="aqua"] {
     #7ebcfa 55% 60%, #87c2fe 60% 65%, #8ac7fe 65% 70%,
     #91ceff 70% 75%, #9adaff 75% 85%, #9fe1ff 85% 95%,
     #a4f1fc 95% 100%);
-  --btn-default-fg: #000000;
+  --btn-default-fg: #000;
   --btn-default-text-shadow: none;
   /* Aqua HIG pp.120-122: the pulse is the default button's affordance; a
      hard 3px focus halo on top of it was ahistorical. */
@@ -499,21 +499,21 @@ body[data-theme="aqua"] {
     0 3px 2px rgba(0, 0, 0, 0.06);
   --btn-default-active-bg: var(--btn-active-bg);
   --btn-default-active-fg: #06131d;
-  --field-bg: #ffffff;
-  --field-focus-bg: #ffffff;
+  --field-bg: #fff;
+  --field-focus-bg: #fff;
   --field-border: 1px solid #8c8c8c;
   --field-radius: 2px;
   /* ClioTalk reply slip: Aqua text-box idiom (field border + radius + inset
      highlight). The Classic dotted outline must not leak into Aqua. */
   --clio-slip-radius: 2px;
-  --clio-slip-surface: #ffffff;
+  --clio-slip-surface: #fff;
   --clio-slip-border: 1px solid #8c8c8c;
-  --clio-slip-shadow: inset 0 1px 0 #ffffff;
-  --clio-slip-kept-surface: #ffffff;
+  --clio-slip-shadow: inset 0 1px 0 #fff;
+  --clio-slip-kept-surface: #fff;
   --clio-slip-kept-border: 1px solid #4d4d4d;
   --clio-slip-kept-shadow: none;
   --clio-slip-mark-border: 1px solid #8c8c8c;
-  --clio-slip-mark-kept: #333333;
+  --clio-slip-mark-kept: #333;
   --clio-said-rule: 3px solid #8c8c8c;
   /* --shade-dark (#8b8b8b) reads 2.8:1 on the details bar's near-white face --
      under this theme's own accepted disabled-state floor. Liquid Glass already
@@ -523,7 +523,7 @@ body[data-theme="aqua"] {
   --clio-muted-copy: #707070;
   --field-control-padding: 2px 6px;
   --select-radius: 10px;
-  --field-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25), 0 1px 0 #ffffff;
+  --field-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25), 0 1px 0 #fff;
   --field-focus-border: 1px solid #4d9ed8;
   --field-focus-ring: 0 0 0 3px rgba(63, 153, 220, 0.58);
   --choice-bg: transparent;
@@ -549,16 +549,16 @@ body[data-theme="aqua"] {
   --apple-menu-slot-width: 44px;
   /* The Apple menu icon is the app's own constant pixel glyph in every
      appearance (base opacity 1); no per-era Apple logo character is drawn. */
-  --menu-bar-bg: repeating-linear-gradient(to bottom, #fafafa 0 1px, #ffffff 1px 2px, #fafafa 2px 3px, #e9e9e9 3px 4px);
+  --menu-bar-bg: repeating-linear-gradient(to bottom, #fafafa 0 1px, #fff 1px 2px, #fafafa 2px 3px, #e9e9e9 3px 4px);
   --menu-bar-border-color: #8e8e8e;
   --menu-bar-border: 1px solid var(--menu-bar-border-color);
-  --menu-bar-shadow: inset 0 1px 0 #ffffff;
+  --menu-bar-shadow: inset 0 1px 0 #fff;
   --menu-panel-bg: rgba(250, 250, 250, 0.94);
-  --menu-panel-border: 1px solid #666666;
+  --menu-panel-border: 1px solid #666;
   --menu-panel-radius: 4px;
   --menu-panel-shadow: 0 6px 14px rgba(0, 0, 0, 0.42);
   --menu-button-active-bg: linear-gradient(#3973c1, #346cbe 50%, #2c61b9);
-  --menu-button-active-fg: #ffffff;
+  --menu-button-active-fg: #fff;
   /* The Jaguar menu capture is a 1px pinstripe rhythm, not a smooth ramp:
      one pale separator row followed by base/base-highlight/base-shadow. Keep
      the measured stop colours, but preserve the source pixel cadence. */
@@ -569,14 +569,14 @@ body[data-theme="aqua"] {
     #346cbe 10px 11px, #3973c1 11px 12px, #346cbe 12px 13px,
     #2c61b9 13px 14px, #346cbe 14px 15px, #3973c1 15px 16px,
     #346cbe 16px 17px, #2c61b9 17px 18px, #346cbe 18px 20px);
-  --menu-item-active-fg: #ffffff;
+  --menu-item-active-fg: #fff;
   --window-frame-lane: 15px;
   --window-frame-track-bg: linear-gradient(90deg,
     #b8b8b8 0 7%, #c0c0c0 7% 13%, #c8c8c8 13% 20%,
     #d3d3d3 20% 27%, #dbdbdb 27% 33%, #e4e4e4 33% 40%,
     #ebebeb 40% 47%, #f1f1f1 47% 53%, #f6f6f6 53% 60%,
     #fafafa 60% 67%, #fbfbfb 67% 73%, #fcfcfc 73% 80%,
-    #f9f9f9 80% 87%, #f4f4f4 87% 93%, #eeeeee 93% 100%);
+    #f9f9f9 80% 87%, #f4f4f4 87% 93%, #eee 93% 100%);
   --window-frame-track-border: 1px solid #9b9b9b;
   /* The Jaguar thumb ends in a bright peak then a dark 1px edge; the
      address-book capture shows the 92,92,92 right rail. The mid-column stops
@@ -598,7 +598,7 @@ body[data-theme="aqua"] {
     #5c5c5c 92% 100%);
   --window-frame-thumb-border: 1px solid #617d91;
   --window-frame-thumb-radius: 7px;
-  --window-frame-arrow-bg: linear-gradient(#ffffff, #d3d3d3 52%, #f5f5f5);
+  --window-frame-arrow-bg: linear-gradient(#fff, #d3d3d3 52%, #f5f5f5);
   /* Jaguar's own arrow buttons, cut from the 10.2 address-book capture. They
      reached the specimen board and nothing else, so real windows drew a 1-bit
      triangle where Jaguar drew a button. Vertical only: the horizontal lane
@@ -623,7 +623,7 @@ body[data-theme="aqua"] {
   --scrollbar-track-shadow: inset 0 0 2px rgba(0, 0, 0, 0.3);
   --scrollbar-thumb-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.75), inset -1px 0 0 rgba(0, 63, 112, 0.24);
   --scrollbar-button-border: 1px solid #9b9b9b;
-  --scrollbar-button-shadow: inset 0 1px 0 #ffffff;
+  --scrollbar-button-shadow: inset 0 1px 0 #fff;
   --tab-radius: 7px 7px 0 0;
   --tab-overlap: 0;
   /* Explicit Jaguar wrap-tab sprites, not the common button painter. */
@@ -633,7 +633,7 @@ body[data-theme="aqua"] {
     #e8e8e8 40% 45%, #e7e7e7 45% 50%, #e5e5e5 50% 55%,
     #dbdbdb 55% 60%, #dedede 60% 65%, #e2e2e2 65% 70%,
     #e6e6e6 70% 75%, #eaeaea 75% 80%, #ececec 80% 85%,
-    #f2f2f2 85% 90%, #f8f8f8 90% 95%, #ffffff 95% 100%);
+    #f2f2f2 85% 90%, #f8f8f8 90% 95%, #fff 95% 100%);
   --tab-hover-bg: var(--tab-bg);
   --tab-active-bg: linear-gradient(to bottom,
     #e2ecf9 0 5%, #cbdff4 5% 10%, #b8d3f0 10% 15%,
@@ -648,7 +648,7 @@ body[data-theme="aqua"] {
   --theme-lab-pane-gap: 10px 18px;
   --theme-lab-pane-padding: 10px 14px 14px;
   --theme-lab-pane-bg:
-    repeating-linear-gradient(to bottom, #e6e6e6 0 1px, #eeeeee 1px 2px, #f2f2f2 2px 3px, #eeeeee 3px 4px);
+    repeating-linear-gradient(to bottom, #e6e6e6 0 1px, #eee 1px 2px, #f2f2f2 2px 3px, #eee 3px 4px);
   --theme-lab-group-padding: 4px 10px 10px;
   --theme-lab-group-bg: transparent;
   --theme-lab-group-border: 0;
@@ -686,7 +686,7 @@ body[data-theme="aqua"] {
   --tab-panel-border: 1px solid #6b8191;
   --tab-panel-radius: 0 0 3px 3px;
   --tab-panel-bg: var(--window-bg);
-  --tab-panel-shadow: inset 0 1px 0 #ffffff;
+  --tab-panel-shadow: inset 0 1px 0 #fff;
   --theme-lab-navigation-generic-label-display: none;
   --theme-lab-column-browser-label-display: inline;
   --theme-lab-generic-browser-display: none;
@@ -698,9 +698,9 @@ body[data-theme="aqua"] {
   --theme-lab-browser-column-scrollbar-width: 15px;
   --theme-lab-browser-column-scrollbar-display: block;
   --theme-lab-browser-column-border-right: 1px solid #a8a8a8;
-  --theme-lab-browser-column-bg: #ffffff;
+  --theme-lab-browser-column-bg: #fff;
   --theme-lab-browser-column-scrollbar-border: 1px solid #8e8e8e;
-  --theme-lab-browser-column-scrollbar-bg: linear-gradient(90deg, #e1e1e1, #ffffff 47%, #d2d2d2 76%, #f3f3f3);
+  --theme-lab-browser-column-scrollbar-bg: linear-gradient(90deg, #e1e1e1, #fff 47%, #d2d2d2 76%, #f3f3f3);
   --theme-lab-browser-column-scrollbar-shadow: inset 0 0 2px rgba(0, 0, 0, 0.28);
   --theme-lab-browser-column-thumb-top: 3px;
   --theme-lab-browser-column-thumb-height: 42px;
@@ -713,11 +713,11 @@ body[data-theme="aqua"] {
   --theme-lab-browser-column-scrollbar-arrow-color: #202020;
   --theme-lab-split-border: 1px solid #8e8e8e;
   --theme-lab-split-radius: 3px;
-  --theme-lab-split-bg: #ffffff;
-  --theme-lab-split-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.24), 0 1px 0 #ffffff;
+  --theme-lab-split-bg: #fff;
+  --theme-lab-split-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.24), 0 1px 0 #fff;
   --theme-lab-sidebar-padding: 0;
   --theme-lab-sidebar-border-right: 1px solid #a8a8a8;
-  --theme-lab-sidebar-bg: #ffffff;
+  --theme-lab-sidebar-bg: #fff;
   --theme-lab-list-row-min-height: 18px;
   --theme-lab-list-row-gap: 4px;
   --theme-lab-list-row-padding: 1px 6px;
@@ -732,11 +732,11 @@ body[data-theme="aqua"] {
   --theme-lab-sidebar-document-image: url("./assets/themes/aqua/browser-document-16.svg");
   --theme-lab-sidebar-trash-image: url("./assets/themes/aqua/trash.svg");
   --theme-lab-sidebar-selected-bg: #bfd8fa;
-  --theme-lab-sidebar-selected-fg: #111111;
+  --theme-lab-sidebar-selected-fg: #111;
   --theme-lab-list-frame-border: 0;
   --theme-lab-list-row-border-bottom: 1px solid #d8d8d8;
   --theme-lab-list-selected-bg: #bfd8fa;
-  --theme-lab-list-selected-fg: #111111;
+  --theme-lab-list-selected-fg: #111;
   --theme-lab-list-icon-display: block;
   --theme-lab-list-icon-size: 16px;
   --theme-lab-list-icon-image: url("./assets/themes/aqua/browser-folder-16.svg");
@@ -745,7 +745,7 @@ body[data-theme="aqua"] {
   --theme-lab-browser-disclosure-color: #747474;
   --theme-lab-browser-horizontal-scrollbar-display: block;
   --theme-lab-browser-scrollbar-border: 1px solid #8e8e8e;
-  --theme-lab-browser-scrollbar-bg: linear-gradient(#d1d1d1, #ffffff 48%, #c3c3c3);
+  --theme-lab-browser-scrollbar-bg: linear-gradient(#d1d1d1, #fff 48%, #c3c3c3);
   --theme-lab-browser-scrollbar-shadow: inset 0 0 2px rgba(0, 0, 0, 0.28);
   --theme-lab-browser-scrollbar-thumb-border: 1px solid #00478f;
   --theme-lab-browser-scrollbar-thumb-bg: linear-gradient(#a4e6ff, #2b96dd 50%, #79d2ff);
@@ -783,22 +783,22 @@ body[data-theme="aqua"] {
   --theme-lab-sheet-specimen-min-height: 116px;
   --theme-lab-sheet-owner-window-border: 1px solid #858585;
   --theme-lab-sheet-owner-window-radius: 7px 7px 2px 2px;
-  --theme-lab-sheet-owner-window-bg: #ffffff;
+  --theme-lab-sheet-owner-window-bg: #fff;
   --theme-lab-sheet-owner-window-shadow: 0 3px 7px rgba(0, 0, 0, 0.3);
   --theme-lab-sheet-owner-window-overflow: hidden;
   --theme-lab-sheet-owner-display: flex;
   --theme-lab-sheet-owner-body-height: 92px;
-  --theme-lab-sheet-owner-body-bg: #ffffff;
+  --theme-lab-sheet-owner-body-bg: #fff;
   /* Alarm Clock DA: Aqua window chrome, white face, candy controls. */
   --alarm-clock-frame-border: 1px solid #858585;
   --alarm-clock-frame-radius: 5px;
   --alarm-clock-frame-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
   --alarm-clock-title-bg: #f2f2f2;
-  --alarm-clock-surface-bg: #ffffff;
-  --alarm-clock-readout-bg: #ffffff;
+  --alarm-clock-surface-bg: #fff;
+  --alarm-clock-readout-bg: #fff;
   --alarm-clock-divider: 1px solid #b3b3b3;
   --alarm-clock-active-bg: linear-gradient(#2a8cff, #0a5bd0);
-  --alarm-clock-active-fg: #ffffff;
+  --alarm-clock-active-fg: #fff;
   --alarm-clock-close-size: 12px;
   --alarm-clock-close-border: 1px solid #b0453e;
   --alarm-clock-close-radius: 50%;
@@ -808,7 +808,7 @@ body[data-theme="aqua"] {
   --alarm-clock-lever-bg: #e8e8e8;
   --alarm-clock-lever-hover-bg: #dcdcdc;
   --alarm-clock-lever-fg: #202020;
-  --alarm-clock-lever-shadow: inset 0 1px 0 #ffffff, 0 1px 1px rgba(0, 0, 0, 0.2);
+  --alarm-clock-lever-shadow: inset 0 1px 0 #fff, 0 1px 1px rgba(0, 0, 0, 0.2);
   --alarm-clock-lever-focus-outline: 2px solid rgba(20, 90, 200, 0.6);
   --alarm-clock-mode-divider: 1px solid #c8c8c8;
   --alarm-clock-mode-radius: 4px;
@@ -833,7 +833,7 @@ body[data-theme="aqua"] {
   --theme-lab-sheet-border-top-width: 0;
   --theme-lab-sheet-radius: 0 0 6px 6px;
   --theme-lab-sheet-bg:
-    repeating-linear-gradient(to bottom, #e6e6e6 0 1px, #eeeeee 1px 2px, #ffffff 2px 3px, #eeeeee 3px 4px);
+    repeating-linear-gradient(to bottom, #e6e6e6 0 1px, #eee 1px 2px, #fff 2px 3px, #eee 3px 4px);
   --theme-lab-sheet-shadow: 0 5px 9px rgba(0, 0, 0, 0.38);
   --theme-lab-sheet-owner-content: none;
   --theme-lab-sheet-icon-display: block;
@@ -854,7 +854,7 @@ body[data-theme="aqua"] {
   --theme-lab-finder-window-display: block;
   --theme-lab-finder-window-border: 1px solid #858585;
   --theme-lab-finder-window-radius: 7px 7px 2px 2px;
-  --theme-lab-finder-window-bg: #ffffff;
+  --theme-lab-finder-window-bg: #fff;
   --theme-lab-finder-window-shadow: 0 4px 9px rgba(0, 0, 0, 0.34);
   --theme-lab-finder-window-overflow: hidden;
   --theme-lab-finder-status-display: flex;
@@ -862,7 +862,7 @@ body[data-theme="aqua"] {
   --theme-lab-finder-status-border-top: 1px solid #a3a3a3;
   --theme-lab-finder-status-border-bottom: 1px solid #a3a3a3;
   --theme-lab-finder-status-bg: var(--toolbar-bg);
-  --theme-lab-finder-status-shadow: inset 0 1px 0 #ffffff;
+  --theme-lab-finder-status-shadow: inset 0 1px 0 #fff;
   --theme-lab-toolbar-min-height: 56px;
   --theme-lab-toolbar-gap: 16px;
   --theme-lab-toolbar-padding: 6px 10px;
@@ -870,7 +870,7 @@ body[data-theme="aqua"] {
   --theme-lab-toolbar-border-inline: 0;
   --theme-lab-toolbar-radius: 0;
   --theme-lab-toolbar-bg: var(--toolbar-bg);
-  --theme-lab-toolbar-shadow: inset 0 1px 0 #ffffff;
+  --theme-lab-toolbar-shadow: inset 0 1px 0 #fff;
   --theme-lab-toolbar-button-display: none;
   --theme-lab-toolbar-location-display: none;
   --theme-lab-toolbar-status-display: none;
@@ -895,22 +895,22 @@ body[data-theme="aqua"] {
   --theme-lab-toolbar-view-columns-image: url("./assets/themes/aqua/view-columns-12.svg");
   --theme-lab-toolbar-era-separator-display: block;
   --theme-lab-toolbar-era-separator-bg: #969696;
-  --theme-lab-toolbar-era-separator-shadow: 1px 0 #ffffff;
+  --theme-lab-toolbar-era-separator-shadow: 1px 0 #fff;
   --theme-lab-finder-min-height: 146px;
   --theme-lab-finder-columns: repeat(6, minmax(58px, 1fr));
   --theme-lab-finder-gap: 4px;
   --theme-lab-finder-padding: 10px 7px;
   --theme-lab-finder-border: 0;
   --theme-lab-finder-border-top: 0;
-  --theme-lab-finder-bg: #ffffff;
+  --theme-lab-finder-bg: #fff;
   --theme-lab-finder-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.18);
   --theme-lab-finder-item-width: auto;
   --theme-lab-finder-item-icon-size: 48px;
   --theme-lab-finder-item-font-family: var(--theme-ui-font);
   --theme-lab-finder-item-font-size: 13px;
   --theme-lab-finder-icon-selected-bg: #b4d1f7;
-  --theme-lab-finder-icon-selected-fg: #111111;
-  --theme-lab-finder-label-bg: #ffffff;
+  --theme-lab-finder-icon-selected-fg: #111;
+  --theme-lab-finder-label-bg: #fff;
   --theme-lab-finder-label-margin-top: 4px;
   --theme-lab-finder-label-padding: 1px 3px;
   --theme-lab-finder-label-font-weight: 400;
@@ -923,7 +923,7 @@ body[data-theme="aqua"] {
   --theme-lab-finder-era-extra-display: flex;
   --theme-lab-finder-rows-display: none;
   --theme-lab-finder-rows-border: 1px solid #8e8e8e;
-  --theme-lab-finder-rows-bg: #ffffff;
+  --theme-lab-finder-rows-bg: #fff;
   --theme-lab-finder-rows-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.16);
   --theme-lab-finder-row-min-height: 25px;
   --theme-lab-finder-row-padding: 3px 6px;
@@ -947,11 +947,11 @@ body[data-theme="aqua"] {
   --control-chooser-item-border: 0;
   --control-chooser-item-radius: 5px;
   --control-chooser-item-bg: transparent;
-  --control-chooser-item-fg: #333333;
+  --control-chooser-item-fg: #333;
   --control-chooser-hover-bg: rgba(0, 20, 60, 0.08);
-  --control-chooser-hover-fg: #222222;
+  --control-chooser-hover-fg: #222;
   --control-chooser-active-bg: rgba(0, 20, 60, 0.16);
-  --control-chooser-active-fg: #111111;
+  --control-chooser-active-fg: #111;
   --control-chooser-label-padding: 0;
   --control-chooser-active-label-bg: transparent;
   --control-chooser-active-label-fg: currentColor;
@@ -970,7 +970,7 @@ body[data-theme="aqua"] {
      real Jaguar control materials (porcelain capsule body, gel-blue tab,
      gel selection). Not a reproduction of any shipped 10.2 object. */
   --control-strip-thickness: 26px;
-  --control-strip-bg: linear-gradient(#ffffff, #d9d9de 48%, #ccccd2 52%, #ececf1);
+  --control-strip-bg: linear-gradient(#fff, #d9d9de 48%, #ccccd2 52%, #ececf1);
   --control-strip-border: 1px solid #8e8e94;
   --control-strip-divider: 1px solid rgba(0, 0, 0, 0.12);
   --control-strip-radius: 13px;
@@ -980,10 +980,10 @@ body[data-theme="aqua"] {
   --control-strip-hover-fg: #10306a;
   --control-strip-hover-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.7);
   --control-strip-active-bg: linear-gradient(#b4d2fa, #4f8ef2 50%, #2f6ad0);
-  --control-strip-active-fg: #ffffff;
+  --control-strip-active-fg: #fff;
   --control-strip-active-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.6);
   --control-strip-gauge: #4f8ef2;
-  --control-strip-gauge-bg: #ffffff;
+  --control-strip-gauge-bg: #fff;
   --control-strip-grip-inset: 0;
   --control-strip-grip:
     repeating-linear-gradient(to bottom, rgba(255, 255, 255, 0.85) 0 1px, rgba(0, 0, 0, 0) 1px 4px) 50% 50% / 8px 60% no-repeat,
@@ -1034,7 +1034,7 @@ body[data-theme="snow-leopard"] {
   --system-titlebar-padding-y: 0;
   --system-titlebar-padding-x: 5px;
   --system-titlebar-inactive-control-filter: grayscale(1);
-  --system-titlebar-inactive-title-color: #777777;
+  --system-titlebar-inactive-title-color: #777;
   --system-control-min-height: 22px;
   /* Quaqua 9.1 regular push button face is ~21px of material in a 23px
      frame; 22px box height keeps the 10.6 compact silhouette. */
@@ -1078,10 +1078,10 @@ body[data-theme="snow-leopard"] {
   --alarm-clock-frame-shadow: 0 3px 7px rgba(0, 0, 0, 0.25);
   --alarm-clock-title-bg: #e6e6e6;
   --alarm-clock-surface-bg: #f2f2f2;
-  --alarm-clock-readout-bg: #ffffff;
+  --alarm-clock-readout-bg: #fff;
   --alarm-clock-divider: 1px solid #a3a3a3;
   --alarm-clock-active-bg: linear-gradient(#69a3da, #1468b6);
-  --alarm-clock-active-fg: #ffffff;
+  --alarm-clock-active-fg: #fff;
   --alarm-clock-close-size: 12px;
   --alarm-clock-close-border: 1px solid #9f3934;
   --alarm-clock-close-radius: 50%;
@@ -1091,7 +1091,7 @@ body[data-theme="snow-leopard"] {
   --alarm-clock-lever-bg: #e4e4e4;
   --alarm-clock-lever-hover-bg: #dcdcdc;
   --alarm-clock-lever-fg: #202020;
-  --alarm-clock-lever-shadow: inset 0 1px 0 #ffffff, 0 1px 1px rgba(0, 0, 0, 0.18);
+  --alarm-clock-lever-shadow: inset 0 1px 0 #fff, 0 1px 1px rgba(0, 0, 0, 0.18);
   --alarm-clock-lever-focus-outline: 1px solid #4a6c8f;
   --alarm-clock-mode-divider: 1px solid #c0c0c0;
   --alarm-clock-mode-radius: 4px;
@@ -1111,7 +1111,7 @@ body[data-theme="snow-leopard"] {
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='7' height='11' viewBox='0 0 7 11'%3E%3Cpath d='m0.5 4 3-3 3 3zM0.5 7l3 3 3-3z' fill='%231c3d5f'/%3E%3C/svg%3E"),
     linear-gradient(#7ca6bf, #7ca6bf),
     linear-gradient(#d2e5f5 0%, #9dd4f5 40%, #73b5e8 51%, #aedbfc 100%),
-    linear-gradient(#ffffff 0%, #fafafa 45%, #dcdcdc 52%, #f1f1f1 100%);
+    linear-gradient(#fff 0%, #fafafa 45%, #dcdcdc 52%, #f1f1f1 100%);
   --select-control-bg-position: right 7px center, right 20px top, right top, left top;
   --select-control-bg-size: 7px 11px, 1px 100%, 21px 100%, 100% 100%;
   --select-control-shadow: var(--btn-shadow);
@@ -1123,7 +1123,7 @@ body[data-theme="snow-leopard"] {
   --system-select-control-bg:
     linear-gradient(#7ca6bf, #7ca6bf) right 19px top / 1px 100% no-repeat,
     linear-gradient(#d2e5f5 0%, #9dd4f5 40%, #73b5e8 51%, #aedbfc 100%) right top / 20px 100% no-repeat,
-    linear-gradient(#ffffff 0%, #fafafa 45%, #dcdcdc 52%, #f1f1f1 100%);
+    linear-gradient(#fff 0%, #fafafa 45%, #dcdcdc 52%, #f1f1f1 100%);
   --system-select-control-shadow: var(--btn-shadow);
   --system-select-control-font-weight: 400;
   --field-control-padding: 3px 6px;
@@ -1153,7 +1153,7 @@ body[data-theme="snow-leopard"] {
   --theme-lab-finder-window-display: block;
   --theme-lab-finder-window-border: 1px solid #8e8e8e;
   --theme-lab-finder-window-radius: 5px 5px 2px 2px;
-  --theme-lab-finder-window-bg: #ffffff;
+  --theme-lab-finder-window-bg: #fff;
   --theme-lab-finder-window-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
   --theme-lab-finder-status-display: flex;
   --theme-lab-finder-status-height: 19px;
@@ -1172,7 +1172,7 @@ body[data-theme="snow-leopard"] {
   --find-path-result-align: baseline;
   --find-path-result-column-gap: 10px;
   --find-path-result-padding: 6px 10px;
-  --find-path-results-bg: #ffffff;
+  --find-path-results-bg: #fff;
   --find-path-result-border-bottom: 1px solid #e3e3e3;
   --find-path-result-last-border-bottom: 0;
   --find-path-header-padding: 2px 10px;
@@ -1274,11 +1274,11 @@ body[data-theme="snow-leopard"] {
   --titlebar-title-bg: transparent;
   --titlebar-title-fg: #202020;
   --titlebar-border: 1px solid #515151;
-  --titlebar-border-inactive: 1px solid #999999;
-  --titlebar-shadow: inset 0 1px 0 #ffffff;
-  --surface-primary: #ffffff;
+  --titlebar-border-inactive: 1px solid #999;
+  --titlebar-shadow: inset 0 1px 0 #fff;
+  --surface-primary: #fff;
   --surface-secondary: #e2e2e2;
-  --surface-inset: #ffffff;
+  --surface-inset: #fff;
   /* Chromium f108f78 platform-mac-snowleopard: active #bdbdbd -> #a7a7a7,
      inactive #e4e4e4 -> #d8d8d8. */
   --toolbar-bg: linear-gradient(#c0c0c0, #b1b1b1 55%, #b3b3b3);
@@ -1296,7 +1296,7 @@ body[data-theme="snow-leopard"] {
      open-menu selection is a saturated blue ramp measured ~#577dea (top) ->
      #3766f2 (mid) -> #1d5bf2 (bottom) with white labels. */
   --selection-bg: linear-gradient(#577dea, #3766f2 50%, #1d5bf2);
-  --selection-fg: #ffffff;
+  --selection-fg: #fff;
   /* A ::selection takes a colour, not a ramp, and a writing surface must mix a
      flat colour to stay translucent. The editor selection takes the mid stop of
      the ramp above. */
@@ -1304,7 +1304,7 @@ body[data-theme="snow-leopard"] {
   /* 10.6 keeps the Aqua desktop-label recipe: shadowed white text on the
      wallpaper, rounded selection pill from the era's own selection ramp. */
   --desktop-label-bg: transparent;
-  --desktop-label-fg: #ffffff;
+  --desktop-label-fg: #fff;
   --desktop-label-text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
   --desktop-label-radius: 8px;
   --desktop-label-selected-bg: var(--selection-bg);
@@ -1314,7 +1314,7 @@ body[data-theme="snow-leopard"] {
      This is independent from the source-list gradient below. */
   --theme-lab-list-selected-bg:
     linear-gradient(#3875d7 0 22%, #4a81da 22% 28%, #5b8dde 33% 78%, #3875d7 78% 100%);
-  --theme-lab-list-selected-fg: #ffffff;
+  --theme-lab-list-selected-fg: #fff;
   --theme-lab-list-row-min-height: 18px;
   --theme-lab-list-row-gap: 4px;
   --theme-lab-list-row-padding: 1px 6px;
@@ -1335,7 +1335,7 @@ body[data-theme="snow-leopard"] {
   --sidebar-selection-bg-inactive:
     linear-gradient(#a8a8a8, #a8a8a8) top / 100% 1px no-repeat,
     linear-gradient(#c1c1c1, #9c9c9c);
-  --sidebar-selection-fg: #ffffff;
+  --sidebar-selection-fg: #fff;
   /* 10.6 Scrapbook reads as a Finder source list: quiet blue-gray rail,
      borderless rows, and the measured source-list selection ramp. */
   --scrapbook-list-display: block;
@@ -1407,7 +1407,7 @@ body[data-theme="snow-leopard"] {
   --tdi-tab-active-unfocused-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
   --tdi-tab-active-unfocused-small-color: rgba(255, 255, 255, 0.75);
   --tdi-tab-hover-bg: var(--sidebar-selection-bg-unfocused);
-  --tdi-tab-hover-fg: #ffffff;
+  --tdi-tab-hover-fg: #fff;
   --tdi-tab-hover-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
   --tdi-tab-pressed-bg: var(--sidebar-selection-bg);
   --tdi-tab-pressed-fg: var(--sidebar-selection-fg);
@@ -1420,14 +1420,14 @@ body[data-theme="snow-leopard"] {
   --tdi-tab-close-fg: #4d5660;
   --tdi-tab-close-shadow: none;
   --tdi-tab-close-active-bg: rgba(255, 255, 255, 0.22);
-  --tdi-tab-close-active-fg: #ffffff;
+  --tdi-tab-close-active-fg: #fff;
   --tdi-tab-close-active-shadow: none;
   --tdi-tab-close-hover-bg: rgba(0, 0, 0, 0.12);
   --tdi-tab-close-hover-fg: currentColor;
   --tdi-tab-close-hover-shadow: none;
   --separator: #c6c6c6;
   --control-bg: linear-gradient(#fcfcfc, #ededed 52%, #dedede);
-  --control-shadow: inset 0 1px 0 #ffffff, 0 1px 1px rgba(0, 0, 0, 0.18);
+  --control-shadow: inset 0 1px 0 #fff, 0 1px 1px rgba(0, 0, 0, 0.18);
   --control-active-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.34);
   /* Theme Family Contract: the keyboard ring. The base layer writes System 6's
      dotted ink ring, so every era that never answered wore it. Each era already
@@ -1438,7 +1438,7 @@ body[data-theme="snow-leopard"] {
   --control-disabled-bg: linear-gradient(#f7f7f7, #ececec);
   --control-disabled-field-bg: #f2f2f2;
   --system-border: 1px solid #a5a5a5;
-  --system-inset: inset 0 1px 2px rgba(0, 0, 0, 0.2), inset 0 -1px 0 #ffffff;
+  --system-inset: inset 0 1px 2px rgba(0, 0, 0, 0.2), inset 0 -1px 0 #fff;
   --control-radius: 4px;
   /* Quaqua 9.1 Button.borders.png frame 0 (enabled): dark outline, ~6px
      corner arc, silver fill #f6f6f6 -> #ebebeb -> #d9d9d9 (midline) ->
@@ -1452,12 +1452,12 @@ body[data-theme="snow-leopard"] {
   --btn-radius: 11px;
   --clio-composer-control-radius: 50%;
   --btn-bg: linear-gradient(#f6f6f6 0%, #ebebeb 38%, #d9d9d9 44%, #e6e6e6 58%, #fdfdfd 100%);
-  --btn-shadow: inset 0 1px 0 #ffffff, inset 0 0 0 1px rgba(255, 255, 255, 0.35), 0 1px 2px rgba(0, 0, 0, 0.28);
-  --btn-hover-bg: linear-gradient(#f8fbff 0%, #eef4fb 38%, #d8e4ee 44%, #eaf1f7 58%, #ffffff 100%);
-  --btn-hover-fg: #111111;
-  --btn-hover-shadow: inset 0 1px 0 #ffffff, 0 1px 2px rgba(28, 92, 145, 0.22);
+  --btn-shadow: inset 0 1px 0 #fff, inset 0 0 0 1px rgba(255, 255, 255, 0.35), 0 1px 2px rgba(0, 0, 0, 0.28);
+  --btn-hover-bg: linear-gradient(#f8fbff 0%, #eef4fb 38%, #d8e4ee 44%, #eaf1f7 58%, #fff 100%);
+  --btn-hover-fg: #111;
+  --btn-hover-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(28, 92, 145, 0.22);
   --btn-active-bg: linear-gradient(#d8d8d8 0%, #b7b7b7 48%, #9c9c9c 54%, #d2d2d2 100%);
-  --btn-active-fg: #111111;
+  --btn-active-fg: #111;
   --btn-active-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.26);
   /* Real 10.6 dialogs (512 Pixels Empty-Trash / Eject-Warning): the default
      button is a light blue ramp #c1dbf2 -> #70acdd -> #c5f0fb with dark
@@ -1467,31 +1467,31 @@ body[data-theme="snow-leopard"] {
   --btn-default-text-shadow: none;
   --btn-default-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 1px 2px rgba(0, 0, 0, 0.2);
   --btn-default-active-bg: linear-gradient(#a8c8e8, #4f94cf 52%, #84c4ec);
-  --btn-default-active-fg: #ffffff;
-  --field-bg: #ffffff;
-  --field-focus-bg: #ffffff;
+  --btn-default-active-fg: #fff;
+  --field-bg: #fff;
+  --field-focus-bg: #fff;
   --field-border: 1px solid #a3a3a3;
   --field-radius: 3px;
   /* ClioTalk reply slip: 10.6 text-box idiom (measured field border/radius,
      inset highlight only -- no drop shadow, which would read as a card). */
   --clio-slip-radius: 3px;
-  --clio-slip-surface: #ffffff;
+  --clio-slip-surface: #fff;
   --clio-slip-border: 1px solid #c8c8c8;
-  --clio-slip-shadow: inset 0 1px 0 #ffffff;
-  --clio-slip-kept-surface: #ffffff;
+  --clio-slip-shadow: inset 0 1px 0 #fff;
+  --clio-slip-kept-surface: #fff;
   --clio-slip-kept-border: 1px solid #7a7a7a;
   --clio-slip-kept-shadow: none;
   --clio-slip-mark-border: 1px solid #c8c8c8;
-  --clio-slip-mark-kept: #333333;
+  --clio-slip-mark-kept: #333;
   --clio-said-rule: 3px solid #9a9a9a;
   --select-radius: 5px;
-  --field-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.18), 0 1px 0 #ffffff;
+  --field-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.18), 0 1px 0 #fff;
   --field-focus-border: 1px solid #4f91cc;
   --field-focus-ring: 0 0 0 3px rgba(94, 158, 219, 0.42);
-  --choice-bg: linear-gradient(#ffffff, #dedede);
+  --choice-bg: linear-gradient(#fff, #dedede);
   --choice-border: 1px solid #949494;
   --choice-radius: 3px;
-  --choice-shadow: inset 0 1px 0 #ffffff;
+  --choice-shadow: inset 0 1px 0 #fff;
   /* Quaqua 9.1 CheckBox.icons.png frame 2, read out of the fidelity tile one
      pixel column at a time (x=3, the first interior column the check does not
      cross). The 10.6 checked box is a concave glass well, not a solid chip:
@@ -1527,9 +1527,9 @@ body[data-theme="snow-leopard"] {
   --choice-checkmark-image: url("./assets/themes/snow-leopard/checkbox-checked-dark.svg");
   --choice-checkmark-size: 14px 14px;
   --choice-disabled-checkmark-image: url("./assets/themes/snow-leopard/checkbox-checked-disabled.svg");
-  --radio-bg: linear-gradient(#ffffff, #dedede);
+  --radio-bg: linear-gradient(#fff, #dedede);
   --radio-border: 1px solid #949494;
-  --radio-shadow: inset 0 1px 0 #ffffff;
+  --radio-shadow: inset 0 1px 0 #fff;
   --radio-image: none;
   --radio-focus-image: none;
   /* Project-owned reconstruction from Quaqua 9.1 RadioButton.icons.png frame
@@ -1560,7 +1560,7 @@ body[data-theme="snow-leopard"] {
   --menu-bar-bg: linear-gradient(#f4f4f4, #d8d8d8);
   --menu-bar-border-color: #9f9f9f;
   --menu-bar-border: 1px solid var(--menu-bar-border-color);
-  --menu-bar-shadow: inset 0 1px 0 #ffffff;
+  --menu-bar-shadow: inset 0 1px 0 #fff;
   --menu-panel-bg: rgba(250, 250, 250, 0.98);
   --menu-panel-border: 1px solid #9a9a9a;
   --menu-panel-radius: 4px;
@@ -1570,9 +1570,9 @@ body[data-theme="snow-leopard"] {
      menu selection is the saturated blue ramp #577dea -> #3766f2 -> #1d5bf2
      with white labels. (Previously the 10.10 #2176e9 ramp sat here.) */
   --menu-button-active-bg: linear-gradient(#577dea, #3766f2 50%, #1d5bf2);
-  --menu-button-active-fg: #ffffff;
+  --menu-button-active-fg: #fff;
   --menu-item-active-bg: linear-gradient(#577dea, #3766f2 50%, #1d5bf2);
-  --menu-item-active-fg: #ffffff;
+  --menu-item-active-fg: #fff;
   --window-frame-lane: 15px;
   /* Quaqua ScrollBar.track.v.png (15px tile): #b8b8b8 -> #fcfcfc ->
      #efefef horizontal ramp. */
@@ -1602,7 +1602,7 @@ body[data-theme="snow-leopard"] {
     linear-gradient(180deg, #4a7fc0 0%, #759fdc 8%, #90bae6 17%, #8bb8e7 26%, #83b4e9 34%, #438de3 46%, #579eee 56%, #6aaefd 65%, #7cc0ff 73%, #88cfff 81%, #92daff 90%, #8bd0ff 100%);
   --window-frame-thumb-border: 1px solid #1c4f96;
   --window-frame-thumb-radius: 999px;
-  --window-frame-arrow-bg: linear-gradient(#ffffff, #d4d4d4 52%, #f5f5f5);
+  --window-frame-arrow-bg: linear-gradient(#fff, #d4d4d4 52%, #f5f5f5);
   --scrollbar-track: var(--window-frame-track-bg);
   --scrollbar-thumb: var(--window-frame-thumb-bg);
   --scrollbar-button: var(--window-frame-arrow-bg);
@@ -1611,7 +1611,7 @@ body[data-theme="snow-leopard"] {
   --scrollbar-track-shadow: inset 0 0 2px rgba(0, 0, 0, 0.25);
   --scrollbar-thumb-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.76), inset -1px 0 0 rgba(0, 60, 108, 0.22);
   --scrollbar-button-border: 1px solid #9b9b9b;
-  --scrollbar-button-shadow: inset 0 1px 0 #ffffff;
+  --scrollbar-button-shadow: inset 0 1px 0 #fff;
   /* Chromium Inspector's app-specific compact Web scrollbar is retained as a
      separate semantic variant; it is not the 10.6 system scrollbar. */
   --scrollbar-compact-width: 11px;
@@ -1619,10 +1619,10 @@ body[data-theme="snow-leopard"] {
   --tab-overlap: 0;
   /* Real 10.6 Displays preference pane (512 Pixels, 1:1): compact connected
      tabs use a neutral gloss at rest and a blue Aqua gloss when selected. */
-  --tab-bg: linear-gradient(#f9f9f9 0%, #ededed 42%, #e3e3e3 50%, #ffffff 100%);
-  --tab-hover-bg: linear-gradient(#ffffff, #f0f0f0);
+  --tab-bg: linear-gradient(#f9f9f9 0%, #ededed 42%, #e3e3e3 50%, #fff 100%);
+  --tab-hover-bg: linear-gradient(#fff, #f0f0f0);
   --tab-active-bg: linear-gradient(#eaf2fb 0%, #acd1f0 42%, #7ab7e8 48%, #9cd1fb 75%, #cfffff 100%);
-  --tab-active-fg: #111111;
+  --tab-active-fg: #111;
   --tab-strip-gap: 0;
   --tab-strip-border-bottom: 0;
   --tab-strip-border-top: 0;
@@ -1631,15 +1631,15 @@ body[data-theme="snow-leopard"] {
   --tab-min-height: 22px;
   --tab-height: 22px;
   --tab-padding: 1px 12px;
-  --tab-border: 1px solid #777777;
+  --tab-border: 1px solid #777;
   --tab-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.74);
   --tab-active-min-height: 22px;
   --tab-active-height: 22px;
-  --tab-active-fg: #111111;
+  --tab-active-fg: #111;
   --tab-active-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
   --tab-first-radius: 5px 0 0 5px;
   --tab-last-radius: 0 5px 5px 0;
-  --tab-last-border-right: 1px solid #777777;
+  --tab-last-border-right: 1px solid #777;
   /* 10.6 shrank the choice controls that Jaguar drew at 18px. Every Quaqua 9.1
      state strip paints the frame across a 14px cell, and the pinned 10.6
      specimens crop 14x14 while Aqua's crop 18x18 — so the 18px inherited from
@@ -1688,7 +1688,7 @@ body[data-theme="snow-leopard"] {
   --control-chooser-hover-bg: rgba(0, 0, 0, 0.12);
   --control-chooser-hover-fg: #1c1c1c;
   --control-chooser-active-bg: rgba(0, 0, 0, 0.28);
-  --control-chooser-active-fg: #ffffff;
+  --control-chooser-active-fg: #fff;
   --control-chooser-label-padding: 0;
   --control-chooser-active-label-bg: transparent;
   --control-chooser-active-label-fg: currentColor;
@@ -1715,10 +1715,10 @@ body[data-theme="snow-leopard"] {
   --control-strip-hover-fg: #1c1c1c;
   --control-strip-hover-shadow: none;
   --control-strip-active-bg: rgba(0, 0, 0, 0.22);
-  --control-strip-active-fg: #ffffff;
+  --control-strip-active-fg: #fff;
   --control-strip-active-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.35);
   --control-strip-gauge: #5787d8;
-  --control-strip-gauge-bg: #ffffff;
+  --control-strip-gauge-bg: #fff;
   --control-strip-grip-inset: 5px 0;
   --control-strip-grip: repeating-linear-gradient(to bottom, #8a8a8a 0 1px, rgba(0, 0, 0, 0) 1px 3px) 50% 50% / 6px 100% no-repeat;
 }
@@ -2080,7 +2080,7 @@ body[data-theme="aqua"] .system-modal form::before {
 body[data-theme="aqua"] .system-modal #system-modal-message {
   font-family: var(--theme-ui-font);
   font-weight: 700;
-  color: #111111;
+  color: #111;
 }
 
 body[data-theme="aqua"] :is(
@@ -2151,15 +2151,15 @@ body[data-theme="aqua"] select:not([multiple]) {
       #64a8f2 9px 10px, #6bb0f6 10px 11px, #73b7fd 11px 12px,
       #7cbfff 12px 13px, #86c9ff 13px 14px, #93d2ff 14px 15px,
       #97daff 15px 16px, #a0e0ff 16px 17px, #a9e6ff 17px 18px,
-      #b1f3ff 18px 19px, #bbffff 19px 20px, #4e4e4e 20px 21px)
+      #b1f3ff 18px 19px, #bff 19px 20px, #4e4e4e 20px 21px)
       right top / 21px 21px no-repeat,
     linear-gradient(to bottom,
       #8b8b8b 0 1px, #fcfcfc 1px 2px, #f6f6f6 2px 3px,
-      #f0f0f0 3px 4px, #eeeeee 4px 5px, #ededed 5px 7px,
+      #f0f0f0 3px 4px, #eee 4px 5px, #ededed 5px 7px,
       #ececec 7px 9px, #e1e1e1 9px 10px, #e6e6e6 10px 11px,
       #e9e9e9 11px 12px, #ececec 12px 13px, #efefef 13px 14px,
       #f3f3f3 14px 15px, #f6f6f6 15px 16px, #f8f8f8 16px 17px,
-      #fcfcfc 17px 18px, #ffffff 18px 20px, #4e4e4e 20px 21px);
+      #fcfcfc 17px 18px, #fff 18px 20px, #4e4e4e 20px 21px);
   box-shadow: var(--aqua-popup-frame);
   font-family: var(--theme-ui-font);
   font-size: var(--system-control-size);
@@ -2181,7 +2181,7 @@ body[data-theme="aqua"] .info-comments textarea {
    System 6 by default. Aqua gives them the 15px blue-thumb scrollbar. */
 body[data-theme="aqua"] :is(.control-panel, .chooser-panel) .settings::-webkit-scrollbar,
 body[data-theme="aqua"] :is(.control-panel, .chooser-panel) .settings::-webkit-scrollbar-track {
-  background: #ffffff;
+  background: #fff;
   border-left: 0;
 }
 
@@ -2199,7 +2199,7 @@ body[data-theme="aqua"] :is(.control-panel, .chooser-panel) .settings::-webkit-s
 }
 
 body[data-theme="aqua"] :is(.control-panel, .chooser-panel) .settings::-webkit-scrollbar-corner {
-  background: #ffffff;
+  background: #fff;
 }
 
 body[data-theme="snow-leopard"] .close-box,
@@ -2315,7 +2315,7 @@ body[data-theme="snow-leopard"] select:not([multiple]) {
 }
 
 body[data-theme="snow-leopard"] .system-modal {
-  background: linear-gradient(to bottom, #ffffff 0%, #f2f2f2 100%);
+  background: linear-gradient(to bottom, #fff 0%, #f2f2f2 100%);
   border: 1px solid #8e8e8e;
   border-radius: 4px 4px 3px 3px;
   box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.85), 0 5px 14px rgba(0, 0, 0, 0.35);
@@ -2340,13 +2340,13 @@ body[data-theme="snow-leopard"] .system-modal form::before {
 body[data-theme="snow-leopard"] .system-modal #system-modal-message {
   font-family: var(--theme-ui-font);
   font-weight: 700;
-  color: #111111;
+  color: #111;
 }
 
 body[data-theme="aqua"] .view-btn,
 body[data-theme="snow-leopard"] .view-btn {
   width: 26px;
-  background: linear-gradient(to bottom, #ffffff 0%, #efefef 55%, #e0e0e0 100%);
+  background: linear-gradient(to bottom, #fff 0%, #efefef 55%, #e0e0e0 100%);
   border: 1px solid #a3a3a3;
   border-right: 0;
 }
@@ -2363,17 +2363,17 @@ body[data-theme="snow-leopard"] .view-btn.is-active {
 
 body[data-theme="aqua"] .view-btn.is-active::before,
 body[data-theme="snow-leopard"] .view-btn.is-active::before {
-  background: #ffffff;
+  background: #fff;
   box-shadow:
-    6px 0 0 #ffffff,
-    0 6px 0 #ffffff,
-    6px 6px 0 #ffffff;
+    6px 0 0 #fff,
+    0 6px 0 #fff,
+    6px 6px 0 #fff;
 }
 
 body[data-theme="aqua"] .view-btn[data-view="list"].is-active::before,
 body[data-theme="snow-leopard"] .view-btn[data-view="list"].is-active::before {
-  background: #ffffff;
-  box-shadow: 0 -4px 0 #ffffff, 0 4px 0 #ffffff;
+  background: #fff;
+  box-shadow: 0 -4px 0 #fff, 0 4px 0 #fff;
 }
 
 body[data-theme="aqua"] .system-select-button:not(:disabled), body[data-theme="snow-leopard"] .system-select-button:not(:disabled) {
@@ -2465,7 +2465,7 @@ body[data-theme="aqua"] .btn {
     linear-gradient(to bottom,
       #e8e8e8 0 1px, #eaeaea 1px 2px, #efefef 2px 3px,
       #f3f3f3 3px 4px, #f8f8f8 4px 5px, #fcfcfc 5px 6px,
-      #ffffff 6px 10px) bottom / 100% 10px no-repeat,
+      #fff 6px 10px) bottom / 100% 10px no-repeat,
     linear-gradient(to bottom, #dedede 0 50%, #e1e1e1 50%);
   /* The two 1px side shadows close the outline around the caps, where a
      background layer can only ever paint a horizontal row. */
@@ -2584,7 +2584,7 @@ body[data-theme="aqua"] .assistant-window .composer .composer-submit-button {
     0 2px 3px rgba(0, 10, 40, 0.4),
     inset 0 1px 0 rgba(255, 255, 255, 0.55),
     inset 0 -1px 1px rgba(0, 6, 40, 0.4);
-  color: #ffffff;
+  color: #fff;
 
 }
 
@@ -2613,11 +2613,11 @@ body[data-theme="aqua"] .assistant-window .composer .composer-file-button {
       rgba(255, 255, 255, 0) 46%) center / 100% 100% no-repeat,
     radial-gradient(circle at 50% 130%,
       rgba(0, 0, 0, 0.16) 0%, rgba(0, 0, 0, 0) 58%) center / 100% 100% no-repeat,
-    linear-gradient(to bottom, #ffffff 0%, #f2f2f2 45%, #e2e2e2 100%);
+    linear-gradient(to bottom, #fff 0%, #f2f2f2 45%, #e2e2e2 100%);
   box-shadow:
     0 1px 2px rgba(0, 0, 0, 0.22),
     inset 0 1px 0 rgba(255, 255, 255, 0.85);
-  color: #333333;
+  color: #333;
 
 }
 
@@ -2630,7 +2630,7 @@ body[data-theme="aqua"] .assistant-window .composer .composer-file-button:focus-
       rgba(255, 255, 255, 0) 46%) center / 100% 100% no-repeat,
     radial-gradient(circle at 50% 130%,
       rgba(0, 0, 0, 0.16) 0%, rgba(0, 0, 0, 0) 58%) center / 100% 100% no-repeat,
-    linear-gradient(to bottom, #ffffff 0%, #e8f0fc 45%, #cfe1f7 100%);
+    linear-gradient(to bottom, #fff 0%, #e8f0fc 45%, #cfe1f7 100%);
   border-color: #7ba7dd;
   color: #1a1a1a;
 
@@ -2659,7 +2659,7 @@ body[data-theme="aqua"] select:disabled {
   background-image:
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='14' viewBox='0 0 6 14'%3E%3Cpath d='m.5 5.5 2.5-3 2.5 3zM.5 8.5l2.5 3 2.5-3z' fill='%23959595'/%3E%3C/svg%3E"),
     linear-gradient(#b5b5b5, #b5b5b5),
-    linear-gradient(#f5f5f5, #cecece 52%, #eeeeee),
+    linear-gradient(#f5f5f5, #cecece 52%, #eee),
     linear-gradient(#fafafa, #e6e6e6 52%, #f6f6f6);
 
 }
@@ -2669,8 +2669,8 @@ body[data-theme="aqua"] :is(.btn:disabled, .btn.is-disabled, .system-select-butt
   border: 1px solid var(--btn-disabled-border-color, #a4a4a4);
   background: var(--btn-disabled-bg, var(--control-disabled-bg));
   /* Reads the appearance token instead of a literal, so Aqua's disabled ink is
-     set in one place. #999999 measured 2.35:1 on the era's own button face. */
-  color: var(--system-disabled-fg, #999999);
+     set in one place. #999 measured 2.35:1 on the era's own button face. */
+  color: var(--system-disabled-fg, #999);
   box-shadow: var(--btn-disabled-shadow, none);
   opacity: var(--btn-disabled-opacity, var(--control-disabled-opacity));
 
@@ -2698,15 +2698,15 @@ body[data-theme="aqua"] .system-select-button:not(:disabled) {
       #64a8f2 9px 10px, #6bb0f6 10px 11px, #73b7fd 11px 12px,
       #7cbfff 12px 13px, #86c9ff 13px 14px, #93d2ff 14px 15px,
       #97daff 15px 16px, #a0e0ff 16px 17px, #a9e6ff 17px 18px,
-      #b1f3ff 18px 19px, #bbffff 19px 20px, #4e4e4e 20px 21px)
+      #b1f3ff 18px 19px, #bff 19px 20px, #4e4e4e 20px 21px)
       right top / 21px 21px no-repeat,
     linear-gradient(to bottom,
       #8b8b8b 0 1px, #fcfcfc 1px 2px, #f6f6f6 2px 3px,
-      #f0f0f0 3px 4px, #eeeeee 4px 5px, #ededed 5px 7px,
+      #f0f0f0 3px 4px, #eee 4px 5px, #ededed 5px 7px,
       #ececec 7px 9px, #e1e1e1 9px 10px, #e6e6e6 10px 11px,
       #e9e9e9 11px 12px, #ececec 12px 13px, #efefef 13px 14px,
       #f3f3f3 14px 15px, #f6f6f6 15px 16px, #f8f8f8 16px 17px,
-      #fcfcfc 17px 18px, #ffffff 18px 20px, #4e4e4e 20px 21px);
+      #fcfcfc 17px 18px, #fff 18px 20px, #4e4e4e 20px 21px);
   box-shadow: var(--aqua-popup-frame);
 
 }
@@ -2715,7 +2715,7 @@ body[data-theme="aqua"] .system-select-menu {
 
   top: calc(100% + 2px);
   padding: 3px 0;
-  border: 1px solid #666666;
+  border: 1px solid #666;
   border-radius: 3px;
   background: rgba(250, 250, 250, 0.94);
   box-shadow: 0 5px 11px rgba(0, 0, 0, 0.4);

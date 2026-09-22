@@ -478,6 +478,7 @@ function captureWindowWorkingSession() {
         appHidden: win.classList.contains("is-app-hidden"),
         active: win.classList.contains("is-active"),
         collapsed: win.classList.contains("is-collapsed"),
+        minimized: win.classList.contains("is-minimized"),
         shadeWidth: inlineStyleValue(win, "--window-shade-width"),
         desklet: win.classList.contains("is-desklet"),
         zoomed: sideAskRestore ? win.dataset.sideaskRestoreZoomed === "true" : win.dataset.zoomed === "true",
@@ -591,6 +592,7 @@ async function restoreWindowWorkingSession(state = {}) {
     win.dataset.app = entry.appId || getWindowAppId(win);
     ensureRunningApp(win.dataset.app, entry.name);
     win.classList.toggle("is-app-hidden", !!entry.appHidden);
+    win.classList.toggle("is-minimized", !!entry.minimized);
     const shadeWidth = entry.shadeWidth
       || entry.frame?.width
       || `${Math.round(win.getBoundingClientRect().width)}px`;
@@ -640,12 +642,13 @@ async function restoreWindowWorkingSession(state = {}) {
     await arrangeWindowAssistantSplit("quickDraft");
   }
 
-  const activeName = state.activeWindowName || visibleWindows.find((entry) => entry.active)?.name || visibleWindows.at(-1)?.name;
+  const foregroundEntries = visibleWindows.filter((entry) => !entry.minimized && !entry.appHidden);
+  const activeName = foregroundEntries.find((entry) => entry.name === state.activeWindowName || entry.active)?.name || foregroundEntries.at(-1)?.name;
   const activeWin = activeName ? getWindow(activeName) : null;
   if (activeWin && !activeWin.classList.contains("is-hidden")) {
     focusWindow(activeWin);
-  } else if (visibleWindows.length) {
-    focusWindow(getWindow(visibleWindows.at(-1).name));
+  } else if (foregroundEntries.length) {
+    focusWindow(getWindow(foregroundEntries.at(-1).name));
   } else {
     activeAppId = "finder";
   }

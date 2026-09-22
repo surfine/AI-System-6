@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "schemaId": "ai-system-6-icon-continuity-v2",
-  "purpose": "Preserve product identity across six historically distinct Macintosh appearances without freezing one physical object, composition, material, or enclosure forever.",
+  "purpose": "Preserve product identity across historically distinct appearances while separating accepted six-era historical audits from the expanded eight-era runtime coverage.",
   "eras": [
     "classic",
     "platinum",
@@ -88,9 +88,12 @@
         "aqua": "Mac OS X 10.2 Dock Finder two-tone split smiling face",
         "snow-leopard": "Mac OS X 10.6 FinderIcon split face with curved profile divider",
         "yosemite": "OS X 10.10 rounded blue/light split Finder face",
-        "liquid-glass": "macOS 27 Golden Gate Beta 1 Finder with a light outer enclosure and an inset blue right face/profile panel"
+        "liquid-glass": "macOS 27 Golden Gate Beta 1 Finder with a light outer enclosure and an inset blue right face/profile panel",
+        "big-sur": "Finder in the 2020 native Dock capture"
       },
-      "nearestAnalogByEra": {},
+      "nearestAnalogByEra": {
+        "big-sur": "Finder in the 2020 native Dock capture"
+      },
       "eraTranslationByEra": {
         "classic": "Use the native compact-Mac System identity with list rows in its screen; do not invent a smiling face. Native evidence owns its anatomy even when the runtime is a smooth Retina SVG.",
         "platinum": "Use the Mac OS 9 Finder prototype rather than a grey System 6 recolour.",
@@ -118,7 +121,8 @@
         "aqua": "A",
         "snow-leopard": "A",
         "yosemite": "A",
-        "liquid-glass": "A"
+        "liquid-glass": "A",
+        "big-sur": "A"
       },
       "reviewStatusByEra": {
         "classic": "reference-validated",
@@ -126,7 +130,8 @@
         "aqua": "reference-validated",
         "snow-leopard": "reference-validated",
         "yosemite": "reference-validated",
-        "liquid-glass": "reference-validated"
+        "liquid-glass": "reference-validated",
+        "big-sur": "historically-reviewed"
       },
       "metaphorKey": "friendly-finder-identity",
       "metaphorKeyStatus": "deprecated-migration-hint"
@@ -155,7 +160,8 @@
         "aqua": "Jaguar Finder identity plus a period-plausible paired treatment",
         "snow-leopard": "Snow Leopard Finder identity plus a period-plausible paired treatment",
         "yosemite": "Yosemite Finder identity plus a period-plausible paired treatment",
-        "liquid-glass": "Golden Gate Beta 1 Finder identity plus an inverse-field companion using the same inset-panel ratios"
+        "liquid-glass": "Golden Gate Beta 1 Finder identity plus an inverse-field companion using the same inset-panel ratios",
+        "big-sur": "Product metaphor using two Finder-like faces"
       },
       "eraTranslationByEra": {
         "classic": "Express two parallel environments with two readable Classic Finder identities; do not claim a native MultiFinder icon resource.",
@@ -183,7 +189,8 @@
         "aqua": "C",
         "snow-leopard": "C",
         "yosemite": "C",
-        "liquid-glass": "C"
+        "liquid-glass": "C",
+        "big-sur": "C"
       },
       "reviewStatusByEra": {
         "classic": "historically-reviewed",
@@ -191,7 +198,8 @@
         "aqua": "historically-reviewed",
         "snow-leopard": "historically-reviewed",
         "yosemite": "historically-reviewed",
-        "liquid-glass": "historically-reviewed"
+        "liquid-glass": "historically-reviewed",
+        "big-sur": "pending"
       },
       "metaphorKey": "current-finder-identity-plus-multiplicity",
       "metaphorKeyStatus": "deprecated-migration-hint"
@@ -218,9 +226,12 @@
         "aqua": "Mac OS X 10.2 Finder folder",
         "snow-leopard": "Mac OS X 10.6 Finder folder",
         "yosemite": "OS X 10.10 Finder folder",
-        "liquid-glass": "macOS Tahoe 26 Finder folder"
+        "liquid-glass": "macOS Tahoe 26 Finder folder",
+        "big-sur": "Finder Home blue folder in the macOS 11 capture"
       },
-      "nearestAnalogByEra": {},
+      "nearestAnalogByEra": {
+        "big-sur": "Finder Home blue folder in the macOS 11 capture"
+      },
       "eraTranslationByEra": {
         "classic": "Follow native System 6 folder anatomy; smooth SVG may change edge representation only.",
         "platinum": "Use compact pixel depth and the Mac OS 9 folder silhouette.",
@@ -246,7 +257,8 @@
         "aqua": "A",
         "snow-leopard": "A",
         "yosemite": "A",
-        "liquid-glass": "A"
+        "liquid-glass": "A",
+        "big-sur": "A"
       },
       "reviewStatusByEra": {
         "classic": "reference-validated",
@@ -254,7 +266,8 @@
         "aqua": "pending",
         "snow-leopard": "pending",
         "yosemite": "pending",
-        "liquid-glass": "pending"
+        "liquid-glass": "pending",
+        "big-sur": "historically-reviewed"
       }
     },
     "hardDisk": {
@@ -281,7 +294,9 @@
         "yosemite": "OS X 10.10 hard-drive volume",
         "liquid-glass": "macOS Tahoe 26 disk or storage volume"
       },
-      "nearestAnalogByEra": {},
+      "nearestAnalogByEra": {
+        "big-sur": "macOS external/internal disk hardware genre"
+      },
       "eraTranslationByEra": {
         "classic": "Follow the native System 6 disk anatomy and optical bounds.",
         "platinum": "Use compact Mac OS 9 pixel hardware depth.",
@@ -307,7 +322,8 @@
         "aqua": "A",
         "snow-leopard": "A",
         "yosemite": "A",
-        "liquid-glass": "A"
+        "liquid-glass": "A",
+        "big-sur": "B"
       },
       "reviewStatusByEra": {
         "classic": "reference-validated",
@@ -315,7 +331,8 @@
         "aqua": "pending",
         "snow-leopard": "pending",
         "yosemite": "pending",
-        "liquid-glass": "pending"
+        "liquid-glass": "pending",
+        "big-sur": "pending"
       }
     },
     "trash": {
@@ -343,7 +360,9 @@
         "yosemite": "OS X 10.10 Trash",
         "liquid-glass": "macOS Tahoe 26 Trash"
       },
-      "nearestAnalogByEra": {},
+      "nearestAnalogByEra": {
+        "big-sur": "Trash silhouette visible in native Dock capture"
+      },
       "eraTranslationByEra": {
         "classic": "Preserve native basket anatomy and the shared empty/full object relationship.",
         "platinum": "Use the compact Mac OS 9 Trash prototype.",
@@ -369,7 +388,8 @@
         "aqua": "A",
         "snow-leopard": "A",
         "yosemite": "A",
-        "liquid-glass": "A"
+        "liquid-glass": "A",
+        "big-sur": "B"
       },
       "reviewStatusByEra": {
         "classic": "reference-validated",
@@ -377,7 +397,8 @@
         "aqua": "pending",
         "snow-leopard": "pending",
         "yosemite": "pending",
-        "liquid-glass": "pending"
+        "liquid-glass": "pending",
+        "big-sur": "pending"
       }
     },
     "document": {
@@ -402,9 +423,12 @@
         "aqua": "Mac OS X 10.2 generic document grammar",
         "snow-leopard": "Mac OS X 10.6 generic document grammar",
         "yosemite": "OS X 10.10 generic document grammar",
-        "liquid-glass": "macOS Tahoe 26 document grammar"
+        "liquid-glass": "macOS Tahoe 26 document grammar",
+        "big-sur": "2020 Apple document HIG generic document"
       },
-      "nearestAnalogByEra": {},
+      "nearestAnalogByEra": {
+        "big-sur": "2020 Apple document HIG generic document"
+      },
       "eraTranslationByEra": {
         "classic": "Use native System 6 paper anatomy and bounds.",
         "platinum": "Use compact Mac OS 9 pixel document construction.",
@@ -430,7 +454,8 @@
         "aqua": "A",
         "snow-leopard": "A",
         "yosemite": "A",
-        "liquid-glass": "A"
+        "liquid-glass": "A",
+        "big-sur": "A"
       },
       "reviewStatusByEra": {
         "classic": "reference-validated",
@@ -438,7 +463,8 @@
         "aqua": "pending",
         "snow-leopard": "pending",
         "yosemite": "pending",
-        "liquid-glass": "pending"
+        "liquid-glass": "pending",
+        "big-sur": "historically-reviewed"
       }
     },
     "fileFloppy": {
@@ -466,7 +492,8 @@
         "aqua": "Jaguar removable-media icon grammar applied to an intentionally retained floppy",
         "snow-leopard": "Snow Leopard removable-media icon grammar applied to an intentionally retained floppy",
         "yosemite": "Yosemite removable-media icon grammar applied to an intentionally retained floppy",
-        "liquid-glass": "Tahoe object and material grammar applied to an intentionally retained floppy"
+        "liquid-glass": "Tahoe object and material grammar applied to an intentionally retained floppy",
+        "big-sur": "Legacy 3.5-inch floppy; no claim of a Big Sur default icon"
       },
       "eraTranslationByEra": {
         "classic": "Use the literal native floppy prototype.",
@@ -492,7 +519,8 @@
         "aqua": "C",
         "snow-leopard": "C",
         "yosemite": "C",
-        "liquid-glass": "C"
+        "liquid-glass": "C",
+        "big-sur": "B"
       },
       "reviewStatusByEra": {
         "classic": "reference-validated",
@@ -500,7 +528,8 @@
         "aqua": "pending",
         "snow-leopard": "pending",
         "yosemite": "pending",
-        "liquid-glass": "pending"
+        "liquid-glass": "pending",
+        "big-sur": "pending"
       },
       "metaphorKey": "temporary-context-floppy",
       "metaphorKeyStatus": "deprecated-migration-hint"
@@ -529,7 +558,8 @@
         "aqua": "Jaguar external hard-drive volume",
         "snow-leopard": "Snow Leopard external hard-drive volume",
         "yosemite": "Yosemite external storage volume",
-        "liquid-glass": "Tahoe external or project storage object"
+        "liquid-glass": "Tahoe external or project storage object",
+        "big-sur": "External storage hardware genre"
       },
       "eraTranslationByEra": {
         "classic": "Stay inside the native hard-disk world and add only a minimal project cue.",
@@ -557,7 +587,8 @@
         "aqua": "B",
         "snow-leopard": "B",
         "yosemite": "B",
-        "liquid-glass": "B"
+        "liquid-glass": "B",
+        "big-sur": "B"
       },
       "reviewStatusByEra": {
         "classic": "historically-reviewed",
@@ -565,7 +596,8 @@
         "aqua": "historically-reviewed",
         "snow-leopard": "historically-reviewed",
         "yosemite": "historically-reviewed",
-        "liquid-glass": "historically-reviewed"
+        "liquid-glass": "historically-reviewed",
+        "big-sur": "pending"
       },
       "metaphorKey": "durable-project-volume",
       "metaphorKeyStatus": "deprecated-migration-hint"
@@ -594,7 +626,8 @@
         "aqua": "Jaguar optical-disc and removable-media grammar",
         "snow-leopard": "Snow Leopard optical-disc grammar",
         "yosemite": "Yosemite optical-media object treated as deliberate archival media",
-        "liquid-glass": "Tahoe layered object grammar applied to deliberate archival media"
+        "liquid-glass": "Tahoe layered object grammar applied to deliberate archival media",
+        "big-sur": "Optical disc and sleeve genre"
       },
       "eraTranslationByEra": {
         "classic": "Use a period-plausible optical medium without pretending it is a direct System 6 project-export resource.",
@@ -621,7 +654,8 @@
         "aqua": "B",
         "snow-leopard": "B",
         "yosemite": "B",
-        "liquid-glass": "B"
+        "liquid-glass": "B",
+        "big-sur": "B"
       },
       "reviewStatusByEra": {
         "classic": "pending",
@@ -629,7 +663,8 @@
         "aqua": "pending",
         "snow-leopard": "pending",
         "yosemite": "pending",
-        "liquid-glass": "pending"
+        "liquid-glass": "pending",
+        "big-sur": "pending"
       },
       "metaphorKey": "finished-project-optical-media",
       "metaphorKeyStatus": "deprecated-migration-hint"
@@ -658,7 +693,8 @@
         "aqua": "Jaguar Sherlock 3 and Finder search grammar",
         "snow-leopard": "Snow Leopard Finder search and Spotlight grammar",
         "yosemite": "Yosemite Finder search and Spotlight grammar",
-        "liquid-glass": "Tahoe Finder search and Spotlight grammar"
+        "liquid-glass": "Tahoe Finder search and Spotlight grammar",
+        "big-sur": "Original application following 2020 app-icon grammar"
       },
       "eraTranslationByEra": {
         "classic": "Use a restrained one-colour lens/search relationship inside the System 6 object world.",
@@ -687,7 +723,8 @@
         "aqua": "B",
         "snow-leopard": "B",
         "yosemite": "B",
-        "liquid-glass": "B"
+        "liquid-glass": "B",
+        "big-sur": "C"
       },
       "reviewStatusByEra": {
         "classic": "historically-reviewed",
@@ -695,7 +732,8 @@
         "aqua": "historically-reviewed",
         "snow-leopard": "historically-reviewed",
         "yosemite": "historically-reviewed",
-        "liquid-glass": "pending"
+        "liquid-glass": "pending",
+        "big-sur": "pending"
       },
       "metaphorKey": "search-and-discovery",
       "metaphorKeyStatus": "deprecated-migration-hint"
@@ -725,7 +763,8 @@
         "aqua": "Mac OS X 10.2 TextEdit",
         "snow-leopard": "Mac OS X 10.6 TextEdit",
         "yosemite": "OS X 10.10 TextEdit",
-        "liquid-glass": "macOS Tahoe 26 TextEdit"
+        "liquid-glass": "macOS Tahoe 26 TextEdit",
+        "big-sur": "Original application following 2020 app-icon grammar"
       },
       "eraTranslationByEra": {
         "classic": "Follow the native TeachText resource anatomy.",
@@ -753,7 +792,8 @@
         "aqua": "B",
         "snow-leopard": "B",
         "yosemite": "B",
-        "liquid-glass": "B"
+        "liquid-glass": "B",
+        "big-sur": "C"
       },
       "reviewStatusByEra": {
         "classic": "reference-validated",
@@ -761,7 +801,8 @@
         "aqua": "pending",
         "snow-leopard": "historically-reviewed",
         "yosemite": "historically-reviewed",
-        "liquid-glass": "historically-reviewed"
+        "liquid-glass": "historically-reviewed",
+        "big-sur": "pending"
       },
       "metaphorKey": "editable-writing-object",
       "metaphorKeyStatus": "deprecated-migration-hint"
@@ -791,7 +832,8 @@
         "aqua": "Jaguar-era album and clipping utilities",
         "snow-leopard": "Snow Leopard-era album and clipping utilities",
         "yosemite": "Yosemite-era album and clipping utilities",
-        "liquid-glass": "Tahoe-era album and clipping object grammar"
+        "liquid-glass": "Tahoe-era album and clipping object grammar",
+        "big-sur": "Original application following 2020 app-icon grammar"
       },
       "eraTranslationByEra": {
         "classic": "Stay recognizably inside the System 6 Scrapbook/desk-accessory world.",
@@ -819,7 +861,8 @@
         "aqua": "B",
         "snow-leopard": "B",
         "yosemite": "B",
-        "liquid-glass": "B"
+        "liquid-glass": "B",
+        "big-sur": "C"
       },
       "reviewStatusByEra": {
         "classic": "historically-reviewed",
@@ -827,7 +870,8 @@
         "aqua": "pending",
         "snow-leopard": "pending",
         "yosemite": "pending",
-        "liquid-glass": "pending"
+        "liquid-glass": "pending",
+        "big-sur": "pending"
       },
       "metaphorKey": "curated-clippings-album",
       "metaphorKeyStatus": "deprecated-migration-hint"
@@ -856,7 +900,8 @@
         "aqua": "Mac OS X 10.2 iChat communication grammar",
         "snow-leopard": "Mac OS X 10.6 iChat communication grammar",
         "yosemite": "OS X 10.10 Messages communication grammar",
-        "liquid-glass": "macOS Tahoe 26 Messages and layered communication grammar"
+        "liquid-glass": "macOS Tahoe 26 Messages and layered communication grammar",
+        "big-sur": "Original application following 2020 app-icon grammar"
       },
       "eraTranslationByEra": {
         "classic": "Express conversation and provisional output as a restrained Classic pictogram; exact two-bubble composition is optional.",
@@ -885,7 +930,8 @@
         "aqua": "B",
         "snow-leopard": "B",
         "yosemite": "B",
-        "liquid-glass": "B"
+        "liquid-glass": "B",
+        "big-sur": "C"
       },
       "reviewStatusByEra": {
         "classic": "historically-reviewed",
@@ -893,7 +939,8 @@
         "aqua": "pending",
         "snow-leopard": "pending",
         "yosemite": "historically-reviewed",
-        "liquid-glass": "historically-reviewed"
+        "liquid-glass": "historically-reviewed",
+        "big-sur": "pending"
       },
       "metaphorKey": "conversation-with-provisional-reply",
       "metaphorKeyStatus": "deprecated-migration-hint",
@@ -922,9 +969,12 @@
         "aqua": "Mac OS X 10.2 System Preferences",
         "snow-leopard": "Mac OS X 10.6 System Preferences",
         "yosemite": "OS X 10.10 System Preferences",
-        "liquid-glass": "macOS Tahoe 26 System Settings"
+        "liquid-glass": "macOS Tahoe 26 System Settings",
+        "big-sur": "System Preferences at right of Apple 2020 app-icon introduction figure"
       },
-      "nearestAnalogByEra": {},
+      "nearestAnalogByEra": {
+        "big-sur": "System Preferences at right of Apple 2020 app-icon introduction figure"
+      },
       "eraTranslationByEra": {
         "classic": "Use native Control Panel/physical-control grammar.",
         "platinum": "Use the target Mac OS 9 control-panel identity.",
@@ -950,7 +1000,8 @@
         "aqua": "B",
         "snow-leopard": "B",
         "yosemite": "B",
-        "liquid-glass": "A"
+        "liquid-glass": "A",
+        "big-sur": "A"
       },
       "reviewStatusByEra": {
         "classic": "historically-reviewed",
@@ -958,7 +1009,8 @@
         "aqua": "historically-reviewed",
         "snow-leopard": "historically-reviewed",
         "yosemite": "historically-reviewed",
-        "liquid-glass": "pending"
+        "liquid-glass": "pending",
+        "big-sur": "historically-reviewed"
       }
     },
     "reviewDesk": {
@@ -985,7 +1037,8 @@
         "aqua": "Jaguar text proofing and spell-check grammar",
         "snow-leopard": "Snow Leopard text proofing and correction grammar",
         "yosemite": "Yosemite text proofing and markup grammar",
-        "liquid-glass": "Tahoe text proofing and markup grammar"
+        "liquid-glass": "Tahoe text proofing and markup grammar",
+        "big-sur": "Original application following 2020 app-icon grammar"
       },
       "eraTranslationByEra": {
         "classic": "Reduce proofing to one readable manuscript-plus-correction object.",
@@ -1013,7 +1066,8 @@
         "aqua": "B",
         "snow-leopard": "B",
         "yosemite": "B",
-        "liquid-glass": "B"
+        "liquid-glass": "B",
+        "big-sur": "C"
       },
       "reviewStatusByEra": {
         "classic": "historically-reviewed",
@@ -1021,7 +1075,8 @@
         "aqua": "historically-reviewed",
         "snow-leopard": "historically-reviewed",
         "yosemite": "historically-reviewed",
-        "liquid-glass": "historically-reviewed"
+        "liquid-glass": "historically-reviewed",
+        "big-sur": "pending"
       },
       "metaphorKey": "manuscript-proofing",
       "metaphorKeyStatus": "deprecated-migration-hint"
@@ -1050,7 +1105,8 @@
         "aqua": "Jaguar-era outliner and mind-mapping applications",
         "snow-leopard": "Snow Leopard-era outliner and mind-mapping applications",
         "yosemite": "Yosemite-era outline and document-map applications",
-        "liquid-glass": "Tahoe-era structured-document and spatial-outline applications"
+        "liquid-glass": "Tahoe-era structured-document and spatial-outline applications",
+        "big-sur": "Original application following 2020 app-icon grammar"
       },
       "eraTranslationByEra": {
         "classic": "Show a document whose headings become a simple branch structure, not a geographic map or modern node network.",
@@ -1078,7 +1134,8 @@
         "aqua": "C",
         "snow-leopard": "C",
         "yosemite": "C",
-        "liquid-glass": "C"
+        "liquid-glass": "C",
+        "big-sur": "C"
       },
       "reviewStatusByEra": {
         "classic": "historically-reviewed",
@@ -1086,7 +1143,8 @@
         "aqua": "historically-reviewed",
         "snow-leopard": "historically-reviewed",
         "yosemite": "historically-reviewed",
-        "liquid-glass": "historically-reviewed"
+        "liquid-glass": "historically-reviewed",
+        "big-sur": "pending"
       },
       "metaphorKey": "document-heading-structure",
       "metaphorKeyStatus": "deprecated-migration-hint",
@@ -1116,7 +1174,9 @@
         "yosemite": "OS X 10.10 generic utility grammar",
         "liquid-glass": "macOS Tahoe 26 generic utility grammar"
       },
-      "nearestAnalogByEra": {},
+      "nearestAnalogByEra": {
+        "big-sur": "Original application following 2020 app-icon grammar"
+      },
       "eraTranslationByEra": {
         "classic": "Use the native generic application anatomy.",
         "platinum": "Use Mac OS 9 generic application grammar.",
@@ -1141,7 +1201,8 @@
         "aqua": "A",
         "snow-leopard": "A",
         "yosemite": "A",
-        "liquid-glass": "A"
+        "liquid-glass": "A",
+        "big-sur": "C"
       },
       "reviewStatusByEra": {
         "classic": "pending",
@@ -1149,7 +1210,8 @@
         "aqua": "pending",
         "snow-leopard": "pending",
         "yosemite": "pending",
-        "liquid-glass": "pending"
+        "liquid-glass": "pending",
+        "big-sur": "pending"
       }
     },
     "systemFile": {
@@ -1176,7 +1238,9 @@
         "yosemite": "OS X 10.10 system-owned document grammar",
         "liquid-glass": "macOS Tahoe 26 system-owned document grammar"
       },
-      "nearestAnalogByEra": {},
+      "nearestAnalogByEra": {
+        "big-sur": "2020 document genre"
+      },
       "eraTranslationByEra": {
         "classic": "Use System 6 document and system identity grammar.",
         "platinum": "Follow the Mac OS 9 System file prototype.",
@@ -1200,7 +1264,8 @@
         "aqua": "A",
         "snow-leopard": "A",
         "yosemite": "A",
-        "liquid-glass": "A"
+        "liquid-glass": "A",
+        "big-sur": "B"
       },
       "reviewStatusByEra": {
         "classic": "pending",
@@ -1208,7 +1273,8 @@
         "aqua": "pending",
         "snow-leopard": "pending",
         "yosemite": "pending",
-        "liquid-glass": "pending"
+        "liquid-glass": "pending",
+        "big-sur": "pending"
       }
     },
     "clipboard": {
@@ -1270,6 +1336,862 @@
         "snow-leopard": "pending",
         "yosemite": "pending",
         "liquid-glass": "pending"
+      }
+    },
+    "clioPaint": {
+      "id": "clioPaint",
+      "role": "clioPaint",
+      "semanticIdentity": "bitmap painting application",
+      "systemOrProduct": "product",
+      "identityAnchors": [
+        "artist palette",
+        "paint brush"
+      ],
+      "genreByEra": {
+        "classic": "application",
+        "platinum": "application",
+        "aqua": "application",
+        "snow-leopard": "application",
+        "yosemite": "application",
+        "big-sur": "application",
+        "liquid-glass": "application",
+        "nextstep": "application"
+      },
+      "historicalPrototypeByEra": {
+        "classic": null,
+        "platinum": null,
+        "aqua": null,
+        "snow-leopard": null,
+        "yosemite": null,
+        "liquid-glass": null,
+        "nextstep": null
+      },
+      "nearestAnalogByEra": {
+        "classic": null,
+        "platinum": null,
+        "aqua": null,
+        "snow-leopard": null,
+        "yosemite": null,
+        "big-sur": "Original drawing application",
+        "liquid-glass": null,
+        "nextstep": null
+      },
+      "provenanceClassByEra": {
+        "classic": "C",
+        "platinum": "C",
+        "aqua": "C",
+        "snow-leopard": "C",
+        "yosemite": "C",
+        "big-sur": "C",
+        "liquid-glass": "C",
+        "nextstep": "C"
+      },
+      "reviewStatusByEra": {
+        "classic": "pending",
+        "platinum": "pending",
+        "aqua": "pending",
+        "snow-leopard": "pending",
+        "yosemite": "pending",
+        "big-sur": "pending",
+        "liquid-glass": "pending",
+        "nextstep": "pending"
+      },
+      "eraTranslationByEra": {
+        "classic": "Original monochrome free-object construction, with separate 16/32 optical artwork.",
+        "platinum": "Original compact object illustration with discrete highlights and shallow structure; not a modern rounded plate.",
+        "aqua": "Original free-object illustration with pronounced gel highlights and early OS X material.",
+        "snow-leopard": "Original stationery or painting-tool objects with controlled material lighting.",
+        "yosemite": "Original shallow, flat, object-specific silhouettes without a family-wide tile.",
+        "big-sur": "Original front-facing rounded application plate enclosing the object identity.",
+        "liquid-glass": "Original translucent layers; Default, Dark and Clear retain the same object composition.",
+        "nextstep": "Original hard rectangular stone-gray tile, black/white bevel and restrained colour accents."
+      },
+      "sourceBoundary": "Original project artwork adapted to era grammar. No native application counterpart, extracted operating-system asset or exact historical replica is claimed."
+    },
+    "clioProject": {
+      "id": "clioProject",
+      "role": "clioProject",
+      "semanticIdentity": "project task dependency planning",
+      "systemOrProduct": "product",
+      "identityAnchors": [
+        "three task cards, two left and one right",
+        "orthogonal dependency links"
+      ],
+      "genreByEra": {
+        "classic": "application",
+        "platinum": "application",
+        "aqua": "application",
+        "snow-leopard": "application",
+        "yosemite": "application",
+        "big-sur": "application",
+        "liquid-glass": "application",
+        "nextstep": "application"
+      },
+      "historicalPrototypeByEra": {
+        "classic": null,
+        "platinum": null,
+        "aqua": null,
+        "snow-leopard": null,
+        "yosemite": null,
+        "liquid-glass": null,
+        "nextstep": null
+      },
+      "nearestAnalogByEra": {
+        "classic": null,
+        "platinum": null,
+        "aqua": null,
+        "snow-leopard": null,
+        "yosemite": null,
+        "big-sur": "Original dependency planning application",
+        "liquid-glass": null,
+        "nextstep": null
+      },
+      "provenanceClassByEra": {
+        "classic": "C",
+        "platinum": "C",
+        "aqua": "C",
+        "snow-leopard": "C",
+        "yosemite": "C",
+        "big-sur": "C",
+        "liquid-glass": "C",
+        "nextstep": "C"
+      },
+      "reviewStatusByEra": {
+        "classic": "pending",
+        "platinum": "pending",
+        "aqua": "pending",
+        "snow-leopard": "pending",
+        "yosemite": "pending",
+        "big-sur": "pending",
+        "liquid-glass": "pending",
+        "nextstep": "pending"
+      },
+      "eraTranslationByEra": {
+        "classic": "Original monochrome free-object construction, with separate 16/32 optical artwork.",
+        "platinum": "Original compact object illustration with discrete highlights and shallow structure; not a modern rounded plate.",
+        "aqua": "Original free-object illustration with pronounced gel highlights and early OS X material.",
+        "snow-leopard": "Original stationery or painting-tool objects with controlled material lighting.",
+        "yosemite": "Original shallow, flat, object-specific silhouettes without a family-wide tile.",
+        "big-sur": "Original front-facing rounded application plate enclosing the object identity.",
+        "liquid-glass": "Original translucent layers; Default, Dark and Clear retain the same object composition.",
+        "nextstep": "Original hard rectangular stone-gray tile, black/white bevel and restrained colour accents."
+      },
+      "sourceBoundary": "Original project artwork adapted to era grammar. No native application counterpart, extracted operating-system asset or exact historical replica is claimed."
+    },
+    "oneMoreTune": {
+      "id": "oneMoreTune",
+      "role": "oneMoreTune",
+      "semanticIdentity": "music listening and playlist application",
+      "systemOrProduct": "product",
+      "identityAnchors": [
+        "two overlapping music cards",
+        "eighth note"
+      ],
+      "genreByEra": {
+        "classic": "application",
+        "platinum": "application",
+        "aqua": "application",
+        "snow-leopard": "application",
+        "yosemite": "application",
+        "big-sur": "application",
+        "liquid-glass": "application",
+        "nextstep": "application"
+      },
+      "historicalPrototypeByEra": {
+        "classic": null,
+        "platinum": null,
+        "aqua": null,
+        "snow-leopard": null,
+        "yosemite": null,
+        "liquid-glass": null,
+        "nextstep": null
+      },
+      "nearestAnalogByEra": {
+        "classic": null,
+        "platinum": null,
+        "aqua": null,
+        "snow-leopard": null,
+        "yosemite": null,
+        "big-sur": "Original music knowledge study application",
+        "liquid-glass": null,
+        "nextstep": null
+      },
+      "provenanceClassByEra": {
+        "classic": "C",
+        "platinum": "C",
+        "aqua": "C",
+        "snow-leopard": "C",
+        "yosemite": "C",
+        "big-sur": "C",
+        "liquid-glass": "C",
+        "nextstep": "C"
+      },
+      "reviewStatusByEra": {
+        "classic": "pending",
+        "platinum": "pending",
+        "aqua": "pending",
+        "snow-leopard": "pending",
+        "yosemite": "pending",
+        "big-sur": "pending",
+        "liquid-glass": "pending",
+        "nextstep": "pending"
+      },
+      "eraTranslationByEra": {
+        "classic": "Original monochrome free-object construction, with separate 16/32 optical artwork.",
+        "platinum": "Original compact object illustration with discrete highlights and shallow structure; not a modern rounded plate.",
+        "aqua": "Original free-object illustration with pronounced gel highlights and early OS X material.",
+        "snow-leopard": "Original stationery or painting-tool objects with controlled material lighting.",
+        "yosemite": "Original shallow, flat, object-specific silhouettes without a family-wide tile.",
+        "big-sur": "Original front-facing rounded application plate enclosing the object identity.",
+        "liquid-glass": "Original translucent layers; Default, Dark and Clear retain the same object composition.",
+        "nextstep": "Original hard rectangular stone-gray tile, black/white bevel and restrained colour accents."
+      },
+      "sourceBoundary": "Original project artwork adapted to era grammar. No native application counterpart, extracted operating-system asset or exact historical replica is claimed."
+    },
+    "startupDisk": {
+      "semanticIdentity": "Startup Disk",
+      "identityAnchors": [
+        "drive",
+        "startup"
+      ],
+      "provenanceClassByEra": {
+        "big-sur": "B"
+      },
+      "reviewStatusByEra": {
+        "big-sur": "pending"
+      },
+      "historicalPrototypeByEra": {},
+      "nearestAnalogByEra": {
+        "big-sur": "Startup storage hardware genre"
+      }
+    },
+    "applications": {
+      "semanticIdentity": "Applications folder",
+      "identityAnchors": [
+        "folder",
+        "applications"
+      ],
+      "provenanceClassByEra": {
+        "big-sur": "B"
+      },
+      "reviewStatusByEra": {
+        "big-sur": "pending"
+      },
+      "historicalPrototypeByEra": {},
+      "nearestAnalogByEra": {
+        "big-sur": "2020 folder genre"
+      }
+    },
+    "quickDraft": {
+      "semanticIdentity": "Quick Draft",
+      "identityAnchors": [
+        "paper",
+        "pencil"
+      ],
+      "provenanceClassByEra": {
+        "big-sur": "B"
+      },
+      "reviewStatusByEra": {
+        "big-sur": "pending"
+      },
+      "historicalPrototypeByEra": {},
+      "nearestAnalogByEra": {
+        "big-sur": "2020 document genre"
+      }
+    },
+    "writingStudio": {
+      "semanticIdentity": "Writing Studio",
+      "identityAnchors": [
+        "typewriter",
+        "writing"
+      ],
+      "provenanceClassByEra": {
+        "big-sur": "C"
+      },
+      "reviewStatusByEra": {
+        "big-sur": "pending"
+      },
+      "historicalPrototypeByEra": {},
+      "nearestAnalogByEra": {
+        "big-sur": "Original application following 2020 app-icon grammar"
+      }
+    },
+    "cloudModel": {
+      "semanticIdentity": "Cloud Model",
+      "identityAnchors": [
+        "server",
+        "cloud"
+      ],
+      "provenanceClassByEra": {
+        "big-sur": "C"
+      },
+      "reviewStatusByEra": {
+        "big-sur": "pending"
+      },
+      "historicalPrototypeByEra": {},
+      "nearestAnalogByEra": {
+        "big-sur": "Original application following 2020 app-icon grammar"
+      }
+    },
+    "cloudModelOff": {
+      "semanticIdentity": "Cloud Model Offline",
+      "identityAnchors": [
+        "server",
+        "cloudOff"
+      ],
+      "provenanceClassByEra": {
+        "big-sur": "C"
+      },
+      "reviewStatusByEra": {
+        "big-sur": "pending"
+      },
+      "historicalPrototypeByEra": {},
+      "nearestAnalogByEra": {
+        "big-sur": "Original application following 2020 app-icon grammar"
+      }
+    },
+    "questionSheet": {
+      "semanticIdentity": "Question Sheet",
+      "identityAnchors": [
+        "paper",
+        "question"
+      ],
+      "provenanceClassByEra": {
+        "big-sur": "B"
+      },
+      "reviewStatusByEra": {
+        "big-sur": "pending"
+      },
+      "historicalPrototypeByEra": {},
+      "nearestAnalogByEra": {
+        "big-sur": "2020 document genre"
+      }
+    },
+    "outline": {
+      "semanticIdentity": "Outline",
+      "identityAnchors": [
+        "cards",
+        "outline"
+      ],
+      "provenanceClassByEra": {
+        "big-sur": "B"
+      },
+      "reviewStatusByEra": {
+        "big-sur": "pending"
+      },
+      "historicalPrototypeByEra": {},
+      "nearestAnalogByEra": {
+        "big-sur": "2020 document genre"
+      }
+    },
+    "sectionDrafts": {
+      "semanticIdentity": "Section Drafts",
+      "identityAnchors": [
+        "paperStack",
+        "sections"
+      ],
+      "provenanceClassByEra": {
+        "big-sur": "B"
+      },
+      "reviewStatusByEra": {
+        "big-sur": "pending"
+      },
+      "historicalPrototypeByEra": {},
+      "nearestAnalogByEra": {
+        "big-sur": "2020 document genre"
+      }
+    },
+    "manuscript": {
+      "semanticIdentity": "Manuscript",
+      "identityAnchors": [
+        "manuscript",
+        "manuscript"
+      ],
+      "provenanceClassByEra": {
+        "big-sur": "B"
+      },
+      "reviewStatusByEra": {
+        "big-sur": "pending"
+      },
+      "historicalPrototypeByEra": {},
+      "nearestAnalogByEra": {
+        "big-sur": "2020 document genre"
+      }
+    },
+    "reader": {
+      "semanticIdentity": "Reader",
+      "identityAnchors": [
+        "book",
+        "reader"
+      ],
+      "provenanceClassByEra": {
+        "big-sur": "C"
+      },
+      "reviewStatusByEra": {
+        "big-sur": "pending"
+      },
+      "historicalPrototypeByEra": {},
+      "nearestAnalogByEra": {
+        "big-sur": "Original application following 2020 app-icon grammar"
+      }
+    },
+    "timeMachine": {
+      "semanticIdentity": "Time Machine",
+      "identityAnchors": [
+        "clock",
+        "archive"
+      ],
+      "provenanceClassByEra": {
+        "big-sur": "C"
+      },
+      "reviewStatusByEra": {
+        "big-sur": "pending"
+      },
+      "historicalPrototypeByEra": {},
+      "nearestAnalogByEra": {
+        "big-sur": "Original application following 2020 app-icon grammar"
+      }
+    },
+    "clioStage": {
+      "semanticIdentity": "ClioStage",
+      "identityAnchors": [
+        "stage",
+        "stage"
+      ],
+      "provenanceClassByEra": {
+        "big-sur": "C"
+      },
+      "reviewStatusByEra": {
+        "big-sur": "pending"
+      },
+      "historicalPrototypeByEra": {},
+      "nearestAnalogByEra": {
+        "big-sur": "Original application following 2020 app-icon grammar"
+      }
+    },
+    "clioChart": {
+      "semanticIdentity": "ClioChart",
+      "identityAnchors": [
+        "easel",
+        "chart"
+      ],
+      "provenanceClassByEra": {
+        "big-sur": "C"
+      },
+      "reviewStatusByEra": {
+        "big-sur": "pending"
+      },
+      "historicalPrototypeByEra": {},
+      "nearestAnalogByEra": {
+        "big-sur": "Original application following 2020 app-icon grammar"
+      }
+    },
+    "liquidCover": {
+      "semanticIdentity": "Cover Glass",
+      "identityAnchors": [
+        "cover",
+        "cover"
+      ],
+      "provenanceClassByEra": {
+        "big-sur": "C"
+      },
+      "reviewStatusByEra": {
+        "big-sur": "pending"
+      },
+      "historicalPrototypeByEra": {},
+      "nearestAnalogByEra": {
+        "big-sur": "Original typography/video-cover tool"
+      }
+    },
+    "cmfStudio": {
+      "semanticIdentity": "CMF Studio",
+      "identityAnchors": [
+        "swatches",
+        "swatches"
+      ],
+      "provenanceClassByEra": {
+        "big-sur": "C"
+      },
+      "reviewStatusByEra": {
+        "big-sur": "pending"
+      },
+      "historicalPrototypeByEra": {},
+      "nearestAnalogByEra": {
+        "big-sur": "Original application following 2020 app-icon grammar"
+      }
+    },
+    "soundscape": {
+      "semanticIdentity": "Soundscape",
+      "identityAnchors": [
+        "speaker",
+        "sound"
+      ],
+      "provenanceClassByEra": {
+        "big-sur": "C"
+      },
+      "reviewStatusByEra": {
+        "big-sur": "pending"
+      },
+      "historicalPrototypeByEra": {},
+      "nearestAnalogByEra": {
+        "big-sur": "Original application following 2020 app-icon grammar"
+      }
+    },
+    "systemFolder": {
+      "semanticIdentity": "System Folder",
+      "identityAnchors": [
+        "folder",
+        "gear"
+      ],
+      "provenanceClassByEra": {
+        "big-sur": "B"
+      },
+      "reviewStatusByEra": {
+        "big-sur": "pending"
+      },
+      "historicalPrototypeByEra": {},
+      "nearestAnalogByEra": {
+        "big-sur": "2020 folder genre"
+      }
+    },
+    "helpFolder": {
+      "semanticIdentity": "Help Folder",
+      "identityAnchors": [
+        "folder",
+        "help"
+      ],
+      "provenanceClassByEra": {
+        "big-sur": "B"
+      },
+      "reviewStatusByEra": {
+        "big-sur": "pending"
+      },
+      "historicalPrototypeByEra": {},
+      "nearestAnalogByEra": {
+        "big-sur": "2020 folder genre"
+      }
+    },
+    "importUtility": {
+      "semanticIdentity": "Import Utility",
+      "identityAnchors": [
+        "inbox",
+        "import"
+      ],
+      "provenanceClassByEra": {
+        "big-sur": "C"
+      },
+      "reviewStatusByEra": {
+        "big-sur": "pending"
+      },
+      "historicalPrototypeByEra": {},
+      "nearestAnalogByEra": {
+        "big-sur": "Original application following 2020 app-icon grammar"
+      }
+    },
+    "chooser": {
+      "semanticIdentity": "Chooser",
+      "identityAnchors": [
+        "network",
+        "chooser"
+      ],
+      "provenanceClassByEra": {
+        "big-sur": "C"
+      },
+      "reviewStatusByEra": {
+        "big-sur": "pending"
+      },
+      "historicalPrototypeByEra": {},
+      "nearestAnalogByEra": {
+        "big-sur": "Original application following 2020 app-icon grammar"
+      }
+    },
+    "systemHelp": {
+      "semanticIdentity": "System Help",
+      "identityAnchors": [
+        "book",
+        "help"
+      ],
+      "provenanceClassByEra": {
+        "big-sur": "C"
+      },
+      "reviewStatusByEra": {
+        "big-sur": "pending"
+      },
+      "historicalPrototypeByEra": {},
+      "nearestAnalogByEra": {
+        "big-sur": "Original application following 2020 app-icon grammar"
+      }
+    },
+    "dictionary": {
+      "semanticIdentity": "Dictionary",
+      "identityAnchors": [
+        "dictionary",
+        "dictionary"
+      ],
+      "provenanceClassByEra": {
+        "big-sur": "C"
+      },
+      "reviewStatusByEra": {
+        "big-sur": "pending"
+      },
+      "historicalPrototypeByEra": {},
+      "nearestAnalogByEra": {
+        "big-sur": "Original application following 2020 app-icon grammar"
+      }
+    },
+    "writingDemo": {
+      "semanticIdentity": "Writing Demo",
+      "identityAnchors": [
+        "paper",
+        "play"
+      ],
+      "provenanceClassByEra": {
+        "big-sur": "B"
+      },
+      "reviewStatusByEra": {
+        "big-sur": "pending"
+      },
+      "historicalPrototypeByEra": {},
+      "nearestAnalogByEra": {
+        "big-sur": "2020 document genre"
+      }
+    },
+    "chatFile": {
+      "semanticIdentity": "Chat File",
+      "identityAnchors": [
+        "paper",
+        "chat"
+      ],
+      "provenanceClassByEra": {
+        "big-sur": "B"
+      },
+      "reviewStatusByEra": {
+        "big-sur": "pending"
+      },
+      "historicalPrototypeByEra": {},
+      "nearestAnalogByEra": {
+        "big-sur": "2020 document genre"
+      }
+    },
+    "chatImport": {
+      "semanticIdentity": "Chat Import",
+      "identityAnchors": [
+        "inbox",
+        "chat"
+      ],
+      "provenanceClassByEra": {
+        "big-sur": "C"
+      },
+      "reviewStatusByEra": {
+        "big-sur": "pending"
+      },
+      "historicalPrototypeByEra": {},
+      "nearestAnalogByEra": {
+        "big-sur": "Original application following 2020 app-icon grammar"
+      }
+    },
+    "systemStatus": {
+      "semanticIdentity": "System Status",
+      "identityAnchors": [
+        "monitor",
+        "status"
+      ],
+      "provenanceClassByEra": {
+        "big-sur": "C"
+      },
+      "reviewStatusByEra": {
+        "big-sur": "pending"
+      },
+      "historicalPrototypeByEra": {},
+      "nearestAnalogByEra": {
+        "big-sur": "Original application following 2020 app-icon grammar"
+      }
+    },
+    "contextPanel": {
+      "semanticIdentity": "Context Panel",
+      "identityAnchors": [
+        "indexBox",
+        "context"
+      ],
+      "provenanceClassByEra": {
+        "big-sur": "C"
+      },
+      "reviewStatusByEra": {
+        "big-sur": "pending"
+      },
+      "historicalPrototypeByEra": {},
+      "nearestAnalogByEra": {
+        "big-sur": "Original application following 2020 app-icon grammar"
+      }
+    },
+    "rebuildArticle": {
+      "semanticIdentity": "Rebuild Article",
+      "identityAnchors": [
+        "press",
+        "rebuild"
+      ],
+      "provenanceClassByEra": {
+        "big-sur": "C"
+      },
+      "reviewStatusByEra": {
+        "big-sur": "pending"
+      },
+      "historicalPrototypeByEra": {},
+      "nearestAnalogByEra": {
+        "big-sur": "Original application following 2020 app-icon grammar"
+      }
+    },
+    "bureaucracyMeme": {
+      "semanticIdentity": "Bureaucracy Meme",
+      "identityAnchors": [
+        "stamp",
+        "forms"
+      ],
+      "provenanceClassByEra": {
+        "big-sur": "C"
+      },
+      "reviewStatusByEra": {
+        "big-sur": "pending"
+      },
+      "historicalPrototypeByEra": {},
+      "nearestAnalogByEra": {
+        "big-sur": "Original application following 2020 app-icon grammar"
+      }
+    },
+    "endfieldTerminal": {
+      "semanticIdentity": "Endfield Terminal",
+      "identityAnchors": [
+        "terminal",
+        "terminal"
+      ],
+      "provenanceClassByEra": {
+        "big-sur": "C"
+      },
+      "reviewStatusByEra": {
+        "big-sur": "pending"
+      },
+      "historicalPrototypeByEra": {},
+      "nearestAnalogByEra": {
+        "big-sur": "Original application following 2020 app-icon grammar"
+      }
+    },
+    "documents": {
+      "semanticIdentity": "Documents folder",
+      "identityAnchors": [
+        "folder",
+        "documents"
+      ],
+      "provenanceClassByEra": {
+        "big-sur": "B"
+      },
+      "reviewStatusByEra": {
+        "big-sur": "pending"
+      },
+      "historicalPrototypeByEra": {},
+      "nearestAnalogByEra": {
+        "big-sur": "2020 folder genre"
+      }
+    },
+    "alias": {
+      "semanticIdentity": "Alias",
+      "identityAnchors": [
+        "paper",
+        "alias"
+      ],
+      "provenanceClassByEra": {
+        "big-sur": "B"
+      },
+      "reviewStatusByEra": {
+        "big-sur": "pending"
+      },
+      "historicalPrototypeByEra": {},
+      "nearestAnalogByEra": {
+        "big-sur": "2020 document genre"
+      }
+    },
+    "writingBell": {
+      "semanticIdentity": "Writing Bell",
+      "identityAnchors": [
+        "bell",
+        "bell"
+      ],
+      "provenanceClassByEra": {
+        "big-sur": "C"
+      },
+      "reviewStatusByEra": {
+        "big-sur": "pending"
+      },
+      "historicalPrototypeByEra": {},
+      "nearestAnalogByEra": {
+        "big-sur": "Original application following 2020 app-icon grammar"
+      }
+    },
+    "trashFull": {
+      "semanticIdentity": "Full Waste Basket",
+      "identityAnchors": [
+        "trash",
+        "full"
+      ],
+      "provenanceClassByEra": {
+        "big-sur": "B"
+      },
+      "reviewStatusByEra": {
+        "big-sur": "pending"
+      },
+      "historicalPrototypeByEra": {},
+      "nearestAnalogByEra": {
+        "big-sur": "Paired state derived from the empty-bin product icon"
+      }
+    },
+    "control": {
+      "semanticIdentity": "Control",
+      "identityAnchors": [
+        "controlBoard",
+        "knobs"
+      ],
+      "provenanceClassByEra": {
+        "big-sur": "C"
+      },
+      "reviewStatusByEra": {
+        "big-sur": "pending"
+      },
+      "historicalPrototypeByEra": {},
+      "nearestAnalogByEra": {
+        "big-sur": "Original application following 2020 app-icon grammar"
+      }
+    },
+    "localModel": {
+      "semanticIdentity": "Local Model",
+      "identityAnchors": [
+        "chip",
+        "none"
+      ],
+      "provenanceClassByEra": {
+        "big-sur": "C"
+      },
+      "reviewStatusByEra": {
+        "big-sur": "pending"
+      },
+      "historicalPrototypeByEra": {},
+      "nearestAnalogByEra": {
+        "big-sur": "Original application following 2020 app-icon grammar"
+      }
+    },
+    "controlStrip": {
+      "semanticIdentity": "Control Strip",
+      "identityAnchors": [
+        "strip",
+        "none"
+      ],
+      "provenanceClassByEra": {
+        "big-sur": "C"
+      },
+      "reviewStatusByEra": {
+        "big-sur": "pending"
+      },
+      "historicalPrototypeByEra": {},
+      "nearestAnalogByEra": {
+        "big-sur": "Original application following 2020 app-icon grammar"
       }
     }
   },
@@ -1496,5 +2418,69 @@
     }
   },
   "metaphorKeyRule": "DEPRECATED MIGRATION ONLY. metaphorKey may help old builders locate an object's former composition, but it cannot lock a physical object, enclosure, full composition, or drawing across eras. semanticIdentity plus one or two identityAnchors are authoritative; historicalPrototypeByEra, genreByEra, and eraTranslationByEra decide the target-era artwork.",
-  "remaining40Policy": "The forty runtime ids outside priorityCore16 remain historicalReviewStatus=pending in the provenance matrix until individually reviewed. Family completeness, accepted-generated, or technically-clean status must not upgrade them."
+  "remaining40Policy": "The forty runtime ids outside priorityCore16 remain historicalReviewStatus=pending in the provenance matrix until individually reviewed. Family completeness, accepted-generated, or technically-clean status must not upgrade them.",
+  "runtimeEras": [
+    "classic",
+    "platinum",
+    "aqua",
+    "snow-leopard",
+    "yosemite",
+    "big-sur",
+    "liquid-glass",
+    "nextstep"
+  ],
+  "supplementalIconIds": [
+    "clioPaint",
+    "clioProject",
+    "oneMoreTune"
+  ],
+  "runtimeCoveragePolicy": "The original eras and priorityCore16 retain their accepted historical audit scope. runtimeEras covers current delivery; supplementalIconIds extend the immutable 56-object inventory without changing accepted source batches. Runtime coverage is not historical approval.",
+  "runtimeCoverageByEra": {
+    "classic": {
+      "runtimeObjectCount": 59,
+      "independentArtworkCount": 59,
+      "fallbackObjectCount": 0
+    },
+    "platinum": {
+      "runtimeObjectCount": 59,
+      "independentArtworkCount": 59,
+      "fallbackObjectCount": 0
+    },
+    "aqua": {
+      "runtimeObjectCount": 59,
+      "independentArtworkCount": 59,
+      "fallbackObjectCount": 0
+    },
+    "snow-leopard": {
+      "runtimeObjectCount": 59,
+      "independentArtworkCount": 59,
+      "fallbackObjectCount": 0
+    },
+    "yosemite": {
+      "runtimeObjectCount": 59,
+      "independentArtworkCount": 59,
+      "fallbackObjectCount": 0
+    },
+    "big-sur": {
+      "runtimeObjectCount": 59,
+      "independentArtworkCount": 59,
+      "fallbackObjectCount": 0
+    },
+    "liquid-glass": {
+      "runtimeObjectCount": 59,
+      "independentArtworkCount": 59,
+      "fallbackObjectCount": 0
+    },
+    "nextstep": {
+      "runtimeObjectCount": 59,
+      "independentArtworkCount": 3,
+      "independentIconIds": [
+        "clioPaint",
+        "clioProject",
+        "oneMoreTune"
+      ],
+      "fallbackEra": "classic",
+      "fallbackObjectCount": 56
+    }
+  }
 }

@@ -1,6 +1,6 @@
 window.AISystem6LaunchIntent = {
   parse(search) {
-    const appearances = "classic platinum aqua snow-leopard yosemite liquid-glass".split(" ");
+    const appearances = "classic platinum aqua snow-leopard yosemite big-sur liquid-glass nextstep".split(" ");
     const commands = {
       micropolis: "open-micropolis",
       teachtext: "open-teachtext",
@@ -37,6 +37,38 @@ window.AISystem6LaunchIntent = {
       // route, and only that view shows the route it was written on.
       dtk: { command: "open-shared-disk-dtk", window: "teachText", profile: "writing" },
       ipad1: { command: "open-shared-disk-ipad1", window: "teachText", profile: "writing" },
+      m5ipad: { command: "open-shared-disk-m5ipad", window: "teachText", profile: "writing" },
+      iphone17e: { command: "open-shared-disk-iphone17e", window: "teachText", profile: "writing" },
+      bongo: { command: "open-shared-disk-bongo", window: "teachText", profile: "writing" },
+      glass: { command: "open-shared-disk-glass", window: "teachText", profile: "writing" },
+      ipad97: { command: "open-shared-disk-ipad97", window: "teachText", profile: "writing" },
+      airbattery: { command: "open-shared-disk-airbattery", window: "teachText", profile: "writing" },
+      pm17: { command: "open-shared-disk-pm17", window: "teachText", profile: "writing" },
+      sympathy: { command: "open-shared-disk-sympathy", window: "teachText", profile: "writing" },
+      ceramic: { command: "open-shared-disk-ceramic", window: "teachText", profile: "writing" },
+      macpro19: { command: "open-shared-disk-macpro19", window: "teachText", profile: "writing" },
+      pocket: { command: "open-shared-disk-pocket", window: "teachText", profile: "writing" },
+      iphone6sp: { command: "open-shared-disk-iphone6sp", window: "teachText", profile: "writing" },
+      sleeve: { command: "open-shared-disk-sleeve", window: "teachText", profile: "writing" },
+      pm12: { command: "open-shared-disk-pm12", window: "teachText", profile: "writing" },
+      pm11: { command: "open-shared-disk-pm11", window: "teachText", profile: "writing" },
+      m5mba: { command: "open-shared-disk-m5mba", window: "teachText", profile: "writing" },
+      mbneo: { command: "open-shared-disk-mbneo", window: "teachText", profile: "writing" },
+      mini7: { command: "open-shared-disk-mini7", window: "teachText", profile: "writing" },
+      mkb: { command: "open-shared-disk-mkb", window: "teachText", profile: "writing" },
+      sd: { command: "open-shared-disk-sd", window: "teachText", profile: "writing" },
+      ios19: { command: "open-shared-disk-ios19", window: "teachText", profile: "writing" },
+      ipada4: { command: "open-shared-disk-ipada4", window: "teachText", profile: "writing" },
+      ip16p: { command: "open-shared-disk-ip16p", window: "teachText", profile: "writing" },
+      mgscrap: { command: "open-shared-disk-mgscrap", window: "teachText", profile: "writing" },
+      t2nic: { command: "open-shared-disk-t2nic", window: "teachText", profile: "writing" },
+      airtrans: { command: "open-shared-disk-airtrans", window: "teachText", profile: "writing" },
+      ip4sdemo: { command: "open-shared-disk-ip4sdemo", window: "teachText", profile: "writing" },
+      airact: { command: "open-shared-disk-airact", window: "teachText", profile: "writing" },
+      touch2: { command: "open-shared-disk-touch2", window: "teachText", profile: "writing" },
+      noport: { command: "open-shared-disk-noport", window: "teachText", profile: "writing" },
+      cdma4: { command: "open-shared-disk-cdma4", window: "teachText", profile: "writing" },
+      iphone17: { command: "open-shared-disk-iphone17", window: "teachText", profile: "writing" },
     };
     const param = (name) => {
       const match = String(search || "").match(new RegExp(`[?&]${name}=([^&#]+)`, "i"));

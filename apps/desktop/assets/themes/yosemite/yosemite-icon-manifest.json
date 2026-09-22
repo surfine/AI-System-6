@@ -54,5 +54,8 @@
   "trashFull": "icons/trashFull-32.png",
   "control": "icons/control-32.png",
   "localModel": "icons/localModel-32.png",
-  "controlStrip": "icons/controlStrip-32.png"
+  "controlStrip": "icons/controlStrip-32.png",
+  "clioProject": "icons/clioProject-32.png",
+  "clioPaint": "icons/clioPaint-32.png",
+  "oneMoreTune": "icons/oneMoreTune-32.png"
 }

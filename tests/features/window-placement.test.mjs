@@ -37,7 +37,10 @@ test.assertIncludes(
 );
 test.assertMatches(
   windowManager,
-  /querySelectorAll\("\.window\[data-window\]:not\(\.is-hidden\):not\(\.is-app-hidden\):not\(\.is-collapsed\)"\)[\s\S]{0,120}?peer !== win/,
+  // The exclusion list gained is-minimized with the NeXTSTEP dock. What this
+  // contract owns is "every visible old window, not only the same app", so it
+  // allows further state filters between the app-hidden and collapsed ones.
+  /querySelectorAll\("\.window\[data-window\]:not\(\.is-hidden\):not\(\.is-app-hidden\)(?::not\(\.is-[a-z-]+\))*:not\(\.is-collapsed\)"\)[\s\S]{0,120}?peer !== win/,
   "placement considers every visible old window, not only the same app",
 );
 test.assertMatches(
@@ -190,6 +193,9 @@ const clampRuntime = Function("environment", `
 `)({
   document: {
     documentElement: { clientWidth: 390, clientHeight: 844 },
+    querySelector: (selector) => (
+      selector === ".menu-bar" ? { getBoundingClientRect: () => ({ bottom: 22 }) } : null
+    ),
     querySelectorAll: () => [narrowWindow],
   },
   window: { innerWidth: 390, innerHeight: 844 },

@@ -247,6 +247,35 @@ test.assert(
   "Try again reads the disks a second time and recovers the list",
 );
 
+// 11. The other way this window goes stale: the writer switches language. Every
+//     label it draws comes from t() and nothing rides data-i18n, so the window
+//     has to be named on the admission table's repaint list — the list
+//     persistence-status.js iterates. Measured in WebKit before this: with the
+//     window open, switchLanguage() left the title, the blurb and both buttons
+//     in Chinese while the rest of the desk followed the switch.
+vmw.run('currentLanguage = "en"');
+vmw.context.applyLanguage();
+test.assert(
+  await vmw.waitFor(() => paneText().includes("Each demonstration disk")),
+  "a language switch redraws the window's own copy instead of leaving the old language on screen",
+);
+test.assert(
+  vmw.run('document.querySelector(\'.window[data-window="projectDisks"] h2\').textContent === "Demonstration Project Disks"'),
+  "the title bar is drawn again as well, because its labels are generated rather than declared",
+);
+test.assert(
+  vmw.run('AISystem6Admissions.repaintHooks().includes("renderDemoDisksPanel")'),
+  "the promise lives on the admission row, beside the rest of what the window needs",
+);
+test.assert(
+  typeof vmw.context.renderDemoDisksPanel === "function",
+  "and the painter that row names is the one the panel module installs",
+);
+test.assert(
+  vmw.run('document.querySelectorAll(".backup-preview-section .import-row").length === 1'),
+  "the same switch reaches the Import Utility's copy of the list, which shares the painter",
+);
+
 test.finish();
 // A real boot leaves unrelated background work in flight (the window manager's
 // own scheduling among it), and test.finish() does not exit on success — the

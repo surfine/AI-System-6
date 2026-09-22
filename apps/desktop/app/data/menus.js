@@ -73,6 +73,7 @@ const appearanceItems = [
   menuItem("set-theme-aqua", "theme_aqua", "", { themeId: "aqua" }),
   menuItem("set-theme-snow-leopard", "theme_snow_leopard", "", { themeId: "snow-leopard" }),
   menuItem("set-theme-yosemite", "theme_yosemite", "", { themeId: "yosemite" }),
+  menuItem("set-theme-big-sur", "theme_big_sur", "", { themeId: "big-sur" }),
   menuItem("set-theme-liquid-glass", "theme_liquid_glass", "", { themeId: "liquid-glass" }),
 ];
 

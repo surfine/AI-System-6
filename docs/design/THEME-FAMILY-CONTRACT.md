@@ -2,7 +2,7 @@
 
 <!-- doc-claims: verified | audited: 2026-09-18 -->
 
-AI System 6 maintains exactly **three appearance families**, not six
+AI System 6 maintains exactly **four appearance families**, not eight
 independent themes. A new app, panel, dialog, or system control is written
 once against the shared object grammar and the family it belongs to; the
 derived appearances receive their era automatically.
@@ -11,7 +11,8 @@ derived appearances receive their era automatically.
 | --- | --- | --- |
 | Classic | Classic / System 6 | Platinum |
 | Aqua | Aqua | Snow Leopard |
-| Liquid Glass | Liquid Glass | Yosemite |
+| Liquid Glass | Liquid Glass | Yosemite, Big Sur |
+| NeXTSTEP | NeXTSTEP | — |
 
 This contract is the standing rule set for every theme edit. It is enforced
 by the registry (`apps/desktop/app/core/theme-registry.js`), the CSS budgets
@@ -22,17 +23,17 @@ contracts (`tests/features/appearance-system.test.mjs`).
 
 `apps/desktop/app/core/theme-registry.js` is the single source of theme metadata:
 
-- `family` names the three maintenance roots (`classic`, `aqua`,
-  `liquid-glass`).
+- `family` names the four maintenance roots (`classic`, `aqua`,
+  `liquid-glass`, `nextstep`).
 - `recipeBase` names the parent recipe. A child starts from the parent and
   owns an explicit delta: `classic → platinum`, `aqua → snow-leopard`,
-  `liquid-glass → yosemite`. Aqua and Liquid Glass are their own roots.
+  `liquid-glass → yosemite / big-sur`. Aqua and Liquid Glass are their own roots.
 - The registry projects `data-theme`, `data-theme-family`, and
   `data-theme-base` on `html` and `body` before first paint.
 - `getRecipeChain(themeId)` returns the ordered lineage; cycles are a
   registry bug and throw.
 
-Only the Liquid Glass family carries the `use-liquid-glass` skin class.
+Only the Liquid Glass appearance carries the `use-liquid-glass` skin class.
 Aqua and Snow Leopard own their rules directly under
 `body[data-theme="..."]`; they must not inherit the glass skin.
 
@@ -208,8 +209,9 @@ Changing a family tests the whole branch automatically:
 ```text
 Classic family  ->  Classic + Platinum
 Aqua family     ->  Aqua + Snow Leopard
-Liquid Glass    ->  Liquid Glass + Yosemite
-shared kernel   ->  all six
+Liquid Glass    ->  Liquid Glass + Yosemite + Big Sur
+NeXTSTEP        ->  NeXTSTEP
+shared kernel   ->  all eight
 ```
 
 The Classic → Platinum paired regression is the canonical fidelity harness
@@ -287,6 +289,35 @@ window's chrome + empty state, and `snapshot:css` (now also `--theme
 platinum`) captures the shared surface set. Paired Classic + Platinum runs of
 the same labels are the machine-readable before/after for parent changes.
 
-The goal: a developer thinks in three families, most apps consume semantic
+The goal: a developer thinks in four families, most apps consume semantic
 tokens only, and adding ten more apps never means ten more child-theme
 patches.
+
+## Big Sur (2020)
+
+Big Sur is the seventh selectable appearance, between Yosemite and Liquid Glass.
+Its independent recipe is `68-big-sur-appearance.css`; it never enables the
+Liquid Glass skin. The existing close-left / zoom-right actions are preserved.
+Big Sur owns 59 independent objects: the original 56 plus ClioPaint, ClioProject,
+and One More Tune. Its 236 PNGs cover 16/32/64/128 px; 16/32 px use independently
+corrected optical artwork, while 64/128 px derive from Image Gen material masters.
+The family no longer aliases Yosemite. See [Big Sur icons](BIG-SUR-ICONS.md).
+The shared `ai-system-6-color-mode` preference accepts `light`, `dark`, and
+`system`; only Big Sur projects its resolved value to `data-color-mode`.
+Existing appearance, project, document and window persistence remain unchanged.
+Historical pixel fidelity is not certified by the new regression screenshot.
+
+## NeXTSTEP material adaptation
+
+NeXTSTEP is the eighth appearance recipe and currently an experimental preview.
+Its independent recipe, `69-nextstep-appearance.css`, and the lazy shell load on
+demand. NeXT’s 3.3 guide informs its grayscale bevels, black active title,
+floating menus, Dock, miniaturization, frame bars and column browsing; CSS
+dimensions are not calibrated against native screenshots. The existing command,
+document and persistence services remain shared, with stale-object and
+cross-project guards at the shell boundary.
+ClioPaint, ClioProject, and One More Tune own independent NeXTSTEP artwork;
+the other 56 objects retain the explicit Classic fallback. These three new apps
+have original designs in each of the eight eras, not historical native icons.
+Their item-by-item historical review remains pending; runtime completeness
+does not extend the existing accepted historical audit.

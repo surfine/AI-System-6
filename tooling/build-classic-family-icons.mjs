@@ -531,3 +531,7 @@ for (const id of ICON_IDS) {
 
 const familyHash = createHash("sha256").update(readFileSync(join(assetDir, "classic-icon-family.json"))).digest("hex");
 console.log(`OK  Classic family: ${ICON_IDS.length} objects × 32/16 px, no fallback (${familyHash.slice(0, 12)})`);
+
+// Reapply the supplemental applications after the historical 56-object build.
+const { buildAddedAppIcons } = await import("./build-added-app-icons.mjs");
+await buildAddedAppIcons({ eras: ["classic"] });

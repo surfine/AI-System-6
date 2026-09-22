@@ -24,7 +24,7 @@ const replacements = [
 
   ['Starting AI System 6&hellip;', '正在启动 AI System 6&hellip;'],
   ['Startup Disk</span>', '启动磁盘</span>'],
-  ['Six Appearances</span>', '六套外观</span>'],
+  ['Seven Appearances</span>', '七套外观</span>'],
   ['It is now safe to shut down AI&nbsp;System&nbsp;6.', '现在可以安全地关闭 AI&nbsp;System&nbsp;6。'],
   ['>Restart</button>', '>重新启动</button>'],
   ['aria-label="Site"', 'aria-label="网站"'],
@@ -39,7 +39,7 @@ const replacements = [
   ['The Writing Route', '写作路线'],
   ['Nothing Saves Itself', '任何东西都不会自动保存'],
   ['Chat Is an App', '聊天只是一款应用'],
-  ['Six Appearances, One Desk', '六套外观，同一张桌面'],
+  ['Seven Appearances, One Desk', '七套外观，同一张桌面'],
   ['It Also Runs DOOM', '它也能运行 DOOM'],
   ['The Little Things', '留下来的小工具'],
   ['Inside the Constraint', '约束之内'],
@@ -92,9 +92,9 @@ const replacements = [
   ['A hard disk tells you what lasts. A floppy tells you what is temporary. Scrapbook holds only what you chose to keep.', '硬盘告诉你什么会长期留下，软盘告诉你什么只是临时材料，Scrapbook 里只有你选择保留的东西。'],
 
   ['THE DESK CHANGES.<br>THE OBJECTS KEEP THEIR MEANING.', '桌面改变外观。<br>对象守住意义。'],
-  ['System 6 supplies the grammar: visible objects, deliberate saving, one task at a time. Six appearances test whether that grammar survives a change of material.', 'System 6 提供一套语法：对象可见、保存明确、一次专注一件事。六套外观检验这套语法能否经受材质变化。'],
+  ['System 6 supplies the grammar: visible objects, deliberate saving, one task at a time. Seven appearances test whether that grammar survives a change of material.', 'System 6 提供一套语法：对象可见、保存明确、一次专注一件事。七套外观检验这套语法能否经受材质变化。'],
   ['<h2>Appearances</h2>', '<h2>外观</h2>'],
-  ['6 appearances          1 desk          the same files', '6 套外观          1 张桌面          同一批文件'],
+  ['7 appearances          1 desk          the same files', '7 套外观          1 张桌面          同一批文件'],
   ['Interfaces age. Objects do not.', '界面会老去，对象不会。'],
   ['The chrome changed. The responsibility of each object did not.', '窗口材质改变了，每个对象承担的责任没有。'],
 

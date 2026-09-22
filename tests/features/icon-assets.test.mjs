@@ -24,7 +24,6 @@ vm.runInContext(
   `${painter}
 globalThis.__probe = {
   eraIds: [...completeEraSystemIconIds],
-  classicOnlyIds: Object.keys(classicOnlyModernFallbackIconId),
   svg: (id, sourceSize) => systemIconSvg(id, { sourceSize, displaySize: 32 }),
 };`,
   sandbox,
@@ -33,7 +32,7 @@ globalThis.__probe = {
 const probe = sandbox.__probe;
 
 test.assert(probe.eraIds.length > 50, "the painter still publishes the era vocabulary");
-test.assert(probe.classicOnlyIds.length > 0, "the painter still publishes its classic-only ids");
+test.assert(["clioPaint", "clioProject", "oneMoreTune"].every((id) => probe.eraIds.includes(id)), "the three new apps join the era vocabulary");
 
 // The rendered href is the truth: the painter put it there, and the browser
 // will ask for exactly that path.
@@ -43,7 +42,7 @@ function hrefsFor(id, sourceSize) {
 }
 
 const missing = [];
-for (const id of [...probe.eraIds, ...probe.classicOnlyIds]) {
+for (const id of probe.eraIds) {
   const wanted = new Set();
   for (const sourceSize of [32, 16]) {
     for (const href of hrefsFor(id, sourceSize)) wanted.add(href);
@@ -66,7 +65,7 @@ test.assert(
 // The reverse direction: a file nothing points at is either a rename left
 // behind or artwork shipped by mistake.
 const referenced = new Set();
-for (const id of [...probe.eraIds, ...probe.classicOnlyIds]) {
+for (const id of probe.eraIds) {
   for (const href of hrefsFor(id, 32)) referenced.add(href);
 }
 test.assert(

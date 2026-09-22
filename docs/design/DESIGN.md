@@ -153,17 +153,18 @@ not a claim that every application screen is visually correct. Use the existing
 full `--url` window audit for broad Liquid Glass geometry changes, and the
 `--url ... --select-only` mode to compare controls in a running build.
 
-## Six Appearances, One Object Grammar
+## Eight Appearances, One Object Grammar
 
-System 6, Platinum, Aqua, Snow Leopard, Yosemite, and Liquid Glass are material
+System 6, Platinum, Aqua, Snow Leopard, Yosemite, Big Sur, Liquid Glass, and NeXTSTEP are material
 skins over the same desktop language. They share object names, DOM structure,
 task flow, copy, state model, keyboard behavior, and feature contracts.
 
-The maintenance lineage has three deliberate branches:
+The maintenance lineage has four deliberate branches:
 
 - Classic → Platinum
 - Aqua → Snow Leopard
-- Liquid Glass → Yosemite
+- Liquid Glass → Yosemite / Big Sur
+- NeXTSTEP (independent material adaptation; dedicated icons deferred; Classic art retained)
 
 `recipeBase` names the comparison and authoring baseline; it does not activate a
 second theme class. Each child owns a reviewable delta, so Aqua candy does not
@@ -292,7 +293,7 @@ Prefer existing primitives before adding classes:
 Do not add a new component shape because it looks modern. Add one only when an
 existing object role cannot express the task.
 
-**These primitives carry all six appearances already.** An application built
+**These primitives carry all eight appearances already.** An application built
 from them inherits every era without writing a line of theme CSS, which is the
 whole reason the list above is a list and not a suggestion:
 

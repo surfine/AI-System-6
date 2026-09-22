@@ -13,6 +13,7 @@
   container-type: inline-size;
 }
 
+.window.is-minimized,
 .window.is-hidden {
   display: none;
 }
@@ -2115,7 +2116,7 @@ html:lang(zh-Hans) .title-bar h2 {
 }
 
 .clio-chat-file-link > small {
-  font-size: 9px;
+  font-size: 10px;
   opacity: 0.8;
 }
 
@@ -2171,7 +2172,7 @@ html:lang(zh-Hans) .title-bar h2 {
 }
 
 .sideask-source-link small {
-  font-size: 8px;
+  font-size: 10px;
 }
 
 .sideask-source-link:hover,
@@ -2571,7 +2572,7 @@ html:lang(zh-Hans) .title-bar h2 {
   background: var(--clio-basis-chip-bg);
   color: var(--ink);
   font-family: var(--clio-control-font);
-  font-size: 9px;
+  font-size: 10px;
   line-height: 1;
   vertical-align: super;
   cursor: pointer;
@@ -4475,13 +4476,13 @@ body.is-cloud-configured .cloud-state-panel {
 
 .control-status[data-state="unavailable"],
 .control-status[data-state="disabled"] {
-  color: #555555;
+  color: var(--control-status-muted-fg);
 }
 
 .control-footer {
   padding: 5px 7px;
   border: var(--system-control-line) solid var(--ink);
-  background: #eeeeee;
+  background: var(--control-footer-bg);
 }
 
 .control-checkbox-grid {

@@ -17,3 +17,24 @@
 .project-disks-window .window-pane {
   overflow: auto;
 }
+
+/* The row summary is one long sentence from the writer's own question sheet.
+   The Import Utility's preview rows wrap theirs inside the cell; these rows use
+   the same classes without that variant, so the text ran past the window edge
+   on a phone (measured: a 607px <small> in a 372px window, spilling to 880px).
+   Wrapping and breaking anywhere keeps the whole line inside its column, which
+   is also why the row does not need a horizontal scroller. */
+.demo-disks-list .import-row small {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* The name inherits the Import Utility's nowrap, so a long project title kept
+   its full width inside a narrower column: measured on a 375px viewport, a
+   308px <b> in a 207px cell, spilling past the window edge. The cell is the
+   row's flexible column, so letting both children wrap is the whole fix. */
+.demo-disks-list .import-row > span:nth-child(2),
+.demo-disks-list .import-row > span:nth-child(2) > * {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}

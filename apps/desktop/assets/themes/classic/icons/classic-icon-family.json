@@ -11,7 +11,7 @@
     "compactMenuList": 16,
     "ordinaryDesktop": 32
   },
-  "compatibilityManifest": "icons/classic-icon-manifest.json",
+  "compatibilityManifest": "classic-icon-manifest.json",
   "compatibilityManifestMeaning": "Stable 32 px semantic mapping only; app/core/system-icons.js selects the authored 16 or 32 px SVG by rendering context.",
   "runtimeDispatch": "apps/desktop/app/core/system-icons.js",
   "nativeSizes": [
@@ -4219,6 +4219,249 @@
           "inkCoverage": 0.1758
         }
       }
+    },
+    "clioPaint": {
+      "genre": "application",
+      "semanticIdentity": "Drawing palette and brush",
+      "physicalMetaphor": "Drawing palette and brush",
+      "provenanceClass": "C",
+      "sourceKind": "original-code-native-period-adaptation",
+      "authoringMethod": "independently authored era-specific SVG construction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "eraGrammarReview": "original-period-adaptation-reviewed",
+      "reviewStatus": "technically-clean",
+      "runtimeAsset": true,
+      "nativeReplica": false,
+      "referenceValidated": false,
+      "sourceNote": "Original AI System 6 application. Period grammar is adapted; no historical native counterpart is claimed.",
+      "sourceReferences": [
+        "apps/desktop/assets/themes/era-icon-reference.json"
+      ],
+      "sizes": {
+        "16": "clioPaint-16.svg",
+        "32": "clioPaint-32.svg"
+      },
+      "runtimeSha256": {
+        "16-default": "d3b8d29cf6d2f9532c06635accfd1e38083b41eb941a69580df888123c9f3fc8",
+        "32-default": "0774704bc7a13d7c70091f70e55897d7ecb767f2571999ab8553be9664ef2810"
+      },
+      "sizePolicy": "16 and 32 px have independent compact compositions with reduced detail; large default tiers use material masters where applicable.",
+      "label": "clioPaint",
+      "metrics": {
+        "16": {
+          "art": {
+            "pixels": 61,
+            "bbox": {
+              "minX": 1,
+              "minY": 2,
+              "maxX": 13,
+              "maxY": 12
+            }
+          },
+          "mask": {
+            "pixels": 111,
+            "bbox": {
+              "minX": 1,
+              "minY": 1,
+              "maxX": 13,
+              "maxY": 13
+            }
+          },
+          "inkPixels": 61,
+          "inkCoverage": 0.2383
+        },
+        "32": {
+          "art": {
+            "pixels": 217,
+            "bbox": {
+              "minX": 3,
+              "minY": 3,
+              "maxX": 27,
+              "maxY": 25
+            }
+          },
+          "mask": {
+            "pixels": 389,
+            "bbox": {
+              "minX": 3,
+              "minY": 3,
+              "maxX": 27,
+              "maxY": 26
+            }
+          },
+          "inkPixels": 217,
+          "inkCoverage": 0.2119
+        }
+      },
+      "masks": {
+        "16": "clioPaint-mask-16.svg",
+        "32": "clioPaint-mask-32.svg"
+      }
+    },
+    "clioProject": {
+      "genre": "application",
+      "semanticIdentity": "Task cards and dependency links",
+      "physicalMetaphor": "Task cards and dependency links",
+      "provenanceClass": "C",
+      "sourceKind": "original-code-native-period-adaptation",
+      "authoringMethod": "independently authored era-specific SVG construction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "eraGrammarReview": "original-period-adaptation-reviewed",
+      "reviewStatus": "technically-clean",
+      "runtimeAsset": true,
+      "nativeReplica": false,
+      "referenceValidated": false,
+      "sourceNote": "Original AI System 6 application. Period grammar is adapted; no historical native counterpart is claimed.",
+      "sourceReferences": [
+        "apps/desktop/assets/themes/era-icon-reference.json"
+      ],
+      "sizes": {
+        "16": "clioProject-16.svg",
+        "32": "clioProject-32.svg"
+      },
+      "runtimeSha256": {
+        "16-default": "24a24cbf0750dcd5e64929b248711a0f0af154fb6687569e6883364f61e19297",
+        "32-default": "8504649cff63bed5f42c93a3fc1453cd84727d703dea94487c76b96961d8a4eb"
+      },
+      "sizePolicy": "16 and 32 px have independent compact compositions with reduced detail; large default tiers use material masters where applicable.",
+      "label": "clioProject",
+      "metrics": {
+        "16": {
+          "art": {
+            "pixels": 99,
+            "bbox": {
+              "minX": 0,
+              "minY": 1,
+              "maxX": 15,
+              "maxY": 14
+            }
+          },
+          "mask": {
+            "pixels": 117,
+            "bbox": {
+              "minX": 0,
+              "minY": 1,
+              "maxX": 15,
+              "maxY": 14
+            }
+          },
+          "inkPixels": 99,
+          "inkCoverage": 0.3867
+        },
+        "32": {
+          "art": {
+            "pixels": 348,
+            "bbox": {
+              "minX": 1,
+              "minY": 3,
+              "maxX": 30,
+              "maxY": 29
+            }
+          },
+          "mask": {
+            "pixels": 383,
+            "bbox": {
+              "minX": 1,
+              "minY": 3,
+              "maxX": 30,
+              "maxY": 29
+            }
+          },
+          "inkPixels": 348,
+          "inkCoverage": 0.3398
+        }
+      },
+      "masks": {
+        "16": "clioProject-mask-16.svg",
+        "32": "clioProject-mask-32.svg"
+      }
+    },
+    "oneMoreTune": {
+      "genre": "application",
+      "semanticIdentity": "Music knowledge study cards and note",
+      "physicalMetaphor": "Music knowledge study cards and note",
+      "provenanceClass": "C",
+      "sourceKind": "original-code-native-period-adaptation",
+      "authoringMethod": "independently authored era-specific SVG construction",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "eraGrammarReview": "original-period-adaptation-reviewed",
+      "reviewStatus": "technically-clean",
+      "runtimeAsset": true,
+      "nativeReplica": false,
+      "referenceValidated": false,
+      "sourceNote": "Original AI System 6 application. Period grammar is adapted; no historical native counterpart is claimed.",
+      "sourceReferences": [
+        "apps/desktop/assets/themes/era-icon-reference.json"
+      ],
+      "sizes": {
+        "16": "oneMoreTune-16.svg",
+        "32": "oneMoreTune-32.svg"
+      },
+      "runtimeSha256": {
+        "16-default": "5d438ccc07498c454038d6d113b710db1f2fed5a2977668c54b89197e0365589",
+        "32-default": "02b351fe265e0dfa26b304ac73a81afc24a0c0493d97aca44d6977fe90c7464b"
+      },
+      "sizePolicy": "16 and 32 px have independent compact compositions with reduced detail; large default tiers use material masters where applicable.",
+      "label": "oneMoreTune",
+      "metrics": {
+        "16": {
+          "art": {
+            "pixels": 117,
+            "bbox": {
+              "minX": 1,
+              "minY": 1,
+              "maxX": 13,
+              "maxY": 14
+            }
+          },
+          "mask": {
+            "pixels": 178,
+            "bbox": {
+              "minX": 1,
+              "minY": 1,
+              "maxX": 13,
+              "maxY": 14
+            }
+          },
+          "inkPixels": 117,
+          "inkCoverage": 0.457
+        },
+        "32": {
+          "art": {
+            "pixels": 304,
+            "bbox": {
+              "minX": 3,
+              "minY": 3,
+              "maxX": 27,
+              "maxY": 28
+            }
+          },
+          "mask": {
+            "pixels": 634,
+            "bbox": {
+              "minX": 3,
+              "minY": 3,
+              "maxX": 27,
+              "maxY": 28
+            }
+          },
+          "inkPixels": 304,
+          "inkCoverage": 0.2969
+        }
+      },
+      "masks": {
+        "16": "oneMoreTune-mask-16.svg",
+        "32": "oneMoreTune-mask-32.svg"
+      }
     }
-  }
+  },
+  "supplementalBuilder": "tooling/build-added-app-icons.mjs",
+  "supplementalIconIds": [
+    "clioPaint",
+    "clioProject",
+    "oneMoreTune"
+  ]
 }

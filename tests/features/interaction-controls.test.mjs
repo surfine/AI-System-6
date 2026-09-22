@@ -5,11 +5,13 @@ import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("interaction-controls");
 const foundation = read("styles/00-foundation.css");
+const icons = read("styles/40-icons.css");
 const windows = read("styles/10-windows.css");
 const docmap = read("styles/20-reader-docmap.css");
 const surfaces = read("styles/30-surfaces.css");
 const apps = read("styles/50-apps.css");
 const responsive = read("styles/60-responsive.css");
+const family = read("styles/65-appearance-themes.css");
 const liquid = read("styles/70-liquid-glass.css");
 const html = read("index.html");
 const desktopRuntime = read("app/core/desktop-runtime.js");
@@ -26,6 +28,36 @@ test.assertIncludes(foundation, "--btn-hover-bg:", "Buttons expose a shared hove
 test.assertIncludes(foundation, "--control-motion-fast-in: 80ms", "Controls share named fast feedback motion");
 test.assertIncludes(foundation, "--control-motion-medium-out: 120ms", "Control exits are shorter than entrances");
 test.assertIncludes(foundation, "@media (prefers-reduced-motion: reduce)", "Shared controls remove spatial motion when reduced motion is requested");
+// Increase Contrast was the one system setting this interface did not answer:
+// measured in Chromium with `Emulation.setEmulatedMedia({ features: [{ name:
+// "prefers-contrast", value: "more" }] })`, every shared role below read
+// exactly what it reads with the setting off. These three assertions are what
+// keeps the answer from being quietly deleted.
+test.assertIncludes(
+  liquid,
+  "@media (prefers-contrast: more)",
+  "Increase Contrast gets a scheme of its own instead of the default bytes",
+);
+test.assertIncludes(
+  liquid,
+  "--system-secondary-divider: 1px solid var(--ink)",
+  "the shared secondary divider becomes a solid ink rule under Increase Contrast",
+);
+test.assertIncludes(
+  liquid,
+  "--system-disabled-fg: #3f3f3f",
+  "disabled ink rises to 7.4:1 on the era's paper under Increase Contrast",
+);
+test.assertIncludes(
+  family,
+  "(prefers-reduced-transparency: reduce), (prefers-contrast: more)",
+  "the family no-transparency answer is shared with Increase Contrast, so the two cannot drift apart",
+);
+test.assertIncludes(
+  liquid,
+  "(prefers-reduced-transparency: reduce), (prefers-contrast: more)",
+  "and the glass era answers both settings from one recipe rather than two",
+);
 test.assertIncludes(foundation, "--control-focus-outline:", "Keyboard focus has an independent shared token");
 test.assertIncludes(foundation, "--details-bar-optical-rise: 1px", "Status bars expose one shared optical-centering correction");
 test.assertIncludes(foundation, "--teachtext-preview-title-divider:", "rendered Markdown title dividers are theme-owned");
@@ -205,5 +237,41 @@ test.assertNotIncludes(foundation, ".window-pane {\n  user-select: none", "Docum
 // control already held the new one. The label follows the value itself now, so
 // no caller has to remember a refresh.
 test.assertIncludes(app, 'watchControlWrites(select, HTMLSelectElement.prototype, "value", refreshSystemSelectControl)', "System Select repaints its label when code writes the value");
+
+// Type floor: macOS asks for a 10pt minimum, and a size below it is only
+// allowed where the number is drawing a glyph rather than setting type — the
+// Classic disks' P/T badge letters, the menu and outline disclosure arrows.
+// Measured before this rule: seven real text styles sat at 8–9px (chat file
+// metadata, a SideAsk source line, three doc-map stack labels, an inline
+// citation chip and the Quick Draft histogram axis).
+for (const [sheetName, sheet] of Object.entries({
+  "00-foundation.css": foundation,
+  "10-windows.css": windows,
+  "20-reader-docmap.css": docmap,
+  "30-surfaces.css": surfaces,
+  "40-icons.css": icons,
+  "50-apps.css": apps,
+  "60-responsive.css": responsive,
+  "65-appearance-themes.css": family,
+  "70-liquid-glass.css": liquid,
+})) {
+  const blocks = sheet.match(/[^{}]+\{[^{}]*\}/g) || [];
+  for (const block of blocks) {
+    const size = /(?:^|[;{\s])font-size\s*:\s*([0-9.]+)px/.exec(block);
+    if (!size || Number(size[1]) >= 10) continue;
+    const selector = block.slice(0, block.indexOf("{")).trim().split("\n").pop().trim();
+    // A drawn glyph may be a CSS `content` pseudo-element, or a text node the
+    // module writes into an aria-hidden span. The second kind is named here so
+    // a new sub-10px size has to argue its case in this list instead of
+    // slipping in behind a rule that happens to mention content.
+    const DRAWN_AS_TEXT_NODE = [".outline-tree-twisty"];
+    const drawnAsGlyph = block.includes("content:")
+      || DRAWN_AS_TEXT_NODE.some((name) => selector.includes(name));
+    test.assert(
+      drawnAsGlyph,
+      `${sheetName} — ${selector}: a size below the 10px floor is only for a drawn glyph, not for type`,
+    );
+  }
+}
 
 test.finish();

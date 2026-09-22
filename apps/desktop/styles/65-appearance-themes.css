@@ -2201,7 +2201,7 @@ body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) :is(.btn
 }
 
 body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) :where(
-  textarea,
+  textarea:not(.mde-input),
   input[type="url"],
   input[type="text"],
   input[type="password"],
@@ -2512,7 +2512,7 @@ body[data-theme="yosemite"] .theme-lab-split-view {
   background-size: cover;
 }
 
-@media (prefers-reduced-transparency: reduce) {
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
   html[data-theme="yosemite"],
   body[data-theme="yosemite"] {
     --window-bg: #f2f3f4;

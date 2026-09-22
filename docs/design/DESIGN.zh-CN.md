@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/design/DESIGN.md -->
-<!-- source-sha256: c37a9d9eadac822b85bfe3f52fe0dd2dc3aa98b8cd8822bb73408d00342c8f30 -->
+<!-- source-sha256: 25d5d63a803b29a72ae772ae0e291fa1dd0970b677c109a4d96cf1992abd6036 -->
 
 # AI System 6 设计合约
 
@@ -42,7 +42,7 @@ Classic Mac OS 思想，只要能改善产品，就可以被引进、消化和�
 - 保留原始角色和状态转换。外观相近或位于同一块窗口边框上的控件，并不因此可以互换。
 - 针对网页、指针、键盘、触控、窄屏和无障碍重新消化，而不是复刻过时的输入限制。
 - 默认体验保持安静。后续系统功能应按需出现，或在真正相关时出现，不能堆成功能清单。
-- 六套 Appearance 使用同一套语义 DOM 和状态模型。各时代只改变材质与视觉几何，不改变
+- 八套 Appearance 使用同一套语义 DOM 和状态模型。各时代只改变材质与视觉几何，不改变
   对象含义。
 
 控件语义是承重规则：
@@ -119,16 +119,17 @@ Classic Mac OS 思想，只要能改善产品，就可以被引进、消化和�
 各自的定向证据；夹具通过不代表所有应用画面都正确。大范围 Liquid Glass 几何改动
 使用已有的完整 `--url` 窗口审计；需要对照运行中的构建时用 `--url ... --select-only`。
 
-## 六套 Appearance，一套对象语法
+## 八套 Appearance，一套对象语法
 
-System 6、Platinum、Aqua、Snow Leopard、Yosemite 和 Liquid Glass 是同一桌面
+System 6、Platinum、Aqua、Snow Leopard、Yosemite、Big Sur、Liquid Glass 和 NeXTSTEP 是同一桌面
 语言的材质皮肤。它们共享对象名称、DOM 结构、任务流程、文案、状态模型、键盘行为和功能合约。
 
-维护谱系刻意分为三条：
+维护谱系刻意分为四条：
 
 - Classic → Platinum
 - Aqua → Snow Leopard
-- Liquid Glass → Yosemite
+- Liquid Glass → Yosemite / Big Sur
+- NeXTSTEP（独立材质适配；专用图标押后，暂用 Classic）
 
 `recipeBase` 指定比较与编写时的基底，不会激活第二个主题 class。每个子主题拥有可评审的
 显式差异，因此 Aqua 的糖果材质不会泄漏到 Snow Leopard，Liquid Glass 的折射也不会泄漏到

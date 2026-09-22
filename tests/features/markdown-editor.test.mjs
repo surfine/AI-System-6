@@ -203,4 +203,7 @@ test.assertMatches(
   "a help document keeps its own reading column",
 );
 
+test.assertIncludes(read("styles/65-appearance-themes.css"), 'textarea:not(.mde-input),',
+  "modern family field chrome excludes the transparent manuscript layer");
+
 test.finish();

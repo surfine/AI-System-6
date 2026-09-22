@@ -1334,18 +1334,18 @@ function getApplicationActionHandlers() {
       openWindow("teachText");
       translateTeachTextDocument();
     },
-    "selection-look-up": () => runSelectionServiceCommand("lookup"),
-    "selection-find-sources": () => runSelectionServiceCommand("find"),
-    "selection-clip": () => runSelectionServiceCommand("clip"),
-    "selection-clip-file": () => runSelectionServiceCommand("clip-file"),
-    "selection-translate": () => runSelectionServiceCommand("translate"),
+    "selection-look-up": (context) => runSelectionServiceCommand("lookup", context?.selection),
+    "selection-find-sources": (context) => runSelectionServiceCommand("find", context?.selection),
+    "selection-clip": (context) => runSelectionServiceCommand("clip", context?.selection),
+    "selection-clip-file": (context) => runSelectionServiceCommand("clip-file", context?.selection),
+    "selection-translate": (context) => runSelectionServiceCommand("translate", context?.selection),
     "make-alias": () => withFinderObjects(() => makeAliasForFinderSelection()),
     "make-docmap": makeDocMapFromFinderOrCurrent,
     // DocMap is lazy: resolve at click time, never as a bare reference.
     "docmap-from-picture": () => withDocMap(() => makeDocMapFromPicture()),
     "docmap-map-picture-reading": () => withDocMap(() => mapDocMapPictureReading()),
     "docmap-discard-picture-reading": () => withDocMap(() => discardDocMapPictureReading()),
-    "make-docmap-selection": () => makeDocMapForRange("selection"),
+    "make-docmap-selection": (context) => makeDocMapForRange("selection", context?.selection || null),
     "make-docmap-source": () => makeDocMapForRange("source"),
     "style-check-section": () => runTeachTextStyleCheck({ sectionOnly: true }),
     "style-check-manuscript": () => runTeachTextStyleCheck({ fullDocument: true }),
@@ -1474,12 +1474,10 @@ function getApplicationActionHandlers() {
     // Wrapped, not bare: these resolve at boot into the lazy module's stub and
     // a bare reference would throw once the module moved out of the bundle.
     "focus-sideask-source": focusSideAskSource,
-    "set-theme-classic": () => applyTheme("classic"),
-    "set-theme-platinum": () => applyTheme("platinum"),
-    "set-theme-aqua": () => applyTheme("aqua"),
-    "set-theme-snow-leopard": () => applyTheme("snow-leopard"),
-    "set-theme-yosemite": () => applyTheme("yosemite"),
-    "set-theme-liquid-glass": () => applyTheme("liquid-glass"),
+    // Register every selectable appearance from the boot-safe registry.
+    ...Object.fromEntries(window.AISystem6Theme.getReleaseReadyThemes().map(({ id }) => [
+      `set-theme-${id}`, () => applyTheme(id),
+    ])),
     "toggle-balloon-help": toggleBalloonHelp,
     "restart-system": restartSystem,
     "shut-down-system": shutDownSystem,
@@ -1587,7 +1585,7 @@ async function handleAction(action, commandContext = {}) {
       }
     }
   }
-  if (!command?.isAvailable()) {
+  if (!command?.isAvailable() || commandContext.isCurrent?.() === false) {
     updateMenuState();
     return;
   }
@@ -1601,6 +1599,7 @@ async function handleAction(action, commandContext = {}) {
       await window.AISystem6WriteLease?.reconcile?.().catch?.(() => null);
     }
   }
+  if (commandContext.isCurrent?.() === false) return;
   const result = command.handler(commandContext);
   updateMenuState();
   return result;
@@ -1714,11 +1713,13 @@ window.AISystem6Runtime?.registerCommand?.("open-claim-check",{handler:()=>openR
 window.AISystem6Runtime?.registerCommand?.("open-style-sheet",{handler:()=>openReviewDesk("style"),isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-writing-flow-windows",{handler:openWritingFlowWindows,isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-teachtext",{handler:openTeachTextForWorkspace,isAvailable:()=>!0});
-// Shared Project Hard Disk links. The command is eager -- the DISK is the lazy
-// part, loaded inside the handler -- and the reference is an arrow so it is
-// resolved when the command runs, not when this line is evaluated.
-window.AISystem6Runtime?.registerCommand?.("open-shared-disk-dtk",{handler:()=>openSharedProjectDisk("dtk"),isAvailable:()=>!0});
-window.AISystem6Runtime?.registerCommand?.("open-shared-disk-ipad1",{handler:()=>openSharedProjectDisk("ipad1"),isAvailable:()=>!0});
+// Shared Project Hard Disk links. The commands are eager -- the DISK is the
+// lazy part, loaded inside the handler -- and the handler is an arrow, so the
+// reference resolves when the command runs rather than when this table is
+// built. One row per route: a fifth disk is a string in this list, not a fifth
+// registration, which is what makes the writing route's advice ("adding a disk
+// is one entry") true of the boot payload too.
+"dtk ipad1 m5ipad iphone17e bongo glass ipad97 airbattery pm17 sympathy ceramic macpro19 pocket iphone6sp sleeve pm12 pm11 m5mba mbneo mini7 mkb sd ios19 ipada4 ip16p mgscrap t2nic airtrans ip4sdemo airact touch2 noport cdma4 iphone17".split(" ").forEach((route)=>window.AISystem6Runtime?.registerCommand?.(`open-shared-disk-${route}`,{handler:()=>openSharedProjectDisk(route),isAvailable:()=>!0}));
 window.AISystem6Runtime?.registerCommand?.("open-finishing-receipt",{handler:()=>openFinishingReceiptForSelection(),isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-clio-attachment-picker",{handler:beginClioTalkAttachmentPicker,isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-clio-image-picker",{handler:openClioImagePicker,isAvailable:()=>!0});

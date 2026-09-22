@@ -33,9 +33,9 @@ THERE ARE FOUR MORE INSIDE. NO MODEL REQUIRED TO LOOK AROUND.</sub>
 
 **OPEN A SINGLE WINDOW:** [CMF Studio](https://system6.aaronlau.me/go/cmf-studio) · [Bonsai City](https://system6.aaronlau.me/go/bonsai-city) · [Endfield Terminal](https://system6.aaronlau.me/go/endfield-terminal) · [Time Machine](https://system6.aaronlau.me/go/time-machine) · [OpenTTD](https://system6.aaronlau.me/go/openttd) · [DOOM](https://system6.aaronlau.me/go/doom)
 
-**OR OPEN A WHOLE FINISHED DISK:** [After the Bridge Opens](https://system6.aaronlau.me/go/dtk) · [Why the First iPad Had Only 256MB](https://system6.aaronlau.me/go/ipad1)
+**OR OPEN A WHOLE FINISHED DISK:** [After the Bridge Opens](https://system6.aaronlau.me/go/dtk) · [Why the First iPad Had Only 256MB](https://system6.aaronlau.me/go/ipad1) · [M5 iPad Pro](https://system6.aaronlau.me/go/m5ipad) · [iPhone 17e, Pale Pink](https://system6.aaronlau.me/go/iphone17e) · [Toward One Piece of Glass](https://system6.aaronlau.me/go/bongo) · [Glass and Where It Comes From](https://system6.aaronlau.me/go/glass) · [iPad Pro 9.7](https://system6.aaronlau.me/go/ipad97) · [iPhone Air MagSafe Battery](https://system6.aaronlau.me/go/airbattery) · [iPhone 17 Pro Max](https://system6.aaronlau.me/go/pm17) · [Project Sympathy](https://system6.aaronlau.me/go/sympathy) · [The Ceramic Apple Watch](https://system6.aaronlau.me/go/ceramic) · [Mac Pro (2019)](https://system6.aaronlau.me/go/macpro19) · [iPhone Pocket](https://system6.aaronlau.me/go/pocket) · [iPhone 6s Plus](https://system6.aaronlau.me/go/iphone6sp) · [MagSafe Leather Sleeve](https://system6.aaronlau.me/go/sleeve) · [iPhone 12 Pro Max](https://system6.aaronlau.me/go/pm12) · [iPhone 17](https://system6.aaronlau.me/go/iphone17) · [CDMA iPhone 4](https://system6.aaronlau.me/go/cdma4) · [Portless Apple Watch](https://system6.aaronlau.me/go/noport) · [touch 2 Engineering Board](https://system6.aaronlau.me/go/touch2) · [iPhone Air](https://system6.aaronlau.me/go/airact) · [iPhone 4S Demo Unit](https://system6.aaronlau.me/go/ip4sdemo) · [Transparent Air Prototypes](https://system6.aaronlau.me/go/airtrans) · [Apple T2 Network Card](https://system6.aaronlau.me/go/t2nic) · [MagSafe Prototypes](https://system6.aaronlau.me/go/mgscrap) · [iPhone 16 Prototype](https://system6.aaronlau.me/go/ip16p) · [iPad Air 4 Prototype](https://system6.aaronlau.me/go/ipada4) · [WWDC2099](https://system6.aaronlau.me/go/ios19) · [Studio Display](https://system6.aaronlau.me/go/sd) · [Magic Keyboard (USB-C)](https://system6.aaronlau.me/go/mkb) · [iPad mini (A17 Pro)](https://system6.aaronlau.me/go/mini7) · [MacBook Neo](https://system6.aaronlau.me/go/mbneo) · [M5 MacBook Air](https://system6.aaronlau.me/go/m5mba) · [iPhone 11 Pro Max](https://system6.aaronlau.me/go/pm11)
 
-<sub>EVERY APP HAS ONE SHAREABLE ADDRESS, <code>/go/&lt;app-id&gt;</code>. THE DESK OPENS AROUND IT. THE TWO DEMONSTRATION PROJECT DISKS USE THE SAME ADDRESS RULE, AND <b>FILE › OPEN DEMONSTRATION PROJECT DISKS…</b> LISTS THEM.</sub>
+<sub>EVERY APP HAS ONE SHAREABLE ADDRESS, <code>/go/&lt;app-id&gt;</code>. THE DESK OPENS AROUND IT. THE THIRTY-FOUR DEMONSTRATION PROJECT DISKS USE THE SAME ADDRESS RULE, AND <b>FILE › OPEN DEMONSTRATION PROJECT DISKS…</b> LISTS THEM.</sub>
 
 </div>
 
@@ -48,7 +48,7 @@ THERE ARE FOUR MORE INSIDE. NO MODEL REQUIRED TO LOOK AROUND.</sub>
 - [Chat is an app. Not the whole computer.](#chat-is-an-app-not-the-whole-computer)
 - [What the constraint still leaves room for](#what-the-constraint-still-leaves-room-for)
 - [It also runs DOOM](#it-also-runs-doom)
-- [One desk. Six systems.](#one-desk-six-systems)
+- [One desk. Seven systems.](#one-desk-seven-systems)
 - [Built under a 1988 constraint](#built-under-a-1988-constraint)
 - [Bring your own model](#bring-your-own-model)
 - [How this repository keeps itself honest](#how-this-repository-keeps-itself-honest)
@@ -67,8 +67,8 @@ THERE ARE FOUR MORE INSIDE. NO MODEL REQUIRED TO LOOK AROUND.</sub>
 - **Every app has one address.** `/go/cmf-studio`, `/go/bonsai-city`,
   `/go/doom` and the rest are the single way to hand somebody one window; the
   old bare directories are retired on the server by the installer itself.
-- **A finished project travels as a disk, not as a screenshot.** `/go/dtk` and
-  `/go/ipad1` mount a whole Project Hard Disk: question sheet, outline,
+- **A finished project travels as a disk, not as a screenshot.** `/go/dtk`,
+  `/go/ipad1`, `/go/m5ipad`, `/go/iphone17`, `/go/iphone17e`, `/go/bongo`, `/go/glass`, `/go/ipad97`, `/go/airbattery`, `/go/pm17`, `/go/sympathy`, `/go/ceramic`, `/go/macpro19`, `/go/pocket`, `/go/iphone6sp`, `/go/sleeve`, `/go/pm12` and `/go/pm11` mount a whole Project Hard Disk: question sheet, outline,
   section drafts, manuscript, review record. The reader gets their own
   editable copy, and **File › Open Demonstration Project Disks…** lists them so
   nobody has to keep the link. Adding a third means one entry in
@@ -260,7 +260,7 @@ the constraint can contain real software; the writing route earns trust
 separately, through visible objects, deliberate saving, and receipts for what
 actually happened.
 
-## One desk. Six systems.
+## One desk. Seven systems.
 
 The files and open windows stay put. The whole computer changes era around
 them.
@@ -274,25 +274,28 @@ them.
   <tr>
     <td width="33%" align="center"><img src="site/img/frames/snow-leopard.webp" alt="Snow Leopard appearance"><br><code>2009 / SNOW LEOPARD</code></td>
     <td width="33%" align="center"><img src="site/img/frames/yosemite.webp" alt="Yosemite appearance"><br><code>2014 / YOSEMITE</code></td>
+    <td width="33%" align="center"><img src="site/img/frames/big-sur.webp" alt="Big Sur appearance"><br><code>2020 / BIG SUR</code></td>
+  </tr>
+  <tr>
     <td width="33%" align="center"><img src="site/img/frames/liquid-glass.webp" alt="Liquid Glass appearance"><br><code>2026 / LIQUID GLASS</code></td>
   </tr>
 </table>
 
-Six frames, one live desktop, captured by `npm run site:capture-frames`.
+Seven frames, one live desktop, captured by `npm run site:capture-frames`.
 System 6 starts from real System 6.0.8 resources and observed Macintosh
 behavior; later eras own independent, Retina-ready icon families. Nothing here
 is a mockup, because a script re-shoots all of it from the running app.
 
 <div align="center">
 
-[![AI System 6 moving a window by its classic dotted outline and switching through all six appearances](apps/desktop/assets/readme/hero-desktop.gif)](https://system6.aaronlau.me)
+[![AI System 6 moving a window by its classic dotted outline while the desk switches appearance](apps/desktop/assets/readme/hero-desktop.gif)](https://system6.aaronlau.me)
 
 </div>
 
 ## Built under a 1988 constraint
 
 ```text
-boot-critical payload   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,953,611 bytes
+boot-critical payload   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,945,088 bytes
 two 1.44 MB floppies    ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  2,949,120 bytes
 heavy tools             load lazily, from a third disk
 ```
@@ -384,4 +387,4 @@ If AI writing tools should leave your voice alone, **[★ star AI System 6](http
 
 </div>
 
-<!-- claim-check: npm run site:check | site/data/floppy-budget.json (bytes 2954038, budget 2954624, written by verify:floppy) | npm run verify:floppy, verify:docs, verify:public | site/img/frames (six appearances) -->
+<!-- claim-check: npm run site:check | site/data/floppy-budget.json (bytes 2945088, budget 2954624, written by verify:floppy) | npm run verify:floppy, verify:docs, verify:public | site/img/frames (seven appearances) -->

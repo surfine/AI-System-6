@@ -376,7 +376,7 @@
 
   // The sixteen priority objects, in the order the icon lineage audit reviews
   // them. tooling/build-icon-lineage-audit.mjs holds the same list for the
-  // offline boards; keep the two in step.
+  // offline boards; keep their order. Three newer applications follow them.
   const OBJECTS = Object.freeze([
     ["finderApp", "Finder / System"], ["multiFinderApp", "MultiFinder"],
     ["folder", "Folder"], ["hardDisk", "Hard Disk"],
@@ -386,6 +386,7 @@
     ["teachText", "TeachText"], ["scrapbook", "Scrapbook"],
     ["assistant", "ClioTalk"], ["controlPanel", "Control / Settings"],
     ["reviewDesk", "Review Desk"], ["docMap", "DocMap"],
+    ["clioPaint", "ClioPaint"], ["clioProject", "ClioProject"], ["oneMoreTune", "One More Tune"],
   ]);
   const OBJECT_IDS = new Set(OBJECTS.map(([id]) => id));
   const OBJECT_LABELS = Object.fromEntries(OBJECTS);
@@ -440,7 +441,13 @@
     return entry[themeId] || entry.fallback;
   }
 
-  function artOf(themeId) {
+  function artOf(themeId, id) {
+    if (themeId === "nextstep" && ["clioPaint", "clioProject", "oneMoreTune"].includes(id)) {
+      return { ...artOf("big-sur"), dir: "nextstep" };
+    }
+    if (themeId === "big-sur" && ["imagePromptStudio", "micropolis", "openttd", "doom", "lightroom", "bonsaiCity"].includes(id)) {
+      return artOf("classic");
+    }
     const theme = window.AISystem6Theme?.getTheme?.(themeId);
     return authoringOf(theme)?.art || authoringOf(window.AISystem6Theme?.getTheme?.("classic"))?.art;
   }
@@ -776,8 +783,8 @@
   function renderInspector(theme) {
     const inspector = lab()?.querySelector("[data-theme-lab-object-inspector]");
     if (!inspector) return;
-    const art = artOf(theme.id);
     const id = OBJECT_IDS.has(inspectedObjectId) ? inspectedObjectId : OBJECTS[0][0];
+    const art = artOf(theme.id, id);
     const cls = provenanceOf(id, theme.id);
     const rows = art.appearances.map((appearance) => {
       const figures = art.zoom.map(([tier, display]) => `<figure>
@@ -827,6 +834,8 @@
   // Historical eras attach their own authored 16 px file in the tile corner, so
   // the overview shows the runtime painter and its compact source together.
   function compactHintSource(themeId, id) {
+    // Per-object metadata also covers the partial NeXTSTEP family.
+    themeId = artOf(themeId, id)?.dir || themeId;
     const stem = (themeId === "platinum" || themeId === "yosemite") && id === "startupDisk" ? "startup-disk"
       : (themeId === "platinum" || themeId === "yosemite") && id === "finderApp" ? "finder-app"
         : themeId === "platinum" && id === "fileFloppy" ? "floppy" : id;
@@ -1553,6 +1562,7 @@
 
   function cleanup() {
     revertDraftTokens();
+    window.AISystem6Theme?.restoreColorMode?.();
     const committedThemeId = window.AISystem6Theme?.getCommittedTheme?.()
       || window.AISystem6Theme?.DEFAULT_THEME_ID
       || "classic";

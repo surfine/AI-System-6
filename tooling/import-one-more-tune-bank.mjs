@@ -26,7 +26,7 @@
 //
 //   node tooling/import-one-more-tune-bank.mjs --package <dir> [--write]
 
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync, copyFileSync, renameSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { foldOneMoreTuneText, joinOneMoreTuneCards, readOneMoreTunePackageQuestions } from "./lib/one-more-tune-join.mjs";
@@ -114,12 +114,13 @@ function familyOf(category) {
 }
 
 const deck = JSON.parse(readFileSync(deckPath, "utf8"));
+if (!Number.isInteger(deck.version) || new Set(deck.cards.map((card) => card.id)).size !== deck.cards.length) throw new Error("Invalid runtime deck");
 const questions = readOneMoreTunePackageQuestions(packageDir);
 const { byQuestion } = joinOneMoreTuneCards(deck.cards, questions);
 
 const usedIds = new Set(deck.cards.map((card) => card.id));
 const nextId = () => {
-  for (let n = 1; n <= 999; n += 1) {
+  for (let n = 1; n < Number.MAX_SAFE_INTEGER; n += 1) {
     const id = `OMT-${String(n).padStart(3, "0")}`;
     if (!usedIds.has(id)) {
       usedIds.add(id);
@@ -218,8 +219,13 @@ for (const card of deck.cards) {
 }
 for (const clash of clashes) console.error(`NO  ${clash}`);
 
+if (clashes.length) process.exit(1);
+
 if (write && added.length) {
-  writeFileSync(deckPath, `${JSON.stringify(deck, null, 2)}\n`, "utf8");
+  deck.version += 1;
+  copyFileSync(deckPath, `${deckPath}.before`);
+  writeFileSync(`${deckPath}.staged`, `${JSON.stringify(deck, null, 2)}\n`, "utf8");
+  renameSync(`${deckPath}.staged`, deckPath);
 }
 console.log(`${write ? "OK  wrote" : "--  would write"} ${added.length} card(s); the deck would hold ${deck.cards.length}.`);
 process.exit(clashes.length ? 1 : 0);
