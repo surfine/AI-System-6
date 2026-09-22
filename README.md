@@ -86,6 +86,9 @@ THERE ARE FOUR MORE INSIDE. NO MODEL REQUIRED TO LOOK AROUND.</sub>
   appearance back. The sound is a store preview, and when a network cannot
   reach the store, this desk's own host relays the same file, so the game is
   playable by ear anywhere; the phone layout keeps a round on one screen.
+  A second game, Relay, asks who took the handoff instead: six presenter
+  clues per round, each one opened costing a point, and the answer kept on the
+  server until you choose.
 
 Every beta has [its own release notes](https://github.com/surfine/AI-System-6/releases).
 

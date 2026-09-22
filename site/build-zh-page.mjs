@@ -110,6 +110,7 @@ const replacements = [
   ['IT ALSO PLAYS THE MUSIC.', '它还会放音乐。'],
   ['One More Tune: an unofficial quiz about the music Apple put in its ads. You hear the phrase, you name the thing it sold, and the desk tells you the rest.', 'One More Tune：一个非官方的问答游戏，题目是苹果广告里的音乐。你听到那一段，说出它卖的是什么，剩下的桌面讲给你听。'],
   ['Every question plays itself: the sound is the question, so the tap that started the round is the only tap it wants. The reveal opens the original, and it visits the era the card belongs to. The whole desk changes appearance for the length of the look, then gives yours back.', '每一题都会自己出声：声音就是题目，所以开始那一局的那一下，就是它唯一需要的一下。揭晓会打开原片，并且造访这张卡所属的时代。整张桌面会在你看的这段时间里换成那个时代，然后把你的还给你。'],
+  ['A second game, Relay, follows the people Apple put on stage: six handoffs from a keynote, a clue that costs a point each time you open one, and the presenter\'s name kept on the server until you choose.', '第二种玩法「接棒」跟着的是苹果请上台的那些人：一场发布会里的六次交接，每开一条线索扣一分，主讲人的名字留在服务器上，直到你作答。'],
   ['The reveal: the stage, the record, the era.', '揭晓：舞台、出处，和那个时代。'],
   ['Photographed from the running desktop. The sound is a promotional store preview, relayed by the desk\'s own host when a network cannot reach the store.', '截自运行中的桌面。声音是商店的推广试听；网络到不了商店时，由桌面自己的主机帮它转发。'],
   ['Play a Round', '玩一局'],

@@ -1357,9 +1357,6 @@ landscape sweep) stay open and are tracked in the 1.0.52 closeout.
   contracts follow the 70 records the app carries, the README gauge quotes the
   payload the gate measured, and the integration ledger records this release
   branch as merged.
-
-## Public Beta 1.0.55 - 2026-09-24 update
-
 - **Big Sur joins the desk as the seventh appearance.** It stands between
   Yosemite and Liquid Glass, carries its own light / dark / follow-the-system
   modes, and reuses Yosemite's semantic icon family rather than pretending to

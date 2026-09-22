@@ -1,5 +1,5 @@
 <!-- canonical-source: CHANGELOG.md -->
-<!-- source-sha256: 0da8dbc8366d6cac532b92ae7be8f75210f184f2ab5075e235922e984bfbd820 -->
+<!-- source-sha256: 1559801f28e948e9fd6514e1f53d0a5fe1f7f41fe2ee7c5465cbcbf199324bff -->
 
 # AI System 6 中文更新日志
 
@@ -1078,7 +1078,7 @@ OpenAI 兼容接口。
 
 - 合并所有未归并 lane：MCP 来宾桥接、RCI 实测配色、暗房重绘、PWA 快捷键与门禁接线，版本定格 20260905.5。
 
-## Public Beta 1.0.55 - 2026-09-24 update
+## Public Beta 1.0.55 - 2026-09-22 更新
 
 - **Big Sur 作为第七套外观上桌。** 它站在 Yosemite 与 Liquid Glass 之间，自带浅色／深色／跟随系统三种模式，图标按本次要求押后，明确复用 Yosemite 的语义资源，不伪造成新画的图标。它的样式表是独立文件，只有你选中它时才会被请求，所以启动包不为它付钱。
 - **NeXTSTEP 3.3 作为第八套外观进了构建，但仍在实验门控后面。** 左最小化右关闭、key/main 两种窗口状态、菜单归属打开它的应用、右侧 Dock 让运行中的应用始终够得着，还有 Shelf。它的 `releaseReady` 保持 false，直到剩余验收项都留下证据，所以任何保存下来的偏好都不会把你交给它。
