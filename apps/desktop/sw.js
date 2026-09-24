@@ -123,10 +123,16 @@ const LANGUAGE_TABLES = {
 
 // Only selected appearances with a separate stylesheet need another file.
 // Messages carry an appearance id; this worker owns the URL allowlist.
-const APPEARANCE_STYLES = Object.freeze({ "big-sur": "styles.big-sur.css", "nextstep": "styles.nextstep.css" });
-const APPEARANCE_MODULES = Object.freeze({ nextstep: [
-  "app/core/nextstep-shell.js", "app/core/nextstep-dock.js", "app/core/nextstep-menus.js", "app/features/finder-columns.js",
-] });
+const APPEARANCE_STYLES = Object.freeze({ "big-sur": "styles.big-sur.css", "nextstep": "styles.nextstep.css", tiger: "styles.tiger.css", "system-7": "styles.system-7.css", "drawing-board": "styles.drawing-board.css", lion: "styles.lion.css" });
+// The miniaturize state machine travels with the era that draws its control.
+// Only NeXTSTEP does today; a Mac OS X era joins this list together with its
+// Dock (owner decision 2026-09-25), never with a lamp alone.
+const APPEARANCE_MODULES = Object.freeze({
+  nextstep: [
+    "app/core/window-minimize.js", "app/core/nextstep-shell.js", "app/core/nextstep-dock.js",
+    "app/core/nextstep-menus.js", "app/features/finder-columns.js",
+  ],
+});
 
 // The System 6 typefaces. They carry no build stamp, and they are requested by
 // the stylesheet before this worker has claimed the first page, so they were

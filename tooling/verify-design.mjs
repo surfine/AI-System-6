@@ -328,7 +328,8 @@ const checks = [
     reason: "Platinum chrome uses 0-blur hard bevels; blurred/soft shadows are forbidden in the Platinum theme block.",
     findings: () => softShadowInBlockFindings(
       cssSourceFiles.filter((file) => file.rel.includes("styles/65-appearance-themes.css")),
-      'body[data-theme="platinum"]'
+      // Platinum writes its own block by lineage so Drawing Board inherits it.
+      'body[data-lineage~="platinum"]'
     ),
   },
 ];

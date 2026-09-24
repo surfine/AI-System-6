@@ -60,6 +60,7 @@ function normalizeHeldThought(record) {
     routeStop: String(record.routeStop || ""),
     reading: String(record.reading || ""),
     clipboard: String(record.clipboard || ""),
+    handoff: record.handoff || "",
     doing: String(record.doing ?? record.note ?? ""),
     next: String(record.next || ""),
   };
@@ -204,6 +205,14 @@ function captureHeldContext() {
     const tab = activeReaderTab();
     context.reading = String(tab?.title || tab?.name || "").trim();
   }
+
+  // Apple's shortcut reads the next hour of the calendar; this desk's calendar
+  // is the handoff date the writer typed on the mounted project's plan. Kept
+  // verbatim — "还有 2 天" is worked out when the thought is read, not frozen
+  // at the moment it was caught. No plan date means no line.
+  // One line on purpose: this file boots with the desk, and the floppy counts it.
+  const handoff = getActiveProject()?.clioProject?.tasks?.projectCd;
+  if (handoff?.date && !handoff.done) context.handoff = handoff.date;
 
   const clipboardField = document.querySelector("#clipboard-text");
   const clipped = String(clipboardField?.value || "").trim().replace(/\s+/g, " ");

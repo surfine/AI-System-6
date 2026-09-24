@@ -7,6 +7,7 @@ import { createCanvas, loadImage } from "canvas";
 import { addedAppArtwork } from "./lib/added-app-compact-art.mjs";
 import { ADDED_APP_ICON_IDS, ADDED_APP_ICON_ERAS } from "./lib/added-app-icon-inventory.mjs";
 import { inkBox, shapeClass } from "./lib/icon-grid.mjs";
+import { ICON_SPECS } from "./lib/icon-family-inventory.mjs";
 import { runtimePixelMetrics } from "./lib/icon-pixel-metrics.mjs";
 import { normalizedMaster } from "./build-big-sur-icons.mjs";
 
@@ -98,7 +99,17 @@ export async function buildAddedAppIcons({eras=ADDED_APP_ICON_ERAS,partial=false
     }
     family.schemaVersion ||= 1;family.target ||= era;family.supplementalBuilder="tooling/build-added-app-icons.mjs";
     family.supplementalIconIds=ADDED_APP_ICON_IDS;family.compatibilityManifest=`${era}-icon-manifest.json`;
-    if(era==="nextstep") {family.completeFamily=false;family.coverageNote="Only three applications own NeXTSTEP artwork; the other 56 semantic objects use Classic.";}
+    if(era==="nextstep") {
+      // Derived, not typed: this builder owns the applications, and
+      // build-nextstep-core-icons.mjs owns the objects. The note is the number
+      // both ledgers can support, so re-running either builder cannot leave a
+      // coverage claim behind that the files contradict.
+      family.completeFamily=false;
+      const owned=Object.keys(family.icons).length;
+      family.coverageNote=`${owned-ADDED_APP_ICON_IDS.length} applications and `
+        +`${(family.coreIconIds||[]).length} core objects own NeXTSTEP artwork; the other `
+        +`${ICON_SPECS.length-owned} semantic objects use Classic.`;
+    }
     json(familyPath,family);json(manifestPath,manifest);json(join(evidence,`${era}-additions.json`),added);
     console.log(`${era}: ${Object.keys(added).length} added applications`);
   }

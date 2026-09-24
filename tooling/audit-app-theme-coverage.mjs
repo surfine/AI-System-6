@@ -163,7 +163,7 @@ for (const fileName of cssFiles) {
 }
 
 const THEME_SELECTOR = /(?:html|body)\[data-theme(?:-family)?=["']|body\.use-liquid-glass/;
-const CHILD_THEME_SELECTOR = /\[data-theme="(?:platinum|snow-leopard|yosemite)"\]/;
+const CHILD_THEME_SELECTOR = /\[data-(?:theme|lineage~)="(?:system-7|platinum|drawing-board|tiger|snow-leopard|lion|yosemite|big-sur)"\]/;
 const budget = JSON.parse(readFileSync(join(root, "tooling/css-budget.json"), "utf8"));
 const childAppPrefixes = applicationCssPrefixes;
 const childAppAllowlist = new Set(budget.childAppSpecificAllowlist || []);

@@ -1,4 +1,4 @@
-// Era engine: one source of truth for the six release appearances.
+// Era engine: one source of truth for the release appearances.
 // The page theme, every synced icon, and both timeline strips follow it.
 
 import { L } from "./copy.js?v=20260820a";
@@ -67,6 +67,25 @@ export const ERAS = [
   },
 ];
 
+// Branches are appearances that are not a stop on the 1988-2026 line. NeXTSTEP
+// is not a Mac release: putting 1995 NeXT between System 6 and Platinum would
+// claim a Mac lineage it does not have. So it has its own Special-menu group
+// and list row, the dissolve and the cycle never visit it, and every lookup
+// below still finds it.
+export const BRANCHES = [
+  {
+    id: "nextstep", year: 1995, label: "NeXTSTEP", ext: "png",
+    font: "Helvetica", substitutes: ["Arial", "Liberation Sans"],
+    role: L("The branch", "岔路"),
+    claim: L("The desk Mac OS X grew from. The objects keep their jobs here too.", "Mac OS X 从这张桌子长出来；对象在这里也守着同样的职责。"),
+  },
+];
+const ALL = [...ERAS, ...BRANCHES];
+
+export function isBranch(id) {
+  return BRANCHES.some((era) => era.id === id);
+}
+
 // Font measurement, not document.fonts.check(): check() reports true for a
 // name that only resolves through fallback, so it cannot find a missing face.
 // A text run set in an absent family measures exactly like the generic it
@@ -127,7 +146,7 @@ if (doc.fonts) {
 
 export function currentEra() {
   const id = doc.documentElement.getAttribute("data-theme") || "classic";
-  return ERAS.find((e) => e.id === id) || ERAS[0];
+  return ALL.find((e) => e.id === id) || ERAS[0];
 }
 
 export function iconSrc(name, era) {
@@ -136,7 +155,7 @@ export function iconSrc(name, era) {
 }
 
 export function setEra(id, store) {
-  const era = ERAS.find((e) => e.id === id) || ERAS[0];
+  const era = ALL.find((e) => e.id === id) || ERAS[0];
   if (era.id === "classic") {
     doc.documentElement.removeAttribute("data-theme");
   } else {

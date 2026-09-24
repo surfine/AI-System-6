@@ -415,6 +415,9 @@ function matchesCompound(element, compound) {
     const actual = element.attrs[attr.name];
     if (actual === undefined) return { matched: false, supported: true };
     if (attr.value !== null && attr.operator === "=" && actual !== attr.value) return { matched: false, supported: true };
+    // [data-lineage~="platinum"]: a whitespace-separated word match, the form
+    // a parent appearance uses so its children inherit the rule.
+    if (attr.value !== null && attr.operator === "~=" && !actual.split(/\s+/).includes(attr.value)) return { matched: false, supported: true };
   }
   let supported = true;
   for (const pseudo of compound.pseudos) {
@@ -549,17 +552,23 @@ sheets.forEach(({ path, css }, sheetIndex) => {
 
 // --- Token tables, one per appearance. ---
 
-const THEME_SCOPES = {
-  classic: [":root", "html", "body"],
-  platinum: [":root", "html", "body", 'body[data-theme="platinum"]'],
-  aqua: [":root", "html", "body", 'body[data-theme="aqua"]'],
-  "snow-leopard": [":root", "html", "body", 'body[data-theme="snow-leopard"]'],
-  yosemite: [":root", "html", "body", 'body[data-theme="yosemite"]'],
-  "liquid-glass": [":root", "html", "body", 'body[data-theme="liquid-glass"]', "body.use-liquid-glass"],
-};
+// An appearance's tokens live under its own id, under every recipe it
+// descends from ([data-lineage~="platinum"]) and under its family. The
+// registry owns those relations, so read them from it.
+const registryHost = {};
+vm.runInNewContext(read("app/core/theme-registry.js"), { window: registryHost });
+const appearanceRegistry = registryHost.AISystem6Theme;
+const themeLineage = (theme) => appearanceRegistry.getRecipeChain(theme).map(({ id }) => id);
+function themeScopes(theme) {
+  const scopes = [":root", "html", "body", `body[data-theme="${theme}"]`,
+    `body[data-theme-family="${appearanceRegistry.getTheme(theme).family}"]`,
+    ...themeLineage(theme).map((id) => `body[data-lineage~="${id}"]`)];
+  if (theme === "liquid-glass") scopes.push("body.use-liquid-glass");
+  return scopes;
+}
 
 function tokenTable(theme) {
-  const scopes = new Set(THEME_SCOPES[theme]);
+  const scopes = new Set(themeScopes(theme));
   const tokens = new Map();
   for (const rule of rules) {
     if (rule.conditions.length) continue;
@@ -683,7 +692,8 @@ function buildElement(surface, theme, focused) {
     const attrs = {};
     if (node.tag === "body") {
       attrs["data-theme"] = theme;
-      attrs["data-theme-family"] = theme;
+      attrs["data-theme-family"] = appearanceRegistry.getTheme(theme).family;
+      attrs["data-lineage"] = themeLineage(theme).join(" ");
       if (theme === "liquid-glass") classes.add("use-liquid-glass");
     }
     parent = { tag: node.tag, id: null, classes, attrs, states: new Set(), parent };

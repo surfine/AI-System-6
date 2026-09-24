@@ -235,8 +235,8 @@ test.assertIncludes(
 );
 test.assertMatches(
   responsive,
-  /\.window:not\(\.is-active\) \.close-box,\n\.window:not\(\.is-active\) \.resize-box,\n\.window:not\(\.is-active\) \.shade-box \{[^}]*visibility: var\(--system-titlebar-inactive-control-visibility\)/,
-  "The inactive title bar drops its controls by token"
+  /\.window:not\(\.is-active\) \.close-box,\n\.window:not\(\.is-active\) \.minimize-box,\n\.window:not\(\.is-active\) \.resize-box,\n\.window:not\(\.is-active\) \.shade-box \{[^}]*visibility: var\(--system-titlebar-inactive-control-visibility\)/,
+  "The inactive title bar drops every control it carries, miniaturize included, by token"
 );
 // macOS states the same thing its own way: a background window's traffic lights
 // go one flat near-white (measured #f1f1f4 on a live macOS 27 window, with a
@@ -249,12 +249,12 @@ test.assertMatches(
 );
 test.assertMatches(
   responsive,
-  /\.window:not\(\.is-active\) \.close-box,\n\.window:not\(\.is-active\) \.resize-box,\n\.window:not\(\.is-active\) \.shade-box \{[^}]*--glass-lamp-close: var\(--glass-lamp-inactive\)/,
+  /\.window:not\(\.is-active\) \.close-box,\n\.window:not\(\.is-active\) \.minimize-box,\n\.window:not\(\.is-active\) \.resize-box,\n\.window:not\(\.is-active\) \.shade-box \{[^}]*--glass-lamp-close: var\(--glass-lamp-inactive\)/,
   "One inactive rule serves both themes: stripes and controls in Classic, gray lamps in glass"
 );
 test.assertMatches(
   responsive,
-  /\.window:not\(\.is-active\) \.close-box,\n\.window:not\(\.is-active\) \.resize-box,\n\.window:not\(\.is-active\) \.shade-box \{[^}]*--glass-lamp-mark-opacity: 0/,
+  /\.window:not\(\.is-active\) \.close-box,\n\.window:not\(\.is-active\) \.minimize-box,\n\.window:not\(\.is-active\) \.resize-box,\n\.window:not\(\.is-active\) \.shade-box \{[^}]*--glass-lamp-mark-opacity: 0/,
   "A background window's lamps show no glyphs"
 );
 test.assertIncludes(
@@ -311,6 +311,7 @@ test.assertMatches(wireup, /win\.querySelector\("\.resize-box"\)\?\.addEventList
 // and painted only by the Mac OS 8/9 recipe, wired to WindowShade not Zoom.
 const themes = read("styles/65-appearance-themes.css");
 const aquaThemes = read("styles/67-aqua-appearance.css");
+const bigSur = read("styles/68-big-sur-appearance.css");
 test.assertIncludes(html, 'class="shade-box" aria-label="Collapse" data-i18n-aria-label="collapse"', "Every full window carries the collapse box in the shared DOM");
 test.assertIncludes(en, 'collapse: "Collapse"', "English has the collapse box accessible label");
 test.assertIncludes(zh, 'collapse: "折叠"', "Chinese has the collapse box accessible label");
@@ -326,13 +327,13 @@ test.assertNotMatches(wireup, /shade-box[\s\S]{0,120}zoomWindow/, "The collapse 
 // stash@{2} "mark optics").
 test.assertNotMatches(
   themes,
-  /body\[data-theme-family="classic"\]:not\(\[data-theme="classic"\]\) \.grow-box \{[^}]*body\[data-theme="platinum"\] \.title-bar \.shade-box::after/,
+  /body\[data-theme-family="classic"\]\[data-lineage~="platinum"\] \.grow-box \{[^}]*body\[data-lineage~="platinum"\] \.title-bar \.shade-box::after/,
   "The Platinum WindowShade mark is a top-level painter, not an unreachable rule nested inside the grow box"
 );
-test.assertMatches(themes, /body\[data-theme="platinum"\] \.title-bar \.resize-box::after \{[^}]*width: 6px;[^}]*height: 6px;[^}]*right top \/ 1px 6px no-repeat,[^}]*left bottom \/ 6px 1px no-repeat;/, "Platinum draws the real six-pixel lower-left Zoom corner");
-test.assertMatches(themes, /body\[data-theme="platinum"\] \.title-bar \.shade-box::after \{[^}]*width: 9px;[^}]*height: 3px;[^}]*left top \/ 9px 1px no-repeat,[^}]*left bottom \/ 9px 1px no-repeat;/, "Platinum draws WindowShade's two native nine-pixel rules");
+test.assertMatches(themes, /body\[data-lineage~="platinum"\] \.title-bar \.resize-box::after \{[^}]*width: 6px;[^}]*height: 6px;[^}]*right top \/ 1px 6px no-repeat,[^}]*left bottom \/ 6px 1px no-repeat;/, "Platinum draws the real six-pixel lower-left Zoom corner");
+test.assertMatches(themes, /body\[data-lineage~="platinum"\] \.title-bar \.shade-box::after \{[^}]*width: 9px;[^}]*height: 3px;[^}]*left top \/ 9px 1px no-repeat,[^}]*left bottom \/ 9px 1px no-repeat;/, "Platinum draws WindowShade's two native nine-pixel rules");
 test.assertIncludes(themes, "right top / calc(var(--system-titlebar-control-slot) + var(--system-titlebar-shade-slot)) 100% no-repeat", "Platinum clears the striped title field behind both right-side Zoom and WindowShade boxes");
-test.assertMatches(themes, /body\[data-theme="platinum"\] \.title-bar:not\(\.spine-title-row\) \{[^}]*var\(--titlebar-gutter\)[^}]*var\(--titlebar-slot-zoom\)[^}]*calc\(var\(--titlebar-gutter\) - var\(--titlebar-slot-zoom\)\);/, "Platinum restores the fourth WindowShade lane after responsive title-bar rules — the Writing Flow rail's lamp-less row stays on its own template");
+test.assertMatches(themes, /body\[data-lineage~="platinum"\] \.title-bar:not\(\.spine-title-row\) \{[^}]*var\(--titlebar-gutter\)[^}]*var\(--titlebar-slot-zoom\)[^}]*calc\(var\(--titlebar-gutter\) - var\(--titlebar-slot-zoom\)\);/, "Platinum restores the fourth WindowShade lane after responsive title-bar rules — the Writing Flow rail's lamp-less row stays on its own template");
 
 // The title is centred on the whole bar, so the two ends reserve the same
 // width and a control slot only exists when its control is in the DOM.
@@ -344,24 +345,50 @@ test.assertMatches(windows, /\.shade-box:focus,[\s\S]*\.shade-box:focus-visible 
 
 // Product-owned title-bar placement outranks the historical three-lamp row:
 // Close stays red at the left edge and Zoom stays green at the right edge.
-for (const theme of ["aqua", "snow-leopard"]) {
-  test.assertMatches(aquaThemes, new RegExp(`body\\[data-theme="${theme}"\\] \\.title-bar > \\.close-box \\{[^}]*grid-column: 1;[^}]*justify-self: start;`), `${theme} keeps Close on the left edge`);
-  test.assertMatches(aquaThemes, new RegExp(`body\\[data-theme="${theme}"\\] \\.title-bar > \\.resize-box \\{[^}]*grid-column: 3;[^}]*justify-self: end;`), `${theme} keeps Zoom on the right edge`);
+// Snow Leopard scopes its rules by lineage so the Aqua-family children that
+// descend from it inherit them.
+for (const [theme, scope] of [["aqua", 'data-theme="aqua"'], ["snow-leopard", 'data-lineage~="snow-leopard"']]) {
+  test.assertMatches(aquaThemes, new RegExp(`body\\[${scope}\\] \\.title-bar > \\.close-box \\{[^}]*grid-column: 1;[^}]*justify-self: start;`), `${theme} keeps Close on the left edge`);
+  test.assertMatches(aquaThemes, new RegExp(`body\\[${scope}\\] \\.title-bar > \\.resize-box \\{[^}]*grid-column: 3;[^}]*justify-self: end;`), `${theme} keeps Zoom on the right edge`);
 }
+// Big Sur joined the edge rule on 2026-09-25, when the owner pulled its
+// three-lamp leading group: the rule names only red and green, and no Mac OS X
+// era draws a yellow lamp until its Dock ships with it. Its sheet states the
+// two ends through the base column tokens (the geometry budget keeps placement
+// in the base sheet), and the base rules below consume them.
+test.assertMatches(bigSur, /body\[data-theme="big-sur"\] \.window > \.title-bar \{[^}]*grid-template-columns: var\(--titlebar-gutter\) minmax\(0, 1fr\) var\(--titlebar-gutter\);[^}]*--titlebar-close-column: 1;[^}]*--titlebar-zoom-column: 3;[^}]*--titlebar-zoom-justify: end;/, "big-sur keeps Close on the left edge and Zoom on the right edge, two balanced ends around the title");
+test.assertNotIncludes(bigSur, "minimize-box", "Big Sur paints no minimize lamp and opens no slot for one");
+// Liquid Glass reaches the same two ends through the base columns (Close 1,
+// Zoom 3) and its own 18px end cells.
+test.assertMatches(liquid, /body\.use-liquid-glass \.title-bar \{[^}]*grid-template-columns: 18px minmax\(0, 1fr\) 18px;/, "liquid-glass keeps two end cells around the title");
+test.assertMatches(liquid, /body\.use-liquid-glass \.close-box \{[^}]*justify-self: start;/, "liquid-glass keeps Close on the left edge");
+test.assertMatches(liquid, /body\.use-liquid-glass \.resize-box \{[^}]*justify-self: end;/, "liquid-glass keeps Zoom on the right edge");
+test.assertNotMatches(liquid, /--titlebar-(close|zoom|minimize)-column:|minimize-box/, "liquid-glass moves no lamp off its edge column and draws no minimize lamp");
+test.assertMatches(windows, /\.title-bar > \.close-box \{[^}]*grid-column: var\(--titlebar-close-column, 1\);/, "the base puts Close in the first column");
+test.assertMatches(windows, /\.title-bar > \.resize-box \{[^}]*grid-column: var\(--titlebar-zoom-column, 3\);\s*justify-self: var\(--titlebar-zoom-justify, end\);/, "the base puts Zoom in the column after the title, at its end");
 test.assertMatches(themes, /body\[data-theme="yosemite"\] \.title-bar > \.close-box \{[^}]*grid-column: 1;[^}]*justify-self: start;/, "Yosemite keeps Close on the left edge");
 test.assertMatches(themes, /body\[data-theme="yosemite"\] \.title-bar > \.resize-box \{[^}]*grid-column: 3;[^}]*justify-self: end;/, "Yosemite keeps Zoom on the right edge");
 test.assertMatches(aquaThemes, /html\[data-theme="aqua"\],[\s\S]*?--system-titlebar-height: 22px;\s*\n\s*--system-titlebar-control-slot: 24px;/, "Jaguar uses its 22px pinstripe bar without reserving a missing three-lamp cluster");
-test.assertMatches(aquaThemes, /html\[data-theme="snow-leopard"\],[\s\S]*?--system-titlebar-height: 22px;\s*\n\s*--system-titlebar-control-slot: 24px;/, "Snow Leopard uses its compact 22px silver bar without reserving a missing three-lamp cluster");
+test.assertMatches(aquaThemes, /html\[data-lineage~="snow-leopard"\],[\s\S]*?--system-titlebar-height: 22px;\s*\n\s*--system-titlebar-control-slot: 24px;/, "Snow Leopard uses its compact 22px silver bar without reserving a missing three-lamp cluster");
 test.assertIncludes(aquaThemes, "#e2e2e2 0 1px, #d0d0d0 1px 3px", "Snow Leopard paints the sampled silver title-bar ramp");
 test.assertMatches(themes, /html\[data-theme="yosemite"\],[\s\S]*?--system-titlebar-height: 22px;\s*\n\s*--system-titlebar-control-slot: 24px;/, "Yosemite uses the native-scale 22px flat title bar");
 test.assertMatches(themes, /body\[data-theme="yosemite"\] \.title-bar > :is\(\.close-box, \.resize-box\) \{[^}]*border-radius: 50%;/, "Yosemite clips its flat traffic lights to circles");
+// Big Sur's chrome is the one era whose sizes were calibrated against native
+// captures on 2026-09-23 rather than inherited: the 512 Pixels macOS 11
+// library images named by docs/01 are 2x, and TextEdit measures 29px to the
+// bar's bottom hairline with the first lamp centre 14px in and 13px down on a
+// 20px pitch. The 38px bar with 28px slots this era shipped with put those
+// centres at 23px/20px. If either number moves, the era is being re-calibrated
+// and the reference in docs/01 has to move with it.
+test.assertMatches(bigSur, /html\[data-theme="big-sur"\],[\s\S]*?--system-titlebar-height: 29px;[\s\S]*?--system-titlebar-control-slot: 20px;[\s\S]*?--system-titlebar-padding-x: 4px;/, "Big Sur keeps its native-calibrated 29px bar, 20px lamp pitch and 4px leading inset");
 // The window frame carries Close and Zoom, the System 6 pair, and that is the
-// whole set. A third lamp token used to sit between them for Theme Lab, whose
-// specimens drew the era's three-lamp cluster; the specimens are real title
-// bars now, so nothing consumes a minimize lamp and the token is gone. Both
-// remaining lamps still come from the same capture, not a hand-mixed colour.
+// pair the Classic capture offers. Yosemite paints both of them from sprites;
+// the miniaturize lamp is a different token shape per era (Big Sur's
+// --big-sur-lamp, NeXTSTEP's own art), so no era carries a third *sprite* lane
+// in the traffic-light pair. Both remaining lamps still come from the same
+// capture, not a hand-mixed colour.
 test.assertMatches(themes, /--traffic-light-close-bg: url\("\.\/assets\/themes\/yosemite\/lamp-close\.png"\);\s*\n\s*--traffic-light-resize-bg: url\("\.\/assets\/themes\/yosemite\/lamp-zoom\.png"\);/, "Yosemite traffic lights paint with the source lamp assets");
-test.assert(!/--traffic-light-minimize-bg/.test(themes), "no era keeps a minimize lamp token, because no control consumes one");
+test.assert(!/--traffic-light-minimize-bg/.test(themes), "no era adds a third sprite lane to the traffic-light pair");
 test.assertNotIncludes(themes, "radial-gradient(circle at 36% 30%", "Yosemite title-bar lamps never add a synthetic specular highlight");
 test.assertMatches(aquaThemes, /:is\(\.close-box, \.resize-box\):is\(:hover, :focus-visible\)::before \{\s*opacity: 1;/, "Aqua and Snow Leopard expose control glyphs to pointer and keyboard users");
 test.assertNotIncludes(zoomWindowContract, "toggleCollapsed", "Zoom never falls back to WindowShade on a narrow or fixed-size window");

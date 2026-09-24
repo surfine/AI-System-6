@@ -1,0 +1,398 @@
+{
+  "schemaVersion": 1,
+  "target": "system-7",
+  "generatedBy": "tooling/build-system-7-icons.mjs",
+  "sourceBoundary": "Classic mask and line art coloured on the System 7 palette; no native System 7 artwork",
+  "icons": {
+    "alias": {
+      "sizes": {
+        "16": "icons/alias-16.png",
+        "32": "icons/alias-32.png"
+      }
+    },
+    "applications": {
+      "sizes": {
+        "16": "icons/applications-16.png",
+        "32": "icons/applications-32.png"
+      }
+    },
+    "assistant": {
+      "sizes": {
+        "16": "icons/assistant-16.png",
+        "32": "icons/assistant-32.png"
+      }
+    },
+    "bonsaiCity": {
+      "sizes": {
+        "16": "icons/bonsaiCity-16.png",
+        "32": "icons/bonsaiCity-32.png"
+      }
+    },
+    "bureaucracyMeme": {
+      "sizes": {
+        "16": "icons/bureaucracyMeme-16.png",
+        "32": "icons/bureaucracyMeme-32.png"
+      }
+    },
+    "chatFile": {
+      "sizes": {
+        "16": "icons/chatFile-16.png",
+        "32": "icons/chatFile-32.png"
+      }
+    },
+    "chatImport": {
+      "sizes": {
+        "16": "icons/chatImport-16.png",
+        "32": "icons/chatImport-32.png"
+      }
+    },
+    "chooser": {
+      "sizes": {
+        "16": "icons/chooser-16.png",
+        "32": "icons/chooser-32.png"
+      }
+    },
+    "clioChart": {
+      "sizes": {
+        "16": "icons/clioChart-16.png",
+        "32": "icons/clioChart-32.png"
+      }
+    },
+    "clioPaint": {
+      "sizes": {
+        "16": "icons/clioPaint-16.png",
+        "32": "icons/clioPaint-32.png"
+      }
+    },
+    "clioProject": {
+      "sizes": {
+        "16": "icons/clioProject-16.png",
+        "32": "icons/clioProject-32.png"
+      }
+    },
+    "clioStage": {
+      "sizes": {
+        "16": "icons/clioStage-16.png",
+        "32": "icons/clioStage-32.png"
+      }
+    },
+    "cloudModel": {
+      "sizes": {
+        "16": "icons/cloudModel-16.png",
+        "32": "icons/cloudModel-32.png"
+      }
+    },
+    "cloudModelOff": {
+      "sizes": {
+        "16": "icons/cloudModelOff-16.png",
+        "32": "icons/cloudModelOff-32.png"
+      }
+    },
+    "cmfStudio": {
+      "sizes": {
+        "16": "icons/cmfStudio-16.png",
+        "32": "icons/cmfStudio-32.png"
+      }
+    },
+    "contextPanel": {
+      "sizes": {
+        "16": "icons/contextPanel-16.png",
+        "32": "icons/contextPanel-32.png"
+      }
+    },
+    "control": {
+      "sizes": {
+        "16": "icons/control-16.png",
+        "32": "icons/control-32.png"
+      }
+    },
+    "controlPanel": {
+      "sizes": {
+        "16": "icons/controlPanel-16.png",
+        "32": "icons/controlPanel-32.png"
+      }
+    },
+    "controlStrip": {
+      "sizes": {
+        "16": "icons/controlStrip-16.png",
+        "32": "icons/controlStrip-32.png"
+      }
+    },
+    "daHandler": {
+      "sizes": {
+        "16": "icons/daHandler-16.png",
+        "32": "icons/daHandler-32.png"
+      }
+    },
+    "dictionary": {
+      "sizes": {
+        "16": "icons/dictionary-16.png",
+        "32": "icons/dictionary-32.png"
+      }
+    },
+    "docMap": {
+      "sizes": {
+        "16": "icons/docMap-16.png",
+        "32": "icons/docMap-32.png"
+      }
+    },
+    "document": {
+      "sizes": {
+        "16": "icons/document-16.png",
+        "32": "icons/document-32.png"
+      }
+    },
+    "documents": {
+      "sizes": {
+        "16": "icons/documents-16.png",
+        "32": "icons/documents-32.png"
+      }
+    },
+    "doom": {
+      "sizes": {
+        "16": "icons/doom-16.png",
+        "32": "icons/doom-32.png"
+      }
+    },
+    "endfieldTerminal": {
+      "sizes": {
+        "16": "icons/endfieldTerminal-16.png",
+        "32": "icons/endfieldTerminal-32.png"
+      }
+    },
+    "fileFloppy": {
+      "sizes": {
+        "16": "icons/fileFloppy-16.png",
+        "32": "icons/fileFloppy-32.png"
+      }
+    },
+    "finderApp": {
+      "sizes": {
+        "16": "icons/finderApp-16.png",
+        "32": "icons/finderApp-32.png"
+      }
+    },
+    "folder": {
+      "sizes": {
+        "16": "icons/folder-16.png",
+        "32": "icons/folder-32.png"
+      }
+    },
+    "hardDisk": {
+      "sizes": {
+        "16": "icons/hardDisk-16.png",
+        "32": "icons/hardDisk-32.png"
+      }
+    },
+    "helpFolder": {
+      "sizes": {
+        "16": "icons/helpFolder-16.png",
+        "32": "icons/helpFolder-32.png"
+      }
+    },
+    "imagePromptStudio": {
+      "sizes": {
+        "16": "icons/imagePromptStudio-16.png",
+        "32": "icons/imagePromptStudio-32.png"
+      }
+    },
+    "importUtility": {
+      "sizes": {
+        "16": "icons/importUtility-16.png",
+        "32": "icons/importUtility-32.png"
+      }
+    },
+    "lightroom": {
+      "sizes": {
+        "16": "icons/lightroom-16.png",
+        "32": "icons/lightroom-32.png"
+      }
+    },
+    "liquidCover": {
+      "sizes": {
+        "16": "icons/liquidCover-16.png",
+        "32": "icons/liquidCover-32.png"
+      }
+    },
+    "localModel": {
+      "sizes": {
+        "16": "icons/localModel-16.png",
+        "32": "icons/localModel-32.png"
+      }
+    },
+    "manuscript": {
+      "sizes": {
+        "16": "icons/manuscript-16.png",
+        "32": "icons/manuscript-32.png"
+      }
+    },
+    "micropolis": {
+      "sizes": {
+        "16": "icons/micropolis-16.png",
+        "32": "icons/micropolis-32.png"
+      }
+    },
+    "multiFinderApp": {
+      "sizes": {
+        "16": "icons/multiFinderApp-16.png",
+        "32": "icons/multiFinderApp-32.png"
+      }
+    },
+    "oneMoreTune": {
+      "sizes": {
+        "16": "icons/oneMoreTune-16.png",
+        "32": "icons/oneMoreTune-32.png"
+      }
+    },
+    "openttd": {
+      "sizes": {
+        "16": "icons/openttd-16.png",
+        "32": "icons/openttd-32.png"
+      }
+    },
+    "outline": {
+      "sizes": {
+        "16": "icons/outline-16.png",
+        "32": "icons/outline-32.png"
+      }
+    },
+    "projectDisc": {
+      "sizes": {
+        "16": "icons/projectDisc-16.png",
+        "32": "icons/projectDisc-32.png"
+      }
+    },
+    "projectDisk": {
+      "sizes": {
+        "16": "icons/projectDisk-16.png",
+        "32": "icons/projectDisk-32.png"
+      }
+    },
+    "questionSheet": {
+      "sizes": {
+        "16": "icons/questionSheet-16.png",
+        "32": "icons/questionSheet-32.png"
+      }
+    },
+    "quickDraft": {
+      "sizes": {
+        "16": "icons/quickDraft-16.png",
+        "32": "icons/quickDraft-32.png"
+      }
+    },
+    "reader": {
+      "sizes": {
+        "16": "icons/reader-16.png",
+        "32": "icons/reader-32.png"
+      }
+    },
+    "rebuildArticle": {
+      "sizes": {
+        "16": "icons/rebuildArticle-16.png",
+        "32": "icons/rebuildArticle-32.png"
+      }
+    },
+    "reviewDesk": {
+      "sizes": {
+        "16": "icons/reviewDesk-16.png",
+        "32": "icons/reviewDesk-32.png"
+      }
+    },
+    "scrapbook": {
+      "sizes": {
+        "16": "icons/scrapbook-16.png",
+        "32": "icons/scrapbook-32.png"
+      }
+    },
+    "searcher": {
+      "sizes": {
+        "16": "icons/searcher-16.png",
+        "32": "icons/searcher-32.png"
+      }
+    },
+    "sectionDrafts": {
+      "sizes": {
+        "16": "icons/sectionDrafts-16.png",
+        "32": "icons/sectionDrafts-32.png"
+      }
+    },
+    "soundscape": {
+      "sizes": {
+        "16": "icons/soundscape-16.png",
+        "32": "icons/soundscape-32.png"
+      }
+    },
+    "startupDisk": {
+      "sizes": {
+        "16": "icons/startupDisk-16.png",
+        "32": "icons/startupDisk-32.png"
+      }
+    },
+    "systemFile": {
+      "sizes": {
+        "16": "icons/systemFile-16.png",
+        "32": "icons/systemFile-32.png"
+      }
+    },
+    "systemFolder": {
+      "sizes": {
+        "16": "icons/systemFolder-16.png",
+        "32": "icons/systemFolder-32.png"
+      }
+    },
+    "systemHelp": {
+      "sizes": {
+        "16": "icons/systemHelp-16.png",
+        "32": "icons/systemHelp-32.png"
+      }
+    },
+    "systemStatus": {
+      "sizes": {
+        "16": "icons/systemStatus-16.png",
+        "32": "icons/systemStatus-32.png"
+      }
+    },
+    "teachText": {
+      "sizes": {
+        "16": "icons/teachText-16.png",
+        "32": "icons/teachText-32.png"
+      }
+    },
+    "timeMachine": {
+      "sizes": {
+        "16": "icons/timeMachine-16.png",
+        "32": "icons/timeMachine-32.png"
+      }
+    },
+    "trash": {
+      "sizes": {
+        "16": "icons/trash-16.png",
+        "32": "icons/trash-32.png"
+      }
+    },
+    "trashFull": {
+      "sizes": {
+        "16": "icons/trashFull-16.png",
+        "32": "icons/trashFull-32.png"
+      }
+    },
+    "writingBell": {
+      "sizes": {
+        "16": "icons/writingBell-16.png",
+        "32": "icons/writingBell-32.png"
+      }
+    },
+    "writingDemo": {
+      "sizes": {
+        "16": "icons/writingDemo-16.png",
+        "32": "icons/writingDemo-32.png"
+      }
+    },
+    "writingStudio": {
+      "sizes": {
+        "16": "icons/writingStudio-16.png",
+        "32": "icons/writingStudio-32.png"
+      }
+    }
+  }
+}

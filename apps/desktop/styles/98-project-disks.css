@@ -34,3 +34,17 @@
   white-space: normal;
   overflow-wrap: anywhere;
 }
+
+/* 项目一览 rows carry a second line -- the risk diamond, the handoff in the
+   writer's own words, and the one thing still missing. The row is a flex line
+   in the boot sheet; here it wraps, and the second line takes the full width.
+   It lives in this lazy sheet because openProjectOverview() loads it, so the
+   boot floppy does not pay for it. */
+.project-peek-row:has(.project-peek-next) {
+  flex-wrap: wrap;
+}
+
+.project-peek-row .project-peek-next {
+  flex: 1 0 100%;
+  margin-left: 0;
+}

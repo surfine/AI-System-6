@@ -9,6 +9,7 @@ const lmstudioModels = read("apps/server/server/lib/lmstudio-models.js");
 const serverChat = read("apps/server/server/chat.js");
 const chatRoute = read("apps/server/server/routes/chat.js");
 const chatMessages = read("app/core/chat-messages.js");
+const modelTaskRuntime = read("app/shared/model-task-runtime.js");
 
 test.assertIncludes(lmstudioModels, "gemma[-_/ ]?4", "known context matching accepts Gemma 4 aliases");
 test.assertIncludes(lmstudioModels, "/26b/i.test(value) && /a4b/i.test(value)) return 262144", "26B A4B defaults to the 256K model-card context");
@@ -28,10 +29,10 @@ test.assertIncludes(serverChat, "function scrubVisibleModelOutput", "Gemma 4 tho
 test.assertIncludes(chatRoute, "scrubVisibleOutputInData(data)", "local non-stream responses are cleaned before display");
 
 test.assertIncludes(chatMessages, "function isGemma4ModelName", "client detects Gemma 4 model names");
-test.assertIncludes(chatMessages, "function gemma4ChatDefaults", "client applies Gemma 4 chat defaults");
-test.assertIncludes(chatMessages, "temperature: Number.isFinite(options.temperature) ? options.temperature : 1.0", "client preserves explicit task temperatures while defaulting Gemma 4 to 1.0");
-test.assertIncludes(chatMessages, "top_p: 0.95", "client applies Gemma 4 top_p");
-test.assertIncludes(chatMessages, "top_k: 64", "client applies Gemma 4 top_k");
+test.assertIncludes(modelTaskRuntime, "if (/gemma[-_/ ]?4/i.test(model))", "client applies Gemma 4 chat defaults");
+test.assertIncludes(modelTaskRuntime, "temperature: Number.isFinite(options.temperature) ? options.temperature : 1.0", "client preserves explicit task temperatures while defaulting Gemma 4 to 1.0");
+test.assertIncludes(modelTaskRuntime, "top_p: 0.95", "client applies Gemma 4 top_p");
+test.assertIncludes(modelTaskRuntime, "top_k: 64", "client applies Gemma 4 top_k");
 test.assertIncludes(chatMessages, "isGemma4ModelName(budgetedPayload.model)", "auto chat disables streaming so Gemma 4 output can be repaired before display");
 test.assertIncludes(chatMessages, "scrubVisibleModelOutput(content)", "client JSON responses strip Gemma 4 thought/channel tags");
 

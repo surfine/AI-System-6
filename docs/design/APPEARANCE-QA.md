@@ -2,9 +2,9 @@
 
 <!-- doc-claims: mixed | audited: 2026-09-18 -->
 
-AI System 6 has seven release appearances and an eighth NeXTSTEP preview surface.
-The preview is intentionally kept out of the normal Appearance selector while
-its dedicated icon family is deferred.
+AI System 6 has eight release appearances. The matrix below records the
+original six; Big Sur (2026-09-22) and NeXTSTEP (released 2026-09-23) are
+covered by their own sections further down, not by a tick in this table.
 
 | Surface            | Classic / System 6 | Platinum | Aqua | Snow Leopard | Yosemite | Liquid Glass |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -24,10 +24,10 @@ its dedicated icon family is deferred.
 | Menu Bar           | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Phone Layout       | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 
-The seven release appearances (registry `releaseReady: true`) are exposed in the
-Control Panel Appearance selector and the Special menu. NeXTSTEP has
-`releaseReady: false` and is available only on the loopback `debugTheme=nextstep`
-preview path until its icon work is authorized. The four historical appearances are additionally held to
+The eight release appearances (registry `releaseReady: true`) are exposed in the
+Control Panel Appearance selector and the Special menu. NeXTSTEP joined them on
+2026-09-23, on the owner's decision, once its workflow and edge-case gates, its
+59 of 59 icons and its touch targets were recorded. The four historical appearances are additionally held to
 their pinned canonical references by `npm run verify:theme-lab:fidelity`, which
 checks two separate tiers: the recorded-run `tolerances` (regression) and the
 shared `FIDELITY_FLOOR` (absolute distance from the era target). Each specimen
@@ -194,10 +194,12 @@ The shared modern-family field recipe also excludes `.mde-input`: an opaque
 field fill was covering the manuscript highlight layer in Yosemite and Big Sur.
 Both eras now keep the text layer transparent and its typography aligned.
 
-NeXTSTEP preview evidence additionally covers its native-style window controls,
+NeXTSTEP evidence additionally covers its native-style window controls,
 key/main title state, floating and detachable menus, right Dock, mini windows,
 column Finder/Shelf, scroll-frame geometry, IME deferral, offline resources and
-cross-theme/session restoration. The preview still uses the explicit Classic
-fallback for icons; the three added-app artworks and item-by-item historical
-review remain pending. This delivery does not upgrade the earlier historical
-fidelity results or certify all icon families.
+cross-theme/session restoration. Every object the appearance maps now has its
+own 3.3-style icon (59 of 59), so the Classic icon fallback is gone. NeXTSTEP
+has no canonical Theme Lab board: `verify-nextstep-workflow` and its edge-case
+companion are its instruments, and a green `verify:theme-lab:fidelity` says
+nothing about it. Its release does not upgrade the earlier historical fidelity
+results or certify all icon families.

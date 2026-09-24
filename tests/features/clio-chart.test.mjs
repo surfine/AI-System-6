@@ -5,7 +5,20 @@ const test = createFeatureTest("clio-chart");
 const source = read("app/features/clio-chart.js");
 const bootstrap = read("app.js");
 
-const context = { window: {} };
+// The module is an app module: it expects the desk's own translator and the
+// current language. The contract supplies the smallest pair that keeps the
+// placeholder labels readable instead of undefined.
+const context = {
+  window: {},
+  currentLanguage: "zh",
+  // The desk's translator fills placeholders; the contract's stand-in keeps the
+  // arguments visible so a message about a row can be asserted by its row.
+  t: (key, ...args) => (args.length ? `${key}: ${args.join(" ")}` : key),
+  btoa,
+  encodeURIComponent,
+  escapeHtml: (value) => String(value === null || value === undefined ? "" : value)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"),
+};
 vm.runInNewContext(source, context);
 const chart = context.window.AISystem6ClioChart;
 
@@ -112,6 +125,96 @@ const traceTable = chart.parseTable(
 );
 test.assert(chart.isChartable(traceTable), "a numeric first column is accepted as a trace axis");
 test.assert(traceTable.rows[1].cells[0].value === null, "a missing trace point remains a gap, never an interpolated value");
+
+// --- Shape, sort and paste: the artifact, not the DOM ----------------------
+// Adding a row or a column rebuilds the block's text, so the contract can read
+// what a shape change produces without a browser.
+const grown = chart.shapeApply(parsed, "insert-row", { index: 0 });
+test.assert(grown && grown.split("\n").length === REVIEW_TABLE.split("\n").length + 1, "inserting a row adds exactly one line");
+const grownTable = chart.parseTable(grown);
+const grownLabels = grownTable.rows.map((row) => row.label);
+test.assert(grownLabels[0] === "MacBook Pro 14 M5" && grownLabels[2] === "MacBook Air 15 M5", "the existing rows keep their order around the new one");
+test.assert(/clio_chart_template_object/.test(grownLabels[1]), "the new row is a labelled placeholder, not a plausible number");
+test.assert(grownTable.rows[1].cells.every((cell) => cell.text === ""), "and every cell of it is empty, never a made-up figure");
+test.assert(grownTable.rows.every((row) => row.cells.length === grownTable.columns.length), "the new row keeps the table's width");
+test.assert(chart.serializeTable(chart.parseTable(grown)) === grown, "the rebuilt block is idempotent like any other table");
+
+const narrow = chart.shapeApply(chart.parseTable(["| Device | Score |", "|---|---|", "| A | 10 |", "| B | 20 |"].join("\n")), "delete-row", { index: 0 });
+test.assert(narrow && chart.parseTable(narrow).rows.map((row) => row.label).join(",") === "B", "deleting a row removes that row only");
+test.assert(chart.shapeApply(chart.parseTable(["| Device | Score |", "|---|---|", "| A | 10 |"].join("\n")), "delete-row", { index: 0 }) === null, "the last remaining row is never deleted");
+test.assert(chart.shapeApply(chart.parseTable(["| Device | Score |", "|---|---|", "| A | 10 |"].join("\n")), "delete-column", { index: 0 }) === null, "the last remaining column is never deleted");
+
+const widened = chart.shapeApply(parsed, "insert-column", { index: 0 });
+const widenedTable = chart.parseTable(widened);
+test.assert(widenedTable.columns.length === parsed.columns.length + 1, "inserting a column widens the header");
+test.assert(widenedTable.rows.every((row) => row.cells.length === widenedTable.columns.length), "and every row with it");
+test.assert(widenedTable.rows.every((row) => row.cells[1].text === ""), "the new column starts empty in every row");
+
+const reordered = chart.shapeApply(parsed, "move-row", { from: 0, to: 1 });
+const order = chart.parseTable(reordered).rows.map((row) => row.label);
+test.assert(order[0] === "MacBook Air 15 M5" && order[1] === "MacBook Pro 14 M5", "a moved row changes the file's order");
+test.assert(chart.shapeApply(parsed, "move-row", { from: 1, to: 1 }) === null, "moving a row onto itself is not an edit");
+test.assert(chart.moveRow(0, 1) === false, "row order stays the file's business until the chart draws the file's order");
+
+// A spreadsheet paste is the highest-volume way data arrives, so the reader has
+// to survive the shapes a spreadsheet actually quotes.
+const quoted = chart.delimitedRows('Device,Note,Score\n"A, Inc.","two\nlines",10\n', ",");
+test.assert(quoted.length === 2, "a quoted line break does not split the row");
+test.assert(quoted[1][0] === "A, Inc.", "a quoted delimiter stays inside its cell");
+test.assert(quoted[1][1] === "two\nlines", "a quoted newline stays inside its cell");
+test.assert(chart.delimitedRows('"He said ""no"""\t2\n', "\t")[0][0] === 'He said "no"', "a doubled quote is one quote");
+
+const converted = chart.delimitedToMarkdown('Device,Note,Score\n"A, Inc.","two, lines",10\n"B, Ltd.",ok,20\n');
+test.assert(chart.isChartable(chart.parseTable(converted)), "a CSV whose cells hold commas still becomes a chartable table");
+test.assert(chart.parseTable(converted).rows[0].label === "A, Inc.", "and the quoted comma stays inside the label");
+
+// --- The projection as a portable drawing ---------------------------------
+const barsSvg = chart.projectionSvg(parsed, "bars");
+test.assert(barsSvg.startsWith("<svg") && barsSvg.endsWith("</svg>"), "a projection serializes to one self-contained SVG");
+test.assert(barsSvg.includes("<pattern"), "the drawing carries its own patterns, so it needs no stylesheet");
+test.assert(barsSvg.includes("MacBook Pro 14 M5") && barsSvg.includes("1125"), "and its own labels and values");
+// The xmlns is a namespace, not a fetch: what must be absent is any reference
+// the renderer would have to go and get.
+test.assert(!barsSvg.includes("xlink:href") && !/<image\b/.test(barsSvg) && !/url\(\s*["']?https?:/.test(barsSvg), "with nothing external to fetch");
+test.assert(barsSvg.includes("role=\"img\"") && barsSvg.includes("aria-label"), "and a name for assistive technology");
+["matrix", "grid", "trace", "score"].forEach((projection) => {
+  const drawn = chart.projectionSvg(parsed, projection);
+  test.assert(drawn.startsWith("<svg") && drawn.endsWith("</svg>"), `the ${projection} projection draws its own page`);
+  test.assert(drawn.includes("<text"), `the ${projection} projection carries readable text`);
+});
+
+const stagePage = chart.stageMarkdown(parsed, "bars");
+test.assert(stagePage.includes("data:image/svg+xml;base64,"), "the stage page embeds the drawing as an image");
+test.assert(stagePage.includes("<!-- _class: evidence"), "and declares the evidence layout");
+test.assert(stagePage.includes("<!-- clio-chart:"), "and keeps the source table for the reader of the file");
+test.assert(chart.svgBase64("A&B") === Buffer.from("A&B", "utf8").toString("base64"), "the encoder survives non-ASCII and markup");
+
+// The bars projection is markup without a DOM in it, so the contract can read
+// what the reader would actually see.
+const barsDrawn = chart.barsMarkup(parsed, { column: 0, sortMode: "desc", descending: true });
+test.assert((barsDrawn.markup.match(/clio-chart-bar /g) || []).length === 4, "every measured row gets exactly one bar");
+test.assert(barsDrawn.markup.includes('data-pattern="0"') && barsDrawn.markup.includes("is-reference"), "the reference object keeps the solid pattern and the row marker");
+test.assert(barsDrawn.markup.includes("clio-chart-extension"), "a measured range draws its extension");
+test.assert(barsDrawn.missing.includes("MacBook Air 15 M4"), "a column with a blank states which row was not measured");
+const twoRow = chart.parseTable(["| Device | Score |", "|---|---|", "| Slow | 10 |", "| Fast | 90 |"].join("\n"));
+const names = (markup) => [...markup.matchAll(/clio-chart-row-name"[^>]*>(?:▶ )?([^<]*)</g)].map((match) => match[1].trim());
+test.assert(names(chart.barsMarkup(twoRow, { column: 0, sortMode: "desc", descending: true }).markup)[0] === "Fast", "a ranking draws the highest value first");
+test.assert(names(chart.barsMarkup(twoRow, { column: 0, sortMode: "source" }).markup)[0] === "Slow", "sort=source draws the file's own order instead");
+const zeroMax = chart.barsMarkup(chart.parseTable(["| Device | Score |", "|---|---|", "| A | 0 |", "| B | 0 |"].join("\n")), { column: 0 });
+test.assert(!/width:NaN%/.test(zeroMax.markup) && !/width:-/.test(zeroMax.markup), "a column of zeros draws zero-length bars, never NaN or a negative width");
+
+// The other four projections are markup too, so each one can be read back.
+const matrixMarkup = chart.matrixMarkup(parsed, { column: 0 });
+test.assert(matrixMarkup.includes("clio-chart-matrix") && matrixMarkup.includes("is-rollup"), "the matrix draws its grid and its computed rollup row");
+test.assert(matrixMarkup.includes("clio-chart-rollup-note") || matrixMarkup.includes("clio_chart_rollup_note"), "and says the rollup was computed, not measured");
+test.assert(chart.traceMarkup(traceTable, {}).includes("clio-chart-trace-line"), "the trace draws its series as paths");
+test.assert(chart.traceMarkup(traceTable, {}).includes('class="clio-chart-axis"'), "with axes");
+const gridMarkup = chart.gridMarkup(parsed, { column: 0 });
+test.assert(gridMarkup.includes("clio-chart-spatial-cell") && gridMarkup.includes("data-density"), "the spatial grid draws one cell per object with a density");
+test.assert(gridMarkup.includes("clio-chart-spatial-summary"), "and states its maximum, average and minimum");
+const scoreMarkup = chart.scoresMarkup(parsed, { column: 2 });
+test.assert(scoreMarkup.includes("clio-chart-score-row"), "the score projection draws its rows");
+test.assert(scoreMarkup.includes("clio_chart_score_no_total") || scoreMarkup.includes("clio-chart-score-note"), "and refuses to invent a weighted total");
 
 const density = new Function(
   `${source.match(/function clioChartGridDensity[\s\S]*?\n}/)[0]}; return clioChartGridDensity;`
@@ -224,11 +327,21 @@ test.assertIncludes(config, 'createLazyModuleLoader("AISystem6ClioChartLoaded", 
 // when a slide carries a chart snapshot, and a restored session can bring that
 // snapshot back without ClioChart having been opened this boot. ClioStage must
 // therefore pull the same sheet, or a restored chart slide loses its styling.
-test.assertIncludes(config, 'createLazyModuleLoader("AISystem6ClioStageLoaded", ["app/features/clio-stage.js"], false, ["styles.clio-chart.css"])', "ClioStage pulls the chart stylesheet for a restored chart slide");
+// The intent is "this loader pulls the chart sheet", not the exact array: the
+// deck's theme module now rides along with the same loader.
+test.assertMatches(
+  config,
+  /createLazyModuleLoader\("AISystem6ClioStageLoaded", \[[^\]]*app\/features\/clio-stage\.js[^\]]*\], false, \["styles\.clio-chart\.css"\]\)/,
+  "ClioStage pulls the chart stylesheet for a restored chart slide"
+);
 test.assertIncludes(styleManifest, '"styles.clio-chart.css"', "the stylesheet ships as its own lazy bundle, off the boot payload");
 test.assertIncludes(html, 'data-window="clioChart"', "the window is declared in index.html");
 test.assert(windowApp("clioChart") === "clioChart", "the window maps to its own application");
-test.assertIncludes(menus, "clioChart: clioChartMenus", "the application owns a menu set");
+// ClioChart is lazy, so its menu set is registered by its own module rather
+// than shipped in the shell's eager table (the same shape doom, micropolis,
+// one-more-tune, clio-paint, openttd and bonsai-city already use).
+test.assertIncludes(source, 'AISystem6RegisterApplicationMenuSet?.("clioChart"', "the application owns a menu set, registered with the module");
+test.assert(!menus.includes("clioChart: clioChartMenus"), "the shell no longer carries rows for a window that is not open");
 test.assertIncludes(menus, 'menuItem("see-as-chart", "clio_chart_see_as_chart")', "TeachText carries the menu twin of the in-body button");
 test.assertIncludes(source, '"open-clio-chart"', "the open action is registered in the lazy module");
 test.assertIncludes(read("app/core/app-admissions.js"), '"open-clio-chart"', "the open action is admitted through the shared table");
@@ -265,7 +378,7 @@ test.assertIncludes(source, "function toggleClioChartPresentation", "presentatio
 test.assertIncludes(source, "event.key !== \" \"", "Space reveals the next presentation item");
 ["clio-chart-view-1", "clio-chart-view-2", "clio-chart-view-3", "clio-chart-view-4", "clio-chart-view-5", "clio-chart-reverse"].forEach((id) => {
   test.assertIncludes(actions, `id: "${id}"`, `${id} is registered as an application shortcut`);
-  test.assertIncludes(menus, `"${id}"`, `${id} is the shadow of a visible menu command`);
+  test.assertIncludes(source, `"${id}"`, `${id} is the shadow of a visible menu command`);
 });
 
 test.assertIncludes(chatMessages, "function clioTalkHasChartableTable", "ClioTalk detects chartable assistant tables");
@@ -274,11 +387,11 @@ test.assertIncludes(chatMessages, "await ensureClioChartModule()", "the reverse 
 test.assertIncludes(chatMessages, "window.AISystem6ClioChart?.open?.({ markdown: content", "the reverse handoff passes the original Markdown");
 
 test.assertIncludes(source, "async function sendClioChartToStage()", "the current projection can become one ClioStage page");
-test.assertIncludes(source, "view.cloneNode(true)", "the stage handoff freezes the read-only projection instead of copying data into another editor");
+test.assertIncludes(source, "data:image/svg+xml;base64,", "the stage handoff carries the projection as a drawing the page owns");
 test.assertIncludes(source, 'sourceKind: "clioChart"', "the ClioStage source is explicitly identified");
 test.assertIncludes(clioStage, 'sourceKind === "clioChart"', "ClioStage recognizes a chart snapshot");
 test.assertIncludes(clioStage, "chartSnapshot.cloneNode(true)", "ClioStage renders a fresh clone of the frozen chart page");
-test.assertIncludes(menus, 'menuItem("clio-chart-send-stage"', "Send to ClioStage is a visible chart menu command");
+test.assertIncludes(source, 'menuItem("clio-chart-send-stage"', "Send to ClioStage is a visible chart menu command");
 test.assertIncludes(source, '"clio-chart-send-stage"', "Send to ClioStage is wired through the runtime command layer");
 
 test.assertIncludes(source, "data-label=", "grid cells carry their field labels into card mode");
@@ -314,9 +427,17 @@ test.assertIncludes(liquidCss, "--clio-chart-switcher-width: 100%", "Liquid Glas
   "--clio-chart-density-75",
   "--clio-chart-spatial-label-size",
 ].forEach((token) => {
-  test.assertIncludes(foundationCss, `${token}:`, `${token} has a Classic 1-bit default`);
+  // The typeface is the one token whose default lives at its consumers, as a
+  // var() fallback: declared on :root it resolved --ui-font there, which is
+  // always Chicago, and every era's chart drew in 1-bit type.
+  if (token === "--clio-chart-typeface") {
+    test.assertNotIncludes(foundationCss, `${token}:`, `${token} has no :root default that would pin Chicago`);
+    test.assertIncludes(css, `var(${token}, var(--ui-font))`, `${token} falls back to the era's own face at the chart`);
+  } else {
+    test.assertIncludes(foundationCss, `${token}:`, `${token} has a Classic 1-bit default`);
+    test.assertIncludes(css, `var(${token})`, `${token} is consumed by the chart stylesheet`);
+  }
   test.assertIncludes(liquidCss, `${token}:`, `${token} has a Liquid Glass override`);
-  test.assertIncludes(css, `var(${token})`, `${token} is consumed by the chart stylesheet`);
 });
 test.assertNotIncludes(
   liquidCss,
@@ -465,7 +586,7 @@ test.assertIncludes(chartSource, "function clioChartTemplatePresets()", "the rev
 // have opened. Templates live in File > New.
 test.assertNotIncludes(chartSource, "renderClioChartChooser", "there is no in-window template chooser");
 test.assertIncludes(chartSource, 'openClioChartTemplate({ id: "blank", builtIn: true })', "the window opens with a blank comparison already on the grid");
-test.assertIncludes(menus, 'submenu("clio_chart_new_from_template"', "the presets live in File > New");
+test.assertIncludes(source, 'submenu("clio_chart_new_from_template"', "the presets live in File > New");
 test.assert(admittedApplicationGroup("open-clio-chart") === "create", "ClioChart is a real entry in the Applications folder");
 ["cpu-gpu", "gaming", "battery-power", "noise-heat", "display", "rating", "blank"].forEach((id) => {
   test.assertIncludes(chartSource, `id: "${id}"`, `the ${id} preset exists`);

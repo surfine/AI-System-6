@@ -30,8 +30,8 @@
     "supplementalIconCount": 3,
     "iconCountPerEra": 59,
     "runtimeCells": 472,
-    "independentArtworkCells": 416,
-    "fallbackCells": 56,
+    "independentArtworkCells": 472,
+    "fallbackCells": 0,
     "priorityCore16Count": 16,
     "priorityCells": 128,
     "pendingCells": 415,
@@ -17724,24 +17724,24 @@
       "familyLedger": "nextstep/nextstep-icon-family.json",
       "runtimeManifest": "nextstep/nextstep-icon-manifest.json",
       "runtimeObjectCount": 59,
-      "independentArtworkCount": 3,
-      "fallbackObjectCount": 56,
-      "fallbackEra": "classic",
+      "independentArtworkCount": 59,
+      "fallbackObjectCount": 0,
       "icons": {
         "startupDisk": {
           "priorityCore16": false,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "startupDisk-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/startupDisk-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "startupDisk-16.svg",
-            "ordinary": "startupDisk-32.svg",
-            "desktopLargeRetina": "startupDisk-32.svg"
+            "compactMenuList": "icons/startupDisk-16.png",
+            "ordinary": "icons/startupDisk-32.png",
+            "desktopLargeRetina": "icons/startupDisk-128.png",
+            "explicit64": "icons/startupDisk-64.png"
           },
-          "compatibilityManifestAsset": "startupDisk-32.svg",
+          "compatibilityManifestAsset": "icons/startupDisk-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "Startup Disk",
           "identityAnchors": [
@@ -17749,164 +17749,172 @@
             "startup"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "C",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "pending",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "product-semantic-smooth-vector",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "hardDisk": {
           "priorityCore16": true,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "hardDisk-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/hardDisk-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "hardDisk-16.svg",
-            "ordinary": "hardDisk-32.svg",
-            "desktopLargeRetina": "hardDisk-32.svg"
+            "compactMenuList": "icons/hardDisk-16.png",
+            "ordinary": "icons/hardDisk-32.png",
+            "desktopLargeRetina": "icons/hardDisk-128.png",
+            "explicit64": "icons/hardDisk-64.png"
           },
-          "compatibilityManifestAsset": "hardDisk-32.svg",
+          "compatibilityManifestAsset": "icons/hardDisk-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "mounted local storage volume",
           "identityAnchors": [
             "storage volume"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "A",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "reference-validated",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "system6-prototype-smooth-vector-trace",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "folder": {
           "priorityCore16": true,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "folder-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/folder-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "folder-16.svg",
-            "ordinary": "folder-32.svg",
-            "desktopLargeRetina": "folder-32.svg"
+            "compactMenuList": "icons/folder-16.png",
+            "ordinary": "icons/folder-32.png",
+            "desktopLargeRetina": "icons/folder-128.png",
+            "explicit64": "icons/folder-64.png"
           },
-          "compatibilityManifestAsset": "folder-32.svg",
+          "compatibilityManifestAsset": "icons/folder-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "system-owned file container",
           "identityAnchors": [
             "tabbed folder"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "A",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "reference-validated",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "system6-prototype-smooth-vector-trace",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "document": {
           "priorityCore16": true,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "document-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/document-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "document-16.svg",
-            "ordinary": "document-32.svg",
-            "desktopLargeRetina": "document-32.svg"
+            "compactMenuList": "icons/document-16.png",
+            "ordinary": "icons/document-32.png",
+            "desktopLargeRetina": "icons/document-128.png",
+            "explicit64": "icons/document-64.png"
           },
-          "compatibilityManifestAsset": "document-32.svg",
+          "compatibilityManifestAsset": "icons/document-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "neutral editable document",
           "identityAnchors": [
             "paper document"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "A",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "reference-validated",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "system6-prototype-smooth-vector-trace",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "applications": {
           "priorityCore16": false,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "applications-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/applications-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "applications-16.svg",
-            "ordinary": "applications-32.svg",
-            "desktopLargeRetina": "applications-32.svg"
+            "compactMenuList": "icons/applications-16.png",
+            "ordinary": "icons/applications-32.png",
+            "desktopLargeRetina": "icons/applications-128.png",
+            "explicit64": "icons/applications-64.png"
           },
-          "compatibilityManifestAsset": "applications-32.svg",
+          "compatibilityManifestAsset": "icons/applications-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "Applications folder",
           "identityAnchors": [
@@ -17914,41 +17922,43 @@
             "applications"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "C",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "pending",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "product-semantic-smooth-vector",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "trash": {
           "priorityCore16": true,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "trash-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/trash-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "trash-16.svg",
-            "ordinary": "trash-32.svg",
-            "desktopLargeRetina": "trash-32.svg"
+            "compactMenuList": "icons/trash-16.png",
+            "ordinary": "icons/trash-32.png",
+            "desktopLargeRetina": "icons/trash-128.png",
+            "explicit64": "icons/trash-64.png"
           },
-          "compatibilityManifestAsset": "trash-32.svg",
+          "compatibilityManifestAsset": "icons/trash-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "system waste container",
           "identityAnchors": [
@@ -17956,41 +17966,43 @@
             "empty/full state relationship"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "A",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "reference-validated",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "system6-prototype-smooth-vector-trace",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "finderApp": {
           "priorityCore16": true,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "finderApp-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/finderApp-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "finderApp-16.svg",
-            "ordinary": "finderApp-32.svg",
-            "desktopLargeRetina": "finderApp-32.svg"
+            "compactMenuList": "icons/finderApp-16.png",
+            "ordinary": "icons/finderApp-32.png",
+            "desktopLargeRetina": "icons/finderApp-128.png",
+            "explicit64": "icons/finderApp-64.png"
           },
-          "compatibilityManifestAsset": "finderApp-32.svg",
+          "compatibilityManifestAsset": "icons/finderApp-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "friendly Finder and system-navigation identity",
           "identityAnchors": [
@@ -17998,41 +18010,43 @@
             "recognizable system-navigation persona"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "A",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "reference-validated",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
-          "blindMixStatus": "not-run",
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "blindMixStatus": null,
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "system6-prototype-smooth-vector-trace",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "fileFloppy": {
           "priorityCore16": true,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "fileFloppy-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/fileFloppy-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "fileFloppy-16.svg",
-            "ordinary": "fileFloppy-32.svg",
-            "desktopLargeRetina": "fileFloppy-32.svg"
+            "compactMenuList": "icons/fileFloppy-16.png",
+            "ordinary": "icons/fileFloppy-32.png",
+            "desktopLargeRetina": "icons/fileFloppy-128.png",
+            "explicit64": "icons/fileFloppy-64.png"
           },
-          "compatibilityManifestAsset": "fileFloppy-32.svg",
+          "compatibilityManifestAsset": "icons/fileFloppy-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "temporary context carried as removable media",
           "identityAnchors": [
@@ -18040,41 +18054,43 @@
             "temporary removable context"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "A",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "reference-validated",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": true,
           "anachronismReason": "File Floppy is a stable product-level metaphor for temporary context. Later appearances redraw that retained metaphor in their own era; they do not claim the target OS still treats floppy disks as standard removable media.",
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "system6-prototype-smooth-vector-trace",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "assistant": {
           "priorityCore16": true,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "assistant-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/assistant-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "assistant-16.svg",
-            "ordinary": "assistant-32.svg",
-            "desktopLargeRetina": "assistant-32.svg"
+            "compactMenuList": "icons/assistant-16.png",
+            "ordinary": "icons/assistant-32.png",
+            "desktopLargeRetina": "icons/assistant-128.png",
+            "explicit64": "icons/assistant-64.png"
           },
-          "compatibilityManifestAsset": "assistant-32.svg",
+          "compatibilityManifestAsset": "icons/assistant-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "conversation between user and model whose model reply remains provisional",
           "identityAnchors": [
@@ -18082,41 +18098,43 @@
             "provisional reply cue"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "B",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "historically-reviewed",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "product-semantic-smooth-vector",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "quickDraft": {
           "priorityCore16": false,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "quickDraft-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/quickDraft-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "quickDraft-16.svg",
-            "ordinary": "quickDraft-32.svg",
-            "desktopLargeRetina": "quickDraft-32.svg"
+            "compactMenuList": "icons/quickDraft-16.png",
+            "ordinary": "icons/quickDraft-32.png",
+            "desktopLargeRetina": "icons/quickDraft-128.png",
+            "explicit64": "icons/quickDraft-64.png"
           },
-          "compatibilityManifestAsset": "quickDraft-32.svg",
+          "compatibilityManifestAsset": "icons/quickDraft-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "Quick Draft",
           "identityAnchors": [
@@ -18124,41 +18142,43 @@
             "pencil"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "C",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "pending",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "product-semantic-smooth-vector",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "writingStudio": {
           "priorityCore16": false,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "writingStudio-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/writingStudio-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "writingStudio-16.svg",
-            "ordinary": "writingStudio-32.svg",
-            "desktopLargeRetina": "writingStudio-32.svg"
+            "compactMenuList": "icons/writingStudio-16.png",
+            "ordinary": "icons/writingStudio-32.png",
+            "desktopLargeRetina": "icons/writingStudio-128.png",
+            "explicit64": "icons/writingStudio-64.png"
           },
-          "compatibilityManifestAsset": "writingStudio-32.svg",
+          "compatibilityManifestAsset": "icons/writingStudio-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "Writing Studio",
           "identityAnchors": [
@@ -18166,41 +18186,43 @@
             "writing"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "C",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "pending",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "product-semantic-smooth-vector",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "projectDisk": {
           "priorityCore16": true,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "projectDisk-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/projectDisk-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "projectDisk-16.svg",
-            "ordinary": "projectDisk-32.svg",
-            "desktopLargeRetina": "projectDisk-32.svg"
+            "compactMenuList": "icons/projectDisk-16.png",
+            "ordinary": "icons/projectDisk-32.png",
+            "desktopLargeRetina": "icons/projectDisk-128.png",
+            "explicit64": "icons/projectDisk-64.png"
           },
-          "compatibilityManifestAsset": "projectDisk-32.svg",
+          "compatibilityManifestAsset": "icons/projectDisk-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "durable project storage",
           "identityAnchors": [
@@ -18208,41 +18230,43 @@
             "restrained project marker"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "B",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "historically-reviewed",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "product-semantic-smooth-vector",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "projectDisc": {
           "priorityCore16": true,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "projectDisc-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/projectDisc-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "projectDisc-16.svg",
-            "ordinary": "projectDisc-32.svg",
-            "desktopLargeRetina": "projectDisc-32.svg"
+            "compactMenuList": "icons/projectDisc-16.png",
+            "ordinary": "icons/projectDisc-32.png",
+            "desktopLargeRetina": "icons/projectDisc-128.png",
+            "explicit64": "icons/projectDisc-64.png"
           },
-          "compatibilityManifestAsset": "projectDisc-32.svg",
+          "compatibilityManifestAsset": "icons/projectDisc-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "finished export or archival media",
           "identityAnchors": [
@@ -18250,41 +18274,43 @@
             "finished project cue"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "B",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "pending",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "product-semantic-smooth-vector",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "cloudModel": {
           "priorityCore16": false,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "cloudModel-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/cloudModel-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "cloudModel-16.svg",
-            "ordinary": "cloudModel-32.svg",
-            "desktopLargeRetina": "cloudModel-32.svg"
+            "compactMenuList": "icons/cloudModel-16.png",
+            "ordinary": "icons/cloudModel-32.png",
+            "desktopLargeRetina": "icons/cloudModel-128.png",
+            "explicit64": "icons/cloudModel-64.png"
           },
-          "compatibilityManifestAsset": "cloudModel-32.svg",
+          "compatibilityManifestAsset": "icons/cloudModel-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "Cloud Model",
           "identityAnchors": [
@@ -18292,41 +18318,43 @@
             "cloud"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "C",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "pending",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "product-semantic-smooth-vector",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "cloudModelOff": {
           "priorityCore16": false,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "cloudModelOff-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/cloudModelOff-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "cloudModelOff-16.svg",
-            "ordinary": "cloudModelOff-32.svg",
-            "desktopLargeRetina": "cloudModelOff-32.svg"
+            "compactMenuList": "icons/cloudModelOff-16.png",
+            "ordinary": "icons/cloudModelOff-32.png",
+            "desktopLargeRetina": "icons/cloudModelOff-128.png",
+            "explicit64": "icons/cloudModelOff-64.png"
           },
-          "compatibilityManifestAsset": "cloudModelOff-32.svg",
+          "compatibilityManifestAsset": "icons/cloudModelOff-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "Cloud Model Offline",
           "identityAnchors": [
@@ -18334,41 +18362,43 @@
             "cloudOff"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "C",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "pending",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "product-semantic-smooth-vector",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "questionSheet": {
           "priorityCore16": false,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "questionSheet-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/questionSheet-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "questionSheet-16.svg",
-            "ordinary": "questionSheet-32.svg",
-            "desktopLargeRetina": "questionSheet-32.svg"
+            "compactMenuList": "icons/questionSheet-16.png",
+            "ordinary": "icons/questionSheet-32.png",
+            "desktopLargeRetina": "icons/questionSheet-128.png",
+            "explicit64": "icons/questionSheet-64.png"
           },
-          "compatibilityManifestAsset": "questionSheet-32.svg",
+          "compatibilityManifestAsset": "icons/questionSheet-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "Question Sheet",
           "identityAnchors": [
@@ -18376,41 +18406,43 @@
             "question"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "C",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "pending",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "product-semantic-smooth-vector",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "outline": {
           "priorityCore16": false,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "outline-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/outline-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "outline-16.svg",
-            "ordinary": "outline-32.svg",
-            "desktopLargeRetina": "outline-32.svg"
+            "compactMenuList": "icons/outline-16.png",
+            "ordinary": "icons/outline-32.png",
+            "desktopLargeRetina": "icons/outline-128.png",
+            "explicit64": "icons/outline-64.png"
           },
-          "compatibilityManifestAsset": "outline-32.svg",
+          "compatibilityManifestAsset": "icons/outline-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "Outline",
           "identityAnchors": [
@@ -18418,41 +18450,43 @@
             "outline"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "C",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "pending",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "product-semantic-smooth-vector",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "sectionDrafts": {
           "priorityCore16": false,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "sectionDrafts-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/sectionDrafts-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "sectionDrafts-16.svg",
-            "ordinary": "sectionDrafts-32.svg",
-            "desktopLargeRetina": "sectionDrafts-32.svg"
+            "compactMenuList": "icons/sectionDrafts-16.png",
+            "ordinary": "icons/sectionDrafts-32.png",
+            "desktopLargeRetina": "icons/sectionDrafts-128.png",
+            "explicit64": "icons/sectionDrafts-64.png"
           },
-          "compatibilityManifestAsset": "sectionDrafts-32.svg",
+          "compatibilityManifestAsset": "icons/sectionDrafts-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "Section Drafts",
           "identityAnchors": [
@@ -18460,41 +18494,43 @@
             "sections"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "C",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "pending",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "product-semantic-smooth-vector",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "manuscript": {
           "priorityCore16": false,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "manuscript-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/manuscript-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "manuscript-16.svg",
-            "ordinary": "manuscript-32.svg",
-            "desktopLargeRetina": "manuscript-32.svg"
+            "compactMenuList": "icons/manuscript-16.png",
+            "ordinary": "icons/manuscript-32.png",
+            "desktopLargeRetina": "icons/manuscript-128.png",
+            "explicit64": "icons/manuscript-64.png"
           },
-          "compatibilityManifestAsset": "manuscript-32.svg",
+          "compatibilityManifestAsset": "icons/manuscript-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "Manuscript",
           "identityAnchors": [
@@ -18502,41 +18538,43 @@
             "manuscript"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "C",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "pending",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "product-semantic-smooth-vector",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "reviewDesk": {
           "priorityCore16": true,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "reviewDesk-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/reviewDesk-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "reviewDesk-16.svg",
-            "ordinary": "reviewDesk-32.svg",
-            "desktopLargeRetina": "reviewDesk-32.svg"
+            "compactMenuList": "icons/reviewDesk-16.png",
+            "ordinary": "icons/reviewDesk-32.png",
+            "desktopLargeRetina": "icons/reviewDesk-128.png",
+            "explicit64": "icons/reviewDesk-64.png"
           },
-          "compatibilityManifestAsset": "reviewDesk-32.svg",
+          "compatibilityManifestAsset": "icons/reviewDesk-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "writer-controlled manuscript proofing and correction application",
           "identityAnchors": [
@@ -18544,41 +18582,43 @@
             "visible inspection or correction action"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "B",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "historically-reviewed",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "product-semantic-smooth-vector",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "searcher": {
           "priorityCore16": true,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "searcher-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/searcher-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "searcher-16.svg",
-            "ordinary": "searcher-32.svg",
-            "desktopLargeRetina": "searcher-32.svg"
+            "compactMenuList": "icons/searcher-16.png",
+            "ordinary": "icons/searcher-32.png",
+            "desktopLargeRetina": "icons/searcher-128.png",
+            "explicit64": "icons/searcher-64.png"
           },
-          "compatibilityManifestAsset": "searcher-32.svg",
+          "compatibilityManifestAsset": "icons/searcher-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "writer-controlled search and discovery utility",
           "identityAnchors": [
@@ -18586,41 +18626,43 @@
             "visible search-result relationship"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "B",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "historically-reviewed",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "product-semantic-smooth-vector",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "reader": {
           "priorityCore16": false,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "reader-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/reader-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "reader-16.svg",
-            "ordinary": "reader-32.svg",
-            "desktopLargeRetina": "reader-32.svg"
+            "compactMenuList": "icons/reader-16.png",
+            "ordinary": "icons/reader-32.png",
+            "desktopLargeRetina": "icons/reader-128.png",
+            "explicit64": "icons/reader-64.png"
           },
-          "compatibilityManifestAsset": "reader-32.svg",
+          "compatibilityManifestAsset": "icons/reader-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "Reader",
           "identityAnchors": [
@@ -18628,41 +18670,43 @@
             "reader"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "C",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "pending",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "product-semantic-smooth-vector",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "timeMachine": {
           "priorityCore16": false,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "timeMachine-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/timeMachine-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "timeMachine-16.svg",
-            "ordinary": "timeMachine-32.svg",
-            "desktopLargeRetina": "timeMachine-32.svg"
+            "compactMenuList": "icons/timeMachine-16.png",
+            "ordinary": "icons/timeMachine-32.png",
+            "desktopLargeRetina": "icons/timeMachine-128.png",
+            "explicit64": "icons/timeMachine-64.png"
           },
-          "compatibilityManifestAsset": "timeMachine-32.svg",
+          "compatibilityManifestAsset": "icons/timeMachine-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "Time Machine",
           "identityAnchors": [
@@ -18670,41 +18714,43 @@
             "archive"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "C",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "pending",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "product-semantic-smooth-vector",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "docMap": {
           "priorityCore16": true,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "docMap-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/docMap-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "docMap-16.svg",
-            "ordinary": "docMap-32.svg",
-            "desktopLargeRetina": "docMap-32.svg"
+            "compactMenuList": "icons/docMap-16.png",
+            "ordinary": "icons/docMap-32.png",
+            "desktopLargeRetina": "icons/docMap-128.png",
+            "explicit64": "icons/docMap-64.png"
           },
-          "compatibilityManifestAsset": "docMap-32.svg",
+          "compatibilityManifestAsset": "icons/docMap-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "visualize document heading structure",
           "identityAnchors": [
@@ -18712,41 +18758,43 @@
             "branching heading hierarchy"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "B",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "historically-reviewed",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "product-semantic-smooth-vector",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "clioStage": {
           "priorityCore16": false,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "clioStage-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/clioStage-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "clioStage-16.svg",
-            "ordinary": "clioStage-32.svg",
-            "desktopLargeRetina": "clioStage-32.svg"
+            "compactMenuList": "icons/clioStage-16.png",
+            "ordinary": "icons/clioStage-32.png",
+            "desktopLargeRetina": "icons/clioStage-128.png",
+            "explicit64": "icons/clioStage-64.png"
           },
-          "compatibilityManifestAsset": "clioStage-32.svg",
+          "compatibilityManifestAsset": "icons/clioStage-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "ClioStage",
           "identityAnchors": [
@@ -18754,41 +18802,43 @@
             "stage"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "C",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "pending",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "product-semantic-smooth-vector",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "clioChart": {
           "priorityCore16": false,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "clioChart-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/clioChart-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "clioChart-16.svg",
-            "ordinary": "clioChart-32.svg",
-            "desktopLargeRetina": "clioChart-32.svg"
+            "compactMenuList": "icons/clioChart-16.png",
+            "ordinary": "icons/clioChart-32.png",
+            "desktopLargeRetina": "icons/clioChart-128.png",
+            "explicit64": "icons/clioChart-64.png"
           },
-          "compatibilityManifestAsset": "clioChart-32.svg",
+          "compatibilityManifestAsset": "icons/clioChart-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "ClioChart",
           "identityAnchors": [
@@ -18796,41 +18846,43 @@
             "chart"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "C",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "pending",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "product-semantic-smooth-vector",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "liquidCover": {
           "priorityCore16": false,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "liquidCover-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/liquidCover-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "liquidCover-16.svg",
-            "ordinary": "liquidCover-32.svg",
-            "desktopLargeRetina": "liquidCover-32.svg"
+            "compactMenuList": "icons/liquidCover-16.png",
+            "ordinary": "icons/liquidCover-32.png",
+            "desktopLargeRetina": "icons/liquidCover-128.png",
+            "explicit64": "icons/liquidCover-64.png"
           },
-          "compatibilityManifestAsset": "liquidCover-32.svg",
+          "compatibilityManifestAsset": "icons/liquidCover-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "Cover Glass",
           "identityAnchors": [
@@ -18838,41 +18890,43 @@
             "cover"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "C",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "pending",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "product-semantic-smooth-vector",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "cmfStudio": {
           "priorityCore16": false,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "cmfStudio-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/cmfStudio-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "cmfStudio-16.svg",
-            "ordinary": "cmfStudio-32.svg",
-            "desktopLargeRetina": "cmfStudio-32.svg"
+            "compactMenuList": "icons/cmfStudio-16.png",
+            "ordinary": "icons/cmfStudio-32.png",
+            "desktopLargeRetina": "icons/cmfStudio-128.png",
+            "explicit64": "icons/cmfStudio-64.png"
           },
-          "compatibilityManifestAsset": "cmfStudio-32.svg",
+          "compatibilityManifestAsset": "icons/cmfStudio-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "CMF Studio",
           "identityAnchors": [
@@ -18880,41 +18934,43 @@
             "swatches"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "C",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "pending",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "product-semantic-smooth-vector",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "soundscape": {
           "priorityCore16": false,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "soundscape-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/soundscape-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "soundscape-16.svg",
-            "ordinary": "soundscape-32.svg",
-            "desktopLargeRetina": "soundscape-32.svg"
+            "compactMenuList": "icons/soundscape-16.png",
+            "ordinary": "icons/soundscape-32.png",
+            "desktopLargeRetina": "icons/soundscape-128.png",
+            "explicit64": "icons/soundscape-64.png"
           },
-          "compatibilityManifestAsset": "soundscape-32.svg",
+          "compatibilityManifestAsset": "icons/soundscape-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "Soundscape",
           "identityAnchors": [
@@ -18922,41 +18978,43 @@
             "sound"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "C",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "pending",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "product-semantic-smooth-vector",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "scrapbook": {
           "priorityCore16": true,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "scrapbook-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/scrapbook-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "scrapbook-16.svg",
-            "ordinary": "scrapbook-32.svg",
-            "desktopLargeRetina": "scrapbook-32.svg"
+            "compactMenuList": "icons/scrapbook-16.png",
+            "ordinary": "icons/scrapbook-32.png",
+            "desktopLargeRetina": "icons/scrapbook-128.png",
+            "explicit64": "icons/scrapbook-64.png"
           },
-          "compatibilityManifestAsset": "scrapbook-32.svg",
+          "compatibilityManifestAsset": "icons/scrapbook-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "durable user-curated selected clippings",
           "identityAnchors": [
@@ -18964,41 +19022,43 @@
             "mounted clipping"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "A",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "historically-reviewed",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "product-semantic-smooth-vector",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "systemFolder": {
           "priorityCore16": false,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "systemFolder-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/systemFolder-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "systemFolder-16.svg",
-            "ordinary": "systemFolder-32.svg",
-            "desktopLargeRetina": "systemFolder-32.svg"
+            "compactMenuList": "icons/systemFolder-16.png",
+            "ordinary": "icons/systemFolder-32.png",
+            "desktopLargeRetina": "icons/systemFolder-128.png",
+            "explicit64": "icons/systemFolder-64.png"
           },
-          "compatibilityManifestAsset": "systemFolder-32.svg",
+          "compatibilityManifestAsset": "icons/systemFolder-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "System Folder",
           "identityAnchors": [
@@ -19006,41 +19066,43 @@
             "gear"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "C",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "pending",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "product-semantic-smooth-vector",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "helpFolder": {
           "priorityCore16": false,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "helpFolder-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/helpFolder-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "helpFolder-16.svg",
-            "ordinary": "helpFolder-32.svg",
-            "desktopLargeRetina": "helpFolder-32.svg"
+            "compactMenuList": "icons/helpFolder-16.png",
+            "ordinary": "icons/helpFolder-32.png",
+            "desktopLargeRetina": "icons/helpFolder-128.png",
+            "explicit64": "icons/helpFolder-64.png"
           },
-          "compatibilityManifestAsset": "helpFolder-32.svg",
+          "compatibilityManifestAsset": "icons/helpFolder-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "Help Folder",
           "identityAnchors": [
@@ -19048,41 +19110,43 @@
             "help"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "C",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "pending",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "product-semantic-smooth-vector",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "importUtility": {
           "priorityCore16": false,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "importUtility-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/importUtility-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "importUtility-16.svg",
-            "ordinary": "importUtility-32.svg",
-            "desktopLargeRetina": "importUtility-32.svg"
+            "compactMenuList": "icons/importUtility-16.png",
+            "ordinary": "icons/importUtility-32.png",
+            "desktopLargeRetina": "icons/importUtility-128.png",
+            "explicit64": "icons/importUtility-64.png"
           },
-          "compatibilityManifestAsset": "importUtility-32.svg",
+          "compatibilityManifestAsset": "icons/importUtility-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "Import Utility",
           "identityAnchors": [
@@ -19090,41 +19154,43 @@
             "import"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "C",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "pending",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "product-semantic-smooth-vector",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "controlPanel": {
           "priorityCore16": true,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "controlPanel-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/controlPanel-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "controlPanel-16.svg",
-            "ordinary": "controlPanel-32.svg",
-            "desktopLargeRetina": "controlPanel-32.svg"
+            "compactMenuList": "icons/controlPanel-16.png",
+            "ordinary": "icons/controlPanel-32.png",
+            "desktopLargeRetina": "icons/controlPanel-128.png",
+            "explicit64": "icons/controlPanel-64.png"
           },
-          "compatibilityManifestAsset": "controlPanel-32.svg",
+          "compatibilityManifestAsset": "icons/controlPanel-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "system configuration",
           "identityAnchors": [
@@ -19132,41 +19198,43 @@
             "period control-surface grammar"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "A",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "historically-reviewed",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "product-semantic-smooth-vector",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "chooser": {
           "priorityCore16": false,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "chooser-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/chooser-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "chooser-16.svg",
-            "ordinary": "chooser-32.svg",
-            "desktopLargeRetina": "chooser-32.svg"
+            "compactMenuList": "icons/chooser-16.png",
+            "ordinary": "icons/chooser-32.png",
+            "desktopLargeRetina": "icons/chooser-128.png",
+            "explicit64": "icons/chooser-64.png"
           },
-          "compatibilityManifestAsset": "chooser-32.svg",
+          "compatibilityManifestAsset": "icons/chooser-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "Chooser",
           "identityAnchors": [
@@ -19174,41 +19242,43 @@
             "chooser"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "C",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "pending",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "product-semantic-smooth-vector",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "systemHelp": {
           "priorityCore16": false,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "systemHelp-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/systemHelp-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "systemHelp-16.svg",
-            "ordinary": "systemHelp-32.svg",
-            "desktopLargeRetina": "systemHelp-32.svg"
+            "compactMenuList": "icons/systemHelp-16.png",
+            "ordinary": "icons/systemHelp-32.png",
+            "desktopLargeRetina": "icons/systemHelp-128.png",
+            "explicit64": "icons/systemHelp-64.png"
           },
-          "compatibilityManifestAsset": "systemHelp-32.svg",
+          "compatibilityManifestAsset": "icons/systemHelp-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "System Help",
           "identityAnchors": [
@@ -19216,41 +19286,43 @@
             "help"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "C",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "pending",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "product-semantic-smooth-vector",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "dictionary": {
           "priorityCore16": false,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "dictionary-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/dictionary-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "dictionary-16.svg",
-            "ordinary": "dictionary-32.svg",
-            "desktopLargeRetina": "dictionary-32.svg"
+            "compactMenuList": "icons/dictionary-16.png",
+            "ordinary": "icons/dictionary-32.png",
+            "desktopLargeRetina": "icons/dictionary-128.png",
+            "explicit64": "icons/dictionary-64.png"
           },
-          "compatibilityManifestAsset": "dictionary-32.svg",
+          "compatibilityManifestAsset": "icons/dictionary-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "Dictionary",
           "identityAnchors": [
@@ -19258,41 +19330,43 @@
             "dictionary"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "C",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "pending",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "product-semantic-smooth-vector",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "teachText": {
           "priorityCore16": true,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "teachText-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/teachText-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "teachText-16.svg",
-            "ordinary": "teachText-32.svg",
-            "desktopLargeRetina": "teachText-32.svg"
+            "compactMenuList": "icons/teachText-16.png",
+            "ordinary": "icons/teachText-32.png",
+            "desktopLargeRetina": "icons/teachText-128.png",
+            "explicit64": "icons/teachText-64.png"
           },
-          "compatibilityManifestAsset": "teachText-32.svg",
+          "compatibilityManifestAsset": "icons/teachText-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "writing and editing application",
           "identityAnchors": [
@@ -19300,41 +19374,43 @@
             "period writing or editing cue"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "A",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "reference-validated",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "system6-prototype-smooth-vector-trace",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "writingDemo": {
           "priorityCore16": false,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "writingDemo-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/writingDemo-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "writingDemo-16.svg",
-            "ordinary": "writingDemo-32.svg",
-            "desktopLargeRetina": "writingDemo-32.svg"
+            "compactMenuList": "icons/writingDemo-16.png",
+            "ordinary": "icons/writingDemo-32.png",
+            "desktopLargeRetina": "icons/writingDemo-128.png",
+            "explicit64": "icons/writingDemo-64.png"
           },
-          "compatibilityManifestAsset": "writingDemo-32.svg",
+          "compatibilityManifestAsset": "icons/writingDemo-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "Writing Demo",
           "identityAnchors": [
@@ -19342,41 +19418,43 @@
             "play"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "C",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "pending",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "product-semantic-smooth-vector",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "chatFile": {
           "priorityCore16": false,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "chatFile-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/chatFile-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "chatFile-16.svg",
-            "ordinary": "chatFile-32.svg",
-            "desktopLargeRetina": "chatFile-32.svg"
+            "compactMenuList": "icons/chatFile-16.png",
+            "ordinary": "icons/chatFile-32.png",
+            "desktopLargeRetina": "icons/chatFile-128.png",
+            "explicit64": "icons/chatFile-64.png"
           },
-          "compatibilityManifestAsset": "chatFile-32.svg",
+          "compatibilityManifestAsset": "icons/chatFile-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "Chat File",
           "identityAnchors": [
@@ -19384,41 +19462,43 @@
             "chat"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "C",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "pending",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "product-semantic-smooth-vector",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "chatImport": {
           "priorityCore16": false,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "chatImport-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/chatImport-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "chatImport-16.svg",
-            "ordinary": "chatImport-32.svg",
-            "desktopLargeRetina": "chatImport-32.svg"
+            "compactMenuList": "icons/chatImport-16.png",
+            "ordinary": "icons/chatImport-32.png",
+            "desktopLargeRetina": "icons/chatImport-128.png",
+            "explicit64": "icons/chatImport-64.png"
           },
-          "compatibilityManifestAsset": "chatImport-32.svg",
+          "compatibilityManifestAsset": "icons/chatImport-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "Chat Import",
           "identityAnchors": [
@@ -19426,41 +19506,43 @@
             "chat"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "C",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "pending",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "product-semantic-smooth-vector",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "systemStatus": {
           "priorityCore16": false,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "systemStatus-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/systemStatus-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "systemStatus-16.svg",
-            "ordinary": "systemStatus-32.svg",
-            "desktopLargeRetina": "systemStatus-32.svg"
+            "compactMenuList": "icons/systemStatus-16.png",
+            "ordinary": "icons/systemStatus-32.png",
+            "desktopLargeRetina": "icons/systemStatus-128.png",
+            "explicit64": "icons/systemStatus-64.png"
           },
-          "compatibilityManifestAsset": "systemStatus-32.svg",
+          "compatibilityManifestAsset": "icons/systemStatus-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "System Status",
           "identityAnchors": [
@@ -19468,41 +19550,43 @@
             "status"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "C",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "pending",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "product-semantic-smooth-vector",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "contextPanel": {
           "priorityCore16": false,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "contextPanel-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/contextPanel-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "contextPanel-16.svg",
-            "ordinary": "contextPanel-32.svg",
-            "desktopLargeRetina": "contextPanel-32.svg"
+            "compactMenuList": "icons/contextPanel-16.png",
+            "ordinary": "icons/contextPanel-32.png",
+            "desktopLargeRetina": "icons/contextPanel-128.png",
+            "explicit64": "icons/contextPanel-64.png"
           },
-          "compatibilityManifestAsset": "contextPanel-32.svg",
+          "compatibilityManifestAsset": "icons/contextPanel-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "Context Panel",
           "identityAnchors": [
@@ -19510,41 +19594,43 @@
             "context"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "C",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "pending",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "product-semantic-smooth-vector",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "rebuildArticle": {
           "priorityCore16": false,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "rebuildArticle-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/rebuildArticle-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "rebuildArticle-16.svg",
-            "ordinary": "rebuildArticle-32.svg",
-            "desktopLargeRetina": "rebuildArticle-32.svg"
+            "compactMenuList": "icons/rebuildArticle-16.png",
+            "ordinary": "icons/rebuildArticle-32.png",
+            "desktopLargeRetina": "icons/rebuildArticle-128.png",
+            "explicit64": "icons/rebuildArticle-64.png"
           },
-          "compatibilityManifestAsset": "rebuildArticle-32.svg",
+          "compatibilityManifestAsset": "icons/rebuildArticle-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "Rebuild Article",
           "identityAnchors": [
@@ -19552,41 +19638,43 @@
             "rebuild"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "C",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "pending",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "product-semantic-smooth-vector",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "bureaucracyMeme": {
           "priorityCore16": false,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "bureaucracyMeme-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/bureaucracyMeme-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "bureaucracyMeme-16.svg",
-            "ordinary": "bureaucracyMeme-32.svg",
-            "desktopLargeRetina": "bureaucracyMeme-32.svg"
+            "compactMenuList": "icons/bureaucracyMeme-16.png",
+            "ordinary": "icons/bureaucracyMeme-32.png",
+            "desktopLargeRetina": "icons/bureaucracyMeme-128.png",
+            "explicit64": "icons/bureaucracyMeme-64.png"
           },
-          "compatibilityManifestAsset": "bureaucracyMeme-32.svg",
+          "compatibilityManifestAsset": "icons/bureaucracyMeme-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "Bureaucracy Meme",
           "identityAnchors": [
@@ -19594,41 +19682,43 @@
             "forms"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "C",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "pending",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "product-semantic-smooth-vector",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "endfieldTerminal": {
           "priorityCore16": false,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "endfieldTerminal-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/endfieldTerminal-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "endfieldTerminal-16.svg",
-            "ordinary": "endfieldTerminal-32.svg",
-            "desktopLargeRetina": "endfieldTerminal-32.svg"
+            "compactMenuList": "icons/endfieldTerminal-16.png",
+            "ordinary": "icons/endfieldTerminal-32.png",
+            "desktopLargeRetina": "icons/endfieldTerminal-128.png",
+            "explicit64": "icons/endfieldTerminal-64.png"
           },
-          "compatibilityManifestAsset": "endfieldTerminal-32.svg",
+          "compatibilityManifestAsset": "icons/endfieldTerminal-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "Endfield Terminal",
           "identityAnchors": [
@@ -19636,41 +19726,43 @@
             "terminal"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "C",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "pending",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "product-semantic-smooth-vector",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "documents": {
           "priorityCore16": false,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "documents-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/documents-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "documents-16.svg",
-            "ordinary": "documents-32.svg",
-            "desktopLargeRetina": "documents-32.svg"
+            "compactMenuList": "icons/documents-16.png",
+            "ordinary": "icons/documents-32.png",
+            "desktopLargeRetina": "icons/documents-128.png",
+            "explicit64": "icons/documents-64.png"
           },
-          "compatibilityManifestAsset": "documents-32.svg",
+          "compatibilityManifestAsset": "icons/documents-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "Documents folder",
           "identityAnchors": [
@@ -19678,41 +19770,43 @@
             "documents"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "C",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "pending",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "product-semantic-smooth-vector",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "alias": {
           "priorityCore16": false,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "alias-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/alias-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "alias-16.svg",
-            "ordinary": "alias-32.svg",
-            "desktopLargeRetina": "alias-32.svg"
+            "compactMenuList": "icons/alias-16.png",
+            "ordinary": "icons/alias-32.png",
+            "desktopLargeRetina": "icons/alias-128.png",
+            "explicit64": "icons/alias-64.png"
           },
-          "compatibilityManifestAsset": "alias-32.svg",
+          "compatibilityManifestAsset": "icons/alias-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "Alias",
           "identityAnchors": [
@@ -19720,82 +19814,86 @@
             "alias"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "C",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "pending",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "product-semantic-smooth-vector",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "systemFile": {
           "priorityCore16": false,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "systemFile-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/systemFile-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "systemFile-16.svg",
-            "ordinary": "systemFile-32.svg",
-            "desktopLargeRetina": "systemFile-32.svg"
+            "compactMenuList": "icons/systemFile-16.png",
+            "ordinary": "icons/systemFile-32.png",
+            "desktopLargeRetina": "icons/systemFile-128.png",
+            "explicit64": "icons/systemFile-64.png"
           },
-          "compatibilityManifestAsset": "systemFile-32.svg",
+          "compatibilityManifestAsset": "icons/systemFile-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "target-era system software document or container",
           "identityAnchors": [
             "system-owned document"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "A",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "pending",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "product-semantic-smooth-vector",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "multiFinderApp": {
           "priorityCore16": true,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "multiFinderApp-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/multiFinderApp-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "multiFinderApp-16.svg",
-            "ordinary": "multiFinderApp-32.svg",
-            "desktopLargeRetina": "multiFinderApp-32.svg"
+            "compactMenuList": "icons/multiFinderApp-16.png",
+            "ordinary": "icons/multiFinderApp-32.png",
+            "desktopLargeRetina": "icons/multiFinderApp-128.png",
+            "explicit64": "icons/multiFinderApp-64.png"
           },
-          "compatibilityManifestAsset": "multiFinderApp-32.svg",
+          "compatibilityManifestAsset": "icons/multiFinderApp-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "multiple concurrent Finder environments",
           "identityAnchors": [
@@ -19803,82 +19901,86 @@
             "multiplicity"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "C",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "historically-reviewed",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
-          "blindMixStatus": "not-run",
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "blindMixStatus": null,
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "product-semantic-smooth-vector",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "daHandler": {
           "priorityCore16": false,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "daHandler-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/daHandler-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "daHandler-16.svg",
-            "ordinary": "daHandler-32.svg",
-            "desktopLargeRetina": "daHandler-32.svg"
+            "compactMenuList": "icons/daHandler-16.png",
+            "ordinary": "icons/daHandler-32.png",
+            "desktopLargeRetina": "icons/daHandler-128.png",
+            "explicit64": "icons/daHandler-64.png"
           },
-          "compatibilityManifestAsset": "daHandler-32.svg",
+          "compatibilityManifestAsset": "icons/daHandler-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "generic target-era application or utility container",
           "identityAnchors": [
             "target-era generic application identity"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "A",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "pending",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "system6-prototype-smooth-vector-trace",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "writingBell": {
           "priorityCore16": false,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "writingBell-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/writingBell-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "writingBell-16.svg",
-            "ordinary": "writingBell-32.svg",
-            "desktopLargeRetina": "writingBell-32.svg"
+            "compactMenuList": "icons/writingBell-16.png",
+            "ordinary": "icons/writingBell-32.png",
+            "desktopLargeRetina": "icons/writingBell-128.png",
+            "explicit64": "icons/writingBell-64.png"
           },
-          "compatibilityManifestAsset": "writingBell-32.svg",
+          "compatibilityManifestAsset": "icons/writingBell-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "Writing Bell",
           "identityAnchors": [
@@ -19886,41 +19988,43 @@
             "bell"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "C",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "pending",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "product-semantic-smooth-vector",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "trashFull": {
           "priorityCore16": false,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "trashFull-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/trashFull-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "trashFull-16.svg",
-            "ordinary": "trashFull-32.svg",
-            "desktopLargeRetina": "trashFull-32.svg"
+            "compactMenuList": "icons/trashFull-16.png",
+            "ordinary": "icons/trashFull-32.png",
+            "desktopLargeRetina": "icons/trashFull-128.png",
+            "explicit64": "icons/trashFull-64.png"
           },
-          "compatibilityManifestAsset": "trashFull-32.svg",
+          "compatibilityManifestAsset": "icons/trashFull-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "Full Waste Basket",
           "identityAnchors": [
@@ -19928,41 +20032,43 @@
             "full"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "C",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "pending",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "product-semantic-smooth-vector",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "control": {
           "priorityCore16": false,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "control-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/control-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "control-16.svg",
-            "ordinary": "control-32.svg",
-            "desktopLargeRetina": "control-32.svg"
+            "compactMenuList": "icons/control-16.png",
+            "ordinary": "icons/control-32.png",
+            "desktopLargeRetina": "icons/control-128.png",
+            "explicit64": "icons/control-64.png"
           },
-          "compatibilityManifestAsset": "control-32.svg",
+          "compatibilityManifestAsset": "icons/control-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "Control",
           "identityAnchors": [
@@ -19970,41 +20076,43 @@
             "knobs"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "C",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "pending",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "product-semantic-smooth-vector",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "localModel": {
           "priorityCore16": false,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "localModel-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/localModel-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "localModel-16.svg",
-            "ordinary": "localModel-32.svg",
-            "desktopLargeRetina": "localModel-32.svg"
+            "compactMenuList": "icons/localModel-16.png",
+            "ordinary": "icons/localModel-32.png",
+            "desktopLargeRetina": "icons/localModel-128.png",
+            "explicit64": "icons/localModel-64.png"
           },
-          "compatibilityManifestAsset": "localModel-32.svg",
+          "compatibilityManifestAsset": "icons/localModel-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "Local Model",
           "identityAnchors": [
@@ -20012,41 +20120,43 @@
             "none"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "C",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "pending",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "product-semantic-smooth-vector",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "controlStrip": {
           "priorityCore16": false,
           "supplementalApplication": false,
-          "artworkCoverage": "classic-compatibility-fallback",
-          "runtimeAssetEra": "classic",
-          "sourceFamilyLedger": "classic/icons/classic-icon-family.json",
-          "sourceRuntimeManifest": "classic/icons/classic-icon-manifest.json",
-          "runtimeAsset": "controlStrip-32.svg",
+          "artworkCoverage": "independent-era-artwork",
+          "runtimeAssetEra": "nextstep",
+          "sourceFamilyLedger": "nextstep/nextstep-icon-family.json",
+          "sourceRuntimeManifest": "nextstep/nextstep-icon-manifest.json",
+          "runtimeAsset": "icons/controlStrip-32.png",
           "runtimeAssetsByContext": {
-            "compactMenuList": "controlStrip-16.svg",
-            "ordinary": "controlStrip-32.svg",
-            "desktopLargeRetina": "controlStrip-32.svg"
+            "compactMenuList": "icons/controlStrip-16.png",
+            "ordinary": "icons/controlStrip-32.png",
+            "desktopLargeRetina": "icons/controlStrip-128.png",
+            "explicit64": "icons/controlStrip-64.png"
           },
-          "compatibilityManifestAsset": "controlStrip-32.svg",
+          "compatibilityManifestAsset": "icons/controlStrip-128.png",
           "runtimeAssetStatus": "mapped",
           "semanticIdentity": "Control Strip",
           "identityAnchors": [
@@ -20054,26 +20164,27 @@
             "none"
           ],
           "provenanceClass": "C",
-          "sourceProvenanceClass": "C",
           "directPrototype": null,
           "nearestPeriodAnalog": null,
-          "authoringMethod": "reused-classic-runtime-artwork",
+          "authoringMethod": "independently authored era-specific SVG construction",
           "authoringStatus": "technically-clean",
-          "legacyFamilyReviewStatus": "pending",
+          "legacyFamilyReviewStatus": "technically-clean",
           "historicalReviewStatus": "pending",
           "blindMixStatus": null,
-          "historicalStatusAuthority": "no-nextstep-native-artwork-claim",
+          "historicalStatusAuthority": "default-pending",
           "intentionalAnachronism": false,
           "anachronismReason": null,
           "nativeSizeArtwork": {
             "sizes": [
+              128,
+              64,
               32,
               16
             ],
-            "construction": "direct-or-optical-per-ledger"
+            "construction": "deterministic-derivative"
           },
-          "sourceKind": "product-semantic-smooth-vector",
-          "sourceNote": "Classic artwork is intentionally reused; this cell is not authored NeXTSTEP art or a historical NeXTSTEP reconstruction."
+          "sourceKind": "original-code-native-period-adaptation",
+          "sourceNote": "Period adaptation of a NeXTSTEP 3.3 object. The shape follows the era's grammar (flat grays, 1px outline, light top-left bevel, dark bottom-right bevel, hard corners); no native screenshot was measured against it, so no replica is claimed."
         },
         "clioPaint": {
           "priorityCore16": false,

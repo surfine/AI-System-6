@@ -1,27 +1,55 @@
 /* Big Sur (macOS 11, 2020). Independent web adaptation of the system
    surfaces described in WWDC20 session 10104. Measurements here are product
-   CSS pixels, not a claim of native pixel fidelity. Icons are deferred and
-   reuse Yosemite. No Liquid Glass painter or refraction is enabled. */
+   CSS pixels, not a claim of native pixel fidelity. The 2020 icon family is
+   its own -- 59 objects, four tiers, `assets/themes/big-sur` -- and this file
+   is the material half of that era: the registry records `overlay: none`, so
+   no Liquid Glass painter or refraction runs behind it. */
 html[data-theme="big-sur"],
 body[data-theme="big-sur"] {
   color-scheme: light;
   --theme-ui-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Segoe UI", sans-serif;
   --theme-title-font: var(--theme-ui-font);
+  /* macOS 11 has one system face for chrome and for body copy. Without this the
+     desk's shared body font (Geneva, the Classic paper face) reached every
+     paragraph inside a Big Sur window while its labels and buttons used SF —
+     measured 2026-09-23: the Control Panel's own explanatory copy came out
+     Geneva beside `-apple-system` labels. The writing surfaces keep their own
+     document face (the editors set it themselves), and `--text-font` is what
+     the reader/preview rules ask for, so this is the UI reading of the era's
+     type, not a change to the writer's paper. */
+  --text-font: var(--theme-ui-font);
   --system-readable-min: 13px;
   --system-title-size: 13px;
   --system-control-size: 13px;
   --system-text-size: 13px;
   --system-caption-size: 11px;
   --system-menu-height: 25px;
-  --system-titlebar-height: 38px;
-  --system-titlebar-title-height: 24px;
+  /* Chrome sizes, pinned 2026-09-23 to the native captures this era is
+     compared against (512 Pixels macOS 11 library, the entries
+     `docs/01_Big_Sur_参照与落地.md` names: TextEdit, Finder: Home, System
+     Preferences: General). Those files are 2x, so each image pixel below is
+     half a measured CSS pixel:
+       TextEdit         bar 29px down to its bottom hairline (28 + 1); the
+                        first lamp centre 14px from the window's left edge and
+                        13px below its top; lamps 12px across, 20px apart
+       Finder: Home     the same 12px lamps on the same 20px pitch, sitting
+                        lower because a 52px toolbar window centres them in
+                        the toolbar; its tab row then measures 28px
+       System Prefs     toolbar 52px down to its hairline, search inside it
+     This block used to be 38px with 28px slots and 10px side padding, which
+     put the group's centres at 23px/20px and left a 16px visual gap against
+     the reference's 8px. Still a product value, not a measurement: the 20px
+     hit target (a mouse may miss by 4px either side of the 12px lamp), and
+     the 44px touch target the responsive layer forces for fingers. */
+  --system-titlebar-height: 29px;
+  --system-titlebar-title-height: 22px;
   --system-titlebar-font-size: 13px;
-  --system-titlebar-control-slot: 28px;
-  --system-titlebar-control-size: 24px;
+  --system-titlebar-control-slot: 20px;
+  --system-titlebar-control-size: 20px;
   --system-titlebar-control-margin-x: 0;
   --system-titlebar-margin-y: 0;
   --system-titlebar-padding-y: 0;
-  --system-titlebar-padding-x: 10px;
+  --system-titlebar-padding-x: 4px;
   --system-titlebar-inactive-control-visibility: visible;
   --system-titlebar-inactive-control-opacity: 1;
   --system-titlebar-inactive-control-filter: grayscale(1);
@@ -106,7 +134,6 @@ body[data-theme="big-sur"] {
   --selection-fg: #ffffff;
   --sidebar-selection-bg: rgba(0, 0, 0, 0.1);
   --sidebar-selection-fg: var(--ink);
-  --details-bar-bg: var(--paper);
   --details-bar-border: var(--rule);
   --system-border: 1px solid var(--rule);
   --system-primary-divider: var(--system-border);
@@ -115,7 +142,6 @@ body[data-theme="big-sur"] {
   --system-object-shadow: var(--system-shadow);
   --system-inset: inset 0 1px 2px rgba(0, 0, 0, 0.07);
   --system-disabled-fg: var(--shade-dark);
-  --control-bg: var(--surface-primary);
   --control-radius: 5px;
   --control-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
   --control-active-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.12);
@@ -184,6 +210,10 @@ body[data-theme="big-sur"] {
   --system-check-size: 15px;
   --system-radio-size: 15px;
   --menu-bar-bg: rgba(248, 244, 242, 0.86);
+  /* The opaque colour under that 0.86, for the strip a home-screen web app
+     runs under the status area. See 60-responsive.css's installed-surface
+     block for why the strip has to be flat there. */
+  --menu-bar-base: #f8f4f2;
   --menu-bar-border-color: transparent;
   --menu-bar-border: 0;
   --menu-bar-shadow: 0 1px 0 rgba(0, 0, 0, 0.08);
@@ -211,11 +241,6 @@ body[data-theme="big-sur"] {
   --scrollbar-track: transparent;
   --scrollbar-thumb: #999;
   --scrollbar-width: 10px;
-  --scrollbar-track-border: 0;
-  --scrollbar-track-shadow: none;
-  --scrollbar-thumb-shadow: none;
-  --scrollbar-button-border: 0;
-  --scrollbar-button-shadow: none;
   --window-frame-lane: 10px;
   --window-frame-track-bg: transparent;
   --window-frame-track-border: 0;
@@ -225,6 +250,87 @@ body[data-theme="big-sur"] {
   --window-frame-thumb-radius: 6px;
   --window-frame-arrow-bg: transparent;
   --window-frame-arrow-ink: transparent;
+  /* macOS 11 scrolls with overlay bars: nothing is drawn until the view moves,
+     and no lane is reserved beside the content. The System 6 frame lanes left
+     a 10px strip of window colour down the right of every document and along
+     its foot (measured 2026-09-23 against 512 Pixels' TextEdit, which runs
+     white to its edges). Same model the Liquid Glass family already uses. */
+  --window-frame-bar-display: none;
+  --window-frame-reserve: 0px;
+  --window-frame-scrollbar-width: thin;
+  /* Content sits on white and runs to the window edge; TextEdit draws no inset
+     frame around its page and no status box under it. The desk strip stays
+     (it is the only place that says why a document cannot be typed into), set
+     as secondary system text on a hairline instead of a boxed monospace
+     instrument. */
+  --teachtext-editor-bg: var(--surface-primary);
+  --teachtext-editor-border: 0;
+  --teachtext-editor-shadow: none;
+  --teachtext-strip-border: 0;
+  --teachtext-strip-bg: transparent;
+  --teachtext-strip-shadow: inset 0 1px 0 var(--rule);
+  --teachtext-strip-font: var(--theme-ui-font);
+  --teachtext-strip-fg: var(--shade-dark);
+  --teachtext-strip-divider: 1px solid var(--rule);
+  /* Finder draws one hairline under its toolbar, not a black rule; path
+     components are plain labels, and an empty folder is just empty. */
+  --finder-pathbar-border: var(--system-border);
+  --finder-breadcrumb-text-decoration: none;
+  --scrap-empty-card-border: 0;
+  --scrap-empty-card-bg: transparent;
+  --file-well-bg: var(--surface-primary);
+  --empty-object-hatch-base: var(--file-well-bg);
+  --empty-object-hatch-alt: var(--file-well-bg);
+  /* Finder's view buttons are borderless glyphs; the chosen one sits on a
+     rounded grey key (Finder: Home, 2020). */
+  --view-controls-border: 0;
+  --view-controls-bg: transparent;
+  --view-controls-radius: 6px;
+  --view-btn-radius: 5px;
+  --view-btn-glyph: var(--shade-dark);
+  --view-btn-hover-bg: rgba(0, 0, 0, 0.06);
+  --view-btn-active-bg: rgba(0, 0, 0, 0.1);
+  --view-btn-active-glyph: var(--ink);
+  /* Title and the strip under it are one unified toolbar surface in macOS 11,
+     split by a single hairline at the bottom, not two tones. */
+  --details-bar-bg: var(--toolbar-bg);
+  --tdi-source-label-fg: var(--shade-dark);
+  /* The rest of the System 6 instruments, read in macOS 11's own voice:
+     readouts in the system face, a hairline under a record's title, a quiet
+     info box, icon names with no paper behind them, a plain chip border. */
+  --readout-font: var(--theme-ui-font);
+  /* The chart bench in macOS 11's grammar: hairline cards with a radius, a
+     blue focus ring on the chosen row instead of a 2px ink frame on grey,
+     roomier cells. Same set of tokens Liquid Glass answers, without glass. */
+  --clio-chart-accent: var(--selection-bg);
+  --clio-chart-solid-fill: var(--ink);
+  --clio-chart-panel: var(--sidebar-selection-bg);
+  --clio-chart-reference: rgba(0, 0, 0, 0.06);
+  --clio-chart-card-border: 1px solid var(--rule);
+  --clio-chart-card-radius: 8px;
+  --clio-chart-radius: 6px;
+  --clio-chart-cell-radius: 5px;
+  --clio-chart-selected-outline: 2px solid var(--selection-bg);
+  --clio-chart-selected-outline-offset: -2px;
+  --clio-chart-mark-border: 0;
+  --clio-chart-type-size: 12px;
+  --clio-chart-cell-height: 26px;
+  --clio-chart-cell-padding: 4px 10px;
+  --clio-chart-grid-collapse: separate;
+  --clio-chart-grid-spacing: 0 4px;
+  --clio-chart-matrix-cell-border: 0;
+  --clio-chart-matrix-size: 11px;
+  --clio-chart-matrix-cell-padding: 5px 10px;
+  --finder-label-bg: transparent;
+  /* Finder names icons in the regular face; bold is what split "MultiFinder"
+     and "Memory Inspector" mid-word in an 82px column. */
+  --finder-label-weight: 400;
+  --scrap-title-rule: var(--system-border);
+  --control-footer-border: var(--system-border);
+  --clio-file-chip-border: var(--system-border);
+  --clio-file-chip-disabled-border: var(--system-border);
+  --clio-entry-divider: var(--system-border);
+  --clio-composer-tool-border: var(--btn-border-color);
   --tab-radius: 5px;
   --tab-overlap: 0;
   --tab-bg: var(--panel);
@@ -370,6 +476,9 @@ body[data-theme="big-sur"][data-color-mode="dark"] {
   --shade: #686868;
   --shade-dark: #b6b6b6;
   --rule: rgba(255, 255, 255, 0.18);
+  --view-btn-hover-bg: rgba(255, 255, 255, 0.08);
+  --view-btn-active-bg: rgba(255, 255, 255, 0.16);
+  --clio-chart-reference: rgba(255, 255, 255, 0.08);
   --surface-primary: #202020;
   --toolbar-bg: #383635;
   --sidebar-bg: rgba(46, 43, 43, 0.96);
@@ -383,6 +492,7 @@ body[data-theme="big-sur"][data-color-mode="dark"] {
   --field-bg: #1e1e1e;
   --selection-bg: #0065cf;
   --menu-bar-bg: rgba(31, 27, 35, 0.9);
+  --menu-bar-base: #1f1b23;
   --menu-panel-bg: rgba(48, 45, 47, 0.98);
   --menu-panel-border: 1px solid rgba(255, 255, 255, 0.2);
   --menu-button-active-bg: rgba(255, 255, 255, 0.16);
@@ -390,13 +500,21 @@ body[data-theme="big-sur"][data-color-mode="dark"] {
 }
 
 /* Preserve the product's close-left / zoom-right semantics. The 12px lamps
-   sit inside separate 24px targets; no nonfunctional minimize lamp is drawn. */
+   sit inside separate 20px targets; no nonfunctional minimize lamp is drawn.
+   macOS 11 groups close, minimize and zoom at the leading edge, but the
+   owner's standing rule keeps red Close at the left and green Zoom at the
+   right edge in every era -- a product rule, not Big Sur history. No yellow
+   lamp is drawn until this era's Dock ships with it (owner decision
+   2026-09-25): a lamp whose window has nowhere to go is a lie. The 29px bar,
+   20px pitch and first lamp centre 14px in are the macOS 11 calibration
+   above; this block only decides which end each lamp sits at, through the
+   base sheet's column tokens rather than placement of its own. */
 body[data-theme="big-sur"] .window > .title-bar {
   grid-template-columns: var(--titlebar-gutter) minmax(0, 1fr) var(--titlebar-gutter);
-}
-body[data-theme="big-sur"] .title-bar :is(h1, h2) {
-  font-weight: 600;
-  text-shadow: none;
+  --titlebar-close-column: 1;
+  --titlebar-zoom-column: 3;
+  --titlebar-zoom-justify: end;
+  --titlebar-title-shadow: none;
 }
 body[data-theme="big-sur"] .title-bar > :is(.close-box, .resize-box) {
   border-radius: 50%;
@@ -407,7 +525,6 @@ body[data-theme="big-sur"] .title-bar > .close-box {
   --big-sur-lamp-rim: #e34840;
 }
 body[data-theme="big-sur"] .title-bar > .resize-box {
-  grid-column: 3;
   --big-sur-lamp: #28c840;
   --big-sur-lamp-rim: #1eaa2e;
 }
@@ -422,6 +539,7 @@ body[data-theme="big-sur"] .title-bar > :is(.close-box, .resize-box):focus-visib
   outline: var(--control-focus-outline);
   outline-offset: 1px;
 }
+
 body[data-theme="big-sur"] :is(.menu-popover, .system-select-menu) :is(button, .system-select-option) {
   border-radius: 4px;
 }
@@ -439,6 +557,7 @@ body[data-theme="big-sur"] :is(select:not([multiple]), .system-select-button) {
     --sidebar-bg: var(--panel);
     --sidebar-backdrop-filter: none;
     --menu-bar-bg: var(--paper);
+    --menu-bar-base: var(--paper);
     --menu-panel-bg: var(--paper);
     --menu-panel-backdrop-filter: none;
   }

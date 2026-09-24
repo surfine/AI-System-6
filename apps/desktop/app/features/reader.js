@@ -155,30 +155,64 @@ function readerDocumentDisplaySource(readerDoc) {
   return getReaderSiteLabel(readerDoc);
 }
 
+// One owner for what the Reader pane is showing: "empty" (nothing open; the
+// source-entry row is the way in), "loading", or "loaded". Layout reads this
+// attribute. It used to infer "a document is open" from whether the DocMap
+// handoff was enabled, so a source too short to map brought the entry row back
+// over a document that was already on screen.
+function setReaderPaneState(state) {
+  const pane = readerContentEl?.closest(".reader-pane");
+  if (!pane) return;
+  pane.dataset.readerState = state;
+  if (state !== "loaded") delete pane.dataset.readerEntry;
+  const another = document.getElementById("reader-open-another");
+  if (another) another.disabled = state !== "loaded";
+}
+
+// "Open Another Source..." over a loaded document: the entry row comes back
+// for one address and folds away again on Escape or once the new source opens.
+function revealReaderSourceEntry() {
+  const pane = readerContentEl?.closest(".reader-pane");
+  if (pane?.dataset.readerState === "loaded") pane.dataset.readerEntry = "open";
+  readerUrlInput?.focus();
+  readerUrlInput?.select();
+}
+
+function dismissReaderSourceEntry() {
+  const pane = readerContentEl?.closest(".reader-pane");
+  if (pane?.dataset.readerEntry !== "open") return false;
+  delete pane.dataset.readerEntry;
+  readerContentEl?.focus({ preventScroll: true });
+  return true;
+}
+
+function showReaderNote(message) {
+  const note = document.createElement("div");
+  note.className = "empty-folder-note";
+  note.textContent = message;
+  readerContentEl.replaceChildren(note);
+}
+
+// Every way of leaving the pane without a readable document -- nothing open, a
+// File Floppy file that has gone, a fetch in flight -- drops the same controls.
+// This was three hand-kept copies that had already started to drift.
+function disableReaderDocumentControls() {
+  for (const button of [readerDocMapButton, readerSendManuscriptButton, readerFindSourcesButton]) {
+    if (button) button.disabled = true;
+  }
+  updateReaderClioStageButton();
+  updateReaderTranslationClipButton();
+}
+
 function resetReaderDocumentState() {
   currentReaderPage = null;
   currentReaderClipCount = 0;
-  updateReaderClioStageButton();
   setReaderWindowTitle();
+  setReaderPaneState("empty");
   readerUrlDisplayEl.textContent = "";
-  readerStatusEl.textContent = t("reader_empty_hint");
-  readerContentEl.replaceChildren();
-  const empty = document.createElement("div");
-  empty.className = "empty-folder-note";
-  empty.textContent = t("reader_empty_hint");
-  readerContentEl.append(empty);
-  if (readerClipButton) {
-    readerClipButton.disabled = true;
-    readerClipButton.hidden = true;
-  }
-  if (readerClipTranslateButton) {
-    readerClipTranslateButton.disabled = true;
-    readerClipTranslateButton.hidden = true;
-  }
-  if (readerDocMapButton) readerDocMapButton.disabled = true;
-  updateReaderClioStageButton();
-  if (readerSendManuscriptButton) readerSendManuscriptButton.disabled = true;
-  if (readerFindSourcesButton) readerFindSourcesButton.disabled = true;
+  readerStatusEl.textContent = t("ready");
+  showReaderNote(t("reader_empty_hint"));
+  disableReaderDocumentControls();
   updateMenuState();
 }
 
@@ -263,27 +297,12 @@ function captureActiveReaderTabState() {
 function renderReaderUnavailableTab(tab) {
   currentReaderPage = null;
   currentReaderClipCount = 0;
-  updateReaderClioStageButton();
   setReaderWindowTitle({ title: tab?.title || t("reader") });
+  setReaderPaneState("empty");
   readerUrlDisplayEl.textContent = tab?.backing?.fileName || "";
   readerStatusEl.textContent = t("reader_file_unavailable");
-  readerContentEl.replaceChildren();
-  const empty = document.createElement("div");
-  empty.className = "empty-folder-note";
-  empty.textContent = t("reader_file_unavailable");
-  readerContentEl.append(empty);
-  if (readerClipButton) {
-    readerClipButton.disabled = true;
-    readerClipButton.hidden = true;
-  }
-  if (readerClipTranslateButton) {
-    readerClipTranslateButton.disabled = true;
-    readerClipTranslateButton.hidden = true;
-  }
-  if (readerDocMapButton) readerDocMapButton.disabled = true;
-  updateReaderClioStageButton();
-  if (readerSendManuscriptButton) readerSendManuscriptButton.disabled = true;
-  if (readerFindSourcesButton) readerFindSourcesButton.disabled = true;
+  showReaderNote(t("reader_file_unavailable"));
+  disableReaderDocumentControls();
   updateMenuState();
 }
 
@@ -291,27 +310,13 @@ function setReaderLoadingState(message) {
   document.body.classList.add("is-busy");
   currentReaderPage = null;
   currentReaderClipCount = 0;
-  updateReaderClioStageButton();
   setReaderWindowTitle();
+  setReaderPaneState("loading");
   readerFetchButton.disabled = true;
-  readerClipButton.disabled = true;
-  readerClipButton.hidden = true;
-  if (readerDocMapButton) readerDocMapButton.disabled = true;
-  updateReaderClioStageButton();
-  if (readerSendManuscriptButton) readerSendManuscriptButton.disabled = true;
-  if (readerFindSourcesButton) readerFindSourcesButton.disabled = true;
-  if (readerClipTranslateButton) {
-    readerClipTranslateButton.disabled = true;
-    readerClipTranslateButton.hidden = true;
-  }
   readerStatusEl.textContent = message;
   readerUrlDisplayEl.textContent = "";
-  readerContentEl.replaceChildren();
-
-  const waiting = document.createElement("div");
-  waiting.className = "empty-folder-note";
-  waiting.textContent = message;
-  readerContentEl.append(waiting);
+  showReaderNote(message);
+  disableReaderDocumentControls();
 }
 
 async function openReaderDocument(readerDoc, options = {}) {
@@ -383,6 +388,8 @@ async function openReaderDocument(readerDoc, options = {}) {
 
   readerStatusEl.textContent = options.status || (renderedVideoTranscript ? t("reader_video_transcript_view") : t("reader_reading_mode"));
   readerUrlDisplayEl.textContent = readerDocumentDisplaySource(currentReaderPage);
+  setReaderPaneState("loaded");
+  if (readerUrlInput) readerUrlInput.value = "";
   if (readerDocMapButton) readerDocMapButton.disabled = false;
   if (readerSendManuscriptButton) readerSendManuscriptButton.disabled = false;
   if (readerFindSourcesButton) readerFindSourcesButton.disabled = false;
@@ -391,26 +398,46 @@ async function openReaderDocument(readerDoc, options = {}) {
   updateMenuState();
 }
 
+// How long the page is, in the unit its own script is counted in: CJK text by
+// characters, everything else by words, with the reading time from both.
+function readerReadingLength(text) {
+  const value = String(text || "");
+  const cjk = value.match(/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/gu)?.length || 0;
+  const words = value.replace(/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/gu, " ").match(/[\p{L}\p{N}]+/gu)?.length || 0;
+  const minutes = Math.max(1, Math.round(cjk / 400 + words / 230));
+  return { count: cjk + words, cjk: cjk >= words, minutes };
+}
+
+// A clipped article usually opens with its own "# Title". The header already
+// sets that title once, so the body starts after it instead of repeating it.
+function readerBodyMarkdown(page) {
+  const text = String(page?.text || "");
+  const match = text.match(/^\s*#\s+(.+?)\s*#*\s*(?:\n|$)/);
+  if (!match) return text;
+  const plain = (value) => String(value || "").replace(/[*_`]/g, "").replace(/\s+/g, " ").trim().toLowerCase();
+  return plain(match[1]) === plain(page.title) ? text.slice(match[0].length) : text;
+}
+
 function appendReaderDocumentHeader() {
   if (currentReaderPage?.videoTranscript?.type === "video_transcript") return;
+  const header = document.createElement("header");
+  header.className = "reader-document-header";
   const title = document.createElement("h1");
   title.textContent = currentReaderPage.title;
-  readerContentEl.append(title);
+  header.append(title);
 
+  const length = readerReadingLength(currentReaderPage.text);
   const metaItems = currentReaderPage.kind === "fileDisk"
-    ? [t("mounted_text_disk"), currentReaderPage.fileName].filter(Boolean)
+    ? [t("mounted_text_disk"), currentReaderPage.fileName]
     : currentReaderPage.kind === "projectCd"
-      ? [t("project_cd"), t("read_only")].filter(Boolean)
-      : [
-        currentReaderPage.author ? `By ${currentReaderPage.author}` : "",
-        currentReaderPage.date || "",
-      ].filter(Boolean);
-  if (metaItems.length) {
-    const meta = document.createElement("div");
-    meta.className = "reader-meta";
-    meta.textContent = metaItems.join(" · ");
-    readerContentEl.append(meta);
-  }
+      ? [t("project_cd"), t("read_only")]
+      : [getReaderSiteLabel(currentReaderPage), currentReaderPage.author, currentReaderPage.date];
+  metaItems.push(t(length.cjk ? "reader_length_chars" : "reader_length_words", length.count.toLocaleString(), length.minutes));
+  const meta = document.createElement("p");
+  meta.className = "reader-meta";
+  meta.textContent = metaItems.filter(Boolean).join(" \u00b7 ");
+  header.append(meta);
+  readerContentEl.append(header);
 }
 
 function renderReaderDocumentView({ renderedVideoTranscript = false } = {}) {
@@ -421,7 +448,7 @@ function renderReaderDocumentView({ renderedVideoTranscript = false } = {}) {
   } else {
     const body = document.createElement("div");
     body.className = "reader-body-content";
-    body.innerHTML = markdownToSystemHtml(currentReaderPage.text);
+    body.innerHTML = markdownToSystemHtml(readerBodyMarkdown(currentReaderPage));
     wireReaderFigures(body);
     readerContentEl.append(body);
   }
@@ -625,7 +652,7 @@ function renderReaderFigureReading(row) {
 function clipReaderFigureReading(panel) {
   if (!readerFigureReading) return;
 
-  const title = document.querySelector("#reader-content h1")?.textContent || "Reader Clip";
+  const title = currentReaderPage?.title || "Reader Clip";
   const capturedAt = new Date().toISOString();
   const url = currentReaderPage?.url || "";
   const site = currentReaderPage?.site || "";
@@ -719,14 +746,12 @@ async function fetchReaderPage(urlArg = null) {
     createReaderWebDocumentTab(readerDoc, { forceNew: true });
     openReaderDocument(readerDoc);
   } catch (error) {
+    // The address stays in the entry row, so the writer can correct it.
     currentReaderPage = null;
     setReaderWindowTitle();
+    setReaderPaneState("empty");
     updateReaderTranslationClipButton();
-    readerContentEl.replaceChildren();
-    const err = document.createElement("div");
-    err.className = "empty-folder-note";
-    err.textContent = t("reader_error", friendlyErrorDetail(error));
-    readerContentEl.append(err);
+    showReaderNote(t("reader_error", friendlyErrorDetail(error)));
     readerStatusEl.textContent = t("ready");
   } finally {
     document.body.classList.remove("is-busy");
@@ -880,7 +905,7 @@ function openReaderWindowWithTabs() {
   const active = activeReaderTab();
   openWindow("reader");
   if (!currentReaderPage && active) openReaderDocumentTab(active.id);
-  readerUrlInput?.focus();
+  if (!currentReaderPage && !active) readerUrlInput?.focus();
 }
 
 async function revealReaderVideoTranscriptRange(fileName, blockIds = []) {
@@ -1063,6 +1088,43 @@ function extractReaderUrls(text) {
     });
 }
 
+// The selection bar. What acts on selected text sits beside the selection
+// instead of in a toolbar the loaded document has already folded away, and it
+// floats over the page's lower corner so selecting never moves the text. The
+// clip verbs used to live in a hidden row and an overflow menu, which left
+// the Reader's own reason for existing reachable only from the Edit menu.
+let readerSelectionReceipt = "";
+
+function updateReaderTranslationClipButton() {
+  const { text } = getReaderSelection();
+  const active = !!currentReaderPage && !!text;
+  if (text !== readerSelectionReceipt) readerSelectionReceipt = "";
+  const bar = document.getElementById("reader-selection-bar");
+  if (bar) {
+    // A class, not data-open: the desk's click dispatcher reads any
+    // [data-open] ancestor as "open this window" and took the Clip click.
+    bar.classList.toggle("is-open", active);
+    bar.inert = !active;
+  }
+  const count = document.getElementById("reader-selection-count");
+  if (count) {
+    count.textContent = !active ? ""
+      : readerSelectionReceipt ? t("reader_selection_clipped")
+        : t("reader_selection_count", countSelectionWords(text));
+  }
+  if (readerClipButton) readerClipButton.disabled = !active;
+
+  const targetLanguage = active ? getTranslationTargetForUi(text) : null;
+  if (readerClipTranslateButton) {
+    readerClipTranslateButton.hidden = !targetLanguage;
+    readerClipTranslateButton.disabled = !targetLanguage;
+    readerClipTranslateButton.textContent = targetLanguage === "zh"
+      ? t("clip_translate_to_chinese")
+      : targetLanguage ? t("clip_translate_to_english") : t("clip_translate");
+  }
+  updateDocMapEntryButtons();
+}
+
 function clipReaderSelection() {
   const { selection, text } = getReaderSelection();
 
@@ -1071,7 +1133,7 @@ function clipReaderSelection() {
     return;
   }
 
-  const title = document.querySelector("#reader-content h1")?.textContent || "Reader Clip";
+  const title = currentReaderPage?.title || "Reader Clip";
   const sourceRef = readerDocumentSource(currentReaderPage);
   const url = currentReaderPage?.url || "";
   const site = currentReaderPage?.site || "";
@@ -1161,6 +1223,7 @@ function clipReaderSelection() {
     renderScraps();
     updateFlowGuideChecklist({ render: false });
     readerStatusEl.textContent = t("reader_clips_count", currentReaderClipCount);
+    readerSelectionReceipt = text;
     setStatus(t("reader_clipped"));
   }
   updateReaderTranslationClipButton();
@@ -1181,7 +1244,7 @@ async function clipReaderSelectionWithTranslation() {
     return;
   }
 
-  const title = document.querySelector("#reader-content h1")?.textContent || "Reader Clip";
+  const title = currentReaderPage?.title || "Reader Clip";
   const sourceRef = readerDocumentSource(currentReaderPage);
   const url = currentReaderPage?.url || "";
   const site = currentReaderPage?.site || "";
@@ -1290,6 +1353,7 @@ async function clipReaderSelectionWithTranslation() {
       renderScraps();
       updateFlowGuideChecklist({ render: false });
       readerStatusEl.textContent = t("reader_clips_count", currentReaderClipCount);
+      readerSelectionReceipt = text;
       setStatus(t("reader_bilingual_clipped"));
     }
   } catch (error) {
@@ -1871,10 +1935,10 @@ window.AISystem6ApplicationRegistry?.registerApplicationLifecycle?.("reader", {
   onDispose: () => window.AISystem6WebPlatform?.releaseScreenWakeLock?.("reader"),
 });
 
-let rmounted=!1;function mountReaderRuntime(){if(rmounted)return!0;rmounted=!0;readerAskForm?.addEventListener("submit",askReaderQuestion);registerAskBarSource("reader",describeReaderAskScope);initReaderSplitHandle();readerUrlInput?.addEventListener("keydown",event=>{if(event.key==="Enter"&&!eventIsTextComposition(event)){event.preventDefault();fetchReaderPage()}});return!0}
+let rmounted=!1;function mountReaderRuntime(){if(rmounted)return!0;rmounted=!0;readerAskForm?.addEventListener("submit",askReaderQuestion);registerAskBarSource("reader",describeReaderAskScope);initReaderSplitHandle();readerUrlInput?.addEventListener("keydown",event=>{if(eventIsTextComposition(event))return;if(event.key==="Enter"){event.preventDefault();fetchReaderPage()}else if(event.key==="Escape"&&dismissReaderSourceEntry())event.preventDefault()});return!0}
 function rwin(){return document.querySelector(".window.is-active")?.dataset.window==="reader"}function rctrl(s){const c=document.querySelector(s);return!!c&&!c.disabled&&!c.hidden}function rready(){return rwin()&&typeof docMapReadinessForSurface=="function"?docMapReadinessForSurface("reader"):null}
-const rav={"open-reader":()=>!0,"reader-open-source":()=>!0,"reader-clip":()=>rctrl("#reader-clip-button"),"reader-clip-translate":()=>rctrl("#reader-clip-translate-button"),"reader-send-manuscript":()=>rctrl("#reader-send-manuscript"),"reader-make-docmap":()=>rctrl("#reader-docmap-button"),"reader-docmap-selection":()=>!!rready()?.selectionReady,"reader-docmap-source":()=>!!rready()?.wholeReady,"reader-open-clio-stage":()=>rctrl("#reader-open-clio-stage"),"reader-find-sources":()=>rctrl("#reader-find-sources"),"focus-reader-question":()=>!!currentReaderPage?.text};
-const rlist=[["open-reader",()=>{if(typeof openReaderWindowWithTabs=="function"){openReaderWindowWithTabs();return}openWindow("reader");readerUrlInput?.focus()}],["reader-open-source",handleReaderOpenButton],["reader-clip",clipReaderSelection],["reader-clip-translate",clipReaderSelectionWithTranslation],["reader-send-manuscript",sendReaderCopyToManuscript],["reader-make-docmap",()=>makeDocMapForRange("auto")],["reader-docmap-selection",()=>{const c=readerSelectionContext();if(!c)return setStatus(t("select_text_first"));return makeDocMapForRange("selection",c)}],["reader-docmap-source",()=>makeDocMapForRange("source")],["reader-find-sources",runReaderFindSources],["reader-open-clio-stage",openCurrentReaderInClioStage],["focus-reader-question",()=>readerQuestionInput?.focus()]];
+const rav={"open-reader":()=>!0,"reader-open-source":()=>!0,"reader-open-another":()=>!!currentReaderPage,"reader-clip":()=>rctrl("#reader-clip-button"),"reader-clip-translate":()=>rctrl("#reader-clip-translate-button"),"reader-send-manuscript":()=>rctrl("#reader-send-manuscript"),"reader-make-docmap":()=>rctrl("#reader-docmap-button"),"reader-docmap-selection":()=>!!rready()?.selectionReady,"reader-docmap-source":()=>!!rready()?.wholeReady,"reader-open-clio-stage":()=>rctrl("#reader-open-clio-stage"),"reader-find-sources":()=>rctrl("#reader-find-sources"),"focus-reader-question":()=>!!currentReaderPage?.text};
+const rlist=[["open-reader",()=>{if(typeof openReaderWindowWithTabs=="function"){openReaderWindowWithTabs();return}openWindow("reader");readerUrlInput?.focus()}],["reader-open-source",handleReaderOpenButton],["reader-open-another",revealReaderSourceEntry],["reader-clip",clipReaderSelection],["reader-clip-translate",clipReaderSelectionWithTranslation],["reader-send-manuscript",sendReaderCopyToManuscript],["reader-make-docmap",()=>makeDocMapForRange("auto")],["reader-docmap-selection",()=>{const c=readerSelectionContext();if(!c)return setStatus(t("select_text_first"));return makeDocMapForRange("selection",c)}],["reader-docmap-source",()=>makeDocMapForRange("source")],["reader-find-sources",runReaderFindSources],["reader-open-clio-stage",openCurrentReaderInClioStage],["focus-reader-question",()=>readerQuestionInput?.focus()]];
 window.AISystem6Runtime?.registerApplication({id:"reader",windowName:"reader",mount:mountReaderRuntime,restore:()=>mountReaderRuntime(),commands:Object.fromEntries(rlist.map(([a,h])=>[a,{handler:h,isAvailable:()=>a==="open-reader"?!0:rwin()&&(rav[a]||(()=>!0))()}]))});
 
 // Called from the window registry's onReveal phase -- the only moment a window

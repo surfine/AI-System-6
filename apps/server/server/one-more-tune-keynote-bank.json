@@ -401,14 +401,1195 @@
         "audioAllowed": false
       },
       "sharedGroup": "keynote-2024-genmoji"
+    },
+    {
+      "id": "keynote-history-20161027-tv",
+      "event": {
+        "id": "evt_20161027",
+        "date": "2016-10-27",
+        "name": "Apple Special Event · October 2016"
+      },
+      "role": {
+        "zh": "介绍 TV app",
+        "en": "TV app introduction"
+      },
+      "clues": {
+        "zh": [
+          "找节目、看电视。",
+          "产品名是 TV app。",
+          "2016 年 10 月，是谁介绍这个应用？"
+        ],
+        "en": [
+          "Find programmes and watch TV.",
+          "The product is the TV app.",
+          "Who introduced it in October 2016?"
+        ]
+      },
+      "answer": "Jen Folse",
+      "distractors": [
+        "Susan Prescott",
+        "Craig Federighi",
+        "Phil Schiller"
+      ],
+      "story": {
+        "zh": "Apple 图注明确署名 Jen Folse。",
+        "en": "The Apple caption names Jen Folse."
+      },
+      "sourceUrl": "https://www.apple.com/newsroom/2016/10/highlights-from-apples-october-2016-event/",
+      "sourceLabel": "Apple Newsroom · October 2016 named photo captions",
+      "source": {
+        "url": "https://www.apple.com/newsroom/2016/10/highlights-from-apples-october-2016-event/",
+        "label": {
+          "zh": "Apple Newsroom · October 2016 named photo captions",
+          "en": "Apple Newsroom · October 2016 named photo captions"
+        },
+        "locator": {
+          "zh": "Jen Folse caption",
+          "en": "Jen Folse caption"
+        },
+        "evidenceClass": "official_named_photo_caption",
+        "permanent": false
+      },
+      "researchIds": [
+        "photo16"
+      ],
+      "review": {
+        "method": "source_text_and_options_editorial_review",
+        "checkedOn": "2026-09-22",
+        "reviewer": "ChatGPT; no independent second reviewer",
+        "choicesReviewed": true,
+        "textReviewed": true,
+        "textDemoEnabled": true,
+        "audioReviewed": false,
+        "audioAllowed": false,
+        "productionEnabled": true,
+        "evidenceLimit": "Text fact only. No voice, face identification, exact scene timing, or earliest-ever claim.",
+        "ownerReview": {
+          "verdict": "pass",
+          "on": "2026-09-23"
+        }
+      },
+      "sharedGroup": "event:2016-10-27:tv-app-2016",
+      "spoilerGroups": [
+        "event:2016-10-27:tv-app-2016"
+      ],
+      "presentation": "text_clues",
+      "editorialDifficulty": "standard",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "playback": null
+    },
+    {
+      "id": "keynote-history-20161027-touchbar",
+      "event": {
+        "id": "evt_20161027",
+        "date": "2016-10-27",
+        "name": "Apple Special Event · October 2016"
+      },
+      "role": {
+        "zh": "演示应用中的 Touch Bar",
+        "en": "Touch Bar app demonstration"
+      },
+      "clues": {
+        "zh": [
+          "键盘上方新增了操作区域。",
+          "这一段展示与 Mac 应用配合。",
+          "谁负责这段 Touch Bar 演示？"
+        ],
+        "en": [
+          "A new control area above the keyboard.",
+          "This segment shows Mac app integration.",
+          "Who gave this Touch Bar demonstration?"
+        ]
+      },
+      "answer": "Craig Federighi",
+      "distractors": [
+        "Tim Cook",
+        "Susan Prescott",
+        "Jen Folse"
+      ],
+      "story": {
+        "zh": "图注将应用集成演示归给 Craig，区别于揭晓产品。",
+        "en": "The caption attributes the app demonstration to Craig."
+      },
+      "sourceUrl": "https://www.apple.com/newsroom/2016/10/highlights-from-apples-october-2016-event/",
+      "sourceLabel": "Apple Newsroom · October 2016 named photo captions",
+      "source": {
+        "url": "https://www.apple.com/newsroom/2016/10/highlights-from-apples-october-2016-event/",
+        "label": {
+          "zh": "Apple Newsroom · October 2016 named photo captions",
+          "en": "Apple Newsroom · October 2016 named photo captions"
+        },
+        "locator": {
+          "zh": "Craig Federighi caption",
+          "en": "Craig Federighi caption"
+        },
+        "evidenceClass": "official_named_photo_caption",
+        "permanent": false
+      },
+      "researchIds": [
+        "photo16"
+      ],
+      "review": {
+        "method": "source_text_and_options_editorial_review",
+        "checkedOn": "2026-09-22",
+        "reviewer": "ChatGPT; no independent second reviewer",
+        "choicesReviewed": true,
+        "textReviewed": true,
+        "textDemoEnabled": true,
+        "audioReviewed": false,
+        "audioAllowed": false,
+        "productionEnabled": true,
+        "evidenceLimit": "Text fact only. No voice, face identification, exact scene timing, or earliest-ever claim.",
+        "distractorNote": {
+          "en": "Phil Schiller was replaced: an Apple caption at this event credits him with this product, so the option could be read as correct from the first clue.",
+          "zh": "Phil Schiller 已替换：同场 Apple 图注把这件产品记在他名下，玩家看第一条线索就选他并不算错。"
+        },
+        "ownerReview": {
+          "verdict": "pass",
+          "on": "2026-09-23"
+        }
+      },
+      "sharedGroup": "event:2016-10-27:touchbar-app-demo",
+      "spoilerGroups": [
+        "event:2016-10-27:touchbar-app-demo"
+      ],
+      "presentation": "text_clues",
+      "editorialDifficulty": "standard",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "playback": null
+    },
+    {
+      "id": "keynote-history-20161027-finalcut",
+      "event": {
+        "id": "evt_20161027",
+        "date": "2016-10-27",
+        "name": "Apple Special Event · October 2016"
+      },
+      "role": {
+        "zh": "演示 Final Cut Pro X",
+        "en": "Final Cut Pro X demonstration"
+      },
+      "clues": {
+        "zh": [
+          "这次轮到视频编辑。",
+          "出现了新的磁性时间线。",
+          "谁演示 Final Cut Pro X？"
+        ],
+        "en": [
+          "The focus turns to video editing.",
+          "A new Magnetic Timeline is shown.",
+          "Who demonstrated Final Cut Pro X?"
+        ]
+      },
+      "answer": "Susan Prescott",
+      "distractors": [
+        "Jen Folse",
+        "Bradee Evans",
+        "Craig Federighi"
+      ],
+      "story": {
+        "zh": "Apple 的对应图注署名 Susan Prescott。",
+        "en": "The relevant Apple caption names Susan Prescott."
+      },
+      "sourceUrl": "https://www.apple.com/newsroom/2016/10/highlights-from-apples-october-2016-event/",
+      "sourceLabel": "Apple Newsroom · October 2016 named photo captions",
+      "source": {
+        "url": "https://www.apple.com/newsroom/2016/10/highlights-from-apples-october-2016-event/",
+        "label": {
+          "zh": "Apple Newsroom · October 2016 named photo captions",
+          "en": "Apple Newsroom · October 2016 named photo captions"
+        },
+        "locator": {
+          "zh": "Susan Prescott caption",
+          "en": "Susan Prescott caption"
+        },
+        "evidenceClass": "official_named_photo_caption",
+        "permanent": false
+      },
+      "researchIds": [
+        "photo16"
+      ],
+      "review": {
+        "method": "source_text_and_options_editorial_review",
+        "checkedOn": "2026-09-22",
+        "reviewer": "ChatGPT; no independent second reviewer",
+        "choicesReviewed": true,
+        "textReviewed": true,
+        "textDemoEnabled": true,
+        "audioReviewed": false,
+        "audioAllowed": false,
+        "productionEnabled": true,
+        "evidenceLimit": "Text fact only. No voice, face identification, exact scene timing, or earliest-ever claim.",
+        "ownerReview": {
+          "verdict": "pass",
+          "on": "2026-09-23"
+        }
+      },
+      "sharedGroup": "event:2016-10-27:final-cut-2016",
+      "spoilerGroups": [
+        "event:2016-10-27:final-cut-2016"
+      ],
+      "presentation": "text_clues",
+      "editorialDifficulty": "standard",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "playback": null
+    },
+    {
+      "id": "keynote-history-20170912-retail",
+      "event": {
+        "id": "evt_20170912",
+        "date": "2017-09-12",
+        "name": "Apple Special Event · September 2017"
+      },
+      "role": {
+        "zh": "介绍 Today at Apple",
+        "en": "Today at Apple update"
+      },
+      "clues": {
+        "zh": [
+          "这里谈的是门店体验。",
+          "主题为 Today at Apple。",
+          "2017 年 9 月由谁介绍？"
+        ],
+        "en": [
+          "This is about in-store experiences.",
+          "The subject is Today at Apple.",
+          "Who presented the update in September 2017?"
+        ]
+      },
+      "answer": "Angela Ahrendts",
+      "distractors": [
+        "Ron Johnson",
+        "Deirdre O'Brien",
+        "Jony Ive"
+      ],
+      "story": {
+        "zh": "官方图注将这段门店更新署名 Angela Ahrendts。",
+        "en": "The caption attributes the retail update to Angela Ahrendts."
+      },
+      "sourceUrl": "https://www.apple.com/newsroom/2017/09/highlights-from-apples-keynote-event/",
+      "sourceLabel": "Apple Newsroom · September 2017 named photo captions",
+      "source": {
+        "url": "https://www.apple.com/newsroom/2017/09/highlights-from-apples-keynote-event/",
+        "label": {
+          "zh": "Apple Newsroom · September 2017 named photo captions",
+          "en": "Apple Newsroom · September 2017 named photo captions"
+        },
+        "locator": {
+          "zh": "Angela Ahrendts caption",
+          "en": "Angela Ahrendts caption"
+        },
+        "evidenceClass": "official_named_photo_caption",
+        "permanent": false
+      },
+      "researchIds": [
+        "photo17"
+      ],
+      "review": {
+        "method": "source_text_and_options_editorial_review",
+        "checkedOn": "2026-09-22",
+        "reviewer": "ChatGPT; no independent second reviewer",
+        "choicesReviewed": true,
+        "textReviewed": true,
+        "textDemoEnabled": true,
+        "audioReviewed": false,
+        "audioAllowed": false,
+        "productionEnabled": true,
+        "evidenceLimit": "Text fact only. No voice, face identification, exact scene timing, or earliest-ever claim.",
+        "distractorNote": {
+          "zh": "干扰项换成与零售相关、但当天不在台上的人：Ron Johnson 是 2011 年前的零售负责人，Deirdre O'Brien 2019 年才接管零售，Jony Ive 参与门店设计但不在发布会上讲零售。",
+          "en": "Distractors are now retail-adjacent people who were not on that stage: Ron Johnson ran retail until 2011, Deirdre O'Brien took it over in 2019, Jony Ive co-designed stores but did not present retail."
+        },
+        "ownerReview": {
+          "verdict": "pass",
+          "on": "2026-09-23",
+          "note": "干扰项再迷惑一点，现在这样区分度不够",
+          "revisedOn": "2026-09-23",
+          "awaiting": "owner re-review of the new distractors",
+          "round2": {
+            "verdict": "pass",
+            "on": "2026-09-23"
+          }
+        }
+      },
+      "sharedGroup": "event:2017-09-12:today-at-apple-2017",
+      "spoilerGroups": [
+        "event:2017-09-12:today-at-apple-2017"
+      ],
+      "presentation": "text_clues",
+      "editorialDifficulty": "standard",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "playback": null
+    },
+    {
+      "id": "keynote-history-20170912-watch-call",
+      "event": {
+        "id": "evt_20170912",
+        "date": "2017-09-12",
+        "name": "Apple Special Event · September 2017"
+      },
+      "role": {
+        "zh": "演示手表蜂窝通话",
+        "en": "Watch cellular call demonstration"
+      },
+      "clues": {
+        "zh": [
+          "手腕上的设备独立通话。",
+          "设备是 Apple Watch Series 3。",
+          "谁用它在发布会上拨打电话？"
+        ],
+        "en": [
+          "A wrist device makes a cellular call.",
+          "The device is Apple Watch Series 3.",
+          "Who demonstrated the call at the event?"
+        ]
+      },
+      "answer": "Jeff Williams",
+      "distractors": [
+        "Eddy Cue",
+        "Phil Schiller",
+        "Craig Federighi"
+      ],
+      "story": {
+        "zh": "该次通话演示的官方图注署名 Jeff Williams。",
+        "en": "The call demonstration caption names Jeff Williams."
+      },
+      "sourceUrl": "https://www.apple.com/newsroom/2017/09/highlights-from-apples-keynote-event/",
+      "sourceLabel": "Apple Newsroom · September 2017 named photo captions",
+      "source": {
+        "url": "https://www.apple.com/newsroom/2017/09/highlights-from-apples-keynote-event/",
+        "label": {
+          "zh": "Apple Newsroom · September 2017 named photo captions",
+          "en": "Apple Newsroom · September 2017 named photo captions"
+        },
+        "locator": {
+          "zh": "Jeff Williams caption",
+          "en": "Jeff Williams caption"
+        },
+        "evidenceClass": "official_named_photo_caption",
+        "permanent": false
+      },
+      "researchIds": [
+        "photo17"
+      ],
+      "review": {
+        "method": "source_text_and_options_editorial_review",
+        "checkedOn": "2026-09-22",
+        "reviewer": "ChatGPT; no independent second reviewer",
+        "choicesReviewed": true,
+        "textReviewed": true,
+        "textDemoEnabled": true,
+        "audioReviewed": false,
+        "audioAllowed": false,
+        "productionEnabled": true,
+        "evidenceLimit": "Text fact only. No voice, face identification, exact scene timing, or earliest-ever claim.",
+        "ownerReview": {
+          "verdict": "pass",
+          "on": "2026-09-23"
+        }
+      },
+      "sharedGroup": "event:2017-09-12:watch-series3-call",
+      "spoilerGroups": [
+        "event:2017-09-12:watch-series3-call"
+      ],
+      "presentation": "text_clues",
+      "editorialDifficulty": "standard",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "playback": null
+    },
+    {
+      "id": "keynote-history-20170912-sky",
+      "event": {
+        "id": "evt_20170912",
+        "date": "2017-09-12",
+        "name": "Apple Special Event · September 2017"
+      },
+      "role": {
+        "zh": "预览 Sky",
+        "en": "Sky preview"
+      },
+      "clues": {
+        "zh": [
+          "一位游戏嘉宾来到舞台。",
+          "展示的是社交冒险游戏 Sky。",
+          "这位来自 thatgamecompany 的嘉宾是谁？"
+        ],
+        "en": [
+          "A game guest takes the stage.",
+          "The preview is the social adventure Sky.",
+          "Which thatgamecompany guest presented it?"
+        ]
+      },
+      "answer": "Jenova Chen",
+      "distractors": [
+        "Atli Mar Sveinsson",
+        "Eddy Cue",
+        "Phil Schiller"
+      ],
+      "story": {
+        "zh": "官方图注标明演示者为 Jenova Chen。",
+        "en": "Apple’s caption identifies Jenova Chen."
+      },
+      "sourceUrl": "https://www.apple.com/newsroom/2017/09/highlights-from-apples-keynote-event/",
+      "sourceLabel": "Apple Newsroom · September 2017 named photo captions",
+      "source": {
+        "url": "https://www.apple.com/newsroom/2017/09/highlights-from-apples-keynote-event/",
+        "label": {
+          "zh": "Apple Newsroom · September 2017 named photo captions",
+          "en": "Apple Newsroom · September 2017 named photo captions"
+        },
+        "locator": {
+          "zh": "Jenova Chen caption",
+          "en": "Jenova Chen caption"
+        },
+        "evidenceClass": "official_named_photo_caption",
+        "permanent": false
+      },
+      "researchIds": [
+        "photo17"
+      ],
+      "review": {
+        "method": "source_text_and_options_editorial_review",
+        "checkedOn": "2026-09-22",
+        "reviewer": "ChatGPT; no independent second reviewer",
+        "choicesReviewed": true,
+        "textReviewed": true,
+        "textDemoEnabled": true,
+        "audioReviewed": false,
+        "audioAllowed": false,
+        "productionEnabled": true,
+        "evidenceLimit": "Text fact only. No voice, face identification, exact scene timing, or earliest-ever claim.",
+        "ownerReview": {
+          "verdict": "pass",
+          "on": "2026-09-23"
+        }
+      },
+      "sharedGroup": "event:2017-09-12:sky-2017",
+      "spoilerGroups": [
+        "event:2017-09-12:sky-2017"
+      ],
+      "presentation": "text_clues",
+      "editorialDifficulty": "standard",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "playback": null
+    },
+    {
+      "id": "keynote-history-20180912-a12",
+      "event": {
+        "id": "evt_20180912",
+        "date": "2018-09-12",
+        "name": "Apple Special Event · September 2018"
+      },
+      "role": {
+        "zh": "讲解 A12 相关体验",
+        "en": "A12 experience presentation"
+      },
+      "clues": {
+        "zh": [
+          "芯片带来了新交互。",
+          "涉及机器学习和 Siri Shortcuts。",
+          "谁在这一段讲解 A12 Bionic？"
+        ],
+        "en": [
+          "A chip enables new interactions.",
+          "Machine learning and Siri Shortcuts feature.",
+          "Who presented these A12 Bionic experiences?"
+        ]
+      },
+      "answer": "Kaiann Drance",
+      "distractors": [
+        "Ivor J. Benjamin",
+        "Lisa Jackson",
+        "Jeff Williams"
+      ],
+      "story": {
+        "zh": "官方活动图注将该段归给 Kaiann Drance。",
+        "en": "The caption attributes this segment to Kaiann Drance."
+      },
+      "sourceUrl": "https://www.apple.com/newsroom/2018/09/highlights-from-apples-keynote-event/",
+      "sourceLabel": "Apple Newsroom · September 2018 named photo captions",
+      "source": {
+        "url": "https://www.apple.com/newsroom/2018/09/highlights-from-apples-keynote-event/",
+        "label": {
+          "zh": "Apple Newsroom · September 2018 named photo captions",
+          "en": "Apple Newsroom · September 2018 named photo captions"
+        },
+        "locator": {
+          "zh": "Kaiann Drance caption",
+          "en": "Kaiann Drance caption"
+        },
+        "evidenceClass": "official_named_photo_caption",
+        "permanent": false
+      },
+      "researchIds": [
+        "photo18sep"
+      ],
+      "review": {
+        "method": "source_text_and_options_editorial_review",
+        "checkedOn": "2026-09-22",
+        "reviewer": "ChatGPT; no independent second reviewer",
+        "choicesReviewed": true,
+        "textReviewed": true,
+        "textDemoEnabled": true,
+        "audioReviewed": false,
+        "audioAllowed": false,
+        "productionEnabled": true,
+        "evidenceLimit": "Text fact only. No voice, face identification, exact scene timing, or earliest-ever claim.",
+        "distractorNote": {
+          "en": "Phil Schiller was replaced: an Apple caption at this event credits him with this product, so the option could be read as correct from the first clue.",
+          "zh": "Phil Schiller 已替换：同场 Apple 图注把这件产品记在他名下，玩家看第一条线索就选他并不算错。"
+        },
+        "ownerReview": {
+          "verdict": "pass",
+          "on": "2026-09-23",
+          "note": "恐怕要结合视频片段判断",
+          "awaiting": "a check against the keynote video; out of rotation until then",
+          "round2": {
+            "verdict": "pass",
+            "on": "2026-09-23"
+          }
+        }
+      },
+      "sharedGroup": "event:2018-09-12:a12-experiences",
+      "spoilerGroups": [
+        "event:2018-09-12:a12-experiences"
+      ],
+      "presentation": "text_clues",
+      "editorialDifficulty": "standard",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "playback": null
+    },
+    {
+      "id": "keynote-history-20180912-blades",
+      "event": {
+        "id": "evt_20180912",
+        "date": "2018-09-12",
+        "name": "Apple Special Event · September 2018"
+      },
+      "role": {
+        "zh": "演示游戏",
+        "en": "Game demonstration"
+      },
+      "clues": {
+        "zh": [
+          "又一位游戏嘉宾登场。",
+          "设备是 iPhone XS。",
+          "谁展示 The Elder Scrolls: Blades？"
+        ],
+        "en": [
+          "Another game guest appears.",
+          "The device is iPhone XS.",
+          "Who showed The Elder Scrolls: Blades?"
+        ]
+      },
+      "answer": "Todd Howard",
+      "distractors": [
+        "Atli Mar Sveinsson",
+        "David Lee",
+        "Steve Nash"
+      ],
+      "story": {
+        "zh": "Apple 图注写明该游戏演示者为 Todd Howard。",
+        "en": "Apple names Todd Howard for this demonstration."
+      },
+      "sourceUrl": "https://www.apple.com/newsroom/2018/09/highlights-from-apples-keynote-event/",
+      "sourceLabel": "Apple Newsroom · September 2018 named photo captions",
+      "source": {
+        "url": "https://www.apple.com/newsroom/2018/09/highlights-from-apples-keynote-event/",
+        "label": {
+          "zh": "Apple Newsroom · September 2018 named photo captions",
+          "en": "Apple Newsroom · September 2018 named photo captions"
+        },
+        "locator": {
+          "zh": "Todd Howard caption",
+          "en": "Todd Howard caption"
+        },
+        "evidenceClass": "official_named_photo_caption",
+        "permanent": false
+      },
+      "researchIds": [
+        "photo18sep"
+      ],
+      "review": {
+        "method": "source_text_and_options_editorial_review",
+        "checkedOn": "2026-09-22",
+        "reviewer": "ChatGPT; no independent second reviewer",
+        "choicesReviewed": true,
+        "textReviewed": true,
+        "textDemoEnabled": true,
+        "audioReviewed": false,
+        "audioAllowed": false,
+        "productionEnabled": true,
+        "evidenceLimit": "Text fact only. No voice, face identification, exact scene timing, or earliest-ever claim.",
+        "ownerReview": {
+          "verdict": "pass",
+          "on": "2026-09-23"
+        }
+      },
+      "sharedGroup": "event:2018-09-12:blades-2018",
+      "spoilerGroups": [
+        "event:2018-09-12:blades-2018"
+      ],
+      "presentation": "text_clues",
+      "editorialDifficulty": "standard",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "playback": null
+    },
+    {
+      "id": "keynote-history-20180912-environment",
+      "event": {
+        "id": "evt_20180912",
+        "date": "2018-09-12",
+        "name": "Apple Special Event · September 2018"
+      },
+      "role": {
+        "zh": "介绍环保工作",
+        "en": "Environmental update"
+      },
+      "clues": {
+        "zh": [
+          "暂时放下性能参数。",
+          "话题是回收和可再生能源。",
+          "谁负责这部分介绍？"
+        ],
+        "en": [
+          "The focus shifts from performance.",
+          "Recycling and renewable energy are discussed.",
+          "Who presented this part?"
+        ]
+      },
+      "answer": "Lisa Jackson",
+      "distractors": [
+        "Kaiann Drance",
+        "Jeff Williams",
+        "Phil Schiller"
+      ],
+      "story": {
+        "zh": "活动图注署名 Lisa Jackson。",
+        "en": "The event caption names Lisa Jackson."
+      },
+      "sourceUrl": "https://www.apple.com/newsroom/2018/09/highlights-from-apples-keynote-event/",
+      "sourceLabel": "Apple Newsroom · September 2018 named photo captions",
+      "source": {
+        "url": "https://www.apple.com/newsroom/2018/09/highlights-from-apples-keynote-event/",
+        "label": {
+          "zh": "Apple Newsroom · September 2018 named photo captions",
+          "en": "Apple Newsroom · September 2018 named photo captions"
+        },
+        "locator": {
+          "zh": "Lisa Jackson caption",
+          "en": "Lisa Jackson caption"
+        },
+        "evidenceClass": "official_named_photo_caption",
+        "permanent": false
+      },
+      "researchIds": [
+        "photo18sep"
+      ],
+      "review": {
+        "method": "source_text_and_options_editorial_review",
+        "checkedOn": "2026-09-22",
+        "reviewer": "ChatGPT; no independent second reviewer",
+        "choicesReviewed": true,
+        "textReviewed": true,
+        "textDemoEnabled": true,
+        "audioReviewed": false,
+        "audioAllowed": false,
+        "productionEnabled": true,
+        "evidenceLimit": "Text fact only. No voice, face identification, exact scene timing, or earliest-ever claim.",
+        "ownerReview": {
+          "verdict": "pass",
+          "on": "2026-09-23"
+        }
+      },
+      "sharedGroup": "event:2018-09-12:environment-2018",
+      "spoilerGroups": [
+        "event:2018-09-12:environment-2018"
+      ],
+      "presentation": "text_clues",
+      "editorialDifficulty": "standard",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "playback": null
+    },
+    {
+      "id": "keynote-history-20181030-air",
+      "event": {
+        "id": "evt_20181030",
+        "date": "2018-10-30",
+        "name": "Apple Special Event · October 2018"
+      },
+      "role": {
+        "zh": "介绍 MacBook Air",
+        "en": "MacBook Air presentation"
+      },
+      "clues": {
+        "zh": [
+          "Air 的屏幕更新了。",
+          "Retina 和 Touch ID 同时出现。",
+          "2018 年 10 月谁介绍这台 Air？"
+        ],
+        "en": [
+          "Air gets a new display.",
+          "Retina and Touch ID feature together.",
+          "Who presented this Air in October 2018?"
+        ]
+      },
+      "answer": "Laura Legros",
+      "distractors": [
+        "Tom Boger",
+        "John Ternus",
+        "Shaan Pruden"
+      ],
+      "story": {
+        "zh": "该产品图注明确署名 Laura Legros。",
+        "en": "The product caption names Laura Legros."
+      },
+      "sourceUrl": "https://www.apple.com/newsroom/2018/10/highlights-from-apples-keynote-event/",
+      "sourceLabel": "Apple Newsroom · October 2018 named photo captions",
+      "source": {
+        "url": "https://www.apple.com/newsroom/2018/10/highlights-from-apples-keynote-event/",
+        "label": {
+          "zh": "Apple Newsroom · October 2018 named photo captions",
+          "en": "Apple Newsroom · October 2018 named photo captions"
+        },
+        "locator": {
+          "zh": "Laura Legros caption",
+          "en": "Laura Legros caption"
+        },
+        "evidenceClass": "official_named_photo_caption",
+        "permanent": false
+      },
+      "researchIds": [
+        "photo18"
+      ],
+      "review": {
+        "method": "source_text_and_options_editorial_review",
+        "checkedOn": "2026-09-22",
+        "reviewer": "ChatGPT; no independent second reviewer",
+        "choicesReviewed": true,
+        "textReviewed": true,
+        "textDemoEnabled": true,
+        "audioReviewed": false,
+        "audioAllowed": false,
+        "productionEnabled": true,
+        "evidenceLimit": "Text fact only. No voice, face identification, exact scene timing, or earliest-ever claim.",
+        "ownerReview": {
+          "verdict": "pass",
+          "on": "2026-09-23"
+        }
+      },
+      "sharedGroup": "event:2018-10-30:macbook-air-2018",
+      "spoilerGroups": [
+        "event:2018-10-30:macbook-air-2018"
+      ],
+      "presentation": "text_clues",
+      "editorialDifficulty": "standard",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "playback": null
+    },
+    {
+      "id": "keynote-history-20181030-mini",
+      "event": {
+        "id": "evt_20181030",
+        "date": "2018-10-30",
+        "name": "Apple Special Event · October 2018"
+      },
+      "role": {
+        "zh": "介绍 Mac mini",
+        "en": "Mac mini announcement"
+      },
+      "clues": {
+        "zh": [
+          "是一台小型台式 Mac。",
+          "此次更新谈到更大的内存容量。",
+          "谁宣布新款 Mac mini？"
+        ],
+        "en": [
+          "It is a compact desktop Mac.",
+          "The update includes more memory capacity.",
+          "Who announced the new Mac mini?"
+        ]
+      },
+      "answer": "Tom Boger",
+      "distractors": [
+        "John Ternus",
+        "Laura Legros",
+        "Shaan Pruden"
+      ],
+      "story": {
+        "zh": "该次 Mac mini 宣布的图注署名 Tom Boger。",
+        "en": "The Mac mini announcement caption names Tom Boger."
+      },
+      "sourceUrl": "https://www.apple.com/newsroom/2018/10/highlights-from-apples-keynote-event/",
+      "sourceLabel": "Apple Newsroom · October 2018 named photo captions",
+      "source": {
+        "url": "https://www.apple.com/newsroom/2018/10/highlights-from-apples-keynote-event/",
+        "label": {
+          "zh": "Apple Newsroom · October 2018 named photo captions",
+          "en": "Apple Newsroom · October 2018 named photo captions"
+        },
+        "locator": {
+          "zh": "Tom Boger caption",
+          "en": "Tom Boger caption"
+        },
+        "evidenceClass": "official_named_photo_caption",
+        "permanent": false
+      },
+      "researchIds": [
+        "photo18"
+      ],
+      "review": {
+        "method": "source_text_and_options_editorial_review",
+        "checkedOn": "2026-09-22",
+        "reviewer": "ChatGPT; no independent second reviewer",
+        "choicesReviewed": true,
+        "textReviewed": true,
+        "textDemoEnabled": true,
+        "audioReviewed": false,
+        "audioAllowed": false,
+        "productionEnabled": true,
+        "evidenceLimit": "Text fact only. No voice, face identification, exact scene timing, or earliest-ever claim.",
+        "ownerReview": {
+          "verdict": "pass",
+          "on": "2026-09-23"
+        }
+      },
+      "sharedGroup": "event:2018-10-30:mac-mini-2018",
+      "spoilerGroups": [
+        "event:2018-10-30:mac-mini-2018"
+      ],
+      "presentation": "text_clues",
+      "editorialDifficulty": "standard",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "playback": null
+    },
+    {
+      "id": "keynote-history-20181030-adobe",
+      "event": {
+        "id": "evt_20181030",
+        "date": "2018-10-30",
+        "name": "Apple Special Event · October 2018"
+      },
+      "role": {
+        "zh": "演示 Adobe 应用",
+        "en": "Adobe app demonstration"
+      },
+      "clues": {
+        "zh": [
+          "画笔与平板一起工作。",
+          "演示涵盖 Photoshop 和 Project Aero。",
+          "这位 Adobe 演示者是谁？"
+        ],
+        "en": [
+          "A pencil works with a tablet.",
+          "Photoshop and Project Aero are demonstrated.",
+          "Who was the Adobe demonstrator?"
+        ]
+      },
+      "answer": "Chantel Benson",
+      "distractors": [
+        "Shaan Pruden",
+        "Laura Legros",
+        "John Ternus"
+      ],
+      "story": {
+        "zh": "Apple 将这组 iPad Pro 演示署名 Chantel Benson。",
+        "en": "Apple attributes the iPad Pro demonstrations to Chantel Benson."
+      },
+      "sourceUrl": "https://www.apple.com/newsroom/2018/10/highlights-from-apples-keynote-event/",
+      "sourceLabel": "Apple Newsroom · October 2018 named photo captions",
+      "source": {
+        "url": "https://www.apple.com/newsroom/2018/10/highlights-from-apples-keynote-event/",
+        "label": {
+          "zh": "Apple Newsroom · October 2018 named photo captions",
+          "en": "Apple Newsroom · October 2018 named photo captions"
+        },
+        "locator": {
+          "zh": "Chantel Benson caption",
+          "en": "Chantel Benson caption"
+        },
+        "evidenceClass": "official_named_photo_caption",
+        "permanent": false
+      },
+      "researchIds": [
+        "photo18"
+      ],
+      "review": {
+        "method": "source_text_and_options_editorial_review",
+        "checkedOn": "2026-09-22",
+        "reviewer": "ChatGPT; no independent second reviewer",
+        "choicesReviewed": true,
+        "textReviewed": true,
+        "textDemoEnabled": true,
+        "audioReviewed": false,
+        "audioAllowed": false,
+        "productionEnabled": true,
+        "evidenceLimit": "Text fact only. No voice, face identification, exact scene timing, or earliest-ever claim.",
+        "ownerReview": {
+          "verdict": "pass",
+          "on": "2026-09-23"
+        }
+      },
+      "sharedGroup": "event:2018-10-30:adobe-ipad-2018",
+      "spoilerGroups": [
+        "event:2018-10-30:adobe-ipad-2018"
+      ],
+      "presentation": "text_clues",
+      "editorialDifficulty": "standard",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "playback": null
+    },
+    {
+      "id": "keynote-history-20190325-card",
+      "event": {
+        "id": "evt_20190325",
+        "date": "2019-03-25",
+        "name": "Apple Special Event · March 2019"
+      },
+      "role": {
+        "zh": "介绍 Apple Card",
+        "en": "Apple Card introduction"
+      },
+      "clues": {
+        "zh": [
+          "这项服务与付款有关。",
+          "产品名是 Apple Card。",
+          "2019 年 3 月由谁介绍？"
+        ],
+        "en": [
+          "The service concerns payments.",
+          "The product is Apple Card.",
+          "Who introduced it in March 2019?"
+        ]
+      },
+      "answer": "Jennifer Bailey",
+      "distractors": [
+        "Ann Thai",
+        "Roger Rosner",
+        "Peter Stern"
+      ],
+      "story": {
+        "zh": "Apple Card 对应的官方图注署名 Jennifer Bailey。",
+        "en": "The Apple Card caption names Jennifer Bailey."
+      },
+      "sourceUrl": "https://www.apple.com/newsroom/2019/03/highlights-from-apples-keynote-event/",
+      "sourceLabel": "Apple Newsroom · March 2019 named photo captions",
+      "source": {
+        "url": "https://www.apple.com/newsroom/2019/03/highlights-from-apples-keynote-event/",
+        "label": {
+          "zh": "Apple Newsroom · March 2019 named photo captions",
+          "en": "Apple Newsroom · March 2019 named photo captions"
+        },
+        "locator": {
+          "zh": "Jennifer Bailey caption",
+          "en": "Jennifer Bailey caption"
+        },
+        "evidenceClass": "official_named_photo_caption",
+        "permanent": false
+      },
+      "researchIds": [
+        "photo19"
+      ],
+      "review": {
+        "method": "source_text_and_options_editorial_review",
+        "checkedOn": "2026-09-22",
+        "reviewer": "ChatGPT; no independent second reviewer",
+        "choicesReviewed": true,
+        "textReviewed": true,
+        "textDemoEnabled": true,
+        "audioReviewed": false,
+        "audioAllowed": false,
+        "productionEnabled": true,
+        "evidenceLimit": "Text fact only. No voice, face identification, exact scene timing, or earliest-ever claim.",
+        "ownerReview": {
+          "verdict": "pass",
+          "on": "2026-09-23"
+        }
+      },
+      "sharedGroup": "event:2019-03-25:apple-card-2019",
+      "spoilerGroups": [
+        "event:2019-03-25:apple-card-2019"
+      ],
+      "presentation": "text_clues",
+      "editorialDifficulty": "standard",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "playback": null
+    },
+    {
+      "id": "keynote-history-20190325-arcade",
+      "event": {
+        "id": "evt_20190325",
+        "date": "2019-03-25",
+        "name": "Apple Special Event · March 2019"
+      },
+      "role": {
+        "zh": "介绍 Apple Arcade",
+        "en": "Apple Arcade unveiling"
+      },
+      "clues": {
+        "zh": [
+          "游戏也有了订阅入口。",
+          "服务名是 Apple Arcade。",
+          "谁负责这段介绍？"
+        ],
+        "en": [
+          "Games gain a subscription offering.",
+          "The service is Apple Arcade.",
+          "Who unveiled it?"
+        ]
+      },
+      "answer": "Ann Thai",
+      "distractors": [
+        "Jennifer Bailey",
+        "Roger Rosner",
+        "Peter Stern"
+      ],
+      "story": {
+        "zh": "官方图注将这次揭晓署名 Ann Thai。",
+        "en": "The unveiling caption names Ann Thai."
+      },
+      "sourceUrl": "https://www.apple.com/newsroom/2019/03/highlights-from-apples-keynote-event/",
+      "sourceLabel": "Apple Newsroom · March 2019 named photo captions",
+      "source": {
+        "url": "https://www.apple.com/newsroom/2019/03/highlights-from-apples-keynote-event/",
+        "label": {
+          "zh": "Apple Newsroom · March 2019 named photo captions",
+          "en": "Apple Newsroom · March 2019 named photo captions"
+        },
+        "locator": {
+          "zh": "Ann Thai caption",
+          "en": "Ann Thai caption"
+        },
+        "evidenceClass": "official_named_photo_caption",
+        "permanent": false
+      },
+      "researchIds": [
+        "photo19"
+      ],
+      "review": {
+        "method": "source_text_and_options_editorial_review",
+        "checkedOn": "2026-09-22",
+        "reviewer": "ChatGPT; no independent second reviewer",
+        "choicesReviewed": true,
+        "textReviewed": true,
+        "textDemoEnabled": true,
+        "audioReviewed": false,
+        "audioAllowed": false,
+        "productionEnabled": true,
+        "evidenceLimit": "Text fact only. No voice, face identification, exact scene timing, or earliest-ever claim.",
+        "ownerReview": {
+          "verdict": "pass",
+          "on": "2026-09-23"
+        }
+      },
+      "sharedGroup": "event:2019-03-25:arcade-2019",
+      "spoilerGroups": [
+        "event:2019-03-25:arcade-2019"
+      ],
+      "presentation": "text_clues",
+      "editorialDifficulty": "standard",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "playback": null
+    },
+    {
+      "id": "keynote-history-20190325-tv-app",
+      "event": {
+        "id": "evt_20190325",
+        "date": "2019-03-25",
+        "name": "Apple Special Event · March 2019"
+      },
+      "role": {
+        "zh": "介绍更新的 TV app",
+        "en": "Updated TV app presentation"
+      },
+      "clues": {
+        "zh": [
+          "电视应用迎来更新。",
+          "这里问的是 app，不是 TV+ 的共同宣布。",
+          "谁介绍预计五月推出的新版 TV app？"
+        ],
+        "en": [
+          "The TV app receives an update.",
+          "This asks about the app, not the joint TV+ announcement.",
+          "Who presented the new TV app planned for May?"
+        ]
+      },
+      "answer": "Peter Stern",
+      "distractors": [
+        "Roger Rosner",
+        "Jennifer Bailey",
+        "Ann Thai"
+      ],
+      "story": {
+        "zh": "该段官方图注署名 Peter Stern。",
+        "en": "This caption names Peter Stern."
+      },
+      "sourceUrl": "https://www.apple.com/newsroom/2019/03/highlights-from-apples-keynote-event/",
+      "sourceLabel": "Apple Newsroom · March 2019 named photo captions",
+      "source": {
+        "url": "https://www.apple.com/newsroom/2019/03/highlights-from-apples-keynote-event/",
+        "label": {
+          "zh": "Apple Newsroom · March 2019 named photo captions",
+          "en": "Apple Newsroom · March 2019 named photo captions"
+        },
+        "locator": {
+          "zh": "Peter Stern caption",
+          "en": "Peter Stern caption"
+        },
+        "evidenceClass": "official_named_photo_caption",
+        "permanent": false
+      },
+      "researchIds": [
+        "photo19"
+      ],
+      "review": {
+        "method": "source_text_and_options_editorial_review",
+        "checkedOn": "2026-09-22",
+        "reviewer": "ChatGPT; no independent second reviewer",
+        "choicesReviewed": true,
+        "textReviewed": true,
+        "textDemoEnabled": true,
+        "audioReviewed": false,
+        "audioAllowed": false,
+        "productionEnabled": true,
+        "evidenceLimit": "Text fact only. No voice, face identification, exact scene timing, or earliest-ever claim.",
+        "ownerReview": {
+          "verdict": "pass",
+          "on": "2026-09-23"
+        }
+      },
+      "sharedGroup": "event:2019-03-25:tv-app-2019",
+      "spoilerGroups": [
+        "event:2019-03-25:tv-app-2019"
+      ],
+      "presentation": "text_clues",
+      "editorialDifficulty": "standard",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "playback": null
     }
   ],
   "reviewNotes": {
-    "zh": "依据官方署名文字稿重写线索；同场干扰选项按具体段落排除。2020 未取得可核验官方署名正文，未选入。只核验发布会上的介绍或演示，不声称功能已交付。原研究包的原声题仍未启用。",
+    "zh": "依据官方署名文字稿重写线索；同场干扰选项按具体段落排除。2020 未取得可核验官方署名正文，未选入。只核验发布会上的介绍或演示，不声称功能已交付。原研究包的原声题仍未启用。2026-09-23 并入 one_more_tune_improvement_20260922 的 15 道人物题（2016–2019 五场活动）：文字与选项经过该包编辑检查、没有独立第二人复核，review 物件如实保留；来源见 apps/server/server/one-more-tune-history-sources.json。",
     "sourcesOpened": [
       "https://developer.apple.com/videos/play/wwdc2023/101/",
       "https://developer.apple.com/videos/play/wwdc2024/101/",
       "https://developer.apple.com/videos/play/wwdc2020/101/"
-    ]
+    ],
+    "en": "Clues are rewritten from officially signed written transcripts; same-event distractors are excluded by paragraph. The 2020 keynote had no verifiable signed text and is not included. Only what a keynote introduced or demonstrated is checked, never that a feature shipped. The earlier research package's audio questions remain off. On 2026-09-23 the 15 presenter questions prepared by one_more_tune_improvement_20260922 (five events, 2016-2019) were merged: they passed that package's editorial check and no independent second review, which their review objects still say, and their sources are recorded in apps/server/server/one-more-tune-history-sources.json."
   }
 }

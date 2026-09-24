@@ -1,7 +1,47 @@
+/* Barlow Condensed SemiBold, Latin subset (OFL; see
+   assets/fonts/barlow-condensed/README.md). It only ever sets the small
+   English terminal tags and the coverage figures, so the Latin subset is the
+   whole need, and it loads with this lazy sheet, never at boot. */
+@font-face {
+  font-family: "Barlow Condensed AIS6";
+  src: url("./assets/fonts/barlow-condensed/BarlowCondensed-SemiBold-latin.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+2013-2014, U+2018-201D, U+2022, U+2026;
+}
+
+/* The Talos-II terminal marks, scoped to this window. The base answer is
+   1-bit: the accent is ink, a gap is a 50% dither, no corner is cut and the
+   tags keep the era's mono face. */
 .endfield-terminal-window {
   container: endfield-terminal / size;
   width: min(1180px,calc(100vw - 64px));
   height: min(760px,calc(100vh - 74px));
+  --ef-accent: var(--ink);
+  --ef-accent-ink: var(--paper);
+  --ef-on-ink-mark: var(--endfield-selected-fg);
+  --ef-hazard: repeating-conic-gradient(var(--ink) 0 25%,var(--paper) 0 50%) 0 0 / 2px 2px;
+  --ef-flash-bg: transparent;
+  --ef-flash-outline: var(--ink);
+  --ef-cut: 0px;
+  --ef-label-font: var(--mono-font);
+  --ef-ease-out: cubic-bezier(0.23,1,0.32,1);
+}
+
+/* Colour eras (the aqua and liquid-glass families) carry Endfield's own
+   yellow. It is a family-level material answer kept here, in the lazy sheet,
+   because the eager theme files have no boot bytes to spare; the grey families
+   (classic, platinum, nextstep) stay on the ink answer above. */
+body:is([data-theme-family="aqua"],[data-theme-family="liquid-glass"]) .endfield-terminal-window {
+  --ef-accent: #ffe500;
+  --ef-accent-ink: #16171a;
+  --ef-on-ink-mark: #ffe500;
+  --ef-hazard: repeating-linear-gradient(-45deg,#ffe500 0 5px,#16171a 5px 10px);
+  --ef-flash-bg: rgba(255,229,0,0.5);
+  --ef-flash-outline: transparent;
+  --ef-cut: 8px;
+  --ef-label-font: "Barlow Condensed AIS6","DIN Condensed","Arial Narrow",var(--mono-font);
 }
 
 .endfield-status-bar {
@@ -18,7 +58,7 @@
 
 .endfield-terminal-pane {
   display: grid;
-  grid-template-columns: 228px minmax(0,1fr);
+  grid-template-columns: 236px minmax(0,1fr);
   min-height: 0;
   padding: 0;
   overflow: hidden;
@@ -43,16 +83,28 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  min-height: 42px;
-  padding: 7px 8px;
-  border-bottom: var(--endfield-surface-border);
+  min-height: 44px;
+  padding: 8px 10px;
 }
 
 .endfield-sidebar h3,.endfield-sidebar-head h3 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
   margin: 0;
   font-family: var(--title-font);
   font-size: 12px;
   line-height: 1.2;
+}
+
+/* The section marker: a short upright bar, the terminal's heading tab. */
+.endfield-sidebar h3::before {
+  flex: none;
+  width: 4px;
+  height: 12px;
+  background: var(--ef-accent);
+  box-shadow: 0 0 0 1px var(--ink);
+  content: "";
 }
 
 .endfield-new-session {
@@ -77,8 +129,7 @@
 }
 
 .endfield-match-section h3 {
-  padding: 8px;
-  border-bottom: var(--endfield-surface-border);
+  padding: 10px 10px 6px;
 }
 
 .endfield-recent-list,.endfield-match-list,.endfield-output {
@@ -99,67 +150,50 @@
   background-clip: padding-box;
 }
 
-.endfield-recent-item,.endfield-match {
+.endfield-recent-list {
+  padding: 0 6px 8px;
+}
+
+.endfield-recent-item {
+  position: relative;
   display: grid;
+  grid-template-columns: 38px minmax(0,1fr);
+  align-items: center;
   width: 100%;
   min-width: 0;
+  min-height: 34px;
+  padding: 6px 8px;
   border: 0;
-  border-bottom: var(--endfield-evidence-divider);
   border-radius: var(--item-radius);
   background: transparent;
   color: var(--ink);
   font: inherit;
   text-align: left;
   cursor: pointer;
-  transition: background var(--control-motion-fast-in) var(--control-motion-ease),color var(--control-motion-fast-in) var(--control-motion-ease),transform var(--control-motion-fast-in) var(--control-motion-ease);
+  transition: background-color var(--control-motion-fast-in) var(--control-motion-ease),color var(--control-motion-fast-in) var(--control-motion-ease);
 }
 
-.endfield-recent-item {
-  grid-template-columns: 24px minmax(0,1fr);
-  align-items: center;
-  min-height: 38px;
-  padding: 6px 8px 6px 5px;
-}
-
-.endfield-match {
-  grid-template-columns: 24px minmax(0,1fr);
-  grid-template-rows: auto auto;
-  padding: 7px 8px 7px 5px;
-}
-
-.endfield-recent-item>span,.endfield-match>span {
-  display: grid;
-  grid-row: 1 / -1;
-  place-items: center;
-  width: 20px;
-  height: 20px;
-  border: var(--endfield-index-border);
-  background: var(--endfield-index-bg);
+.endfield-recent-item>span {
   color: var(--endfield-muted);
+  font-family: var(--mono-font);
   font-size: 10px;
-  text-align: center;
+  letter-spacing: 0.02em;
 }
 
-.endfield-recent-item b,.endfield-match b,.endfield-match small {
+.endfield-recent-item b {
   min-width: 0;
   overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.endfield-recent-item b,.endfield-match b {
-  font-size: 11px;
+  font-family: var(--text-font);
+  font-size: 11.5px;
   line-height: 1.3;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.endfield-match small {
-  color: var(--endfield-muted);
-  font-size: 9px;
-  white-space: nowrap;
-}
-
-.endfield-recent-item:hover:not(:disabled),.endfield-match:hover:not(:disabled) {
-  background: var(--endfield-hover-bg);
+@media (hover:hover) and (pointer:fine) {
+  .endfield-recent-item:hover:not(:disabled),.endfield-source-group:hover {
+    background: var(--endfield-hover-bg);
+  }
 }
 
 .endfield-recent-item.is-selected {
@@ -167,27 +201,72 @@
   color: var(--endfield-selected-fg);
 }
 
+/* The selected query's number turns to the signal colour, and a 3px edge of
+   it runs down the row: the game's own marker for the tab you are on. */
 .endfield-recent-item.is-selected>span {
-  color: inherit;
+  color: var(--ef-on-ink-mark);
 }
 
-.endfield-recent-item:focus-visible,.endfield-match:focus-visible {
+.endfield-recent-item.is-selected::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--ef-on-ink-mark);
+  content: "";
+}
+
+.endfield-recent-item:focus-visible {
   outline: var(--control-focus-outline);
   outline-offset: -3px;
 }
 
-.endfield-recent-item:active:not(:disabled),.endfield-match:active:not(:disabled) {
-  transform: translateY(1px);
-}
-
-.endfield-recent-item:disabled,.endfield-match:disabled {
+.endfield-recent-item:disabled {
   cursor: wait;
   opacity: var(--control-disabled-opacity);
 }
 
+/* One bar per kind, as long as its share of the largest kind. */
+.endfield-source-group {
+  display: grid;
+  grid-template-columns: 64px minmax(0,1fr) 22px;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  font-family: var(--text-font);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.endfield-source-group:focus-visible {
+  outline: var(--control-focus-outline);
+  outline-offset: -3px;
+}
+
+.endfield-source-group-bar {
+  position: relative;
+  height: 6px;
+  background: var(--endfield-hover-bg);
+}
+
+.endfield-source-group-bar>i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--ink);
+}
+
+.endfield-source-group.is-gap .endfield-source-group-bar>i {
+  background: var(--ef-hazard);
+}
+
+.endfield-source-group small {
+  color: var(--endfield-muted);
+  font-family: var(--mono-font);
+  text-align: right;
+}
+
 .endfield-empty {
   margin: 0;
-  padding: 10px;
+  padding: 4px 10px 10px;
   color: var(--endfield-muted);
   font-size: 10px;
   line-height: 1.45;
@@ -205,28 +284,46 @@
   display: grid;
   align-content: start;
   gap: 12px;
-  padding: 14px;
-  scroll-padding: 14px;
+  padding: 16px;
+  scroll-padding: 16px;
 }
 
-.endfield-answer,.endfield-evidence-list {
+.endfield-answer {
+  display: grid;
+  gap: 14px;
   min-width: 0;
+  padding: 18px 20px;
+  padding: clamp(16px,3cqi,28px);
   border: var(--endfield-surface-border);
   border-radius: var(--endfield-surface-radius);
   background: var(--endfield-surface-bg);
   box-shadow: var(--endfield-surface-shadow);
-}
-
-.endfield-answer {
-  padding: 18px 20px;
-  padding: clamp(16px,3cqi,28px);
   font-family: var(--text-font);
   font-size: 14px;
   line-height: 1.65;
 }
 
+.endfield-answer>* {
+  margin: 0;
+}
+
+/* A new answer, a search or the welcome arrives in a short cascade. It only
+   happens when the whole output is replaced, so it is an occasional motion,
+   and keyboard-driven list moves never trigger it. */
+.endfield-answer:not(.endfield-loading)>* {
+  animation: endfield-rise 220ms var(--ef-ease-out) both;
+}
+
+.endfield-answer>:nth-child(2) { animation-delay: 30ms; }
+.endfield-answer>:nth-child(3) { animation-delay: 60ms; }
+.endfield-answer>:nth-child(4) { animation-delay: 90ms; }
+.endfield-answer>:nth-child(n+5) { animation-delay: 120ms; }
+
 .endfield-kicker {
-  margin: 0 0 5px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
   color: var(--endfield-muted);
   font-family: var(--mono-font);
   font-size: 10px;
@@ -234,14 +331,36 @@
   text-transform: uppercase;
 }
 
+.endfield-kicker-tag {
+  padding: 3px 6px 2px;
+  background: var(--ef-accent);
+  box-shadow: 0 0 0 1px var(--ink);
+  color: var(--ef-accent-ink);
+  font-family: var(--ef-label-font);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  line-height: 1;
+}
+
 .endfield-answer h3 {
-  max-width: 30ch;
-  margin: 0 0 12px;
+  max-width: 24ch;
+  margin: -6px 0 0;
   font-family: var(--title-font);
   font-size: 22px;
-  font-size: clamp(18px,2.4cqi,26px);
-  line-height: 1.18;
+  font-size: clamp(19px,2.6cqi,28px);
+  line-height: 1.2;
   text-wrap: balance;
+}
+
+.endfield-tagline {
+  margin-top: -10px;
+  color: var(--endfield-muted);
+  font-family: var(--ef-label-font);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
 }
 
 .endfield-answer .markdown-body {
@@ -272,178 +391,495 @@
   background: var(--endfield-quiet-bg);
 }
 
-/* Same number, same mark: the inline chip is the evidence index scaled down to
-   sit in a line of prose, not a second visual idea for the same reference. */
-.endfield-inline-citation {
-  display: inline-grid;
-  place-items: center;
-  min-width: 17px;
-  height: 17px;
-  margin-inline: 2px;
-  padding: 0 3px;
-  border: var(--endfield-index-border);
-  border-radius: var(--endfield-index-radius);
-  background: var(--endfield-index-bg);
-  color: var(--endfield-ink, var(--ink));
-  font-family: var(--mono-font);
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 1;
-  vertical-align: 1px;
-  cursor: pointer;
-}
-
-.endfield-inline-citation:hover,
-.endfield-inline-citation:focus-visible {
-  background: var(--endfield-hover-bg);
-  color: var(--endfield-ink, var(--ink));
-}
-
 .endfield-answer .markdown-body>:last-child {
   margin-bottom: 0;
 }
 
-.endfield-welcome {
-  min-height: 280px;
-  min-height: min(360px,56cqh);
-  align-content: center;
+/* Same number, same mark: the inline chip, the evidence index and the
+   sidebar's counts are one sign, so a reader learns it once. */
+.endfield-inline-citation,.endfield-evidence-index {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 3px;
+  border: var(--endfield-index-border);
+  border-radius: var(--endfield-index-radius);
+  background: var(--ef-accent);
+  color: var(--ef-accent-ink);
+  font-family: var(--mono-font);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
 }
 
-.endfield-welcome>p:not(.endfield-kicker) {
-  max-width: 64ch;
+.endfield-inline-citation {
+  margin-inline: 2px;
+  vertical-align: 1px;
+  cursor: pointer;
+  transition: transform 120ms var(--ef-ease-out);
+}
+
+.endfield-inline-citation:active {
+  transform: scale(0.92);
+}
+
+.endfield-inline-citation:focus-visible {
+  outline: var(--control-focus-outline);
+  outline-offset: 2px;
+}
+
+/* Welcome */
+.endfield-welcome>p:not(.endfield-kicker,.endfield-tagline) {
+  max-width: 60ch;
+}
+
+.endfield-coverage {
+  display: grid;
+  grid-template-columns: repeat(4,minmax(0,1fr));
+  max-width: 640px;
+  border: var(--endfield-surface-border);
+  border-radius: var(--endfield-surface-radius);
+}
+
+.endfield-coverage>div {
+  display: grid;
+  gap: 3px;
+  padding: 9px 12px 8px;
+}
+
+.endfield-coverage>div+div {
+  border-left: var(--endfield-evidence-divider);
+}
+
+.endfield-coverage dt {
+  font-family: var(--ef-label-font);
+  font-size: 24px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.endfield-coverage dd {
   margin: 0;
+  color: var(--endfield-muted);
+  font-size: 11px;
+  line-height: 1.3;
 }
 
-.endfield-suggestions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
-  margin-top: 18px;
+.endfield-question-list {
+  display: grid;
+  gap: 6px;
+  max-width: 640px;
 }
 
-.endfield-loading {
-  opacity: 0.78;
+.endfield-question-list .btn {
+  display: grid;
+  grid-template-columns: 24px minmax(0,1fr) auto;
+  gap: 8px;
+  align-items: center;
+  justify-items: start;
+  text-align: left;
+  white-space: normal;
 }
 
-.endfield-loading::after {
-  width: 42px;
-  height: 2px;
-  margin-top: 14px;
-  background: var(--ink);
-  content: "";
-  animation: endfield-query-pulse 900ms ease-in-out infinite alternate;
+.endfield-question-no {
+  color: var(--endfield-muted);
+  font-family: var(--mono-font);
+  font-size: 10px;
+}
+
+/* Searching: a hazard band runs at constant speed (constant motion is
+   linear) above the three things the terminal is actually doing. */
+.endfield-scan {
+  position: relative;
+  max-width: 520px;
+  height: 8px;
+  overflow: hidden;
+  border: 1px solid var(--ink);
+}
+
+.endfield-scan>i {
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  background: var(--ef-hazard);
+  animation: endfield-scan 1.1s linear infinite;
+}
+
+.endfield-steps {
+  display: grid;
+  gap: 6px;
+  max-width: 560px;
+  padding: 0;
+  counter-reset: endfield-step;
+  font-family: var(--mono-font);
+  font-size: 11px;
+  line-height: 1.4;
+  list-style: none;
+}
+
+.endfield-steps li {
+  display: grid;
+  grid-template-columns: 18px minmax(0,1fr) auto;
+  gap: 8px;
+  counter-increment: endfield-step;
+}
+
+.endfield-steps li::before {
+  color: var(--endfield-muted);
+  content: counter(endfield-step);
+}
+
+.endfield-steps b {
+  color: var(--endfield-muted);
+  font-weight: 400;
+  text-align: right;
 }
 
 .endfield-error>p {
   max-width: 62ch;
 }
 
-.endfield-evidence-list>h3 {
-  margin: 0;
-  padding: 10px 12px;
-  border-bottom: var(--endfield-evidence-divider);
-  font-family: var(--title-font);
-  font-size: 13px;
-}
-
-.endfield-evidence {
-  scroll-margin: 14px;
-  border-bottom: var(--endfield-evidence-divider);
-}
-
-.endfield-evidence:last-child {
-  border-bottom: 0;
-}
-
-.endfield-evidence:focus {
-  outline: var(--control-focus-outline);
-  outline-offset: -3px;
-}
-
-.endfield-evidence summary {
+/* The story line the answer sits on. */
+.endfield-track {
   display: grid;
-  grid-template-columns: auto minmax(0,1fr) auto;
-  align-items: center;
-  gap: 8px;
-  min-height: 38px;
-  padding: 7px 10px;
-  cursor: pointer;
+  gap: 6px;
+}
+
+.endfield-track-label {
+  color: var(--endfield-muted);
+  font-family: var(--mono-font);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
+.endfield-track ol {
+  display: grid;
+  grid-auto-columns: minmax(0,1fr);
+  grid-auto-flow: column;
+  gap: 3px;
+  margin: 0;
+  padding: 0;
   list-style: none;
 }
 
-.endfield-evidence summary::-webkit-details-marker {
-  display: none;
-}
-
-.endfield-evidence summary:hover {
-  background: var(--endfield-hover-bg);
-}
-
-.endfield-evidence-index {
-  display: grid;
-  place-items: center;
-  min-width: 22px;
-  width: auto;
-  height: 22px;
-  padding-inline: 4px;
-  border: var(--endfield-index-border);
-  border-radius: var(--endfield-index-radius);
-  background: var(--endfield-index-bg);
-  font-family: var(--mono-font);
+.endfield-track-stop {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+  padding-top: 6px;
+  border-top: 4px solid var(--ink);
   font-size: 11px;
+  line-height: 1.3;
+}
+
+.endfield-track-stop span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.endfield-track-stop b {
+  flex: none;
+  min-width: 16px;
+  padding: 0 3px;
+  border: var(--endfield-index-border);
+  font-family: var(--mono-font);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  line-height: 14px;
+  text-align: center;
+}
+
+.endfield-track-stop b[data-count="0"] {
+  border-style: dashed;
+  color: var(--endfield-muted);
+  font-weight: 400;
+}
+
+.endfield-track-stop.is-reached,.endfield-track-stop.is-current {
+  border-top-color: var(--ef-accent);
+  box-shadow: inset 0 1px 0 var(--ink);
+}
+
+.endfield-track-stop.is-current span {
+  font-weight: 700;
+}
+
+.endfield-track-stop.is-ahead {
+  border-top-style: dashed;
+  border-top-color: var(--endfield-muted);
+  color: var(--endfield-muted);
+}
+
+.endfield-track-note {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 0;
+  color: var(--endfield-muted);
+  font-family: var(--mono-font);
+  font-size: 10px;
+}
+
+.endfield-track-note .is-gap::before {
+  display: inline-block;
+  width: 10px;
+  height: 8px;
+  margin-right: 5px;
+  background: var(--ef-hazard);
+  vertical-align: -1px;
+  content: "";
+}
+
+/* Evidence: one group per entry, its lines as a transcript. */
+.endfield-sources {
+  display: grid;
+  gap: 10px;
+}
+
+.endfield-mission {
+  position: relative;
+  min-width: 0;
+  border: var(--endfield-surface-border);
+  border-radius: var(--endfield-surface-radius);
+  background: var(--endfield-surface-bg);
+}
+
+/* The corner tick: Endfield's panels carry a small cut mark top-right. */
+.endfield-mission::after {
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  border: 6px solid transparent;
+  border-top-color: var(--ef-accent);
+  border-right-color: var(--ef-accent);
+  border-top-right-radius: var(--endfield-surface-radius);
+  content: "";
+}
+
+.endfield-source-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  min-width: 0;
+  padding: 8px 12px;
+  border-bottom: var(--endfield-evidence-divider);
+  color: var(--endfield-muted);
+  font-family: var(--mono-font);
+  font-size: 10px;
+}
+
+.endfield-source-kind {
+  padding: 3px 5px;
+  background: var(--endfield-selected-bg);
+  color: var(--endfield-selected-fg);
+  font-family: var(--text-font);
+  font-size: 10.5px;
   font-weight: 700;
   line-height: 1;
 }
 
-.endfield-evidence-title {
-  min-width: 0;
-  overflow: hidden;
+.endfield-mission-title {
+  color: var(--ink);
   font-family: var(--text-font);
-  font-size: 12px;
+  font-size: 13px;
+}
+
+.endfield-mission-link {
+  margin-left: auto;
+}
+
+.endfield-source-link {
+  color: var(--ink);
+  font-family: var(--mono-font);
+  text-decoration: underline;
+}
+
+.endfield-source-link::after {
+  content: " \2197";
+}
+
+.endfield-source-link:focus-visible {
+  outline: var(--control-focus-outline);
+  outline-offset: 1px;
+}
+
+.endfield-source {
+  position: relative;
+  display: grid;
+  grid-template-columns: 26px minmax(56px,max-content) minmax(0,1fr) auto;
+  gap: 10px;
+  align-items: baseline;
+  padding: 6px 12px 6px 10px;
+  border-top: var(--endfield-evidence-divider);
+  scroll-margin: 16px;
+  transition: background-color 600ms ease;
+}
+
+.endfield-source:first-child {
+  border-top: 0;
+}
+
+.endfield-source:focus {
+  outline: var(--control-focus-outline);
+  outline-offset: -3px;
+}
+
+/* A cited line lights up once when the reader jumps to it, then fades. */
+.endfield-source.is-flash {
+  background: var(--ef-flash-bg);
+  outline: 2px solid var(--ef-flash-outline);
+  outline-offset: -3px;
+  transition-duration: 0ms;
+}
+
+.endfield-source-speaker {
+  max-width: 9em;
+  overflow: hidden;
+  color: var(--ink);
+  font-family: var(--text-font);
+  font-size: 11.5px;
   font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.endfield-evidence-speaker {
-  color: var(--endfield-muted);
-  font-size: 10px;
+/* The name is written once per turn, as a transcript would; it stays in the
+   tree for screen readers. */
+.endfield-source.is-continued .endfield-source-speaker {
+  opacity: 0;
 }
 
-.endfield-evidence-body {
-  padding: 4px 12px 12px 40px;
-  font-family: var(--text-font);
-  font-size: 12px;
-  line-height: 1.55;
-}
-
-.endfield-evidence-body p {
+.endfield-source-quote {
   margin: 0;
+  font-family: var(--text-font);
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-line;
 }
 
-/* Context lines are the surrounding transcript, so they read as a transcript:
-   the speaker becomes its own small tag above the line instead of running into
-   it, and the line keeps full ink — it is the archive text the answer stands
-   on, not a footnote. */
-.endfield-evidence-body .endfield-context {
-  margin: 6px 0 0;
-  padding: 4px 8px 5px 9px;
-  border-left: var(--endfield-context-rule);
-  border-radius: var(--endfield-context-radius);
-  background: var(--endfield-context-bg);
-}
-
-.endfield-context-speaker {
-  display: block;
+.endfield-source-origin {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
   color: var(--endfield-muted);
   font-family: var(--mono-font);
   font-size: 10px;
-  font-style: normal;
-  letter-spacing: 0.04em;
+  white-space: nowrap;
 }
 
-.endfield-context-line {
-  display: block;
+/* Fourteen clip buttons in a column shout. With a pointer the button waits
+   for the line to be hovered or focused (it stays in the tab order, and
+   focusing it shows it); on touch it is always there. */
+@media (hover:hover) and (pointer:fine) {
+  .endfield-source:not(:hover,:focus-within) .endfield-source-origin .mini-btn {
+    opacity: 0;
+  }
+}
+
+.endfield-source.is-missing {
+  color: var(--endfield-muted);
+}
+
+.endfield-source.is-missing::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--ef-hazard);
+  content: "";
+}
+
+.endfield-source.is-missing .endfield-evidence-index {
+  background: transparent;
+  color: var(--endfield-muted);
+}
+
+.endfield-stamp {
+  display: inline-block;
+  padding: 0 4px;
+  border: 1px solid var(--endfield-muted);
+  border-radius: 2px;
+  font-family: var(--mono-font);
+  font-size: 10px;
+  line-height: 15px;
+  white-space: nowrap;
+}
+
+.endfield-stamp.is-gap {
+  border-style: dashed;
+  color: var(--endfield-muted);
+}
+
+/* Verdict and gap: a label cell and the sentence. */
+.endfield-verdict {
+  display: grid;
+  grid-template-columns: 64px minmax(0,1fr);
+  border: var(--endfield-surface-border);
+  border-radius: var(--endfield-surface-radius);
+  overflow: hidden;
+  background: var(--endfield-surface-bg);
+}
+
+.endfield-verdict+.endfield-verdict {
+  margin-top: -8px;
+}
+
+.endfield-verdict-label {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  padding: 11px 10px;
+  background: var(--endfield-selected-bg);
+  color: var(--endfield-selected-fg);
+}
+
+.endfield-verdict-label b {
+  font-size: 13px;
+  line-height: 1;
+}
+
+.endfield-tag {
+  color: var(--ef-on-ink-mark);
+  font-family: var(--ef-label-font);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  line-height: 1;
+}
+
+.endfield-verdict.is-gap .endfield-verdict-label {
+  border-right: 1px dashed var(--endfield-muted);
+  background: transparent;
+  color: var(--ink);
+}
+
+.endfield-verdict.is-gap .endfield-tag {
+  color: var(--endfield-muted);
+}
+
+.endfield-verdict-body {
+  min-width: 0;
+  padding: 10px 14px;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.endfield-verdict-body>* {
+  margin: 0;
+}
+
+.endfield-fold {
+  padding: 6px 10px;
+  border: 1px dashed var(--endfield-muted);
+  color: var(--endfield-muted);
+  font-family: var(--mono-font);
+  font-size: 10px;
 }
 
 .endfield-command-bar {
@@ -456,11 +892,24 @@
 }
 
 .endfield-query-field {
+  display: flex;
+  align-items: center;
+  gap: 7px;
   min-width: 0;
 }
 
+.endfield-query-field::before {
+  flex: none;
+  font-family: var(--mono-font);
+  font-size: 13px;
+  font-weight: 700;
+  content: ">";
+}
+
 .endfield-query-field input {
+  flex: 1 1 auto;
   width: 100%;
+  min-width: 0;
   min-height: var(--control-hit-target);
 }
 
@@ -468,14 +917,115 @@
   cursor: wait;
 }
 
-@keyframes endfield-query-pulse{
+/* The pane's one signal-coloured control. In colour eras it is Endfield's
+   cut-corner button; in the grey eras the cut is 0 and the accent is ink, so
+   the era's own default button stands. */
+.endfield-command-bar .btn.default {
+  transition: transform 120ms var(--ef-ease-out);
+}
+
+.endfield-command-bar .btn.default:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+body:is([data-theme-family="aqua"],[data-theme-family="liquid-glass"]) .endfield-command-bar .btn.default {
+  padding-right: calc(12px + var(--ef-cut));
+  border: 1px solid #16171a;
+  border-radius: 0;
+  background: var(--ef-accent);
+  box-shadow: none;
+  color: var(--ef-accent-ink);
+  clip-path: polygon(0 0,calc(100% - var(--ef-cut)) 0,100% var(--ef-cut),100% 100%,0 100%);
+}
+
+/* Status bar: the archive version stands as a plate at the left end. */
+.endfield-stamps {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+}
+
+.endfield-stamps>.endfield-stamp:first-child:not(.is-gap) {
+  padding: 0 7px;
+  border-color: var(--ink);
+  background: var(--ef-accent);
+  color: var(--ef-accent-ink);
+  font-family: var(--ef-label-font);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+.endfield-progress {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--mono-font);
+  font-size: 10px;
+}
+
+.endfield-status-bar .endfield-progress .select-wrap {
+  /* The base bar rule clips every span (overflow hidden + ellipsis), but the
+     System 6 select harness draws its popup below the wrap as an absolute
+     descendant — clipping the wrap would cut the menu off. Let the wrap's own
+     box stay inline; only the inner button ellipsizes. */
+  overflow: visible;
+  white-space: normal;
+}
+
+.endfield-status-bar .endfield-progress .system-select-button {
+  box-sizing: border-box;
+  width: auto;
+  min-width: 128px;
+  max-width: 190px;
+  min-height: 19px;
+  padding: 0 26px 0 6px;
+  /* Keep the compact bar's own monospaced face rather than letting an era
+     re-dress the button at control size (Aqua's .system-select-button is
+     20px/13px Lucida; that would break out of the 28px status row and fight
+     the surrounding mono text). */
+  font: inherit;
+  font-weight: 700;
+}
+
+.endfield-status-bar .endfield-progress .select-wrap select {
+  box-sizing: border-box;
+  width: auto;
+  min-width: 128px;
+  max-width: 190px;
+  min-height: 19px;
+  padding: 0 26px 0 6px;
+  font: inherit;
+  font-weight: 700;
+}
+
+@keyframes endfield-rise{
   from {
-    transform: scaleX(0.35);
-    transform-origin: left;
+    opacity: 0;
+    transform: translateY(6px);
   }
   to {
-    transform: scaleX(1);
-    transform-origin: left;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes endfield-scan{
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
+
+@keyframes endfield-fade{
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
 
@@ -489,19 +1039,15 @@
   }
   .endfield-sidebar {
     grid-row: 2;
-    grid-template-columns: minmax(0,0.8fr) minmax(0,1.2fr);
+    grid-template-columns: 1fr;
     grid-template-rows: auto minmax(0,1fr);
     border-top: var(--endfield-surface-border);
     border-right: 0;
   }
-  .endfield-sidebar-head {
-    grid-column: 1 / -1;
-  }
   .endfield-match-section {
-    border-top: 0;
-    border-left: var(--endfield-surface-border);
+    display: none;
   }
-  .endfield-stamps,
+  .endfield-stamps>.endfield-stamp:not(:first-child),
   .endfield-status-bar > span:last-child {
     display: none;
   }
@@ -509,21 +1055,27 @@
     flex: 1 1 auto;
     justify-content: space-between;
   }
+  .endfield-coverage {
+    grid-template-columns: repeat(2,minmax(0,1fr));
+  }
+  .endfield-coverage>div:nth-child(3) {
+    border-left: 0;
+  }
+  .endfield-coverage>div:nth-child(n+3) {
+    border-top: var(--endfield-evidence-divider);
+  }
   .endfield-source {
-    grid-template-columns: 22px minmax(0,1fr);
+    grid-template-columns: 24px minmax(0,1fr);
+    gap: 2px 8px;
   }
-  .endfield-source .mini-btn {
+  .endfield-source-speaker,.endfield-source-quote,.endfield-source-origin {
     grid-column: 2;
-    grid-row: auto;
-    justify-self: end;
-    margin-top: 6px;
   }
-  .endfield-sidebar {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto minmax(0,1fr);
-  }
-  .endfield-match-section {
+  .endfield-source.is-continued .endfield-source-speaker {
     display: none;
+  }
+  .endfield-track-stop span {
+    font-size: 10px;
   }
 }
 
@@ -541,208 +1093,34 @@
   .endfield-command-bar button {
     min-height: 44px;
   }
-  .endfield-evidence summary {
-    grid-template-columns: auto minmax(0,1fr);
+  .endfield-track ol {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(2,minmax(0,1fr));
   }
-  .endfield-evidence-speaker {
-    grid-column: 2;
+  .endfield-verdict {
+    grid-template-columns: 1fr;
   }
-  .endfield-evidence-body {
-    padding-left: 12px;
+  .endfield-verdict-label {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
   }
 }
 
 @media(prefers-reduced-motion:reduce){
-  .endfield-loading::after {
+  .endfield-scan>i {
+    width: 100%;
+    opacity: 0.6;
     animation: none;
   }
-  .endfield-recent-item,.endfield-match {
+  .endfield-answer:not(.endfield-loading)>* {
+    animation: endfield-fade 160ms ease both;
+    animation-delay: 0ms;
+  }
+  .endfield-recent-item,.endfield-source,.endfield-inline-citation,.endfield-command-bar .btn.default {
     transition-duration: 0.01ms;
   }
-  .endfield-recent-item:active:not(:disabled),.endfield-match:active:not(:disabled) {
+  .endfield-inline-citation:active,.endfield-command-bar .btn.default:active:not(:disabled) {
     transform: none;
   }
-}
-
-.endfield-stamps {
-  display: inline-flex;
-  gap: 6px;
-  align-items: center;
-  min-width: 0;
-}
-.endfield-stamp {
-  display: inline-block;
-  padding: 0 4px;
-  border: 1px solid var(--endfield-muted);
-  border-radius: 2px;
-  font-family: var(--mono-font);
-  font-size: 10px;
-  line-height: 15px;
-  white-space: nowrap;
-}
-.endfield-stamp.is-gap {
-  border-style: dashed;
-  color: var(--endfield-muted);
-}
-.endfield-progress {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-family: var(--mono-font);
-  font-size: 10px;
-}
-.endfield-status-bar .endfield-progress .select-wrap {
-  /* The base bar rule clips every span (overflow hidden + ellipsis), but the
-     System 6 select harness draws its popup below the wrap as an absolute
-     descendant — clipping the wrap would cut the menu off. Let the wrap's own
-     box stay inline; only the inner button ellipsizes. */
-  overflow: visible;
-  white-space: normal;
-}
-.endfield-status-bar .endfield-progress .system-select-button {
-  box-sizing: border-box;
-  width: auto;
-  min-width: 128px;
-  max-width: 190px;
-  min-height: 19px;
-  padding: 0 26px 0 6px;
-  /* Keep the compact bar's own monospaced face rather than letting an era
-     re-dress the button at control size (Aqua's .system-select-button is
-     20px/13px Lucida; that would break out of the 28px status row and fight
-     the surrounding mono text). */
-  font: inherit;
-  font-weight: 700;
-}
-.endfield-status-bar .endfield-progress .select-wrap select {
-  box-sizing: border-box;
-  width: auto;
-  min-width: 128px;
-  max-width: 190px;
-  min-height: 19px;
-  padding: 0 26px 0 6px;
-  font: inherit;
-  font-weight: 700;
-}
-.endfield-sources {
-  display: grid;
-  gap: 8px;
-  margin-top: 8px;
-}
-.endfield-source {
-  display: grid;
-  grid-template-columns: 22px minmax(0,1fr) auto;
-  gap: 8px;
-  align-items: start;
-  padding: 9px 10px;
-  border: var(--endfield-surface-border);
-  border-radius: var(--endfield-surface-radius);
-  background: var(--endfield-surface-bg);
-  scroll-margin: 14px;
-}
-.endfield-source:focus {
-  outline: var(--control-focus-outline);
-  outline-offset: -3px;
-}
-.endfield-source.is-missing {
-  border-style: dashed;
-  background: transparent;
-  color: var(--endfield-muted);
-}
-.endfield-source-head {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 6px;
-  align-items: center;
-  min-width: 0;
-  font-family: var(--mono-font);
-  font-size: 10px;
-  color: var(--endfield-muted);
-}
-.endfield-source-kind {
-  padding: 0 4px;
-  border: 1px solid currentColor;
-  border-radius: 2px;
-  font-weight: 700;
-  color: var(--endfield-ink, var(--ink));
-}
-.endfield-source-origin {
-  /* The quote's own column: auto-placement would drop this row under the index
-     stamp, because the clip button already holds column 3 for two rows. */
-  grid-column: 2;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 8px;
-  align-items: center;
-  margin: 5px 0 0;
-  font-family: var(--mono-font);
-  font-size: 10px;
-  color: var(--endfield-muted);
-}
-.endfield-source-link {
-  color: inherit;
-  text-decoration: underline;
-}
-.endfield-source-link:focus-visible {
-  outline: var(--control-focus-outline);
-  outline-offset: 1px;
-}
-.endfield-source-quote {
-  grid-column: 2;
-  margin: 4px 0 0;
-  font-family: var(--text-font);
-  font-size: 12px;
-  line-height: 1.55;
-}
-.endfield-source .mini-btn {
-  grid-column: 3;
-  grid-row: 1 / span 2;
-  align-self: start;
-}
-.endfield-verdict {
-  margin: 14px 0 0;
-  font-family: var(--text-font);
-  font-size: 13px;
-  line-height: 1.6;
-}
-.endfield-verdict b {
-  display: inline-block;
-  min-width: 3em;
-  font-family: var(--mono-font);
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  color: var(--endfield-muted);
-}
-.endfield-fold {
-  margin-top: 10px;
-  padding: 6px 10px;
-  border: 1px dashed var(--endfield-muted);
-  color: var(--endfield-muted);
-  font-family: var(--mono-font);
-  font-size: 10px;
-}
-.endfield-question-list {
-  display: grid;
-  gap: 6px;
-  margin-top: 14px;
-}
-.endfield-question-list .btn {
-  display: grid;
-  grid-template-columns: minmax(0,1fr) auto;
-  gap: 8px;
-  align-items: center;
-  justify-items: start;
-  text-align: left;
-  white-space: normal;
-}
-.endfield-source-group {
-  display: grid;
-  grid-template-columns: minmax(0,1fr) auto;
-  padding: 7px 8px;
-  border-bottom: var(--endfield-evidence-divider);
-  font-size: 11px;
-  cursor: pointer;
-}
-.endfield-source-group small {
-  color: var(--endfield-muted);
-  font-family: var(--mono-font);
 }

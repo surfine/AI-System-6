@@ -15,6 +15,35 @@
 const { readJsonBody, sendJson } = require("../lib/http.js");
 const deck = require("../one-more-tune.js");
 
+// Which authority answers is the request's own domain, and the list is closed:
+// the music deck (the round this endpoint was built for, asked for by sending
+// no domain at all), the presenter relay, the keynote line, and the era-
+// research edition. A domain this host does not have is refused. It used to
+// fall through to the music deck -- a request for a game that does not exist
+// here was answered with ten songs, which is not a refusal, it is a different
+// game, and the player had no way to tell the two apart.
+const ROUND_AUTHORITIES = Object.freeze({
+  "": "music",
+  music: "music",
+  keynote_person: "keynote_person",
+  keynote_context: "keynote_context",
+  interface_history: "interface_history",
+});
+
+function roundAuthority(domain) {
+  const key = domain === undefined || domain === null ? "" : String(domain).trim();
+  return Object.hasOwn(ROUND_AUTHORITIES, key) ? ROUND_AUTHORITIES[key] : null;
+}
+
+function refuseUnknownDomain(res) {
+  sendJson(res, 400, {
+    code: "unknown_domain",
+    error: "This host plays the music deck, the presenter relay, the keynote line and the era-research edition. "
+      + "Send one of those domains, or none at all for the deck.",
+    domains: ["music", "keynote_person", "keynote_context", "interface_history"],
+  });
+}
+
 function pathnameOf(req) {
   try {
     return new URL(req.url || "/", `http://${req.headers.host || "localhost"}`).pathname;
@@ -34,17 +63,56 @@ async function handleOneMoreTuneRound(req, res) {
   } catch {
     body = {};
   }
-  // Three authorities, one route each way: the music deck, the presenter relay,
-  // and the keynote-line round. Which one answers is the request's own domain,
-  // so the browser never chooses a mode the server does not have.
-  const round = body?.domain === "keynote_person"
-    ? require("../one-more-tune-keynote.js").startRound()
-    : body?.domain === "keynote_context"
-      ? require("../one-more-line.js").startRound()
-      : await deck.startRound({
-    challengeId: String(body?.challengeId || ""),
-    questionIndex: Number.isInteger(body?.questionIndex) ? body.questionIndex : -1,
-  });
+  // One authority each, read from the closed list: the music deck, the
+  // presenter relay, the keynote line, and the era-research edition (whose
+  // questions are written but not yet reviewed, so it answers with that fact
+  // instead of with questions). The domain is checked before any of them runs,
+  // so an unknown one is a refusal rather than a silently different game.
+  const authority = roundAuthority(body?.domain);
+  if (!authority) {
+    refuseUnknownDomain(res);
+    return;
+  }
+  let round;
+  try {
+    round = authority === "keynote_person"
+      ? require("../one-more-tune-keynote.js").startRound()
+      : authority === "keynote_context"
+        ? require("../one-more-line.js").startRound()
+        : authority === "interface_history"
+          ? require("../one-more-tune-interface-history.js").startRound()
+          : await deck.startRound({
+            challengeId: String(body?.challengeId || ""),
+            questionIndex: Number.isInteger(body?.questionIndex) ? body.questionIndex : -1,
+          });
+  } catch (error) {
+    // A text edition that cannot compose an honest round (its bank cannot meet
+    // its own quotas any more) refuses with a code. That is an unavailable
+    // round, not a crash, and the caller gets neither the bank's contents nor a
+    // stack: the selector's code is the whole answer.
+    if (error?.name === "SelectionError") {
+      sendJson(res, 503, {
+        code: error.code,
+        domain: authority,
+        error: "This edition cannot open a set right now.",
+      });
+      return;
+    }
+    throw error;
+  }
+  // An edition whose questions are drafted but not reviewed says exactly that:
+  // how many exist, how many may be served (none), and that it is review and
+  // not absence that stands in the way.
+  if (round.mode === "unavailable" && round.code === "questions_not_reviewed") {
+    sendJson(res, 503, {
+      code: round.code,
+      domain: round.domain || "interface_history",
+      error: "This edition's questions are written but have not been through review, so it does not open yet.",
+      drafted: round.drafted ?? 0,
+      available: round.available ?? 0,
+    });
+    return;
+  }
   // A set that has gone stale says so; it never quietly becomes a new round.
   if (round.mode === "unavailable" && round.code === "no_sound") {
     // Nothing answered for any of the ten: no store preview, no song video.
@@ -77,9 +145,15 @@ async function handleOneMoreTuneAnswer(req, res) {
     sendJson(res, 400, { code: "one_more_tune_bad_request", error: "A JSON body is required." });
     return;
   }
-  const authority = body?.domain === "keynote_person" ? require("../one-more-tune-keynote.js")
-    : body?.domain === "keynote_context" ? require("../one-more-line.js")
-      : deck;
+  const domain = roundAuthority(body?.domain);
+  if (!domain) {
+    refuseUnknownDomain(res);
+    return;
+  }
+  const authority = domain === "keynote_person" ? require("../one-more-tune-keynote.js")
+    : domain === "keynote_context" ? require("../one-more-line.js")
+      : domain === "interface_history" ? require("../one-more-tune-interface-history.js")
+        : deck;
   const result = authority.submitAnswer(body || {});
   sendJson(res, result.ok ? 200 : result.code === "invalid_choice" ? 400 : 404, result);
 }

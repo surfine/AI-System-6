@@ -390,6 +390,7 @@ window.AISystem6QuickDraft = Object.freeze({
   ventEntryCount,
   isVentIntakeActive,
   importChatScreenshots,
+  returnFromWalk,
   togglePreview: toggleQuickDraftPreview,
   toggleComposite: toggleQuickDraftComposite,
   previewMode: currentQuickDraftDisplayMode,
@@ -445,6 +446,7 @@ window.AISystem6QuickDraft = Object.freeze({
 const QUICK_DRAFT_COMMAND_NAMES = [
   "quick-draft-open-writing-studio",
   "quick-draft-import-chat",
+  "quick-draft-walk-return",
   "quick-draft-vent-on",
   "quick-draft-vent-off",
   "quick-draft-vent-summary",
@@ -502,6 +504,7 @@ function quickDraftCommandAvailable(action) {
     }
     return false;
   }
+  if (action === "quick-draft-walk-return") return true;
   if (action === "quick-draft-vent-on") return !quickDraft.isVentIntakeActive?.();
   if (action === "quick-draft-vent-off") return !!quickDraft.isVentIntakeActive?.();
   if (action === "quick-draft-vent-summary") return !!quickDraft.modelAvailable?.() && !!quickDraft.hasOrganizableMaterial?.();
@@ -536,6 +539,7 @@ function runQuickDraftRuntimeCommand(action) {
     })();
   }
   if (action === "quick-draft-import-chat") return window.AISystem6QuickDraft.importChatScreenshots?.();
+  if (action === "quick-draft-walk-return") return window.AISystem6QuickDraft.returnFromWalk?.();
   if (action === "quick-draft-toggle-sideask") return toggleQuickDraftSideAsk();
 
   const command = action.slice("quick-draft-".length);

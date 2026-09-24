@@ -20,7 +20,11 @@ import {
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const require = createRequire(import.meta.url);
-const THEMES = Object.freeze(["classic", "platinum", "aqua", "snow-leopard", "yosemite", "big-sur", "liquid-glass", "nextstep"]);
+// Every registered appearance, read from the registry so a new one gets a
+// regression baseline the day it is declared.
+const THEMES = Object.freeze([
+  ...readFileSync(join(root, "apps/desktop/app/core/theme-registry.js"), "utf8").matchAll(/\bid:\s*"([a-z0-9-]+)"/g),
+].map((match) => match[1]));
 // Theme Lab styles are dev-only: they are absent from the production bundle
 // and injected here by the verification tooling.
 const LAB_CSS = readFileSync(join(root, "apps/desktop/styles/66-theme-lab.css"), "utf8");

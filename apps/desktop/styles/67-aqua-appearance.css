@@ -10,7 +10,7 @@
 /* Era wallpapers override the System 6 desktop grid from the theme layer:
    Platinum uses the abstracted Mac OS 9 field; the Liquid Glass family
    (Aqua / Snow Leopard / Yosemite) paints their measured wallpaper ramps. */
-body[data-theme="aqua"] .desktop, body[data-theme="snow-leopard"] .desktop {
+body[data-theme-family="aqua"] .desktop {
 
   background: var(--desktop-surface);
 
@@ -387,9 +387,6 @@ body[data-theme="aqua"] {
   --desktop-label-selected-bg: var(--selection-bg);
   --desktop-label-selected-fg: var(--selection-fg);
   --separator: #9b9b9b;
-  --control-bg: linear-gradient(to bottom,
-    #f6f6f6 0%, #ebebeb 37%, #d9d9d9 42%, #e3e3e3 53%,
-    #eee 63%, #fff 89%, #fdfdfd 100%);
   --control-shadow: inset 0 1px 0 #fff, 0 1px 1px rgba(0, 0, 0, 0.28);
   --control-active-shadow: inset 0 2px 3px rgba(0, 63, 114, 0.45);
   /* Theme Family Contract: the keyboard ring. The base layer writes System 6's
@@ -619,11 +616,6 @@ body[data-theme="aqua"] {
   --scrollbar-thumb: var(--window-frame-thumb-bg);
   --scrollbar-button: var(--window-frame-arrow-bg);
   --scrollbar-width: 15px;
-  --scrollbar-track-border: 1px solid #9b9b9b;
-  --scrollbar-track-shadow: inset 0 0 2px rgba(0, 0, 0, 0.3);
-  --scrollbar-thumb-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.75), inset -1px 0 0 rgba(0, 63, 112, 0.24);
-  --scrollbar-button-border: 1px solid #9b9b9b;
-  --scrollbar-button-shadow: inset 0 1px 0 #fff;
   --tab-radius: 7px 7px 0 0;
   --tab-overlap: 0;
   /* Explicit Jaguar wrap-tab sprites, not the common button painter. */
@@ -990,8 +982,8 @@ body[data-theme="aqua"] {
     linear-gradient(#cfe4ff, #6ba2f7 45%, #3672e8 55%, #7fb0f8);
 }
 
-html[data-theme="snow-leopard"],
-body[data-theme="snow-leopard"] {
+html[data-lineage~="snow-leopard"],
+body[data-lineage~="snow-leopard"] {
 
   /* Evidence boundary: Quaqua 9.1's Quaqua16SnowLeopardLookAndFeel.java (the
      Snow LAF introduced in Quaqua 6.0) owns native geometry, state variants,
@@ -1284,6 +1276,8 @@ body[data-theme="snow-leopard"] {
   --toolbar-bg: linear-gradient(#c0c0c0, #b1b1b1 55%, #b3b3b3);
   --toolbar-bg-inactive: linear-gradient(#e4e4e4, #d8d8d8);
   --toolbar-border: 1px solid #515151;
+  --finder-sidebar-font-size: 12px;
+  --finder-sidebar-row-height: 20px;
   --app-toolbar-bg: linear-gradient(to bottom, #f0f0f0 0%, #e3e3e3 45%, #d2d2d2 100%);
   --app-toolbar-border-bottom: 1px solid #a9a9a9;
   --toolbar-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.66);
@@ -1426,7 +1420,6 @@ body[data-theme="snow-leopard"] {
   --tdi-tab-close-hover-fg: currentColor;
   --tdi-tab-close-hover-shadow: none;
   --separator: #c6c6c6;
-  --control-bg: linear-gradient(#fcfcfc, #ededed 52%, #dedede);
   --control-shadow: inset 0 1px 0 #fff, 0 1px 1px rgba(0, 0, 0, 0.18);
   --control-active-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.34);
   /* Theme Family Contract: the keyboard ring. The base layer writes System 6's
@@ -1527,11 +1520,14 @@ body[data-theme="snow-leopard"] {
   --choice-checkmark-image: url("./assets/themes/snow-leopard/checkbox-checked-dark.svg");
   --choice-checkmark-size: 14px 14px;
   --choice-disabled-checkmark-image: url("./assets/themes/snow-leopard/checkbox-checked-disabled.svg");
-  --radio-bg: linear-gradient(#fff, #dedede);
+  /* A gradient is an image, not a colour: as --radio-bg it made the shared
+     background-color invalid and the unchecked well vanished. The well is the
+     image layer, over a colour close to its middle. */
+  --radio-bg: #efefef;
   --radio-border: 1px solid #949494;
   --radio-shadow: inset 0 1px 0 #fff;
-  --radio-image: none;
-  --radio-focus-image: none;
+  --radio-image: linear-gradient(#fff, #dedede);
+  --radio-focus-image: var(--radio-image);
   /* Project-owned reconstruction from Quaqua 9.1 RadioButton.icons.png frame
      3: a navy-to-steel rim around the measured concave lavender/cyan well, and
      the native 2×3 centre mark. The transparent first layer preserves the
@@ -1607,11 +1603,6 @@ body[data-theme="snow-leopard"] {
   --scrollbar-thumb: var(--window-frame-thumb-bg);
   --scrollbar-button: var(--window-frame-arrow-bg);
   --scrollbar-width: 15px;
-  --scrollbar-track-border: 1px solid #9b9b9b;
-  --scrollbar-track-shadow: inset 0 0 2px rgba(0, 0, 0, 0.25);
-  --scrollbar-thumb-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.76), inset -1px 0 0 rgba(0, 60, 108, 0.22);
-  --scrollbar-button-border: 1px solid #9b9b9b;
-  --scrollbar-button-shadow: inset 0 1px 0 #fff;
   /* Chromium Inspector's app-specific compact Web scrollbar is retained as a
      separate semantic variant; it is not the 10.6 system scrollbar. */
   --scrollbar-compact-width: 11px;
@@ -1726,10 +1717,10 @@ body[data-theme="snow-leopard"] {
 /* Snow Leopard era-specific Finder fixtures (dev-only Theme Lab). The shared
    toolbar is replaced inside the Finder window by the 10.6 unified toolbar;
    the source-list specimen renders real 10.6 sidebar groups. */
-html[data-theme="snow-leopard"] .theme-lab-snow-toolbar,
-body[data-theme="snow-leopard"] .theme-lab-snow-toolbar,
-html[data-theme="snow-leopard"] .theme-lab-snow-source-list,
-body[data-theme="snow-leopard"] .theme-lab-snow-source-list {
+html[data-lineage~="snow-leopard"] .theme-lab-snow-toolbar,
+body[data-lineage~="snow-leopard"] .theme-lab-snow-toolbar,
+html[data-lineage~="snow-leopard"] .theme-lab-snow-source-list,
+body[data-lineage~="snow-leopard"] .theme-lab-snow-source-list {
 
   display: block;
 
@@ -1737,7 +1728,7 @@ body[data-theme="snow-leopard"] .theme-lab-snow-source-list {
 
 /* body-only: Theme Lab renders after boot, when body carries the theme;
    the html twin was boot-era defense a runtime-only window never needs. */
-body[data-theme="snow-leopard"] .theme-lab-finder-window > .theme-lab-toolbar {
+body[data-lineage~="snow-leopard"] .theme-lab-finder-window > .theme-lab-toolbar {
 
   display: none;
 
@@ -1746,7 +1737,7 @@ body[data-theme="snow-leopard"] .theme-lab-finder-window > .theme-lab-toolbar {
 /* Historical chrome recipe. Each branch owns its selector; the values stay in
    the per-theme token tables above. Classic and Liquid Glass keep their own
    native title bars from the base files. */
-body[data-theme="aqua"] .title-bar, body[data-theme="snow-leopard"] .title-bar {
+body[data-theme-family="aqua"] .title-bar {
 
   background: var(--system-titlebar-active-bg);
   background-origin: var(--system-titlebar-background-origin);
@@ -1755,7 +1746,7 @@ body[data-theme="aqua"] .title-bar, body[data-theme="snow-leopard"] .title-bar {
   border-bottom: var(--titlebar-border);
 }
 
-body[data-theme="aqua"] .window:not(.is-active) .title-bar, body[data-theme="snow-leopard"] .window:not(.is-active) .title-bar {
+body[data-theme-family="aqua"] .window:not(.is-active) .title-bar {
 
   background: var(--system-titlebar-inactive-bg);
   background-origin: var(--system-titlebar-background-origin);
@@ -1763,8 +1754,8 @@ body[data-theme="aqua"] .window:not(.is-active) .title-bar, body[data-theme="sno
 
 }
 
-body[data-theme="aqua"] .title-bar h1, body[data-theme="snow-leopard"] .title-bar h1,
-body[data-theme="aqua"] .title-bar h2, body[data-theme="snow-leopard"] .title-bar h2 {
+body[data-theme-family="aqua"] .title-bar h1,
+body[data-theme-family="aqua"] .title-bar h2 {
 
   background: var(--titlebar-title-bg);
   color: var(--titlebar-title-fg);
@@ -1826,7 +1817,7 @@ body[data-theme="aqua"] :where(
 
 }
 
-body[data-theme="aqua"] input[type="search"], body[data-theme="snow-leopard"] input[type="search"] {
+body[data-theme-family="aqua"] input[type="search"] {
 
   appearance: none;
   -webkit-appearance: none;
@@ -1934,9 +1925,11 @@ body[data-theme="aqua"] .resize-box {
   background: var(--traffic-light-resize-bg) center / var(--traffic-light-sprite-size) no-repeat;
 }
 
-/* The real Aqua title bar follows the project's fixed constraint: Close on
-   the left edge, Zoom on the right edge, and the unused Minimize slot stays
-   visibly empty (no decorative third lamp). */
+/* The Aqua title bar follows the owner's standing product rule, not Mac OS X
+   history: Close on the left edge, Zoom on the right edge. The grid is
+   gutter | title | gutter, so there is no Minimize slot to leave empty; no
+   Minimize lamp is drawn until this era's Dock ships with it (owner decision
+   2026-09-25). */
 body[data-theme="aqua"] .window > .title-bar {
   grid-template-columns:
     var(--titlebar-gutter)
@@ -1981,8 +1974,7 @@ body[data-theme="aqua"] .title-bar > :is(.close-box, .resize-box)::after {
 /* The lamps reveal their action glyphs on pointer hover or keyboard focus:
    an X on Close and a + on Zoom. Resting lamps stay plain, as in the native
    captures; the product-specific red-left / green-right placement remains. */
-body[data-theme="aqua"] .title-bar > .close-box::before,
-body[data-theme="snow-leopard"] .title-bar > .close-box::before {
+body[data-theme-family="aqua"] .title-bar > .close-box::before {
   /* The base close-box art box is 11px anchored at the classic art offset;
      left/width would beat inset and push the glyph up-left. Pin all four
      edges and clear the inherited box so the glyph centers on the lamp. */
@@ -1998,8 +1990,7 @@ body[data-theme="snow-leopard"] .title-bar > .close-box::before {
   height: 100%;
 }
 
-body[data-theme="aqua"] .title-bar > .resize-box::before,
-body[data-theme="snow-leopard"] .title-bar > .resize-box::before {
+body[data-theme-family="aqua"] .title-bar > .resize-box::before {
   inset: 0;
   border: 0;
   opacity: 0;
@@ -2008,16 +1999,14 @@ body[data-theme="snow-leopard"] .title-bar > .resize-box::before {
     linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)) center / 1px 42% no-repeat;
 }
 
-body[data-theme="aqua"] .title-bar > :is(.close-box, .resize-box):is(:hover, :focus-visible)::before,
-body[data-theme="snow-leopard"] .title-bar > :is(.close-box, .resize-box):is(:hover, :focus-visible)::before {
+body[data-theme-family="aqua"] .title-bar > :is(.close-box, .resize-box):is(:hover, :focus-visible)::before {
   opacity: 1;
 }
 
 /* Native press feedback: the held lamp darkens like backlit gel; release
    restores it. Filter, not a background swap, so the 1:1 sprite is the
    single source of the lamp's pixels. */
-body[data-theme="aqua"] .title-bar > :is(.close-box, .resize-box):active,
-body[data-theme="snow-leopard"] .title-bar > :is(.close-box, .resize-box):active {
+body[data-theme-family="aqua"] .title-bar > :is(.close-box, .resize-box):active {
   filter: brightness(0.78) saturate(1.12);
 }
 
@@ -2045,8 +2034,7 @@ body[data-theme="aqua"] :is(.window, .system-modal) {
    lower-right corner (HIG Fig 5-1, Fig 8-9) - not the System 6 grow box
    with its double square and hairlines. The wedge is a project-authored SVG
    derived from the 10.2 Open dialog corner; 10.6 uses the same grip. */
-body[data-theme="aqua"] .grow-box,
-body[data-theme="snow-leopard"] .grow-box {
+body[data-theme-family="aqua"] .grow-box {
   width: 15px;
   height: 15px;
   background:
@@ -2202,8 +2190,8 @@ body[data-theme="aqua"] :is(.control-panel, .chooser-panel) .settings::-webkit-s
   background: #fff;
 }
 
-body[data-theme="snow-leopard"] .close-box,
-body[data-theme="snow-leopard"] .resize-box {
+body[data-lineage~="snow-leopard"] .close-box,
+body[data-lineage~="snow-leopard"] .resize-box {
 
   background-position:
     calc(var(--system-titlebar-control-art-offset-x) - 2px)
@@ -2214,19 +2202,19 @@ body[data-theme="snow-leopard"] .resize-box {
 
 }
 
-body[data-theme="snow-leopard"] .close-box {
+body[data-lineage~="snow-leopard"] .close-box {
 
   background-image: var(--traffic-light-close-bg);
 
 }
 
-body[data-theme="snow-leopard"] .resize-box {
+body[data-lineage~="snow-leopard"] .resize-box {
 
   background-image: var(--traffic-light-resize-bg);
 
 }
 
-body[data-theme="snow-leopard"] .resize-box::before {
+body[data-lineage~="snow-leopard"] .resize-box::before {
 
   width: 100%;
   height: 100%;
@@ -2237,9 +2225,10 @@ body[data-theme="snow-leopard"] .resize-box::before {
 
 }
 
-/* Project constraint, same as Aqua: Close on the left edge, Zoom on the
-   right edge, unused Minimize slot visibly empty. */
-body[data-theme="snow-leopard"] .window > .title-bar {
+/* The owner's product rule, same as Aqua: Close on the left edge, Zoom on
+   the right edge, and no Minimize lamp until this era's Dock ships with it
+   (owner decision 2026-09-25). */
+body[data-lineage~="snow-leopard"] .window > .title-bar {
 
   grid-template-columns:
     var(--titlebar-gutter)
@@ -2248,7 +2237,7 @@ body[data-theme="snow-leopard"] .window > .title-bar {
 
 }
 
-body[data-theme="snow-leopard"] .window > .title-bar :is(h1, h2) {
+body[data-lineage~="snow-leopard"] .window > .title-bar :is(h1, h2) {
 
   padding-inline: var(--titlebar-content-padding-inline);
   font-weight: var(--titlebar-title-weight, 600);
@@ -2257,13 +2246,13 @@ body[data-theme="snow-leopard"] .window > .title-bar :is(h1, h2) {
 
 }
 
-body[data-theme="snow-leopard"] .window:not(.is-active) > .title-bar {
+body[data-lineage~="snow-leopard"] .window:not(.is-active) > .title-bar {
 
   border-bottom: var(--titlebar-border-inactive, var(--titlebar-border));
 
 }
 
-body[data-theme="snow-leopard"] .title-bar > :is(.close-box, .resize-box) {
+body[data-lineage~="snow-leopard"] .title-bar > :is(.close-box, .resize-box) {
   width: var(--traffic-light-size);
   height: var(--traffic-light-size);
   background-position: center;
@@ -2273,27 +2262,27 @@ body[data-theme="snow-leopard"] .title-bar > :is(.close-box, .resize-box) {
   background-repeat: no-repeat;
 }
 
-body[data-theme="snow-leopard"] .title-bar > .close-box {
+body[data-lineage~="snow-leopard"] .title-bar > .close-box {
   grid-column: 1;
   justify-self: start;
 
   background-image: var(--traffic-light-close-bg);
 }
 
-body[data-theme="snow-leopard"] .title-bar > .resize-box {
+body[data-lineage~="snow-leopard"] .title-bar > .resize-box {
   grid-column: 3;
   justify-self: end;
 
   background-image: var(--traffic-light-resize-bg);
 }
 
-body[data-theme="snow-leopard"] .title-bar > :is(.close-box, .resize-box)::after {
+body[data-lineage~="snow-leopard"] .title-bar > :is(.close-box, .resize-box)::after {
 
   content: none;
 
 }
 
-body[data-theme="snow-leopard"] select:not([multiple]) {
+body[data-lineage~="snow-leopard"] select:not([multiple]) {
 
   min-height: var(--select-control-min-height);
   padding: var(--select-control-padding);
@@ -2314,20 +2303,20 @@ body[data-theme="snow-leopard"] select:not([multiple]) {
   font-weight: var(--select-control-font-weight);
 }
 
-body[data-theme="snow-leopard"] .system-modal {
+body[data-lineage~="snow-leopard"] .system-modal {
   background: linear-gradient(to bottom, #fff 0%, #f2f2f2 100%);
   border: 1px solid #8e8e8e;
   border-radius: 4px 4px 3px 3px;
   box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.85), 0 5px 14px rgba(0, 0, 0, 0.35);
 }
 
-body[data-theme="snow-leopard"] .system-modal form {
+body[data-lineage~="snow-leopard"] .system-modal form {
   position: relative;
   padding-left: 96px;
   min-height: 92px;
 }
 
-body[data-theme="snow-leopard"] .system-modal form::before {
+body[data-lineage~="snow-leopard"] .system-modal form::before {
   content: "";
   position: absolute;
   left: 0;
@@ -2337,14 +2326,13 @@ body[data-theme="snow-leopard"] .system-modal form::before {
   background: url("./assets/themes/aqua/sheet-warning-64.svg") center / 64px 64px no-repeat;
 }
 
-body[data-theme="snow-leopard"] .system-modal #system-modal-message {
+body[data-lineage~="snow-leopard"] .system-modal #system-modal-message {
   font-family: var(--theme-ui-font);
   font-weight: 700;
   color: #111;
 }
 
-body[data-theme="aqua"] .view-btn,
-body[data-theme="snow-leopard"] .view-btn {
+body[data-theme-family="aqua"] .view-btn {
   width: 26px;
   background: linear-gradient(to bottom, #fff 0%, #efefef 55%, #e0e0e0 100%);
   border: 1px solid #a3a3a3;
@@ -2356,13 +2344,12 @@ body[data-theme="aqua"] .view-btn.is-active {
   border-color: #2f6fb8;
 }
 
-body[data-theme="snow-leopard"] .view-btn.is-active {
+body[data-lineage~="snow-leopard"] .view-btn.is-active {
   background: linear-gradient(to bottom, #b8b8b8 0%, #9f9f9f 55%, #8d8d8d 100%);
   border-color: #7e7e7e;
 }
 
-body[data-theme="aqua"] .view-btn.is-active::before,
-body[data-theme="snow-leopard"] .view-btn.is-active::before {
+body[data-theme-family="aqua"] .view-btn.is-active::before {
   background: #fff;
   box-shadow:
     6px 0 0 #fff,
@@ -2370,13 +2357,12 @@ body[data-theme="snow-leopard"] .view-btn.is-active::before {
     6px 6px 0 #fff;
 }
 
-body[data-theme="aqua"] .view-btn[data-view="list"].is-active::before,
-body[data-theme="snow-leopard"] .view-btn[data-view="list"].is-active::before {
+body[data-theme-family="aqua"] .view-btn[data-view="list"].is-active::before {
   background: #fff;
   box-shadow: 0 -4px 0 #fff, 0 4px 0 #fff;
 }
 
-body[data-theme="aqua"] .system-select-button:not(:disabled), body[data-theme="snow-leopard"] .system-select-button:not(:disabled) {
+body[data-theme-family="aqua"] .system-select-button:not(:disabled) {
 
   min-height: var(--system-select-control-min-height);
   padding: var(--system-select-control-padding);
@@ -2399,7 +2385,7 @@ body[data-theme="aqua"] .system-select-button:not(:disabled), body[data-theme="s
 
 /* Native Aqua pop-ups expose both directions in the blue arrow well. The base
    Classic disclosure triangle remains untouched outside this family. */
-body[data-theme="aqua"] .system-select-button::after, body[data-theme="snow-leopard"] .system-select-button::after {
+body[data-theme-family="aqua"] .system-select-button::after {
 
   right: var(--system-select-arrow-right, 6px);
   top: var(--system-select-arrow-top, auto);
@@ -2757,13 +2743,13 @@ body[data-theme="aqua"] .theme-lab-toolbar-round-icon.is-forward {
    the Jaguar candy and the 10.6 silver chrome stay separate. These selectors
    deliberately name the Aqua family directly - no Liquid Glass family class
    may style the Aqua branch. */
-body[data-theme="aqua"] .window:not(.is-active), body[data-theme="snow-leopard"] .window:not(.is-active) {
+body[data-theme-family="aqua"] .window:not(.is-active) {
 
   box-shadow: var(--inactive-window-shadow);
 
 }
 
-body[data-theme="aqua"] :where(.btn), body[data-theme="snow-leopard"] :where(.btn) {
+body[data-theme-family="aqua"] :where(.btn) {
 
   border-color: var(--btn-border-color);
   border-radius: var(--btn-radius);
@@ -2774,7 +2760,7 @@ body[data-theme="aqua"] :where(.btn), body[data-theme="snow-leopard"] :where(.bt
 
 }
 
-body[data-theme="aqua"] .btn.default, body[data-theme="snow-leopard"] .btn.default {
+body[data-theme-family="aqua"] .btn.default {
 
   background: var(--btn-default-bg);
   border-color: #1c6bc7;
@@ -2784,7 +2770,7 @@ body[data-theme="aqua"] .btn.default, body[data-theme="snow-leopard"] .btn.defau
 
 }
 
-body[data-theme="aqua"] .btn:is(.is-active, :active):not(:disabled):not(.is-disabled), body[data-theme="snow-leopard"] .btn:is(.is-active, :active):not(:disabled):not(.is-disabled) {
+body[data-theme-family="aqua"] .btn:is(.is-active, :active):not(:disabled):not(.is-disabled) {
 
   background: var(--btn-active-bg);
   color: var(--btn-active-fg);
@@ -2792,7 +2778,7 @@ body[data-theme="aqua"] .btn:is(.is-active, :active):not(:disabled):not(.is-disa
 
 }
 
-body[data-theme="aqua"] :is(.btn:disabled, .btn.is-disabled), body[data-theme="snow-leopard"] :is(.btn:disabled, .btn.is-disabled) {
+body[data-theme-family="aqua"] :is(.btn:disabled, .btn.is-disabled) {
 
   background: var(--control-disabled-bg);
   color: var(--system-disabled-fg, var(--shade-dark));
@@ -2807,14 +2793,7 @@ body[data-theme="aqua"] :is(.btn:disabled, .btn.is-disabled), body[data-theme="s
 
 }
 
-body[data-theme="aqua"] :where(
-  textarea,
-  input[type="url"],
-  input[type="text"],
-  input[type="password"],
-  input[type="search"],
-  input[type="number"]
-), body[data-theme="snow-leopard"] :where(
+body[data-theme-family="aqua"] :where(
   textarea,
   input[type="url"],
   input[type="text"],
@@ -2842,7 +2821,7 @@ body[data-theme="aqua"] :where(
    top of the words: in Aqua and Snow Leopard the writer clicked into TeachText,
    the Question Sheet, the Outline, Section Drafts or the Review Desk and the
    text went white. The same guard is on the base rules in 60-responsive.css. */
-body[data-theme="aqua"] :is(input, textarea, select):not(.mde-input):focus, body[data-theme="snow-leopard"] :is(input, textarea, select):not(.mde-input):focus {
+body[data-theme-family="aqua"] :is(input, textarea, select):not(.mde-input):focus {
 
   border: var(--field-focus-border);
   outline: 0;
@@ -2852,14 +2831,14 @@ body[data-theme="aqua"] :is(input, textarea, select):not(.mde-input):focus, body
 
 }
 
-body[data-theme="aqua"] .theme-lab-toolbar, body[data-theme="snow-leopard"] .theme-lab-toolbar {
+body[data-theme-family="aqua"] .theme-lab-toolbar {
 
   border-radius: var(--theme-lab-toolbar-radius);
   box-shadow: var(--toolbar-highlight);
 
 }
 
-body[data-theme="aqua"] :is(.theme-lab-sidebar, .theme-lab-list) button:not(:disabled), body[data-theme="snow-leopard"] .theme-lab-sidebar button {
+body[data-theme="aqua"] :is(.theme-lab-sidebar, .theme-lab-list) button:not(:disabled), body[data-lineage~="snow-leopard"] .theme-lab-sidebar button {
 
   /* The nav-row metric tokens are defined for snow-leopard only (and yosemite,
      in 65). A var() with no fallback naming an undefined custom property is
@@ -2872,7 +2851,7 @@ body[data-theme="aqua"] :is(.theme-lab-sidebar, .theme-lab-list) button:not(:dis
 
 }
 
-body[data-theme="snow-leopard"] .theme-lab-sidebar button {
+body[data-lineage~="snow-leopard"] .theme-lab-sidebar button {
 
   min-height: var(--theme-lab-nav-row-min-height);
   padding-block: var(--theme-lab-nav-row-padding-block);
@@ -2888,7 +2867,7 @@ body[data-theme="aqua"] :is(.theme-lab-sidebar button:disabled, .theme-lab-sideb
   opacity: 0.65;
 }
 
-body[data-theme="aqua"] .theme-lab-finder-rows > div, body[data-theme="snow-leopard"] .theme-lab-finder-rows > div {
+body[data-theme-family="aqua"] .theme-lab-finder-rows > div {
 
   min-height: var(--theme-lab-finder-row-min-height);
 
@@ -2899,7 +2878,7 @@ body[data-theme="aqua"] .theme-lab-finder-rows > div, body[data-theme="snow-leop
 /* Text-like controls only. A checkbox or radio is not faded in 10.6: it is
    redrawn in grey, which the --choice-disabled-* roles above own. Leaving them
    in this rule let its opacity and field background outrank those roles. */
-body[data-theme="snow-leopard"] :is(select, input:not([type="checkbox"]):not([type="radio"])):disabled {
+body[data-lineage~="snow-leopard"] :is(select, input:not([type="checkbox"]):not([type="radio"])):disabled {
 
   /* Dimmed once, by colour. The opacity here dimmed already-grey ink a second
      time, the same shape removed from yosemite in 65-appearance-themes.css. */
@@ -2908,13 +2887,13 @@ body[data-theme="snow-leopard"] :is(select, input:not([type="checkbox"]):not([ty
 
 }
 
-body[data-theme="snow-leopard"] .window:not(.is-active) .theme-lab-sidebar {
+body[data-lineage~="snow-leopard"] .window:not(.is-active) .theme-lab-sidebar {
 
   background: var(--sidebar-bg-inactive);
 
 }
 
-body[data-theme="snow-leopard"] .window:not(.is-active) .theme-lab-sidebar button.is-selected {
+body[data-lineage~="snow-leopard"] .window:not(.is-active) .theme-lab-sidebar button.is-selected {
 
   background: var(--sidebar-selection-bg-inactive);
 
@@ -2922,7 +2901,7 @@ body[data-theme="snow-leopard"] .window:not(.is-active) .theme-lab-sidebar butto
 /* Aqua and Snow Leopard own complete 56-object families. Runtime source-size
    dispatch lives in system-icons.js: lists/menus use 16, normal surfaces 32,
    and desktop/Retina surfaces 128. */
-:where(body[data-theme="aqua"], body[data-theme="snow-leopard"])
+:where(body[data-theme-family="aqua"])
   .sys-icon[data-system-icon]:not(:where([data-system-icon="play"], [data-system-icon="pause"], [data-system-icon="previousTrack"], [data-system-icon="nextTrack"], [data-system-icon="shuffleTracks"], [data-system-icon="repeatTracks"], [data-system-icon="speaker"])) {
   border: 0;
   border-radius: 0;
@@ -2931,101 +2910,44 @@ body[data-theme="snow-leopard"] .window:not(.is-active) .theme-lab-sidebar butto
   background-repeat: no-repeat;
   box-shadow: none;
 }
-:where(body[data-theme="aqua"], body[data-theme="snow-leopard"])
+:where(body[data-theme-family="aqua"])
   .sys-icon[data-system-icon]:not(:where([data-system-icon="play"], [data-system-icon="pause"], [data-system-icon="previousTrack"], [data-system-icon="nextTrack"], [data-system-icon="shuffleTracks"], [data-system-icon="repeatTracks"], [data-system-icon="speaker"])) .sys-icon-svg {
   display: block;
 }
 
-:where(body[data-theme="aqua"], body[data-theme="snow-leopard"]) .sys-icon-svg :is(.sys-icon-classic, .sys-icon-platinum-core, .sys-icon-aqua, .sys-icon-snow-leopard, .sys-icon-yosemite, .sys-icon-liquid) {
+:where(body[data-theme-family="aqua"]) .sys-icon-svg :is(.sys-icon-classic, .sys-icon-platinum-core, .sys-icon-aqua, .sys-icon-snow-leopard, .sys-icon-yosemite, .sys-icon-liquid) {
   display: none;
 }
 
 /* :is(), not :where(): the shared hide rule in 50-apps.css is a class
    selector, and a zero-specificity :where() wrapper loses to it, which
    blanked every Aqua and Snow Leopard icon. */
-:is(body[data-theme="aqua"] .sys-icon-svg .sys-icon-aqua, body[data-theme="snow-leopard"] .sys-icon-svg .sys-icon-snow-leopard) {
+:is(body[data-theme="aqua"] .sys-icon-svg .sys-icon-aqua, body[data-lineage~="snow-leopard"] .sys-icon-svg .sys-icon-snow-leopard) {
   display: block;
 }
 body[data-theme="aqua"] .sys-icon {
   --aqua-icon: url("./assets/themes/aqua/aqua-sprite.png");
 }
 
-body[data-theme="snow-leopard"] .sys-icon {
+body[data-lineage~="snow-leopard"] .sys-icon {
 }
 
-/* Shared sprite cells, addressed by column and row (theme-independent). */
-[data-system-icon="startupDisk"]{--sx:0}
-[data-system-icon="hardDisk"]{--sx:1}
-[data-system-icon="folder"]{--sx:2}
-[data-system-icon="document"]{--sx:3}
-[data-system-icon="applications"]{--sx:4}
-[data-system-icon="trash"]{--sx:5}
-[data-system-icon="finderApp"]{--sx:6}
-[data-system-icon="fileFloppy"]{--sx:7}
-[data-system-icon="assistant"]{--sy:1}
-[data-system-icon="quickDraft"]{--sx:1;--sy:1}
-[data-system-icon="writingStudio"]{--sx:2;--sy:1}
-[data-system-icon="projectDisk"]{--sx:3;--sy:1}
-[data-system-icon="projectDisc"]{--sx:4;--sy:1}
-[data-system-icon="cloudModel"]{--sx:5;--sy:1}
-[data-system-icon="cloudModelOff"]{--sx:6;--sy:1}
-[data-system-icon="questionSheet"]{--sx:7;--sy:1}
-[data-system-icon="outline"]{--sy:2}
-[data-system-icon="sectionDrafts"]{--sx:1;--sy:2}
-[data-system-icon="manuscript"]{--sx:2;--sy:2}
-[data-system-icon="reviewDesk"]{--sx:3;--sy:2}
-[data-system-icon="searcher"]{--sx:4;--sy:2}
-[data-system-icon="reader"]{--sx:5;--sy:2}
-[data-system-icon="timeMachine"]{--sx:6;--sy:2}
-[data-system-icon="docMap"]{--sx:7;--sy:2}
-[data-system-icon="clioStage"]{--sy:3}
-[data-system-icon="clioChart"]{--sx:1;--sy:3}
-[data-system-icon="liquidCover"]{--sx:2;--sy:3}
-[data-system-icon="cmfStudio"]{--sx:3;--sy:3}
-[data-system-icon="soundscape"]{--sx:4;--sy:3}
-[data-system-icon="scrapbook"]{--sx:5;--sy:3}
-[data-system-icon="systemFolder"]{--sx:6;--sy:3}
-[data-system-icon="helpFolder"]{--sx:7;--sy:3}
-[data-system-icon="importUtility"]{--sy:4}
-[data-system-icon="controlPanel"]{--sx:1;--sy:4}
-[data-system-icon="chooser"]{--sx:2;--sy:4}
-[data-system-icon="systemHelp"]{--sx:3;--sy:4}
-[data-system-icon="dictionary"]{--sx:4;--sy:4}
-[data-system-icon="teachText"]{--sx:5;--sy:4}
-[data-system-icon="writingDemo"]{--sx:6;--sy:4}
-[data-system-icon="chatFile"]{--sx:7;--sy:4}
-[data-system-icon="chatImport"]{--sy:5}
-[data-system-icon="systemStatus"]{--sx:1;--sy:5}
-[data-system-icon="contextPanel"]{--sx:2;--sy:5}
-[data-system-icon="rebuildArticle"]{--sx:3;--sy:5}
-[data-system-icon="bureaucracyMeme"]{--sx:4;--sy:5}
-[data-system-icon="endfieldTerminal"]{--sx:5;--sy:5}
-[data-system-icon="documents"]{--sx:6;--sy:5}
-[data-system-icon="alias"]{--sx:7;--sy:5}
-[data-system-icon="systemFile"]{--sy:6}
-[data-system-icon="multiFinderApp"]{--sx:1;--sy:6}
-[data-system-icon="daHandler"]{--sx:2;--sy:6}
-[data-system-icon="writingBell"]{--sx:3;--sy:6}
-[data-system-icon="trashFull"]{--sx:4;--sy:6}
-[data-system-icon="control"]{--sx:5;--sy:6}
-[data-system-icon="localModel"]{--sx:6;--sy:6}
-[data-system-icon="controlStrip"]{--sx:7;--sy:6}
 
 /* Aqua/SL boot/shutdown: same shared harness as Classic/LG, era material only. */
-:where(body[data-theme="aqua"], body[data-theme="snow-leopard"]) :is(.boot-screen, .shutdown-screen) { background: linear-gradient(180deg, #20294a, #0e1429); color: #fff; animation: aqua-screen-in .4s ease-out; }
-body[data-theme="snow-leopard"] :is(.boot-screen, .shutdown-screen) { background: linear-gradient(180deg, #262626, #111); }
-:where(body[data-theme="aqua"], body[data-theme="snow-leopard"]) .happy-mac { border-color: #6f86b0; border-radius: 8px; background: linear-gradient(180deg, #f4f8ff, #cfe0f5 45%, #a8c3e8); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 10px 24px rgba(0, 0, 0, 0.35); animation: aqua-mac-in .6s ease-out both; }
-:where(body[data-theme="aqua"], body[data-theme="snow-leopard"]) .happy-mac::after { border-color: #6f86b0; border-radius: 0 0 4px 4px; background: linear-gradient(180deg, #e8f0fb, #b9cdec); }
-:where(body[data-theme="aqua"], body[data-theme="snow-leopard"]) .happy-mac-face { border-color: #6f86b0; border-radius: 4px; background: linear-gradient(180deg, #fff, #e8f0fb); }
-body[data-theme="snow-leopard"] .happy-mac { border-color: #7f8a99; border-radius: 6px; background: linear-gradient(180deg, #f5f5f5, #d9d9d9 45%, #bdbdbd); box-shadow: inset 0 1px 0 #fff, 0 8px 20px rgba(0, 0, 0, 0.4); animation-duration: 0.45s; }
-body[data-theme="snow-leopard"] .happy-mac::after { border-color: #7f8a99; background: linear-gradient(180deg, #ececec, #c4c4c4); }
-body[data-theme="snow-leopard"] .happy-mac-face { border-color: #7f8a99; background: linear-gradient(180deg, #fff, #f0f0f0); }
-:where(body[data-theme="aqua"], body[data-theme="snow-leopard"]) .boot-progress { border: 0; height: 12px; padding: 0; border-radius: 6px; background: rgba(0, 0, 0, 0.48); }
-:where(body[data-theme="aqua"], body[data-theme="snow-leopard"]) .boot-progress span { position: relative; overflow: hidden; border-radius: 6px; background: linear-gradient(180deg, #7ca5ef, #3f70d8 55%, #2f5cc4); }
-body[data-theme="snow-leopard"] .boot-progress span { background: linear-gradient(180deg, #6f9fe6, #3e7cd0 60%, #2e68b8); }
-:where(body[data-theme="aqua"], body[data-theme="snow-leopard"]) .boot-progress span::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent); transform: translateX(-100%); animation: aqua-progress-sheen 1.7s ease-in-out infinite; }
-:where(body[data-theme="aqua"], body[data-theme="snow-leopard"]) :is(.boot-ledger, .shutdown-ledger) { border: 1px solid rgba(255, 255, 255, 0.16); background: rgba(9, 13, 28, 0.55); color: #fff; }
+:where(body[data-theme-family="aqua"]) :is(.boot-screen, .shutdown-screen) { background: linear-gradient(180deg, #20294a, #0e1429); color: #fff; animation: aqua-screen-in .4s ease-out; }
+body[data-lineage~="snow-leopard"] :is(.boot-screen, .shutdown-screen) { background: linear-gradient(180deg, #262626, #111); }
+:where(body[data-theme-family="aqua"]) .happy-mac { border-color: #6f86b0; border-radius: 8px; background: linear-gradient(180deg, #f4f8ff, #cfe0f5 45%, #a8c3e8); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 10px 24px rgba(0, 0, 0, 0.35); animation: aqua-mac-in .6s ease-out both; }
+:where(body[data-theme-family="aqua"]) .happy-mac::after { border-color: #6f86b0; border-radius: 0 0 4px 4px; background: linear-gradient(180deg, #e8f0fb, #b9cdec); }
+:where(body[data-theme-family="aqua"]) .happy-mac-face { border-color: #6f86b0; border-radius: 4px; background: linear-gradient(180deg, #fff, #e8f0fb); }
+body[data-lineage~="snow-leopard"] .happy-mac { border-color: #7f8a99; border-radius: 6px; background: linear-gradient(180deg, #f5f5f5, #d9d9d9 45%, #bdbdbd); box-shadow: inset 0 1px 0 #fff, 0 8px 20px rgba(0, 0, 0, 0.4); animation-duration: 0.45s; }
+body[data-lineage~="snow-leopard"] .happy-mac::after { border-color: #7f8a99; background: linear-gradient(180deg, #ececec, #c4c4c4); }
+body[data-lineage~="snow-leopard"] .happy-mac-face { border-color: #7f8a99; background: linear-gradient(180deg, #fff, #f0f0f0); }
+:where(body[data-theme-family="aqua"]) .boot-progress { border: 0; height: 12px; padding: 0; border-radius: 6px; background: rgba(0, 0, 0, 0.48); }
+:where(body[data-theme-family="aqua"]) .boot-progress span { position: relative; overflow: hidden; border-radius: 6px; background: linear-gradient(180deg, #7ca5ef, #3f70d8 55%, #2f5cc4); }
+body[data-lineage~="snow-leopard"] .boot-progress span { background: linear-gradient(180deg, #6f9fe6, #3e7cd0 60%, #2e68b8); }
+:where(body[data-theme-family="aqua"]) .boot-progress span::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent); transform: translateX(-100%); animation: aqua-progress-sheen 1.7s ease-in-out infinite; }
+:where(body[data-theme-family="aqua"]) :is(.boot-ledger, .shutdown-ledger) { border: 1px solid rgba(255, 255, 255, 0.16); background: rgba(9, 13, 28, 0.55); color: #fff; }
 @keyframes aqua-screen-in { from { opacity: 0 } to { opacity: 1 } }
 @keyframes aqua-mac-in { from { opacity: 0; transform: scale(calc(var(--boot-mac-scale) * 0.97)) } to { opacity: 1; transform: scale(var(--boot-mac-scale)) } }
 @keyframes aqua-progress-sheen { from { transform: translateX(-100%) } to { transform: translateX(100%) } }
-@media (prefers-reduced-motion: reduce) { :where(body[data-theme="aqua"], body[data-theme="snow-leopard"]) :is(.boot-screen, .shutdown-screen), :where(body[data-theme="aqua"], body[data-theme="snow-leopard"]) .happy-mac, :where(body[data-theme="aqua"], body[data-theme="snow-leopard"]) .boot-progress span::after { animation: none } }
+@media (prefers-reduced-motion: reduce) { :where(body[data-theme-family="aqua"]) :is(.boot-screen, .shutdown-screen), :where(body[data-theme-family="aqua"]) .happy-mac, :where(body[data-theme-family="aqua"]) .boot-progress span::after { animation: none } }

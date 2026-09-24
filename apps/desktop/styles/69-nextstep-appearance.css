@@ -1,13 +1,32 @@
 /* NeXTSTEP 3.3 material adaptation. Evidence: NeXT's Release 3.3 Visual
    Guide, chapters 1 and 4 (nextop.de mirror). Gray bevels and a black key
    window title are documented; these CSS measurements are not native pixel
-   calibration. The shared Mac-style menu, Zoom and WindowShade semantics
-   remain intact. Dedicated NeXT icons and shell behavior are deferred. */
+   calibration. The era's own shell is real and lives in app/core:
+   nextstep-shell.js (miniwindow, key/main window, resize strip),
+   nextstep-dock.js (application and miniwindow objects), nextstep-menus.js
+   (detachable submenus) and finder-columns.js.
+
+   Its icon family is now complete for the objects the appearance maps: three
+   project-original applications (tooling/build-added-app-icons.mjs) plus fifty
+   six objects at 16/32/64/128 (tooling/build-nextstep-core-icons.mjs, whose
+   ledger names the five batches in `coreIconIds`, `utilityIconIds`,
+   `deskIconIds`, `fileIconIds` and `lastIconIds`). The theme registry still
+   states `art.dir: "classic"` for the ids this era does not own -- the six game
+   and lab payloads (`imagePromptStudio`, `micropolis`, `openttd`, `doom`,
+   `lightroom`, `bonsaiCity`) that the appearance contract deliberately leaves
+   with the Classic painter. Every authored shape is an original period
+   adaptation with `nativeReplica: false`; the ledger counts the coverage rather
+   than claiming it. */
 html[data-theme="nextstep"],
 body[data-theme="nextstep"] {
   color-scheme: light;
   --theme-ui-font: Helvetica, Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
   --theme-title-font: var(--theme-ui-font);
+  /* 3.3 writes in Helvetica, not Geneva: the shared body font is the Classic
+     paper face, so a NeXTSTEP panel's own copy would otherwise come out in a
+     face the era never had (measured 2026-09-23 with the same probe as Big
+     Sur's). The writing surfaces still set their own document face. */
+  --text-font: var(--theme-ui-font);
   --system-readable-min: 12px;
   --system-title-size: 12px;
   --system-control-size: 12px;
@@ -76,7 +95,6 @@ body[data-theme="nextstep"] {
   --selection-fg: #ffffff;
   --details-bar-bg: #aaaaaa;
   --details-bar-border: #555555;
-  --control-bg: #aaaaaa;
   --control-radius: 0px;
   --control-shadow: var(--system-shadow);
   --control-active-shadow: var(--system-inset);
@@ -160,6 +178,27 @@ body[data-theme="nextstep"] {
   --window-frame-arrow-bg: #aaaaaa;
   --window-frame-arrow-ink: #000000;
   --scrollbar-corner-bg: #aaaaaa;
+  /* With nothing to scroll the knob and arrows go, but the grey track still
+     runs the whole scroller (Controls, F14); the arrow cells' share of the bar
+     was showing a paper-white ground. */
+  --window-frame-bar-bg: #aaaaaa;
+  /* Readouts and the desk strip in the era's Helvetica with plain dark rules,
+     not System 6 Monaco cells; path components are plain labels; the view
+     buttons are NeXT push-on buttons that turn white when on, not an inverted
+     1-bit segment. */
+  --readout-font: var(--theme-ui-font);
+  --teachtext-strip-font: var(--theme-ui-font);
+  --teachtext-strip-border: 1px solid #555555;
+  --teachtext-strip-bg: #aaaaaa;
+  --teachtext-strip-shadow: inset -1px -1px 0 #ffffff;
+  --teachtext-strip-divider: 1px solid #555555;
+  --finder-breadcrumb-text-decoration: none;
+  --view-controls-border: 1px solid #000000;
+  --view-controls-bg: #aaaaaa;
+  --view-btn-glyph: #000000;
+  --view-btn-hover-bg: #aaaaaa;
+  --view-btn-active-bg: #ffffff;
+  --view-btn-active-glyph: #000000;
   --tab-bg: #aaaaaa;
   --tab-active-bg: #cccccc;
   --tab-active-fg: #000000;
@@ -341,13 +380,8 @@ body[data-theme="nextstep"] {
   --scrapbook-pane-gap: 6px;
   --scrapbook-pane-rows: minmax(0, 1fr) auto auto;
   --scrollbar-button: var(--window-frame-arrow-bg);
-  --scrollbar-button-border: 1px solid #000000;
-  --scrollbar-button-shadow: var(--system-shadow);
   --scrollbar-thumb: var(--window-frame-thumb-bg);
-  --scrollbar-thumb-shadow: var(--system-shadow);
   --scrollbar-track: var(--window-frame-track-bg);
-  --scrollbar-track-border: 1px solid #000000;
-  --scrollbar-track-shadow: var(--system-shadow);
   --scrollbar-width: var(--window-frame-lane);
   --search-field-background: var(--field-bg);
   --search-field-min-height: 26px;
@@ -362,6 +396,12 @@ body[data-theme="nextstep"] {
   --sidebar-bg-inactive: var(--panel);
   --system-button-mini-font-size: 10px;
   --system-button-mini-height: 19px;
+  /* NeXTSTEP 3.3 marks the button Return will press (NS04). The mark itself is
+     drawn by the shared rule in 10-windows.css, and only inside a dialog whose
+     Return key is really wired to its default button; this era names the
+     glyph. A token rather than a rule, so the choice costs no appearance
+     selector and any later era can decide for itself. */
+  --btn-default-return-mark: "\23CE";
   --system-button-mini-padding-x: 7px;
   --system-button-small-font-size: 11px;
   --system-button-small-height: 22px;
@@ -615,8 +655,11 @@ body[data-theme="nextstep"] .window-frame-bar.is-vertical {
   border-left: 0;
   border-right: var(--window-frame-track-border);
 }
+/* The horizontal scroller runs the full width and its arrows sit in the
+   bottom-left corner, under the vertical scroller (Controls, F14). Starting it
+   one lane in left that corner cell uncovered, showing the window's white. */
 body[data-theme="nextstep"] .window-frame-bar.is-horizontal {
-  left: var(--window-frame-lane);
+  left: 0;
   right: 0;
   bottom: 8px;
 }

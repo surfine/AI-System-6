@@ -26,6 +26,14 @@ export const lazyStyleBundles = [
   // An independent appearance is requested only when selected, including boot.
   { id: "big-sur", output: "styles.big-sur.css", loader: "app/core/theme-registry.js",
     sources: ["styles/68-big-sur-appearance.css"] },
+  { id: "tiger", output: "styles.tiger.css", loader: "app/core/theme-registry.js",
+    sources: ["styles/67-tiger-appearance.css"] },
+  { id: "system-7", output: "styles.system-7.css", loader: "app/core/theme-registry.js",
+    sources: ["styles/65-system-7-appearance.css"] },
+  { id: "drawing-board", output: "styles.drawing-board.css", loader: "app/core/theme-registry.js",
+    sources: ["styles/65-drawing-board-appearance.css"] },
+  { id: "lion", output: "styles.lion.css", loader: "app/core/theme-registry.js",
+    sources: ["styles/67-lion-appearance.css"] },
   // The Draft Desk sheet dresses Quick Draft and 文字亮室, whose modules are
   // already lazy, and every one of its 250 selector parts is scoped to
   // draft-desk / quick-draft / lightroom / listen / darkroom (the only others
@@ -76,6 +84,14 @@ export const lazyStyleBundles = [
     output: "styles.time-machine.css",
     loader: "app/core/config.js",
     sources: ["styles/22-time-machine.css"],
+  },
+  // DocMap is summoned, not resident: docmap.js has always loaded on first use,
+  // and every selector in its sheet is .docmap-* or .video-docmap-*.
+  {
+    id: "docmap",
+    output: "styles.docmap.css",
+    loader: "app/core/config.js",
+    sources: ["styles/23-docmap.css"],
   },
   // ClioChart's own module has always been lazy. Its sheet also dresses one
   // ClioStage element (.clio-stage-chart-slide, added when a slide carries a
@@ -168,6 +184,15 @@ export const lazyStyleBundles = [
     loader: "app/core/config.js",
     sources: ["styles/98-project-disks.css"],
   },
+  // ClioProject: the plan diagram, its Get Info pane and the all-disks
+  // calendar. The module is lazy and builtByModule, and every selector is
+  // scoped to .clio-project-*, so the sheet travels with the loader.
+  {
+    id: "clio-project",
+    output: "styles.clio-project.css",
+    loader: "app/core/config.js",
+    sources: ["styles/99-clio-project.css"],
+  },
 ];
 
 // Every stylesheet the product ships, eager or lazy. Checks that reason about
@@ -191,6 +216,7 @@ export const styleLayerByPath = Object.freeze({
   "styles/10-windows.css": "windows",
   "styles/20-reader-docmap.css": "reader-docmap",
   "styles/22-time-machine.css": "time-machine",
+  "styles/23-docmap.css": "docmap",
   "styles/30-surfaces.css": "surfaces",
   "styles/40-icons.css": "icons",
   "styles/50-apps.css": "apps",
@@ -198,6 +224,10 @@ export const styleLayerByPath = Object.freeze({
   "styles/65-appearance-themes.css": "appearance-themes",
   "styles/67-aqua-appearance.css": "aqua-appearance",
   "styles/68-big-sur-appearance.css": "big-sur-appearance",
+  "styles/67-tiger-appearance.css": "tiger-appearance",
+  "styles/65-system-7-appearance.css": "system-7-appearance",
+  "styles/65-drawing-board-appearance.css": "drawing-board-appearance",
+  "styles/67-lion-appearance.css": "lion-appearance",
   "styles/69-nextstep-appearance.css": "nextstep-appearance",
   "styles/nextstep-shell.css": "nextstep-shell",
   "styles/70-liquid-glass.css": "liquid-glass",
@@ -221,6 +251,7 @@ export const styleLayerByPath = Object.freeze({
   "styles/96-clio-paint.css": "clio-paint",
   "styles/97-one-more-tune.css": "one-more-tune",
   "styles/98-project-disks.css": "project-disks",
+  "styles/99-clio-project.css": "clio-project",
 });
 
 // Layer order = eager files in bundle order, then lazy sheets in declaration

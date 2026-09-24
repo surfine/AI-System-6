@@ -66,12 +66,14 @@
   --face-platinum: Charcoal, "Charcoal CY", "Platinum Asap", Geneva, "Noto Sans", Tahoma, Verdana, "Songti SC", STSong, SimSun, sans-serif;
   --face-aqua: "Lucida Grande", "Lucida Sans Unicode", "Lucida Sans", "DejaVu Sans", STHeiti, "Heiti SC", SimHei, sans-serif;
   --face-snow-leopard: "Lucida Grande", "Lucida Sans Unicode", "Lucida Sans", "DejaVu Sans", STHeiti, "Heiti SC", SimHei, sans-serif;
+  --face-nextstep: Helvetica, Arial, "Liberation Sans", "PingFang SC", "Microsoft YaHei", sans-serif;
   --face-big-sur: var(--face-liquid-glass);
   --face-yosemite: "Helvetica Neue", Helvetica, Arial, "Liberation Sans", "Hiragino Sans GB", "Heiti SC", STHeiti, SimHei, sans-serif;
   --face-liquid-glass: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable Text", "Segoe UI", Roboto, "Noto Sans", "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC", sans-serif;
   --face-liquid-glass-title: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI Variable Display", "Segoe UI", Roboto, "Noto Sans", "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC", sans-serif;
   --face-mono-monaco: Monaco, "Courier New", monospace;
   --face-mono-menlo: Menlo, "DejaVu Sans Mono", "Bitstream Vera Sans Mono", Consolas, monospace;
+  --face-mono-courier: Courier, "Courier New", "Liberation Mono", monospace;
   --face-mono-sf: ui-monospace, "SF Mono", "Cascadia Mono", "Segoe UI Mono", "Noto Sans Mono", monospace;
 }
 
@@ -261,7 +263,8 @@ details.menu[open] > summary {
 }
 
 .tbar h1,
-.tbar h2 {
+.tbar h2,
+.tbar h3 {
   font-family: var(--site-font, var(--ui-font));
   font-size: 18px;
   font-weight: normal;
@@ -372,10 +375,17 @@ details.menu[open] > summary {
   cursor: pointer;
 }
 html[data-theme] .btn { padding: 0 20px; }
-.btn:hover,
 .btn:focus-visible {
   background: var(--ink);
   color: var(--paper);
+}
+/* Touch screens fire :hover on tap and leave it stuck, so the inverted
+   hover state only exists where a pointer can actually hover. */
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover {
+    background: var(--ink);
+    color: var(--paper);
+  }
 }
 .btn:active { transform: translateY(1px); }
 
@@ -596,6 +606,7 @@ html[data-theme] .btn { padding: 0 20px; }
   /* The hero's default button already opens the live desktop; the menu-bar
      copy of that link is the one item 375px cannot afford. */
   .menu-link-live { display: none; }
+  .menu-link-notes { display: none; }
   .menu-bar { gap: 12px; }
   .wbody { padding: 16px 14px 18px; }
   body { font-size: 17px; }
@@ -786,10 +797,80 @@ html[data-theme="liquid-glass"] {
   --bar-border: rgba(255, 255, 255, 0.5);
 }
 
+/* ---------- NeXTSTEP 3.3 (1995): the branch the Mac grew from ----------
+   Released in 1.0.55 as a branch, not a stop: it has its own Special-menu
+   group and list row, and the 1988-2026 dissolve never visits it. Evidence
+   is the same as the app's 69-nextstep-appearance.css: NeXT's Release 3.3
+   Visual Guide. Gray bevels everywhere, a black title bar on the key window
+   with white centred Helvetica, square corners, no shadow falling on the
+   desk, and a close box on the right of the bar. */
+html[data-theme="nextstep"] {
+  --ink: #000;
+  --paper: #fff;
+  --site-font: Helvetica, Arial, "Liberation Sans", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --display-font: var(--site-font);
+  --mono-font: "Ohlfs", Courier, "Courier New", monospace;
+  --desk-bg: #555555;
+  --desk-image: none;
+  --win-bg: #aaaaaa;
+  --win-border: #000;
+  --win-radius: 0;
+  --win-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #555555;
+  --tbar-bg: linear-gradient(#000, #000);
+  --tbar-bg-size: 100% 100%;
+  --tbar-bg-origin: border-box;
+  --tbar-title-bg: transparent;
+  --tbar-ink: #fff;
+  --tbar-border: #000;
+  --btn-bg: #aaaaaa;
+  --btn-border: #000;
+  --btn-radius: 0;
+  --btn-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #555555;
+  --menu-bg: #aaaaaa;
+  --menu-radius: 0;
+  --menu-shadow: inset 1px 1px 0 #ffffff, 2px 2px 0 rgba(0, 0, 0, 0.5);
+  --bar-bg: #aaaaaa;
+  --bar-border: #000;
+  --sel-bg: #fff;
+  --card-bg: #bbbbbb;
+}
+html[data-theme="nextstep"] .tbar { height: 23px; }
+html[data-theme="nextstep"] .tbar h1,
+html[data-theme="nextstep"] .tbar h2,
+html[data-theme="nextstep"] .tbar h3 { font-size: 13px; font-weight: 700; }
+/* The close box sits at the right end of a NeXT title bar, beveled, with an
+   X. Miniaturize lives at the left; a page has nothing to miniaturize. */
+html[data-theme="nextstep"] .close-box {
+  left: auto;
+  right: 5px;
+  width: 15px;
+  height: 15px;
+  border: 1px solid #000;
+  background: #aaaaaa;
+  box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #555;
+}
+html[data-theme="nextstep"] .close-box::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  background:
+    linear-gradient(45deg, transparent 44%, #000 44% 56%, transparent 56%),
+    linear-gradient(-45deg, transparent 44%, #000 44% 56%, transparent 56%);
+}
+/* Selected text and the pressed button invert to white on NeXT, not blue. */
+html[data-theme="nextstep"] .btn:focus-visible { background: #fff; color: #000; }
+@media (hover: hover) and (pointer: fine) {
+  html[data-theme="nextstep"] .btn:hover { background: #fff; color: #000; }
+}
+html[data-theme="nextstep"] .btn-default::after { content: none; }
+/* The default button carries the Return glyph after its label. */
+html[data-theme="nextstep"] .btn-default::before { content: "\21B5"; order: 2; margin-left: 10px; }
+
 /* Aqua-lineage eras close with traffic lights, not a close box. */
 html[data-theme="aqua"] .close-box,
 html[data-theme="snow-leopard"] .close-box,
 html[data-theme="yosemite"] .close-box,
+html[data-theme="big-sur"] .close-box,
 html[data-theme="liquid-glass"] .close-box {
   width: 12px;
   height: 12px;
@@ -801,23 +882,30 @@ html[data-theme="liquid-glass"] .close-box {
 html[data-theme="aqua"] .tbar,
 html[data-theme="snow-leopard"] .tbar,
 html[data-theme="yosemite"] .tbar,
+html[data-theme="big-sur"] .tbar,
 html[data-theme="liquid-glass"] .tbar {
   height: 30px;
 }
 html[data-theme="aqua"] .tbar h1, html[data-theme="aqua"] .tbar h2,
 html[data-theme="snow-leopard"] .tbar h1, html[data-theme="snow-leopard"] .tbar h2,
 html[data-theme="yosemite"] .tbar h1, html[data-theme="yosemite"] .tbar h2,
-html[data-theme="liquid-glass"] .tbar h1, html[data-theme="liquid-glass"] .tbar h2 {
+html[data-theme="big-sur"] .tbar h1, html[data-theme="big-sur"] .tbar h2,
+html[data-theme="liquid-glass"] .tbar h1, html[data-theme="liquid-glass"] .tbar h2,
+html[data-theme="aqua"] .tbar h3, html[data-theme="snow-leopard"] .tbar h3,
+html[data-theme="yosemite"] .tbar h3, html[data-theme="big-sur"] .tbar h3,
+html[data-theme="liquid-glass"] .tbar h3 {
   font-size: 15px;
   font-weight: 600;
 }
 html[data-theme="platinum"] .tbar h1,
-html[data-theme="platinum"] .tbar h2 {
+html[data-theme="platinum"] .tbar h2,
+html[data-theme="platinum"] .tbar h3 {
   font-size: 15px;
 }
 
 /* Modern body text sizes down a step; Chicago needed the extra height. */
 html[data-theme="yosemite"] body,
+html[data-theme="big-sur"] body,
 html[data-theme="liquid-glass"] body,
 html[data-theme="aqua"] body,
 html[data-theme="snow-leopard"] body {

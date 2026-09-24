@@ -1589,20 +1589,42 @@ function updateProjectLabels() {
   renderAboutMacintosh();
 }
 
-// A disk at risk of stalling, defined ONLY from facts the desk already has:
-// nothing written to the project for two weeks (its `updatedAt`, which every
-// record write stamps) AND nothing burned to its Project CD. No delivery-date
-// field exists and none is invented; a missing timestamp is unknown, and an
-// unknown is never claimed as a risk. Pure, so the contract can execute it.
-const PROJECT_DISK_STALL_DAYS = 14;
+// A disk at risk, defined by the dates the writer set in ClioProject and
+// nothing else (decided 2026-08-21, restored 2026-09-23): the handoff — the
+// date on the Project CD stop — is past or within a week while the handoff
+// is still unticked, or a date the writer gave any task has passed with the
+// task unticked. No date is invented, and a date that cannot be read as one
+// day is words, not a deadline: an unknown is never claimed as a risk.
+// Pure, so the contract can execute it.
+const PROJECT_DISK_HANDOFF_WARN_DAYS = 7;
 
-function projectDiskAtRisk(project, cdItems, now = Date.now()) {
-  const updated = Date.parse(project?.updatedAt || "");
-  if (!Number.isFinite(updated)) return false;
-  const stalled = now - updated >= PROJECT_DISK_STALL_DAYS * 24 * 60 * 60 * 1000;
-  const burned = (Array.isArray(cdItems) ? cdItems : [])
-    .some((item) => item && item.projectId === project?.id);
-  return stalled && !burned;
+// A hand-typed date read back as a day number — only the forms that cannot
+// mean two things: 2026-09-30, 2026/9/30, 2026年9月30日, 9月30日, 9/30. The
+// stored text is never rewritten; ClioProject shows it exactly as typed.
+function projectHandDateDay(text, now = Date.now()) {
+  const match = String(text || "").trim().match(/^(?:(\d{4})\s*[-/年]\s*)?(\d{1,2})\s*[-/月]\s*(\d{1,2})\s*日?$/);
+  if (!match) return null;
+  const month = +match[2] - 1;
+  const at = new Date(Date.UTC(match[1] ? +match[1] : new Date(now).getFullYear(), month, +match[3]));
+  return at.getUTCMonth() === month && at.getUTCDate() === +match[3] ? at / 864e5 : null;
+}
+
+function projectTodayDay(now = Date.now()) {
+  const today = new Date(now);
+  return Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()) / 864e5;
+}
+
+function projectDiskAtRisk(project, now = Date.now()) {
+  const plan = project?.clioProject;
+  if (!plan) return false;
+  const today = projectTodayDay(now);
+  const tasks = plan.tasks || {};
+  const handoff = projectHandDateDay(tasks.projectCd?.date, now);
+  if (handoff !== null && !tasks.projectCd?.done && handoff - today <= PROJECT_DISK_HANDOFF_WARN_DAYS) return true;
+  return [...Object.values(tasks), ...(plan.ownTasks || [])].some((task) => {
+    const due = task && !task.done ? projectHandDateDay(task.date, now) : null;
+    return due !== null && due < today;
+  });
 }
 
 // The mark itself: the diamond — the classic "this one has something in it"
@@ -1611,8 +1633,7 @@ function projectDiskAtRisk(project, cdItems, now = Date.now()) {
 // `lastChild` stays the disk's name label. Balloon Help says it in words.
 function applyProjectDiskRiskMark(icon, project) {
   if (!icon) return;
-  const atRisk = !!project
-    && projectDiskAtRisk(project, typeof projectCdItems !== "undefined" ? projectCdItems : []);
+  const atRisk = projectDiskAtRisk(project);
   icon.classList.toggle("has-disk-risk", atRisk);
   let mark = icon.querySelector(".disk-risk-mark");
   if (atRisk && !mark) {
@@ -2493,11 +2514,9 @@ function clearProjectTransientState() {
   lastClipScrapId = null;
   lastRetrievedContextItems = [];
   claimCitationContextItems = [];
-  currentReaderPage = null;
-  currentReaderClipCount = 0;
-  setReaderWindowTitle();
-  readerUrlDisplayEl.textContent = "";
-  readerStatusEl.textContent = t("reader_empty_hint");
+  // The Reader's own reset: this used to null the page record and leave the
+  // previous project's document on screen under it.
+  resetReaderDocumentState();
   attachedClipIds.clear();
   renderAttachedClips();
 }

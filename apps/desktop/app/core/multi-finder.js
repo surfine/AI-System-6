@@ -86,6 +86,7 @@ async function setFinderEnvironment(mode, { persistStartup = true, announce = tr
   if (nextEnvironment === "multifinder" && previous.runtimeEnvironment !== nextEnvironment) {
     multiFinderSwitcherHintSeen = false;
   }
+  releaseOrphanedMiniwindows();
   renderMultiFinderMenu();
   if (typeof updateQuickDraftFocusChrome === "function") updateQuickDraftFocusChrome();
   if (typeof updateMenuState === "function") updateMenuState();
@@ -214,6 +215,46 @@ function runningApplicationRows() {
   return rows;
 }
 
+// ---- Miniaturized windows --------------------------------------------------
+//
+// "Which window" has one answer that reaches every appearance: the walk over
+// the front application's windows (⌘`), which counts a miniaturized window as
+// still open. A walk is not a list, and a miniaturized window is the one kind
+// of window a writer cannot simply click — it is not on screen. The Dock
+// covers an application with no visible window left; this covers the rest,
+// including the case where a writer put one document away and left another of
+// the same application open. NeXTSTEP's shell still draws its own miniwindows
+// in its dock; the rows here are the desk's list, and they read the same state.
+function miniaturizedWindows() {
+  return Array.from(document.querySelectorAll(".window[data-window].is-minimized"))
+    .filter((win) => !win.classList.contains("is-hidden") && !win.classList.contains("is-app-hidden"))
+    .sort((a, b) => Number(b.style.zIndex || 0) - Number(a.style.zIndex || 0));
+}
+
+function miniwindowRows() {
+  const windows = miniaturizedWindows();
+  if (!windows.length) return [];
+  const rows = [document.createElement("hr")];
+  const heading = document.createElement("div");
+  heading.className = "multifinder-heading";
+  heading.textContent = t("miniwindow_list");
+  rows.push(heading);
+  windows.forEach((win) => {
+    const row = document.createElement("button");
+    row.type = "button";
+    row.className = "multifinder-app multifinder-miniwindow";
+    row.dataset.miniwindow = win.dataset.window;
+    row.innerHTML = `
+      <span class="multifinder-mark">▫</span>
+      <span>${escapeHtml(applicationWindowTitle(win))}</span>
+      <small>${escapeHtml(multiFinderAppLabels[getWindowAppId(win)] || getWindowAppId(win))}</small>
+    `;
+    row.addEventListener("click", () => restoreMinimizedWindow(win));
+    rows.push(row);
+  });
+  return rows;
+}
+
 // ---- The front application's windows ---------------------------------------
 //
 // The application list answers "which application". With seventeen windows in
@@ -233,9 +274,10 @@ function frontApplicationId() {
 }
 
 function applicationWindowOrder(appId = frontApplicationId()) {
-  // A window shaded into its title bar is still open: WindowShade is this
-  // desk's minimize, so a list that dropped those would lose the windows a
-  // writer is most likely to be looking for. Front-most first, the order the
+  // A window shaded into its title bar is still open: WindowShade puts a
+  // window aside without it leaving the desk (a verb of its own beside
+  // minimize, never replaced by it), so a list that dropped those would lose
+  // the windows a writer is most likely to be looking for. Front-most first, the order the
   // window switcher in 98.js used (z-index as a last-used proxy).
   const visible = visibleWindowsForApp(appId);
   const minimized = windowsForApp(appId).filter((win) => win.classList.contains("is-minimized")
@@ -394,7 +436,7 @@ function renderMultiFinderMenu() {
     button.setAttribute("aria-haspopup", "menu");
     button.setAttribute("aria-label", t("multifinder_switcher"));
     button.dataset.balloonHelp = "balloon_multifinder_switcher";
-    popover.replaceChildren(...(showSwitcher ? runningApplicationRows() : []));
+    popover.replaceChildren(...(showSwitcher ? [...runningApplicationRows(), ...miniwindowRows()] : []));
   }
   // These rows are rebuilt from scratch, so the element cache updateMenuState()
   // greys from is now stale. Without this the new rows would never be asked
@@ -421,36 +463,65 @@ function renderAppleMultiFinderSection(visible) {
   applyApplicationRowAvailability(section);
 }
 
-function switchToApp(appId) {
+/**
+ * Bring an application forward.
+ *
+ * `restoreMinimized` is not a detail, it is the era's own rule. In NeXTSTEP
+ * 3.3 the application icon stands for the application and a window comes back
+ * from its own miniwindow icon; activating the application must therefore
+ * leave miniaturized windows exactly where they are. Mac OS X's Dock has no
+ * separate window icon for most applications, so there the application icon is
+ * the way back to a window that is no longer on screen. The caller that knows
+ * which control was pressed asks for the behaviour; `activateApplicationRow`
+ * below reads it from the menu-bar model.
+ */
+function switchToApp(appId, { restoreMinimized = false } = {}) {
   if (!isMultiFinderMode()) return;
   ensureRunningApp(appId);
-  hiddenAppIds.delete(appId);
-  const allWindows = windowsForApp(appId);
-  allWindows.forEach((win) => {
-    win.classList.remove("is-app-hidden");
-    delete win.dataset.appHiddenCollapsed;
-  });
+  unhideApp(appId);
   const windows = visibleWindowsForApp(appId);
 
   windows
     .sort((a, b) => Number(a.style.zIndex || 0) - Number(b.style.zIndex || 0))
-    .forEach((win) => {
-      setWindowLayerZ(win, nextWindowLayerZ());
-      win.classList.remove("is-collapsed");
-    });
+    .forEach((win) => setWindowLayerZ(win, nextWindowLayerZ()));
 
   activeAppId = appId;
-  if (windows.length) focusWindow(windows[windows.length - 1], 1);
+  if (windows.length) {
+    focusWindow(windows[windows.length - 1], 1);
+  } else if (restoreMinimized) {
+    // An application whose windows are all miniaturized still has to come
+    // forward: clicking its icon is the way back a person will actually find,
+    // and it is the one every macOS-shaped appearance can offer -- including
+    // the ones whose title bars never carried a minimize lamp of their own.
+    const miniaturized = windowsForApp(appId)
+      .filter((win) => win.classList.contains("is-minimized")
+        && !win.classList.contains("is-hidden") && !win.classList.contains("is-app-hidden"))
+      .sort((a, b) => Number(b.style.zIndex || 0) - Number(a.style.zIndex || 0));
+    if (miniaturized.length) restoreMinimizedWindow(miniaturized[0]);
+  }
   renderMultiFinderMenu();
 }
 
-function unhideApp(appId, { expand = true } = {}) {
+// The application row in the desk's own list. Which era's rule applies is read
+// from the menu-bar model the registry already states: an application-owned bar
+// (System 6 through 9, and NeXTSTEP, where the Dock lists applications) keeps
+// that era's separation between "the application" and "the window"; a
+// system-owned bar (Mac OS X and later) has no window list of its own, so the
+// application row is also the way back to a miniaturized window.
+function activateApplicationRow(appId) {
+  return switchToApp(appId, { restoreMinimized: !usesApplicationOwnedMenuBar() });
+}
+
+// Showing an application undoes Hide and nothing else. Hide rolls an
+// application's windows up and marks them, so switching to it, Show All and
+// the ⌘` walk unroll exactly the marked ones; a window the writer rolled up
+// stays rolled up (Mac OS 8 HIG): bringing an application forward is not a
+// WindowShade command.
+function unhideApp(appId) {
   hiddenAppIds.delete(appId);
   windowsForApp(appId).forEach((win) => {
     win.classList.remove("is-app-hidden");
-    if (expand || win.dataset.appHiddenCollapsed === "true") {
-      win.classList.remove("is-collapsed");
-    }
+    if (win.dataset.appHiddenCollapsed === "true") win.classList.remove("is-collapsed");
     delete win.dataset.appHiddenCollapsed;
   });
 }
@@ -466,8 +537,12 @@ function hideApp(appId = activeAppId, { preserveActive = false } = {}) {
       win.classList.remove("is-active");
       return;
     }
-    win.classList.add("is-collapsed");
-    win.dataset.appHiddenCollapsed = "true";
+    // Only the windows Hide itself rolls up carry its mark: one the writer had
+    // already rolled up is theirs, and showing the application leaves it so.
+    if (!win.classList.contains("is-collapsed")) {
+      win.classList.add("is-collapsed");
+      win.dataset.appHiddenCollapsed = "true";
+    }
     win.classList.remove("is-active");
   });
   if (!preserveActive) {

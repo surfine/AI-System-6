@@ -565,12 +565,12 @@ const ensureGuestToolsModule = createLazyModuleLoader("AISystem6GuestTools", ["a
 // provider is one of those servers.
 const ensureMcpServersModule = createLazyModuleLoader("AISystem6McpServers", ["app/features/mcp-servers.js"]);
 const ensureMingmingHandoffReviewModule = createLazyModuleLoader("", ["app/features/mingming-handoff-review.js"]);
-const ensureSlidesExportModule = createLazyModuleLoader("AISystem6SlidesExportLoaded", ["app/features/slides-export.js"]);
-const ensureClioStageModule = createLazyModuleLoader("AISystem6ClioStageLoaded", ["app/features/clio-stage.js"], false, ["styles.clio-chart.css"]);
+const ensureSlidesExportModule = createLazyModuleLoader("AISystem6SlidesExportLoaded", ["app/features/slide-themes.js", "app/features/slides-export.js"]);
+const ensureClioStageModule = createLazyModuleLoader("AISystem6ClioStageLoaded", ["app/features/slide-themes.js", "app/features/clio-stage.js"], false, ["styles.clio-chart.css"]);
 const ensureClioChartModule = createLazyModuleLoader("AISystem6ClioChartLoaded", ["app/features/clio-chart.js"], false, ["styles.clio-chart.css"]);
 // The plan window carries its pure model with it: the model is also what the
 // contract executes, so it stays a separate file rather than folding in.
-const ensureClioProjectModule = createLazyModuleLoader("AISystem6ClioProjectWindowLoaded", ["app/core/application-shell.js", "app/core/clio-project.js", "app/features/clio-project-window.js"]);
+const ensureClioProjectModule = createLazyModuleLoader("AISystem6ClioProjectWindowLoaded", ["app/core/application-shell.js", "app/core/clio-project.js", "app/features/clio-project-window.js"], false, ["styles.clio-project.css"]);
 const ensureClioPaintModule = createLazyModuleLoader("AISystem6ClioPaintLoaded", ["app/core/application-shell.js", "app/features/clio-paint.js"], false, ["styles.clio-paint.css"]);
 const ensureOneMoreTuneModule = createLazyModuleLoader("AISystem6OneMoreTuneLoaded", ["app/core/application-shell.js", "app/features/one-more-tune.js"], false, ["styles.one-more-tune.css"]);
 const ensureTodoDaModule = createLazyModuleLoader("AISystem6TodoDaLoaded", ["app/core/application-shell.js", "app/features/todo-da.js"]);
@@ -593,6 +593,7 @@ const ensureQuickDraftModule = createLazyModuleLoader("AISystem6QuickDraftLoaded
      2026-09-16, and the boot payload is over its floor until it moves. It
      loads before draft-desk.js, which consumes its normalizers. */
   "app/core/quick-draft-workspace.js",
+  "app/core/walk-transcript.js",
   "app/features/draft-desk.js",
   "app/features/quick-draft-intake.js",
   "app/features/quick-draft-editor.js",
@@ -609,7 +610,7 @@ const ensureCmfStudioModule = createLazyModuleLoader("AISystem6CMFStudioLoaded",
 ], false, ["styles.cmf-studio.css"]);
 const ensureSoundscapeModule = createLazyModuleLoader("AISystem6SoundscapeLoaded", ["app/features/soundscape.js"], false, ["styles.soundscape.css"]);
 const ensureFindChangeModule = createLazyModuleLoader("AISystem6FindChangeLoaded", ["app/features/find-change.js"]);
-const ensureThemeLabModule = createLazyModuleLoader("AISystem6ThemeLabLoaded", ["app/core/application-shell.js", "app/features/theme-lab.js"], false, ["styles.theme-lab.css"]);
+const ensureThemeLabModule = createLazyModuleLoader("AISystem6ThemeLabLoaded", ["app/core/application-shell.js", "app/features/theme-authoring.js", "app/features/theme-lab.js"], false, ["styles.theme-lab.css"]);
 window.AISystem6EnsureThemeLabModule = ensureThemeLabModule;
 // The GPL engine bundle loads first, then the AI System 6 shell; the shell's
 // flag proves both arrived. Styles ride along as a lazy bundle.
@@ -661,7 +662,7 @@ const ensureWritingDemoModule = createLazyModuleLoader("AISystem6WritingDemoLoad
 ]);
 // A shared launch link mounts a whole Project Hard Disk. The backups are large
 // and few visitors need one, so they travel as their own lazy module -- and the
-// folder that lists them reads a small one first: thirty-four rows should not
+// folder that lists them reads a small one first: thirty-five rows should not
 // cost every manuscript in the set.
 const ensureSharedProjectDisksIndexModule = createLazyModuleLoader("AISystem6SharedProjectDisksIndexLoaded", [
   "app/content/shared-project-disks-index.js",
@@ -705,7 +706,9 @@ function ensureLazySystemModule(path, loadedFlag) {
 }
 function ensureFinderObjectsModule() { return ensureLazySystemModule("app/features/finder-objects.js", "AISystem6FinderObjectsLoaded"); }
 function ensureDesktopMaintenanceModule() { return ensureLazySystemModule("app/core/desktop-maintenance.js", "AISystem6DesktopMaintenanceLoaded"); }
-function ensureDocMapModule() { return ensureLazySystemModule("app/features/docmap.js", "AISystem6DocMapLoaded"); }
+// The sheet travels with the module: DocMap's styles are lazy too.
+const ensureDocMapModuleLoaded = createLazyModuleLoader("AISystem6DocMapLoaded", ["app/features/docmap.js"], false, ["styles.docmap.css"]);
+function ensureDocMapModule() { return ensureDocMapModuleLoaded(); }
 
 // User-initiated lazy action: on load/install failure, show an understandable,
 // retryable error in the current window instead of writing only to the

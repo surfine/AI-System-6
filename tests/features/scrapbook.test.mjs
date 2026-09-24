@@ -35,6 +35,30 @@ test.assertIncludes(responsive, ".scrap-list:has(.scrap-empty-card)", "an empty 
 test.assertIncludes(html, '<form id="scrapbook-ask-form" class="ask-bar" data-ask-source="scrapbook">', "Scrapbook asks through the shared ask bar");
 test.assertIncludes(scrapbook, 't("ask_scope_scraps", selected.length) : t("ask_scope_all_scraps", count)', "Scrapbook still derives the clips carried into SideAsk");
 
+// One answer to "which scraps are showing" -- stack, then filter -- for the
+// list, the System 6 page rail and the in-place row refresh alike.
+const apps = read("styles/50-apps.css");
+test.assertIncludes(html, 'id="scrap-filter" class="scrap-filter" type="text" inputmode="search"', "the Scrapbook bar carries a filter field");
+test.assertIncludes(scrapbook, "(selectedScrapStack === \"all\" || getScrapStack(scrap) === selectedScrapStack) && scrapMatchesFilter(scrap)", "stack and filter narrow the scraps in one place");
+test.assertIncludes(scrapbook, "const visibleScraps = scrapbookPageScraps();\n  syncScrapSelection(visibleScraps);", "the list draws from the same answer as the page rail");
+test.assertIncludes(scrapbook, 't("scrap_filter_empty", scrapFilterQuery)', "an empty filter result says what was filtered for");
+
+// A row previews what the scrap says, not the source its meta line already names.
+test.assertIncludes(scrapbook, "function scrapPreviewLine(scrap, meta)", "the row preview skips section labels and the source line");
+
+// The source is a citation beside its Open Source button, not a field.
+test.assertMatches(html, /class="scrap-citation-row">\s*<div id="scrap-source-info" class="source-info-panel scrap-citation">[\s\S]*?id="open-scrap-source"/, "Open Source sits beside the citation it opens");
+test.assertIncludes(apps, ".source-info-panel.scrap-citation {\n  display: grid;", "the citation wraps instead of ellipsizing inside an inset frame");
+
+// Actions: Delete apart, Insert last and default, pictures behind one menu.
+test.assertMatches(html, /class="button-row scrap-actions">\s*<button class="btn danger" type="button" id="delete-scrap"[\s\S]*id="scrap-picture-menu"[\s\S]*<button class="btn default" type="button" id="insert-scrap"/, "the action row orders Delete, Picture and Insert");
+test.assertIncludes(apps, ".scrap-editor .button-row {\n  flex-wrap: wrap;", "the action row wraps instead of pushing the editor out of its column");
+
+// Two or more selected: the batch actions that sat hidden since May come back.
+test.assertNotIncludes(html, 'class="scrap-selection-actions" hidden', "batch actions are no longer hidden in the window");
+test.assertIncludes(scrapbook, 'scrapForm.dataset.scrapMode = selectedScrapIds.size > 1 ? "multi" : "single"', "a multi-selection switches the editor to its batch view");
+test.assertIncludes(apps, '.scrap-editor[data-scrap-mode="multi"] > .scrap-selection-actions {\n  display: grid;', "the batch view shows the batch actions");
+
 
 // Clipped pictures. Scrapbook stays curated material the writer chose, so a
 // picture is clipped, not generated — and a picture-only clip is told plainly

@@ -106,7 +106,7 @@ const windowRegistry = Object.freeze({
   clioProject: {
     app: "clioProject",
     builtByModule: true,
-    width: 560,
+    width: 760,
     lazy: {
       ensure: () => ensureClioProjectModule(),
       attach: () => window.AISystem6ClioProjectWindow?.attach?.(),

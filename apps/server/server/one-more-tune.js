@@ -775,6 +775,10 @@ function submitAnswer({ roundToken, questionToken, choiceToken = "", skipped = f
     points: correct ? 1 : 0,
     outcome,
     cardId: card.id,
+    // Which of the four was right, once the question is answered: the reveal
+    // ticks that row, so a wrong pick is shown beside the answer rather than
+    // leaving the player to match the product name back to a row.
+    correctChoice: question.correctToken,
     reveal: revealFor(card),
   };
   return { ok: true, repeated: false, ...question.result };

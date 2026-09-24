@@ -4,6 +4,49 @@
 
 window.AISystem6SlidesExportLoaded = true;
 
+// The deck's resources live in app/features/slide-themes.js, which loads with
+// this module. Nothing here invents a second source for eras, modes or layouts.
+function slideDeckRuntime() {
+  return typeof window !== "undefined" ? window.AISystem6SlideThemes || null : null;
+}
+
+// What the model must know before it writes a page: how this deck argues, what
+// it looks like, how close it is read, and the exact syntax that carries all
+// three per page.
+function slideDeckPromptBrief(spec) {
+  const runtime = slideDeckRuntime();
+  if (!runtime || !spec) return "";
+  const zh = currentLanguage === "zh";
+  const mode = runtime.index().modes.find((entry) => entry.id === spec.mode) || runtime.index().modes[0];
+  const era = runtime.byId(spec.era);
+  const floor = runtime.fontFloor(spec);
+  const layouts = runtime.layoutList();
+  const preferred = mode.affinity.slice(0, 6).join(", ");
+  return [
+    zh ? "## 这份 deck 的骨架" : "## This deck's skeleton",
+    zh
+      ? `论证方式：${mode.zh}。标题要求：${mode.titleRule}。组织倾向：${mode.tendency}。备注语气：${mode.notes}。`
+      : `Argument mode: ${mode.en}. Titles: ${mode.titleRuleEn}. Tendency: ${mode.tendency}. Notes: ${mode.notes}.`,
+    zh
+      ? `时代主题：${era.label}（${era.year}）。它在 frontmatter 的 style 块里，不要改动其中的颜色与字体。`
+      : `Era: ${era.label} (${era.year}). Its rules live in the frontmatter style block; do not restyle them.`,
+    zh
+      ? `阅读距离：${floor.id}，正文不得小于 ${floor.body}px，注解不得小于 ${floor.meta}px。放不下就拆页，不许缩字。`
+      : `Reading distance: ${floor.id}. Body never below ${floor.body}px, annotations never below ${floor.meta}px. Split the page instead of shrinking type.`,
+    zh
+      ? `每一页第二行必须写版式声明：\`<!-- _class: <版式> [hero|light|dark] -->\`。可用版式：${layouts.map((layout) => layout.id).join(", ")}。这份 deck 优先用：${preferred}。`
+      : `Every page declares its layout on its second line: \`<!-- _class: <layout> [hero|light|dark] -->\`. Available: ${layouts.map((layout) => layout.id).join(", ")}. Prefer for this deck: ${preferred}.`,
+    zh
+      ? "节奏：首页必须是 cover 或 lead；连续两页以上同一种明暗面不允许；每四页至少一页 hero；八页以上至少一页 dark；每页可加 `<!-- job: 这一页对读者做什么 -->`。"
+      : "Rhythm: the first page is cover or lead; never three pages on one surface in a row; at least one hero per four pages; at least one dark page once the deck reaches eight; each page may add `<!-- job: what this page does for the reader -->`.",
+    zh ? "每种版式要写的 Markdown 形状（照写，不要自创结构）：" : "The markdown shape each layout expects (write exactly this, do not invent structure):",
+    ...layouts.map((layout) => {
+      const shape = runtime.markdownContract()[layout.id] || "";
+      return `- ${layout.id}（${layout.zh}）: ${shape}`;
+    }),
+  ].join("\n");
+}
+
 const marpSlidesFrontmatter = [
   "---",
   "marp: true",
@@ -143,7 +186,8 @@ function trimSlideLines(lines) {
   return block.slice(start, end);
 }
 
-function markdownToMarpSlides(markdown) {
+function markdownToMarpSlides(markdown, spec = null) {
+  const runtime = slideDeckRuntime();
   const sourceLines = stripSlidesSourceFrontmatter(markdown);
   const slides = [];
   let current = [];
@@ -185,11 +229,18 @@ function markdownToMarpSlides(markdown) {
   pushSlide();
 
   const body = slides
-    .map((slide) => slide.join("\n").trimEnd())
+    .map((slide, index) => {
+      const text = slide.join("\n").trimEnd();
+      if (!text) return "";
+      // A converted deck can only declare what the converter honestly knows:
+      // its first page is the cover. The rest of the layout is the writer's.
+      return runtime && index === 0 ? `<!-- _class: cover -->\n\n${text}` : text;
+    })
     .filter(Boolean)
     .join("\n\n---\n\n");
+  const frontmatter = runtime ? runtime.frontmatter(spec) : marpSlidesFrontmatter;
 
-  return `${marpSlidesFrontmatter}\n\n${body}`.trimEnd() + "\n";
+  return `${frontmatter}\n\n${body}`.trimEnd() + "\n";
 }
 
 function splitMarpSlidesForValidation(markdown) {
@@ -274,7 +325,22 @@ function validateMarpSlidesMarkdown(markdown, sourceMarkdown = "") {
   if (slideCount < minReasonable || slideCount > maxReasonable) {
     errors.push(`unreasonable_slide_count:${slideCount}`);
   }
-  return { ok: errors.length === 0, errors, slideCount };
+  return withSlideDeckGate({ ok: errors.length === 0, errors, slideCount }, text, true);
+}
+
+// The deck gate rides on the Marp validation both routes already run: the era
+// and layout classes must exist, the mode and the pages must agree, and the
+// rhythm rules must hold. AI output is held to it strictly; an imported or
+// hand-written deck only gets warnings, because the writer's file is theirs.
+function withSlideDeckGate(validation, markdown, strict) {
+  const runtime = slideDeckRuntime();
+  if (!runtime || typeof runtime.validate !== "function") return validation;
+  const deck = runtime.validate(markdown, { strict: !!strict });
+  const errors = [...(validation?.errors || [])];
+  const warnings = [...(validation?.warnings || [])];
+  deck.errors.forEach((error) => { if (!errors.includes(error)) errors.push(error); });
+  deck.warnings.forEach((warning) => { if (!warnings.includes(warning)) warnings.push(warning); });
+  return { ...validation, errors, warnings, ok: errors.length === 0, deck };
 }
 
 function slidesValidationErrorLabel(error) {
@@ -291,6 +357,25 @@ function slidesValidationErrorLabel(error) {
     const count = error.split(":")[1] || "0";
     return zh ? `页数看起来不合理：${count} 页` : `Slide count looks unreasonable: ${count}`;
   }
+  if (error === "deck_spec_unparsable") return zh ? "clio-deck 规格块不是合法 JSON" : "The clio-deck spec block is not valid JSON";
+  if (error === "no_dark_surface") return zh ? "整份 deck 没有一页深色面" : "No dark page anywhere in the deck";
+  if (error.startsWith("unknown_era:")) return zh ? `未知的时代主题：${error.split(":")[1]}` : `Unknown era: ${error.split(":")[1]}`;
+  if (error.startsWith("unknown_mode:")) return zh ? `未知的论证方式：${error.split(":")[1]}` : `Unknown mode: ${error.split(":")[1]}`;
+  if (error.startsWith("unknown_canvas:")) return zh ? `未知画布：${error.split(":")[1]}` : `Unknown canvas: ${error.split(":")[1]}`;
+  if (error.startsWith("unknown_reading:")) return zh ? `未知阅读距离：${error.split(":")[1]}` : `Unknown reading distance: ${error.split(":")[1]}`;
+  if (error.startsWith("unknown_layout:")) return zh ? `不存在的版式：${error.split(":")[1]}` : `Unknown layout: ${error.split(":")[1]}`;
+  if (error.startsWith("missing_layout:")) return zh ? `第 ${error.split(":")[1]} 页没有声明版式` : `Page ${error.split(":")[1]} declares no layout`;
+  if (error.startsWith("first_page_not_hero:")) return zh ? "第一页不是封面或开场页" : "The first page is not a cover or hook";
+  if (error.startsWith("mode_layout_mismatch:")) {
+    const parts = error.split(":");
+    return zh ? `第 1 页的版式（${parts[2]}）不属于 ${parts[1]}` : `Page 1's layout (${parts[2]}) does not belong to ${parts[1]}`;
+  }
+  if (error.startsWith("mode_layout_drift:")) return zh ? `多页版式偏离该论证方式：${error.split(":")[1]}` : `Pages drift from the argument mode: ${error.split(":")[1]}`;
+  if (error.startsWith("surface_run:")) {
+    const parts = error.split(":");
+    return zh ? `第 ${parts[1]} 页起 ${parts[2]} 面连续超过两页` : `Page ${parts[1]} continues the ${parts[2]} surface for a third page`;
+  }
+  if (error.startsWith("too_few_heroes:")) return zh ? `hero 页太少（${error.split(":")[1]}）` : `Too few hero pages (${error.split(":")[1]})`;
   return error;
 }
 
@@ -342,7 +427,7 @@ function createEditableSlidesDocument(source) {
     type: "text",
     name,
     folderId: folder.id,
-    body: markdownToMarpSlides(source.markdown),
+    body: markdownToMarpSlides(source.markdown, source.deckSpec),
     source: "Slides",
     durable: true,
     label: "draft",
@@ -389,6 +474,8 @@ function buildAiSlidesPrompt(source) {
   return [
     resolveWritingRoutePrompt("other-apps.marp-convert"),
     "",
+    slideDeckPromptBrief(source.deckSpec),
+    "",
     `SOURCE TITLE:\n${title}`,
     "",
     `SOURCE MARKDOWN:\n${source.markdown}`,
@@ -427,61 +514,110 @@ function cleanMarpSkillModelOutput(markdown) {
   return text.replace(/^\s*<!--\s*```[\s\S]*?-->\s*/g, "").trimEnd() + "\n";
 }
 
-function clioMarpStyleBlock() {
-  return marpSlidesFrontmatter
+// The style block the deck carries: the chosen era's CSS, indented to sit under
+// `style: |`. Without the runtime loaded the pre-era block still stands, so an
+// old caller cannot produce a deck with no styling at all.
+function clioMarpStyleBlock(spec = null) {
+  const runtime = slideDeckRuntime();
+  if (!runtime) {
+    return marpSlidesFrontmatter
+      .split("\n")
+      .slice(5, -1)
+      .join("\n");
+  }
+  const resolved = { ...runtime.defaultSpec(), ...(spec || {}) };
+  return runtime.cssFor(resolved.era)
     .split("\n")
-    .slice(5, -1)
+    .map((line) => (line ? `  ${line}` : line))
     .join("\n");
 }
 
-function ensureClioMarpVisualStyle(markdown) {
-  const text = normalizeMarkdownText(markdown).trimEnd();
-  const lines = text.split("\n");
-  if (lines[0]?.trim() !== "---") {
-    return [
-      "---",
-      "marp: true",
-      "theme: default",
-      "paginate: true",
-      "size: 16:9",
-      clioMarpStyleBlock(),
-      "---",
-      "",
-      text,
-    ].join("\n").trimEnd() + "\n";
-  }
+// Drops one YAML block (`style: |` and its indented body) from the head lines.
+function dropFrontmatterBlock(rows, key) {
+  const out = [];
+  let dropping = false;
+  rows.forEach((line) => {
+    if (new RegExp(`^${key}\\s*:`, "i").test(line)) { dropping = true; return; }
+    if (dropping) {
+      if (/^\S/.test(line)) dropping = false;
+      else return;
+    }
+    out.push(line);
+  });
+  return out;
+}
 
+// A deck always leaves this desk carrying its own identity: the era class, the
+// style block that renders it, and the one-line spec the gates read. A model may
+// write its own frontmatter; it may not write a deck that renders unstyled or
+// that loses the era it was told to use.
+function ensureClioMarpVisualStyle(markdown, spec = null) {
+  const runtime = slideDeckRuntime();
+  const text = normalizeMarkdownText(markdown).trimEnd();
+  // One implementation of "give this deck its identity": the restyle route
+  // calls the same function from ClioStage.
+  if (runtime && spec) return runtime.restyle(text, spec);
+  const lines = text.split("\n");
   let frontmatterEnd = -1;
-  for (let index = 1; index < lines.length; index += 1) {
-    if (lines[index].trim() === "---") {
-      frontmatterEnd = index;
-      break;
+  if (lines[0]?.trim() === "---") {
+    for (let index = 1; index < lines.length; index += 1) {
+      if (lines[index].trim() === "---") { frontmatterEnd = index; break; }
     }
   }
-  if (frontmatterEnd < 0) return `${text}\n`;
 
-  const frontmatter = lines.slice(1, frontmatterEnd).join("\n");
-  if (!/^marp\s*:\s*true\s*$/im.test(frontmatter)) {
-    return [
-      "---",
-      "marp: true",
-      "theme: default",
-      "paginate: true",
-      "size: 16:9",
-      clioMarpStyleBlock(),
-      "---",
-      "",
-      text,
-    ].join("\n").trimEnd() + "\n";
+  // Without the theme runtime the pre-era behaviour stands: a valid slide body
+  // gets the plain Marp frontmatter rather than being refused.
+  if (!runtime) {
+    if (lines[0]?.trim() !== "---" || frontmatterEnd < 0) {
+      return [
+        "---",
+        "marp: true",
+        "theme: default",
+        "paginate: true",
+        "size: 16:9",
+        clioMarpStyleBlock(),
+        "---",
+        "",
+        text,
+      ].join("\n").trimEnd() + "\n";
+    }
+    const frontmatter = lines.slice(1, frontmatterEnd).join("\n");
+    if (!/^marp\s*:\s*true\s*$/im.test(frontmatter)) {
+      return [
+        "---",
+        "marp: true",
+        "theme: default",
+        "paginate: true",
+        "size: 16:9",
+        clioMarpStyleBlock(),
+        "---",
+        "",
+        text,
+      ].join("\n").trimEnd() + "\n";
+    }
+    if (/^style\s*:\s*\|/im.test(frontmatter)) return `${text}\n`;
+    return [...lines.slice(0, frontmatterEnd), clioMarpStyleBlock(), ...lines.slice(frontmatterEnd)].join("\n").trimEnd() + "\n";
   }
-  if (/^style\s*:\s*\|/im.test(frontmatter)) return `${text}\n`;
 
-  const nextLines = [
-    ...lines.slice(0, frontmatterEnd),
-    clioMarpStyleBlock(),
-    ...lines.slice(frontmatterEnd),
-  ];
-  return nextLines.join("\n").trimEnd() + "\n";
+  const resolved = { ...runtime.defaultSpec(), ...(spec || {}) };
+  const specLine = runtime.specLine(resolved);
+  if (frontmatterEnd < 0) {
+    return [runtime.frontmatter(resolved), "", specLine, "", text].join("\n").trimEnd() + "\n";
+  }
+
+  let head = lines.slice(0, frontmatterEnd + 1);
+  const hadMarpTrue = /^marp\s*:\s*true\s*$/im.test(head.join("\n"));
+  head = dropFrontmatterBlock(head, "class");
+  head = dropFrontmatterBlock(head, "style");
+  const identity = [`class: era-${resolved.era}`, "style: |", ...clioMarpStyleBlock(resolved).split("\n")];
+  const sizeIndex = head.findIndex((line) => /^size\s*:/i.test(line));
+  const anchor = sizeIndex >= 0 ? sizeIndex : head.findIndex((line) => /^paginate\s*:/i.test(line));
+  if (anchor >= 0) head.splice(anchor + 1, 0, ...identity);
+  else head.splice(head.length - 1, 0, ...identity);
+  if (!hadMarpTrue) head.splice(1, 0, "marp: true");
+  const body = lines.slice(frontmatterEnd + 1).join("\n");
+  const bodyWithSpec = /<!--\s*clio-deck\s*:/i.test(body) ? body : `\n${specLine}\n${body}`;
+  return `${head.join("\n")}\n${bodyWithSpec}`.trimEnd() + "\n";
 }
 
 function compactMarpPlanningLine(value, maxLength = 180) {
@@ -599,6 +735,8 @@ function buildMarpSkillPrompt(source) {
     return [
       resolveWritingRoutePrompt("other-apps.marp-demo-deck"),
       "",
+      slideDeckPromptBrief(source.deckSpec),
+      "",
       "---",
       "marp: true",
       "theme: default",
@@ -622,6 +760,8 @@ function buildMarpSkillPrompt(source) {
   const plan = buildMarpDeckPlanSummary(source);
   return [
     resolveWritingRoutePrompt("other-apps.marp-deck"),
+    "",
+    slideDeckPromptBrief(source.deckSpec),
     "",
     "Required frontmatter. Include this exact style block unless you have a strong reason to add only more CSS:",
     "---",
@@ -698,7 +838,7 @@ function validateMarpSkillMarkdown(markdown, sourceMarkdown = "") {
   const minSlides = sourceWords > 260 ? 2 : 1;
   const maxSlides = Math.max(4, Math.min(48, Math.ceil(sourceWords / 35) + 4));
   if (slideCount < minSlides || slideCount > maxSlides) errors.push(`unreasonable_slide_count:${slideCount}`);
-  return { ok: errors.length === 0, errors, slideCount };
+  return withSlideDeckGate({ ok: errors.length === 0, errors, slideCount }, text, true);
 }
 
 function marpSkillValidationErrorLabel(error) {
@@ -720,7 +860,9 @@ function marpSkillValidationErrorLabel(error) {
     const count = error.split(":")[1] || "0";
     return zh ? `页数看起来不合理：${count} 页` : `Slide count looks unreasonable: ${count}`;
   }
-  return error;
+  // The deck gate's codes are shared with the slides validator, so their label
+  // lives in one place rather than being written twice.
+  return slidesValidationErrorLabel(error);
 }
 
 function formatMarpSkillValidationError(validation) {
@@ -776,24 +918,32 @@ async function generateMarpMarkdownAndOpenClioStage(sourceOverride = null) {
     setStatus(t("teachtext_empty"));
     return null;
   }
+  const runtime = slideDeckRuntime();
+  // The demo is a canned brief, so it reuses the remembered deck instead of
+  // stopping the walkthrough with a question.
+  const spec = runtime
+    ? (source.demoBrief ? runtime.storedSetup() : await runtime.chooseSetup())
+    : null;
+  if (runtime && !spec) return null;
+  const planned = { ...source, deckSpec: spec };
   if (!beginLongTask("marp-slides", currentLanguage === "zh" ? "正在生成 Marp Markdown..." : "Generating Marp Markdown...")) return null;
   try {
     let markdown = "";
     let validation = null;
-    let prompt = buildMarpSkillPrompt(source);
-    const maxAttempts = source.demoBrief ? 3 : 2;
+    let prompt = buildMarpSkillPrompt(planned);
+    const maxAttempts = planned.demoBrief ? 3 : 2;
     for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
       const result = await sendToLmStudio(prompt, getLongTaskSignal(), {
-        maxTokens: Number.isFinite(source.maxTokens) ? source.maxTokens : 3200,
+        maxTokens: Number.isFinite(planned.maxTokens) ? planned.maxTokens : 3200,
         temperature: attempt === 0 ? 0.18 : 0.08,
         skipContext: true,
         taskKind: "marp",
         streamPreference: "none",
       });
-      markdown = ensureClioMarpVisualStyle(cleanMarpSkillModelOutput(result));
-      validation = validateMarpSkillMarkdown(markdown, source.markdown);
+      markdown = ensureClioMarpVisualStyle(cleanMarpSkillModelOutput(result), spec);
+      validation = validateMarpSkillMarkdown(markdown, planned.markdown);
       if (validation.ok) break;
-      prompt = buildMarpRepairPrompt(source, markdown, validation);
+      prompt = buildMarpRepairPrompt(planned, markdown, validation);
     }
     if (!validation.ok) {
       const message = formatMarpSkillValidationError(validation);
@@ -837,11 +987,15 @@ async function printActiveMarkdownToSlidesAi() {
     setStatus(t("teachtext_empty"));
     return null;
   }
+  const runtime = slideDeckRuntime();
+  const spec = runtime ? await runtime.chooseSetup() : null;
+  if (!spec) return null;
+  const planned = { ...source, deckSpec: spec };
   if (!beginLongTask("ai-slides", "AI is drafting slides...")) return null;
   try {
     let markdown = "";
     let validation = null;
-    let prompt = buildAiSlidesPrompt(source);
+    let prompt = buildAiSlidesPrompt(planned);
     for (let attempt = 0; attempt < 2; attempt += 1) {
       const result = await sendToLmStudio(prompt, getLongTaskSignal(), {
         maxTokens: 2600,
@@ -850,10 +1004,10 @@ async function printActiveMarkdownToSlidesAi() {
         taskKind: "slides",
         streamPreference: "none",
       });
-      markdown = normalizeMarkdownText(result).trim() + "\n";
-      validation = validateMarpSlidesMarkdown(markdown, source.markdown);
+      markdown = ensureClioMarpVisualStyle(normalizeMarkdownText(result).trim(), spec);
+      validation = validateMarpSlidesMarkdown(markdown, planned.markdown);
       if (validation.ok) break;
-      prompt = buildMarpRepairPrompt(source, markdown, validation, { aiSlides: true });
+      prompt = buildMarpRepairPrompt(planned, markdown, validation, { aiSlides: true });
     }
     if (!validation.ok) {
       const message = formatSlidesValidationError(validation);
@@ -862,7 +1016,7 @@ async function printActiveMarkdownToSlidesAi() {
       pushSystemNotification(message, { state: "failed" });
       return null;
     }
-    openTemporarySlidesDocument(markdown, source.name);
+    openTemporarySlidesDocument(markdown, planned.name);
     return markdown;
   } catch (error) {
     if (!isAbortError(error)) {
@@ -880,10 +1034,26 @@ async function printActiveMarkdownToSlidesAi() {
 }
 
 function printActiveMarkdownToSlides() {
+  // Kept as the synchronous converter; the gate lives in the menu wrapper so
+  // every caller still reaches the same one implementation.
   const source = slidesSourceFromActiveWindow();
   if (!source.markdown.trim()) {
     setStatus(t("teachtext_empty"));
     return null;
   }
   return createEditableSlidesDocument(source);
+}
+
+// The three generation entry points share one gate: two questions the desk
+// cannot invent. Cancelling leaves the desk exactly as it was.
+async function printSlidesWithSetup() {
+  const runtime = slideDeckRuntime();
+  const spec = runtime ? await runtime.chooseSetup() : null;
+  if (!spec) return null;
+  const source = slidesSourceFromActiveWindow();
+  if (!source.markdown.trim()) {
+    setStatus(t("teachtext_empty"));
+    return null;
+  }
+  return createEditableSlidesDocument({ ...source, deckSpec: spec });
 }

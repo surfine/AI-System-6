@@ -19,7 +19,7 @@
 }
 
 .clio-chart-owner {
-  font-family: var(--clio-chart-typeface);
+  font-family: var(--clio-chart-typeface, var(--ui-font));
   font-size: var(--clio-chart-type-size);
   color: var(--clio-chart-ink);
 }
@@ -75,7 +75,7 @@ body.is-resizing-tdi .clio-chart-view-pane {
 .clio-chart-grid {
   border-collapse: var(--clio-chart-grid-collapse);
   border-spacing: var(--clio-chart-grid-spacing);
-  font-family: var(--clio-chart-typeface);
+  font-family: var(--clio-chart-typeface, var(--ui-font));
   font-size: var(--clio-chart-type-size);
   background: var(--clio-chart-surface);
   color: var(--clio-chart-ink);
@@ -175,7 +175,7 @@ body.is-resizing-tdi .clio-chart-view-pane {
   padding: 0;
   background: var(--clio-chart-surface);
   color: var(--clio-chart-ink);
-  font-family: var(--clio-chart-typeface);
+  font-family: var(--clio-chart-typeface, var(--ui-font));
   font-size: var(--clio-chart-type-size);
   text-align: right;
 }
@@ -199,14 +199,16 @@ body.is-resizing-tdi .clio-chart-view-pane {
   padding-bottom: 4px;
   margin-bottom: 8px;
   border-bottom: 1px solid var(--clio-chart-rule);
-  font-family: var(--clio-chart-typeface);
+  font-family: var(--clio-chart-typeface, var(--ui-font));
 }
 
 .clio-chart-view-head b {
   font-size: 12px;
 }
 
-.clio-chart-view-head span {
+/* The unit caption only: a descendant selector also greyed the labels inside
+   the projection buttons, leaving the chosen one grey on its blue key. */
+.clio-chart-view-head > span {
   flex: 1 1 40px;
   min-width: 0;
   font-size: 10px;
@@ -233,7 +235,7 @@ body.is-resizing-tdi .clio-chart-view-pane {
   flex: 1 1 auto;
   min-height: 0;
   overflow: auto;
-  font-family: var(--clio-chart-typeface);
+  font-family: var(--clio-chart-typeface, var(--ui-font));
 }
 
 .clio-chart-row {

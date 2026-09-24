@@ -53,5 +53,5 @@ failed.links[1].onload();
 await failed.api.whenReady();
 await retry;
 assert.equal(failed.api.getCurrentTheme(), "nextstep");
-assert.equal(failed.api.getReleaseReadyThemes().some(({ id }) => id === "nextstep"), false);
+assert.equal(failed.api.getReleaseReadyThemes().some(({ id }) => id === "nextstep"), true, "NeXTSTEP is a release appearance since 2026-09-23");
 console.log("PASS appearance transaction: pending, stale response, preview, failure, retry, boot readiness");

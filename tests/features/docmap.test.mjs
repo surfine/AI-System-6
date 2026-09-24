@@ -98,8 +98,8 @@ test.assertIncludes(app, "docmap-balanced-center-box", "Balanced center draws a 
 test.assertIncludes(app, "const isRootLink = datum.source === root", "First-level branches connect to the center, not the raw root rect edge");
 test.assertIncludes(app, "leftPort", "Balanced center exposes an explicit left connection port");
 test.assertIncludes(app, "rightPort", "Balanced center exposes an explicit right connection port");
-test.assertNotIncludes(css, ".docmap-balanced-node-text", "Old hand-rolled balanced text style is removed");
-test.assertNotIncludes(css, ".docmap-mm-left .markmap-foreign", "Removed the broken left-label text-align rule that clipped labels");
+test.assertNotIncludes(`${css}\n${read("styles/23-docmap.css")}`, ".docmap-balanced-node-text", "Old hand-rolled balanced text style is removed");
+test.assertNotIncludes(`${css}\n${read("styles/23-docmap.css")}`, ".docmap-mm-left .markmap-foreign", "Removed the broken left-label text-align rule that clipped labels");
 
 // fit + print must wait for the mirror + center pass, not frame the raw one-sided render.
 test.assertIncludes(app, 'docMapLayoutFor() === "balanced" && docMapBalancedPending', "fitDocMapCanvasToView waits for the balanced center pass");
@@ -226,5 +226,33 @@ test.assertIncludes(
 );
 test.assertIncludes(actions, "withDocMap(() => mapDocMapPictureReading())", "confirming defers to the lazy module the same way");
 test.assertIncludes(actions, "withDocMap(() => discardDocMapPictureReading())", "and so does discarding");
+
+// The DocMap sheet travels with the lazy module instead of riding every boot.
+const docMapCss = read("styles/23-docmap.css");
+const styleManifest = read("tooling/style-manifest.mjs");
+const config = read("app/core/config.js");
+test.assertIncludes(styleManifest, 'sources: ["styles/23-docmap.css"]', "DocMap's styles are a lazy bundle");
+test.assertIncludes(config, 'createLazyModuleLoader("AISystem6DocMapLoaded", ["app/features/docmap.js"], false, ["styles.docmap.css"])', "the loader brings the sheet with the module");
+test.assertNotMatches(css, /^\.docmap-(pane|tree|layout|markmap)/m, "no DocMap canvas rule is left on the startup sheet");
+for (const allowlist of ["apps/server/server/static.js", "tooling/lib/paths.mjs", "tooling/web-release-manifest.mjs", "tooling/check-release-assets.mjs"]) {
+  test.assertIncludes(read(allowlist), "styles.docmap.css", `${allowlist} serves the lazy sheet`);
+}
+
+// A branch can be picked. Markmap only folds (its circle); the words did
+// nothing, so every node command acted on the root.
+const docmap = read("app/features/docmap.js");
+test.assertIncludes(docmap, 'svg.addEventListener("click", pickDocMapCanvasNode)', "clicking a branch's words picks it");
+test.assertIncludes(docmap, 'if (event.target.closest("circle")) return;', "the circle keeps folding the branch");
+test.assertIncludes(docmap, "function docMapNodeForCanvasLabel(label, depth)", "the drawn words are matched back to the map's own node");
+test.assertIncludes(docmap, 'group.classList.toggle("is-docmap-picked", isPicked)', "the picked branch is marked on the canvas");
+test.assertIncludes(docMapCss, ".docmap-markmap-svg .is-docmap-picked .markmap-foreign > div > div {\n  border-radius: var(--control-radius);\n  background: var(--selection-bg);", "a picked branch reads as selected text does");
+test.assertIncludes(docmap, 'strip.id = "docmap-node-strip"', "the picked branch gets a strip under the canvas");
+test.assertIncludes(docmap, "const detail = picked.quote ||", "the strip shows the source words the branch is anchored to");
+test.assertIncludes(docmap, 'if (command === "question") sendDocMapNodeToQuestionSheet();', "the strip reaches the branch-level commands");
+test.assertIncludes(docmap, 'refreshAskBar("docMap")', "the ask bar's focus follows the pick");
+
+// A small map stays near its natural size when fitted.
+test.assertIncludes(docmap, "maxInitialScale: 1.25,", "fitting a three-branch map no longer doubles its labels");
+test.assertIncludes(read("styles/70-liquid-glass.css"), "body.use-liquid-glass .docmap-markmap-frame {\n  border: 0;", "Liquid Glass draws one canvas surface, not a card inside a card");
 
 test.finish();

@@ -853,7 +853,7 @@
   border: 1px solid transparent;
   border-top: 0;
   background: transparent;
-  font-family: var(--mono-font);
+  font-family: var(--readout-font);
   font-size: 11px;
   line-height: 1.35;
   color: var(--ink);
@@ -2417,7 +2417,7 @@ body.alarm-clock-ringing .alarm-clock-menu-icon {
 
 .memory-cards-details-bar output {
   min-width: 118px;
-  font-family: var(--mono-font);
+  font-family: var(--readout-font);
   font-size: 18px;
   line-height: 1.2;
   white-space: nowrap;
@@ -2781,7 +2781,7 @@ body.alarm-clock-ringing .alarm-clock-menu-icon {
   background: var(--drop-target-bg);
   box-shadow: var(--drop-target-shadow);
   color: var(--drop-target-fg);
-  font-family: var(--drop-target-font-family);
+  font-family: var(--drop-target-font-family, var(--ui-font));
   font-size: var(--drop-target-font-size);
   font-weight: var(--drop-target-font-weight);
   text-align: var(--drop-target-text-align);

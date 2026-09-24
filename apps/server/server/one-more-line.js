@@ -31,6 +31,7 @@
 "use strict";
 const { randomBytes, randomInt } = require("node:crypto");
 const bank = require("./one-more-line-bank.json");
+const { pickDiverseItems } = require("./one-more-tune-selection.js");
 
 const ROUND_SIZE = 10;
 const TTL = 2 * 60 * 60 * 1000;
@@ -68,29 +69,25 @@ function hasNeighbouringPhrase(items) {
 }
 
 /**
- * Ten questions, with the two-use phrases held apart.
+ * Ten questions, whole-round exclusions applied.
  *
- * A plain shuffle put the two One more thing questions next to each other often
- * enough to matter, and the second one is then free: the explanation of the
- * first names the other use on purpose. The order is repaired by drawing the
- * next question from the phrases that are not the previous one, and the whole
- * draw is retried if the bank is ever edited into a shape where that cannot
- * work — the invariant is checked, not assumed.
+ * The phrase rule this function used to carry — two questions about one phrase
+ * never side by side, because the first one's explanation names the other use on
+ * purpose — is now one part of the shared selector's conflict graph
+ * (`one-more-tune-selection.js`), which also holds one question per
+ * shared-evidence component, at most two per event, at least three era buckets
+ * and four historical questions. That is the policy the 2026-09-22 package
+ * brought with the questions it prepared; the selector throws a coded
+ * SelectionError instead of quietly shrinking the round.
  */
 function pickItems() {
-  for (let attempt = 0; attempt < 12; attempt += 1) {
-    const remaining = shuffled(bank.items).slice(0, ROUND_SIZE);
-    const ordered = [];
-    while (remaining.length) {
-      const previous = ordered[ordered.length - 1];
-      const allowed = remaining.filter((item) => !previous || phraseKey(item) !== phraseKey(previous));
-      const next = (allowed.length ? allowed : remaining)[randomInt((allowed.length ? allowed : remaining).length)];
-      ordered.push(next);
-      remaining.splice(remaining.indexOf(next), 1);
-    }
-    if (!hasNeighbouringPhrase(ordered)) return ordered;
-  }
-  throw new Error("One More Line cannot separate two questions about the same phrase");
+  return pickDiverseItems(bank.items, {
+    size: ROUND_SIZE,
+    maxPerEvent: 2,
+    minEras: 3,
+    minOld: 4,
+    oldYear: 2019,
+  });
 }
 
 /**

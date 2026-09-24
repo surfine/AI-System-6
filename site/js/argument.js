@@ -11,15 +11,17 @@
 // swaps those to the era the page is wearing, which is right everywhere else
 // and exactly wrong here: six rows of one era's icon would prove nothing.
 
-import { ERAS, iconSrc, setEra, onEraChange, currentEra, fontLabel } from "./eras.js?v=20260820a";
+import { ERAS, BRANCHES, iconSrc, setEra, onEraChange, currentEra, fontLabel } from "./eras.js?v=20260820a";
 import { L } from "./copy.js?v=20260820a";
 
 const doc = document;
 
 // Which monospace each era shipped, as the token names in site.css. Monaco
-// held from 1984, Menlo took Terminal in 10.6, SF Mono is current.
+// held from 1984, Menlo took Terminal in 10.6, SF Mono is current. NeXTSTEP
+// set Terminal in Ohlfs, which nobody ships; Courier is the nearest face.
 const MONO = {
   classic: "monaco",
+  nextstep: "courier",
   platinum: "monaco",
   aqua: "monaco",
   "snow-leopard": "menlo",
@@ -36,9 +38,10 @@ export function initArgument(list) {
   if (!list) return;
   list.innerHTML = "";
 
-  const rows = ERAS.map((era) => {
+  // The branch rows come after the line, set apart by a rule (desk.css).
+  const rows = [...ERAS, ...BRANCHES].map((era) => {
     const row = doc.createElement("li");
-    row.className = "claim-row";
+    row.className = BRANCHES.includes(era) ? "claim-row is-branch" : "claim-row";
     row.dataset.era = era.id;
     row.style.setProperty("--row-face", `var(--face-${era.id})`);
     row.style.setProperty("--row-mono", `var(--face-mono-${MONO[era.id]})`);

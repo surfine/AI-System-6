@@ -155,15 +155,44 @@ function projectOverviewItemCount(projectId) {
   return count;
 }
 
-// A project's tasks are a plain object of records hanging off the project. The
-// only thing the overview says about them is how many are done, so no schedule,
-// no percentage and no next step is derived from them here — or anywhere.
-function projectOverviewTaskCounts(project) {
-  const tasks = project?.clioProject?.tasks;
-  if (!tasks || typeof tasks !== "object") return null;
-  const records = Object.values(tasks);
-  if (!records.length) return null;
-  return { done: records.filter((task) => task?.done === true).length, total: records.length };
+// What the overview says about a project is the one thing still missing and
+// when it is due -- both facts the desk already holds. The old "done x/y" line
+// counted only the plan nodes the writer had ever touched, so it read like a
+// progress figure and was wrong; a busy writer ticks nothing, so the sentence
+// is worked out from the record through ClioProject's own evidence, and the
+// writer's ticks there outrank it. Nothing is estimated and nothing is stored.
+function projectOverviewNextStep(project) {
+  const model = window.AISystem6ClioProject;
+  if (!model || typeof markdownOutlineTree !== "function") return "";
+  const outline = markdownOutlineTree(project?.outline || "");
+  const plan = model.clioProjectPlan(project?.clioProject || {}, outline);
+  const evidence = model.clioProjectEvidence({
+    project,
+    outline,
+    files: chatFiles.filter((file) => file.projectId === project?.id),
+    cdItems: typeof projectCdItems !== "undefined" ? projectCdItems : [],
+  });
+  const step = model.clioProjectNextStep(plan, evidence);
+  if (step.key === "unwritten" || step.key === "uninserted") {
+    const named = step.titles.filter(Boolean).slice(0, 2).map((title) => `「${title}」`).join("");
+    return t(`project_overview_left_${step.key}`, step.count, step.count <= 2 ? named : "");
+  }
+  return t(`project_overview_left_${step.key}`);
+}
+
+// The handoff exactly as the writer typed it on the Project CD stop, with the
+// distance only when the words read as a day (the same reader the risk mark
+// uses). No date typed is said plainly; a date is never invented.
+function projectOverviewHandoff(project) {
+  const text = String(project?.clioProject?.tasks?.projectCd?.date || "").trim();
+  if (!text) return t("project_overview_handoff_none");
+  if (project.clioProject.tasks.projectCd.done === true) return t("project_overview_handoff_done", text);
+  const day = typeof projectHandDateDay === "function" ? projectHandDateDay(text) : null;
+  if (day === null || typeof projectTodayDay !== "function") return t("project_overview_handoff_words", text);
+  const days = day - projectTodayDay();
+  if (days > 0) return t("project_overview_handoff_in", text, days);
+  if (days === 0) return t("project_overview_handoff_today", text);
+  return t("project_overview_handoff_past", text, -days);
 }
 
 function renderProjectPeek() {
@@ -241,10 +270,11 @@ function renderProjectPeek() {
   parts.all.hidden = projects.length <= 1;
 }
 
-// The overview: every project in the order the portfolio already has them, and
-// nothing about any of them but what is filed and what is done. No dates, no
-// percentages, no "next step" — those are judgements this window would have to
-// invent, and the read-only promise is easier to keep than to explain.
+// The overview: every project in the order the portfolio already has them.
+// Each row says what is filed, the one thing still missing, and when it is
+// due -- the ten-second answer to "which one needs me today". No percentages,
+// no stats row, no "recent activity": the sentence is a fact from the record
+// and the date is the writer's own words.
 function renderProjectOverview(parts) {
   parts.title.textContent = t("project_overview");
   parts.count.textContent = t("project_overview_count", projects.length);
@@ -261,18 +291,23 @@ function renderProjectOverview(parts) {
     const items = document.createElement("small");
     items.textContent = t("project_overview_items", projectOverviewItemCount(project.id));
     button.append(name, items);
-    const tasks = projectOverviewTaskCounts(project);
-    if (tasks) {
-      const done = document.createElement("small");
-      done.textContent = t("project_overview_tasks", tasks.done, tasks.total);
-      button.append(done);
-    }
+    // A second line: the same diamond the disk icon wears, the handoff in the
+    // writer's own words, and the one thing still missing.
+    const second = [];
+    if (typeof projectDiskAtRisk === "function" && projectDiskAtRisk(project)) second.push(t("project_overview_risk"));
+    second.push(projectOverviewHandoff(project));
+    const nextStep = projectOverviewNextStep(project);
+    if (nextStep) second.push(nextStep);
     if (project.id === activeProjectId && isProjectMounted) {
       const mounted = document.createElement("small");
       mounted.className = "project-peek-mounted";
       mounted.textContent = t("project_overview_mounted");
       button.append(mounted);
     }
+    const line = document.createElement("small");
+    line.className = "project-peek-next";
+    line.textContent = second.join(" · ");
+    button.append(line);
     row.append(button);
     parts.list.append(row);
   });
@@ -293,6 +328,14 @@ function renderProjectOverview(parts) {
 }
 
 async function openProjectOverview() {
+  // The "still missing" sentence comes from ClioProject's model. It is loaded
+  // here rather than named in the boot loader table, so the overview pays for
+  // it and the boot floppy does not; the script loader loads a file only once.
+  if (!window.AISystem6ClioProject && typeof loadClassicScriptOnce === "function") {
+    await loadClassicScriptOnce("app/core/clio-project.js").catch(() => {});
+  }
+  // The two-line row is dressed by the lazy project-disks sheet, not the boot one.
+  if (typeof loadStylesheetOnce === "function") await loadStylesheetOnce("styles.project-disks.css").catch(() => {});
   peekedProjectId = "";
   peekedFileId = "";
   peekDarkroomVersions.clear();

@@ -548,10 +548,30 @@ function renderScrapbookPager(visibleScraps, selectedScrap = null) {
   scrapbookPageTrackEl.replaceChildren(fragment);
 }
 
+// What the filter field has typed, lower-cased. It narrows the list and the
+// System 6 page rail alike, because both draw from scrapbookPageScraps().
+let scrapFilterQuery = "";
+
+function scrapMatchesFilter(scrap) {
+  if (!scrapFilterQuery) return true;
+  const source = scrap.source || {};
+  return [scrap.title, scrap.body, scrap.selectedText, source.title, source.site, source.author, source.url]
+    .some((value) => String(value || "").toLowerCase().includes(scrapFilterQuery));
+}
+
+// The one answer to "which scraps are showing": the chosen stack, then the
+// filter. The list, the page rail and the in-place row refresh used to each
+// recompute the stack half of this on their own.
 function scrapbookPageScraps() {
-  return selectedScrapStack === "all"
-    ? getProjectScraps()
-    : getProjectScraps().filter((scrap) => getScrapStack(scrap) === selectedScrapStack);
+  return getProjectScraps().filter((scrap) =>
+    (selectedScrapStack === "all" || getScrapStack(scrap) === selectedScrapStack) && scrapMatchesFilter(scrap));
+}
+
+function setScrapFilter(value) {
+  const next = String(value || "").trim().toLowerCase();
+  if (next === scrapFilterQuery) return;
+  scrapFilterQuery = next;
+  renderScraps();
 }
 
 /**
@@ -594,6 +614,24 @@ function showNextScrapbookPage() {
   moveScrapbookPage(1);
 }
 
+// The line a row previews: the clipped passage when there is one; otherwise
+// the first line of the scrap that says something the row does not already
+// say. Section labels ("来源与日期", "Source:") and the source line itself sat
+// in the preview directly under the same source in the meta line.
+function scrapPreviewLine(scrap, meta) {
+  const quote = String(scrap.selectedText || "").replace(/\s+/g, " ").trim();
+  if (quote) return quote;
+  const known = String(meta || "").replace(/\s+/g, "");
+  const lines = String(scrap.body || "").split("\n")
+    .map((line) => line.replace(/^[>#*\-\s]+/, "").trim())
+    .filter(Boolean);
+  const telling = lines.find((line) => line.length > 12
+    && !/[:：]$/.test(line)
+    && !/^(Source|Site|URL|Author|Date|Time|Selected passage|Context (before|after))\s*:/i.test(line)
+    && !known.includes(line.replace(/\s+/g, "")));
+  return telling || lines[0] || "";
+}
+
 function scrapListItemHtml(scrap) {
   const stack = getScrapStack(scrap);
   const isClip = stack === "sources";
@@ -602,9 +640,8 @@ function scrapListItemHtml(scrap) {
   const meta = contract.timeRange
     ? `${contract.title} / ${contract.timeRange}`
     : scrap.source?.site || scrap.source?.title || scrapStackLabel(stack);
-  const body = scrap.selectedText || scrap.body || "";
   const date = formatScrapCardDate(scrap.createdAt);
-  const preview = body.replace(/\s+/g, " ").trim().slice(0, 72);
+  const preview = scrapPreviewLine(scrap, meta).slice(0, 96);
   const translationBadge = scrapHasTranslation(scrap)
     ? `<b class="scrap-translation-badge" title="${escapeHtml(t("show_translation"))}">${escapeHtml(t("translation_badge"))}</b>`
     : "";
@@ -620,7 +657,7 @@ function scrapListItemHtml(scrap) {
     <span class="scrap-card-list-title">${escapeHtml(scrap.title)}</span>
     ${translationBadge}
     ${citationBadge}
-    <small class="scrap-card-list-meta">${escapeHtml([meta, date].filter(Boolean).join(" - "))}</small>
+    <small class="scrap-card-list-meta">${escapeHtml([meta, date].filter(Boolean).join(" \u00b7 "))}</small>
     <small class="scrap-card-list-stats">${escapeHtml(preview || "--")}</small>
   `;
 }
@@ -636,9 +673,13 @@ function formatScrapCardDate(value) {
   });
 }
 
+// Two marks under the title: which stack the scrap is in, and whether it
+// carries a translation. The keyword tags extractScrapTags guesses from word
+// frequency stay searchable (the filter reads them through the body) but are
+// not dressed up here as the writer's own categories, and the source has its
+// own line now.
 function renderScrapTags(scrap) {
   scrapTagsEl.replaceChildren();
-  const tags = scrap.tags || extractScrapTags(scrap.body);
   const stack = document.createElement("span");
   stack.className = "tag";
   stack.textContent = scrapStackLabel(getScrapStack(scrap));
@@ -650,28 +691,6 @@ function renderScrapTags(scrap) {
     translation.textContent = t("translation_badge");
     translation.title = formatTranslationMeta(scrap.translationLanguage, scrap.translationCreatedAt, scrap.translationSource, scrap.translationModel);
     scrapTagsEl.append(translation);
-  }
-
-  tags.forEach(tag => {
-    const span = document.createElement("span");
-    span.className = "tag";
-    span.textContent = tag;
-    scrapTagsEl.append(span);
-  });
-
-  if (scrap.source?.url) {
-    const source = document.createElement("span");
-    source.className = "tag source-tag";
-    source.textContent = scrap.source.site || scrap.source.title || "reader";
-    source.title = scrap.source.url;
-    scrapTagsEl.append(source);
-  }
-  if (scrap.sourceKind === "video_transcript" || scrap.source?.sourceKind === "video_transcript") {
-    const source = document.createElement("span");
-    source.className = "tag source-tag";
-    source.textContent = "video_transcript";
-    source.title = sourceContractForScrap(scrap).timeRange || "";
-    scrapTagsEl.append(source);
   }
 }
 
@@ -727,13 +746,13 @@ function getReaderSelectionContext(selection, selectedText, radius = 220) {
 }
 
 function renderScraps() {
-  const projectScraps = getProjectScraps();
-  const visibleScraps = selectedScrapStack === "all"
-    ? projectScraps
-    : projectScraps.filter((scrap) => getScrapStack(scrap) === selectedScrapStack);
+  const visibleScraps = scrapbookPageScraps();
   syncScrapSelection(visibleScraps);
   scrapCountEl.textContent = t("scraps_count", visibleScraps.length);
   const selectedCount = getSelectedScraps().length;
+  // Two or more selected: the editor gives way to what acts on all of them.
+  const scrapForm = document.getElementById("scrap-form");
+  if (scrapForm) scrapForm.dataset.scrapMode = selectedScrapIds.size > 1 ? "multi" : "single";
   if (scrapSelectionCountEl) {
     scrapSelectionCountEl.textContent = selectedCount ? t("selected_scraps_count", selectedCount) : t("no_scraps_selected");
   }
@@ -752,6 +771,7 @@ function renderScraps() {
   const signature = [
     activeProjectId,
     selectedScrapStack,
+    scrapFilterQuery,
     selectedScrapId,
     [...selectedScrapIds].sort().join(","),
     scrapTranslationViewMode,
@@ -769,7 +789,8 @@ function renderScraps() {
     const empty = document.createElement("button");
     empty.type = "button";
     empty.className = "scrap-empty-card";
-    empty.innerHTML = `<span class="mini-icon scrapbook-desk-icon"></span><b>${escapeHtml(t("scrapbook"))}</b><small>${escapeHtml(t("no_scraps"))}</small>`;
+    const emptyMessage = scrapFilterQuery ? t("scrap_filter_empty", scrapFilterQuery) : t("no_scraps");
+    empty.innerHTML = `<span class="mini-icon scrapbook-desk-icon"></span><b>${escapeHtml(t("scrapbook"))}</b><small>${escapeHtml(emptyMessage)}</small>`;
     empty.disabled = true;
     fragment.append(empty);
     scrapListEl.append(fragment);
@@ -849,24 +870,45 @@ function canOpenScrapSource(scrap) {
     || (contract.kind === "documentClip" && !!contract.fileId);
 }
 
+// Where the scrap came from, as a citation: the source's own title on one
+// line, then site, author, date, time range and the citation key. It used to
+// be a single ellipsized line drawn like a text field the writer could not
+// type into.
 function renderScrapSourceInfo(scrap) {
   if (!scrapSourceInfoEl) return;
+  scrapSourceInfoEl.replaceChildren();
+  scrapSourceInfoEl.removeAttribute("title");
+  const line = (className, text) => {
+    const element = document.createElement("span");
+    element.className = className;
+    element.textContent = text;
+    scrapSourceInfoEl.append(element);
+  };
   if (!scrap) {
-    scrapSourceInfoEl.innerHTML = `<span>${escapeHtml(t("source_no_origin"))}</span>`;
+    line("scrap-citation-meta", t("source_no_origin"));
     return;
   }
 
   const contract = sourceContractForScrap(scrap);
+  const source = scrap.source || {};
   const citation = sourceCitationForContextItem({
     kind: "scrap",
     id: scrap.id,
     projectId: scrap.projectId,
     tags: scrap.tags || [],
-    sourceType: scrap.source?.type || "",
+    sourceType: source.type || "",
   });
-  scrapSourceInfoEl.innerHTML = `
-    <span>${escapeHtml(contract.origin || contract.target || t("source_saved_in_project"))}${citation ? ` - ${escapeHtml(citation)}` : ""}</span>
-  `;
+  const title = source.title || contract.title || "";
+  const details = [source.site || contract.origin, source.author, source.date, contract.timeRange, citation]
+    .map((value) => String(value || "").trim())
+    .filter((value, index, all) => value && value !== title && all.indexOf(value) === index);
+  if (!title && !details.length) {
+    line("scrap-citation-meta", contract.target || t("source_saved_in_project"));
+    return;
+  }
+  if (title) line("scrap-citation-title", title);
+  if (details.length) line("scrap-citation-meta", details.join(" \u00b7 "));
+  if (source.url) scrapSourceInfoEl.title = source.url;
 }
 
 function updateSelectedScrapMetadata() {
@@ -883,9 +925,7 @@ function updateSelectedScrapMetadata() {
   renderScrapTags(scrap);
   renderScrapSourceInfo(scrap);
 
-  const visibleScraps = selectedScrapStack === "all"
-    ? getProjectScraps()
-    : getProjectScraps().filter((item) => getScrapStack(item) === selectedScrapStack);
+  const visibleScraps = scrapbookPageScraps();
   const buttons = scrapListEl.querySelectorAll("button");
   const index = visibleScraps.indexOf(scrap);
   if (buttons[index]) {
@@ -1476,7 +1516,7 @@ function deleteSelectedScrap() {
   if (selected.length) playSystemSound("trash");
 }
 
-let smounted=!1;function mountScrapbookRuntime(){if(smounted)return!0;smounted=!0;scrapbookAskForm?.addEventListener("submit",askScrapbookQuestion);registerAskBarSource("scrapbook",describeScrapbookAskScope);toggleScrapTranslationButton?.addEventListener("click",toggleScrapTranslationView);return!0}
+let smounted=!1;function mountScrapbookRuntime(){if(smounted)return!0;smounted=!0;scrapbookAskForm?.addEventListener("submit",askScrapbookQuestion);registerAskBarSource("scrapbook",describeScrapbookAskScope);toggleScrapTranslationButton?.addEventListener("click",toggleScrapTranslationView);const filter=document.getElementById("scrap-filter");filter?.addEventListener("input",()=>setScrapFilter(filter.value));filter?.addEventListener("keydown",event=>{if(event.key==="Escape"&&filter.value){event.preventDefault();filter.value="";setScrapFilter("")}});return!0}
 function swin(){return document.querySelector(".window.is-active")?.dataset.window==="scrapbook"}function sctrl(s){const c=document.querySelector(s);return!!c&&!c.disabled&&!c.hidden}
 const sav={"open-scrapbook":()=>!0,"scrapbook-open-source":()=>sctrl("#open-scrap-source"),"scrapbook-page-previous":()=>canMoveScrapbookPage(-1),"scrapbook-page-next":()=>canMoveScrapbookPage(1),"scrapbook-keep-reading":()=>!!scrapReadingProposal,"scrapbook-discard-reading":()=>!!scrapReadingProposal,"scrapbook-toggle-translation":()=>sctrl("#toggle-scrap-translation"),"scrapbook-insert":()=>sctrl("#insert-scrap"),"scrapbook-attach":()=>sctrl("#attach-scrap-to-assistant"),"scrapbook-send-question":()=>sctrl("#send-scraps-to-question"),"scrapbook-outline":()=>sctrl("#outline-scraps"),"scrapbook-export-bilingual":()=>sctrl("#download-scraps-bilingual"),"scrapbook-delete":()=>sctrl("#delete-scrap"),"focus-scrapbook-question":()=>getSelectedScraps().length>0};
 

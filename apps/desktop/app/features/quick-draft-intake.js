@@ -876,6 +876,45 @@ function quickDraftMaterialsForModel(materials) {
   });
 }
 
+async function returnFromWalk() {
+  collectRefs();
+  const text = await showInputDialog({
+    title: t("quick_draft_walk_title"),
+    message: t("quick_draft_walk_message"),
+    placeholder: t("quick_draft_walk_placeholder"),
+    multiline: true,
+  });
+  if (text == null || !text.trim()) return false;
+  const { parseWalkEnvelope, findSpokenMarks, walkMaterialText, walkFileName } = window.AISystem6WalkTranscript;
+  const { meta, body } = parseWalkEnvelope(text);
+  if (!body) {
+    setQuickDraftStatus(t("quick_draft_walk_empty"));
+    return false;
+  }
+  const marks = findSpokenMarks(body);
+  const confirmed = await showSystemModal(t("quick_draft_walk_confirm",
+    meta || t("quick_draft_walk_undated"), body.length.toLocaleString(), marks.length),
+  "confirm", { confirmKey: "quick_draft_walk_confirm_button" });
+  if (confirmed !== "yes") return false;
+  try {
+    const file = new File([walkMaterialText({ body, marks, labels: {
+      marksHeading: t("quick_draft_walk_marks_heading"),
+      transcriptHeading: t("quick_draft_walk_transcript_heading"),
+    } })], walkFileName({ meta, now: new Date(), prefix: t("quick_draft_walk_file_prefix") }), { type: "text/plain" });
+    const result = await insertFilesIntoFileFloppy([file], { source: "quickDraft", openAfter: "" });
+    if (result && result.mountedFileNames?.length) {
+      if (typeof renderSourceMap === "function") renderSourceMap(normalizeQuickDraftRecord(activeProjectQuickDraft({ create: false })?.record));
+      if (typeof updateSourceCount === "function") updateSourceCount();
+      setQuickDraftStatus(t("quick_draft_walk_done", result.mountedFileNames[0], marks.length));
+      return true;
+    }
+  } catch (error) {
+    console.warn("[Quick Draft] Walk import failed", error);
+  }
+  setQuickDraftStatus(t("quick_draft_walk_failed"));
+  return false;
+}
+
 async function importChatScreenshots() {
   if (!getActiveProject()) {
     setQuickDraftStatus(t("quick_draft_no_project"));

@@ -33,7 +33,7 @@ test.assertIncludes(windowsCss, ":where(:nth-child(even of .find-path-result))",
 
 // Era blocks assign tokens only; no app selector may appear under a theme
 // scope (child-appearance budget is zero).
-test.assertNotIncludes(platinumCss, '[data-theme="platinum"] .find-path', "Platinum carries the Searcher table through tokens, not app selectors");
+test.assertNotMatches(platinumCss, /\[data-(?:theme|lineage~)="platinum"\] \.find-path/, "Platinum carries the Searcher table through tokens, not app selectors");
 test.assertNotIncludes(aquaCss, '.find-path', "the Aqua branch carries the Searcher table through tokens, not app selectors");
 test.assertIncludes(platinumCss, "--find-path-relevance-display: block;", "Platinum turns the Sherlock relevance column on");
 test.assertIncludes(aquaCss, "--find-path-result-even-bg: #edf3fe;", "Aqua zebra-stripes the result rows");

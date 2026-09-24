@@ -20,6 +20,14 @@ window.AISystem6LocalLMStudio = (() => {
   // (parallel embed autoloads, retries) from each stacking a duplicate beside
   // the others.
   const loadModelInFlight = new Map();
+  // Models that answered `reasoning: "off"` with "does not expose reasoning
+  // configuration". LM Studio's native chat lets each model choose its own
+  // reasoning default, and a thinking-by-default model (a 35B-A3B, say)
+  // spends the whole output budget thinking and returns an empty message —
+  // the "translated nothing after four minutes" report. So every native call
+  // asks for "off"; a model that refuses the setting is remembered here and
+  // asked plainly from then on.
+  const noReasoning = new Set();
 
   function currentProvider() {
     const value = document.getElementById("local-provider")?.value || "lm-studio";
@@ -603,6 +611,7 @@ window.AISystem6LocalLMStudio = (() => {
     if (Number.isFinite(maxOutputTokens) && maxOutputTokens > 0) {
       request.max_output_tokens = Math.round(maxOutputTokens);
     }
+    if (payload.ai_system6_enable_thinking !== true && !noReasoning.has(request.model)) request.reasoning = "off";
     return request;
   }
 
@@ -1032,6 +1041,11 @@ window.AISystem6LocalLMStudio = (() => {
     } catch (error) {
       connected = false;
       throw networkError(error, signal);
+    }
+    if (!response.ok && nativeRequest?.reasoning && /reasoning/i.test(await response.clone().text().catch(() => ""))) {
+      noReasoning.add(nativeRequest.model);
+      delete nativeRequest.reasoning;
+      response = await post();
     }
     if (!response.ok && apiMode === "native") {
       const probeText = await response.clone().text().catch(() => "");

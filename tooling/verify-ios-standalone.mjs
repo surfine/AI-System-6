@@ -568,6 +568,450 @@ async function waitForStableInk(udid, screen, scratch, tag, floor, { minWaitMs =
   return { pixels: last, path, attempts };
 }
 
+// The insets a real web clip reports, in points. Only the geometry phase needs
+// them: it runs the app in WebKit at the clip's own viewport, where env() reports
+// 0/0/0/0 because a browser is not a web clip, and injects these instead — the
+// same trick verify-display-corners uses for the display's corners. Landscape
+// turns the portrait top inset into the two side insets and keeps a shorter
+// bottom one, which is what iOS does on an iPhone.
+const STANDALONE_INSETS = {
+  "iPhone Air": { top: 59, bottom: 34 },
+  "iPhone 17": { top: 59, bottom: 34 },
+  "iPhone 17 Pro": { top: 62, bottom: 34 },
+  "iPhone 17 Pro Max": { top: 62, bottom: 34 },
+  "iPhone 17e": { top: 47, bottom: 34 },
+};
+
+function standaloneInsets(deviceName) {
+  return STANDALONE_INSETS[deviceName] || STANDALONE_INSETS["iPhone Air"];
+}
+
+/**
+ * Is the status band the app's own chrome, and is that chrome solid?
+ *
+ * A home-screen web app gets a blur painted across the top of the screen by the
+ * system, and the shape of what you see is whatever the app's bar lets through:
+ * over a flat, opaque strip the blur has nothing to work with and reads as
+ * nothing at all; over a translucent material it is the desk showing through,
+ * which is the washed band the owner reported (MacRumors thread "iOS 27 PWA
+ * blurred across top of screen", and the reply that traced it to a bar whose
+ * background is not fully opaque).
+ *
+ * So the question is asked of pixels, not of style declarations: put a black
+ * backdrop behind the bar, photograph the band, swap it for a white one, and
+ * photograph it again. Byte-identical photographs mean the band does not show
+ * what is behind it. Style reading cannot answer this — a bar can be opaque by
+ * an image whose colours happen to be solid (Aqua's pinstripes) or translucent
+ * by a colour (Liquid Glass's 0.9 white).
+ *
+ * @returns {Promise<{tested: boolean, opaque?: boolean, reason?: string}>}
+ */
+async function bandProbe(page, orientation) {
+  if (!orientation.box.top) return { tested: false, reason: "the surface reports no top inset" };
+  await page.evaluate(() => {
+    if (document.getElementById("standalone-band-probe")) return;
+    const back = document.createElement("div");
+    back.id = "standalone-band-probe";
+    // Below the menu bar's own stacking token and above the desk, so the bar
+    // composites over it exactly as it composites over the wallpaper.
+    back.style.cssText = "position:fixed;inset:0;z-index:5;background:#000;pointer-events:none";
+    document.body.prepend(back);
+  });
+  const clip = { x: 0, y: 0, width: orientation.width, height: Math.max(8, Math.round(orientation.box.top)) };
+  const shot = async (color) => {
+    await page.evaluate((value) => { document.getElementById("standalone-band-probe").style.background = value; }, color);
+    await page.waitForTimeout(120);
+    return page.screenshot({ clip });
+  };
+  const dark = await shot("#000000");
+  const light = await shot("#ffffff");
+  await page.evaluate(() => document.getElementById("standalone-band-probe")?.remove());
+  return { tested: true, opaque: Buffer.compare(dark, light) === 0 };
+}
+
+/**
+ * Two identical reads in a row, before any geometry verdict.
+ *
+ * The phase asks whether a control is reachable at rest. A reading taken while
+ * the window is still growing to its full-screen size measures the animation
+ * instead of the layout, which is how the same 44px resize box was reported as
+ * 16x16 on the tablet in one run and measured at 44x44 in every hand-made
+ * replication. Settling first is not a loosened assertion: a control that is
+ * genuinely too small stays too small at rest, and still fails.
+ *
+ * @returns {Promise<boolean>} whether the surface stopped moving within the window
+ */
+async function settleGeometry(page, timeoutMs = 2000) {
+  // Animations off first. A geometry verdict is about the layout at rest, and
+  // `getBoundingClientRect` reports a transformed box: the window (or the face
+  // inside it) animates in with a scale, and an audit that reads rects while
+  // that runs measures the animation. That is the most likely reason the same
+  // 44px box came back as 44x40, 16x16 and 13x13 on three runs of one state.
+  await page.addStyleTag({
+    content: "*, *::before, *::after { animation: none !important; transition: none !important; }",
+  }).catch(() => {});
+  const until = Date.now() + timeoutMs;
+  let previous = "";
+  while (Date.now() < until) {
+    const reading = await page.evaluate(() => {
+      const win = document.querySelector('.window[data-window="oneMoreTune"]');
+      if (!win) return "";
+      const box = win.querySelector(".resize-box")?.getBoundingClientRect();
+      const bar = win.querySelector(".title-bar")?.getBoundingClientRect();
+      const pane = win.querySelector(".one-more-tune-pane");
+      return [
+        Math.round(box?.width || 0), Math.round(box?.height || 0), Math.round(box?.top || 0),
+        Math.round(bar?.top || 0), Math.round(win.getBoundingClientRect().height),
+        pane ? pane.scrollHeight : 0,
+      ].join("|");
+    }).catch(() => "");
+    if (reading && reading === previous) return true;
+    previous = reading;
+    await new Promise((wait) => setTimeout(wait, 120));
+  }
+  return false;
+}
+
+/**
+ * The standalone geometry phase: what the layout must guarantee once the real
+ * insets are in play.
+ *
+ * The device phase above answers "does the desk paint?" from pixels, and it
+ * cannot answer "is anything under the home indicator" — the accessibility tree
+ * carries no computed styles, and a photograph cannot tell a control 20px from
+ * the edge from one under a 34px inset. This phase runs the same build in WebKit
+ * at the clip's own viewport with the device's insets injected and asks the three
+ * questions a person feels: is a control under the notch or the indicator, is the
+ * game's own explanation cut off, and are the controls thumb-sized. It is a
+ * browser phase on purpose, and its scope is exactly that: the layout half of
+ * the standalone surface, not a second verdict about Safari.
+ */
+async function geometryPhase({ url, deviceName, screen, scratch, summary, failures }) {
+  const { webkit } = require("playwright");
+  const insets = standaloneInsets(deviceName);
+  const orientations = [
+    {
+      name: "portrait",
+      width: screen.width,
+      height: screen.height,
+      box: { top: insets.top, bottom: insets.bottom, left: 0, right: 0 },
+    },
+    {
+      name: "landscape",
+      width: screen.height,
+      height: screen.width,
+      box: { top: 0, bottom: Math.min(insets.bottom, 21), left: insets.top, right: insets.top },
+    },
+    // The tablet, which is not the phone's screen at another size: a 12.9" iPad
+    // reports a 24pt top inset and its layout never enters the phone's portrait
+    // query. Measured 2026-09-23 — before the installed-surface rule covered it,
+    // the bar stayed 44px tall in flow with no top padding and the first menu
+    // button began at y=1, so the clock and the battery were painted over
+    // 文件 / 编辑 / 对话 / 特别 in all eight appearances. The phase injects
+    // insets, so it can ask this of a tablet without one on the bench.
+    {
+      name: "ipad",
+      width: 1024,
+      height: 1366,
+      box: { top: 24, bottom: 20, left: 0, right: 0 },
+    },
+  ];
+  const measured = [];
+  const browser = await webkit.launch();
+  try {
+    for (const orientation of orientations) {
+      const context = await browser.newContext({
+        viewport: { width: orientation.width, height: orientation.height },
+        isMobile: true,
+        hasTouch: true,
+        deviceScaleFactor: 2,
+      });
+      const page = await context.newPage();
+      const pageErrors = [];
+      page.on("pageerror", (error) => pageErrors.push(String(error.message).slice(0, 160)));
+      // The app asks the platform which surface it is on, so the phase answers
+      // the same question the same way: a web clip reports navigator.standalone,
+      // and WebKit in a browser never does.
+      await page.addInitScript(() => {
+        try {
+          Object.defineProperty(window.navigator, "standalone", { value: true, configurable: true });
+        } catch {
+          // A browser that refuses the property is not a web clip.
+        }
+      });
+      await page.goto(url, { waitUntil: "domcontentloaded" });
+      await page.waitForFunction(() => !document.body.classList.contains("is-booting"), null, { timeout: 120000 });
+      await page.addStyleTag({
+        content: `:root{--safe-area-top:${orientation.box.top}px;--safe-area-bottom:${orientation.box.bottom}px;`
+          + `--safe-area-left:${orientation.box.left}px;--safe-area-right:${orientation.box.right}px;}`,
+      });
+      await page.evaluate(() => handleAction("open-assistant"));
+      await page.waitForTimeout(700);
+
+      const audit = (box) => page.evaluate((insetBox) => {
+        const height = window.innerHeight;
+        const descriptor = (el) => `${el.tagName.toLowerCase()}${el.id ? `#${el.id}` : ""} "${String(el.textContent || el.getAttribute("aria-label") || "").trim().slice(0, 16)}"`;
+        // Every style read happens before every rect read, on purpose.
+        //
+        // This used to interleave them (a `getComputedStyle` per ancestor inside
+        // a per-control rect walk), and the readings were not stable: two runs of
+        // one state gave "close 44x40, zoom 44x40, grow 28x28" and then only a
+        // position finding, while a three-control replication of the same
+        // function printed 44x44 everywhere. The reason is in this app:
+        // `app/core/window-frame-bars.js` observes each window with a
+        // ResizeObserver and rewrites its frame bars from the callback. Reading
+        // layout flushes pending style work, that flush can deliver the observer,
+        // and the callback mutates the very window being measured — so a long
+        // sweep can mix a before-callback layout with an after-callback one.
+        // Reading all styles first, then all rects in one uninterrupted pass,
+        // gives one snapshot; the assertions themselves are unchanged.
+        const candidates = [...document.querySelectorAll("button, [role='button'], input, select, textarea, .choice, .rating")]
+          .map((el) => {
+            const style = getComputedStyle(el);
+            const clips = [];
+            let node = el.parentElement;
+            while (node && node !== document.body) {
+              const parentStyle = getComputedStyle(node);
+              if (/(auto|scroll|hidden|clip)/.test(parentStyle.overflowY) || /(auto|scroll|hidden|clip)/.test(parentStyle.overflowX)) clips.push(node);
+              node = node.parentElement;
+            }
+            return { el, style, clips };
+          })
+          .filter(({ el, style }) => style.visibility !== "hidden" && style.display !== "none" && !el.closest(".is-hidden"));
+        // One layout flush, no style reads in between: the rects all describe the
+        // same frame.
+        const controls = [];
+        for (const candidate of candidates) {
+          let rect = candidate.el.getBoundingClientRect();
+          if (rect.width < 4 || rect.height < 4) continue;
+          for (const node of candidate.clips) {
+            const clip = node.getBoundingClientRect();
+            const top = Math.max(rect.top, clip.top);
+            const bottom = Math.min(rect.bottom, clip.bottom);
+            const left = Math.max(rect.left, clip.left);
+            const right = Math.min(rect.right, clip.right);
+            rect = { top, bottom, left, right, width: Math.max(0, right - left), height: Math.max(0, bottom - top) };
+          }
+          if (rect.width < 4 || rect.height < 4) continue;
+          controls.push({ el: candidate.el, rect });
+        }
+        const win = document.querySelector('.window[data-window="oneMoreTune"]');
+        const pane = win?.querySelector(".one-more-tune-pane");
+        // The round's reveal names the record in its liner notes: the song, who
+        // played it, where it aired and the two ways out.
+        const explanation = win?.querySelector('.omt-room[data-omt-phase="reveal"] .omt-notes');
+        return {
+          installedHook: document.documentElement.hasAttribute("data-installed"),
+          // The status band itself: is it the app's own chrome, and is that
+          // chrome solid? A web clip gets a system blur across the top of the
+          // screen, and the shape of that blur is whatever the bar lets through.
+          barBand: (() => {
+            const bar = document.querySelector(".menu-bar");
+            if (!bar) return null;
+            const rect = bar.getBoundingClientRect();
+            const style = getComputedStyle(bar);
+            return {
+              height: Math.round(rect.height),
+              position: style.position,
+              coversInset: rect.top <= 0.5 && rect.bottom >= insetBox.top - 1,
+            };
+          })(),
+          underBottomInset: controls.filter(({ rect }) => rect.bottom > height - insetBox.bottom + 1).map(({ el }) => descriptor(el)),
+          aboveTopInset: controls.filter(({ rect }) => rect.top < insetBox.top - 1).map(({ el }) => descriptor(el)),
+          undersized: controls
+            .filter(({ el }) => el.closest('.window[data-window="oneMoreTune"]'))
+            // Rounded, because an intersection with a scroll container lands on
+            // a fractional pixel: a 44px control measured as 43.99 is the size
+            // it is, not a miss.
+            .filter(({ rect }) => Math.round(rect.height) < 44)
+            .map(({ el, rect }) => `${descriptor(el)} ${Math.round(rect.width)}x${Math.round(rect.height)}`),
+          explanation: explanation ? {
+            clamp: getComputedStyle(explanation).getPropertyValue("-webkit-line-clamp").trim() || "none",
+            truncated: explanation.scrollHeight > explanation.clientHeight + 2,
+            characters: explanation.textContent.trim().length,
+          } : null,
+          sourceLinkVisible: Boolean(win?.querySelector('.omt-room[data-omt-phase="reveal"] .omt-links :is(a, button)')?.getBoundingClientRect().height),
+          horizontalOverflow: pane ? pane.scrollWidth > pane.clientWidth + 2 : false,
+        };
+      }, box);
+
+      await page.evaluate(() => handleAction("open-one-more-tune"));
+      await page.waitForSelector('[data-one-more-tune-view="challenge"]', { timeout: 60000 });
+      await page.click('[data-one-more-tune-view="challenge"]');
+      await page.waitForTimeout(400);
+      await settleGeometry(page);
+      const desk = await audit(orientation.box);
+      if (process.env.OMT_GEOMETRY_DEBUG) {
+        console.log(`    [debug ${orientation.name}] ${await page.evaluate(() => {
+          const win = document.querySelector('.window[data-window="oneMoreTune"]');
+          const box = win?.querySelector(".resize-box");
+          const bar = win?.querySelector(".title-bar");
+          const raw = box?.getBoundingClientRect();
+          const close = win?.querySelector(".close-box");
+          const closeRect = close?.getBoundingClientRect();
+          return `theme=${document.body.dataset.theme || "?"} installed=${document.documentElement.hasAttribute("data-installed")} coarse=${matchMedia("(hover: none) and (pointer: coarse)").matches} win=${Math.round(win?.getBoundingClientRect().width)}x${Math.round(win?.getBoundingClientRect().height)} bar=${Math.round(bar?.getBoundingClientRect().height)} box=${Math.round(raw?.width)}x${Math.round(raw?.height)}@${Math.round(raw?.top)} close=${Math.round(closeRect?.width)}x${Math.round(closeRect?.height)} closeToken=${close ? getComputedStyle(close).getPropertyValue("--system-titlebar-control-size").trim() : "-"}`;
+        })}`);
+        // The same two numbers the audit would report, printed beside the raw
+        // box: raw rect vs the rect after `visibleRect()` walks the ancestors.
+        console.log(`    [debug ${orientation.name} filter] ${await page.evaluate(() => {
+          const win = document.querySelector('.window[data-window="oneMoreTune"]');
+          const visibleRect = (el) => {
+            let rect = el.getBoundingClientRect();
+            let node = el.parentElement;
+            while (node && node !== document.body) {
+              const style = getComputedStyle(node);
+              if (/(auto|scroll|hidden|clip)/.test(style.overflowY) || /(auto|scroll|hidden|clip)/.test(style.overflowX)) {
+                const clip = node.getBoundingClientRect();
+                const top = Math.max(rect.top, clip.top);
+                const bottom = Math.min(rect.bottom, clip.bottom);
+                const left = Math.max(rect.left, clip.left);
+                const right = Math.min(rect.right, clip.right);
+                rect = { top, bottom, left, right, width: Math.max(0, right - left), height: Math.max(0, bottom - top) };
+              }
+              node = node.parentElement;
+            }
+            return rect;
+          };
+          const report = (selector) => {
+            const el = win?.querySelector(selector);
+            if (!el) return `${selector}: none`;
+            const raw = el.getBoundingClientRect();
+            const seen = visibleRect(el);
+            return `${selector.replace(".", "")}=${Math.round(raw.width)}x${Math.round(raw.height)}->${Math.round(seen.width)}x${Math.round(seen.height)}`;
+          };
+          return [report(".close-box"), report(".resize-box"), report(".grow-box")].join(" ");
+        })}`);
+      }
+      const band = await bandProbe(page, orientation);
+      let reveal = null;
+      const start = await page.$('[data-one-more-tune-command="one-more-tune-start-round"]');
+      if (start) {
+        await start.click();
+        await page.waitForTimeout(1600);
+        const choice = await page.$(".choice");
+        if (choice) {
+          await choice.click();
+          await page.waitForTimeout(1400);
+          await settleGeometry(page);
+          reveal = await audit(orientation.box);
+        }
+      }
+      // Next Act's reveal is the one that carries an explanation rather than a
+      // credit line: it is the sentence a person reads after answering, so it is
+      // the text this phase must find whole.
+      let line = null;
+      const lineTab = await page.$('[data-one-more-tune-view="line"]');
+      if (lineTab) {
+        await lineTab.click();
+        await page.waitForTimeout(300);
+        const lineStart = await page.$('[data-one-more-tune-command="one-more-tune-line-start"]');
+        if (lineStart) {
+          await lineStart.click();
+          await page.waitForFunction(() => /1\s*\/\s*10/.test(document.querySelector("#one-more-tune-body")?.innerText || ""), null, { timeout: 60000 });
+          await page.waitForTimeout(300);
+          const lineChoice = await page.$("[data-one-more-tune-line-answer]");
+          if (lineChoice) {
+            await lineChoice.click();
+            await page.waitForTimeout(900);
+          }
+          await settleGeometry(page);
+          line = await page.evaluate((insetBox) => {
+            const height = window.innerHeight;
+            const win = document.querySelector('.window[data-window="oneMoreTune"]');
+            const explanation = win?.querySelector(".one-more-tune-line .revealbox p");
+            const source = win?.querySelector(".one-more-tune-line-source");
+            const visibleRect = (el) => {
+              let rect = el.getBoundingClientRect();
+              let node = el.parentElement;
+              while (node && node !== document.body) {
+                const style = getComputedStyle(node);
+                if (/(auto|scroll|hidden|clip)/.test(style.overflowY) || /(auto|scroll|hidden|clip)/.test(style.overflowX)) {
+                  const clip = node.getBoundingClientRect();
+                  const top = Math.max(rect.top, clip.top);
+                  const bottom = Math.min(rect.bottom, clip.bottom);
+                  const left = Math.max(rect.left, clip.left);
+                  const right = Math.min(rect.right, clip.right);
+                  rect = { top, bottom, left, right, width: Math.max(0, right - left), height: Math.max(0, bottom - top) };
+                }
+                node = node.parentElement;
+              }
+              return rect;
+            };
+            const controls = [...(win?.querySelectorAll("button, [role='button'], input") || [])]
+              .filter((el) => visibleRect(el).height > 0)
+              .map((el) => ({ el, rect: visibleRect(el) }));
+            return {
+              explanation: explanation ? {
+                truncated: explanation.scrollHeight > explanation.clientHeight + 2,
+                characters: explanation.textContent.trim().length,
+                clamp: getComputedStyle(explanation).getPropertyValue("-webkit-line-clamp").trim() || "none",
+              } : null,
+              sourceVisible: Boolean(source),
+              underneath: controls.filter(({ rect }) => rect.bottom > height - insetBox.bottom + 1).length,
+              undersized: controls.filter(({ rect }) => Math.round(rect.height) < 44).length,
+            };
+          }, orientation.box);
+        }
+      }
+      await page.screenshot({ path: join(scratch, `geometry-${orientation.name}.png`) });
+
+      const state = reveal || desk;
+      const findings = [];
+      if (!state.installedHook) {
+        findings.push("the desk did not mark itself as the installed surface (html[data-installed] is missing)");
+      }
+      if (state.underBottomInset.length) {
+        findings.push(`${state.underBottomInset.length} control(s) inside the ${orientation.box.bottom}px bottom inset — ${state.underBottomInset.slice(0, 3).join(", ")}`);
+      }
+      if (state.aboveTopInset.length) {
+        findings.push(`${state.aboveTopInset.length} control(s) reaching into the ${orientation.box.top}px top inset — ${state.aboveTopInset.slice(0, 3).join(", ")}`);
+      }
+      if (state.barBand && !state.barBand.coversInset) {
+        findings.push(`the menu bar does not cover the ${orientation.box.top}px status band (${state.barBand.height}px tall, ${state.barBand.position})`);
+      }
+      if (band.tested && !band.opaque) {
+        findings.push(`the ${orientation.box.top}px status band is see-through: swapping the desk behind the menu bar for a white one changed what the band photographs`);
+      }
+      if (state.undersized.length) {
+        findings.push(`${state.undersized.length} control(s) in One More Tune under 44px — ${state.undersized.slice(0, 4).join(", ")}`);
+      }
+      if (state.explanation?.truncated) {
+        findings.push(`the reveal's explanation is cut off (${state.explanation.characters} characters, clamp ${state.explanation.clamp})`);
+      }
+      if (!state.explanation) findings.push("the reveal shows no explanation paragraph at all");
+      if (reveal && !reveal.sourceLinkVisible) findings.push("the reveal's source link is not visible");
+      if (line) {
+        if (!line.explanation) findings.push("Next Act's reveal shows no explanation");
+        else if (line.explanation.truncated) {
+          findings.push(`Next Act's explanation is cut off (${line.explanation.characters} characters, clamp ${line.explanation.clamp})`);
+        }
+        if (!line.sourceVisible) findings.push("Next Act's reveal shows no source");
+        if (line.underneath) findings.push(`${line.underneath} Next Act control(s) inside the bottom inset`);
+        if (line.undersized) findings.push(`${line.undersized} Next Act control(s) under 44px`);
+      }
+      if (state.horizontalOverflow) findings.push("the One More Tune pane scrolls sideways");
+      if (pageErrors.length) findings.push(`${pageErrors.length} page error(s)`);
+      measured.push({
+        orientation: orientation.name,
+        box: orientation.box,
+        reveal: Boolean(reveal),
+        findings,
+        pageErrors: pageErrors.length,
+      });
+      failures.push(...findings.map((finding) => `standalone geometry (${orientation.name}) — ${finding}`));
+      console.log(
+        `ios-standalone geometry: ${orientation.name} ${orientation.width}x${orientation.height}`
+        + ` insets ${JSON.stringify(orientation.box)} — `
+        + (findings.length ? findings.join("; ") : "controls clear the insets, the reveal is whole, targets are 44px"),
+      );
+      await context.close();
+    }
+  } finally {
+    await browser.close();
+  }
+  summary.geometry = measured;
+}
+
 function main() {
   const args = parseArgs(process.argv.slice(2));
   if (args.help) {
@@ -603,6 +1047,7 @@ function main() {
 
     const layout = run("baguette", ["chrome", "layout", "--udid", device.udid]);
     const screen = layout.ok ? JSON.parse(layout.stdout).screen : null;
+    summary.screen = screen;
     if (!screen) throw new Error(`baguette chrome layout failed: ${layout.stderr || layout.stdout}`);
     const shaped = { screen };
 
@@ -759,8 +1204,24 @@ function main() {
   };
 
   return runInstrument()
+    // A missing clip is a failure about the clip, not a reason to skip the
+    // layout half — the phase needs the server the instrument already started,
+    // not the simulator. Recorded first so the geometry phase still runs.
     .catch((error) => {
-      failures.push(error.message);
+      failures.push(String(error?.message || error));
+    })
+    // The geometry phase runs whatever the device phase found: it needs the
+    // server the instrument already started, not the simulator, and a device
+    // phase that could not measure the clip must not silence the layout half.
+    .then(() => {
+      if (!summary.screen) {
+        console.log("ios-standalone: note — the device reported no screen geometry, so the layout phase was skipped");
+        return undefined;
+      }
+      return geometryPhase({ url: args.url, deviceName: device.name, screen: summary.screen, scratch, summary, failures });
+    })
+    .catch((error) => {
+      failures.push(String(error?.message || error));
     })
     .then(() => {
       if (server.child && !args.keepServer) server.child.kill("SIGTERM");
@@ -780,6 +1241,9 @@ function main() {
       if (summary.browserBaseline?.path) console.log(`  safari baseline: ${summary.browserBaseline.path}`);
       if (summary.screenshot) console.log(`  home-screen launch: ${summary.screenshot}`);
       if (summary.keyboard?.path) console.log(`  with the composer focused: ${summary.keyboard.path}`);
+      for (const phase of summary.geometry || []) {
+        console.log(`  geometry ${phase.orientation}: ${phase.findings.length ? phase.findings.join("; ") : "clean"}`);
+      }
       if (failures.length) {
         for (const failure of failures) console.error(`  ${failure}`);
         console.error(`  receipt: ${join(scratch, "result.json")}`);

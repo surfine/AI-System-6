@@ -22,6 +22,12 @@ test.assertIncludes(appVent, "window.AISystem6ChatVent", "Frontend guardrail is 
 test.assertIncludes(appVent, SHARED_MARKER, "Frontend guardrail has a stable marker");
 test.assertIncludes(appVent, "聊天截图是创作素材，不是可靠事实来源", "Frontend guardrail blocks chat screenshots from becoming facts");
 test.assertIncludes(appVent, "默认匿名化聊天对象", "Frontend guardrail protects chat participant identity");
+// 2026-09-24 charter: other people's words are quoted, never turned into "their view".
+// The failure this names: an AI summary of someone's recorded words dropped who
+// they were said to and what was omitted, and was then read as what they meant.
+test.assertIncludes(appVent, "不要把某个人的话总结或转述成他的观点", "Frontend guardrail never paraphrases a person's words into their view");
+test.assertIncludes(serverVent, "不要把某个人的话总结或转述成他的观点", "Server guardrail says the same");
+test.assertIncludes(serverVent, "do not summarise or paraphrase a person's words into their view", "and says it in English");
 test.assertIncludes(appVent, "最终第一感受由用户确认", "Frontend guardrail keeps first impression user-confirmed");
 
 test.assertIncludes(serverVent, "module.exports", "Server guardrail is a CommonJS module");

@@ -4,7 +4,7 @@
 //
 // Theme Lab owns painter specimens. This gate answers the other maintenance
 // question: do the same system primitives actually reach ordinary and
-// visually-special application windows under all six appearances?
+// visually-special application windows under every release-ready appearance?
 
 import { spawn } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
@@ -22,20 +22,21 @@ const { chromium } = require("playwright");
 
 const THEME_IDS = Object.freeze([
   "classic",
+  "system-7",
   "platinum",
+  "drawing-board",
   "aqua",
+  "tiger",
   "snow-leopard",
+  "lion",
   "yosemite",
   "big-sur",
   "liquid-glass",
   "nextstep",
 ]);
-// NeXTSTEP 3.3 ships in the build but stays behind the experimental gate until
-// its own acceptance items are recorded (see
-// internal/evidence/drafts/nextstep/acceptance-ledger.zh-CN.md). It still has
-// to project into real applications exactly like the others — the assertion
-// below only stops treating "not release-ready" as a defect in itself.
-const EXPERIMENTAL_THEME_IDS = Object.freeze(["nextstep"]);
+// Preview-only appearances are registered and isolated here; they are not
+// production styles until their independent acceptance is complete.
+const EXPERIMENTAL_THEME_IDS = Object.freeze(["system-7", "drawing-board", "tiger", "lion"]);
 
 const REGISTERED_WINDOWS = Object.freeze(Object.entries(windowInterfaceRegistry).map(([id, contract]) => Object.freeze({
   id,
@@ -181,8 +182,16 @@ const TITLE_METRIC_EXCEPTIONS = new Map([
 // The height the native content rect gives, asserted rather than assumed.
 const ALARM_CLOCK_NATIVE_STRIP_HEIGHT = 18;
 
-function titleSignature(titleBar, windowId) {
-  const exceptions = TITLE_METRIC_EXCEPTIONS.get(windowId) || [];
+// A Finder toolbar window (the Mac OS X eras' finderLayout) folds the title
+// into a unified toolbar whose height is the layout's, not the painter's:
+// macOS 11's one-row bar is 52px. It still shares every other title metric.
+const TOOLBAR_WINDOW_EXCEPTIONS = ["height"];
+
+function titleSignature(titleBar, windowId, toolbarWindow = false) {
+  const exceptions = [
+    ...(TITLE_METRIC_EXCEPTIONS.get(windowId) || []),
+    ...(toolbarWindow ? TOOLBAR_WINDOW_EXCEPTIONS : []),
+  ];
   const signature = {
     height: titleBar.rect.height,
     backgroundColor: titleBar.style.backgroundColor,
@@ -347,7 +356,10 @@ try {
   );
 
   const results = [];
-  for (const theme of registry) {
+  // Preserve the complete production sweep. Preview-only candidates are
+  // covered by the registry/isolation assertions above and Theme Lab, not
+  // silently promoted to the release-ready propagation contract.
+  for (const theme of registry.filter((theme) => theme.releaseReady !== false)) {
     // applyTheme is asynchronous for an appearance whose stylesheet is not in
     // the boot bundle: it returns a transaction that finishes once the sheet
     // (and any interaction wait) is ready. Big Sur and NeXTSTEP both ship as
@@ -512,6 +524,7 @@ try {
           devicePixelRatio: window.devicePixelRatio,
           window: capture(target),
           titleBar: capture(target.querySelector(":scope > .title-bar")),
+          toolbarWindow: target.classList.contains("is-toolbar-window"),
           sample: capture(sampleElement),
           sampleClassName: sampleElement?.className || "",
           sampleModernDisplaySize: Number(sampleElement?.querySelector(".sys-icon-svg")?.dataset.modernDisplaySize || 0),
@@ -593,7 +606,11 @@ try {
       });
     }
 
-    const systemTitleBar = windows.find(({ id }) => id === "finder").titleBar;
+    // The reference is a plain system window. Finder used to be it, but in the
+    // Mac OS X eras Finder is a toolbar window, so the first mounted window
+    // that is neither a toolbar window nor a declared exception stands in.
+    const systemWindow = windows.find((w) => !w.missing && !w.toolbarWindow && !TITLE_METRIC_EXCEPTIONS.has(w.id));
+    const systemTitleBar = systemWindow?.titleBar;
     for (const windowResult of windows) {
       // A window that never mounted already has its finding; measuring it
       // again would crash on undefined surfaces instead of naming the rest.
@@ -603,8 +620,8 @@ try {
       assert(
         systemTitleBar
           && windowResult.titleBar
-          && titleSignature(windowResult.titleBar, windowResult.id)
-            === titleSignature(systemTitleBar, windowResult.id),
+          && titleSignature(windowResult.titleBar, windowResult.id, windowResult.toolbarWindow)
+            === titleSignature(systemTitleBar, windowResult.id, windowResult.toolbarWindow),
         `${theme.id}/${windowResult.id}: app stylesheet overrode the shared system title-bar painter`,
       );
       // What the Alarm Clock gives up above, it owes here: its strip stays the

@@ -6,7 +6,7 @@ import { ICON_IDS } from "./icon-family-inventory.mjs";
 import { ADDED_APP_ICON_IDS } from "./added-app-icon-inventory.mjs";
 
 export const GENERATED_COMPATIBILITY_MANIFEST_ERAS = Object.freeze(["aqua", "snow-leopard", "yosemite"]);
-export const THEME_LAB_PACKAGED_ERAS = Object.freeze(["aqua", "snow-leopard", "yosemite", "big-sur", "liquid-glass", "nextstep"]);
+export const THEME_LAB_PACKAGED_ERAS = Object.freeze(["system-7", "aqua", "snow-leopard", "yosemite", "big-sur", "liquid-glass", "nextstep"]);
 const COMPLETE_ICON_IDS = Object.freeze([...ICON_IDS, ...ADDED_APP_ICON_IDS]);
 const EXTENDED_ICON_IDS = Object.freeze([
   "micropolis", "openttd", "doom", "bonsaiCity", "lightroom", "imagePromptStudio",
@@ -84,12 +84,35 @@ export function generatedEraCompatibilityManifestReport(repositoryRoot = resolve
  * complete families. The separate 32 px manifests are compatibility mappings,
  * not the authoritative runtime-size selector.
  */
+/**
+ * The partial-appearance coverage statement, read from the ledger that also
+ * feeds the provenance matrix: `independentIconIds` is which objects own the
+ * era's own artwork, and `runtimeObjectCount` is the denominator both reports
+ * must share. Two hard-coded copies of "three applications" is how a batch of
+ * authored object art keeps being reported as a fallback.
+ */
+const continuityCoverage = new Map();
+function nextstepCoverage(repositoryRoot) {
+  if (!continuityCoverage.has(repositoryRoot)) {
+    const ledger = JSON.parse(readFileSync(join(repositoryRoot, "apps/desktop/assets/themes/icon-system-continuity.json"), "utf8"));
+    continuityCoverage.set(repositoryRoot, ledger.runtimeCoverageByEra?.nextstep || {});
+  }
+  return continuityCoverage.get(repositoryRoot);
+}
+
 export function themeLabPackagedAssetReport(repositoryRoot = resolve(moduleDirectory, "../..")) {
   return THEME_LAB_PACKAGED_ERAS.map((eraId) => {
     const themeRoot = join(repositoryRoot, "apps/desktop/assets/themes", eraId);
     const familyPath = join(themeRoot, `${eraId}-icon-family.json`);
     const family = JSON.parse(readFileSync(familyPath, "utf8"));
-    const independentIds = eraId === "big-sur" ? COMPLETE_ICON_IDS : eraId === "nextstep" ? ADDED_APP_ICON_IDS : null;
+    // Big Sur's family is complete. NeXTSTEP's is partial by design, and which
+    // objects own artwork is stated once, in the continuity ledger's
+    // runtimeCoverageByEra scope -- the same list the provenance matrix reads.
+    // Keeping it here as a second hard-coded trio is how a batch of real
+    // object art ends up reported as "the other 56 use Classic".
+    const independentIds = eraId === "big-sur" ? COMPLETE_ICON_IDS
+      : eraId === "nextstep" ? (nextstepCoverage(repositoryRoot).independentIconIds || [])
+        : null;
     if (independentIds) {
       const declaredIds = Object.keys(family.icons || {});
       if (declaredIds.length !== independentIds.length || independentIds.some((id) => !Object.hasOwn(family.icons || {}, id))) {
@@ -153,7 +176,16 @@ export function themeLabPackagedAssetReport(repositoryRoot = resolve(moduleDirec
       ...(independentIds ? {
         independentObjectCount: independentIds.length,
         tiers: [16, 32, 64, 128],
-        ...(eraId === "nextstep" ? { fallbackEra: "classic", fallbackObjectCount: ICON_IDS.length } : {}),
+        // A partial appearance reports what it falls back to. Once every object
+        // is authored, saying "falls back to classic" would be a claim about
+        // nothing, so the fields are left out rather than printed as zero.
+        ...(eraId === "nextstep"
+          && (nextstepCoverage(repositoryRoot).runtimeObjectCount || ICON_IDS.length) - independentIds.length > 0
+          ? {
+            fallbackEra: "classic",
+            fallbackObjectCount: (nextstepCoverage(repositoryRoot).runtimeObjectCount || ICON_IDS.length) - independentIds.length,
+          }
+          : {}),
       } : {}),
       files: files.sort((left, right) => left.relativePath.localeCompare(right.relativePath)),
       bytes: files.reduce((sum, entry) => sum + entry.bytes, 0),

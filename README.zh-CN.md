@@ -1,5 +1,5 @@
 <!-- canonical-source: README.md -->
-<!-- source-sha256: 88355cbd8bacc9acadee997a53d3329e36cfdf1998349d5bb7991a0ab07fdf6b -->
+<!-- source-sha256: 83a05dad36f9d58ae0fd5fe98c2125e6f699615357b3a9c3c4387a7980c885fe -->
 
 > 英文版为准 / 仅供人类参考
 
@@ -36,9 +36,9 @@
 
 **直接打开一个窗口：** [配色工作台](https://system6.aaronlau.me/go/cmf-studio) · [盆景城市](https://system6.aaronlau.me/go/bonsai-city) · [终末地终端](https://system6.aaronlau.me/go/endfield-terminal) · [时间机器](https://system6.aaronlau.me/go/time-machine) · [OpenTTD](https://system6.aaronlau.me/go/openttd) · [DOOM](https://system6.aaronlau.me/go/doom)
 
-**或者打开一整块写完之后留下的盘：** [未来通车之后](https://system6.aaronlau.me/go/dtk) · [初代 iPad 为什么只有 256MB](https://system6.aaronlau.me/go/ipad1) · [M5 iPad Pro](https://system6.aaronlau.me/go/m5ipad) · [iPhone 17e 浅粉色](https://system6.aaronlau.me/go/iphone17e) · [走向一整块玻璃](https://system6.aaronlau.me/go/bongo) · [玻璃与他们的产地](https://system6.aaronlau.me/go/glass) · [iPad Pro 9.7](https://system6.aaronlau.me/go/ipad97) · [iPhone Air MagSafe 电池](https://system6.aaronlau.me/go/airbattery) · [iPhone 17 Pro Max](https://system6.aaronlau.me/go/pm17) · [Project Sympathy](https://system6.aaronlau.me/go/sympathy) · [陶瓷 Apple Watch](https://system6.aaronlau.me/go/ceramic) · [Mac Pro (2019)](https://system6.aaronlau.me/go/macpro19) · [iPhone Pocket](https://system6.aaronlau.me/go/pocket) · [iPhone 6s Plus](https://system6.aaronlau.me/go/iphone6sp) · [MagSafe 皮革保护套](https://system6.aaronlau.me/go/sleeve) · [iPhone 12 Pro Max](https://system6.aaronlau.me/go/pm12) · [iPhone 17 标准版](https://system6.aaronlau.me/go/iphone17) · [CDMA iPhone 4](https://system6.aaronlau.me/go/cdma4) · [无接口 Apple Watch](https://system6.aaronlau.me/go/noport) · [touch 2 工程板](https://system6.aaronlau.me/go/touch2) · [iPhone Air](https://system6.aaronlau.me/go/airact) · [iPhone 4S Demo](https://system6.aaronlau.me/go/ip4sdemo) · [透明探索版 Air](https://system6.aaronlau.me/go/airtrans) · [T2 网卡](https://system6.aaronlau.me/go/t2nic) · [MagSafe 废案](https://system6.aaronlau.me/go/mgscrap) · [iPhone 16 工程机](https://system6.aaronlau.me/go/ip16p) · [iPad Air 4 工程机](https://system6.aaronlau.me/go/ipada4) · [WWDC2099](https://system6.aaronlau.me/go/ios19) · [Studio Display](https://system6.aaronlau.me/go/sd) · [Magic Keyboard](https://system6.aaronlau.me/go/mkb) · [iPad mini (A17 Pro)](https://system6.aaronlau.me/go/mini7) · [MacBook Neo](https://system6.aaronlau.me/go/mbneo) · [M5 MacBook Air](https://system6.aaronlau.me/go/m5mba) · [iPhone 11 Pro Max](https://system6.aaronlau.me/go/pm11)
+**或者打开一整块写完之后留下的盘：** [未来通车之后](https://system6.aaronlau.me/go/dtk) · [初代 iPad 为什么只有 256MB](https://system6.aaronlau.me/go/ipad1) · [M5 iPad Pro](https://system6.aaronlau.me/go/m5ipad) · [iPhone 17e 浅粉色](https://system6.aaronlau.me/go/iphone17e) · [走向一整块玻璃](https://system6.aaronlau.me/go/bongo) · [玻璃与他们的产地](https://system6.aaronlau.me/go/glass) · [iPad Pro 9.7](https://system6.aaronlau.me/go/ipad97) · [iPhone Air MagSafe 电池](https://system6.aaronlau.me/go/airbattery) · [iPhone 17 Pro Max](https://system6.aaronlau.me/go/pm17) · [Project Sympathy](https://system6.aaronlau.me/go/sympathy) · [陶瓷 Apple Watch](https://system6.aaronlau.me/go/ceramic) · [Mac Pro (2019)](https://system6.aaronlau.me/go/macpro19) · [iPhone Pocket](https://system6.aaronlau.me/go/pocket) · [iPhone 6s Plus](https://system6.aaronlau.me/go/iphone6sp) · [MagSafe 皮革保护套](https://system6.aaronlau.me/go/sleeve) · [iPhone 12 Pro Max](https://system6.aaronlau.me/go/pm12) · [iPhone 17 标准版](https://system6.aaronlau.me/go/iphone17) · [收起窗口，留下位置](https://system6.aaronlau.me/go/windowshade) · [CDMA iPhone 4](https://system6.aaronlau.me/go/cdma4) · [无接口 Apple Watch](https://system6.aaronlau.me/go/noport) · [touch 2 工程板](https://system6.aaronlau.me/go/touch2) · [iPhone Air](https://system6.aaronlau.me/go/airact) · [iPhone 4S Demo](https://system6.aaronlau.me/go/ip4sdemo) · [透明探索版 Air](https://system6.aaronlau.me/go/airtrans) · [T2 网卡](https://system6.aaronlau.me/go/t2nic) · [MagSafe 废案](https://system6.aaronlau.me/go/mgscrap) · [iPhone 16 工程机](https://system6.aaronlau.me/go/ip16p) · [iPad Air 4 工程机](https://system6.aaronlau.me/go/ipada4) · [WWDC2099](https://system6.aaronlau.me/go/ios19) · [Studio Display](https://system6.aaronlau.me/go/sd) · [Magic Keyboard](https://system6.aaronlau.me/go/mkb) · [iPad mini (A17 Pro)](https://system6.aaronlau.me/go/mini7) · [MacBook Neo](https://system6.aaronlau.me/go/mbneo) · [M5 MacBook Air](https://system6.aaronlau.me/go/m5mba) · [iPhone 11 Pro Max](https://system6.aaronlau.me/go/pm11)
 
-<sub>每个应用都有唯一一个可分享的地址 <code>/go/&lt;app-id&gt;</code>。桌面围绕它打开；三十四块演示用项目硬盘用的是同一条地址规则，<b>启动磁盘上的「演示用项目硬盘」文件夹（File 菜单的同一项）</b>会把它们全部列出来。</sub>
+<sub>每个应用都有唯一一个可分享的地址 <code>/go/&lt;app-id&gt;</code>。桌面围绕它打开；三十五块演示用项目硬盘用的是同一条地址规则，<b>启动磁盘上的「演示用项目硬盘」文件夹（File 菜单的同一项）</b>会把它们全部列出来。</sub>
 
 </div>
 
@@ -51,7 +51,7 @@
 - [聊天是一个应用，不是整台计算机](#聊天是一个应用不是整台计算机)
 - [约束仍然容得下什么](#约束仍然容得下什么)
 - [它还能跑 DOOM](#它还能跑-doom)
-- [一张桌子，七个系统](#一张桌子七个系统)
+- [一张桌子，八个系统](#一张桌子八个系统)
 - [在一个 1988 年的约束下建造](#在一个-1988-年的约束下建造)
 - [自带模型](#自带模型)
 - [这个仓库如何让自己保持诚实](#这个仓库如何让自己保持诚实)
@@ -60,6 +60,22 @@
 
 ## 1.0.55 有什么新东西
 
+另附 System 7、Drawing Board、Tiger 与 Lion 四套实验外观；常规外观仍为原来的八套。
+
+- **NeXTSTEP 成为第八套外观。** Mac OS X 的来处，按 3.3 版界面规范做：角落里的主菜单、
+  左侧滚动条、右侧 Dock，每个对象都有自己的图标。从 Special 菜单选它。
+- **Mac OS X 时代的 Finder 窗口有了工具栏，从 Snow Leopard 起还有边栏。**「个人收藏」与
+  「位置」在同一个窗口里导航；经典时代保持空间式 Finder，手机上每个时代都保留单栏。
+- **一份 deck 可以穿这张桌子的任何一种外观。** 讲演台多出四个互相独立的维度：
+  **时代主题**（桌面自己的八个外观，1988 到 2025）、**论证方式**（结论先行 / 故事线 /
+  教学 / 视觉主导 / 中性完备）、**页面版式**（十六种，从封面到对比矩阵），以及
+  **画布与阅读距离**（它决定这一页正文的字号下限）。每个时代都照那一年的演示软件来打扮页面，
+  从 1988 年的投影胶片外框，到 NeXTSTEP 的斜面面板与 Platinum 的红色楔形。生成前只问两件事——用途与阅读距离；
+  时代用你自己第一页的真实缩略图来选。**换时代主题**可以把整份 deck 换个时代而**正文一字不动**，
+  **Print PDF** 一页一张导出。
+- **交给 deck 的图现在随页面一起旅行。** ClioChart 把选定的投影画成一份自包含 SVG——
+  自带网点、标签、数值与"未测"说明，不引用任何外部资源——deck 页面把它当图片带着，
+  页内注释留着原表格。于是这页可以在 ClioChart 关掉之后照样保存、重开、打印与导出。
 - **配色工作台按产品实拍的打光来照配色。** iPhone 17 Pro / Max（一个条目、
   两种姿态）、iPhone Air、iPhone 17e、MacBook Neo，以及可折叠的 iPhone Duo，
   都在官方场景自己的环境光下渲染，逐部件配色，并可导出 USDZ 用于 AR。
@@ -67,20 +83,26 @@
   原始壁纸一个按钮就能恢复，折叠视频在你的机器上渲染完成。
 - **每个应用只有一个地址。** `/go/cmf-studio`、`/go/bonsai-city`、`/go/doom`
   等是把这个窗口交给别人的唯一方式；服务器上那些旧的裸目录由安装器自己退役。
-- **写完之后的作品以整块盘旅行，不是截图。** `/go/dtk`、`/go/ipad1` 等挂载的是一整块项目硬盘：问题单、大纲、分节草稿、正文、审校记录。读者拿到的是自己能改的副本；三十四块盘收在启动磁盘的**「演示用项目硬盘」文件夹**里，也就是 File 菜单打开的那一个窗口——每块盘都有自己的名字，「简介」里用作者写在问题单上的话说明它是什么，而打开这个文件夹读的是 16KB 的清单，不是背后 3.7MB 的正文。加一块新盘＝在 `tooling/build-shared-project-disks.mjs` 加一条登记、在三张 `LAUNCH_ROUTES` 表里加一条路由，`tests/features/launch-intent.test.mjs` 会盯着源盘和发布出去的副本保持一致。
+- **写完之后的作品以整块盘旅行，不是截图。** `/go/dtk`、`/go/ipad1` 等挂载的是一整块项目硬盘：问题单、大纲、分节草稿、正文、审校记录。读者拿到的是自己能改的副本；三十五块盘收在启动磁盘的**「演示用项目硬盘」文件夹**里，也就是 File 菜单打开的那一个窗口——每块盘都有自己的名字，「简介」里用作者写在问题单上的话说明它是什么，而打开这个文件夹读的是 16KB 的清单，不是背后 3.7MB 的正文。加一块新盘＝在 `tooling/build-shared-project-disks.mjs` 加一条登记、在三张 `LAUNCH_ROUTES` 表里加一条路由，`tests/features/launch-intent.test.mjs` 会盯着源盘和发布出去的副本保持一致。
 - **公网可以接待一位访客。** 打开访客桥之后，另一个 agent 可以经由指名你这张
   桌面的邀请，从互联网连上来；工具契约、权限和在审校台等待你确认的方式，
   与你在 Mac 上使用时完全一致。
+- **把散步带回书桌。** 钟点稿可以接收粘贴的逐字稿，找出口述「标记」前的原话，
+  确认后放进文件软盘。原话保持完整，不会自动插入正文。
+- **资料工具相互衔接。** Reader 保留阅读进度，Scrapbook 把选择和编辑分开，
+  DocMap 可以先选一枝再提问；Searcher 支持键盘选择，Time Machine 把存档控件留在页面旁。
 - **One More Tune：一个关于苹果广告音乐的问答游戏。** 每一题都会自己出声，
   因为声音本身就是题目。答完，揭晓会打开原片——在它自己的窗口里，居中放在
   桌面上——并且让整张桌面换成这张卡所属的时代，随后把你的外观还给你。声音
   用的是商店试听；网络到不了商店时，由这张桌面自己的主机转发同一个文件，所以
-  任何地方都能靠耳朵玩；手机版把一局控制在一屏之内。
+  任何地方都能靠耳朵玩。白标唱片和十个曲目位置把手机上的一局放在一屏内；
+  继续存下的一局时，十道题和上次的位置会一起回来。
   第二种玩法「接棒」问的是另一件事：这一棒由谁接手——每轮六条主讲人线索，
   每开一条扣一分，答案留在服务器上，直到你作答。第三种玩法「下一幕」问的
   是台词当时在做什么、接着进入哪一章：一轮十道纯文字题，完全不播声音，每题
   答后打开解释和它依据的文字稿位置——包括同一句话有两种已核对用法的时候，
-  前一道的说明不会顺手把后一道的答案送出去。
+  前一道的说明不会顺手把后一道的答案送出去。接棒与下一幕里的 41 道苹果历史题
+  都放回所引页面核对过，经三轮作者审阅后才进入轮换。
 
 每个测试版都有自己的[发布说明](https://github.com/surfine/AI-System-6/releases)。
 
@@ -241,7 +263,7 @@ flowchart LR
 同一个 MultiFinder 里。它们证明这套约束装得下真正的软件；写作路线的可信，则来自可见对象、
 明确保存，以及每一件真正发生过的事都有回执。
 
-## 一张桌子。七个系统。
+## 一张桌子。八个系统。
 
 文件和打开的窗口留在原地。整台计算机在它们周围换了时代。
 
@@ -258,10 +280,11 @@ flowchart LR
   </tr>
   <tr>
     <td width="33%" align="center"><img src="site/img/frames/liquid-glass.webp" alt="Liquid Glass 外观"><br><code>2026 / LIQUID GLASS</code></td>
+    <td width="33%" align="center"><img src="site/img/frames/nextstep.webp" alt="NeXTSTEP 外观"><br><code>1995 / NEXTSTEP · 岔路</code></td>
   </tr>
 </table>
 
-七帧画面，一台活的桌面，由 `npm run site:capture-frames` 拍下。System 6 从真实的
+八帧画面，一台活的桌面，由 `npm run site:capture-frames` 拍下。System 6 从真实的
 System 6.0.8 资源和实际观察到的 Macintosh 行为出发；后面几个时代各有独立的、
 适配 Retina 的图标家族。这里没有一张是摆拍，因为有一个脚本会从运行中的应用里
 把它们全部重拍一遍。
@@ -275,7 +298,7 @@ System 6.0.8 资源和实际观察到的 Macintosh 行为出发；后面几个�
 ## 在一个 1988 年的约束下建造
 
 ```text
-启动关键载荷            ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,948,224 字节
+启动关键载荷            ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,949,829 字节
 两张 1.44 MB 软盘       ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  2,949,120 字节
 重型工具                按需懒加载，从第三张盘上来
 ```
@@ -352,7 +375,7 @@ AI-System-6/
 
 <img src="site/img/themes/classic/hardDisk.svg" width="40" height="40" alt=""> <img src="site/img/themes/platinum/hardDisk.png" width="40" height="40" alt=""> <img src="site/img/themes/aqua/hardDisk.png" width="40" height="40" alt=""> <img src="site/img/themes/snow-leopard/hardDisk.png" width="40" height="40" alt=""> <img src="site/img/themes/yosemite/hardDisk.png" width="40" height="40" alt=""> <img src="site/img/themes/liquid-glass/hardDisk.png" width="40" height="40" alt="">
 
-<sub>一块硬盘。七个时代。同一份工作。</sub>
+<sub>一块硬盘。八个时代。同一份工作。</sub>
 
 如果 AI 写作工具应该放过你的嗓音，就 **[★ 给 AI System 6 加星](https://github.com/surfine/AI-System-6)**。
 

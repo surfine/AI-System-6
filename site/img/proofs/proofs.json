@@ -1,96 +1,96 @@
 {
- "capturedAt": "2026-09-19T22:37:56.506Z",
- "build": "20260919.16",
- "proofs": [
-  {
-   "id": "one-more-tune-2026",
-   "label": "One More Tune \u00b7 2026",
-   "caption": "The same round under Liquid Glass: the stage, the record, and the era the card belongs to \u2014 the reveal visits it, so the desk wears it.",
-   "file": "one-more-tune-2026.webp"
-  },
-  {
-   "id": "slides",
-   "label": "Build Slides",
-   "caption": "A Marp deck, opened and presented on the desktop.",
-   "file": "slides.webp"
-  },
-  {
-   "id": "charts",
-   "label": "Make Charts",
-   "caption": "A Markdown table in the manuscript, projected as a chart.",
-   "file": "charts.webp"
-  },
-  {
-   "id": "cmf",
-   "label": "Design in 3D",
-   "caption": "A 3D colorway on a 1988 desktop, exportable as USDZ for AR.",
-   "file": "cmf.webp"
-  },
-  {
-   "id": "micropolis",
-   "label": "Build",
-   "caption": "Micropolis: a fresh map, simulating.",
-   "file": "micropolis.webp"
-  },
-  {
-   "id": "openttd",
-   "label": "Connect",
-   "caption": "OpenTTD: the wasm build at its Chinese title screen.",
-   "file": "openttd.webp"
-  },
-  {
-   "id": "doom",
-   "label": "Survive",
-   "caption": "DOOM: engine compiled and idling, waiting for your own WAD.",
-   "file": "doom.webp"
-  },
-  {
-   "id": "glass",
-   "label": "Render Glass",
-   "caption": "Refractive WebGL typography, rendered in the browser.",
-   "file": "glass.webp"
-  },
-  {
-   "id": "image-prompt",
-   "label": "Write Image Prompts",
-   "caption": "Image Prompt Studio turns an idea into two ready-to-paste prompts.",
-   "file": "image-prompt.webp"
-  },
-  {
-   "id": "calculator",
-   "label": "Calculator",
-   "caption": "Adds up, in a beveled window.",
-   "file": "calculator.webp"
-  },
-  {
-   "id": "puzzle",
-   "label": "Puzzle",
-   "caption": "The sliding-tile puzzle, mid-move.",
-   "file": "puzzle.webp"
-  },
-  {
-   "id": "writing-bell",
-   "label": "Writing Bell",
-   "caption": "A Pomodoro timer that rings like 1988.",
-   "file": "writing-bell.webp"
-  },
-  {
-   "id": "alarm-clock",
-   "label": "Alarm Clock",
-   "caption": "Winds up, goes off, looks the part.",
-   "file": "alarm-clock.webp"
-  },
-  {
-   "id": "dictation",
-   "label": "Dictation Pad",
-   "caption": "Speak into the field you are already in.",
-   "file": "dictation.webp"
-  },
-  {
-   "id": "memory-cards",
-   "label": "Memory Cards",
-   "caption": "Flip two, find the pair.",
-   "file": "memory-cards.webp"
-  }
- ]
+  "capturedAt": "2026-09-23T07:39:32.447Z",
+  "build": "20260923.1",
+  "proofs": [
+    {
+      "id": "one-more-tune-2026",
+      "label": "One More Tune · 2026",
+      "caption": "The same round under Liquid Glass: the stage, the record, and the era the card belongs to — the reveal visits it, so the desk wears it.",
+      "file": "one-more-tune-2026.webp"
+    },
+    {
+      "id": "slides",
+      "label": "Build Slides",
+      "caption": "A Marp deck, opened and presented on the desktop.",
+      "file": "slides.webp"
+    },
+    {
+      "id": "charts",
+      "label": "Make Charts",
+      "caption": "A Markdown table in the manuscript, projected as a chart.",
+      "file": "charts.webp"
+    },
+    {
+      "id": "cmf",
+      "label": "Design in 3D",
+      "caption": "A 3D colorway on a 1988 desktop, exportable as USDZ for AR.",
+      "file": "cmf.webp"
+    },
+    {
+      "id": "micropolis",
+      "label": "Build",
+      "caption": "Micropolis: a fresh map, simulating.",
+      "file": "micropolis.webp"
+    },
+    {
+      "id": "openttd",
+      "label": "Connect",
+      "caption": "OpenTTD: the wasm build at its Chinese title screen.",
+      "file": "openttd.webp"
+    },
+    {
+      "id": "doom",
+      "label": "Survive",
+      "caption": "DOOM: engine compiled and idling, waiting for your own WAD.",
+      "file": "doom.webp"
+    },
+    {
+      "id": "glass",
+      "label": "Render Glass",
+      "caption": "Refractive WebGL typography, rendered in the browser.",
+      "file": "glass.webp"
+    },
+    {
+      "id": "image-prompt",
+      "label": "Write Image Prompts",
+      "caption": "Image Prompt Studio turns an idea into two ready-to-paste prompts.",
+      "file": "image-prompt.webp"
+    },
+    {
+      "id": "calculator",
+      "label": "Calculator",
+      "caption": "Adds up, in a beveled window.",
+      "file": "calculator.webp"
+    },
+    {
+      "id": "puzzle",
+      "label": "Puzzle",
+      "caption": "The sliding-tile puzzle, mid-move.",
+      "file": "puzzle.webp"
+    },
+    {
+      "id": "writing-bell",
+      "label": "Writing Bell",
+      "caption": "A Pomodoro timer that rings like 1988.",
+      "file": "writing-bell.webp"
+    },
+    {
+      "id": "alarm-clock",
+      "label": "Alarm Clock",
+      "caption": "Winds up, goes off, looks the part.",
+      "file": "alarm-clock.webp"
+    },
+    {
+      "id": "dictation",
+      "label": "Dictation Pad",
+      "caption": "Speak into the field you are already in.",
+      "file": "dictation.webp"
+    },
+    {
+      "id": "memory-cards",
+      "label": "Memory Cards",
+      "caption": "Flip two, find the pair.",
+      "file": "memory-cards.webp"
+    }
+  ]
 }

@@ -1683,6 +1683,31 @@ function setDeskRecordConflictStanding(next) {
   refreshDeskRecordConflictStanding();
 }
 
+// The days the writer actually wrote, for ClioProject's calendar: "wrote
+// something" means the project's word count changed that day, not that it was
+// opened. One [day, count] pair is appended only when the count moves, so a
+// year of daily writing is a few kilobytes riding on the project record and
+// travelling with the disk. The count is the writer's own text on the route —
+// Question Sheet, Outline, section drafts and the manuscript they went into.
+function noteProjectWritingDay(project, now = new Date()) {
+  if (!project) return;
+  const inserted = new Set();
+  let count = (project.questionSheet || "").length + (project.outline || "").length;
+  for (const draft of project.drafts || []) {
+    count += (draft?.body || "").length;
+    if (draft?.insertedFileId) inserted.add(draft.insertedFileId);
+  }
+  for (const file of typeof chatFiles !== "undefined" ? chatFiles : []) {
+    if (inserted.has(file.id)) count += (file.body || "").length;
+  }
+  // Swedish is the locale whose short date is ISO: 2026-09-23, local time.
+  const day = now.toLocaleDateString("sv");
+  const log = Array.isArray(project.writingDays) ? project.writingDays : [];
+  const last = log[log.length - 1];
+  if (last?.[1] === count) return;
+  project.writingDays = (last?.[0] === day ? log.slice(0, -1) : log).concat([[day, count]]).slice(-400);
+}
+
 async function persistDeskState() {
   const endPerf = window.AISystem6Perf?.start("state_save");
   const startedAt = performance.now();
@@ -1692,6 +1717,7 @@ async function persistDeskState() {
       return false;
     }
     ensureActiveProject();
+    noteProjectWritingDay(getActiveProject());
     syncCurrentNotePadPage();
     const plans = deskCollectionDefinitions().map(deskCollectionPlan);
     const changedPlans = plans.filter((plan) => plan.puts.length || plan.deletes.length);

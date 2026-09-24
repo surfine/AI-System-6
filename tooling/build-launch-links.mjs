@@ -70,6 +70,7 @@ export const LAUNCH_ROUTES = Object.freeze([
   "noport",
   "cdma4",
   "iphone17",
+  "windowshade",
   "cmf-studio",
   "one-more-tune",
 ]);

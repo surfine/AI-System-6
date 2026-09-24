@@ -40,6 +40,7 @@
 // runs only this fast path.
 
 import { createHash } from "node:crypto";
+import vm from "node:vm";
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -51,6 +52,21 @@ import { lazyStyleBundles } from "./style-manifest.mjs";
 import { TOKEN_COMPARED_THEMES } from "../tests/appearance-snapshot-manifest.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
+
+// A theme's rules may be scoped by its exact id, by any recipe it descends
+// from ([data-lineage~="snow-leopard"] reaches Snow Leopard and its children),
+// or by its family. The registry owns those relations; read them from it.
+const registryWindow = {};
+vm.runInNewContext(readFileSync(join(root, "apps/desktop/app/core/theme-registry.js"), "utf8"), { window: registryWindow });
+const themeRegistry = registryWindow.AISystem6Theme;
+function themeScopeAttributes(themeId) {
+  const theme = themeRegistry.getTheme(themeId);
+  return [
+    `[data-theme="${themeId}"]`,
+    ...themeRegistry.getRecipeChain(themeId).map(({ id }) => `[data-lineage~="${id}"]`),
+    `[data-theme-family="${theme.family}"]`,
+  ];
+}
 const require = createRequire(import.meta.url);
 const { chromium } = require("playwright");
 
@@ -151,9 +167,9 @@ function stripThemePrefix(selector, themeId) {
     const rest = selector.slice(end).replace(/^[\s>+~]+/, "").trim();
     return rest || "body";
   }
-  const attr = `[data-theme="${themeId}"]`;
+  const attr = themeScopeAttributes(themeId).find((candidate) => selector.includes(candidate));
+  if (!attr) return null;
   const at = selector.indexOf(attr);
-  if (at === -1) return null;
   if (/[\s>+~]/.test(selector.slice(0, at))) return null;
   let end = at + attr.length;
   while (end < selector.length && !/[\s>+~]/.test(selector[end])) end += 1;

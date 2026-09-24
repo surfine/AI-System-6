@@ -133,17 +133,18 @@
      writer cannot type. */
   grid-template-columns: repeat(4, minmax(0, auto)) minmax(0, 1fr);
   gap: 0;
-  border: 1px solid var(--ink);
-  background: var(--paper);
-  box-shadow: inset 1px 1px 0 var(--shade);
-  font-family: var(--mono-font);
+  border: var(--teachtext-strip-border);
+  background: var(--teachtext-strip-bg);
+  box-shadow: var(--teachtext-strip-shadow, inset 1px 1px 0 var(--shade));
+  color: var(--teachtext-strip-fg, currentColor);
+  font-family: var(--teachtext-strip-font, var(--mono-font));
   font-size: 11px;
 }
 
 .teachtext-desk-strip span {
   min-width: 0;
   padding: 4px 6px;
-  border-right: 1px dotted var(--shade-dark);
+  border-right: var(--teachtext-strip-divider, 1px dotted var(--shade-dark));
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1004,6 +1005,17 @@ body[data-line-spacing="relaxed"] {
   margin-bottom: 5px;
 }
 
+/* A command menu with nothing available reads as a disabled button and does
+   not open. One rule for every such menu (DocMap's Commands, Searcher's Send
+   To); Liquid Glass dresses the same state in 70-liquid-glass.css. */
+.teachtext-command-menu.is-disabled > summary {
+  color: var(--shade-dark);
+  background:
+    repeating-linear-gradient(-45deg, transparent 0 9px, rgba(0, 0, 0, 0.06) 9px 18px),
+    var(--paper);
+  pointer-events: none;
+}
+
 /* Command controls in top toolbars open into their owning window. Bottom
    action bars retain the default upward placement above. */
 .teachtext-command-menu.command-menu-opens-down .teachtext-command-popover {
@@ -1354,27 +1366,6 @@ body[data-line-spacing="relaxed"] {
   max-height: 12em;
   overflow: auto;
   white-space: pre-wrap;
-}
-
-/* The same proposal figure in DocMap, with one difference that is the whole
-   point: this one is editable. Every node in the map anchors into this text, so
-   the writer has to be able to correct a misread word before the map is built,
-   not only accept or reject the reading whole. Same tokens as the Scrapbook
-   block above; no liquid-glass twin is needed for either, and 70-liquid-glass
-   names neither class. */
-.docmap-picture-reading {
-  display: grid;
-  gap: 6px;
-  padding: 6px;
-  border: var(--system-control-line) solid var(--ink);
-  background: var(--paper);
-  box-shadow: var(--system-inset);
-}
-
-.docmap-picture-reading-text {
-  display: block;
-  width: 100%;
-  resize: vertical;
 }
 
 .image-manager-list-header {
@@ -1876,14 +1867,65 @@ body:not(.use-liquid-glass) .scrap-list button.is-multi-selected:not(.is-selecte
   border-radius: var(--radio-radius);
 }
 
+/* The scrap, top to bottom: what it is (title, citation, marks), the
+   writer's text, then what can be done with it. A column rather than a grid
+   of fixed rows, so a part that is absent (pictures, a reading) takes no
+   track and the text keeps the space. */
 .scrap-editor {
-  display: grid;
-  grid-template-rows: auto auto auto minmax(140px, 1fr) auto auto auto;
+  display: flex;
+  flex-direction: column;
   gap: 10px;
   min-height: 0;
   min-width: 0;
   overflow: auto;
   padding-right: 2px;
+}
+
+.scrap-editor-header {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.scrap-citation-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 8px;
+}
+
+/* A citation, not a field: no inset frame, and it wraps instead of cutting
+   the source's title off at one line. */
+.source-info-panel.scrap-citation {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  white-space: normal;
+}
+
+.scrap-citation-title {
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.scrap-citation-meta {
+  font-family: var(--ui-font);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+/* The stack and translation marks: small outlined captions in the UI face,
+   read at a glance, not chips that outweigh the title. */
+.scrap-editor-header .tag {
+  padding: 0 6px;
+  font-family: var(--ui-font);
+  font-size: 11px;
+  line-height: 16px;
+  text-transform: none;
 }
 
 /* System 6 Scrapbook page rail. Its stepped arrows reuse the exact shared
@@ -1963,26 +2005,15 @@ body:not(.use-liquid-glass) .scrap-list button.is-multi-selected:not(.is-selecte
   align-items: center;
   justify-content: space-between;
   padding-inline: 5px;
-  font-family: var(--mono-font);
+  font-family: var(--readout-font);
   font-size: var(--system-caption-size);
   line-height: 1;
 }
 
 #scrap-body-input {
+  flex: 1 1 140px;
+  width: 100%;
   min-height: 140px;
-}
-
-.scrap-text-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 2px;
-}
-
-.scrap-text-header label {
-  font-weight: 700;
 }
 
 #scrap-body-input.is-translation-view {
@@ -2008,7 +2039,7 @@ body:not(.use-liquid-glass) .scrap-list button.is-multi-selected:not(.is-selecte
   overflow: hidden;
   text-overflow: ellipsis;
   padding-bottom: 2px;
-  border-bottom: 1px solid var(--ink);
+  border-bottom: var(--scrap-title-rule, 1px solid var(--ink));
 }
 
 .source-info-panel {
@@ -2086,21 +2117,63 @@ body:not(.use-liquid-glass) .scrap-list button.is-multi-selected:not(.is-selecte
   color: var(--ink);
 }
 
+/* Delete stands apart at the leading edge; everything that keeps or uses
+   the scrap gathers at the trailing edge, Insert last as the default. The row
+   wraps: told never to, five 88px buttons pushed the editor wider than its
+   column and the text ran out of the window. */
 .scrap-editor .button-row {
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: 8px;
 }
 
 .scrap-editor .button-row .btn {
-  min-width: 88px;
+  min-width: min(88px, 100%);
 }
 
+.scrap-actions > #delete-scrap {
+  margin-inline-end: auto;
+}
+
+.scrap-picture-menu {
+  position: relative;
+}
+
+/* Two or more scraps selected: the editor steps aside for what acts on all of
+   them. These actions had been hidden in the window since May; only the Scrap
+   menu could reach them. */
 .scrap-selection-actions {
-  border-top: var(--scrap-selection-actions-border);
+  display: none;
+  align-content: start;
+  gap: 8px;
+}
+
+.scrap-editor[data-scrap-mode="multi"] > :not(.scrap-selection-actions) {
+  display: none;
+}
+
+.scrap-editor[data-scrap-mode="multi"] > .scrap-selection-actions {
   display: grid;
-  gap: 6px;
-  padding-top: 7px;
+}
+
+.scrap-selection-count {
+  padding-bottom: 6px;
+  border-bottom: var(--scrap-selection-actions-border);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.scrap-selection-actions .button-row {
+  justify-content: flex-start;
+}
+
+/* The filter sits at the end of the Scrapbook's bar and narrows the list and
+   the page rail alike. */
+.scrap-filter {
+  flex: 0 1 160px;
+  min-width: 90px;
+  min-height: 22px;
+  padding-block: 2px;
 }
 
 /* The Scrapbook pane is a two-column grid; the ask bar spans it. */
@@ -2109,9 +2182,7 @@ body:not(.use-liquid-glass) .scrap-list button.is-multi-selected:not(.is-selecte
 }
 
 #scrap-stack[hidden],
-#scrap-tags[hidden],
-#attach-scrap-to-assistant[hidden],
-.scrap-selection-actions[hidden] {
+#attach-scrap-to-assistant[hidden] {
   display: none;
 }
 
@@ -2229,7 +2300,7 @@ body:not(.use-liquid-glass) .scrap-list button.is-multi-selected:not(.is-selecte
 
 .notification-item small {
   color: var(--shade-dark);
-  font-family: var(--mono-font);
+  font-family: var(--readout-font);
   white-space: nowrap;
 }
 
@@ -2323,6 +2394,12 @@ input[type="checkbox"]:checked {
   box-shadow: var(--choice-checked-shadow, inherit);
 }
 
+/* The border and the art come from the era's own tokens. This rule used to
+   write `border: 0`, so an era that draws its unchecked radio as a bordered
+   well - Snow Leopard, Yosemite, Big Sur - painted a white disc on a white
+   pane, and only Theme Lab's specimen (which carries its own copy of the
+   recipe) looked right. The art is placed against the border box so a 1px
+   border does not crop an era's full-size radio image. */
 input[type="radio"] {
   appearance: none;
   -webkit-appearance: none;
@@ -2331,10 +2408,11 @@ input[type="radio"] {
   min-width: var(--system-radio-size);
   min-height: var(--system-radio-size);
   margin: 0;
-  border: 0;
+  border: var(--radio-border);
   border-radius: 50%;
   background-color: var(--radio-bg);
   background-image: var(--radio-image);
+  background-origin: border-box;
   background-position: center;
   background-repeat: no-repeat;
   background-size: var(--system-radio-size) var(--system-radio-size);
@@ -2350,7 +2428,10 @@ input[type="radio"]:focus-visible {
   box-shadow: var(--control-choice-hover-shadow);
 }
 
+/* A checked radio's art draws its own rim in every era that has a border, so
+   the unchecked well's border steps aside unless the era names a checked rim. */
 input[type="radio"]:checked {
+  border-color: var(--radio-checked-border-color, transparent);
   background-image: var(--radio-checked-image);
   background-size:
     7px 7px,

@@ -203,7 +203,7 @@
 .finder-item:focus span:last-of-type,
 .finder-item:hover span:last-of-type,
 .finder-item.is-selected span:last-of-type {
-  background: var(--paper);
+  background: var(--finder-label-bg);
   padding: 1px 3px;
   box-decoration-break: clone;
   /* A filename with no space (e.g. "DTK_Release_notes.pdf") has no natural
@@ -559,7 +559,7 @@
   min-width: 0;
   /* Same single hairline a System 6 Finder draws under its item count row —
      it is also the top edge of the content area's frame. */
-  border-bottom: 1px solid var(--ink);
+  border-bottom: var(--finder-pathbar-border, 1px solid var(--ink));
   padding: 10px 10px 6px;
 }
 
@@ -810,7 +810,7 @@
   min-height: 0;
   max-height: none;
   align-content: start;
-  background: var(--paper);
+  background: var(--file-well-bg);
   padding: 14px;
 }
 

@@ -74,23 +74,20 @@
 }
 
 .reader-toolbar {
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-}
-
-.reader-url-row {
   display: block;
 }
 
-.reader-toolbar input {
-  width: 100%;
-  font-family: var(--mono-font);
-  font-size: 12px;
+/* One row: the address and the button that opens it. */
+.reader-url-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
 }
 
-.reader-pane:not(:has(#reader-docmap-button:not(:disabled))) .reader-actions .btn:disabled:not(#reader-fetch-button) {
-  display: none;
+.reader-url-row input {
+  width: 100%;
+  min-width: 0;
 }
 
 /* The overflow menu is only worth showing when it holds an available action. */
@@ -98,18 +95,11 @@
   display: none;
 }
 
-.reader-pane:has(#reader-docmap-button:not(:disabled)) .reader-url-row,
-.reader-pane:has(#reader-docmap-button:not(:disabled)) #reader-fetch-button {
-  display: none;
-}
-
-/* Loaded documents put switching and overflow in the status bar, so the
-   source-entry toolbar gives its complete row back to the reading surface. */
-.reader-pane:has(#reader-docmap-button:not(:disabled)) .reader-toolbar {
-  display: none;
-}
-
-.reader-pane:has(#reader-docmap-button:not(:disabled)) .reader-actions {
+/* A loaded document gives the entry row back to the page. It returns only
+   when the writer asks for another source, and goes again on Escape. The pane
+   says which state it is in (reader.js setReaderPaneState); nothing here
+   guesses it from another control's availability. */
+.reader-pane[data-reader-state="loaded"]:not([data-reader-entry="open"]) > .reader-toolbar {
   display: none;
 }
 
@@ -121,6 +111,64 @@
   flex-direction: row;
   gap: 6px;
   position: relative;
+}
+
+/* The selection bar: the verbs for selected text, beside the selection. It
+   floats over the lower corner of the page in the theme's menu-panel material
+   (1-bit frame and drop shadow in System 6, glass in Liquid Glass) and never
+   takes a row from the text, so selecting does not move what is selected.
+   Motion is state feedback only: it rises 6px into place, and leaves faster
+   than it came. */
+.reader-selection-bar {
+  /* No stacking token needed: it is the last positioned child of the
+     workspace, so it already paints over the page. */
+  position: absolute;
+  right: 24px;
+  bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: calc(100% - 48px);
+  padding: 5px 5px 5px 10px;
+  border: var(--menu-panel-border);
+  border-radius: var(--menu-panel-radius);
+  background: var(--menu-panel-bg);
+  box-shadow: var(--menu-panel-shadow);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(6px);
+  transition: opacity 120ms ease-out, transform 120ms ease-out, visibility 0s linear 120ms;
+}
+
+.reader-selection-bar.is-open {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition: opacity 160ms ease-out, transform 180ms cubic-bezier(0.23, 1, 0.32, 1), visibility 0s;
+}
+
+.reader-selection-count {
+  min-width: 0;
+  overflow: hidden;
+  font-family: var(--ui-font);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--shade-dark);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reader-selection-bar .btn {
+  flex: none;
+  min-height: calc(var(--system-button-min-height) - 2px);
+  padding: 3px 10px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reader-selection-bar,
+  .reader-selection-bar.is-open {
+    transform: none;
+  }
 }
 
 /* Reader tab rail. Wide windows keep the spatially stable vertical list;
@@ -287,7 +335,9 @@ body.is-resizing-tdi {
   border-bottom: var(--tdi-source-label-border-bottom);
   background: var(--tdi-source-label-bg);
   color: var(--tdi-source-label-fg);
-  font-family: var(--tdi-source-label-font-family);
+  /* Fallback, not a :root default: resolved here it is this era's face;
+     resolved on :root it was always Chicago. */
+  font-family: var(--tdi-source-label-font-family, var(--ui-font));
   font-size: var(--tdi-source-label-font-size);
   font-weight: var(--tdi-source-label-font-weight);
   letter-spacing: var(--tdi-source-label-letter-spacing);
@@ -834,24 +884,39 @@ body.is-resizing-tdi {
   margin-inline: auto;
 }
 
-.reader-content h1 {
-  font-size: 22px;
+/* Room below the last line, so the selection bar never sits on the end of the
+   text when the page is scrolled all the way down. */
+.reader-content::after {
+  content: "";
+  display: block;
+  height: 48px;
+}
+
+/* The document names itself once: title, then one line of provenance (site,
+   author, date, length), then one rule. The body's own leading "# Title" is
+   dropped when it repeats this one (reader.js readerBodyMarkdown). */
+.reader-document-header {
+  margin-bottom: 1.6em;
+  padding-bottom: 10px;
+  border-bottom: var(--reader-meta-divider);
+}
+
+.reader-document-header h1 {
+  margin: 0 0 6px;
   font-family: var(--title-font);
-  border-bottom: var(--reader-title-divider);
-  padding-bottom: 8px;
-  margin-bottom: 16px;
-  text-align: center;
+  font-size: 24px;
+  line-height: 1.3;
+  text-align: start;
+  overflow-wrap: anywhere;
 }
 
 .reader-meta {
-  font-family: var(--mono-font);
-  font-size: 11px;
+  margin: 0;
+  font-family: var(--ui-font);
+  font-size: 12px;
+  line-height: 1.4;
   color: var(--shade-dark);
-  margin-bottom: 24px;
-  word-break: break-all;
-  text-align: center;
-  border-bottom: var(--reader-meta-divider);
-  padding-bottom: 6px;
+  overflow-wrap: anywhere;
 }
 
 .reader-body-content p {
@@ -860,14 +925,36 @@ body.is-resizing-tdi {
   text-align: justify;
 }
 
-.reader-body-content h1,
-.reader-body-content h2,
-.reader-body-content h3 {
+/* Hierarchy by size, weight and space. The thick rule that used to stand to
+   the left of every heading was the side stripe DESIGN.md forbids. */
+.reader-body-content :is(h1, h2, h3) {
+  margin: 1.8em 0 0.6em;
   font-family: var(--title-font);
-  margin-top: 1.8em;
-  margin-bottom: 0.8em;
-  border-left: var(--reader-section-marker);
-  padding-left: 10px;
+  line-height: 1.35;
+}
+
+.reader-body-content h1 {
+  font-size: 1.3em;
+}
+
+.reader-body-content h2 {
+  font-size: 1.18em;
+}
+
+.reader-body-content h3 {
+  font-size: 1.05em;
+}
+
+/* Someone else's words, marked as quoted: a hairline, not an accent bar. */
+.reader-body-content blockquote {
+  margin: 1.2em 0;
+  padding-inline-start: 1em;
+  border-inline-start: var(--system-control-line) solid var(--shade-dark);
+  color: var(--shade-dark);
+}
+
+.reader-body-content blockquote p {
+  text-indent: 0;
 }
 
 .reader-body-content ul,
@@ -1261,11 +1348,6 @@ body:has(.shutdown-screen:not(.is-hidden)) .dictation-field-button {
 .rebuild-flow-window {
   width: 460px;
   height: auto;
-}
-
-.docmap-window {
-  width: min(860px, calc(100vw - 210px));
-  height: min(600px, calc(100vh - 76px));
 }
 
 .clio-stage-window {
@@ -1925,24 +2007,6 @@ body:has(.shutdown-screen:not(.is-hidden)) .dictation-field-button {
   white-space: nowrap;
 }
 
-.docmap-pane {
-  display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
-  gap: 8px;
-  padding: 8px;
-}
-
-.docmap-drop-zone {
-  position: relative;
-  min-height: 0;
-  display: grid;
-}
-
-.docmap-drop-zone.is-dragging,
-.docmap-drop-zone.is-importing {
-  box-shadow: inset 0 0 0 2px var(--ink);
-}
-
 .visually-hidden {
   position: absolute;
   width: 1px;
@@ -1954,344 +2018,6 @@ body:has(.shutdown-screen:not(.is-hidden)) .dictation-field-button {
   clip-path: inset(50%);
   border: 0;
   white-space: nowrap;
-}
-
-.docmap-layout {
-  min-height: 0;
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  gap: 6px;
-}
-
-.docmap-map-toolbar .btn {
-  min-height: 25px;
-  padding: 3px 9px;
-}
-
-.docmap-mobile-focus,
-.docmap-mobile-hint {
-  display: none;
-}
-
-.docmap-tree {
-  position: relative;
-  min-height: 0;
-  height: 100%;
-  overflow: auto;
-  border: var(--system-control-line) solid var(--ink);
-  background: var(--paper);
-  padding: 10px;
-  scrollbar-gutter: stable both-edges;
-}
-
-.docmap-empty-note {
-  --empty-note-margin: min(8vh, 56px) auto 0;
-  --empty-note-max-width: 560px;
-}
-
-.docmap-markmap-frame {
-  width: 100%;
-  height: 100%;
-  min-height: 520px;
-  background: var(--paper);
-}
-
-.docmap-markmap-svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-  min-height: 520px;
-  --markmap-font: 400 var(--system-readable-min)/1.32 var(--text-font);
-  --markmap-text-color: var(--ink);
-}
-
-.docmap-markmap-svg .markmap-node > circle {
-  fill: var(--docmap-node-circle-fill);
-  stroke-width: var(--docmap-node-circle-stroke-width);
-}
-
-.docmap-markmap-svg .markmap-link {
-  stroke-width: 2.5px;
-}
-
-.video-docmap-workbench {
-  display: grid;
-  grid-template-columns: minmax(360px, 1fr) minmax(280px, 34%);
-  gap: 10px;
-  height: 100%;
-  min-height: 540px;
-}
-
-.video-docmap-map,
-.video-docmap-inspector {
-  min-width: 0;
-  min-height: 0;
-}
-
-.video-docmap-map {
-  border-right: var(--system-control-line) solid var(--ink);
-  padding-right: 10px;
-}
-
-.video-docmap-markmap-frame,
-.video-docmap-markmap-svg {
-  min-height: 540px;
-}
-
-.video-docmap-inspector {
-  display: grid;
-  grid-template-rows: minmax(120px, 34%) minmax(0, 1fr);
-  gap: 8px;
-  overflow: hidden;
-}
-
-.video-docmap-timeline {
-  display: grid;
-  gap: 5px;
-  align-content: start;
-  overflow: auto;
-  padding-right: 4px;
-}
-
-.video-docmap-timeline button {
-  display: grid;
-  grid-template-columns: minmax(92px, auto) minmax(0, 1fr);
-  gap: 6px;
-  align-items: baseline;
-  width: 100%;
-  min-height: var(--video-timeline-min-height);
-  border: var(--video-timeline-border);
-  border-radius: var(--video-timeline-radius);
-  background: var(--video-timeline-bg);
-  box-shadow: var(--video-timeline-shadow);
-  padding: 4px 6px;
-  color: var(--video-timeline-fg);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.video-docmap-timeline button.is-selected {
-  border-color: var(--video-timeline-selected-border-color);
-  background: var(--video-timeline-selected-bg);
-  box-shadow: var(--video-timeline-selected-shadow);
-  color: var(--video-timeline-selected-fg);
-}
-
-.video-docmap-timeline button.is-selected span {
-  color: var(--video-timeline-selected-span-fg);
-}
-
-.video-docmap-timeline span {
-  font-size: 11px;
-  white-space: nowrap;
-}
-
-.video-docmap-timeline b {
-  min-width: 0;
-  overflow: hidden;
-  font-size: 12px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.video-docmap-node {
-  overflow: auto;
-  border: var(--system-control-line) solid var(--ink);
-  padding: 8px;
-  background: var(--paper);
-}
-
-.video-docmap-node header {
-  display: grid;
-  gap: 4px;
-}
-
-.video-docmap-node header b {
-  font-size: 15px;
-}
-
-.video-docmap-node header small {
-  width: fit-content;
-  border: 1px solid var(--ink);
-  padding: 1px 5px;
-  background: #f4f4f4;
-}
-
-.video-docmap-node p {
-  margin: 8px 0;
-}
-
-.video-docmap-node blockquote {
-  margin: 8px 0;
-  border-left: var(--system-control-line) solid var(--ink);
-  padding-left: 8px;
-}
-
-.docmap-command-menu.is-disabled summary {
-  color: var(--shade-dark);
-  background:
-    repeating-linear-gradient(-45deg, transparent 0 9px, rgba(0, 0, 0, 0.06) 9px 18px),
-    var(--paper);
-  pointer-events: none;
-}
-
-.docmap-command-popover {
-  right: 0;
-  bottom: auto;
-  left: auto;
-  top: 100%;
-  margin-top: 5px;
-  width: max-content;
-  min-width: 260px;
-  max-width: min(420px, calc(100vw - 48px));
-}
-
-.docmap-command-popover .btn {
-  white-space: normal;
-  overflow-wrap: anywhere;
-  line-height: 1.2;
-}
-
-.docmap-layout-picker {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-
-.docmap-layout-picker span {
-  font-family: var(--title-font);
-  font-size: 12px;
-}
-
-/* Balanced (two-sided) DocMap center anchor. The Markmap root sits symmetrically
-   about the mirror axis, so its label is already centered; we promote it into a
-   real center by hiding its ordinary node ornaments (connector dot + underline)
-   and framing the title in a box, with the first-level branches connecting to the
-   middle of the box's left/right edges.
-   We deliberately do NOT restyle the label text (no text-align, no font-weight):
-   Markmap's label div is the full --markmap-max-width with the text pinned left
-   and the foreignObject clipped to the *measured* text width, so re-aligning or
-   re-weighting the text after layout pushes it outside the visible box. */
-.docmap-mm-balanced-root > circle,
-.docmap-mm-balanced-root > line {
-  opacity: 0;
-  pointer-events: none;
-}
-
-.docmap-balanced-center-box {
-  fill: var(--paper);
-  stroke: var(--ink);
-  stroke-width: 2px;
-}
-
-.docmap-details-bar {
-  gap: 8px;
-}
-
-.docmap-details-bar #docmap-count {
-  white-space: nowrap;
-}
-
-.docmap-status-actions {
-  display: flex;
-  align-items: center;
-  min-width: 0;
-}
-
-@container (max-width: 520px) {
-  .docmap-pane {
-    gap: 6px;
-    padding: 6px;
-  }
-
-  .docmap-layout {
-    gap: 8px;
-  }
-
-  .docmap-map-toolbar {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    align-items: stretch;
-    gap: 6px;
-  }
-
-  .docmap-toolbar-group {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 6px;
-    width: 100%;
-  }
-
-  .docmap-toolbar-group:first-child {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .docmap-layout-picker {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    width: 100%;
-  }
-
-  .docmap-layout-picker > span {
-    display: none;
-  }
-
-  .docmap-map-toolbar .btn,
-  .docmap-map-toolbar .view-switch-option {
-    min-width: 0;
-    min-height: 44px;
-    padding: 6px 8px;
-    justify-content: center;
-    text-align: center;
-    white-space: normal;
-    overflow-wrap: anywhere;
-  }
-
-  .docmap-mobile-focus {
-    display: inline-flex;
-  }
-
-  .docmap-drop-zone {
-    overflow: hidden;
-  }
-
-  .docmap-tree {
-    padding: 0;
-    border-width: 1px;
-    overflow: hidden;
-    overscroll-behavior: contain;
-    scrollbar-gutter: auto;
-  }
-
-  .docmap-markmap-frame,
-  .docmap-markmap-svg {
-    min-height: 100%;
-    touch-action: none;
-  }
-
-  .docmap-mobile-hint {
-    position: absolute;
-    right: 8px;
-    bottom: 8px;
-    left: 8px;
-    display: block;
-    width: fit-content;
-    max-width: calc(100% - 16px);
-    margin: 0 auto;
-    padding: 4px 8px;
-    border: var(--docmap-mobile-hint-border);
-    border-radius: var(--control-radius);
-    background: var(--paper);
-    box-shadow: var(--system-shadow);
-    font-family: var(--ui-font);
-    font-size: 11px;
-    line-height: 1.25;
-    text-align: center;
-    pointer-events: none;
-  }
-
 }
 
 .dictionary-window .window-pane.dictionary-pane {

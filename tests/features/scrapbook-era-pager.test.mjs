@@ -32,7 +32,7 @@ test.assertIncludes(aqua, "--scrap-list-item-selected-bg: linear-gradient(#73baf
 test.assertIncludes(aqua, "--scrap-list-item-selected-bg: var(--sidebar-selection-bg);", "Snow Leopard reuses the measured source-list selection");
 test.assertIncludes(appearance, "--scrapbook-pager-display: none;", "Yosemite keeps a flat list browser");
 test.assertIncludes(liquid, "--scrapbook-list-display: block;", "Liquid Glass preserves its existing split browser");
-test.assertNotMatches(appearance, /body\[data-theme="(?:platinum|yosemite)"\][^{]*(?:scrapbook-pane|scrapbook-pager|scrap-list)/, "appearance themes remain token-only for Scrapbook roles");
-test.assertNotMatches(aqua, /body\[data-theme="(?:aqua|snow-leopard)"\][^{]*(?:scrapbook-pane|scrapbook-pager|scrap-list)/, "Aqua-family themes remain token-only for Scrapbook roles");
+test.assertNotMatches(appearance, /body\[data-(?:theme|lineage~)="(?:platinum|yosemite)"\][^{]*(?:scrapbook-pane|scrapbook-pager|scrap-list)/, "appearance themes remain token-only for Scrapbook roles");
+test.assertNotMatches(aqua, /body\[data-(?:theme|lineage~|theme-family)="(?:aqua|snow-leopard)"\][^{]*(?:scrapbook-pane|scrapbook-pager|scrap-list)/, "Aqua-family themes remain token-only for Scrapbook roles");
 
 test.finish();

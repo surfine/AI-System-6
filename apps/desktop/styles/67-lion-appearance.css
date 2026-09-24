@@ -1,0 +1,144 @@
+/* Lion (Mac OS X 10.7, 2011).
+
+   A child of Snow Leopard: it inherits every rule 10.6 scopes by
+   [data-lineage~="snow-leopard"] and owns only what 10.7 changed.
+
+   Evidence, two independent native sources that agree to within a level or
+   two (internal/evidence/drafts/lion-reference/README.zh-CN.md):
+   - Apple's Mac OS X Human Interface Guidelines, revision 2011-07-26, the
+     Lion edition; its embedded screenshots are 1x;
+   - 512 Pixels' Lion screenshot library, 109 captures of a real 10.7.5
+     machine at 2x.
+
+   What 10.7 changed, and so what this sheet draws:
+   - a lighter window frame: #f1f1f1 highlight over #e5e5e5 -> #b7b7b7, a
+     #bcbcbc band and a #696969 base line (10.6: #e2e2e2, #d0d0d0 -> #bcbcbc,
+     #515151);
+   - 12 px lamps, and at the title bar's right end the full-screen button
+     (two outward arrows, 14 px, no bezel) where 10.6 drew a green lamp;
+   - overlay scroll bars: no lane, no track, a 7 px capsule of 50% black in a
+     10 pt gutter, shown only while scrolling;
+   - white document and list content on a #ededed window body;
+   - the source list's blue-grey gradient and flatter push buttons;
+   - the Andromeda galaxy as the default desktop picture. */
+html[data-theme="lion"],
+body[data-theme="lion"] {
+  /* Title bar, HIG p.142 at 1x (512 Pixels agrees at 2x). */
+  --system-titlebar-active-bg: linear-gradient(to bottom,
+    #f1f1f1 0 1px, #e5e5e5 1px, #dcdcdc 6px, #d3d3d3 10px, #cacaca 13px,
+    #c0c0c0 16px, #b7b7b7 21px, #bcbcbc 21px 22px);
+  --system-titlebar-inactive-bg: linear-gradient(to bottom,
+    #fbfbfb 0 1px, #f7f7f7 1px, #e2e2e2 21px, #e7e7e7 21px 22px);
+  --titlebar-border: 1px solid #696969;
+  --titlebar-border-inactive: 1px solid #a7a7a7;
+  --titlebar-title-fg: #313131;
+  --system-titlebar-inactive-title-color: #858585;
+  /* Unified toolbar: the same ramp continued down to #b2b2b2 over a
+     #6b6b6b line (Finder, HIG p.151 and 512 Pixels' Finder-Home). */
+  --toolbar-bg: linear-gradient(#c0c0c0, #b2b2b2);
+  --toolbar-bg-inactive: linear-gradient(#e6e6e6, #e0e0e0);
+  --toolbar-border: 1px solid #6b6b6b;
+  /* 12 px lamps, 20 px apart, the first 8 px in (10.6's were 14 px). */
+  --traffic-light-size: 12px;
+  --traffic-light-sprite-size: 12px 12px;
+  /* Content is white again; the window body stays #ededed. */
+  --paper: #fff;
+  --pane-bg: #fff;
+  --window-bg: #ededed;
+  /* Both sources fit a 4 pt corner, top and bottom (10.6 drew 5 px). */
+  --window-radius: 4px;
+  /* Source list: #e8ecf1 -> #d2d8e0 in a focused window, flat #f0f0f0
+     behind; selection a #6ab1e5 -> #3787d2 ramp between a #5ca4df top line
+     and a #317ac2 base (HIG p.153; 512 Pixels' Applications). */
+  --sidebar-bg: linear-gradient(#e8ecf1, #d2d8e0);
+  --sidebar-bg-inactive: #f0f0f0;
+  --sidebar-selection-bg: linear-gradient(#5ca4df 0 1px, #72b9ea 1px 2px, #6ab1e5 2px, #3787d2 calc(100% - 1px), #317ac2 calc(100% - 1px));
+  --sidebar-selection-bg-unfocused: linear-gradient(#bcc5d6 0 1px, #c4cce0 1px 2px, #bdc6db 2px, #9eacc7 calc(100% - 1px), #93a0ba calc(100% - 1px));
+  --sidebar-selection-bg-inactive: var(--sidebar-selection-bg-unfocused);
+  /* Push buttons, HIG p.199: white top half, a hard step at mid-height to
+     #ececec, rising to #f2f2f2; the default button a two-half blue gloss. */
+  --btn-bg: linear-gradient(#ffffff 0%, #f3f3f3 48%, #ececec 50%, #f2f2f2 100%);
+  --btn-default-bg: linear-gradient(#d6edff 0%, #a4d3fa 48%, #88c7fb 50%, #d5faff 100%);
+  /* Overlay scroll bars, HIG p.136/p.148: nothing reserved beside the
+     content, a 7 px capsule of 50% black in a 10 pt gutter, no track, no
+     arrows. The same model Big Sur uses, which is where it began. */
+  --scrollbar-track: transparent;
+  --scrollbar-thumb: rgba(0, 0, 0, 0.5);
+  --scrollbar-width: 10px;
+  --scrollbar-track-border: 0;
+  --scrollbar-track-shadow: none;
+  --scrollbar-thumb-shadow: none;
+  --scrollbar-button-border: 0;
+  --scrollbar-button-shadow: none;
+  --window-frame-lane: 10px;
+  --window-frame-track-bg: transparent;
+  --window-frame-track-border: 0;
+  --window-frame-thumb-bg: var(--scrollbar-thumb);
+  --window-frame-thumb-bg-horizontal: var(--scrollbar-thumb);
+  --window-frame-thumb-border: 1.5px solid transparent;
+  --window-frame-thumb-radius: 5px;
+  --window-frame-arrow-bg: transparent;
+  --window-frame-arrow-ink: transparent;
+  --window-frame-bar-display: none;
+  --window-frame-reserve: 0px;
+  --window-frame-scrollbar-width: thin;
+  /* The Andromeda galaxy, as gradients: a tilted band of blue arms across
+     the middle with a warm core, on a deep blue sky darkest at the top.
+     Colours are 512 Pixels' Desktop capture, sampled on a 10 x 5 grid. */
+  /* Period tokens every era answers, with the values Snow Leopard already
+     draws (the foundation defaults it inherits). */
+  --balloon-help-shadow: var(--system-object-shadow);
+  --control-strip-tile-height: calc(var(--control-strip-thickness) - 2px);
+  --control-strip-tile-margin: 0;
+  --control-strip-tile-radius: 0;
+  --desktop-label-box-shadow: none;
+  --menu-item-fg: var(--ink);
+  --surface-backdrop-filter: none;
+  --window-backdrop-filter: none;
+  --desktop: #1d3a64;
+  --desktop-surface:
+    radial-gradient(ellipse 13% 9% at 47% 46%, rgba(255, 244, 228, 1), rgba(240, 208, 180, 0.8) 35%, transparent 100%),
+    radial-gradient(ellipse 24% 8% at 37% 51%, rgba(210, 166, 164, 0.65), transparent 75%),
+    radial-gradient(ellipse 24% 8% at 59% 41%, rgba(210, 166, 164, 0.6), transparent 75%),
+    radial-gradient(ellipse 20% 9% at 19% 60%, rgba(115, 130, 195, 0.7), transparent 75%),
+    radial-gradient(ellipse 24% 11% at 31% 55%, rgba(130, 135, 190, 0.75), transparent 75%),
+    radial-gradient(ellipse 24% 11% at 66% 38%, rgba(130, 135, 190, 0.75), transparent 75%),
+    radial-gradient(ellipse 20% 9% at 80% 32%, rgba(115, 130, 195, 0.65), transparent 75%),
+    radial-gradient(ellipse 14% 6% at 91% 28%, rgba(105, 125, 195, 0.5), transparent 75%),
+    radial-gradient(circle at 30% 35%, rgba(255, 255, 255, 0.9) 0 3px, rgba(200, 215, 255, 0.35) 6px, transparent 16px),
+    radial-gradient(1px 1px at 17px 23px, rgba(255, 255, 255, 0.85), transparent 1.5px) 0 0 / 97px 83px,
+    radial-gradient(1px 1px at 61px 9px, rgba(255, 255, 255, 0.6), transparent 1.5px) 0 0 / 131px 107px,
+    radial-gradient(1px 1px at 5px 44px, rgba(220, 230, 255, 0.5), transparent 1.5px) 0 0 / 59px 71px,
+    radial-gradient(ellipse 48% 20% at 52% 45%, rgba(90, 120, 190, 0.35), transparent 75%),
+    radial-gradient(ellipse 70% 60% at 15% 75%, rgba(30, 90, 160, 0.45), transparent 70%),
+    linear-gradient(to bottom, #171d2e 0%, #1b2f50 22%, #174277 50%, #134680 64%, #0f2f5c 86%, #0a152d 100%);
+}
+
+body[data-theme="lion"] .desktop {
+  background: var(--desktop-surface);
+}
+
+/* The title bar's right end: Lion's full-screen button in place of 10.6's
+   green lamp. Two outward arrows, 14 px, #a8a8a8 with a #5e5e5e edge and a
+   light emboss below, no bezel (HIG p.135; identical in Safari, Preview and
+   iCal on 512 Pixels). */
+body[data-theme="lion"] .title-bar > .resize-box {
+  width: 14px;
+  height: 14px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='15' viewBox='0 0 14 15'%3E%3Cg fill='%23f0f0f0' transform='translate(0 1)'%3E%3Cpath d='M7.5.5h6v6l-1.9-1.9-2.2 2.2-2.2-2.2 2.2-2.2z'/%3E%3Cpath d='M6.5 13.5h-6v-6l1.9 1.9 2.2-2.2 2.2 2.2-2.2 2.2z'/%3E%3C/g%3E%3Cg fill='%23a8a8a8' stroke='%235e5e5e' stroke-linejoin='round'%3E%3Cpath d='M7.5.5h6v6l-1.9-1.9-2.2 2.2-2.2-2.2 2.2-2.2z'/%3E%3Cpath d='M6.5 13.5h-6v-6l1.9 1.9 2.2-2.2 2.2 2.2-2.2 2.2z'/%3E%3C/g%3E%3C/svg%3E") center / 14px 15px no-repeat;
+}
+
+body[data-theme="lion"] .title-bar > .resize-box::before {
+  background: none;
+}
+
+body[data-theme="lion"] .window:not(.is-active) .title-bar > .resize-box {
+  opacity: 0.55;
+}
+
+/* 10.7 draws no resize control: any window edge resizes. The corner keeps
+   its hit area and cursor so resizing still works, but paints nothing over
+   the content that now runs to the edge. */
+body[data-theme="lion"] .grow-box {
+  background: transparent;
+}

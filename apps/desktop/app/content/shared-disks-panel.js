@@ -52,6 +52,36 @@ function installDemoDisksPanel() {
     return list.find((project) => project.id === id) || null;
   }
 
+  // The rows the Startup Disk's folder draws. They live here rather than in
+  // app.js because this module is where the index they read arrives: the boot
+  // bundle then carries one guarded call instead of a mapper for data it never
+  // has. The folder's own page asks for them through the window manager, which
+  // ensures this module first.
+  function finderItems() {
+    const index = window.AISystem6SharedProjectDisksIndex || {};
+    return Object.keys(index).map((route) => {
+      const disk = index[route] || {};
+      return {
+        name: disk.name || route,
+        iconId: "projectDisk",
+        icon: "project-disk-icon",
+        action: `open-shared-disk-${route}`,
+        kind: t("project_disk"),
+        description: disk.subject || "",
+        createdAt: disk.exportedAt || "",
+        updatedAt: disk.exportedAt || "",
+      };
+    });
+  }
+  // The metadata every Finder item carries (built-in size, the folder as its
+  // location, the description Get Info shows) is the boot bundle's helper, and
+  // this module runs in the same scope, so the rows come back finished.
+  window.AISystem6DemonstrationDiskItems = () => (
+    typeof withStaticFinderMetadata === "function"
+      ? withStaticFinderMetadata(finderItems(), t("demo_disks_title"))
+      : finderItems()
+  );
+
   // One line per disk, straight from the generated index. The subject is the
   // writer's own first line under "## 主题", so a row cannot drift away from
   // what the project says about itself; a disk that has none falls back to what

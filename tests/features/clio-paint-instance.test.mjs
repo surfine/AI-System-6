@@ -133,6 +133,59 @@ test.assert(
   "the window says what happened instead of silently dropping the answer"
 );
 
+// --- Pressing inside a selection moves it ------------------------------------
+//
+// Found in the browser on 2026-09-24: the press handler was one if/else chain
+// ending in "any other tool draws a shape", and a press that started a move
+// made the selection branch's condition false, so the same press fell through
+// and also started a marquee. The lifted pixels were lost and no move was
+// written. Driven here through the real pointer handlers on the real module;
+// the document is a bitmap, so the picture itself can be read back headless.
+const moveRun = await run(`
+  (() => {
+    const api = window.AISystem6ClioPaint;
+    const root = document.querySelector('[data-window="clioPaint"]');
+    const viewport = root.querySelector("#clio-paint-viewport");
+    clioPaintEventPoint = (event) => ({ x: event.clientX, y: event.clientY });
+    let pointerId = 50;
+    const drag = (points, extra = {}) => {
+      const id = pointerId++;
+      const fire = (type, [x, y]) => viewport.dispatchEvent(Object.assign(new Event(type, { bubbles: true, cancelable: true }), {
+        pointerId: id, pointerType: "mouse", button: 0, clientX: x, clientY: y, shiftKey: false, altKey: false, ...extra,
+      }));
+      fire("pointerdown", points[0]);
+      points.slice(1).forEach((point) => fire("pointermove", point));
+      fire("pointerup", points[points.length - 1]);
+    };
+    clioPaintBlankCanvas({ width: 480, height: 300 });
+    api.setTool("rect-filled");
+    api.setPattern(1);
+    drag([[20, 20], [60, 50]]);
+    const drawn = clioPaintGetBit(clioPaintState.doc, 40, 35);
+    api.setTool("marquee");
+    drag([[10, 10], [70, 60]]);
+    const selected = api.state().hasSelection;
+    drag([[40, 35], [140, 35]]);
+    const labels = clioPaintState.history.past.map((step) => step.labelKey);
+    api.setTool("pencil");
+    return {
+      drawn,
+      selected,
+      lastStep: labels[labels.length - 1],
+      moves: labels.filter((label) => label === "clio_paint_op_move").length,
+      stillSelected: api.state().hasSelection,
+      oldPlace: clioPaintGetBit(clioPaintState.doc, 40, 35),
+      newPlace: clioPaintGetBit(clioPaintState.doc, 140, 35),
+      pencilOnInk: (() => { drag([[140, 35]]); return clioPaintGetBit(clioPaintState.doc, 140, 35); })(),
+    };
+  })()
+`);
+test.assert(moveRun.drawn === 1 && moveRun.selected === true, "a filled rectangle is drawn and then selected");
+test.assert(moveRun.lastStep === "clio_paint_op_move" && moveRun.moves === 1, "pressing inside the selection writes one Move step, not a new marquee");
+test.assert(moveRun.oldPlace === 0 && moveRun.newPlace === 1, "and the pixels arrive where they were dragged, gone from where they were");
+test.assert(moveRun.stillSelected === false, "choosing another tool puts the selection down");
+test.assert(moveRun.pencilOnInk === 0, "the pencil draws white when it starts on a black pixel");
+
 // --- A disabled Paint command says what it is waiting for -------------------
 const reasons = await run(`
   (() => {
@@ -148,7 +201,8 @@ const reasons = await run(`
     const inWindow = api.commandAvailability("clio-paint-undo");
     const noResult = api.commandAvailability("clio-paint-result-copy");
     const open = api.commandAvailability("open-clio-paint");
-    return { awayFromWindow, inWindow, noResult, open };
+    const noSelection = api.commandAvailability("clio-paint-invert");
+    return { awayFromWindow, inWindow, noResult, open, noSelection };
   })()
 `);
 test.assert(
@@ -159,6 +213,11 @@ test.assert(reasons.open.available === true, "opening the app is always availabl
 test.assert(
   reasons.noResult.available === false && reasons.noResult.reason === "clio_paint_no_result",
   "a command that needs a result says so"
+);
+
+test.assert(
+  reasons.noSelection.available === false && reasons.noSelection.reason === "clio_paint_no_selection",
+  "an Edit command that works on a region says it is waiting for one"
 );
 
 test.finish();

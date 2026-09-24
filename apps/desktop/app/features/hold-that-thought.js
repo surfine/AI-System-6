@@ -103,6 +103,24 @@ function formatHeldThoughtTime(at) {
     : date.toLocaleDateString(locale, { month: "short", day: "numeric" });
 }
 
+// The handoff as typed, with the distance worked out when the thought is read
+// — a thought picked up next week should say how far the handoff is now, not
+// how far it was. The reading of a hand-typed date belongs to the disk icons'
+// risk mark (projectHandDateDay in project-disk.js), so this line and the mark
+// can never disagree about which words are a day; where no reader answers,
+// the words are printed as typed and no distance is invented.
+function heldThoughtHandoffLine(thought) {
+  const text = String(thought?.handoff || "");
+  if (!text) return "";
+  const now = new Date();
+  const day = typeof projectHandDateDay === "function" ? projectHandDateDay(text, now.getTime()) : null;
+  if (!Number.isFinite(day)) return text;
+  const days = Math.round(day - Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) / 864e5);
+  if (days > 0) return t("held_thought_handoff_in", text, days);
+  if (days === 0) return t("held_thought_handoff_today", text);
+  return t("held_thought_handoff_past", text, -days);
+}
+
 // A row per captured line, and only for lines that were really captured. An
 // absent source is absent from the window: the desk never prints an empty
 // "reading" row to prove it looked.
@@ -114,6 +132,7 @@ function renderHeldThoughtContext(thought) {
     [t("held_thought_sentence"), thought?.sentence || ""],
     [t("held_thought_reading"), thought?.reading || ""],
     [t("held_thought_clipboard"), thought?.clipboard || ""],
+    [t("held_thought_handoff"), heldThoughtHandoffLine(thought)],
   ].filter(([, value]) => !!value);
 
   parts.context.replaceChildren();

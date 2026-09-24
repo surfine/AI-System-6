@@ -4,6 +4,7 @@
 "use strict";
 const { randomBytes, randomInt } = require("node:crypto");
 const bank = require("./one-more-tune-keynote-bank.json");
+const { pickDiverseItems } = require("./one-more-tune-selection.js");
 const rounds = new Map();
 const ROUND_SIZE = 6;
 const TTL = 2 * 60 * 60 * 1000;
@@ -28,13 +29,18 @@ function publicQuestion(question) {
 }
 function startRound() {
   prune();
-  const groups = new Set();
-  const items = shuffled(bank.items).filter((item) => {
-    if (groups.has(item.sharedGroup)) return false;
-    groups.add(item.sharedGroup);
-    return true;
-  }).slice(0, ROUND_SIZE);
-  if (items.length !== ROUND_SIZE) throw new Error("Keynote bank needs six distinct topics");
+  // One question per shared-evidence group, at most two per event, at least two
+  // era buckets and three historical questions: the editorial policy the
+  // 2026-09-22 package brought with its questions. The selector throws a coded
+  // SelectionError instead of quietly shrinking the round, and the route turns
+  // that into an unavailable response.
+  const items = pickDiverseItems(bank.items, {
+    size: ROUND_SIZE,
+    maxPerEvent: 2,
+    minEras: 2,
+    minOld: 3,
+    oldYear: 2019,
+  });
   const roundToken = token();
   const questions = items.map((item) => {
     const choices = shuffled([item.answer, ...item.distractors]).map((label) => ({ id: token(), label }));

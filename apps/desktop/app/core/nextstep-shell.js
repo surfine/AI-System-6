@@ -1,69 +1,22 @@
 // NeXTSTEP presentation of existing managed windows. Window identity, contents,
 // running-app membership and save/close decisions remain with the shared owner.
+//
+// Minimize/restore used to live here, which made the desk's only miniaturize
+// button a NeXTSTEP possession. The state moved to the shared window manager
+// (window-manager.js, "Miniaturize, and the way back"); what remains here is
+// this appearance's own button and its own miniwindow list in the dock.
 (() => {
   if (window.AISystem6NextstepShellLoaded) return;
   const chrome = new Map();
-  const focusSnapshots = new WeakMap();
   const enabled = () => window.AISystem6Theme.getCurrentTheme() === "nextstep";
   const managedWindows = () => Array.from(document.querySelectorAll(".window[data-window]"));
 
-  function rememberFocus(win) {
-    const target = document.activeElement;
-    if (!win.contains(target)) return;
-    const selection = window.getSelection();
-    focusSnapshots.set(win, {
-      target,
-      start: target.selectionStart,
-      end: target.selectionEnd,
-      direction: target.selectionDirection,
-      range: selection?.rangeCount && win.contains(selection.anchorNode) ? selection.getRangeAt(0).cloneRange() : null,
-      scrollTop: target.scrollTop,
-      scrollLeft: target.scrollLeft,
-    });
-  }
-
-  function restoreFocus(win) {
-    const saved = focusSnapshots.get(win);
-    if (!saved?.target?.isConnected) return;
-    saved.target.focus({ preventScroll: true });
-    if (typeof saved.start === "number") saved.target.setSelectionRange(saved.start, saved.end, saved.direction);
-    if (typeof saved.start !== "number" && saved.range?.startContainer.isConnected) {
-      const selection = window.getSelection();
-      selection.removeAllRanges();
-      selection.addRange(saved.range);
-    }
-    saved.target.scrollTop = saved.scrollTop;
-    saved.target.scrollLeft = saved.scrollLeft;
-  }
-
-  function minimize(win) {
-    if (!win || win.classList.contains("is-hidden") || win.classList.contains("is-minimized")) return false;
-    rememberFocus(win);
-    const wasActive = win.classList.contains("is-active");
-    win.classList.add("is-minimized");
-    win.classList.remove("is-active");
-    if (wasActive) {
-      const next = visibleLayeredWindows().sort((a, b) => Number(b.style.zIndex || 0) - Number(a.style.zIndex || 0))[0];
-      if (next) focusWindow(next);
-      else { activeAppId = "finder"; document.activeElement?.blur(); }
-    }
-    renderMultiFinderMenu();
-    scheduleWorkingSessionSave();
-    return true;
-  }
-
-  function restore(win, { focus = true } = {}) {
-    if (!win?.classList.contains("is-minimized")) return false;
-    win.classList.remove("is-minimized");
-    if (focus) {
-      unhideApp(getWindowAppId(win), { expand: false });
-      focusWindow(win);
-      restoreFocus(win);
-    }
-    renderMultiFinderMenu();
-    scheduleWorkingSessionSave();
-    return true;
-  }
+  // One miniaturize for the desk, one already-written restore: the shared
+  // owner keeps the focus snapshot and the working-session save, so this
+  // appearance cannot drift into a second meaning for a minimized window.
+  const minimize = (win) => minimizeWindow(win);
+  const restore = (win, options) => restoreMinimizedWindow(win, options);
+  const restoreFocus = (win) => restoreWindowFocus(win);
 
   function wire(win) {
     if (!enabled() || chrome.has(win)) return;

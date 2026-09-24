@@ -1383,6 +1383,7 @@ function setBusy(isBusy) {
       "[data-quick-draft-fix-edit]",
       "[data-quick-draft-fix-keep]",
       '[data-action="quick-draft-import-chat"]',
+      '[data-action="quick-draft-walk-return"]',
       "[data-quick-draft-delivery]",
     ].join(", ")) || []),
   ]);
@@ -1856,6 +1857,14 @@ function bind() {
     if (importChat) {
       closeQuickDraftMenus();
       importChatScreenshots();
+      return;
+    }
+    if (event.target.closest('[data-action="quick-draft-walk-return"]')) {
+      // This window handles the click; document-level command dispatch must
+      // not open a second input dialog and cancel the first one's promise.
+      event.stopPropagation();
+      closeQuickDraftMenus();
+      returnFromWalk();
       return;
     }
     const delivery = event.target.closest("[data-quick-draft-delivery]");

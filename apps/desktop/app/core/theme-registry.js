@@ -12,19 +12,6 @@
   const LEGACY_LIQUID_KEY = "ai-system-6-liquid-glass";
   const DEFAULT_THEME_ID = "classic";
 
-  function freezeAuthoringMetadata({ tokenFile, tokenSelector, art }) {
-    const zoom = Object.freeze((art.zoom || []).map((pair) => Object.freeze([...pair])));
-    return Object.freeze({
-      tokenHome: Object.freeze({ file: tokenFile, selector: tokenSelector }),
-      art: Object.freeze({
-        ...art,
-        tiers: Object.freeze([...(art.tiers || [])]),
-        zoom,
-        appearances: Object.freeze([...(art.appearances || ["default"])]),
-      }),
-    });
-  }
-
   // `year` is the release year of the system each appearance reproduces. It is
   // the axis Theme Lab's timeline is drawn on, and it matches site/js/eras.js
   // so the product and the public page date the same era the same way.
@@ -67,16 +54,27 @@
       fontStrategy: "preference",
       overlay: "none",
       capabilities: Object.freeze(["native-window-outline", "one-bit-chrome"]),
-      authoring: freezeAuthoringMetadata({
-        tokenFile: "apps/desktop/styles/00-foundation.css",
-        tokenSelector: ":root",
-        art: {
-          dir: "classic", ext: "svg", tiers: [32, 16],
-          ordinary: 32, compact: 16, large: 32,
-          zoom: [[32, 32], [32, 64], [32, 128], [32, 256]],
-          appearances: ["default"],
-        },
-      }),
+    }),
+    Object.freeze({
+      id: "system-7",
+      year: 1991,
+      label: "System 7",
+      labelKey: "theme_system_7",
+      // System 7 on a colour screen: System 6's geometry and one-bit object
+      // outlines, with the grey-and-lavender window frame and colour icons.
+      // A child of Classic; the icon family is its own (derived from the
+      // Classic outlines by tooling/build-system-7-icons.mjs).
+      family: "classic",
+      recipeBase: "classic",
+      menuBarModel: "application-owned",
+      releaseReady: false,
+      systemFont: "Chicago",
+      systemFontSize: 12,
+      fontStrategy: "preference",
+      overlay: "none",
+      capabilities: Object.freeze(["native-window-outline", "color-chrome", "independent-icons"]),
+      // Its icons exist at 32 and 16 px only, like the Classic family.
+      classicIconTiers: true,
     }),
     Object.freeze({
       id: "platinum",
@@ -92,16 +90,25 @@
       fontStrategy: "theme",
       overlay: "none",
       capabilities: Object.freeze(["solid-material", "grayscale-depth", "native-window-outline"]),
-      authoring: freezeAuthoringMetadata({
-        tokenFile: "apps/desktop/styles/65-appearance-themes.css",
-        tokenSelector: 'html[data-theme="platinum"],\nbody[data-theme="platinum"]',
-        art: {
-          dir: "platinum", ext: "png", tiers: [42, 32, 16],
-          ordinary: 32, compact: 16, large: 42,
-          zoom: [[42, 168], [32, 96], [16, 64]],
-          appearances: ["default"],
-        },
-      }),
+    }),
+    Object.freeze({
+      id: "drawing-board",
+      year: 1998,
+      label: "Drawing Board",
+      labelKey: "theme_drawing_board",
+      // The Appearance Manager theme Mac OS 8.5's betas carried and the
+      // release dropped: Platinum's controls, drawn in pencil on drafting
+      // paper. A child of Platinum; its icons are Platinum's (8.5 themes did
+      // not redraw the Finder's icons).
+      family: "classic",
+      recipeBase: "platinum",
+      menuBarModel: "application-owned",
+      releaseReady: false,
+      systemFont: "Charcoal",
+      systemFontSize: 12,
+      fontStrategy: "theme",
+      overlay: "none",
+      capabilities: Object.freeze(["solid-material", "pencil-outline", "native-window-outline"]),
     }),
     Object.freeze({
       id: "aqua",
@@ -113,6 +120,7 @@
       // owns its material, geometry, and state rules under data-theme="aqua".
       family: "aqua",
       recipeBase: null,
+      finderLayout: "two-row-plain",
       menuBarModel: "system-owned",
       releaseReady: true,
       systemFont: "Lucida Grande",
@@ -120,16 +128,25 @@
       fontStrategy: "theme",
       overlay: "none",
       capabilities: Object.freeze(["solid-material", "pinstripe", "traffic-lights"]),
-      authoring: freezeAuthoringMetadata({
-        tokenFile: "apps/desktop/styles/67-aqua-appearance.css",
-        tokenSelector: 'html[data-theme="aqua"],\nbody[data-theme="aqua"]',
-        art: {
-          dir: "aqua", ext: "png", tiers: [128, 32, 16],
-          ordinary: 32, compact: 16, large: 128,
-          zoom: [[128, 128], [32, 96], [16, 64]],
-          appearances: ["default"],
-        },
-      }),
+    }),
+    Object.freeze({
+      id: "tiger",
+      year: 2005,
+      label: "Tiger",
+      labelKey: "theme_tiger",
+      // Mac OS X 10.4's textured ("brushed metal") window. A child of Snow
+      // Leopard for maintenance, not history: 10.6 already owns the unified
+      // title bar and toolbar geometry, so Tiger's delta is the material, the
+      // rounded bottom corners, and the Jaguar-lineage icon family.
+      family: "aqua",
+      recipeBase: "snow-leopard",
+      menuBarModel: "system-owned",
+      releaseReady: false,
+      systemFont: "Lucida Grande",
+      systemFontSize: 13,
+      fontStrategy: "theme",
+      overlay: "none",
+      capabilities: Object.freeze(["textured-material", "unified-toolbar", "traffic-lights"]),
     }),
     Object.freeze({
       id: "snow-leopard",
@@ -141,6 +158,7 @@
       // with its own 10.6 token delta.
       family: "aqua",
       recipeBase: "aqua",
+      finderLayout: "two-row-sidebar",
       menuBarModel: "system-owned",
       releaseReady: true,
       systemFont: "Lucida Grande",
@@ -148,16 +166,24 @@
       fontStrategy: "theme",
       overlay: "none",
       capabilities: Object.freeze(["solid-material", "unified-toolbar", "traffic-lights"]),
-      authoring: freezeAuthoringMetadata({
-        tokenFile: "apps/desktop/styles/67-aqua-appearance.css",
-        tokenSelector: 'html[data-theme="snow-leopard"],\nbody[data-theme="snow-leopard"]',
-        art: {
-          dir: "snow-leopard", ext: "png", tiers: [512, 128, 32, 16],
-          ordinary: 32, compact: 16, large: 128,
-          zoom: [[512, 256], [128, 128], [32, 96], [16, 64]],
-          appearances: ["default"],
-        },
-      }),
+    }),
+    Object.freeze({
+      id: "lion",
+      year: 2011,
+      label: "Lion",
+      labelKey: "theme_lion",
+      // Mac OS X 10.7: 10.6's window grammar with the scroll bars gone until
+      // you scroll, a full-screen button in the title bar and a monochrome
+      // source list. A child of Snow Leopard; its icons are 10.6's.
+      family: "aqua",
+      recipeBase: "snow-leopard",
+      menuBarModel: "system-owned",
+      releaseReady: false,
+      systemFont: "Lucida Grande",
+      systemFontSize: 13,
+      fontStrategy: "theme",
+      overlay: "none",
+      capabilities: Object.freeze(["solid-material", "unified-toolbar", "traffic-lights", "overlay-scrollbars"]),
     }),
     Object.freeze({
       id: "yosemite",
@@ -166,6 +192,7 @@
       labelKey: "theme_yosemite",
       family: "liquid-glass",
       recipeBase: "liquid-glass",
+      finderLayout: "two-row-sidebar",
       menuBarModel: "system-owned",
       releaseReady: true,
       systemFont: "Helvetica Neue",
@@ -173,16 +200,6 @@
       fontStrategy: "theme",
       overlay: "none",
       capabilities: Object.freeze(["vibrancy", "translucent-sidebar", "traffic-lights"]),
-      authoring: freezeAuthoringMetadata({
-        tokenFile: "apps/desktop/styles/65-appearance-themes.css",
-        tokenSelector: 'html[data-theme="yosemite"],\nbody[data-theme="yosemite"]',
-        art: {
-          dir: "yosemite", ext: "png", tiers: [128, 64, 32, 16],
-          ordinary: 32, compact: 16, large: 128,
-          zoom: [[128, 128], [64, 128], [32, 96], [16, 64]],
-          appearances: ["default"],
-        },
-      }),
     }),
     Object.freeze({
       id: "big-sur",
@@ -191,24 +208,25 @@
       labelKey: "theme_big_sur",
       family: "liquid-glass",
       recipeBase: "liquid-glass",
+      finderLayout: "one-row",
       menuBarModel: "system-owned",
+      // macOS 11 reserves the accent selection for the key window: click away
+      // from a Finder window and the highlighted row goes neutral. The fact is
+      // projected like the menu-bar model, so the stylesheet reads it rather
+      // than the desk hard-coding one appearance's id into a shared rule.
+      selectionModel: "key-window",
       releaseReady: true,
       systemFont: "SF Pro",
       systemFontSize: 13,
       fontStrategy: "theme",
       overlay: "none",
       colorModes: true,
-      capabilities: Object.freeze(["vibrancy", "translucent-sidebar", "traffic-lights"]),
-      authoring: freezeAuthoringMetadata({
-        tokenFile: "apps/desktop/styles/68-big-sur-appearance.css",
-        tokenSelector: 'html[data-theme="big-sur"],\nbody[data-theme="big-sur"]',
-        art: {
-          dir: "big-sur", ext: "png", tiers: [128, 64, 32, 16],
-          ordinary: 32, compact: 16, large: 128,
-          zoom: [[128, 128], [64, 128], [32, 96], [16, 64]],
-          appearances: ["default"],
-        },
-      }),
+      // No `minimize-lamp`. The yellow lamp is granted only to an era whose
+      // Dock ships with it (owner decision 2026-09-25): a lamp is real only
+      // where the window it puts away has a place to go and a way back. No
+      // Mac OS X era has its Dock yet, so none has the capability today, and
+      // Big Sur draws the product's close-left / zoom-right pair.
+      capabilities: Object.freeze(["vibrancy", "translucent-sidebar", "traffic-lights", "independent-icons"]),
     }),
     Object.freeze({
       id: "liquid-glass",
@@ -217,6 +235,7 @@
       labelKey: "theme_liquid_glass",
       family: "liquid-glass",
       recipeBase: null,
+      finderLayout: "one-row",
       menuBarModel: "system-owned",
       releaseReady: true,
       systemFont: "SF Pro",
@@ -224,17 +243,6 @@
       fontStrategy: "modern",
       overlay: "liquid-glass",
       capabilities: Object.freeze(["vibrancy", "continuous-glass", "liquid-overlay", "traffic-lights"]),
-      authoring: freezeAuthoringMetadata({
-        tokenFile: "apps/desktop/styles/70-liquid-glass.css",
-        tokenSelector: "body.use-liquid-glass",
-        art: {
-          dir: "liquid-glass", ext: "png", tiers: [128, 64, 32, 16],
-          ordinary: 32, compact: 16, large: 128,
-          zoom: [[128, 128], [64, 128], [32, 96], [16, 64]],
-          variant: "-default",
-          appearances: ["default", "dark", "clear"],
-        },
-      }),
     }),
     Object.freeze({
       id: "nextstep",
@@ -243,26 +251,17 @@
       labelKey: "theme_nextstep",
       family: "nextstep",
       recipeBase: null,
-      // Experimental until the NeXTSTEP shell passes its workflow gates.
+      // Released 2026-09-23 on the owner's decision: its workflow and edge-case
+      // gates, 59/59 icons and touch targets were recorded in the Big Sur /
+      // NeXTSTEP / One More Tune review (internal/plans/BIGSUR-NEXTSTEP-OMT-
+      // HANDOFF.zh-CN.md §2.8). Narrow screens keep the merged switcher.
       menuBarModel: "application-owned",
-      releaseReady: false,
+      releaseReady: true,
       systemFont: "Helvetica",
       systemFontSize: 12,
       fontStrategy: "theme",
       overlay: "none",
       capabilities: Object.freeze(["solid-material", "grayscale-depth"]),
-      authoring: freezeAuthoringMetadata({
-        tokenFile: "apps/desktop/styles/69-nextstep-appearance.css",
-        tokenSelector: 'html[data-theme="nextstep"],\nbody[data-theme="nextstep"]',
-        // Most icons retain Classic art; Theme Lab resolves the three new apps
-        // to their authored NeXTSTEP supplement per object.
-        art: {
-          dir: "classic", ext: "svg", tiers: [32, 16],
-          ordinary: 32, compact: 16, large: 32,
-          zoom: [[32, 32], [32, 64], [32, 128], [32, 256]],
-          appearances: ["default"],
-        },
-      }),
     }),
   ]);
 
@@ -273,8 +272,10 @@
     return byId.has(id) ? id : DEFAULT_THEME_ID;
   }
 
-  // Release path: every era in the registry is a supported appearance and
-  // may become the active product theme. No research switch gates any theme.
+  // Release path: a registered era becomes the stored appearance only when it
+  // is release-ready. An era still being verified stays in the registry for
+  // the explicit experimental preview; it is not reachable through storage,
+  // so a saved preference can never restore a shell that is not finished.
   function normalizeReleaseThemeId(value) {
     const theme = byId.get(String(value || "").trim().toLowerCase());
     if (theme?.releaseReady) return theme.id;
@@ -348,11 +349,14 @@
   }
 
   let committedThemeId = readInitialTheme();
-  let currentThemeId = committedThemeId === "nextstep" ? DEFAULT_THEME_ID : committedThemeId;
+  // NeXTSTEP used to boot as Classic while it was experimental; since its
+  // release a saved NeXTSTEP boots as itself, through the same lazy-style
+  // path Big Sur uses.
+  let currentThemeId = committedThemeId;
   let appearanceGeneration = 0;
   let pendingAppearance = null;
   const appearanceStyles = new Map();
-  const appearanceStylePaths = { "big-sur": "styles.big-sur.css", nextstep: "styles.nextstep.css" };
+  const appearanceStylePaths = { "big-sur": "styles.big-sur.css", nextstep: "styles.nextstep.css", tiger: "styles.tiger.css", "system-7": "styles.system-7.css", "drawing-board": "styles.drawing-board.css", lion: "styles.lion.css" };
   const preparations = new Set();
   let composing = false;
   const interactionWaiters = new Set();
@@ -381,8 +385,22 @@
     // reads it here; JS reads it through menuBarModel(). One source, two
     // consumers.
     element.dataset.menuBarModel = theme.menuBarModel;
+    // Finder pages' toolbar-window layout (styles/10-windows.css recipes).
+    if (theme.finderLayout) element.dataset.finderLayout = theme.finderLayout;
+    else delete element.dataset.finderLayout;
+    // Whose accent a selection belongs to. "key-window" is macOS 11 and later:
+    // the highlight is the accent only while that window is the front one, and
+    // goes neutral behind another window. An appearance that draws no accent
+    // selection leaves this unset and keeps the base behaviour.
+    if (theme.selectionModel) element.dataset.selectionModel = theme.selectionModel;
+    else delete element.dataset.selectionModel;
     if (theme.recipeBase) element.dataset.themeBase = theme.recipeBase;
     else delete element.dataset.themeBase;
+    // The whole recipe chain, root first ("aqua snow-leopard tiger"). A parent
+    // writes its own rules as [data-lineage~="snow-leopard"], so a child
+    // appearance inherits them without being named; rules shared by a whole
+    // family use [data-theme-family]. data-theme stays the one exact id.
+    element.dataset.lineage = getRecipeChain(theme.id).map(({ id }) => id).join(" ");
     if (element === global.document?.body) {
       // Only Liquid Glass itself carries the glass skin class. Yosemite is a
       // Liquid-Glass-family descendant for maintenance lineage, but it owns
@@ -535,10 +553,6 @@
     return registry.filter((theme) => theme.releaseReady !== false);
   }
 
-  function getAuthoringMetadata(value = currentThemeId) {
-    return getTheme(value).authoring;
-  }
-
   function getRecipeChain(value = currentThemeId) {
     const chain = [];
     const visited = new Set();
@@ -589,7 +603,6 @@
     getCommittedTheme,
     getTheme,
     getReleaseReadyThemes,
-    getAuthoringMetadata,
     getRecipeChain,
     hasCapability,
     getMenuBarModel,

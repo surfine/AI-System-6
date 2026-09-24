@@ -3,7 +3,7 @@
 // Capture the official site's master frames from the real app.
 //
 // One deterministic desk — real files, real windows, arranged once — is
-// captured in all six release appearances as pixel-aligned frames. The site
+// captured in all eight release appearances as pixel-aligned frames. The site
 // shows product pixels only from these captures, so the site can never show
 // an interface the product does not have. Rerun after visual releases:
 //
@@ -13,7 +13,7 @@
 // Output: site/img/frames/<era>.png (+ .webp for the color eras) and
 // site/img/frames/manifest.json with window geometry and provenance.
 
-import { mkdirSync, writeFileSync, statSync, rmSync } from "node:fs";
+import { mkdirSync, writeFileSync, statSync, rmSync, renameSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -24,7 +24,7 @@ const outDir = path.join(root, "site", "img", "frames");
 const appUrl = process.env.APP_URL || "http://localhost:4173/";
 
 const VIEW = { width: 1440, height: 900 };
-const ERAS = ["classic", "platinum", "aqua", "snow-leopard", "yosemite", "big-sur", "liquid-glass"];
+const ERAS = ["classic", "nextstep", "platinum", "aqua", "snow-leopard", "yosemite", "big-sur", "liquid-glass"];
 
 const MANUSCRIPT_TITLE = "The Tide Comes In Twice";
 const MANUSCRIPT_BODY = `# The Tide Comes In Twice
@@ -140,9 +140,11 @@ await page.evaluate(() => {
 // Arrange the desk. Order also sets stacking: last placed = frontmost.
 // The manuscript (TeachText) is the hero and stays clear on the right; the
 // research apps fan out on the left, each with a readable title bar showing.
+// NeXTSTEP has no menu bar: its main menu stands in the top-left corner, about
+// 150 px wide and 300 tall, so the Searcher starts clear of it in every era.
 const LAYOUT = [
   ["assistant", 380, 448, 470, 400],
-  ["findPath", 32, 44, 400, 316],
+  ["findPath", 176, 44, 400, 316],
   ["scrapbook", 48, 396, 330, 452],
   ["reviewDesk", 872, 600, 400, 228],
   ["teachText", 700, 96, 560, 480],
@@ -215,12 +217,17 @@ for (const era of ERAS) {
   const png = path.join(outDir, `${era}.png`);
   await page.screenshot({ path: png });
   files[era] = `${era}.png`;
-  // Color eras compress far better as WebP; the 1-bit eras stay PNG so the
-  // dither pattern keeps its exact pixels.
+  // Every era is encoded both ways and keeps the smaller: gradient eras win
+  // lossy, while flat ones (System 6's dither, Platinum and NeXTSTEP's greys)
+  // come out smaller as lossless WebP, and exact to the pixel as well.
   {
     const webp = path.join(outDir, `${era}.webp`);
+    const lossless = path.join(outDir, `${era}.lossless.webp`);
     try {
       execFileSync("cwebp", ["-quiet", "-q", "88", "-sharp_yuv", png, "-o", webp]);
+      execFileSync("cwebp", ["-quiet", "-lossless", "-z", "9", png, "-o", lossless]);
+      if (statSync(lossless).size < statSync(webp).size) renameSync(lossless, webp);
+      else rmSync(lossless);
       files[era] = `${era}.webp`;
       rmSync(png);
     } catch (e) {

@@ -24,8 +24,8 @@
 <meta name="twitter:description" content="一张本地优先的写作桌，让 AI 帮忙，却不让它悄悄变成写作者。">
 <meta name="twitter:image" content="https://aisystem6.pages.dev/img/og-poster.png">
 <script>try{var t=localStorage.getItem("s6-site-theme");if(t&&t!=="classic")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=20260814i">
-<link rel="stylesheet" href="desk.css?v=20260814i">
+<link rel="stylesheet" href="site.css?v=20260923a">
+<link rel="stylesheet" href="desk.css?v=20260923a">
 </head>
 <body>
 
@@ -35,7 +35,7 @@
   <div class="boot-progress"><span id="boot-fill"></span></div>
   <div class="boot-ledger">
     <span id="boot-check-disk">启动磁盘</span>
-    <span id="boot-check-eras">七套外观</span>
+    <span id="boot-check-eras">八套外观</span>
     <span id="boot-check-llm">LLM</span>
   </div>
 </div>
@@ -69,17 +69,18 @@
   <details class="menu menu-extra">
     <summary>显示</summary>
     <ul class="menu-list">
+      <li><a href="#chat">三种办法</a></li>
+      <li><a href="#desk">一张桌子</a></li>
+      <li><a href="#temporary">没有东西会自己存下来</a></li>
       <li><a href="#route">写作路线</a></li>
-      <li><a href="#temporary">任何东西都不会自动保存</a></li>
-      <li><a href="#chat">聊天只是一款应用</a></li>
-      <li><a href="#argument">七套外观，同一张桌面</a></li>
-      <li><a href="#games">它也能运行 DOOM</a></li>
-      <li><a href="#accessories">留下来的小工具</a></li>
-      <li><a href="#impossible">约束之内</a></li>
+      <li><a href="#story">往事</a></li>
+      <li><a href="#argument">Seven Appearances, One Desk</a></li>
+      <li><a href="#branch">另一条路</a></li>
+      <li><a href="#more">工作之余</a></li>
       <li><a href="#floppies">两张软盘</a></li>
       <li><a href="#model">选择模型</a></li>
-      <li><a href="#demo">50 秒演示</a></li>
       <li><a href="#readme">说明文件</a></li>
+      <li><a href="#demo">50 秒演示</a></li>
     </ul>
   </details>
   <details class="menu">
@@ -90,7 +91,10 @@
       <li><a href="#" data-appearance="aqua"><span><span class="menu-check" aria-hidden="true">&#10003;</span>Aqua</span><kbd>2002</kbd></a></li>
       <li><a href="#" data-appearance="snow-leopard"><span><span class="menu-check" aria-hidden="true">&#10003;</span>Snow Leopard</span><kbd>2009</kbd></a></li>
       <li><a href="#" data-appearance="yosemite"><span><span class="menu-check" aria-hidden="true">&#10003;</span>Yosemite</span><kbd>2014</kbd></a></li>
+      <li><a href="#" data-appearance="big-sur"><span><span class="menu-check" aria-hidden="true">&#10003;</span>Big Sur</span><kbd>2020</kbd></a></li>
       <li><a href="#" data-appearance="liquid-glass"><span><span class="menu-check" aria-hidden="true">&#10003;</span>Liquid Glass</span><kbd>2026</kbd></a></li>
+      <li class="menu-sep" aria-hidden="true"></li>
+      <li><a href="#" data-appearance="nextstep"><span><span class="menu-check" aria-hidden="true">&#10003;</span>NeXTSTEP</span><kbd>1995</kbd></a></li>
       <li class="menu-sep" aria-hidden="true"></li>
       <li><a href="#" id="menu-cycle"><span><span class="menu-check" aria-hidden="true">&#10003;</span>循环切换外观</span></a></li>
       <li class="menu-sep" aria-hidden="true"></li>
@@ -106,6 +110,7 @@
     </ul>
   </details>
   <span class="menu-spacer"></span>
+  <a class="menu-link menu-link-notes" href="history/zh-CN">往事</a>
   <a class="menu-link menu-link-live" href="https://system6.aaronlau.me">运行中系统</a>
   <a class="menu-link" href="index.html" lang="en">English</a>
   <a class="menu-link" href="https://github.com/surfine/AI-System-6">GitHub</a>
@@ -117,11 +122,12 @@
   <header class="hero-scene" id="hero" aria-labelledby="hero-title">
     <p class="hero-brand">AI SYSTEM 6</p>
     <h1 class="hero-head" id="hero-title">写到最后，<br>仍然应该像你。</h1>
-    <p class="hero-sub">AI System 6 把来源、问题、草稿、审校与交付分别放在看得见的位置。模型可以帮忙，却不能悄悄接过笔。</p>
+    <p class="hero-sub">AI System 6 是一张开在浏览器和 Mac 上的写作桌，沿用 1988 年 Macintosh 的规矩。来源、问题、草稿和成稿，各有一个看得见的位置。模型可以帮忙，却不能悄悄接过笔。</p>
     <p class="btn-row hero-btns">
       <a class="btn btn-default" href="https://system6.aaronlau.me">启动运行中的系统</a>
-      <a class="btn" href="#route">查看写作路线</a>
+      <a class="btn" href="#chat">先看看怎么用</a>
     </p>
+    <p class="hero-facts">浏览器直接打开 &middot; Mac 测试版（Apple 芯片） &middot; 免费，MIT 开源</p>
     <figure class="machine-figure dissolve-figure" id="hero-dissolve">
       <noscript>
         <img src="img/frames/classic.webp" width="2880" height="1800" style="width:100%;height:auto"
@@ -134,19 +140,61 @@
     <p class="machine-provenance" id="hero-provenance"></p>
   </header>
 
-  <!-- ================= The route: the product itself ================= -->
-  <section class="scene" id="route" aria-labelledby="route-title">
-    <h2 class="scene-head" id="route-title">一份作品，<br>八个看得见的位置。</h2>
-    <p class="scene-note">路线就是产品。从第一份来源到最后的交付，每一站都让一种不同的责任留在明处。</p>
-    <div class="route-stage" id="route-stage"></div>
-    <p class="proof-note">由 <code>tooling/capture-site-route.mjs</code> 从运行中的应用拍摄；没有连接模型。</p>
+  <!-- ================= Three ways ================= -->
+  <section class="scene" id="chat" aria-labelledby="chat-title">
+    <p class="scene-kicker">三种办法</p>
+    <h2 class="scene-head" id="chat-title">和 AI 一起写，<br>有三种办法。</h2>
+    <p class="scene-note" id="chat-note">你让它把一段话改顺。它递回来的确实更顺。你粘进去，发出去。第二天重读，在里面找不到自己。</p>
+    <ol class="ways">
+      <li class="way">
+        <div class="way-illo way-illo-chat" aria-hidden="true"><span class="illo-bubble"></span><span class="illo-bubble is-reply"></span><span class="illo-bubble is-reply is-short"></span><span class="illo-arrow"></span><span class="illo-page"><i></i><i></i><i class="is-theirs"></i><i class="is-theirs"></i></span></div>
+        <p class="way-num">01</p>
+        <h3>在聊天框里写</h3>
+        <p>答案就在那儿，复制一下就进了正文。从这一刻起，它的字和你的字，就是同一些字。</p>
+      </li>
+      <li class="way">
+        <div class="way-illo way-illo-inline" aria-hidden="true"><span class="illo-page is-wide"><i></i><i class="is-theirs"></i><i></i><i class="is-theirs is-short"></i><i></i><i class="is-theirs"></i></span></div>
+        <p class="way-num">02</p>
+        <h3>让它在编辑器里补</h3>
+        <p>建议直接长在你的句子里。有的编辑器会给它的字标上颜色；你改掉几个字，它们就算你的了。</p>
+      </li>
+      <li class="way is-ours">
+        <div class="way-illo way-illo-desk" aria-hidden="true"><span class="illo-window is-model"><b></b><i class="is-theirs"></i><i class="is-theirs"></i><i class="is-theirs is-short"></i></span><span class="illo-window is-yours"><b></b><i></i><i></i><i class="is-short"></i></span><span class="illo-hand"></span></div>
+        <p class="way-num">03</p>
+        <h3>在一张桌子上写</h3>
+        <p>模型有自己的一扇窗口，它写的字留在那扇窗口里。要进你的作品，得你亲手搬过去。</p>
+      </li>
+    </ol>
+    <p class="ways-axis">区别不在模型聪不聪明，<br>而在它写下的字，有没有经过你的手。</p>
+  </section>
+
+  <!-- ================= The desk tour ================= -->
+  <section class="scene scene-tour" id="desk" aria-labelledby="desk-title">
+    <p class="scene-kicker">一张桌子</p>
+    <h2 class="scene-head" id="desk-title">一扇窗口，只做一件事。</h2>
+    <p class="scene-note">往下滚，镜头会在一张真实的桌面截图上走一圈。</p>
+    <div class="tour" id="tour">
+      <div class="tour-stage-wrap"><figure class="tour-stage" id="tour-stage">
+        <noscript><img src="img/frames/liquid-glass.webp" width="2880" height="1800" style="width:100%;height:auto" alt="拍摄自真实应用的 AI System 6 桌面。"></noscript>
+      </figure>
+      <p class="tour-caption">拍摄自运行中的应用；没有连接任何 AI 模型。</p></div>
+      <ol class="tour-steps">
+        <li class="tour-step" data-region="findPath"><img data-icon="searcher" class="obj-icon tour-icon" width="32" height="32" alt="" src="img/themes/classic/searcher.svg"><p class="tour-num">01</p><h3>Searcher 找来源</h3><p>它找回来的是标题、网站和摘要：是门，不是答案。要读原文，它把你交给阅读器。</p></li>
+        <li class="tour-step" data-region="scrapbook"><img data-icon="scrapbook" class="obj-icon tour-icon" width="32" height="32" alt="" src="img/themes/classic/scrapbook.svg"><p class="tour-num">02</p><h3>Scrapbook 只收你挑的</h3><p>每一条摘录都记得自己从哪来。这个名字，1984 年的第一台 Mac 上就有了。</p></li>
+        <li class="tour-step" data-region="assistant"><img data-icon="assistant" class="obj-icon tour-icon" width="32" height="32" alt="" src="img/themes/classic/assistant.svg"><p class="tour-num">03</p><h3>模型住在 ClioTalk</h3><p>它可以聊天、提议、起草，写下的每个字都先待在这扇窗口里。截图里没有接任何模型，桌面的其余部分照样在工作。</p></li>
+        <li class="tour-step" data-region="teachText"><img data-icon="teachText" class="obj-icon tour-icon" width="32" height="32" alt="" src="img/themes/classic/teachText.svg"><p class="tour-num">04</p><h3>正文住在 TeachText</h3><p>字只有你放进来，才会出现在这里。存储、摘录、插入、导出，每一步都是你按下的键。</p></li>
+        <li class="tour-step" data-region="reviewDesk"><img data-icon="reviewDesk" class="obj-icon tour-icon" width="32" height="32" alt="" src="img/themes/classic/reviewDesk.svg"><p class="tour-num">05</p><h3>「审校台」把稿子读回给你</h3><p>作品交出去之前，它会指出哪里事实站不住、结构散了，哪些句子开始像模型。</p></li>
+        <li class="tour-step" data-region="File Floppy"><img data-icon="fileFloppy" class="obj-icon tour-icon" width="32" height="32" alt="" src="img/themes/classic/fileFloppy.svg"><p class="tour-num">06</p><h3>带进来的，都在软盘上</h3><p>PDF、网页、录音放在「文件软盘」上。它们只是这一次的参考，不会悄悄变成项目的一部分。</p></li>
+      </ol>
+    </div>
   </section>
 
   <!-- ================= AI output is temporary ================= -->
   <section class="scene" id="temporary" aria-labelledby="temporary-title">
-    <h2 class="scene-head" id="temporary-title">任何东西都不会自动保存。</h2>
+    <p class="scene-kicker">唯一的规矩</p>
+    <h2 class="scene-head" id="temporary-title">没有东西会自己存下来。</h2>
     <p class="scene-note">模型回复仍然只是一份回复。只有在你保存、摘录、插入或导出以后，它才会成为作品的一部分。</p>
-    <ul class="temp-grid">
+    <ul class="temp-grid temp-grid-pairs">
       <li class="temp-card">
         <h3>输出到来时仍是临时的</h3>
         <p>你可以阅读、拒绝，或决定它应该去哪里，而不必先改动正文。</p>
@@ -158,63 +206,92 @@
       <li class="temp-card">
         <h3>来源保留自己的身份</h3>
         <p>Searcher 寻找来源入口，阅读器打开原文，Scrapbook 只留下你亲自挑选的段落。</p>
+        <p>钟点稿的「散步回来」接收粘贴的逐字稿，把口述标记保留为原话引用。确认后才加入文件软盘材料，正文保持原样。</p>
       </li>
       <li class="temp-card">
         <h3>桌面只报告真正发生过的事</h3>
-        <p>保存、检索、摘录和审校都有状态与回执，不是模型可以猜测的措辞。</p>
+        <p>保存、检索、摘录、审校，都由桌面在它们真正发生时记下，轮不到模型替你说出口。</p>
       </li>
     </ul>
   </section>
-
-  <!-- ================= Chat is an app ================= -->
-  <section class="scene" id="chat" aria-labelledby="chat-title">
-    <h2 class="scene-head" id="chat-title">聊天只是一款应用。<br>不是整台电脑。</h2>
-    <p class="scene-note" id="chat-note">ClioTalk 只是一扇窗口。周围的桌面保存来源、草稿、决定与文件，不让一段对话同时冒充这一切。</p>
-    <div class="compare-wall">
-      <div class="compare-col">
-        <h3>一个聊天产品</h3>
-        <ul>
-          <li>一条会话承载所有材料</li>
-          <li>上下文消失在提示词里</li>
-          <li>回复看起来像已经保存的结果</li>
-          <li>答案本身就是终点</li>
-        </ul>
+  <!-- ================= The route: the product itself ================= -->
+  <section class="scene" id="route" aria-labelledby="route-title">
+    <p class="scene-kicker">怎么写</p>
+    <h2 class="scene-head" id="route-title">一份作品，<br>八个看得见的位置。</h2>
+    <p class="scene-note">你带着一份作品，从第一份来源一路走到交出去的文件。沿途每一站只做一件事，你也总能看见自己走到了哪一站。</p>
+    <div class="route-stage" id="route-stage"></div>
+    <p class="proof-note">拍摄自运行中的应用；没有连接任何 AI 模型。</p>
+  </section>
+  <!-- ================= Field Notes doorway ================= -->
+  <section class="scene" id="story" aria-labelledby="story-title">
+    <div class="notes-door">
+      <div class="notes-copy">
+        <p class="scene-kicker">往事</p>
+        <h2 class="scene-head" id="story-title">这张桌子的第一句话，<br>来自《冰与火之歌》的作者。</h2>
+        <p class="scene-note">乔治·R·R·马丁在一台不联网的 DOS 电脑上，用 WordStar 4.0 写《冰与火之歌》，因为它只做写作程序该做的事，别的一概不做。AI System 6 是 2026 年 5 月的一个通宵里做出来的，第一份设计文档就以他这段话开头；后来的每一个功能，也都有自己的来历。</p>
+        <p class="btn-row notes-btns"><a class="btn btn-default" href="history/zh-CN">翻开往事</a></p>
+        <p class="notes-meta">七章 &middot; 可以开一台真正的 1988 年 Mac &middot; 每个年份都有出处</p>
       </div>
-      <div class="compare-col is-ours">
-        <h3>这台电脑</h3>
-        <ul>
-          <li>每个对象只有一项看得见的责任</li>
-          <li>来源、摘录、地图与草稿各自保留身份</li>
-          <li>输出在你留下以前始终是临时的</li>
-          <li>终点是一份能够交给别人的文件</li>
-        </ul>
-      </div>
+      <a class="notes-cover" href="history/zh-CN" aria-label="往事：电脑，曾经是会等你的">
+        <span class="notes-cover-label">AI System 6 往事 &middot; 第 001 篇</span>
+        <span class="notes-cover-title">电脑，<br>曾经是会等你的。</span>
+        <span class="notes-cover-icons" id="notes-icons"></span>
+        <ol class="notes-chapters">
+          <li><b>2014</b>「我不要任何帮助」</li>
+          <li><b>1984</b>Scrapbook：只收你挑的</li>
+          <li><b>1988</b>「存储」是你亲手按下的</li>
+          <li><b>1994</b>先让窗口让开</li>
+          <li><b>1997</b>帮忙，别站在稿子上</li>
+          <li><b>2001</b>材质一变再变</li>
+          <li><b>2022</b>电脑开始写字</li>
+        </ol>
+      </a>
     </div>
-    <figure class="machine-figure machine-figure-narrow" id="route-machine"></figure>
-    <p class="scene-fine">硬盘告诉你什么会长期留下，软盘告诉你什么只是临时材料，Scrapbook 里只有你选择保留的东西。</p>
   </section>
 
-  <!-- ================= Seven appearances, one argument ================= -->
+  <!-- ================= Eight appearances, one argument ================= -->
   <section class="scene" id="argument" aria-labelledby="argument-title">
-    <h2 class="scene-head" id="argument-title">桌面改变外观。<br>对象守住意义。</h2>
-    <p class="scene-note" id="argument-note">System 6 提供一套语法：对象可见、保存明确、一次专注一件事。七套外观检验这套语法能否经受材质变化。</p>
+    <p class="scene-kicker">四十年</p>
+    <h2 class="scene-head" id="argument-title">桌面换了外观，<br>对象守住意义。</h2>
+    <p class="scene-note" id="argument-note">System 6 给了这张桌面一套语法：东西看得见，保存靠自己，一扇窗口只做一件事。同一张桌面随后穿上从 1988 到 2026 年的七代 Mac 外观：窗口先有了阴影，再有了光泽，最后成了玻璃。文件仍然是文件，存储仍然是存储。</p>
     <div class="finder-window claim-window">
       <header class="tbar"><span class="close-box" aria-hidden="true"></span>
         <h2>外观</h2>
       </header>
-      <div class="finder-status">7 套外观          1 张桌面          同一批文件</div>
+      <div class="finder-status">7 个时代 · 1 条岔路          1 张桌面          同一批文件</div>
       <ol class="claim-list" id="claim-list"></ol>
       <p class="claim-kicker">界面会老去，对象不会。</p>
     </div>
-    <p class="scene-fine">窗口材质改变了，每个对象承担的责任没有。</p>
+    <p class="scene-fine">在列表里点一个年份，或者从「特别」菜单里选，整页都会跟着你回到那一年。</p>
   </section>
+  <!-- ================= The branch: NeXTSTEP ================= -->
+  <section class="scene" id="branch" aria-labelledby="branch-title">
+    <p class="scene-kicker">另一条路</p>
+    <h2 class="scene-head" id="branch-title">一条岔路，<br>后来成了主干。</h2>
+    <p class="scene-note">Mac 还在跑 System 7 的年代，乔布斯离开苹果后创办的 NeXT 正在做另一张桌子：灰色、带斜面、标题栏是黑的，应用排在右侧的 Dock 里。世界上第一个网页浏览器，就是在一台 NeXT 电脑上写出来的。1996 年底苹果买下 NeXT，NeXTSTEP 成了 Mac OS X 的地基，上面那一代 Aqua，就是从它长出来的。</p>
+    <figure class="proof-card branch-card">
+      <img class="proof-shot" src="img/frames/nextstep.webp" width="1440" height="900" loading="lazy" decoding="async" alt="NeXTSTEP 外观下的同一张 AI System 6 桌面：主菜单在左上角，灰色斜面窗口配黑色标题栏，Dock 立在右侧。">
+      <figcaption class="proof-cap"><span class="proof-label">NeXTSTEP</span><span class="proof-line">1995 年。同样的文件，放在现代 Mac 长出来的那张桌子上。</span></figcaption>
+    </figure>
+    <p class="scene-fine">AI System 6 把它当作一条岔路来穿，而不是时间线上的一站：同样的文件，同样的规矩，放在现代 Mac 长出来的那张桌子上。从 Special 菜单里选它。</p>
+    <p class="scene-fine">另附 System 7、Drawing Board、Tiger 与 Lion 四套实验外观；常规外观仍为原来的八套。</p>
+  </section>
+  <!-- ================= A whole computer ================= -->
+  <section class="scene" id="more" aria-labelledby="more-title">
+    <p class="scene-kicker">工作之余</p>
+    <h2 class="scene-head" id="more-title">写累了，<br>这还是一整台电脑。</h2>
+    <p class="scene-note">窗口里的游戏、一个音乐问答、几样桌面附件，还有一张安静的写作桌仍然容得下的工具。这里的每一张图，都拍摄自运行中的应用。</p>
+    <div class="more-switch" role="tablist" aria-label="桌上还有什么" hidden>
+      <button type="button" role="tab" data-panel="games" aria-selected="true">游戏</button>
+      <button type="button" role="tab" data-panel="music" aria-selected="false">音乐</button>
+      <button type="button" role="tab" data-panel="accessories" aria-selected="false">桌面附件</button>
+      <button type="button" role="tab" data-panel="impossible" aria-selected="false">工具</button>
+    </div>
 
-  <!-- ================= Games ================= -->
-  <section class="scene" id="games" aria-labelledby="games-title">
-    <h2 class="scene-head" id="games-title">它也能运行 DOOM。</h2>
-    <p class="scene-note">Micropolis、OpenTTD、DOOM，都在窗口里，就在正文旁边。</p>
-    <p class="scene-fine">不是游戏录像，而是编译为 WebAssembly 的游戏本身，与 Searcher 和审校台运行在同一个 MultiFinder 里。</p>
-    <div class="games-wall">
+    <div class="more-panel" id="games" role="tabpanel">
+      <h3 class="more-head" id="games-title">它也能运行 DOOM。</h3>
+      <p class="scene-fine">Micropolis、OpenTTD、DOOM，各在一扇窗口里，就在正文旁边。是能玩的游戏本身，不是录像。</p>
+      <div class="games-wall">
       <figure class="proof-card">
         <img class="proof-shot games-shot" src="img/proofs/micropolis.webp?v=20260814h" alt="AI System 6 窗口里的 Micropolis：经典工具面板旁是一张新生成的河流地图，状态栏欢迎新市长。" loading="lazy" decoding="async">
         <figcaption class="proof-cap"><span class="proof-label">Micropolis</span><span class="proof-line">1900 年 1 月，$20,000。欢迎你，市长。</span></figcaption>
@@ -228,32 +305,26 @@
         <figcaption class="proof-cap"><span class="proof-label">DOOM</span><span class="proof-line">引擎就绪，恶魔请自备。</span></figcaption>
       </figure>
     </div>
-    <p class="proof-note">与本页其他画面一样，由脚本从运行中的桌面拍摄。</p>
-    <p class="btn-row"><a class="btn btn-default" href="https://system6.aaronlau.me">去运行这些游戏</a></p>
-  </section>
+      <p class="btn-row"><a class="btn btn-default" href="https://system6.aaronlau.me">去运行这些游戏</a></p>
+    </div>
 
-  <!-- ================= Desk accessories ================= -->
-  <section class="scene" id="music" aria-labelledby="music-title">
-    <h2 class="scene-head" id="music-title">它还会放音乐。</h2>
-    <p class="scene-note">One More Tune：一个非官方的问答游戏，题目是苹果广告里的音乐。你听到那一段，说出它卖的是什么，剩下的桌面讲给你听。</p>
-    <p class="scene-fine">每一题都会自己出声：声音就是题目，所以开始那一局的那一下，就是它唯一需要的一下。揭晓会打开原片，并且造访这张卡所属的时代。整张桌面会在你看的这段时间里换成那个时代，然后把你的还给你。</p>
-    <p class="scene-fine">第二种玩法「接棒」跟着的是苹果请上台的那些人：一场发布会里的六次交接，每开一条线索扣一分，主讲人的名字留在服务器上，直到你作答。</p>
-    <p class="scene-fine">第三种玩法「下一幕」问的是一句台词当时在做什么、接着进入哪一章：一轮十道纯文字题，没有任何要听的东西，每题答后打开解释和它依据的文字稿位置。</p>
-    <div class="games-wall">
+    <div class="more-panel" id="music" role="tabpanel">
+      <h3 class="more-head" id="music-title">它还会放音乐。</h3>
+      <p class="scene-fine">One More Tune 把苹果广告音乐放上一张白标唱片。听一段，选一个答案，沿十个曲目位置走完这一局。下次回来，十道题和上次的位置都还在。另外两种玩法跟着苹果发布会走：「接棒」讲台上一个接一个交棒的人，「下一幕」问一句名台词当时在做什么、接下来发生了什么。这是一位爱好者做的非官方问答。</p>
+      <div class="games-wall games-wall-single">
       <figure class="proof-card">
-        <img class="proof-shot games-shot" src="img/proofs/one-more-tune-2026.webp?v=20260920a" alt="One More Tune's reveal under Liquid Glass: the stage it was heard on, the era band, the product the phrase belonged to, the song, and the way onward." loading="lazy" decoding="async">
-        <figcaption class="proof-cap"><span class="proof-label">One More Tune</span><span class="proof-line">揭晓：舞台、出处，和那个时代。</span></figcaption>
+        <img class="proof-shot games-shot" src="img/proofs/one-more-tune-2026.webp?v=20260925a" alt="One More Tune in Liquid Glass: a record, ten track positions, the revealed answer and the next tune." loading="lazy" decoding="async">
+        <figcaption class="proof-cap"><span class="proof-label">One More Tune</span><span class="proof-line">十个曲目位置，一张唱片，下一首。</span></figcaption>
       </figure>
     </div>
-    <p class="proof-note">截自运行中的桌面。声音是商店的推广试听；网络到不了商店时，由桌面自己的主机帮它转发。</p>
-    <p class="btn-row"><a class="btn btn-default" href="https://system6.aaronlau.me/?launch=one-more-tune">玩一局</a></p>
-  </section>
+      <p class="proof-note">音乐来自商店的官方推广试听。</p>
+      <p class="btn-row"><a class="btn btn-default" href="https://system6.aaronlau.me/?launch=one-more-tune">玩一局</a></p>
+    </div>
 
-  <!-- ================= Desk accessories ================= -->
-  <section class="scene" id="accessories" aria-labelledby="accessories-title">
-    <h2 class="scene-head" id="accessories-title">那些小东西，也被留下。</h2>
-    <p class="scene-note">计算器、数字华容道、写作铃、闹钟、听写板和记忆卡片。这些小工具说明，桌面也在意工作之外的片刻。</p>
-    <ul class="temp-grid">
+    <div class="more-panel" id="accessories" role="tabpanel">
+      <h3 class="more-head" id="accessories-title">那些小东西，也被留下。</h3>
+      <p class="scene-fine">计算器、数字华容道、写作铃、闹钟、听写板和记忆卡片。这些小工具说明，桌面也在意工作之外的片刻。</p>
+      <ul class="temp-grid">
       <li class="temp-card accessory-card">
         <img class="accessory-shot" src="img/proofs/calculator.webp?v=20260817a" alt="计算器桌面附件：带斜面的 1988 风格键盘，显示 1988 加 38。" loading="lazy" decoding="async">
         <h3>计算器</h3>
@@ -285,13 +356,11 @@
         <p>翻开两张，寻找成对图案。</p>
       </li>
     </ul>
-    <p class="scene-fine">拍摄自运行中的桌面。它们是对象，不是摆拍图片。</p>
-  </section>
+    </div>
 
-  <!-- ================= The proof ================= -->
-  <section class="scene" id="impossible" aria-labelledby="proof-title">
-    <h2 class="scene-head" id="proof-title">约束之内，仍然装得下什么。</h2>
-    <div class="finder-window" id="impossible-window">
+    <div class="more-panel" id="impossible" role="tabpanel">
+      <h3 class="more-head" id="proof-title">安静是选择，不是局限。</h3>
+      <div class="finder-window" id="impossible-window">
       <header class="tbar"><span class="close-box" aria-hidden="true"></span>
         <h2 id="impossible-title">一张安静的写作桌仍能为这些事留出位置</h2>
       </header>
@@ -300,25 +369,71 @@
       <p class="proof-note">运行中真实应用的截图。本页没有模型图。</p>
       <div class="finder-body" id="impossible-body"></div>
     </div>
+    </div>
   </section>
 
   <!-- ================= Two floppies ================= -->
   <section class="scene" id="floppies" aria-labelledby="floppies-title">
+    <p class="scene-kicker">大小</p>
     <h2 class="scene-head" id="floppies-title">两张软盘。</h2>
     <div class="floppy-wall" id="floppy-wall"></div>
-    <p class="scene-fine">同一份载荷里还装着三十四块写完的项目硬盘：它们是启动磁盘上的一个文件夹，也就是 File 菜单打开的那个窗口；打开哪一块，就在你自己机器上得到一份可改的副本。翻这个文件夹读的是 16&nbsp;KB 的清单，不是它背后的正文。</p>
+    <p class="scene-fine">你启动进去的那张桌面，装得进两张 1.44&nbsp;MB 软盘。AI 模型是另一件大得多的东西，用哪一个，始终由你决定。同一套系统里还带着三十五块写完的项目硬盘，都是可以打开、拆开来看的真实示例项目。每一块都有自己的地址，和所有窗口遵循同一条规则，所以一块磁盘可以用一个链接交给朋友：<code>/go/dtk</code>、<code>/go/m5mba</code>、<code>/go/pocket</code>。</p>
   </section>
-
   <!-- ================= Your model ================= -->
   <section class="scene" id="model" aria-labelledby="model-title">
-    <h2 class="scene-head" id="model-title">更换模型。<br>工作空间仍在。</h2>
+    <p class="scene-kicker">你的模型</p>
+    <h2 class="scene-head" id="model-title">更换模型，<br>工作空间仍在。</h2>
+    <p class="scene-note">可以在自己的电脑上运行模型，也可以用你选的云端服务，菜单栏会一直写明是哪一个。这里写的是「没有」，桌面照样工作。</p>
     <figure class="machine-figure machine-figure-strip" id="model-machine"></figure>
-    <p class="scene-note">菜单栏如实显示：没有连接模型，桌面仍然可以工作。</p>
     <div class="model-providers" role="list" aria-label="支持的模型服务商">
       <span role="listitem"><img data-icon="localModel" class="obj-icon" width="32" height="32" alt="" src="img/themes/classic/localModel.svg"><span>LM Studio</span></span>
       <span role="listitem"><img data-icon="endfieldTerminal" class="obj-icon" width="32" height="32" alt="" src="img/themes/classic/endfieldTerminal.svg"><span>Ollama</span></span>
       <span role="listitem"><img data-icon="cloudModel" class="obj-icon" width="32" height="32" alt="" src="img/themes/classic/cloudModel.svg"><span>DeepSeek</span></span>
       <span role="listitem"><img data-icon="chooser" class="obj-icon" width="32" height="32" alt="" src="img/themes/classic/chooser.svg"><span>任何 OpenAI 兼容端点</span></span>
+    </div>
+  </section>
+  <!-- ================= 说明文件: questions ================= -->
+  <section class="scene" id="readme" aria-labelledby="readme-heading">
+    <p class="scene-kicker">启动之前</p>
+    <h2 class="scene-head" id="readme-heading">你的字，<br>只留在你的电脑上。</h2>
+    <div class="window readme-window">
+      <header class="tbar"><span class="close-box" aria-hidden="true"></span><h2 id="readme-title">说明文件</h2></header>
+      <div class="wbody readme-body">
+        <details class="faq" open>
+          <summary>需要先接一个 AI 模型吗？</summary>
+          <p>不需要。不接模型，这张桌子照样能打开、能写、能存、能导出。想用 AI 的时候，在「控制面板」里接上一个：本机的 LM Studio 或 Ollama、DeepSeek，或者任何兼容 OpenAI 的服务。</p>
+        </details>
+        <details class="faq">
+          <summary>AI 在这张桌子上是什么角色？</summary>
+          <p>同伴，不是伙伴：它陪你写，但作品的决定权不分给它。具体说来：</p>
+          <ul class="faq-rules">
+            <li><b>它问，不替你答。</b>打开问题单，在「边写边问」里点「采访我」，模型一次只问一个问题，而且只问你才答得出的：你看到了什么，写给谁，谁真的说过哪句话。它不替你措辞，不替你起草，也不夸你；你的回答原样记进问题单。在「钟点稿」里，它也不替你决定观点、立场和标题，标题最多以「建议」出现。</li>
+            <li><b>你给骨头，它补的肉要你点头才放进去。</b>在「章节草稿」里，模型一次只写你选中的那一节。写好的内容先给你看，你确认了才放进稿子，并标明「AI 协助」。</li>
+            <li><b>原话不转述。</b>听写板的「成形」只替你把说的话断行、分段，一个字都不改；要是非改字不可，它就不动，并告诉你为什么。导入的聊天记录和吐槽只算写作素材，不会被当成已经核实的事实。</li>
+            <li><b>先看看别人能不能接住。</b>发出去之前，可以把自己的稿子放进 DocMap 摊成一张图，或者用「听稿」一拍一拍读给你听，标出哪里会被听丢。</li>
+          </ul>
+        </details>
+        <details class="faq">
+          <summary>我的稿子存在哪？</summary>
+          <p>你的项目保存在这个浏览器里，就在这台电脑上。本机模型让请求留在本机；云端请求遵循你所选服务商的政策。服务端不保存第二份项目数据库，你的密钥也不会进入项目文件、对话、备份或导出。</p>
+        </details>
+        <details class="faq">
+          <summary>要花钱吗？</summary>
+          <p>不用。AI System 6 免费，MIT 开源。如果用云端模型，费用是你和那家服务商之间的事。</p>
+        </details>
+        <details class="faq">
+          <summary>手机和 iPad 能用吗？</summary>
+          <p>能，竖着横着都行。在 iPhone 上，可以把它添加到主屏幕，像一个应用那样打开。</p>
+        </details>
+        <details class="faq">
+          <summary>Mac 版有什么不同？</summary>
+          <p>是同一张桌子。Mac 测试版把运行需要的东西一起带上了，下载就能打开；浏览器版连安装都不用。</p>
+        </details>
+        <details class="faq">
+          <summary>为什么它长得像 1988 年的 Mac？</summary>
+          <p>它的脾气来自 WordStar，乔治·R·R·马丁至今还在用它写小说：只管写作，别的一概不做。它的样子来自 1988 年的 System 6，因为一张摆满看得见的东西的桌子，最能把 AI 藏起来的事摆到明处：哪段对话只是临时的，你留下了什么，模型能看到什么。它不是 Apple 做的。</p>
+        </details>
+      </div>
     </div>
   </section>
 
@@ -337,10 +452,10 @@
       <p class="qt-strip">通过哔哩哔哩在这里播放，也可以<a href="https://www.bilibili.com/video/BV1ht3m6UEDb/">前往网站观看</a>。</p>
     </div>
   </section>
-
   <!-- ================= Ready to boot ================= -->
   <section class="scene" id="boot-cta" aria-labelledby="boot-title">
-    <h2 class="scene-head" id="boot-title">准备好启动了吗？</h2>
+    <p class="scene-kicker">开始</p>
+    <h2 class="scene-head" id="boot-title">下次 AI 说要替你写，<br>先别急着复制。</h2>
     <div class="boot-picker">
       <a class="boot-choice" href="https://system6.aaronlau.me">
         <img data-icon="startupDisk" class="obj-icon" width="64" height="64" alt="" src="img/themes/classic/startupDisk.svg">
@@ -358,57 +473,15 @@
         <span class="boot-sub">在 GitHub 查看</span>
       </a>
     </div>
+    <p class="boot-facts">浏览器直接打开 &middot; Mac 测试版（Apple 芯片） &middot; 免费，MIT 开源 &middot; 不接模型也能用</p>
   </section>
-
-  <!-- ================= 说明文件 ================= -->
-  <section class="scene" id="readme" aria-labelledby="readme-title">
-    <div class="window readme-window">
-      <header class="tbar"><span class="close-box" aria-hidden="true"></span><h2 id="readme-title">说明文件</h2></header>
-      <div class="wbody readme-body">
-        <p class="pack-lede">六个对象，一条纪律：写作者始终留在作品里。</p>
-        <ul class="pack-grid">
-          <li class="pack-card">
-            <img data-icon="hardDisk" class="obj-icon" width="32" height="32" alt="" src="img/themes/classic/hardDisk.svg">
-            <h3>作品有长期留下的地方</h3>
-            <p>对话结束以后，项目、参考资料、草稿和主动选择的摘录仍留在项目硬盘里。</p>
-          </li>
-          <li class="pack-card">
-            <img data-icon="fileFloppy" class="obj-icon" width="32" height="32" alt="" src="img/themes/classic/fileFloppy.svg">
-            <h3>临时材料继续保持临时</h3>
-            <p>文件软盘里的材料与模型回复，不会只因出现在屏幕上就变成项目记忆。</p>
-          </li>
-          <li class="pack-card">
-            <img data-icon="questionSheet" class="obj-icon" width="32" height="32" alt="" src="img/themes/classic/questionSheet.svg">
-            <h3>你的问题先于正文</h3>
-            <p>接收者、反对意见、亲眼看到的细节和尚未解决的疑问，都有地方留下。</p>
-          </li>
-          <li class="pack-card">
-            <img data-icon="scrapbook" class="obj-icon" width="32" height="32" alt="" src="img/themes/classic/scrapbook.svg">
-            <h3>选择让材料成为记忆</h3>
-            <p>Scrapbook 只保存你选择的段落，并保留回到来源的路径。</p>
-          </li>
-          <li class="pack-card">
-            <img data-icon="teachText" class="obj-icon" width="32" height="32" alt="" src="img/themes/classic/teachText.svg">
-            <h3>正文同一时间只有一个编辑者</h3>
-            <p>每个阶段都明确唯一可编辑的表面，因此一条命令不会悄悄改写文章的旧版本。</p>
-          </li>
-          <li class="pack-card">
-            <img data-icon="reviewDesk" class="obj-icon" width="32" height="32" alt="" src="img/themes/classic/reviewDesk.svg">
-            <h3>审校台把作品读回来</h3>
-            <p>在作品离开你手中之前，它会把事实、结构和模型口吻风险摆到明处。</p>
-          </li>
-        </ul>
-        <p class="pack-more">项目保存在这个浏览器的 IndexedDB 中。本机模型让请求留在本机；云端请求遵循你所选服务商的政策。服务端不保存第二份项目数据库。</p>
-      </div>
-    </div>
-  </section>
-
   <footer class="site-footer">
     <p>
       <a href="https://system6.aaronlau.me">运行中系统</a> /
       <a href="https://github.com/surfine/AI-System-6">GitHub</a> /
       <a href="https://github.com/surfine/AI-System-6/issues">问题反馈</a> /
       <a href="https://www.bilibili.com/video/BV1ht3m6UEDb/">50 秒演示</a> /
+      <a href="history/zh-CN">往事</a> /
       <a href="index.html" lang="en">English</a>
     </p>
     <p>采用 MIT 许可。AI System 6 是独立项目，与 Apple&nbsp;Inc. 没有关联，也未获其背书。</p>
@@ -416,6 +489,6 @@
   </footer>
 
 </main>
-<script type="module" src="js/main.js?v=20260820a"></script>
+<script type="module" src="js/main.js?v=20260923a"></script>
 </body>
 </html>

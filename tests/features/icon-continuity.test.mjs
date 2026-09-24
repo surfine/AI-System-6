@@ -144,9 +144,28 @@ for (const era of continuity.runtimeEras) {
   const entry = provenance.eras[era];
   test.assert(entry.runtimeObjectCount === 59 && Object.keys(entry.icons).length === 59,
     `${era} reports all 59 mapped objects`);
-  test.assert(entry.independentArtworkCount === (era === "nextstep" ? 3 : 59)
-    && entry.fallbackObjectCount === (era === "nextstep" ? 56 : 0),
-  `${era} distinguishes independent artwork from Classic compatibility fallback`);
+  // Which objects own the era's own artwork is stated in the continuity ledger,
+  // and the matrix must agree with it object for object. The numbers are read
+  // rather than typed because a batch of authored object art (the NeXTSTEP core
+  // objects) changes them, and a hard-coded 3/56 would then report real
+  // artwork as a Classic fallback.
+  const independentIds = era === "nextstep"
+    ? (continuity.runtimeCoverageByEra?.nextstep?.independentIconIds || [])
+    : Object.keys(entry.icons);
+  test.assert(entry.independentArtworkCount === independentIds.length
+    && entry.fallbackObjectCount === entry.runtimeObjectCount - independentIds.length,
+    `${era} distinguishes independent artwork from Classic compatibility fallback`);
+  // An appearance reports a fallback exactly when it has one: NeXTSTEP began
+  // with 56 Classic objects and ends, batch by batch, with none. The assertion
+  // is the relationship, not a number that a later batch would have to edit.
+  test.assert(entry.fallbackObjectCount === Object.values(entry.icons)
+    .filter((cell) => cell.artworkCoverage === "classic-compatibility-fallback").length,
+  `${era} counts exactly the cells it maps to the fallback era`);
+  for (const id of independentIds) {
+    const cell = entry.icons[id];
+    test.assert(cell?.artworkCoverage === "independent-era-artwork",
+      `${era}/${id} is mapped to the era's own artwork, not to the fallback`);
+  }
   for (const id of supplementalIds) {
     const cell = entry.icons[id];
     test.assert(cell.supplementalApplication && cell.provenanceClass === "C"
@@ -155,12 +174,16 @@ for (const era of continuity.runtimeEras) {
     `${era}/${id} records original era-adapted artwork without native historical approval`);
   }
 }
+// The same read-don't-type rule as above: the fallback set is every object the
+// era has not authored, and the ledger names which those are.
+const nextstepAuthored = new Set(continuity.runtimeCoverageByEra?.nextstep?.independentIconIds || []);
 const nextstepFallback = Object.entries(provenance.eras.nextstep.icons)
-  .filter(([id]) => !supplementalIds.includes(id));
-test.assert(nextstepFallback.length === 56 && nextstepFallback.every(([, cell]) =>
-  cell.artworkCoverage === "classic-compatibility-fallback" && cell.runtimeAssetEra === "classic"
-  && cell.historicalReviewStatus === "pending"),
-"NeXTSTEP honestly reuses all 56 original Classic objects without inheriting their historical approval");
+  .filter(([id]) => !nextstepAuthored.has(id));
+test.assert(nextstepFallback.length === provenance.eras.nextstep.runtimeObjectCount - nextstepAuthored.size
+  && nextstepFallback.every(([, cell]) =>
+    cell.artworkCoverage === "classic-compatibility-fallback" && cell.runtimeAssetEra === "classic"
+    && cell.historicalReviewStatus === "pending"),
+`NeXTSTEP honestly reuses the ${nextstepFallback.length} original Classic objects it has not authored, without inheriting their historical approval`);
 
 for (const [theme, paths] of Object.entries(DOCMAP_ARTWORK)) {
   const family = JSON.parse(read(paths.family));

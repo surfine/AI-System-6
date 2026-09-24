@@ -41,6 +41,26 @@ const zh = read("app/data/translations-zh.js");
 const LANGUAGE_FIELDS = ["zh", "en"];
 const text = (value, language) => String(value?.[language] || "").trim();
 
+// The owner's second review caught answers that could be picked by length
+// alone ("三短一长选最长"): the right option was the only fully worded one. A
+// right answer may not stand out by length in either language. Width counts a
+// CJK character as two; a gap has to be both large (6+) and proportional
+// (25%) to count, so product names that are simply different lengths
+// (OS X Lion vs Mountain Lion) are left alone.
+const optionWidth = (value) => [...String(value || "")].reduce((n, c) => n + (/[\u3000-\u9fff\uff00-\uffef]/.test(c) ? 2 : 1), 0);
+for (const item of bank.items) {
+  for (const language of LANGUAGE_FIELDS) {
+    const answer = optionWidth(item.options.find((option) => option.id === item.answerId)?.[language]);
+    const others = item.options.filter((option) => option.id !== item.answerId).map((option) => optionWidth(option[language]));
+    const longest = Math.max(...others);
+    const shortest = Math.min(...others);
+    const standsLong = answer - longest >= 6 && answer > longest * 1.25;
+    const standsShort = shortest - answer >= 6 && answer < shortest * 0.8;
+    test.assert(!standsLong && !standsShort,
+      `${item.id} (${language}): the right answer does not give itself away by length (${answer} vs ${shortest}-${longest})`);
+  }
+}
+
 /** A response object the route can write into, the way the relay's contract does. */
 function collector() {
   const chunks = [];
@@ -85,7 +105,12 @@ const answerRound = async (payload) => (await post(route.handleOneMoreTuneAnswer
 // ---- The bank --------------------------------------------------------------
 test.assert(bank.schemaVersion === 1, "the bank declares the schema version it is written in");
 test.assert(bank.mode === "keynote_context", "the bank names the domain the round asks for");
-test.assert(bank.items.length === 12, `the bank carries the research package's twelve checked questions (${bank.items.length})`);
+// The twelve checked questions the bank was built with, plus the twenty-six the
+// 2026-09-22 history package prepared (2007-2019, one per year), merged
+// 2026-09-23 once each could name its own source record. Their review objects
+// still say textDemoEnabled / not production, and the phrase pairs below are
+// unaffected: the additions carry no phrase.
+test.assert(bank.items.length === 38, `the bank carries the research package's checked questions plus the prepared history batch (${bank.items.length})`);
 test.assert(LANGUAGE_FIELDS.every((language) => text(bank.title, language) && text(bank.purpose, language)),
   "the bank's own title and purpose are written in both languages");
 test.assert(Array.isArray(bank.reviewNotes) && bank.reviewNotes.length >= 3, "the bank states what it is not: the sample boundary and the audio boundary");
@@ -114,7 +139,13 @@ for (const item of bank.items) {
   // Rule 1, item by item: an item may not claim audio that was never auditioned.
   test.assert(item.review?.audioReviewed === false && item.review?.audioAllowed === false,
     `${item.id} ships with no reviewed or allowed audio`);
-  test.assert(item.review?.productionEnabled === false, `${item.id} is a learning item, not a production question`);
+  // Production is an editorial act: only a question the owner has read and
+  // passed (review.ownerReview.verdict === "pass", 2026-09-23 review page) may
+  // be production; everything else, including rewrites awaiting a second
+  // look, stays a learning item.
+  const ownerPassed = item.review?.ownerReview?.verdict === "pass";
+  test.assert(item.review?.productionEnabled === ownerPassed,
+    `${item.id} is production only if the owner passed it (${ownerPassed ? "passed" : "not passed"})`);
   test.assert(item.review?.textDemoEnabled === true, `${item.id} is enabled as a written question`);
 }
 
@@ -231,8 +262,15 @@ for (const item of bank.items) {
 }
 
 // ---- The route the browser actually uses -----------------------------------
-test.assertIncludes(routeFile, 'body?.domain === "keynote_context"', "the round route dispatches the line domain");
-test.assertIncludes(routeFile, 'require("../one-more-line.js")', "and to the line authority, not to the music deck");
+// The route now resolves the request's domain against a closed list before any
+// authority runs, so the contract checks the dispatch and the list rather than
+// the shape of one ternary.
+test.assertIncludes(routeFile, 'require("../one-more-line.js").startRound()', "the line domain reaches the line authority");
+// The refusal names every domain this host really plays, so the list is the
+// contract: a new authority that is added to the dispatch but not to the
+// refusal (or the reverse) fails here, and a client reading the refusal learns
+// the whole truth rather than a stale subset.
+test.assertIncludes(routeFile, 'domains: ["music", "keynote_person", "keynote_context", "interface_history"]', "and the list of domains that may reach it is closed");
 // The Pages tree is not published, so a public clone carries no functions/
 // directory. Where it exists, the forwarding route set is asserted; the private
 // tree is where that claim can be made at all.

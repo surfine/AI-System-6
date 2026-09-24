@@ -196,4 +196,29 @@ test.assertIncludes(liquid, "--finder-navigation-bg: rgba(255, 255, 255, 0.24)",
 test.assertIncludes(en, 'finder_location: "Finder location"', "English exposes the path bar to assistive technology");
 test.assertIncludes(zh, 'finder_location: "Finder 位置"', "Chinese exposes the path bar to assistive technology");
 
+// ---- Toolbar windows and the Finder sidebar (2026-09-23) ------------------
+//
+// In the Mac OS X eras a Finder page is a unified title-and-toolbar window,
+// and in four of them it carries a sidebar. Which era gets what is a decision
+// of the owner's, recorded in the registry, not in each era's tokens:
+// Aqua is 10.0-10.2 (toolbar, no sidebar yet); Snow Leopard and Yosemite put
+// the toolbar in its own row over a sidebar; Big Sur and Liquid Glass have one
+// row with the lamps over a full-height sidebar. System 6, Platinum and
+// NeXTSTEP stay spatial: no layout, no sidebar.
+{
+  const registry = read("app/core/theme-registry.js");
+  const layoutOf = (id) => registry.slice(registry.indexOf(`id: "${id}",`) + id.length + 6).split(/\bid: "/)[0].match(/finderLayout: "([a-z-]+)"/)?.[1] || "";
+  for (const [id, layout] of [["aqua", "two-row-plain"], ["snow-leopard", "two-row-sidebar"], ["yosemite", "two-row-sidebar"], ["big-sur", "one-row"], ["liquid-glass", "one-row"], ["classic", ""], ["platinum", ""], ["nextstep", ""]]) {
+    test.assert(layoutOf(id) === layout, `${id} Finder layout is ${layout || "the spatial stack"} (got ${layoutOf(id) || "none"})`);
+  }
+  test.assertIncludes(registry, "element.dataset.finderLayout = theme.finderLayout", "the registry projects the era's Finder layout onto the page");
+  const windowsCss = read("styles/10-windows.css");
+  test.assertIncludes(windowsCss, 'display: var(--finder-sidebar-display, none)', "the sidebar is out of the page unless a layout turns it on");
+  test.assert(windowsCss.indexOf(".window.is-toolbar-window {") < windowsCss.indexOf(".window.is-hidden"), "the toolbar-window display rule sits above the hidden-window rules, which must win");
+  test.assertMatches(windowsCss, /@media \(min-width: 861px\) and \(not \(\(hover: none\) and \(pointer: coarse\) and \(max-height: 660px\)\)\) \{\s*body\[data-finder-layout\] \{\s*--finder-window-display: grid;/, "the arrangement is a desktop window's: a phone keeps the stacked Finder page with no sidebar and its title");
+  test.assertIncludes(windowManager, 'rail.className = "tdi-rail tdi-source-rail finder-sidebar"', "the sidebar is the tdi-rail source list, not a new primitive");
+  test.assertIncludes(windowManager, "navigateFinderLocation(windowName, target)", "a sidebar row navigates the way the breadcrumb does");
+  test.assert(!/\.reduce\(\(total, el\) => total \+ el\.offsetHeight/.test(windowManager), "chrome height is measured as the strips' extent, not their sum (one toolbar row holds three strips)");
+}
+
 test.finish();

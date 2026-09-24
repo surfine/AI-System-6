@@ -126,7 +126,7 @@ test.assertIncludes(iconCss, ".sys-icon-classic .classic-paper", "Classic paper 
 test.assertIncludes(iconCss, "stroke: none", "one-pixel mask runs are not expanded into silhouettes");
 
 const themeLab = read("app/features/theme-lab.js");
-const themeRegistry = read("app/core/theme-registry.js");
+const themeRegistry = read("app/features/theme-authoring.js");
 const app = read("app.js");
 const labCss = read("styles/66-theme-lab.css");
 // One object lab now serves all six eras, so the Classic contract asserts the
@@ -134,8 +134,8 @@ const labCss = read("styles/66-theme-lab.css");
 const labStrings = read("app/data/translations-en.js");
 test.assertIncludes(themeLab, "data-theme-lab-object-grid", "the lab has an object-by-object core grid");
 test.assertIncludes(themeLab, "const OBJECTS", "the lab uses the explicit 16-object priority list");
-test.assertIncludes(themeRegistry, 'dir: "classic", ext: "svg", tiers: [32, 16]', "Classic declares its authored 32 and 16 px SVG tiers in the shared registry");
-test.assertIncludes(themeRegistry, "zoom: [[32, 32], [32, 64], [32, 128], [32, 256]]", "the shared registry exposes 1x, 2x, 4x, and 8x inspection scales");
+test.assertIncludes(themeRegistry, 'dir: "classic", ext: "svg", tiers: [32, 16]', "Classic declares its authored 32 and 16 px SVG tiers in the Theme Lab authoring table");
+test.assertIncludes(themeRegistry, "zoom: [[32, 32], [32, 64], [32, 128], [32, 256]]", "the Theme Lab authoring table exposes 1x, 2x, 4x, and 8x inspection scales");
 test.assertIncludes(labStrings, "theme_lab_state_selected", "the lab exercises a selected state at both authored tiers");
 test.assertIncludes(labStrings, "theme_lab_context_list_view", "the lab includes a true small-icon Finder context");
 test.assertIncludes(labStrings, "Retina SVG family", "Theme Lab states the product-specific Retina SVG exception");

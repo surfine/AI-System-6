@@ -79,6 +79,8 @@ declare function attachImagesToModelMessages(messages: any, attachments: any, op
 declare function attachMarkdownEditor(target: any): void;
 declare function attachMarkdownHighlight(target: any): void;
 declare function showSystemModal(message: string, kind?: string, options?: any): Promise<string>;
+declare function showInputDialog(options?: { title?: string; message?: string; defaultValue?: string; placeholder?: string; multiline?: boolean }): Promise<string | null>;
+declare function insertFilesIntoFileFloppy(files: File[], options?: { source?: string; openAfter?: string }): Promise<{ mountedFileNames: string[] } | null>;
 declare function closeWindow(name: string, force?: boolean): Promise<boolean>;
 declare function openTransientFilePicker(options: any): void;
 declare function extractFileText(file: File, options?: any): Promise<any>;
@@ -125,6 +127,12 @@ interface Window {
   AISystem6QuickDraftComposition?: any;
   AISystem6QuickDraftAI?: any;
   AISystem6QuickDraftListen?: any;
+  AISystem6WalkTranscript: {
+    parseWalkEnvelope(text?: string): { meta: string; body: string };
+    findSpokenMarks(body?: string): Array<{ index: number; word: string; quote: string }>;
+    walkMaterialText(options: { body: string; marks?: Array<{ quote: string }>; labels: { marksHeading: string; transcriptHeading: string } }): string;
+    walkFileName(options: { meta?: string; now?: Date; prefix: string }): string;
+  };
   AISystem6QuickDraftHandoff?: any;
   AISystem6ModelUserErrors?: any;
   AISystem6WebPlatform?: any;

@@ -105,7 +105,11 @@ function isSafeMarkdownHref(href) {
 
 function isSafeMarkdownImageSrc(src) {
   const value = String(src || "").trim();
-  return /^(https?:|\/|\.\/|\.\.\/|data:image\/(?:png|jpe?g|gif|webp|bmp);base64,)/i.test(value);
+  // `svg+xml` is here because a chart handed to a deck travels as a drawing: the
+  // image is rendered through <img src>, and an SVG in image context cannot run
+  // script or reach the document. Scriptable sources (data:text/html,
+  // javascript:) stay refused.
+  return /^(https?:|\/|\.\/|\.\.\/|data:image\/(?:png|jpe?g|gif|webp|bmp|svg\+xml);base64,)/i.test(value);
 }
 
 function createSystemMarkdownRenderer() {

@@ -100,6 +100,9 @@ answeredActions.add("open-one-more-tune");
 answeredActions.add("open-todo-da");
 answeredActions.add("open-dictation");
 answeredActions.add("clio-stage-docmap");
+// The deck's print sheet is owned by the lazy ClioStage module for the same
+// reason: its command arrives with the module, not with the shell.
+answeredActions.add("clio-stage-export-pdf");
 answeredActions.add("open-docmap");
 // The demonstration-disks module is lazy: its command arrives with the module
 // the admission table's loader fetches, and both the Startup Disk row and the

@@ -376,6 +376,10 @@ async function boot() {
     await runBootSequence();
     if (bootDebugTheme?.releaseReady === false && developmentPreviewAllowed) await window.AISystem6Theme.previewExperimentalTheme(bootDebugTheme.id);
     await window.AISystem6Theme?.whenReady();
+    // The appearance is final only now (boot passes through the release theme
+    // on its way to a preview), so this is where a restored miniwindow learns
+    // whether the desk it woke on can show the way back to it.
+    if (typeof releaseOrphanedMiniwindows === "function") releaseOrphanedMiniwindows();
     document.body.dataset.appReady = "ready";
     // This timer fires after boot() has already returned, so nothing here is
     // inside boot()'s own try/catch any more — an uncaught throw in this

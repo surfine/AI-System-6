@@ -24,8 +24,8 @@
 <meta name="twitter:description" content="A local-first writing desk where AI helps without quietly becoming the writer.">
 <meta name="twitter:image" content="https://aisystem6.pages.dev/img/og-poster.png">
 <script>try{var t=localStorage.getItem("s6-site-theme");if(t&&t!=="classic")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
-<link rel="stylesheet" href="site.css?v=20260814i">
-<link rel="stylesheet" href="desk.css?v=20260814i">
+<link rel="stylesheet" href="site.css?v=20260923a">
+<link rel="stylesheet" href="desk.css?v=20260923a">
 </head>
 <body>
 
@@ -35,7 +35,7 @@
   <div class="boot-progress"><span id="boot-fill"></span></div>
   <div class="boot-ledger">
     <span id="boot-check-disk">Startup Disk</span>
-    <span id="boot-check-eras">Seven Appearances</span>
+    <span id="boot-check-eras">Eight Appearances</span>
     <span id="boot-check-llm">LLM</span>
   </div>
 </div>
@@ -69,17 +69,18 @@
   <details class="menu menu-extra">
     <summary>View</summary>
     <ul class="menu-list">
-      <li><a href="#route">The Writing Route</a></li>
+      <li><a href="#chat">Three Ways</a></li>
+      <li><a href="#desk">One Desk</a></li>
       <li><a href="#temporary">Nothing Saves Itself</a></li>
-      <li><a href="#chat">Chat Is an App</a></li>
+      <li><a href="#route">The Writing Route</a></li>
+      <li><a href="#story">Field Notes</a></li>
       <li><a href="#argument">Seven Appearances, One Desk</a></li>
-      <li><a href="#games">It Also Runs DOOM</a></li>
-      <li><a href="#accessories">The Little Things</a></li>
-      <li><a href="#impossible">Inside the Constraint</a></li>
+      <li><a href="#branch">The Other Road</a></li>
+      <li><a href="#more">After Hours</a></li>
       <li><a href="#floppies">Two Floppies</a></li>
       <li><a href="#model">Choose a Model</a></li>
-      <li><a href="#demo">50s Demo</a></li>
       <li><a href="#readme">Read Me</a></li>
+      <li><a href="#demo">50s Demo</a></li>
     </ul>
   </details>
   <details class="menu">
@@ -90,7 +91,10 @@
       <li><a href="#" data-appearance="aqua"><span><span class="menu-check" aria-hidden="true">&#10003;</span>Aqua</span><kbd>2002</kbd></a></li>
       <li><a href="#" data-appearance="snow-leopard"><span><span class="menu-check" aria-hidden="true">&#10003;</span>Snow Leopard</span><kbd>2009</kbd></a></li>
       <li><a href="#" data-appearance="yosemite"><span><span class="menu-check" aria-hidden="true">&#10003;</span>Yosemite</span><kbd>2014</kbd></a></li>
+      <li><a href="#" data-appearance="big-sur"><span><span class="menu-check" aria-hidden="true">&#10003;</span>Big Sur</span><kbd>2020</kbd></a></li>
       <li><a href="#" data-appearance="liquid-glass"><span><span class="menu-check" aria-hidden="true">&#10003;</span>Liquid Glass</span><kbd>2026</kbd></a></li>
+      <li class="menu-sep" aria-hidden="true"></li>
+      <li><a href="#" data-appearance="nextstep"><span><span class="menu-check" aria-hidden="true">&#10003;</span>NeXTSTEP</span><kbd>1995</kbd></a></li>
       <li class="menu-sep" aria-hidden="true"></li>
       <li><a href="#" id="menu-cycle"><span><span class="menu-check" aria-hidden="true">&#10003;</span>Cycle Appearances</span></a></li>
       <li class="menu-sep" aria-hidden="true"></li>
@@ -106,6 +110,7 @@
     </ul>
   </details>
   <span class="menu-spacer"></span>
+  <a class="menu-link menu-link-notes" href="history/">Field&nbsp;Notes</a>
   <a class="menu-link menu-link-live" href="https://system6.aaronlau.me">Live&nbsp;System</a>
   <a class="menu-link" href="zh-CN" lang="zh-CN">简体中文</a>
   <a class="menu-link" href="https://github.com/surfine/AI-System-6">GitHub</a>
@@ -116,12 +121,13 @@
   <!-- ================= Hero ================= -->
   <header class="hero-scene" id="hero" aria-labelledby="hero-title">
     <p class="hero-brand">AI SYSTEM 6</p>
-    <h1 class="hero-head" id="hero-title">YOUR WORDS SHOULD<br>STILL SOUND LIKE YOU.</h1>
-    <p class="hero-sub">AI System 6 keeps sources, questions, drafts, review, and handoff in visible places. The model may help, but it never quietly takes the pen.</p>
+    <h1 class="hero-head" id="hero-title">Your words should<br>still sound like you.</h1>
+    <p class="hero-sub">AI System 6 is a writing desk for your browser and your Mac, built on the rules of a 1988 Macintosh. Your sources, questions, drafts, and finished file each have a place you can see. The model may help, but it never quietly takes the pen.</p>
     <p class="btn-row hero-btns">
       <a class="btn btn-default" href="https://system6.aaronlau.me">Boot the Live System</a>
-      <a class="btn" href="#route">See the Writing Route</a>
+      <a class="btn" href="#chat">See How It Works</a>
     </p>
+    <p class="hero-facts">Opens in your browser &middot; Mac beta for Apple silicon &middot; Free and MIT open source</p>
     <figure class="machine-figure dissolve-figure" id="hero-dissolve">
       <noscript>
         <img src="img/frames/classic.webp" width="2880" height="1800" style="width:100%;height:auto"
@@ -134,19 +140,61 @@
     <p class="machine-provenance" id="hero-provenance"></p>
   </header>
 
-  <!-- ================= The route: the product itself ================= -->
-  <section class="scene" id="route" aria-labelledby="route-title">
-    <h2 class="scene-head" id="route-title">ONE PIECE OF WRITING.<br>EIGHT VISIBLE PLACES.</h2>
-    <p class="scene-note">The route is the product. Each stop keeps a different kind of responsibility visible, from the first source to the finished handoff.</p>
-    <div class="route-stage" id="route-stage"></div>
-    <p class="proof-note">Captured by <code>tooling/capture-site-route.mjs</code>. No model was connected.</p>
+  <!-- ================= Three ways ================= -->
+  <section class="scene" id="chat" aria-labelledby="chat-title">
+    <p class="scene-kicker">Three ways</p>
+    <h2 class="scene-head" id="chat-title">There are three ways<br>to write with AI.</h2>
+    <p class="scene-note" id="chat-note">You ask it to smooth out a paragraph. What comes back really is smoother. You paste it in and send it. The next day you reread it, and you cannot find yourself in it.</p>
+    <ol class="ways">
+      <li class="way">
+        <div class="way-illo way-illo-chat" aria-hidden="true"><span class="illo-bubble"></span><span class="illo-bubble is-reply"></span><span class="illo-bubble is-reply is-short"></span><span class="illo-arrow"></span><span class="illo-page"><i></i><i></i><i class="is-theirs"></i><i class="is-theirs"></i></span></div>
+        <p class="way-num">01</p>
+        <h3>Write in a chat box</h3>
+        <p>The answer is right there, one copy away from your draft. From then on, its words and yours are the same words.</p>
+      </li>
+      <li class="way">
+        <div class="way-illo way-illo-inline" aria-hidden="true"><span class="illo-page is-wide"><i></i><i class="is-theirs"></i><i></i><i class="is-theirs is-short"></i><i></i><i class="is-theirs"></i></span></div>
+        <p class="way-num">02</p>
+        <h3>Let it fill in your editor</h3>
+        <p>Suggestions grow inside your sentences. Some editors color the machine's words; change a few letters and they count as yours.</p>
+      </li>
+      <li class="way is-ours">
+        <div class="way-illo way-illo-desk" aria-hidden="true"><span class="illo-window is-model"><b></b><i class="is-theirs"></i><i class="is-theirs"></i><i class="is-theirs is-short"></i></span><span class="illo-window is-yours"><b></b><i></i><i></i><i class="is-short"></i></span><span class="illo-hand"></span></div>
+        <p class="way-num">03</p>
+        <h3>Write at a desk</h3>
+        <p>The model gets a window of its own, and what it writes stays in that window. To reach your work, it has to be carried there by you.</p>
+      </li>
+    </ol>
+    <p class="ways-axis">The difference isn't how clever the model is.<br>It's whether its words pass through your hands.</p>
+  </section>
+
+  <!-- ================= The desk tour ================= -->
+  <section class="scene scene-tour" id="desk" aria-labelledby="desk-title">
+    <p class="scene-kicker">One desk</p>
+    <h2 class="scene-head" id="desk-title">Every window does one job.</h2>
+    <p class="scene-note">Scroll, and the camera walks across a real screenshot of the desk.</p>
+    <div class="tour" id="tour">
+      <div class="tour-stage-wrap"><figure class="tour-stage" id="tour-stage">
+        <noscript><img src="img/frames/liquid-glass.webp" width="2880" height="1800" style="width:100%;height:auto" alt="The AI System 6 desktop, captured from the real app."></noscript>
+      </figure>
+      <p class="tour-caption">Photographed in the running app, with no AI model connected.</p></div>
+      <ol class="tour-steps">
+        <li class="tour-step" data-region="findPath"><img data-icon="searcher" class="obj-icon tour-icon" width="32" height="32" alt="" src="img/themes/classic/searcher.svg"><p class="tour-num">01</p><h3>Searcher finds sources</h3><p>It brings back titles, sites, and snippets: doors, not answers. To read the original, it hands you to Reader.</p></li>
+        <li class="tour-step" data-region="scrapbook"><img data-icon="scrapbook" class="obj-icon tour-icon" width="32" height="32" alt="" src="img/themes/classic/scrapbook.svg"><p class="tour-num">02</p><h3>Scrapbook keeps only what you chose</h3><p>Every clip remembers where it came from. The name was already on the first Mac, in 1984.</p></li>
+        <li class="tour-step" data-region="assistant"><img data-icon="assistant" class="obj-icon tour-icon" width="32" height="32" alt="" src="img/themes/classic/assistant.svg"><p class="tour-num">03</p><h3>The model lives in ClioTalk</h3><p>It can talk, suggest, and draft. Every word it writes stays in this window first. Here no model is connected, and the rest of the desk works anyway.</p></li>
+        <li class="tour-step" data-region="teachText"><img data-icon="teachText" class="obj-icon tour-icon" width="32" height="32" alt="" src="img/themes/classic/teachText.svg"><p class="tour-num">04</p><h3>Your manuscript lives in TeachText</h3><p>Words arrive here only when you put them here. Save, clip, insert, export: each one is a key you press.</p></li>
+        <li class="tour-step" data-region="reviewDesk"><img data-icon="reviewDesk" class="obj-icon tour-icon" width="32" height="32" alt="" src="img/themes/classic/reviewDesk.svg"><p class="tour-num">05</p><h3>Review Desk reads it back</h3><p>Before the work leaves, it points out shaky facts, loose structure, and the sentences that have started to sound like a model.</p></li>
+        <li class="tour-step" data-region="File Floppy"><img data-icon="fileFloppy" class="obj-icon tour-icon" width="32" height="32" alt="" src="img/themes/classic/fileFloppy.svg"><p class="tour-num">06</p><h3>What you bring in rides on a floppy</h3><p>PDFs, pages, and recordings go on the File Floppy. They are reference for this piece of work, and never quietly become part of the project.</p></li>
+      </ol>
+    </div>
   </section>
 
   <!-- ================= AI output is temporary ================= -->
   <section class="scene" id="temporary" aria-labelledby="temporary-title">
-    <h2 class="scene-head" id="temporary-title">NOTHING SAVES ITSELF.</h2>
+    <p class="scene-kicker">The one rule</p>
+    <h2 class="scene-head" id="temporary-title">Nothing saves itself.</h2>
     <p class="scene-note">A model reply is still only a reply. It becomes part of the work only when you save, clip, insert, or export it.</p>
-    <ul class="temp-grid">
+    <ul class="temp-grid temp-grid-pairs">
       <li class="temp-card">
         <h3>Output arrives temporary</h3>
         <p>You can read it, reject it, or decide where it belongs without changing the manuscript.</p>
@@ -158,63 +206,92 @@
       <li class="temp-card">
         <h3>Sources keep their identity</h3>
         <p>Searcher finds a source door. Reader opens the original. Scrapbook keeps only the passages you chose.</p>
+        <p>Back from a Walk in Quick Draft accepts a pasted transcript and keeps spoken marks as verbatim quotations. Confirm to add it as File Floppy material; your manuscript stays as you wrote it.</p>
       </li>
       <li class="temp-card">
         <h3>The desk reports what happened</h3>
-        <p>Saved, searched, clipped, and reviewed are states with receipts, not words the model is allowed to guess.</p>
+        <p>Saved, searched, clipped, reviewed: the desk records these when they actually happen. A model does not get to say them for you.</p>
       </li>
     </ul>
   </section>
-
-  <!-- ================= Chat is an app ================= -->
-  <section class="scene" id="chat" aria-labelledby="chat-title">
-    <h2 class="scene-head" id="chat-title">CHAT IS AN APP.<br>NOT THE WHOLE COMPUTER.</h2>
-    <p class="scene-note" id="chat-note">ClioTalk is one window. The desk around it holds the sources, drafts, decisions, and files that a conversation should not have to impersonate.</p>
-    <div class="compare-wall">
-      <div class="compare-col">
-        <h3>A chat product</h3>
-        <ul>
-          <li>One thread carries every kind of material</li>
-          <li>Context disappears into a prompt</li>
-          <li>A reply can look like a saved result</li>
-          <li>The answer becomes the endpoint</li>
-        </ul>
+  <!-- ================= The route: the product itself ================= -->
+  <section class="scene" id="route" aria-labelledby="route-title">
+    <p class="scene-kicker">How you write</p>
+    <h2 class="scene-head" id="route-title">One piece of writing.<br>Eight places you can see.</h2>
+    <p class="scene-note">You carry one piece of writing from the first source to the finished file. Each stop along the way does one job, and you can always see which stop you are at.</p>
+    <div class="route-stage" id="route-stage"></div>
+    <p class="proof-note">Photographed in the running app, with no AI model connected.</p>
+  </section>
+  <!-- ================= Field Notes doorway ================= -->
+  <section class="scene" id="story" aria-labelledby="story-title">
+    <div class="notes-door">
+      <div class="notes-copy">
+        <p class="scene-kicker">Field Notes</p>
+        <h2 class="scene-head" id="story-title">This desk's first line came<br>from George R.R. Martin.</h2>
+        <p class="scene-note">He writes A Song of Ice and Fire in WordStar 4.0, on a DOS machine that isn't connected to the internet, because it does what a writing program should and nothing else. AI System 6 was built overnight in May 2026, its first design document opens with his words, and every feature since has a story of its own.</p>
+        <p class="btn-row notes-btns"><a class="btn btn-default" href="history/">Read the Field Notes</a></p>
+        <p class="notes-meta">Seven chapters &middot; a real 1988 Mac to boot &middot; every date sourced</p>
       </div>
-      <div class="compare-col is-ours">
-        <h3>This computer</h3>
-        <ul>
-          <li>Each object has one visible responsibility</li>
-          <li>Sources, clips, maps, and drafts keep their identity</li>
-          <li>Output stays temporary until you keep it</li>
-          <li>The endpoint is a file you can hand to someone</li>
-        </ul>
-      </div>
+      <a class="notes-cover" href="history/" aria-label="Field Notes: The computer used to wait for you">
+        <span class="notes-cover-label">AI System 6 Field Notes &middot; No. 001</span>
+        <span class="notes-cover-title">The computer used to<br>wait for you.</span>
+        <span class="notes-cover-icons" id="notes-icons"></span>
+        <ol class="notes-chapters">
+          <li><b>2014</b>&ldquo;I don't want any help&rdquo;</li>
+          <li><b>1984</b>Scrapbook: only what you chose</li>
+          <li><b>1988</b>Save was something you did</li>
+          <li><b>1994</b>Let the window step aside</li>
+          <li><b>1997</b>Help, but not on the page</li>
+          <li><b>2001</b>The material kept changing</li>
+          <li><b>2022</b>The computer started writing</li>
+        </ol>
+      </a>
     </div>
-    <figure class="machine-figure machine-figure-narrow" id="route-machine"></figure>
-    <p class="scene-fine">A hard disk tells you what lasts. A floppy tells you what is temporary. Scrapbook holds only what you chose to keep.</p>
   </section>
 
-  <!-- ================= Seven appearances, one argument ================= -->
+  <!-- ================= Eight appearances, one argument ================= -->
   <section class="scene" id="argument" aria-labelledby="argument-title">
-    <h2 class="scene-head" id="argument-title">THE DESK CHANGES.<br>THE OBJECTS KEEP THEIR MEANING.</h2>
-    <p class="scene-note" id="argument-note">System 6 supplies the grammar: visible objects, deliberate saving, one task at a time. Seven appearances test whether that grammar survives a change of material.</p>
+    <p class="scene-kicker">Forty years</p>
+    <h2 class="scene-head" id="argument-title">The desk changes.<br>The objects keep their meaning.</h2>
+    <p class="scene-note" id="argument-note">System 6 gave this desk its grammar: things you can see, saving on purpose, one job per window. The same desk then wears seven eras of Mac design, from 1988 to 2026. Windows gain shadows, then gloss, then glass. A file is still a file. Save still means save.</p>
     <div class="finder-window claim-window">
       <header class="tbar"><span class="close-box" aria-hidden="true"></span>
         <h2>Appearances</h2>
       </header>
-      <div class="finder-status">7 appearances          1 desk          the same files</div>
+      <div class="finder-status">7 eras · 1 branch          1 desk          the same files</div>
       <ol class="claim-list" id="claim-list"></ol>
       <p class="claim-kicker">Interfaces age. Objects do not.</p>
     </div>
-    <p class="scene-fine">The chrome changed. The responsibility of each object did not.</p>
+    <p class="scene-fine">Choose a year in the list, or from the Special menu, and the whole page travels there with you.</p>
   </section>
+  <!-- ================= The branch: NeXTSTEP ================= -->
+  <section class="scene" id="branch" aria-labelledby="branch-title">
+    <p class="scene-kicker">The other road</p>
+    <h2 class="scene-head" id="branch-title">A branch that became<br>the trunk.</h2>
+    <p class="scene-note">While the Mac was still running System 7, NeXT, the company Steve Jobs started after leaving Apple, was building a different desk: gray, beveled, black title bars, applications lined up in a Dock down the right edge. The first web browser was written on one. At the end of 1996 Apple bought NeXT, and NeXTSTEP became the foundation of Mac OS X. The Aqua above grew out of it.</p>
+    <figure class="proof-card branch-card">
+      <img class="proof-shot" src="img/frames/nextstep.webp" width="1440" height="900" loading="lazy" decoding="async" alt="The same AI System 6 desk in the NeXTSTEP appearance: the main menu in the top-left corner, gray beveled windows with black title bars, and the Dock down the right edge.">
+      <figcaption class="proof-cap"><span class="proof-label">NeXTSTEP</span><span class="proof-line">1995. The same files, on the desk the modern Mac grew from.</span></figcaption>
+    </figure>
+    <p class="scene-fine">AI System 6 wears it as a branch, not a stop on the line: the same files and the same rules, on the desk the modern Mac grew from. Choose it from the Special menu.</p>
+    <p class="scene-fine">System 7, Drawing Board, Tiger and Lion are also included as experimental appearances; the eight regular choices stay unchanged.</p>
+  </section>
+  <!-- ================= A whole computer ================= -->
+  <section class="scene" id="more" aria-labelledby="more-title">
+    <p class="scene-kicker">After hours</p>
+    <h2 class="scene-head" id="more-title">When you stop writing,<br>it's still a whole computer.</h2>
+    <p class="scene-note">Games in windows, a music quiz, the desk accessories, and tools a quiet desk still has room for. Every picture here is a photograph of the running app.</p>
+    <div class="more-switch" role="tablist" aria-label="What else is on the desk" hidden>
+      <button type="button" role="tab" data-panel="games" aria-selected="true">Games</button>
+      <button type="button" role="tab" data-panel="music" aria-selected="false">Music</button>
+      <button type="button" role="tab" data-panel="accessories" aria-selected="false">Desk accessories</button>
+      <button type="button" role="tab" data-panel="impossible" aria-selected="false">Tools</button>
+    </div>
 
-  <!-- ================= Games ================= -->
-  <section class="scene" id="games" aria-labelledby="games-title">
-    <h2 class="scene-head" id="games-title">IT ALSO RUNS DOOM.</h2>
-    <p class="scene-note">Micropolis. OpenTTD. DOOM. In windows, next to your manuscript.</p>
-    <p class="scene-fine">Not videos of games. The games, compiled to WebAssembly, in the same MultiFinder as Searcher and Review Desk.</p>
-    <div class="games-wall">
+    <div class="more-panel" id="games" role="tabpanel">
+      <h3 class="more-head" id="games-title">It also runs DOOM.</h3>
+      <p class="scene-fine">Micropolis, OpenTTD, and DOOM, each in a window beside your manuscript. Real games you can play, not recordings of them.</p>
+      <div class="games-wall">
       <figure class="proof-card">
         <img class="proof-shot games-shot" src="img/proofs/micropolis.webp?v=20260814h" alt="Micropolis running in an AI System 6 window: the classic tool palette beside a freshly generated river map, with the status line Welcome to your new city, Mayor." loading="lazy" decoding="async">
         <figcaption class="proof-cap"><span class="proof-label">Micropolis</span><span class="proof-line">Jan 1900. $20,000. Welcome, Mayor.</span></figcaption>
@@ -228,32 +305,26 @@
         <figcaption class="proof-cap"><span class="proof-label">DOOM</span><span class="proof-line">Engine ready. Bring your own demons.</span></figcaption>
       </figure>
     </div>
-    <p class="proof-note">Photographed from the running desktop by the same script that shoots everything else on this page.</p>
-    <p class="btn-row"><a class="btn btn-default" href="https://system6.aaronlau.me">Go Play Them</a></p>
-  </section>
+      <p class="btn-row"><a class="btn btn-default" href="https://system6.aaronlau.me">Go Play Them</a></p>
+    </div>
 
-  <!-- ================= Desk accessories ================= -->
-  <section class="scene" id="music" aria-labelledby="music-title">
-    <h2 class="scene-head" id="music-title">IT ALSO PLAYS THE MUSIC.</h2>
-    <p class="scene-note">One More Tune: an unofficial quiz about the music Apple put in its ads. You hear the phrase, you name the thing it sold, and the desk tells you the rest.</p>
-    <p class="scene-fine">Every question plays itself: the sound is the question, so the tap that started the round is the only tap it wants. The reveal opens the original, and it visits the era the card belongs to. The whole desk changes appearance for the length of the look, then gives yours back.</p>
-    <p class="scene-fine">A second game, Relay, follows the people Apple put on stage: six handoffs from a keynote, a clue that costs a point each time you open one, and the presenter's name kept on the server until you choose.</p>
-    <p class="scene-fine">A third, Next Act, asks what a keynote line was doing and which chapter followed it: ten written questions a round, nothing to listen to, and every answer opens the explanation and the transcript position behind it.</p>
-    <div class="games-wall">
+    <div class="more-panel" id="music" role="tabpanel">
+      <h3 class="more-head" id="music-title">It also plays the music.</h3>
+      <p class="scene-fine">One More Tune puts an Apple ad on a white-label record. Listen, choose, and follow ten track positions through the round. Come back later and continue with all ten questions at the place you reached. Two more rounds follow Apple's keynotes: Relay, about the people who handed the stage to one another, and Next Act, about what a famous line was doing and what came after it. An unofficial quiz, made by a fan.</p>
+      <div class="games-wall games-wall-single">
       <figure class="proof-card">
-        <img class="proof-shot games-shot" src="img/proofs/one-more-tune-2026.webp?v=20260920a" alt="One More Tune's reveal under Liquid Glass: the stage it was heard on, the era band, the product the phrase belonged to, the song, and the way onward." loading="lazy" decoding="async">
-        <figcaption class="proof-cap"><span class="proof-label">One More Tune</span><span class="proof-line">The reveal: the stage, the record, the era.</span></figcaption>
+        <img class="proof-shot games-shot" src="img/proofs/one-more-tune-2026.webp?v=20260925a" alt="One More Tune in Liquid Glass: a record, ten track positions, the revealed answer and the next tune." loading="lazy" decoding="async">
+        <figcaption class="proof-cap"><span class="proof-label">One More Tune</span><span class="proof-line">Ten tracks, one record, your next tune.</span></figcaption>
       </figure>
     </div>
-    <p class="proof-note">Photographed from the running desktop. The sound is a promotional store preview, relayed by the desk's own host when a network cannot reach the store.</p>
-    <p class="btn-row"><a class="btn btn-default" href="https://system6.aaronlau.me/?launch=one-more-tune">Play a Round</a></p>
-  </section>
+      <p class="proof-note">The music is the store's own promotional preview.</p>
+      <p class="btn-row"><a class="btn btn-default" href="https://system6.aaronlau.me/?launch=one-more-tune">Play a Round</a></p>
+    </div>
 
-  <!-- ================= Desk accessories ================= -->
-  <section class="scene" id="accessories" aria-labelledby="accessories-title">
-    <h2 class="scene-head" id="accessories-title">THE LITTLE THINGS, KEPT.</h2>
-    <p class="scene-note">Calculator, puzzle, writing bell, alarm clock, dictation pad, memory cards. The small tools that say the desk was made with care.</p>
-    <ul class="temp-grid">
+    <div class="more-panel" id="accessories" role="tabpanel">
+      <h3 class="more-head" id="accessories-title">The little things, kept.</h3>
+      <p class="scene-fine">Calculator, puzzle, writing bell, alarm clock, dictation pad, memory cards. The small tools that say the desk was made with care.</p>
+      <ul class="temp-grid">
       <li class="temp-card accessory-card">
         <img class="accessory-shot" src="img/proofs/calculator.webp?v=20260817a" alt="The Calculator desk accessory: a beveled 1988 keypad showing 1988 plus 38." loading="lazy" decoding="async">
         <h3>Calculator</h3>
@@ -285,13 +356,11 @@
         <p>Flip two, find the pair.</p>
       </li>
     </ul>
-    <p class="scene-fine">Photographed from the running desktop. They are objects, not pictures.</p>
-  </section>
+    </div>
 
-  <!-- ================= The proof ================= -->
-  <section class="scene" id="impossible" aria-labelledby="proof-title">
-    <h2 class="scene-head" id="proof-title">WHAT FITS INSIDE THE CONSTRAINT.</h2>
-    <div class="finder-window" id="impossible-window">
+    <div class="more-panel" id="impossible" role="tabpanel">
+      <h3 class="more-head" id="proof-title">Quiet on purpose. Not small.</h3>
+      <div class="finder-window" id="impossible-window">
       <header class="tbar"><span class="close-box" aria-hidden="true"></span>
         <h2 id="impossible-title">Things a Quiet Writing Desk Can Still Make Room For</h2>
       </header>
@@ -300,25 +369,71 @@
       <p class="proof-note">Photographs of the real app, running. No mockups anywhere on this page.</p>
       <div class="finder-body" id="impossible-body"></div>
     </div>
+    </div>
   </section>
 
   <!-- ================= Two floppies ================= -->
   <section class="scene" id="floppies" aria-labelledby="floppies-title">
-    <h2 class="scene-head" id="floppies-title">TWO FLOPPIES.</h2>
+    <p class="scene-kicker">Size</p>
+    <h2 class="scene-head" id="floppies-title">Two floppies.</h2>
     <div class="floppy-wall" id="floppy-wall"></div>
-    <p class="scene-fine">That same payload carries thirty-four finished project disks: one folder on the Startup Disk, the window the File menu opens, and an editable copy on your own machine when you open one. Browsing the folder reads a 16&nbsp;KB list of names, not the manuscripts behind them.</p>
+    <p class="scene-fine">The desk you boot into fits in what two 1.44&nbsp;MB floppy disks once held. The AI model is a separate and far larger thing, and which one you use stays your choice. The same system also carries thirty-five finished project disks, real sample projects you can open and take apart. Each has an address of its own, under the same rule every window follows, so a disk can be passed to a friend as one link: <code>/go/dtk</code>, <code>/go/m5mba</code>, <code>/go/pocket</code>.</p>
   </section>
-
   <!-- ================= Your model ================= -->
   <section class="scene" id="model" aria-labelledby="model-title">
-    <h2 class="scene-head" id="model-title">CHOOSE THE MODEL.<br>KEEP THE WORKSPACE.</h2>
+    <p class="scene-kicker">Your model</p>
+    <h2 class="scene-head" id="model-title">Choose the model.<br>Keep the workspace.</h2>
+    <p class="scene-note">Run a model on your own computer, or use a cloud service you choose. The menu bar always says which. Here it says none, and the desk still works.</p>
     <figure class="machine-figure machine-figure-strip" id="model-machine"></figure>
-    <p class="scene-note">The menu bar tells the truth. No model is connected, and the desk still works.</p>
     <div class="model-providers" role="list" aria-label="Supported providers">
       <span role="listitem"><img data-icon="localModel" class="obj-icon" width="32" height="32" alt="" src="img/themes/classic/localModel.svg"><span>LM Studio</span></span>
       <span role="listitem"><img data-icon="endfieldTerminal" class="obj-icon" width="32" height="32" alt="" src="img/themes/classic/endfieldTerminal.svg"><span>Ollama</span></span>
       <span role="listitem"><img data-icon="cloudModel" class="obj-icon" width="32" height="32" alt="" src="img/themes/classic/cloudModel.svg"><span>DeepSeek</span></span>
       <span role="listitem"><img data-icon="chooser" class="obj-icon" width="32" height="32" alt="" src="img/themes/classic/chooser.svg"><span>Any OpenAI-compatible</span></span>
+    </div>
+  </section>
+  <!-- ================= Read Me: questions ================= -->
+  <section class="scene" id="readme" aria-labelledby="readme-heading">
+    <p class="scene-kicker">Before you boot</p>
+    <h2 class="scene-head" id="readme-heading">Your words stay<br>on your machine.</h2>
+    <div class="window readme-window">
+      <header class="tbar"><span class="close-box" aria-hidden="true"></span><h2 id="readme-title">Read Me</h2></header>
+      <div class="wbody readme-body">
+        <details class="faq" open>
+          <summary>Do I need to connect an AI model first?</summary>
+          <p>No. With no model connected, the desk still opens, writes, saves, and exports. When you want AI, connect one in Control Panel: LM Studio or Ollama on your own computer, DeepSeek, or any OpenAI-compatible service.</p>
+        </details>
+        <details class="faq">
+          <summary>What role does the AI play on this desk?</summary>
+          <p>A companion, not a partner: it keeps you company while you write, but it doesn't share the say over the work. In practice:</p>
+          <ul class="faq-rules">
+            <li><b>It asks; it doesn't answer for you.</b> With the Question Sheet open, press Interview me in SideAsk and the model asks one question at a time, only what you alone can answer: what you saw, who this is for, what someone actually said. It suggests no wording, drafts nothing, praises nothing, and your answer goes into the sheet as you wrote it. In Quick Draft it doesn't decide your point, your stance, or your title either; a title can only appear as a suggestion.</li>
+            <li><b>You bring the bones; what it adds waits for your yes.</b> In Section Drafts the model writes only the section you picked. It shows you the result first, and it goes into the draft only once you confirm, marked AI Assisted.</li>
+            <li><b>Your words are not paraphrased.</b> Dictation Pad's Shape only breaks what you said into lines and paragraphs, and changes not one word; if it would have to, it does nothing and tells you why. Imported chats and venting count as material to write from, never as checked fact.</li>
+            <li><b>It helps you check the piece reaches people.</b> Before it goes out, you can open your own draft in DocMap as a map, or use Listen to hear it read back one beat at a time, marking where a listener would get lost.</li>
+          </ul>
+        </details>
+        <details class="faq">
+          <summary>Where does my writing live?</summary>
+          <p>Your projects stay in this browser, on this computer. A local model keeps requests on your machine; cloud requests follow the policy of the provider you choose. The server keeps no second project database, and your keys never go into project files, conversations, backups, or exports.</p>
+        </details>
+        <details class="faq">
+          <summary>What does it cost?</summary>
+          <p>Nothing. AI System 6 is free and MIT open source. If you use a cloud model, what you pay is between you and that provider.</p>
+        </details>
+        <details class="faq">
+          <summary>Does it work on a phone or an iPad?</summary>
+          <p>Yes, upright or sideways. On an iPhone you can add it to the Home Screen and open it like an app.</p>
+        </details>
+        <details class="faq">
+          <summary>How is the Mac app different?</summary>
+          <p>It is the same desk. The Mac beta brings everything it needs to run, so you download it and open it; the browser version needs no install at all.</p>
+        </details>
+        <details class="faq">
+          <summary>Why does it look like a 1988 Mac?</summary>
+          <p>Its manners come from WordStar, the program George R.R. Martin still writes on: it does the writing and nothing else. Its shape comes from System 6, in 1988, because a desk of things you can see is the clearest way to show what AI would otherwise hide: which conversation is temporary, what you kept, what the model can see. It is not made by Apple.</p>
+        </details>
+      </div>
     </div>
   </section>
 
@@ -337,10 +452,10 @@
       <p class="qt-strip">Plays here via Bilibili, or <a href="https://www.bilibili.com/video/BV1ht3m6UEDb/">watch it on the site</a>.</p>
     </div>
   </section>
-
   <!-- ================= Ready to boot ================= -->
   <section class="scene" id="boot-cta" aria-labelledby="boot-title">
-    <h2 class="scene-head" id="boot-title">READY TO BOOT?</h2>
+    <p class="scene-kicker">Start</p>
+    <h2 class="scene-head" id="boot-title">Next time AI offers to write it,<br>don't copy it just yet.</h2>
     <div class="boot-picker">
       <a class="boot-choice" href="https://system6.aaronlau.me">
         <img data-icon="startupDisk" class="obj-icon" width="64" height="64" alt="" src="img/themes/classic/startupDisk.svg">
@@ -358,57 +473,15 @@
         <span class="boot-sub">View on GitHub</span>
       </a>
     </div>
+    <p class="boot-facts">Opens in your browser &middot; Mac beta for Apple silicon &middot; Free and MIT open source &middot; Works with no model connected</p>
   </section>
-
-  <!-- ================= Read Me ================= -->
-  <section class="scene" id="readme" aria-labelledby="readme-title">
-    <div class="window readme-window">
-      <header class="tbar"><span class="close-box" aria-hidden="true"></span><h2 id="readme-title">Read Me</h2></header>
-      <div class="wbody readme-body">
-        <p class="pack-lede">Six objects, one discipline: the writer remains visible in the work.</p>
-        <ul class="pack-grid">
-          <li class="pack-card">
-            <img data-icon="hardDisk" class="obj-icon" width="32" height="32" alt="" src="img/themes/classic/hardDisk.svg">
-            <h3>The work has a durable home</h3>
-            <p>Projects, references, drafts, and chosen clips remain on the Project Hard Disk when the conversation is over.</p>
-          </li>
-          <li class="pack-card">
-            <img data-icon="fileFloppy" class="obj-icon" width="32" height="32" alt="" src="img/themes/classic/fileFloppy.svg">
-            <h3>Temporary material stays temporary</h3>
-            <p>Files on the File Floppy and replies from a model do not become project memory by appearing on screen.</p>
-          </li>
-          <li class="pack-card">
-            <img data-icon="questionSheet" class="obj-icon" width="32" height="32" alt="" src="img/themes/classic/questionSheet.svg">
-            <h3>Your question comes before the prose</h3>
-            <p>The recipient, the objection, the detail you saw yourself, and the doubt you have not resolved all have somewhere to stay.</p>
-          </li>
-          <li class="pack-card">
-            <img data-icon="scrapbook" class="obj-icon" width="32" height="32" alt="" src="img/themes/classic/scrapbook.svg">
-            <h3>Selection becomes memory</h3>
-            <p>Scrapbook holds only the passages you chose, with a path back to the source.</p>
-          </li>
-          <li class="pack-card">
-            <img data-icon="teachText" class="obj-icon" width="32" height="32" alt="" src="img/themes/classic/teachText.svg">
-            <h3>The manuscript has one owner</h3>
-            <p>Each phase names the one editable surface, so a command cannot quietly rewrite an older version of the article.</p>
-          </li>
-          <li class="pack-card">
-            <img data-icon="reviewDesk" class="obj-icon" width="32" height="32" alt="" src="img/themes/classic/reviewDesk.svg">
-            <h3>Review Desk reads it back</h3>
-            <p>It makes factual, structural, and model-voice risk visible before the work leaves your hands.</p>
-          </li>
-        </ul>
-        <p class="pack-more">The project stays in this browser's IndexedDB. A local model keeps requests on your machine; cloud requests follow the policy of the provider you choose. The server keeps no second project database.</p>
-      </div>
-    </div>
-  </section>
-
   <footer class="site-footer">
     <p>
       <a href="https://system6.aaronlau.me">Live system</a> /
       <a href="https://github.com/surfine/AI-System-6">GitHub</a> /
       <a href="https://github.com/surfine/AI-System-6/issues">Issues</a> /
       <a href="https://www.bilibili.com/video/BV1ht3m6UEDb/">50-second demo</a> /
+      <a href="history/">Field Notes</a> /
       <a href="zh-CN" lang="zh-CN">简体中文</a>
     </p>
     <p>MIT licensed. AI System 6 is an independent project and is not affiliated with or endorsed by Apple&nbsp;Inc.</p>
@@ -416,6 +489,6 @@
   </footer>
 
 </main>
-<script type="module" src="js/main.js?v=20260820a"></script>
+<script type="module" src="js/main.js?v=20260923a"></script>
 </body>
 </html>

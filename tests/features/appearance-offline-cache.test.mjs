@@ -19,14 +19,27 @@ for (const id of ["classic", "yosemite", "liquid-glass", "constructor", "__proto
 test.assert(requests.length === 0, "other appearances and arbitrary inputs trigger no download");
 await message("big-sur");
 test.assert(requests[0] === "https://example.test/styles.big-sur.css?v=test-build", "selected Big Sur caches only the worker-owned stylesheet URL for its build");
+// Big Sur draws no minimize lamp until its Dock ships (owner decision
+// 2026-09-25), so it keeps its stylesheet and nothing else: the miniaturize
+// state machine is NeXTSTEP's alone today.
+test.assert(
+  !requests.includes("https://example.test/app/core/window-minimize.js?v=test-build"),
+  "Big Sur retains no miniaturize module, because it draws no yellow lamp",
+);
 await message("big-sur");
 test.assert(requests.length === 1, "repeated appearance notifications reuse the retained response");
 
 await message("nextstep");
 test.assert(requests[1] === "https://example.test/styles.nextstep.css?v=test-build", "selected NeXTSTEP caches its own versioned material stylesheet");
 await message("nextstep");
-test.assert(requests.length === 6, "NeXTSTEP retains its stylesheet and four shell modules without downloading an icon family");
-for (const path of ["app/core/nextstep-shell.js", "app/core/nextstep-dock.js", "app/core/nextstep-menus.js", "app/features/finder-columns.js"]) {
+// The question is which URLs are kept, not how many round trips it took: a
+// path already in the shell cache is never fetched again, and an icon family
+// is never part of it.
+test.assert(
+  new Set(requests).size === requests.length && new Set(requests).size === 7,
+  "the two appearances together retain seven URLs -- two stylesheets, four NeXTSTEP shell modules and NeXTSTEP's miniaturize state machine -- fetching none of them twice and downloading no icon family",
+);
+for (const path of ["app/core/window-minimize.js", "app/core/nextstep-shell.js", "app/core/nextstep-dock.js", "app/core/nextstep-menus.js", "app/features/finder-columns.js"]) {
   test.assert(requests.includes(`https://example.test/${path}?v=test-build`), `NeXTSTEP retains ${path} for offline restart`);
 }
 

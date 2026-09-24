@@ -70,34 +70,6 @@ function getTeachTextSelectionInfo() {
   return { start, end, text };
 }
 
-function updateReaderTranslationClipButton() {
-  if (!readerClipTranslateButton) return;
-
-  const { text } = getReaderSelection();
-  const hasReaderSelection = !!currentReaderPage && !!text;
-  const targetLanguage = currentReaderPage && text ? getTranslationTargetForUi(text) : null;
-
-  if (readerClipButton) {
-    readerClipButton.hidden = !hasReaderSelection;
-    readerClipButton.disabled = !hasReaderSelection;
-  }
-
-  if (!targetLanguage) {
-    readerClipTranslateButton.hidden = true;
-    readerClipTranslateButton.disabled = true;
-    readerClipTranslateButton.textContent = t("clip_translate");
-    updateDocMapEntryButtons();
-    return;
-  }
-
-  readerClipTranslateButton.hidden = false;
-  readerClipTranslateButton.disabled = false;
-  readerClipTranslateButton.textContent = targetLanguage === "zh"
-    ? t("clip_translate_to_chinese")
-    : t("clip_translate_to_english");
-  updateDocMapEntryButtons();
-}
-
 function updateTeachTextTranslateButton() {
   if (!teachTextTranslateButton) return;
   const selection = getTeachTextSelectionInfo();

@@ -25,10 +25,19 @@ const ignoredDirs = new Set([
   "liquid-glass-studio",
   "liquid-glass-text",
   "codex-snapshots",
+  // Local scratch output and agent checkpoints, both already ignored by
+  // .gitignore. When git cannot answer (a child process in this environment can
+  // meet a broken shim), the walker falls back to reading the tree, and these
+  // are the directories that are not repository documents.
+  ".scratch",
+  ".jspace",
   "shell",
 ]);
 
-const ignoredFiles = new Set(["AGENTS.md"]);
+// Files .gitignore retires repo-wide: they are local hand-offs, not documents
+// the locale gate owns. (The gate normally asks `git ls-files`; when a child
+// process cannot run git, the tree walk needs the same answer.)
+const ignoredFiles = new Set(["AGENTS.md", "HANDOFF.md", "HANDOFF.zh-CN.md"]);
 
 function shouldIgnoreDirectory(absPath, entryName) {
   return ignoredDirs.has(entryName)

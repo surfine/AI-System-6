@@ -757,7 +757,13 @@ async function runClioTalkAction(kind = "", options = {}) {
   if (action === "organize") return collectVentOutline();
   if (action === "vent-summary") return collectVentOutline();
   if (action === "draft") return requestMingmingQuickDraft();
-  if (action === "mingming" || action === "luoluo" || action === "hkrr") return runAdjustmentCommand(action);
+  // In Quick Draft these three are one-shot advice cards in ClioTalk; the
+  // route already holds their prompts (isQuickDraftAdviceOnlyTask) and never
+  // returns body copy. They used to switch on the darkroom's adjustment layer
+  // of the same name instead — Quick Draft reaching into the negative, which
+  // rule A (Quick Draft writes, 文字亮室 looks) forbids. The layers stay the
+  // darkroom's, driven from its own inspector.
+  if (action === "mingming" || action === "luoluo" || action === "hkrr") return runNextAction(action);
   if (action === "praise") return requestQuickDraft("brief", {
     taskKind: "praise",
     userNotes: nextActionNote("praise"),

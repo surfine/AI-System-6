@@ -2,6 +2,7 @@
 // must never submit, confirm, save, or dispatch a shortcut.
 
 import vm from "node:vm";
+import { parse } from "acorn";
 import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("input-method-safety");
@@ -34,7 +35,31 @@ test.assertIncludes(modal, '!eventIsTextComposition(event)', "the input modal do
 test.assertIncludes(wireup, "eventIsTextComposition(event)", "ClioTalk composer skips composition Enter");
 test.assertIncludes(wireup, "projectDiskNameInput.addEventListener", "project name input is guarded");
 test.assertIncludes(reader, "readerUrlInput?.addEventListener", "Reader URL input is guarded");
-test.assertIncludes(reader, "!eventIsTextComposition(event)", "Reader's Enter path uses the shared composition guard");
+// Execute the mounted listener: both an early return and a guarded Enter
+// branch are valid, but neither may submit a composing keystroke.
+{
+  let onKey;
+  let fetched = 0;
+  let prevented = 0;
+  const context = vm.createContext({
+    window: {}, rmounted: false, readerAskForm: null,
+    readerUrlInput: { addEventListener: (_type, handler) => { onKey = handler; } },
+    askReaderQuestion() {}, registerAskBarSource() {}, describeReaderAskScope() {},
+    initReaderSplitHandle() {}, fetchReaderPage() { fetched += 1; },
+    dismissReaderSourceEntry() { return false; },
+  });
+  vm.runInContext(guardSource, context);
+  context.eventIsTextComposition = context.window.AISystem6InputGuard.isComposition;
+  const mount = parse(reader, { ecmaVersion: "latest" }).body.find((node) => node.type === "FunctionDeclaration" && node.id.name === "mountReaderRuntime");
+  vm.runInContext(reader.slice(mount.start, mount.end), context);
+  context.mountReaderRuntime();
+  const key = { key: "Enter", preventDefault() { prevented += 1; } };
+  onKey({ ...key, isComposing: true });
+  onKey({ ...key, keyCode: 229 });
+  test.assert(fetched === 0 && prevented === 0, "Reader leaves composing Enter to the input method");
+  onKey({ ...key, keyCode: 13 });
+  test.assert(fetched === 1 && prevented === 1, "Reader submits once after composition ends");
+}
 test.assertIncludes(desktopRuntime, '!eventIsTextComposition(event)', "the new-project dialog is guarded");
 test.assertIncludes(markdownEditor, '!eventIsTextComposition(event)', "the Markdown editor does not transform during composition");
 test.assertIncludes(alarmClock, '!eventIsTextComposition(event)', "Alarm Clock does not commit during composition");

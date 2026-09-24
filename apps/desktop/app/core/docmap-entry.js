@@ -467,31 +467,6 @@ function syncDocMapEntryButton(button, readiness) {
   button.setAttribute("aria-label", t(ariaKey));
 }
 
-let readerDocMapSelectionReceipt = "";
-
-function syncReaderDocMapSelectionStatus(readiness) {
-  if (!readerStatusEl) return;
-  const selection = readiness?.selectionSource;
-  const signature = selection?.text || "";
-  if (signature === readerDocMapSelectionReceipt) return;
-  readerDocMapSelectionReceipt = signature;
-  if (!signature) {
-    if (readerStatusEl.dataset.docmapReceipt === "selection") {
-      readerStatusEl.textContent = currentReaderPage?.videoTranscript
-        ? t("reader_video_transcript_view")
-        : t("reader_reading_mode");
-      delete readerStatusEl.dataset.docmapReceipt;
-    }
-    return;
-  }
-  readerStatusEl.dataset.docmapReceipt = "selection";
-  readerStatusEl.textContent = readiness.selectionReady
-    ? t("docmap_selection_ready", selection.text.length)
-    : readiness.wholeReady
-      ? t("docmap_selection_short_source_ready", selection.text.length, selection.threshold)
-      : t("docmap_selection_too_short", selection.text.length, selection.threshold);
-}
-
 function setDocMapSourceStatus(source, message) {
   if (!source || !message) return;
   if (["reader", "videoTranscript"].includes(source.scope) && readerStatusEl) {
@@ -536,7 +511,6 @@ function updateDocMapEntryButtons() {
   syncDocMapEntryButton(clipboardDocMapButton, clipboardReadiness);
   syncDocMapEntryButton(scrapbookDocMapButton, scrapbookReadiness);
   syncDocMapEntryButton(chatFileDocMapButton, documentsReadiness);
-  syncReaderDocMapSelectionStatus(readerReadiness);
 
   const timeMachineButton = document.querySelector("#time-machine-docmap");
   const timeMachineReadiness = window.AISystem6TimeMachine?.docMapReadiness?.();

@@ -283,16 +283,16 @@ const PROOFS = [
           title.value = "The Shape of Quiet";
           title.dispatchEvent(new Event("input", { bubbles: true }));
         }
-        const gptOut = document.getElementById("ips-gpt-out");
-        if (gptOut) {
-          gptOut.value = "A calm, cinematic cover in deep tech blue with generous negative space. The scene is a wide, quiet composition built for a title: soft blue gradients fall away to near-black at the edges, leaving the center open and low-contrast. A single, even key light catches faint atmospheric haze. The title \"The Shape of Quiet\" sits small and centered in clean sans-serif type. Editorial minimalism, polished and high-fidelity, 16:9.";
-        }
-        const universalOut = document.getElementById("ips-universal-out");
-        if (universalOut) {
-          universalOut.value = "Subject: a calm cinematic tech-blue cover with generous negative space\nStyle: polished, high-fidelity, editorial minimalism\nLighting: soft, even key light with faint atmospheric haze\nComposition: wide 16:9, low-contrast open center, richer detail toward the edges\nNegative: clutter, high contrast in the center, rendered title text\nAspect ratio: 16:9";
-        }
-        const status = document.getElementById("ips-status");
-        if (status) status.textContent = "Prompt ready — copy it.";
+        // The prompts arrive the way they do for a writer - through Write
+        // Prompt - so the window shows its filled state: the two outputs, the
+        // universal lines as a list, and the entry in "Written before". Only
+        // the model call is replaced, with a fixed reply; nothing leaves the
+        // machine.
+        const gptImage = "A calm, cinematic cover in deep tech blue with generous negative space. The scene is a wide, quiet composition built for a title: soft blue gradients fall away to near-black at the edges, leaving the center open and low-contrast. A single, even key light catches faint atmospheric haze. Editorial minimalism, polished and high-fidelity, 16:9. Constraints: do not render the title text.";
+        const universal = "Subject: a calm cinematic tech-blue cover with generous negative space\nStyle: polished, high-fidelity, editorial minimalism\nLighting: soft, even key light with faint atmospheric haze\nComposition: wide 16:9, low-contrast open center, richer detail toward the edges\nNegative: clutter, high contrast in the center, rendered title text\nAspect ratio: 16:9";
+        window.sendLocalModelTask = async () => ({ text: `## GPT-Image\n${gptImage}\n\n## 通用\n${universal}` });
+        document.getElementById("ips-go")?.click();
+        await new Promise((resolve) => setTimeout(resolve, 200));
       });
       await page.waitForTimeout(900);
     },

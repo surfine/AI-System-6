@@ -405,7 +405,14 @@ body.use-liquid-glass .menu-bar {
    file sets either property on either selector at top level, and the theme
    layers that override them run after this one either way. */
 
+/* Every control in the bar, including the miniaturize lamp: an era's
+   background-window state is a property of the bar, not of two of its three
+   controls. Measured 2026-09-23 before this line: Big Sur's Close and Zoom
+   went grayscale on a background window while the yellow lamp between them
+   stayed #febc2e — the same omission the 44px touch rule had, and the same
+   fix. On macOS all three lights go flat grey together. */
 .window:not(.is-active) .close-box,
+.window:not(.is-active) .minimize-box,
 .window:not(.is-active) .resize-box,
 .window:not(.is-active) .shade-box {
   --system-titlebar-control-art-ink: var(--shade-dark);
@@ -680,7 +687,7 @@ select:focus {
 .document-icon-grid,
 .project-disk-grid,
 .trash-list {
-  background: var(--paper);
+  background: var(--file-well-bg);
   border: var(--system-border);
   box-shadow: var(--system-inset);
 }
@@ -722,8 +729,8 @@ select:focus {
   background:
     repeating-linear-gradient(
       -45deg,
-      var(--paper) 0,
-      var(--paper) 6px,
+      var(--empty-object-hatch-base) 0,
+      var(--empty-object-hatch-base) 6px,
       var(--empty-object-hatch-alt) 6px,
       var(--empty-object-hatch-alt) 12px
     );
@@ -733,8 +740,8 @@ select:focus {
 /* .teachtext-pane gap moved to base (styles/50-apps.css). */
 
 .teachtext-desk-strip {
-  border: var(--system-control-line) solid var(--ink);
-  background: var(--quiet-panel);
+  border: var(--teachtext-strip-border);
+  background: var(--teachtext-strip-bg);
 }
 
 .teachtext-preview,
@@ -764,8 +771,7 @@ select:focus {
   opacity: 1;
 }
 
-.teachtext-preview h1,
-.reader-content h1 {
+.teachtext-preview h1 {
   margin-top: 0;
   font-size: 22px;
 }
@@ -779,9 +785,6 @@ select:focus {
 }
 
 /* .reader-toolbar gap moved to base (styles/20-reader-docmap.css). */
-
-/* .reader-actions/.button-row gap moved to each base file
-   (styles/20-reader-docmap.css and styles/10-windows.css). */
 
 /* .scrapbook-pane grid-template-columns moved to base (styles/50-apps.css). */
 
@@ -1252,18 +1255,6 @@ select:focus {
   body:not(.is-writer-mode) .system-help-window.is-mobile-system-page > .system-help-pane {
     overflow: hidden;
   }
-  /* Five buttons at a 88px floor, told never to wrap, make a 472px row inside
-     a 420px window -- so the whole scrap editor scrolled sideways to reach its
-     own Save. A phone wraps the row instead and lets the buttons share the
-     width they have. */
-  .scrap-editor .button-row {
-    flex-wrap: wrap;
-  }
-
-  .scrap-editor .button-row .btn {
-    min-width: min(88px, 100%);
-  }
-
   /* An overlay window floats on a phone, but the screen is the limit. Desk
      Accessories keep their own size until it exceeds the display;
      then they clamp and scroll inside instead of hanging off the edge. This is
@@ -1630,15 +1621,15 @@ body.is-writer-mode .system-help-window .system-help-pane {
     display: none;
   }
 
-  /* Standalone on iOS the menu bar is the topmost thing on screen, so it grows
-     into the status-bar area instead of hiding under it. No stacking token
-     needed here: the 00-foundation.css base .menu-bar rule already sets the
-     identical token, and nothing between the two files touches it. */
+  /* Standalone on iOS the menu bar is the topmost thing on screen. How tall it
+     grows and what fills the status band belongs to the installed-surface block
+     at the end of this file — one rule for every device and both orientations,
+     instead of a portrait-phone copy of it here. No stacking token needed:
+     the 00-foundation.css base .menu-bar rule already sets it, and nothing
+     between the two files touches the value. */
   body:not(.is-writer-mode) .menu-bar {
     position: fixed;
     inset: 0 0 auto 0;
-    height: calc(var(--menu-bar-height) + var(--safe-area-top));
-    padding-top: var(--safe-area-top);
   }
 
   body:not(.is-writer-mode) .desktop {
@@ -1834,6 +1825,7 @@ body.is-writer-mode .system-help-window .system-help-pane {
   body.mobile-finder-desktop:not(.is-writer-mode) .window.is-mobile-finder-page {
     display: none;
   }
+
 
   /* Dialogs belong to the page beneath them. They remain compact, centered,
      and independently scrollable so Save Chat, Page Setup, and Get Info never
@@ -2562,12 +2554,10 @@ button.btn {
 /* .btn.default box-shadow merged into base (styles/10-windows.css);
    border-width was already in base. */
 
-.btn:hover:not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected) {
-  background: var(--btn-hover-bg);
-  color: var(--btn-hover-fg);
-  transform: none;
-  box-shadow: var(--btn-hover-shadow);
-}
+/* .btn:hover merged into base (styles/10-windows.css). It said the same three
+   things plus `transform: none`, and because a later byte-identical rule
+   outranks the base .btn:active in the cascade, keeping it here is what made a
+   plainly pressed button look hovered. One birthplace per state. */
 
 /* `.btn:active` was a byte-identical copy of 10-windows.css:3627 and is the
    third rule deleted to pay for the insets. Nothing between the windows layer
@@ -2656,6 +2646,11 @@ button:disabled {
   line-height: 1.22;
 }
 
+.finder-item span:last-of-type {
+  background: var(--finder-label-bg);
+  font-weight: var(--finder-label-weight, var(--system-emphasis-weight));
+}
+
 .teachtext-pane textarea:not(.mde-input),
 .question-sheet-pane textarea:not(.mde-input),
 .outline-content:not(.mde-input),
@@ -2676,8 +2671,7 @@ button:disabled {
 .mini-btn,
 .message-actions .btn,
 .reader-tabs .btn,
-.details-bar .btn,
-.docmap-map-toolbar .btn {
+.details-bar .btn {
   min-height: calc(var(--system-button-min-height) - 2px);
   padding: 3px 10px;
 }
@@ -2803,10 +2797,6 @@ input[type="radio"] {
     overflow: auto;
   }
 
-  body:not(.is-writer-mode) .scrapbook-window .scrap-editor {
-    grid-template-rows: auto auto auto minmax(120px, 1fr) auto auto auto;
-  }
-
   body:not(.is-writer-mode) .scrapbook-window #scrap-body-input {
     min-height: 120px;
   }
@@ -2886,10 +2876,6 @@ input[type="radio"] {
     overscroll-behavior-inline: contain;
   }
 
-  body.mobile-app-foreground:not(.is-writer-mode) .assistant-window.is-mobile-fullscreen .composer {
-    margin: 6px 7px 7px;
-    padding: 6px;
-  }
 
   body.mobile-app-foreground:not(.is-writer-mode) .assistant-window.is-mobile-fullscreen .composer textarea {
     min-height: 42px;
@@ -2907,10 +2893,17 @@ input[type="radio"] {
     min-height: 44px;
   }
 
+  /* One equal column per visible control: Synthesize only exists once there
+     are results, so a fixed four-column grid left a hole before it did. */
   .find-path-pane > .button-row:last-child {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
     gap: 6px;
+  }
+
+  .find-path-send-menu > summary {
+    width: 100%;
   }
 
   .find-path-pane > .button-row:last-child .btn {
@@ -2924,35 +2917,18 @@ input[type="radio"] {
     padding: 6px;
   }
 
-  .reader-toolbar {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 6px;
-  }
-
-  .reader-url-row input {
+  .reader-url-row :is(input, .btn) {
     min-height: 44px;
   }
 
-  .reader-actions {
-    display: flex;
-    gap: 6px;
+  .reader-selection-bar {
+    right: 8px;
+    bottom: 8px;
+    max-width: calc(100% - 16px);
   }
 
-  .reader-actions .btn {
-    min-width: 0;
+  .reader-selection-bar .btn {
     min-height: 44px;
-    padding: 6px 8px;
-    white-space: normal;
-    overflow-wrap: anywhere;
-  }
-
-  .reader-pane:has(#reader-docmap-button:not(:disabled)) .reader-toolbar {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .reader-pane:has(#reader-docmap-button:not(:disabled)) .reader-actions {
-    display: none;
   }
 
   .reader-content {
@@ -2962,10 +2938,8 @@ input[type="radio"] {
     overflow-wrap: anywhere;
   }
 
-  .reader-content h1 {
-    margin-bottom: 18px;
+  .reader-document-header h1 {
     font-size: 20px;
-    overflow-wrap: anywhere;
   }
 
   .reader-body-content p {
@@ -3240,5 +3214,123 @@ input[type="radio"] {
   body.mobile-landscape-shell:not(.is-writer-mode) .writing-spine-panel {
     left: 0;
     right: auto;
+  }
+}
+
+
+/* A home-screen web app owns the whole screen: the notch and the home indicator
+   are real, and the title bar's close and zoom boxes are the only way to end or
+   un-maximize a window there, where the eras draw them at 11-15px (measured: 14px
+   in Liquid Glass, 13px in Platinum). Installed + a finger means 44px, with the
+   era's art left where it was drawn. Safari keeps the drawn chrome; the hook is
+   the platform's own signal (navigator.standalone / display-mode), never a user
+   agent. Reasoning: DEBT-AUDIT.zh-CN.md §11. */
+@media (hover: none) and (pointer: coarse) {
+  /* The status band, wherever there is one. This started as a portrait-phone
+     rule inside the 860px query above, which left the other two surfaces alone:
+     measured 2026-09-23 in WebKit with a clip's own insets injected, an iPad's
+     bar stayed 44px tall in flow with no top padding, so the first menu
+     button's box began at y=1 under a 24pt status bar — the clock and the
+     battery were painted over 文件 / 编辑 / 对话 / 特别 in all eight
+     appearances, and in landscape the same thing happens on a phone. One rule
+     now covers every touch device and both orientations; a browser tab reports
+     an inset of 0, so none of it reaches that surface.
+
+     Sticky, not fixed: that is the one arrangement the MacRumors thread
+     reports as making the system yield its blur (a fixed header the reply
+     warned would be painted over anyway), and a sticky bar is in flow, so it
+     reserves its own height. The portrait block above pads the body instead,
+     because there the bar is out of flow — installed, that padding would count
+     the band twice. */
+  html[data-installed] body:not(.is-writer-mode) {
+    padding-top: 0;
+  }
+
+  html[data-installed] body:not(.is-writer-mode) .menu-bar {
+    position: sticky;
+    inset: auto;
+    top: 0;
+    height: calc(var(--menu-bar-height) + var(--safe-area-top));
+    padding-top: var(--safe-area-top);
+    /* A flat strip, not a material. A home-screen web app gets a system blur
+       painted across the top of the screen; a blur over a translucent bar IS
+       the desk showing through it, which is the washed band this file's
+       Liquid Glass rule already documents from the browser's side. The
+       appearance's gradients stay — what goes away is the see-through half of
+       the fill. Measured with a black backdrop swapped for a white one behind
+       the bar: yosemite at 0.9, big-sur at 0.86 and liquid-glass at 0.9 were
+       the three appearances whose strip changed colour with it; the other five
+       were already opaque and resolve to their own --paper. */
+    background-color: var(--menu-bar-base, var(--paper));
+  }
+
+  /* The same courtesy the sides already get, on the axis that was missing: a
+     window's bottom-right grow box is a live control on a tablet, and it was
+     landing inside the 20px home-indicator band. The desk keeps its work above
+     the inset instead of flush to it. */
+  html[data-installed] body:not(.is-writer-mode) .desktop {
+    padding-bottom: max(16px, var(--safe-area-bottom));
+  }
+
+  html[data-installed] .title-bar {
+    --titlebar-installed-control: var(--system-titlebar-control-size);
+    --titlebar-installed-resize-x: var(--system-titlebar-resize-art-offset-x);
+    --system-titlebar-control-slot: 44px;
+    min-height: 44px;
+  }
+
+  /* The middle lamp belongs in this list: it is the same control as Close and
+     Zoom, and a finger that gets 44px for two of the three lamps and 24px for
+     the one in between is a row that only looks touch-sized. The hit area
+     grows; the lamp the appearance paints stays 12px, because what changed is
+     how far a finger may miss by, not how big the light is. */
+  html[data-installed] .title-bar > :is(.close-box, .resize-box, .minimize-box) {
+    --system-titlebar-control-size: 44px;
+    --system-titlebar-control-art-offset-y: calc((44px - var(--system-titlebar-title-height)) / 2);
+    width: 44px;
+    height: 44px;
+  }
+
+  /* The window's other corner control. `.is-mobile-fullscreen` hides the grow
+     box, which is right on a phone where the window is the screen — but a tablet
+     keeps a real window, so this one is a live control and was measured at 16px
+     there (and at 28px in another run) by `verify:ios-standalone`'s geometry
+     phase. A finger gets the same 44px the title bar's boxes get. */
+  html[data-installed] .grow-box {
+    width: 44px;
+    height: 44px;
+  }
+
+  /* A phone or tablet in a browser tab is still a finger, and the installed
+     block above only covered a home-screen app: measured 2026-09-23 at 390x844
+     with hasTouch, the assistant window's title bar was 38px with 24px Close
+     and Zoom. The same three controls get the same 44px hit area here; the
+     appearance's lamp art does not change size, because what grows is how far a
+     finger may miss by. */
+  html:not([data-installed]) body:not(.is-writer-mode) .title-bar {
+    --system-titlebar-control-slot: 44px;
+    min-height: 44px;
+  }
+
+  html:not([data-installed]) body:not(.is-writer-mode)
+    .title-bar > :is(.close-box, .resize-box, .minimize-box) {
+    --system-titlebar-control-size: 44px;
+    --system-titlebar-control-art-offset-y: calc((44px - var(--system-titlebar-title-height)) / 2);
+    width: 44px;
+    height: 44px;
+  }
+
+  /* Zoom is end-justified, so the bigger box moves its leading edge left by the
+     whole growth and the art has to come back by all of it. The composer's Add
+     and Send are the two controls a thumb hits most — 36px is a mouse size. */
+  html[data-installed] .assistant-window .composer :is(.composer-submit-button, .composer-file-button) {
+    width: 44px;
+    height: 44px;
+  }
+
+  html[data-installed] .title-bar > .resize-box {
+    --system-titlebar-resize-art-offset-x: calc(
+      var(--titlebar-installed-resize-x) + 44px - var(--titlebar-installed-control)
+    );
   }
 }

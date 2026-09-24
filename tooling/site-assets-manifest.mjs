@@ -5,8 +5,8 @@
 // scenes cannot leave an invisible six-era asset family behind.
 
 export const SITE_ICON_NAMES = [
-  // Route
-  "fileFloppy", "searcher", "scrapbook", "teachText", "reviewDesk", "hardDisk",
+  // Desk tour and route; hardDisk and fileFloppy also stand in the Field Notes
+  "fileFloppy", "searcher", "scrapbook", "teachText", "reviewDesk", "hardDisk", "assistant",
   // Finder: things this computer should not be able to do
   "timeMachine", "soundscape", "importUtility", "clioChart", "clioStage",
   "cmfStudio", "liquidCover", "docMap", "questionSheet",
@@ -33,4 +33,5 @@ export const SITE_ICON_ERAS = {
   yosemite: { pattern: (name) => `yosemite/icons/${name}-128.png`, ext: "png" },
   "big-sur": { pattern: (name) => `big-sur/icons/${name}-128.png`, ext: "png" },
   "liquid-glass": { pattern: (name) => `liquid-glass/icons/${name}-128-default.png`, ext: "png" },
+  nextstep: { pattern: (name) => `nextstep/icons/${name}-128.png`, ext: "png" },
 };

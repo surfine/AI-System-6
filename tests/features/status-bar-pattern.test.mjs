@@ -31,10 +31,10 @@ test.assertIncludes(index, 'class="status-bar-context reader-status-context"', "
 test.assertIncludes(index, 'class="status-bar-trailing reader-status-actions"', "Reader reserves the trailing slot for document commands");
 test.assertIncludes(index, 'id="reader-docmap-selection-command" data-action="reader-docmap-selection"', "Reader exposes selection mapping as an explicitly gated command");
 test.assertIncludes(index, 'id="reader-docmap-source-command" data-action="reader-docmap-source"', "Reader exposes whole-source mapping as an explicitly gated command");
-test.assertMatches(index, /reader-status-actions[\s\S]*id="reader-command-menu"[\s\S]*<\/div>\s*<\/div>\s*<div class="window-pane reader-pane">/, "Reader's Commands menu lives in the status bar rather than the content toolbar");
-test.assertIncludes(readerStyles, ".reader-pane:has(#reader-docmap-button:not(:disabled)) .reader-actions {", "a loaded Reader document removes the now-empty source-action row");
+test.assertMatches(index, /reader-status-actions[\s\S]*id="reader-command-menu"[\s\S]*<\/div>\s*<\/div>\s*<div class="window-pane reader-pane"[^>]*>/, "Reader's Commands menu lives in the status bar rather than the content toolbar");
+test.assertIncludes(readerStyles, '.reader-pane[data-reader-state="loaded"]:not([data-reader-entry="open"]) > .reader-toolbar {', "a loaded Reader document removes the source-entry row");
 test.assertIncludes(readerStyles, ".reader-status-context:has(.tdi-stack-host:not(.is-hidden)) > #reader-url-display", "the compact document stack replaces duplicate source text under pressure");
-test.assertIncludes(responsive, ".reader-pane:has(#reader-docmap-button:not(:disabled)) .reader-actions {\n    display: none;", "phone rules do not resurrect Reader's empty toolbar row");
+test.assertNotIncludes(responsive, ".reader-actions", "phone rules have no Reader action row to resurrect");
 
 test.assertIncludes(index, 'class="details-bar app-status-bar teachtext-details-bar"', "TeachText maps its existing state, context, and save state onto the shared slots");
 test.assertIncludes(index, 'class="details-bar app-status-bar docmap-details-bar"', "DocMap maps count, document stack, and Commands onto the shared slots");
@@ -114,8 +114,8 @@ shippedSources.forEach((path) => {
 });
 test.assertMatches(
   index,
-  /scrapbook-details-bar[\s\S]*?<div class="window-status-strip" aria-live="polite"><span class="window-status-slot" data-status-host><\/span><\/div>\s*<\/div>/,
-  "Scrapbook hosts the shared status line at the end of its plain bar",
+  /scrapbook-details-bar[\s\S]*?<div class="window-status-strip" aria-live="polite"><span class="window-status-slot" data-status-host><\/span><\/div>\s*<input id="scrap-filter"[^>]*>\s*<\/div>/,
+  "Scrapbook hosts the shared status line in the stretching cell of its bar, with only the filter field after it",
 );
 test.assertIncludes(readerStyles, ".reader-status-actions,\n.docmap-status-actions {\n  justify-self: stretch;", "the trailing cell stretches so a long receipt ellipsizes instead of displacing Commands");
 test.assertIncludes(readerStyles, ".scrapbook-details-bar > .window-status-strip {\n  box-sizing: border-box;\n  flex: 1 1 auto;\n  padding-block: 1px;", "a strip inside an existing bar measures its frame, so a receipt never shoves the row");

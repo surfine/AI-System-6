@@ -88,4 +88,13 @@ test.assertNotIncludes(coordinator, "void persistQuickDraftWorkspace", "Draft De
 test.assertIncludes(coordinator, 'addEventListener("click", async () => { await saveQuickDraftAsProjectDocument(); })', "Project Save handler awaits its transaction");
 test.assertIncludes(coordinator, 'addEventListener("click", async () => { await sendQuickDraftToReviewDesk(); })', "Review handoff handler awaits its public API");
 
+// Rule A (2026-08-21): Quick Draft writes, 文字亮室 looks. The three lens
+// commands in Quick Draft are one-shot advice cards in ClioTalk — the route
+// already treats them as advice-only and never returns body copy — and they
+// must not switch on the darkroom's adjustment layer of the same name.
+const clioTalkAction = ai.slice(ai.indexOf("async function runClioTalkAction"), ai.indexOf("async function askClioTalk"));
+test.assertIncludes(clioTalkAction, 'action === "hkrr") return runNextAction(action);', "Quick Draft's lens commands run as one-shot ClioTalk advice");
+test.assertNotIncludes(clioTalkAction, "runAdjustmentCommand", "and never reach into the darkroom's adjustment layers");
+test.assertIncludes(read("apps/server/server/routes/draft-thesis.js"), '["mingming", "luoluo", "hkrr", "praise", "boundary", "strategy-check"]', "the route keeps those commands advice-only");
+
 test.finish();

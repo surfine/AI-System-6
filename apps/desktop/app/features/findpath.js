@@ -75,6 +75,7 @@ async function fetchMoreResults() {
 }
 
 function renderFindPathResults() {
+  wireFindPathResults();
   updateFindPathStatusBar();
   findPathResultsEl?.classList.remove("is-hidden");
   const scrollPos = findPathResultsEl.scrollTop;
@@ -90,6 +91,7 @@ function renderFindPathResults() {
       renderFindPathNotice(t("no_find_path_results"));
     }
     synthesizeFindPathButton.hidden = true;
+    syncFindPathActions();
     return;
   }
 
@@ -132,21 +134,8 @@ function renderFindPathResults() {
       ` : ""}
       ${hasTranslation ? `<div class="find-path-translation"><b>${escapeHtml(formatTranslationMeta(result.translationLanguage, result.translationCreatedAt, "Searcher", result.translationModel))}</b><p>${escapeHtml(result.translation)}</p></div>` : ""}
     `;
-    item.addEventListener("click", (event) => {
-      if (event.target.closest("[data-find-path-translate]")) return;
-      selectedFindPathIndex = index;
-      renderFindPathResults();
-    });
-    item.addEventListener("keydown", (event) => {
-      if (event.key === "Enter" || event.key === " ") {
-        event.preventDefault();
-        selectedFindPathIndex = index;
-        renderFindPathResults();
-      }
-    });
-    item.addEventListener("dblclick", () => {
-      if (result.url) window.open(result.url, "_blank");
-    });
+    item.setAttribute("aria-pressed", index === selectedFindPathIndex ? "true" : "false");
+    item.dataset.findPathIndex = String(index);
     findPathResultsEl.append(item);
   });
 
@@ -161,6 +150,85 @@ function renderFindPathResults() {
   }
 
   findPathResultsEl.scrollTop = scrollPos;
+  syncFindPathActions();
+}
+
+// Selecting a result marks its row; it no longer rebuilds the list, which
+// used to throw away the focused row and with it any keyboard navigation.
+function selectFindPathResult(index, { focus = false } = {}) {
+  if (!findPathResults[index]) return;
+  selectedFindPathIndex = index;
+  findPathResultsEl.querySelectorAll(".find-path-result").forEach((row) => {
+    const selected = Number(row.dataset.findPathIndex) === index;
+    row.classList.toggle("is-selected", selected);
+    row.setAttribute("aria-pressed", selected ? "true" : "false");
+    if (selected && focus) {
+      row.focus({ preventScroll: true });
+      row.scrollIntoView({ block: "nearest" });
+    }
+  });
+  syncFindPathActions();
+}
+
+// A result goes to Reader, the one surface that opens a source on this desk.
+// Double-click used to hand it to a raw browser tab instead.
+function openSelectedFindPathInReader() {
+  window.AISystem6Runtime?.dispatchCommand?.("open-selected-in-reader");
+}
+
+// The handoff verbs act on the selected result; with none selected they are
+// unavailable, and Balloon Help says why, instead of answering a click with a
+// status line.
+function syncFindPathActions() {
+  const hasResult = !!getSelectedFindPath();
+  const pane = findPathResultsEl?.closest(".find-path-pane");
+  if (!pane) return;
+  pane.querySelectorAll('[data-action="open-selected-in-reader"], [data-action="clip-selected-find-path"], [data-action="find-path-to-floppy"], [data-action="copy-search-result-markdown"], [data-action="insert-search-result"]').forEach((button) => {
+    button.disabled = !hasResult;
+    button.dataset.balloonHelpDisabled = "balloon_searcher_needs_result";
+  });
+  const menu = pane.querySelector(".find-path-send-menu");
+  if (menu) {
+    menu.classList.toggle("is-disabled", !hasResult);
+    if (!hasResult) menu.open = false;
+  }
+}
+
+function wireFindPathResults() {
+  if (!findPathResultsEl || findPathResultsEl.dataset.wired) return;
+  findPathResultsEl.dataset.wired = "true";
+  const rowIndex = (event) => {
+    const row = event.target.closest(".find-path-result");
+    return row ? Number(row.dataset.findPathIndex) : -1;
+  };
+  findPathResultsEl.addEventListener("click", (event) => {
+    if (event.target.closest("[data-find-path-translate]")) return;
+    const index = rowIndex(event);
+    if (index >= 0) selectFindPathResult(index);
+  });
+  findPathResultsEl.addEventListener("dblclick", (event) => {
+    const index = rowIndex(event);
+    if (index < 0) return;
+    selectFindPathResult(index);
+    openSelectedFindPathInReader();
+  });
+  findPathResultsEl.addEventListener("keydown", (event) => {
+    const index = rowIndex(event);
+    if (index < 0 || event.target.closest("button")) return;
+    const last = findPathResults.length - 1;
+    const next = { ArrowDown: index + 1, ArrowUp: index - 1, Home: 0, End: last }[event.key];
+    if (next !== undefined) {
+      event.preventDefault();
+      selectFindPathResult(Math.max(0, Math.min(last, next)), { focus: true });
+    } else if (event.key === " ") {
+      event.preventDefault();
+      selectFindPathResult(index);
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+      selectFindPathResult(index);
+      openSelectedFindPathInReader();
+    }
+  });
 }
 
 // DeepSeek provider state: one server-side Responses API call returns the

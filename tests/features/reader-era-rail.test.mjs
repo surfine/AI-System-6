@@ -27,8 +27,8 @@ test.assertIncludes(appearance, "--tdi-tab-active-bg: var(--selection-bg);", "Pl
 test.assertIncludes(aqua, "--tdi-rail-shadow: inset 1px 1px 0 #fff, 2px 2px 4px", "Jaguar gives the fixed source rail Aqua drawer depth without motion");
 test.assertIncludes(aqua, "--tdi-source-label-display: block;", "Snow Leopard reveals the compact source-list heading");
 test.assertIncludes(aqua, "--tdi-tab-active-bg: var(--sidebar-selection-bg);", "Snow Leopard reuses the measured source-list selection painter");
-test.assertNotMatches(appearance, /body\[data-theme="platinum"\][^{]*(?:tdi-source-rail|status-bar-placard)/, "Platinum remains token-only for the new Reader roles");
-test.assertNotMatches(aqua, /body\[data-theme="(?:aqua|snow-leopard)"\][^{]*(?:tdi-source-rail|status-bar-placard)/, "Aqua-family appearances remain token-only for the new Reader roles");
+test.assertNotMatches(appearance, /body\[data-(?:theme|lineage~)="platinum"\][^{]*(?:tdi-source-rail|status-bar-placard)/, "Platinum remains token-only for the new Reader roles");
+test.assertNotMatches(aqua, /body\[data-(?:theme|lineage~|theme-family)="(?:aqua|snow-leopard)"\][^{]*(?:tdi-source-rail|status-bar-placard)/, "Aqua-family appearances remain token-only for the new Reader roles");
 test.assertIncludes(en, 'reader_sources_label: "Sources"', "English includes the source-list heading");
 test.assertIncludes(zh, 'reader_sources_label: "来源"', "Chinese includes the source-list heading");
 

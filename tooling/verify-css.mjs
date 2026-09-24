@@ -356,11 +356,11 @@ const APPEARANCE_FILE = "styles/65-appearance-themes.css";
 // The Aqua partial is a family-owned split of the Appearance layer (zero
 // visual diff by contract); its per-era recipes must be counted by the same
 // ratchet, otherwise Snow Leopard/Aqua selector walls grow invisibly.
-const APPEARANCE_FILES = [APPEARANCE_FILE, "styles/67-aqua-appearance.css", "styles/68-big-sur-appearance.css", "styles/69-nextstep-appearance.css"];
+const APPEARANCE_FILES = [APPEARANCE_FILE, "styles/65-system-7-appearance.css", "styles/65-drawing-board-appearance.css", "styles/67-aqua-appearance.css", "styles/67-tiger-appearance.css", "styles/67-lion-appearance.css", "styles/68-big-sur-appearance.css", "styles/69-nextstep-appearance.css"];
 const THEME_FILES = new Set([
   LIQUID_FILE,
   APPEARANCE_FILE,
-  "styles/67-aqua-appearance.css",
+  "styles/65-system-7-appearance.css", "styles/65-drawing-board-appearance.css", "styles/67-aqua-appearance.css", "styles/67-tiger-appearance.css", "styles/67-lion-appearance.css",
   "styles/68-big-sur-appearance.css", "styles/69-nextstep-appearance.css",
   // Theme-scoped files that don't participate in twinning. Bureaucracy/meme
   // and Endfield Terminal are standalone surfaces, not base/theme pairs.
@@ -540,22 +540,21 @@ if (typeof twinBudget !== "number") {
 
 // --- Multi-era Appearance checks -------------------------------------------
 //
+// An era's own rules are scoped by [data-theme="id"] or, when children should
+// inherit them, by [data-lineage~="id"] (the registry projects the recipe
+// chain). Both count as that era's selectors everywhere below.
+//
 // New historical themes start token-first. A per-era recipe selector is
 // permitted only in the owning Appearance file, is capped, must reference a
 // real base primitive, and may not be copied across themes. Shared recipes use
 // data-theme-family; repeated per-era selectors are evidence of a missing
 // semantic token or family recipe.
 
+// Every registered appearance, read from the registry so a new one is counted
+// the day it is declared.
 const APPEARANCE_THEME_IDS = Object.freeze([
-  "classic",
-  "platinum",
-  "aqua",
-  "snow-leopard",
-  "yosemite",
-  "big-sur",
-  "liquid-glass",
-  "nextstep",
-]);
+  ...readFileSync(resolveProjectPath("apps/desktop/app/core/theme-registry.js"), "utf8").matchAll(/\bid:\s*"([a-z0-9-]+)"/g),
+].map((match) => match[1]));
 const appearanceSelectors = APPEARANCE_FILES.flatMap((relPath) =>
   extractSelectorLists(readFileSync(resolveProjectPath(relPath), "utf8"))
 );
@@ -576,7 +575,7 @@ const recipesByBase = new Map();
 const appearanceOrphans = [];
 for (const themeId of APPEARANCE_THEME_IDS) {
   const escapedId = themeId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const prefix = new RegExp(`^(?:html|body)\\[data-theme=["']${escapedId}["']\\](?:\\s+|$)`);
+  const prefix = new RegExp(`^(?:html|body)\\[data-(?:theme|lineage~)=["']${escapedId}["']\\](?:\\s+|$)`);
   const owned = appearanceSelectors.filter((selector) => prefix.test(selector));
   const limit = appearanceThemeSelectorLimits[themeId];
   if (typeof limit === "number" && owned.length > limit) {
@@ -599,7 +598,7 @@ const RECIPE_PARENTS = Object.freeze({
 });
 for (const themeId of APPEARANCE_THEME_IDS) {
   const escapedId = themeId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const prefix = new RegExp(`^(?:html|body)\\[data-theme=["']${escapedId}["']\\](?:\\s+|$)`);
+  const prefix = new RegExp(`^(?:html|body)\\[data-(?:theme|lineage~)=["']${escapedId}["']\\](?:\\s+|$)`);
   const owned = appearanceSelectors65.filter((selector) => prefix.test(selector));
   for (const selector of owned) {
     const base = selector.replace(prefix, "").trim();
@@ -658,7 +657,14 @@ if (appearanceOrphans.length) {
 // may only decrease. A genuine system-level historical exception (for example
 // a Desk Accessory that is really a system component) goes into
 // budget.childAppSpecificAllowlist with a justification.
-const CHILD_THEME_IDS = ["platinum", "snow-leopard", "yosemite", "big-sur"];
+// Every appearance with a recipeBase is a child, read from the registry so a
+// new child is held to the rule the day it is declared.
+const CHILD_THEME_IDS = (() => {
+  const registry = readFileSync(resolveProjectPath("apps/desktop/app/core/theme-registry.js"), "utf8");
+  const ids = [...registry.matchAll(/\bid:\s*"([a-z0-9-]+)"/g)].map((match) => match[1]);
+  const bases = [...registry.matchAll(/\brecipeBase:\s*(?:"([a-z0-9-]+)"|null)/g)].map((match) => match[1] || null);
+  return ids.filter((id, index) => bases[index]);
+})();
 const SHARED_WINDOW_PRIMITIVES = new Set([".window", ".window-pane"]);
 const childAppAllowlist = new Set(budget.childAppSpecificAllowlist || []);
 const childAppPrefixes = applicationCssPrefixes;
@@ -666,7 +672,7 @@ const childAppViolations = [];
 let childAppSpecificCount = 0;
 for (const themeId of CHILD_THEME_IDS) {
   const escapedId = themeId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const prefix = new RegExp(`^(?:html|body)\\[data-theme=["']${escapedId}["']\\](?:\\s+|$)`);
+  const prefix = new RegExp(`^(?:html|body)\\[data-(?:theme|lineage~)=["']${escapedId}["']\\](?:\\s+|$)`);
   for (const selector of appearanceSelectors) {
     if (!prefix.test(selector)) continue;
     const base = selector.replace(prefix, "").trim();
@@ -697,7 +703,7 @@ if (typeof childAppBudget !== "number") {
   ok(`${APPEARANCE_FILE}: child+app-specific selectors ${childAppSpecificCount}/${childAppBudget} across ${Object.keys(windowInterfaceRegistry).length} registered windows`);
 }
 
-const OUTSIDE_THEME_SELECTOR_PATTERN = /\b(?:body(?:\.use-liquid-glass|:not\(\.use-liquid-glass\))|(?:html|body)\[data-theme(?:-family)?=)/;
+const OUTSIDE_THEME_SELECTOR_PATTERN = /\b(?:body(?:\.use-liquid-glass|:not\(\.use-liquid-glass\))|(?:html|body)\[data-(?:theme(?:-family)?|lineage~)=)/;
 const outsideThemeBudgets = budget.themeSelectorsOutsideLiquid ?? {};
 cssFiles
   .filter((path) => path !== LIQUID_FILE && path !== APPEARANCE_FILE)
@@ -832,7 +838,7 @@ function countUnprefixedRules(relPath) {
           });
           if (declaresRealProperty
             && selectors.length
-            && selectors.every((one) => !/use-liquid-glass|\[data-theme/.test(one))) {
+            && selectors.every((one) => !/use-liquid-glass|\[data-(?:theme|lineage)/.test(one))) {
             offenders.push(selectors[0].replace(/\s+/g, " ").slice(0, 70));
           }
         }
@@ -852,7 +858,7 @@ function countUnprefixedRules(relPath) {
 
 const APPEARANCE_GEOMETRY_FILES = [
   APPEARANCE_FILE,
-  "styles/67-aqua-appearance.css",
+  "styles/65-system-7-appearance.css", "styles/65-drawing-board-appearance.css", "styles/67-aqua-appearance.css", "styles/67-tiger-appearance.css", "styles/67-lion-appearance.css",
   "styles/68-big-sur-appearance.css", "styles/69-nextstep-appearance.css",
   LIQUID_FILE,
 ];
@@ -874,8 +880,8 @@ const APPEARANCE_GEOMETRY_FILES = [
 // lands teaches people to ignore it.
 function eraTokenCoverage() {
   const registry = readFileSync(resolveProjectPath("apps/desktop/app/core/theme-registry.js"), "utf8");
-  const ids = [...registry.matchAll(/\bid:\s*"([a-z-]+)"/g)].map((match) => match[1]);
-  const bases = [...registry.matchAll(/\brecipeBase:\s*(?:"([a-z-]+)"|null)/g)].map((match) => match[1] || null);
+  const ids = [...registry.matchAll(/\bid:\s*"([a-z0-9-]+)"/g)].map((match) => match[1]);
+  const bases = [...registry.matchAll(/\brecipeBase:\s*(?:"([a-z0-9-]+)"|null)/g)].map((match) => match[1] || null);
   const parent = new Map(ids.map((id, index) => [id, bases[index] ?? null]));
   const sources = APPEARANCE_GEOMETRY_FILES
     .map((relPath) => readFileSync(resolveProjectPath(relPath), "utf8"))
@@ -884,7 +890,7 @@ function eraTokenCoverage() {
   for (const id of ids) {
     const blocks = id === "liquid-glass"
       ? /body\.use-liquid-glass\s*\{([^}]*)\}/g
-      : new RegExp(`(?:html|body)\\[data-theme="${id}"\\][^{]*\\{([^}]*)\\}`, "g");
+      : new RegExp(`(?:html|body)\\[data-(?:theme|lineage~)="${id}"\\][^{]*\\{([^}]*)\\}`, "g");
     const tokens = new Set();
     for (const block of sources.matchAll(blocks)) {
       for (const declaration of block[1].matchAll(/(--[a-z0-9-]+)\s*:/g)) {
@@ -923,7 +929,11 @@ if (!coverageBudgets || typeof coverageBudgets !== "object") {
       ok(`${id}: baseline appearance, defines the defaults the other eras answer`);
       continue;
     }
-    const allowed = coverageBudgets.missing?.[id];
+    // `inherited` holds children that take their parent's unanswered tokens
+    // along with its recipe (System 7 from Classic, Drawing Board from
+    // Platinum). They are ratcheted like the eras in `missing`, but they do
+    // not vote on which tokens are period tokens.
+    const allowed = coverageBudgets.missing?.[id] ?? coverageBudgets.inherited?.[id];
     const found = missing.get(id) || [];
     if (typeof allowed !== "number") {
       if (found.length) {

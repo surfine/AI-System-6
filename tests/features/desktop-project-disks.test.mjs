@@ -149,7 +149,7 @@ const label = fakeNode();
 label.closest = (selector) => (selector === ".icon-column" ? column : mountedIcon);
 
 const source = projectDisk.slice(
-  projectDisk.indexOf("const PROJECT_DISK_STALL_DAYS"),
+  projectDisk.indexOf("const PROJECT_DISK_HANDOFF_WARN_DAYS"),
   projectDisk.indexOf("function setProjectDiskActionVisible"),
 );
 
@@ -272,41 +272,33 @@ test.assertIncludes(
 
 // --- The risk mark states two facts the desk already has ---------------------
 //
-// A small diamond beside a disk whose project is long-unmodified AND not
-// burned to a Project CD. No delivery-date field exists and none is invented:
-// the predicate reads `updatedAt` (stamped by every record write) and the
-// Project CD items, nothing else, and a missing timestamp is unknown — an
-// unknown is never claimed as a risk. Pure, so it is executed here.
+// A small diamond beside a disk whose handoff is close or past, or whose
+// writer-dated task is overdue (decided 2026-08-21, restored 2026-09-23 after
+// a build that marked "14 days untouched" instead). The dates are the ones
+// typed into ClioProject; only a date that can mean exactly one day is read,
+// and anything else is words, never a risk. Pure, so it is executed here.
 const atRisk = context.projectDiskAtRisk;
+const readDay = context.projectHandDateDay;
 
-const now = Date.parse("2026-08-31T00:00:00.000Z");
-const staleDate = "2026-08-01T00:00:00.000Z"; // 30 days before
-const freshDate = "2026-08-29T00:00:00.000Z"; // 2 days before
+const now = Date.parse("2026-09-23T12:00:00");
+const plan = (tasks = {}, ownTasks = []) => ({ id: "p1", clioProject: { tasks, ownTasks } });
 
-test.assert(
-  atRisk({ id: "p1", updatedAt: staleDate }, [], now) === true,
-  "a month untouched with nothing burned is at risk"
-);
-test.assert(
-  atRisk({ id: "p1", updatedAt: staleDate }, [{ projectId: "p1" }], now) === false,
-  "a burned Project CD answers the risk, however old the disk"
-);
-test.assert(
-  atRisk({ id: "p1", updatedAt: staleDate }, [{ projectId: "other" }], now) === true,
-  "another project's CD answers nothing for this one"
-);
-test.assert(
-  atRisk({ id: "p1", updatedAt: freshDate }, [], now) === false,
-  "a disk written to this week is not at risk"
-);
-test.assert(
-  atRisk({ id: "p1", updatedAt: "" }, [], now) === false,
-  "a missing timestamp is unknown, and an unknown is never claimed as a risk"
-);
-test.assert(
-  atRisk({ id: "p1", updatedAt: staleDate }, undefined, now) === true,
-  "absent CD records read as nothing burned, not as an error"
-);
+test.assert(atRisk({ id: "p1" }, now) === false, "a disk with no plan has no dates, so no risk is claimed");
+test.assert(atRisk(plan({ projectCd: { date: "9月30日" } }), now) === true, "a handoff a week out with the handoff unticked is at risk");
+test.assert(atRisk(plan({ projectCd: { date: "2026-10-10" } }), now) === false, "a handoff weeks away is not");
+test.assert(atRisk(plan({ projectCd: { date: "9/20" } }), now) === true, "a handoff already past is at risk");
+test.assert(atRisk(plan({ projectCd: { date: "9/20", done: true } }), now) === false, "a ticked handoff answers the risk");
+test.assert(atRisk(plan({ projectCd: { date: "月底前" } }), now) === false, "a date written as words is never read as a deadline");
+test.assert(atRisk(plan({ outline: { date: "2026年9月1日" } }), now) === true, "a dated stop left unticked past its day is at risk");
+test.assert(atRisk(plan({}, [{ id: "task:a", date: "9/22", done: false }]), now) === true, "so is an overdue task the writer hung");
+test.assert(atRisk(plan({}, [{ id: "task:a", date: "9/22", done: true }]), now) === false, "and a finished one is not");
+test.assert(atRisk(plan({}, [{ id: "task:a", date: "9/23" }]), now) === false, "a task due today is not overdue yet");
+test.assertNotIncludes(projectDisk, "PROJECT_DISK_STALL_DAYS", "the 14-days-untouched rule is gone, not kept beside the dates");
+
+test.assert(readDay("2026-09-30", now) === readDay("9月30日", now), "a year-less date is read in the current year");
+test.assert(readDay("2026/9/30", now) === readDay("2026年9月30日", now), "slashes and 年月日 read the same day");
+test.assert(readDay("2/30", now) === null, "an impossible day is not rolled into March");
+test.assert(readDay("Friday", now) === null && readDay("9.30", now) === null, "anything that could mean two things stays words");
 
 // The mark is drawn where the disks are drawn, prepended so the disk's name
 // label stays `lastChild`, and Balloon Help carries the words for it.
@@ -321,14 +313,18 @@ test.assertIncludes(zh, "balloon_project_disk_risk:", "Chinese says it too");
 // --- The overview is the same window, one level up ---------------------------
 //
 // The peek lists what a disk holds. With nothing peeked there is no disk, so it
-// lists the disks — read-only, and counting on every render rather than keeping
-// a total of its own, because a stored total is a second copy of statistics
-// that can drift from the arrays it describes. It reports no date, no
-// percentage and no next step: an overview that judged would be writing.
+// lists the disks -- read-only, counted on every render, never kept. Since
+// 2026-09-24 each row also says the one thing still missing and when it is
+// due: both come from the record (ClioProject's evidence, the writer's own
+// handoff words), never an estimate, and the old "done x/y" -- which counted
+// only nodes the writer had touched -- is gone.
 test.assertIncludes(peek, "async function openProjectOverview", "the overview opens through one function of its own");
 test.assertIncludes(peek, "button.dataset.peekProject = project.id;", "each project row carries the id its click needs");
 test.assertIncludes(peek, "function projectOverviewItemCount", "what is filed is counted from the loaded arrays");
-test.assertIncludes(peek, "function projectOverviewTaskCounts", "and what is done comes from the project's own task records");
+test.assertIncludes(peek, "model.clioProjectNextStep(plan, evidence)", "the missing step is worked out by ClioProject's model from the record");
+test.assertIncludes(peek, "function projectOverviewHandoff", "the handoff is the writer's own words, with a distance only when they read as a day");
+test.assertNotIncludes(peek, "projectOverviewTaskCounts", "the touched-nodes-only done/total count is gone");
+test.assertIncludes(peek, 'loadClassicScriptOnce("app/core/clio-project.js")', "the overview loads ClioProject's model itself, off the boot floppy");
 test.assertNotIncludes(peek, "localStorage", "the overview is derived on render and never kept");
 test.assertNotIncludes(peek, "setItem", "so nothing at all is written");
 test.assert(

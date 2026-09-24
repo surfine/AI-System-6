@@ -284,7 +284,7 @@ function oneMoreTuneEnsureDeck() {
 
 let oneMoreTuneState = null;
 let oneMoreTuneResources = null;
-let oneMoreTuneView = "shelf";
+let oneMoreTuneView = "challenge";
 let oneMoreTuneSession = null;
 let oneMoreTuneRound = null;
 let oneMoreTuneKeynoteRound = null;
@@ -304,7 +304,7 @@ let oneMoreTuneSourceOpen = "";
 // One coordinator, one sounding source. Buffers are per card because a
 // challenge round moves between cards, and they are per session because the
 // files belong to the person, not to this deck.
-let oneMoreTuneAudio = { context: null, buffers: new Map(), elements: new Map(), node: null, gate: null, stopTimer: null, playingCardId: "", wechatHooked: false };
+let oneMoreTuneAudio = { context: null, buffers: new Map(), elements: new Map(), node: null, gate: null, stopTimer: null, playingCardId: "", wechatHooked: false, gateArmed: undefined, cueSource: "", cueStart: null, cueEnd: null, cueClockAt: null, discFrame: 0, discAt: 0, pendingCue: false };
 
 // --- Storage -----------------------------------------------------------
 
@@ -1253,36 +1253,6 @@ function oneMoreTuneMusicRow(card) {
  * this at all — cannot leak through a preloaded frame, and the link is always
  * there for a region or a video that refuses to be embedded.
  */
-/**
- * The stage, on both faces of one question.
- *
- * Before the answer it is the blind player: six bars, no name, one button that
- * plays the cue. After the answer it is the same block in the same place, with
- * the same button — now a replay — because a person who has just read the
- * answer usually wants to hear it once more with the name in hand. Two faces
- * that drew two different players were two different-looking screens for one
- * question, and the reveal's version also had nowhere to stand: it lived inside
- * the reveal box, which is a card, not a stage.
- */
-function oneMoreTuneRoundStage(question) {
-  return `<div class="darkplayer">
-          <div class="vinyl" aria-hidden="true"></div>
-          <div class="playerhead"><span><span class="era-mark" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span> <span data-i18n="one_more_tune_listen_first">LISTEN FIRST</span></span></div>
-          <button class="playbutton" type="button" data-one-more-tune-command="one-more-tune-hear" aria-label="${oneMoreTuneEscape(t("one_more_tune_hear"))}"><span><span class="triangle" aria-hidden="true"></span></span></button>
-          <div class="playerfoot"><span class="mono">${question.everHeard ? String(question.heard).padStart(2, "0") + " ×" : "— : —"}</span><div class="trackline" aria-hidden="true"></div></div>
-        </div>`;
-}
-
-function oneMoreTuneRevealPlayer(card) {
-  const link = oneMoreTuneWatchLink(card);
-  if (!link) return "";
-  // One button, one window: the film is watched in its own window (see
-  // installOneMoreTuneFilmWindow), so nothing is embedded in the reveal.
-  return `<div class="one-more-tune-reveal-player">
-          <button class="btn" type="button" data-one-more-tune-command="one-more-tune-play-film" data-one-more-tune-video-id="${oneMoreTuneEscape(card.videoId)}" data-one-more-tune-start="${link.anchor === null ? "" : Math.floor(link.anchor)}" data-i18n="one_more_tune_watch_here">Watch it here</button>
-        </div>`;
-}
-
 function formatOneMoreTuneSeconds(value) {
   if (!Number.isFinite(value)) return t("one_more_tune_time_unknown");
   const total = Math.max(0, Math.round(value));
@@ -1722,7 +1692,7 @@ function oneMoreTuneSongEmbed(question) {
 function oneMoreTuneRefreshPlayerChrome() {
   const question = oneMoreTuneQuestion();
   if (!question) return;
-  const badge = document.querySelector(".one-more-tune-window .playerfoot .mono");
+  const badge = document.querySelector(".one-more-tune-window [data-disc-heard]");
   if (badge) badge.textContent = question.everHeard ? `${String(question.heard).padStart(2, "0")} ×` : "— : —";
   const tag = document.querySelector(".one-more-tune-window .sectiontag .tag");
   if (tag && question.everHeard) {
@@ -2103,27 +2073,429 @@ function oneMoreTuneSilentWavUrl() {
  * element for each preview would be refused the moment nobody tapped.
  */
 function oneMoreTuneAudioElement() {
-  if (oneMoreTuneAudio.gate) return oneMoreTuneAudio.gate;
+  const existing = oneMoreTuneAudio.gate;
+  // A gate whose play was turned down is not armed. iOS grants this element the
+  // right to play later only if a gesture played it, so one the engine refused
+  // has to be played again inside the next gesture rather than handed back as
+  // though it were ready — which is how every question after the first went
+  // silent in the home-screen app with nothing on screen to say so.
+  if (existing && oneMoreTuneAudio.gateArmed !== false) return existing;
   try {
-    const element = new Audio();
-    // Unmuted on purpose. A muted element does not move the device's audio
-    // session to playback, and moving it is half of what this first play is
-    // for; the other half is the right to play later without a tap. The sound
-    // is silence, so nothing is heard either way.
-    element.muted = false;
-    element.playsInline = true;
-    element.setAttribute("playsinline", "");
-    element.preload = "auto";
-    element.setAttribute("x-webkit-airplay", "deny");
-    element.src = oneMoreTuneSilentWavUrl();
+    const element = existing || new Audio();
+    if (!existing) {
+      // Unmuted on purpose. A muted element does not move the device's audio
+      // session to playback, and moving it is half of what this first play is
+      // for; the other half is the right to play later without a tap. The sound
+      // is silence, so nothing is heard either way.
+      element.muted = false;
+      element.playsInline = true;
+      element.setAttribute("playsinline", "");
+      element.preload = "auto";
+      element.setAttribute("x-webkit-airplay", "deny");
+      element.src = oneMoreTuneSilentWavUrl();
+      element.dataset.oneMoreTuneGate = "1";
+      oneMoreTuneAudio.gate = element;
+    }
     const played = element.play?.();
-    if (played?.then) played.then(() => { try { element.pause(); } catch {} }).catch(() => {});
-    element.dataset.oneMoreTuneGate = "1";
-    oneMoreTuneAudio.gate = element;
+    if (played?.then) {
+      played.then(() => {
+        oneMoreTuneAudio.gateArmed = true;
+        // Silence, and paused straight away: this play is for the session and
+        // the permission, never for the ear.
+        if (element.dataset.oneMoreTuneGate === "1") { try { element.pause(); } catch {} }
+      }).catch(() => {
+        oneMoreTuneAudio.gateArmed = false;
+      });
+    }
+    return element;
   } catch {
     oneMoreTuneAudio.gate = null;
   }
   return oneMoreTuneAudio.gate;
+}
+
+// --- The record ---------------------------------------------------------
+//
+// A round is played on a white label: an unprinted test pressing, the record a
+// DJ is handed before anybody has told them what it is. Before the answer its
+// paper label carries the track code (A3) and 33⅓ and nothing else, so the
+// question prints no hint — not even an era colour. The record does the jobs the
+// disc did, in a shape a person already knows:
+//
+//   the platter   turns at 33⅓ while there is sound, and coasts to a stop
+//   the tonearm   sits on THIS question's band — side A's five tracks run from
+//                 the rim inward, side B's the same — and moves inward with the
+//                 cue's own clock
+//   the rim       how far into THIS recording we are, in the room's ink
+//
+// At the answer the label prints: the era's colour and the year, or plain paper
+// and "year unknown" for a card nobody dated. Colour is identity and arrives only
+// with the answer; right and wrong are marks, never an era's hue. The drawn
+// design and its one-screen measurements are in
+// internal/evidence/drafts/one-more-tune-redesign/white-label/.
+
+const ONE_MORE_TUNE_DISC_ARC_MS = 250;
+// 33⅓ rpm is 1.8 seconds a turn. A platter is a heavy thing: it spins up and
+// coasts down rather than jumping between rates.
+const ONE_MORE_TUNE_SPIN_TURN_MS = 1800;
+const ONE_MORE_TUNE_SPIN_UP_S = 0.28;
+const ONE_MORE_TUNE_SPIN_DOWN_S = 0.55;
+const ONE_MORE_TUNE_SIDE_TRACKS = 5;
+// The tonearm, in units of the record's diameter: the pivot's offset from the
+// spindle, the stylus's place along the arm, and the five bands of a side.
+const ONE_MORE_TUNE_ARM = Object.freeze({ pivotX: 0.6, pivotY: 0.4, tipX: -0.045, tipY: 0.771, outer: 0.47, band: 0.05, groove: 0.045 });
+// The rim is drawn in a 100-unit box, so one set of numbers holds at any size.
+const ONE_MORE_TUNE_RIM_STROKE = 1.2;
+
+function oneMoreTuneDiscClamp(value, low, high) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return low;
+  return number < low ? low : number > high ? high : number;
+}
+
+/**
+ * The disc's whole visual state, as data.
+ *
+ * Pure on purpose: this is the part a contract can pin without a DOM, and the
+ * part that says what "unknown" means — no position and no duration means no
+ * arc and no `aria-valuenow`, because this deck's own rule is that an unknown
+ * is null and 0 is an answer.
+ *
+ * @returns {{ playing: boolean, unknown: boolean, reveal: boolean, era: string,
+ *            progress: number|null, attrs: Record<string,string>,
+ *            elapsed: string, total: string, aria: { now: number|null, text: string } }}
+ */
+function oneMoreTuneDiscFrame(input) {
+  const playback = String(input?.playback || "idle");
+  const playing = playback === "playing";
+  const position = Number.isFinite(input?.position) ? Number(input.position) : null;
+  const duration = Number.isFinite(input?.duration) && Number(input.duration) > 0 ? Number(input.duration) : null;
+  const reveal = input?.reveal === true;
+  const era = /^[1-6]$/.test(String(input?.era || "")) ? String(input.era) : "";
+  const hasArc = position !== null && duration !== null;
+  const progress = hasArc ? oneMoreTuneDiscClamp(position / duration, 0, 1) : null;
+  const unknown = !hasArc;
+  return {
+    playing,
+    unknown,
+    reveal,
+    era,
+    progress,
+    attrs: {
+      "data-playback": playing ? "playing" : playback,
+      "data-unknown": unknown ? "true" : "false",
+      "data-reveal": reveal ? "true" : "false",
+      ...(era ? { "data-era": era } : {}),
+    },
+    elapsed: unknown ? "— : —" : formatOneMoreTuneSeconds(position),
+    total: unknown ? "— : —" : formatOneMoreTuneSeconds(duration),
+    aria: {
+      now: progress === null ? null : Math.round(progress * 100),
+      text: unknown ? "— : —" : `${formatOneMoreTuneSeconds(position)} / ${formatOneMoreTuneSeconds(duration)}`,
+    },
+  };
+}
+
+/**
+ * The rim's numbers, computed from whatever diameter the disc has, so one
+ * component works at 132px and at 296px. What it replaces was a
+ * `stroke-dasharray="817"` typed into a mockup and a `width:22%` typed into
+ * this window's sheet, each true at exactly one size.
+ */
+function oneMoreTuneDiscRim(size, stroke) {
+  const width = oneMoreTuneDiscClamp(stroke ?? ONE_MORE_TUNE_RIM_STROKE, 1, 8);
+  const radius = Math.max(1, (Number(size) || 0) / 2 - width / 2 - 1);
+  const length = 2 * Math.PI * radius;
+  const box = radius * 2 + width + 2;
+  return {
+    box,
+    radius,
+    stroke: width,
+    length,
+    lead: (value) => {
+      const angle = ((oneMoreTuneDiscClamp(value, 0, 1) * 360) - 90) * (Math.PI / 180);
+      const scale = 100 / box;
+      return {
+        x: (box / 2 + radius * Math.cos(angle)) * scale,
+        y: (box / 2 + radius * Math.sin(angle)) * scale,
+      };
+    },
+  };
+}
+
+/** The side and track a question sits on: A1–A5, then B1–B5. */
+function oneMoreTuneTrackCode(index) {
+  const at = Math.max(0, Math.floor(Number(index) || 0));
+  return `${at < ONE_MORE_TUNE_SIDE_TRACKS ? "A" : "B"}${(at % ONE_MORE_TUNE_SIDE_TRACKS) + 1}`;
+}
+
+/**
+ * The tonearm's swing, in degrees, that puts the stylus at `radius` (a fraction
+ * of the record's diameter). The stylus travels a circle round the pivot, the
+ * band is a circle round the spindle, and the arm swings to where they cross.
+ */
+function oneMoreTuneArmAngle(radius) {
+  const { pivotX, pivotY, tipX, tipY } = ONE_MORE_TUNE_ARM;
+  const arm = Math.hypot(tipX, tipY);
+  const reach = Math.hypot(pivotX, pivotY);
+  const along = (pivotX * pivotX + pivotY * pivotY + arm * arm - radius * radius) / (2 * arm * reach);
+  const swing = Math.asin(oneMoreTuneDiscClamp(along, -1, 1)) - Math.atan2(pivotY, pivotX) - Math.atan2(-tipX, tipY);
+  return swing * 180 / Math.PI;
+}
+
+/** Where the arm lands for one question, and where it has reached when the cue ends. */
+function oneMoreTuneArmBand(index) {
+  const { outer, band, groove } = ONE_MORE_TUNE_ARM;
+  const track = Math.max(0, Math.floor(Number(index) || 0)) % ONE_MORE_TUNE_SIDE_TRACKS;
+  const from = outer - band * track;
+  return { from: oneMoreTuneArmAngle(from), to: oneMoreTuneArmAngle(from - groove) };
+}
+
+/**
+ * The reveal's naming, as a record's liner notes. These are ad tunes and sound
+ * logos, so there are no lines to sync: what a sleeve can honestly print is the
+ * thing a person would hum, who played it, and where it aired. A missing field
+ * is left out rather than filled in, and a card with no year has no era.
+ */
+function oneMoreTuneLinerNotes(reveal) {
+  if (!reveal) return null;
+  const era = oneMoreTuneEra(reveal);
+  return {
+    song: String(reveal.song || "").trim(),
+    artist: String(reveal.artist || "").trim(),
+    film: String(reveal.film || "").trim(),
+    year: Number.isInteger(reveal.year) ? String(reveal.year) : "",
+    era: era.id !== "none" ? era : null,
+  };
+}
+
+/**
+ * The record, on every face of one question.
+ *
+ * The button is the whole record — pressing the record is the gesture a phone
+ * wants for the sound — and it keeps `.playbutton`, the name the contracts and
+ * the menu wiring were written with. The rim is the stage's sibling of the
+ * button rather than its child, because a button's children are presentational
+ * to assistive technology and the rim is a progressbar somebody may need to read.
+ */
+function oneMoreTuneRoundStage(question, { idle = false } = {}) {
+  const reveal = !idle && question?.submitted ? question.reveal || null : null;
+  const index = oneMoreTuneRound?.index ?? 0;
+  const code = idle ? "?" : oneMoreTuneTrackCode(index);
+  const side = t(index < ONE_MORE_TUNE_SIDE_TRACKS ? "one_more_tune_side_a" : "one_more_tune_side_b");
+  const era = reveal ? oneMoreTuneEra(reveal) : null;
+  const known = Boolean(era && era.id !== "none");
+  const band = oneMoreTuneArmBand(index);
+  const printed = reveal
+    ? `<span class="omt-label omt-label-print"${known ? ` data-era="${era.id}"` : ""}><small>${code}</small><b>${known ? oneMoreTuneEscape(String(reveal.year)) : "—"}</b><small>${oneMoreTuneEscape(known ? era.name : t("one_more_tune_era_unknown"))}</small></span>`
+    : "";
+  const command = idle ? "one-more-tune-start-round" : "one-more-tune-hear";
+  const label = idle ? t("one_more_tune_start_round") : t("one_more_tune_hear");
+  return `<div class="omt-stage" data-disc-stage data-token="${oneMoreTuneEscape(question?.token || "")}" data-playback="idle"${reveal ? " data-printed" : ""}${question?.mediaFailed ? " data-failed" : ""} style="--omt-arm-from:${band.from.toFixed(2)}deg;--omt-arm-to:${band.to.toFixed(2)}deg">
+          <button class="omt-deck playbutton" type="button" data-disc data-one-more-tune-command="${command}" aria-label="${oneMoreTuneEscape(label)}" data-unknown="true" data-reveal="${reveal ? "true" : "false"}"${known ? ` data-era="${era.id}"` : ""}>
+            <span class="omt-flip" aria-hidden="true"><span class="omt-spin" data-disc-platter>
+              <span class="omt-grooves"></span>
+              <span class="omt-label omt-label-white"><b>${code}</b><small>${idle ? "33⅓" : `33⅓ · ${oneMoreTuneEscape(side)}`}</small></span>
+              ${printed}
+              <span class="omt-hole"></span>
+            </span></span>
+            <span class="omt-sheen" aria-hidden="true"></span>
+          </button>
+          <svg class="omt-rim" data-disc-rim data-disc-progress role="progressbar" aria-label="${oneMoreTuneEscape(t("one_more_tune_disc_progress"))}" focusable="false" viewBox="0 0 100 100">
+            <circle class="omt-rim-bed" data-disc-bed cx="50" cy="50" r="48.4"></circle>
+            <circle class="omt-rim-arc" data-disc-arc cx="50" cy="50" r="48.4" transform="rotate(-90 50 50)"></circle>
+          </svg>
+          <span class="omt-arm" aria-hidden="true"><span class="omt-arm-base"></span><span class="omt-arm-swing"><span class="omt-arm-track"><span class="omt-arm-cw"></span><span class="omt-arm-tube"></span><span class="omt-arm-head"></span></span></span><span class="omt-arm-cap"></span></span>
+        </div>`;
+}
+
+/**
+ * Keep the record that is already turning.
+ *
+ * A face re-renders when the answer arrives, when a replay finishes and when a
+ * link upgrades; a record rebuilt each time would jump back to 0° and drop its
+ * arm in one frame. The platter (with its angle and its spin) and the arm (with
+ * its place on the band) move into the fresh stage; everything else — the
+ * printed label, the state attributes — comes from the fresh markup.
+ */
+function oneMoreTuneCarryRecord(body, token, paint) {
+  const find = (root) => (typeof root?.querySelectorAll === "function"
+    ? [...root.querySelectorAll("[data-disc-stage]")].find((stage) => stage.dataset.token === token) || null
+    : null);
+  const old = token ? find(body) : null;
+  paint();
+  if (!old) return;
+  const fresh = find(body);
+  if (!fresh || fresh === old) return;
+  const oldPlatter = old.querySelector("[data-disc-platter]");
+  const freshPlatter = fresh.querySelector("[data-disc-platter]");
+  if (oldPlatter && freshPlatter) {
+    oldPlatter.querySelector(".omt-label-print")?.remove();
+    const print = freshPlatter.querySelector(".omt-label-print");
+    if (print) oldPlatter.querySelector(".omt-hole")?.before(print);
+    freshPlatter.replaceWith(oldPlatter);
+  }
+  const oldArm = old.querySelector(".omt-arm");
+  const freshArm = fresh.querySelector(".omt-arm");
+  if (oldArm && freshArm) freshArm.replaceWith(oldArm);
+  // The stage the arm and platter just left said "playing"; the fresh one starts
+  // from what the audio says now, so the arm lifts or stays in one transition.
+  fresh.dataset.playback = old.dataset.playback || "idle";
+}
+
+/** Where we are inside THIS cue — the segment, not the film it came from. */
+function oneMoreTuneDiscPosition() {
+  const from = oneMoreTuneAudio.cueStart;
+  const to = oneMoreTuneAudio.cueEnd;
+  if (!oneMoreTuneAudio.playingCardId || !Number.isFinite(from) || !Number.isFinite(to) || to <= from) {
+    return { position: null, duration: null };
+  }
+  const duration = to - from;
+  if (oneMoreTuneAudio.cueSource === "element") {
+    const element = oneMoreTuneAudio.gate;
+    const at = element && Number.isFinite(element.currentTime) ? element.currentTime : from;
+    return { position: oneMoreTuneDiscClamp(at - from, 0, duration), duration };
+  }
+  const context = oneMoreTuneAudio.context;
+  if (!context || !Number.isFinite(oneMoreTuneAudio.cueClockAt)) return { position: 0, duration };
+  return { position: oneMoreTuneDiscClamp(context.currentTime - oneMoreTuneAudio.cueClockAt, 0, duration), duration };
+}
+
+/** The frame in front of us right now, from the round and the audio state. */
+function oneMoreTuneDiscFrameNow() {
+  const question = oneMoreTuneQuestion();
+  const reveal = question?.submitted ? question.reveal || null : null;
+  const era = reveal ? oneMoreTuneEra(reveal) : null;
+  const { position, duration } = oneMoreTuneDiscPosition();
+  return oneMoreTuneDiscFrame({
+    playback: oneMoreTuneAudio.playingCardId ? "playing" : "idle",
+    position,
+    duration,
+    reveal: Boolean(reveal),
+    era: era && era.id !== "none" ? era.id : null,
+  });
+}
+
+/**
+ * Paint the record that is on screen, from the live audio state.
+ *
+ * The rim and the arm are drawn against the clock four times a second with a
+ * 250ms linear transition, which turns four samples a second into continuous
+ * motion; the platter's rate is stepped every frame by the ticker. The size is
+ * the sheet's business — container queries on the room — so nothing here
+ * measures layout.
+ */
+function paintOneMoreTuneDisc() {
+  const el = document.querySelector(".one-more-tune-window [data-disc]");
+  if (!el) return false;
+  const stage = el.closest("[data-disc-stage]") || el;
+  const room = el.closest(".omt-room") || stage;
+  const frame = oneMoreTuneDiscFrameNow();
+  for (const [name, value] of Object.entries(frame.attrs)) el.setAttribute(name, value);
+  const question = oneMoreTuneQuestion();
+  // Four states the arm can show: resting, cued over the band while the sound
+  // is fetched, down on the record, and left in mid-air when the sound refused
+  // to start — a question that cannot play says so before anybody reads a word.
+  const playback = frame.playing ? "playing"
+    : oneMoreTuneAudio.pendingCue ? "loading"
+      : question?.mediaFailed && !question?.submitted ? "failed" : "idle";
+  if (stage.dataset && stage.dataset.playback !== playback) stage.dataset.playback = playback;
+  stage.style?.setProperty?.("--omt-arm-p", frame.progress === null ? "0" : frame.progress.toFixed(3));
+  const rim = oneMoreTuneDiscRim(100, ONE_MORE_TUNE_RIM_STROKE);
+  const arc = stage.querySelector?.("[data-disc-arc]");
+  if (arc) {
+    const drawn = frame.progress === null ? 0 : frame.progress * rim.length;
+    arc.setAttribute("stroke-dasharray", rim.length.toFixed(2));
+    arc.setAttribute("stroke-dashoffset", (rim.length - drawn).toFixed(2));
+  }
+  const elapsed = room.querySelector?.("[data-disc-elapsed]");
+  if (elapsed) elapsed.textContent = frame.elapsed;
+  const total = room.querySelector?.("[data-disc-total]");
+  if (total) total.textContent = frame.total;
+  // The meter is the rim, which is the thing a reader can see: its accessible
+  // value follows the same frame, and an unknown position leaves `aria-valuenow`
+  // off rather than calling it zero.
+  const svg = stage.querySelector?.("[data-disc-rim]");
+  if (svg) {
+    svg.setAttribute("aria-valuemin", "0");
+    svg.setAttribute("aria-valuemax", "100");
+    if (frame.aria.now === null) svg.removeAttribute("aria-valuenow");
+    else svg.setAttribute("aria-valuenow", String(frame.aria.now));
+    svg.setAttribute("aria-valuetext", frame.aria.text);
+  }
+  el.setAttribute("aria-pressed", frame.playing ? "true" : "false");
+  return true;
+}
+
+/**
+ * Step the platter's speed toward what the audio says: up to 33⅓ while there is
+ * sound, down to a stop when it ends. An exponential approach, so a pause or a
+ * submission coasts instead of braking in one frame. Reduced motion keeps the
+ * platter still; the rim and the arm still move, because they carry information.
+ * Returns whether the platter is still turning.
+ */
+function stepOneMoreTuneSpin(seconds) {
+  const platter = document.querySelector(".one-more-tune-window [data-disc-platter]");
+  if (!platter || typeof platter.animate !== "function") return false;
+  if (!platter.__omtSpin) {
+    platter.__omtSpin = platter.animate([{ transform: "rotate(0deg)" }, { transform: "rotate(360deg)" }], {
+      duration: ONE_MORE_TUNE_SPIN_TURN_MS,
+      iterations: Infinity,
+    });
+    platter.__omtSpin.playbackRate = 0;
+    platter.__omtRate = 0;
+  }
+  const still = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const target = oneMoreTuneAudio.playingCardId && !still ? 1 : 0;
+  const current = platter.__omtRate || 0;
+  const settle = target > current ? ONE_MORE_TUNE_SPIN_UP_S : ONE_MORE_TUNE_SPIN_DOWN_S;
+  let next = current + (target - current) * (1 - Math.exp(-seconds / settle));
+  if (target === 0 && next < 0.01) next = 0;
+  if (target === 1 && next > 0.995) next = 1;
+  platter.__omtRate = next;
+  platter.__omtSpin.playbackRate = next;
+  return next > 0;
+}
+
+/** Repaint the record after a face is painted, and bind its ticker. */
+function syncOneMoreTuneDisc() {
+  const painted = paintOneMoreTuneDisc();
+  if (painted) startOneMoreTuneDiscTicker();
+  return painted;
+}
+
+/**
+ * One clock for the record: the platter's rate every frame, the rim and the
+ * arm four times a second, and nothing at all once the sound has stopped and
+ * the platter has coasted to rest.
+ */
+function startOneMoreTuneDiscTicker() {
+  if (oneMoreTuneAudio.discFrame || typeof requestAnimationFrame !== "function") return;
+  let last = 0;
+  const tick = (now) => {
+    oneMoreTuneAudio.discFrame = 0;
+    const seconds = last ? Math.min(0.05, (now - last) / 1000) : 1 / 60;
+    last = now;
+    const turning = stepOneMoreTuneSpin(seconds);
+    const sounding = Boolean(oneMoreTuneAudio.playingCardId);
+    if (sounding && now - oneMoreTuneAudio.discAt >= ONE_MORE_TUNE_DISC_ARC_MS) {
+      oneMoreTuneAudio.discAt = now;
+      paintOneMoreTuneDisc();
+    }
+    if (!sounding && !turning) {
+      paintOneMoreTuneDisc();
+      return;
+    }
+    oneMoreTuneAudio.discFrame = requestAnimationFrame(tick);
+  };
+  oneMoreTuneAudio.discAt = 0;
+  oneMoreTuneAudio.discFrame = requestAnimationFrame(tick);
+}
+
+function stopOneMoreTuneDiscTicker() {
+  if (!oneMoreTuneAudio.discFrame) return;
+  if (typeof cancelAnimationFrame === "function") cancelAnimationFrame(oneMoreTuneAudio.discFrame);
+  oneMoreTuneAudio.discFrame = 0;
 }
 
 /**
@@ -2149,6 +2521,15 @@ function stopOneMoreTuneAudio() {
   }
   oneMoreTuneAudio.node = null;
   oneMoreTuneAudio.playingCardId = "";
+  oneMoreTuneAudio.cueSource = "";
+  oneMoreTuneAudio.cueStart = null;
+  oneMoreTuneAudio.cueEnd = null;
+  oneMoreTuneAudio.cueClockAt = null;
+  oneMoreTuneAudio.pendingCue = false;
+  // The platter coasts to a stop and the arm lifts: the ticker runs until the
+  // record is at rest, then ends itself.
+  paintOneMoreTuneDisc();
+  startOneMoreTuneDiscTicker();
 }
 
 function chooseOneMoreTuneAudioFile(cardId) {
@@ -2176,6 +2557,32 @@ async function loadOneMoreTuneAudioFile(file, cardId) {
     setStatus(t("one_more_tune_audio_failed"));
   }
   renderOneMoreTune();
+}
+
+/**
+ * A cue the browser refused, reported against the question that asked for it.
+ *
+ * The refusal arrives a tick late — `play()` says so in a promise — so the
+ * record has to be corrected after the fact rather than read before it. The
+ * count of listenings is this deck's own account of what was heard, and a play
+ * the engine turned down is not one of them: leaving the count up would mark
+ * the question as heard on a score card the person never heard.
+ *
+ * The words are the ones the suspended Web Audio context already uses, because
+ * it is the same thing happening: a home-screen launch is a document nobody has
+ * touched yet, so the first sound waits for a finger. The block is not fatal —
+ * the record is still on screen, and pressing it is the gesture that lets the
+ * sound through.
+ */
+function failOneMoreTuneCue(cardId, statusKey) {
+  const question = oneMoreTuneQuestion();
+  if (question && oneMoreTuneQuestionAudioKey(question) === String(cardId || "")) {
+    question.mediaFailed = true;
+    question.heard = Math.max(0, Number(question.heard || 0) - 1);
+    question.everHeard = question.heard > 0;
+    renderOneMoreTune();
+  }
+  setStatus(t(statusKey));
 }
 
 /**
@@ -2216,7 +2623,32 @@ function playOneMoreTuneWindow(cardId, from, to) {
       if (element.src !== elementUrl) element.src = elementUrl;
       element.muted = false;
       element.currentTime = Math.max(0, from);
-      element.play()?.catch?.(() => {});
+      // What the rim is allowed to say: this cue's own window, and the element's
+      // clock as the place to read it from.
+      oneMoreTuneAudio.cueSource = "element";
+      oneMoreTuneAudio.cueStart = Math.max(0, from);
+      oneMoreTuneAudio.cueEnd = to;
+      oneMoreTuneAudio.cueClockAt = null;
+      // The play's own promise is the only answer the engine gives, and this
+      // path used to throw it away: a refusal resolved to nothing, the block
+      // below returned true, and the question was counted as heard on a face
+      // that looked like it was playing. That is the whole of "in the
+      // home-screen app there is no sound and no error" — on iOS this is the
+      // path every store preview takes, because WebKit refuses to decode them
+      // (see oneMoreTuneLoadMedia) and the element is what plays them instead.
+      const started = element.play?.();
+      if (started?.then) {
+        started.then(() => {
+          // The same element, and now it has played inside a gesture: this is
+          // what makes the next question's play legal.
+          oneMoreTuneAudio.gateArmed = true;
+        }).catch(() => {
+          oneMoreTuneAudio.gateArmed = false;
+          try { element.pause(); } catch {}
+          if (oneMoreTuneAudio.playingCardId === cardId) oneMoreTuneAudio.playingCardId = "";
+          failOneMoreTuneCue(cardId, "one_more_tune_audio_blocked");
+        });
+      }
       oneMoreTuneAudio.playingCardId = cardId;
       oneMoreTuneAudio.stopTimer = setTimeout(() => {
         try { element.pause(); } catch {}
@@ -2236,6 +2668,12 @@ function playOneMoreTuneWindow(cardId, from, to) {
     node.buffer = buffer;
     node.connect(context.destination);
     node.start(0, start, length);
+    // The segment, not the film: `length` is what this question plays, and the
+    // context's own clock is what says how far into it we are.
+    oneMoreTuneAudio.cueSource = "buffer";
+    oneMoreTuneAudio.cueStart = start;
+    oneMoreTuneAudio.cueEnd = start + length;
+    oneMoreTuneAudio.cueClockAt = context.currentTime;
     oneMoreTuneAudio.node = node;
     oneMoreTuneAudio.playingCardId = cardId;
     oneMoreTuneAudio.stopTimer = setTimeout(() => {
@@ -2375,15 +2813,16 @@ function installOneMoreTuneWindow() {
     statusHtml: `
           <span class="status-bar-leading" id="one-more-tune-status"></span>
           <span class="status-bar-trailing one-more-tune-status-counts" id="one-more-tune-counts"></span>`,
-    // The masthead and the tab row come straight from the design: a small-caps
-    // eyebrow, the wordmark with its record bars, and the section tags.
+    // The window's title already says what this is, so the head carries no
+    // wordmark: printing the name twice was the repetition the owner asked to
+    // lose. What is left is the three games (and 资料, for a backstage browser
+    // only). The card shelf and study are places a person goes to on purpose,
+    // and they live in the Study menu; a round in progress hides this row
+    // altogether (see renderOneMoreTune).
     beforePaneHtml: `
         <header class="top">
-          <span class="brand" aria-hidden="true"><span class="brandmark"><b></b><b></b><b></b><b></b><b></b><b></b></span><span>one more <i>tune.</i></span></span>
           <nav class="nav one-more-tune-tabs" role="tablist" aria-label="One More Tune sections" data-i18n-aria-label="one_more_tune_sections">
-            <button class="system-tab is-active" type="button" role="tab" aria-selected="true" data-one-more-tune-view="shelf" data-i18n="one_more_tune_view_shelf">Card Shelf</button>
-            <button class="system-tab" type="button" role="tab" aria-selected="false" data-one-more-tune-view="study" data-i18n="one_more_tune_view_study">Study</button>
-            <button class="system-tab" type="button" role="tab" aria-selected="false" data-one-more-tune-view="challenge" data-i18n="one_more_tune_view_challenge">Challenge</button>
+            <button class="system-tab is-active" type="button" role="tab" aria-selected="true" data-one-more-tune-view="challenge" data-i18n="one_more_tune_view_challenge">Challenge</button>
             <button class="system-tab" type="button" role="tab" aria-selected="false" data-one-more-tune-view="keynote" data-i18n="one_more_tune_view_keynote">Relay</button>
             <button class="system-tab" type="button" role="tab" aria-selected="false" data-one-more-tune-view="line" data-i18n="one_more_tune_view_line">Next Act</button>
             <button class="system-tab" type="button" role="tab" aria-selected="false" data-one-more-tune-view="sources" data-one-more-tune-backstage hidden data-i18n="one_more_tune_view_sources">Sources</button>
@@ -2442,6 +2881,15 @@ function renderOneMoreTune() {
   const body = oneMoreTuneBody();
   if (!body) return;
   syncOneMoreTuneTabs();
+  // Three facts the sheet lays the window out by. A challenge face is a room
+  // that fills the pane rather than a page that scrolls; a round in progress
+  // hides the tab row, because nothing on it is wanted between the first
+  // question and the back cover — leaving is in the menu; and a question on
+  // screen hides the study counts as well.
+  const root = oneMoreTuneRoot();
+  root?.toggleAttribute?.("data-omt-room", oneMoreTuneView === "challenge");
+  root?.toggleAttribute?.("data-omt-round", oneMoreTuneView === "challenge" && Boolean(oneMoreTuneRound));
+  root?.toggleAttribute?.("data-omt-asking", oneMoreTuneView === "challenge" && Boolean(oneMoreTuneRound && oneMoreTuneQuestion()));
   // Each face starts at its own top. A phase change that leaves the reader
   // halfway down the previous face is the one scroll behaviour the design
   // names: "scrollTo" on every step.
@@ -2456,6 +2904,11 @@ function renderOneMoreTune() {
   window.AISystem6TranslateWithin?.(body);
   hydrateSystemIcons?.(body);
   syncOneMoreTuneCounts();
+  // The disc is painted from the audio state rather than from the markup, so a
+  // re-render has to hand it the frame it is actually in: a question already
+  // sounding keeps its arc, and a reveal shows the era band it just earned.
+  // A window that destroys its own chord here is the bug this exists to stop.
+  syncOneMoreTuneDisc();
   // The listen link paints as a search and becomes the recording's own store
   // page when the catalogue answers — the Music app opens a store item, not a
   // search. Nothing here blocks the face: a reader who clicks before the answer
@@ -3243,7 +3696,7 @@ function oneMoreTuneOpenPracticeRound(cards) {
   return { mode: "practice", questions, origin: "local" };
 }
 
-function oneMoreTuneAdoptRound(round, { index = 0 } = {}) {
+function oneMoreTuneAdoptRound(round, { index = 0, single = false } = {}) {
   stopOneMoreTuneAudio();
   clearOneMoreTuneNowPlaying();
   const questions = round.questions || [];
@@ -3256,6 +3709,9 @@ function oneMoreTuneAdoptRound(round, { index = 0 } = {}) {
     setId: round.setId || "",
     deckVersion: round.deckVersion || 0,
     index: start,
+    // One question a link named on its own. Its index is 0 of 1, not a place
+    // in the set's ten, so it never writes or clears this device's cursor.
+    single: single === true,
     questions,
   };
   oneMoreTuneView = "challenge";
@@ -3274,6 +3730,7 @@ function oneMoreTuneAdoptRound(round, { index = 0 } = {}) {
  * answer) and cleared when the round is over or refused as stale.
  */
 function oneMoreTuneRememberRound() {
+  if (oneMoreTuneRound?.single) return;
   const state = oneMoreTuneStateNow();
   if (!oneMoreTuneRound?.setId) {
     state.round = null;
@@ -3613,6 +4070,17 @@ async function oneMoreTuneLoadMedia(question) {
  */
 async function playOneMoreTuneQuestion(question) {
   if (!question) return false;
+  oneMoreTuneAudio.pendingCue = true;
+  paintOneMoreTuneDisc();
+  try {
+    return await playOneMoreTuneQuestionCue(question);
+  } finally {
+    oneMoreTuneAudio.pendingCue = false;
+    paintOneMoreTuneDisc();
+  }
+}
+
+async function playOneMoreTuneQuestionCue(question) {
   if (question.media?.provider === "none") {
     question.mediaFailed = true;
     setStatus(t("one_more_tune_media_unavailable"));
@@ -3665,6 +4133,10 @@ async function playOneMoreTuneQuestion(question) {
   question.mediaFailed = false;
   question.heard += 1;
   question.everHeard = true;
+  // The sound is in the air, so the disc follows it from here: the arc reads the
+  // cue's own clock, and the platter turns for as long as that clock moves.
+  paintOneMoreTuneDisc();
+  startOneMoreTuneDiscTicker();
   return true;
 }
 
@@ -3682,6 +4154,16 @@ async function submitOneMoreTuneAnswer(chosenId, { outcome = "answered" } = {}) 
   question.submitted = true;
   question.chosen = chosenId;
   question.outcome = chosenId ? "answered" : outcome;
+  // The press is answered on the frame it lands: the chosen row stays down and
+  // the other three step back while the authority scores it, so a slow network
+  // reads as "sent" rather than as a tap that did nothing.
+  question.pending = true;
+  const room = document.querySelector?.(".one-more-tune-window .omt-room");
+  room?.setAttribute?.("data-omt-waiting", "");
+  room?.querySelectorAll?.("[data-one-more-tune-submit]").forEach((button) => {
+    if (button.dataset.oneMoreTuneSubmit === chosenId) button.dataset.state = "pending";
+    button.setAttribute("aria-disabled", "true");
+  });
   stopOneMoreTuneAudio();
   if (oneMoreTuneRound.origin === "server") {
     try {
@@ -3694,6 +4176,7 @@ async function submitOneMoreTuneAnswer(chosenId, { outcome = "answered" } = {}) 
       question.correct = result.correct === true;
       question.points = Number(result.points) || 0;
       question.reveal = result.reveal || null;
+      question.correctChoice = typeof result.correctChoice === "string" ? result.correctChoice : "";
     } catch {
       // The round did not take the answer, so this question has no result at
       // all: no reveal, no verdict, no point. It is marked as its own state
@@ -3723,6 +4206,7 @@ async function submitOneMoreTuneAnswer(chosenId, { outcome = "answered" } = {}) 
     listens: question.heard,
     mode: oneMoreTuneRound?.mode || "",
   });
+  question.pending = false;
   renderOneMoreTune();
 }
 
@@ -3742,6 +4226,7 @@ async function retryOneMoreTuneAnswer() {
   // submitOneMoreTuneAnswer refuses a question that already has one.
   question.submitted = false;
   question.answerFailed = false;
+  question.revealPainted = false;
   question.reveal = null;
   question.correct = false;
   question.points = 0;
@@ -3757,9 +4242,11 @@ function advanceOneMoreTuneRound() {
   clearOneMoreTuneNowPlaying();
   oneMoreTuneRound.index += 1;
   // The place moves with the person: a round that reached its tenth question
-  // is finished rather than paused, so the cursor goes with it.
-  if (oneMoreTuneRound.index >= oneMoreTuneRound.questions.length) oneMoreTuneForgetRound();
-  else oneMoreTuneRememberRound();
+  // is finished rather than paused, so the cursor goes with it. A lone
+  // question finishing says nothing about the ten the cursor is kept for.
+  if (oneMoreTuneRound.index >= oneMoreTuneRound.questions.length) {
+    if (!oneMoreTuneRound.single) oneMoreTuneForgetRound();
+  } else oneMoreTuneRememberRound();
   renderOneMoreTune();
   autoPlayOneMoreTuneQuestion();
 }
@@ -3768,8 +4255,9 @@ function endOneMoreTuneRound() {
   stopOneMoreTuneFilm();
   stopOneMoreTuneAudio();
   clearOneMoreTuneNowPlaying();
+  const single = oneMoreTuneRound?.single === true;
   oneMoreTuneRound = null;
-  oneMoreTuneForgetRound();
+  if (!single) oneMoreTuneForgetRound();
   renderOneMoreTune();
 }
 
@@ -3950,21 +4438,27 @@ async function openOneMoreTuneChallenge(code) {
     return;
   }
   const explicit = parts.length > 3 ? Number.parseInt(parts[3], 10) : -1;
-  // A link that names a set with no question in it resumes the round this
-  // device already reached into, rather than starting the same ten again. That
-  // is the wrist's loop: a shared round comes back to the message, the wrist
-  // raises, and the round is where it was left.
-  const stored = oneMoreTuneResumableRound();
-  const index = Number.isInteger(explicit) && explicit >= 0
-    ? explicit
-    : (stored && stored.setId === parts[2] ? stored.index : -1);
+  // A link that names one question is that question alone, and only that link
+  // asks the authority for one. A link that names a set with no question in it
+  // resumes the round this device already reached into, rather than starting
+  // the same ten again. That is the wrist's loop: a shared round comes back to
+  // the message, the wrist raises, and the round is where it was left.
+  //
+  // The two used to share one index, so the device's place went to the server
+  // as a question number and a resumed round came back as "question 01 / 1":
+  // the ten were gone and the place was lost with them. The place is where the
+  // cursor lands in the whole ten; the questions before it were already
+  // passed, so they are behind the cursor rather than asked again.
+  const single = Number.isInteger(explicit) && explicit >= 0 ? explicit : -1;
+  const stored = single < 0 ? oneMoreTuneResumableRound() : null;
+  const index = stored && stored.setId === parts[2] ? stored.index : 0;
   setStatus(t("one_more_tune_round_opening"));
   const round = await oneMoreTuneOpenServerRound({
     // The whole code travels, not just its middle: the version in it is what
     // lets the authority say "that set is from another deck" instead of serving
     // a ten that merely looks similar.
     challengeId: `OMT.${parts[1]}.${parts[2]}`,
-    questionIndex: Number.isInteger(index) ? index : -1,
+    questionIndex: single,
   });
   if (!round) {
     // The set it names is gone or stale: a cursor pointing at it would only
@@ -3974,7 +4468,8 @@ async function openOneMoreTuneChallenge(code) {
     renderOneMoreTune();
     return;
   }
-  oneMoreTuneAdoptRound(round, { index });
+  if (single >= 0) oneMoreTuneAdoptRound(round, { single: true });
+  else oneMoreTuneAdoptRound(round, { index });
 }
 
 async function reportOneMoreTuneQuestion() {
@@ -3991,40 +4486,100 @@ async function reportOneMoreTuneQuestion() {
 }
 
 /**
+ * The round's room: one surface for the start, the question, the reveal and
+ * the back cover.
+ *
+ * It is always dark — a listening room, whatever the desk's appearance — so the
+ * answer's colour has somewhere to arrive, and the 1-bit desk gets the same
+ * room in black and white. `data-omt-enter` marks the first paint of a face,
+ * which is the only paint its entrance plays on: a reveal re-rendered by a
+ * replay or a link upgrade must not shake the wrong answer a second time.
+ */
+function oneMoreTuneRoom(phase, inner, { era = "", enter = false } = {}) {
+  return `<section class="omt-room" data-omt-phase="${phase}"${era ? ` data-lit data-era="${era}"` : ""}${enter ? " data-omt-enter" : ""} aria-labelledby="one-more-tune-step-title">
+        <div class="omt-light" aria-hidden="true"></div><div class="omt-wash" aria-hidden="true"></div>
+        <div class="omt-in">${inner}</div>
+      </section>`;
+}
+
+/**
+ * The round as a track list: side A, side B, five each. An empty slot is still
+ * to come, the dotted one is playing, and a heard one carries its card's era —
+ * identity, which the answer has already disclosed — and a mark for the
+ * verdict, so colour never says right or wrong on its own.
+ */
+function oneMoreTuneTrackList(round, { enter = false } = {}) {
+  const questions = round?.questions || [];
+  const now = round?.index ?? 0;
+  const right = questions.filter((question) => question.correct).length;
+  const label = t("one_more_tune_track_label")
+    .replace("{n}", String(Math.min(now + 1, questions.length)))
+    .replace("{total}", String(questions.length))
+    .replace("{right}", String(right));
+  const slots = questions.map((question, index) => {
+    const side = index === 0 ? '<span class="omt-side">A</span>'
+      : index === ONE_MORE_TUNE_SIDE_TRACKS ? '<span class="omt-side is-b">B</span>' : "";
+    const heard = index < now || (index === now && question.submitted);
+    if (!heard) return `${side}<span class="omt-slot"${index === now ? " data-now" : ""}></span>`;
+    const era = question.reveal ? oneMoreTuneEra(question.reveal) : null;
+    const state = question.correct ? "right"
+      : question.answerFailed || (question.mediaFailed && !question.correct) ? "broken"
+        : question.outcome === "skipped" ? "skip" : "wrong";
+    const mark = { right: "✓", wrong: "✕", skip: "–", broken: "!" }[state];
+    return `${side}<span class="omt-slot" data-s="${state}"${era && era.id !== "none" ? ` data-era="${era.id}"` : ""}${enter && index === now ? " data-fresh" : ""}>${mark}</span>`;
+  }).join("");
+  return `<p class="omt-slots" role="img" aria-label="${oneMoreTuneEscape(label)}">${slots}</p>`;
+}
+
+/**
+ * Which of the four was right. The round's authority says so with the answer;
+ * an older authority that does not can still be read by label, and a practice
+ * round knows its own answer. When none of the three can say, nothing is marked
+ * right rather than something being marked by a guess.
+ */
+function oneMoreTuneCorrectChoiceId(question) {
+  if (!question) return "";
+  if (question.correctChoice) return String(question.correctChoice);
+  if (question.localAnswer) return `local-${question.localAnswer}-choice`;
+  const product = String(question.reveal?.product || "").trim();
+  const match = product ? (question.choices || []).filter((choice) => choice.label === product) : [];
+  return match.length === 1 ? match[0].id : "";
+}
+
+const ONE_MORE_TUNE_TICK = '<svg class="omt-mark" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4.5 10.5l3.6 3.6 7.4-8"></path></svg>';
+const ONE_MORE_TUNE_CROSS = '<svg class="omt-mark" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M5.5 5.5l9 9M14.5 5.5l-9 9"></path></svg>';
+
+/**
  * The challenge faces.
  *
- * A question face may show the prompt, the player and the four choices, and
- * nothing else: the reveal comes back from the server with the submission, so
- * there is no answer in the page to hide in the first place.
+ * A question face may show the progress, the record, the question and the four
+ * choices, and nothing else: the reveal comes back from the server with the
+ * submission, so there is no answer in the page to hide in the first place.
  */
 function renderOneMoreTuneChallenge(body) {
   if (!oneMoreTuneRound) {
     // Every card the player can see plays; where its sound comes from is not
-    // the player's business, so the start screen names none of it.
+    // the player's business, so the start screen names none of it. A round this
+    // device already reached into comes first, as a round rather than a start
+    // button, and starting a fresh ten stays beside it.
     const count = oneMoreTuneChallengePool().length || oneMoreTuneRoundPool().length;
-    // A round this device already reached into comes first, as a round rather
-    // than a start button: Lifeline's wrist raises, the story is where it was
-    // left, and the decision is one tap. Starting a fresh ten stays available
-    // beside it, and starting one clears the remembered place.
     const resumable = oneMoreTuneResumableRound();
     const resumeLine = resumable
-      ? `<button class="btn default" type="button" data-one-more-tune-command="one-more-tune-resume-round">${oneMoreTuneEscape(t("one_more_tune_continue_round").replace("{n}", String(resumable.index + 1)))}</button>`
+      ? `<button class="omt-next" type="button" data-one-more-tune-command="one-more-tune-resume-round">${oneMoreTuneEscape(t("one_more_tune_continue_round").replace("{n}", String(resumable.index + 1)))}</button>`
       : "";
-    body.innerHTML = `
-      <section class="one-more-tune-study one-more-tune-challenge-idle">
-        <div class="sectiontag"><span class="eyebrow">AN UNOFFICIAL APPLE MUSIC QUIZ</span><span class="tag on" data-i18n="one_more_tune_tag_ten">Ten a round</span></div>
-        <h1>${t("one_more_tune_hero_line")}</h1>
-        <p class="intro">${t("one_more_tune_hero_intro")}</p>
-        <div class="featureline"><span data-i18n="one_more_tune_feature_ten">Every round is ten</span><span data-i18n="one_more_tune_feature_untimed">No clock</span><span data-i18n="one_more_tune_feature_reveal">The reveal opens the original</span></div>
-        <div class="toolbar">
-          ${resumeLine}
-          <button class="btn${resumable ? " light" : ""}" type="button" data-one-more-tune-command="one-more-tune-start-round"${count ? "" : " disabled"} data-i18n="one_more_tune_start_round">Start a round</button>
-          <label class="linkbutton" for="one-more-tune-challenge-input" data-i18n="one_more_tune_challenge_code_label">Sent a set?</label>
-          <input id="one-more-tune-challenge-input" class="one-more-tune-challenge-input" type="text" autocomplete="off" spellcheck="false"
-            data-i18n-placeholder="one_more_tune_challenge_code_placeholder" placeholder="OMT.1.xxxxxxxx" />
-          <button class="btn light smallbtn" type="button" data-one-more-tune-command="one-more-tune-open-challenge" data-i18n="one_more_tune_challenge_code_open">Open that set</button>
-        </div>
-      </section>`;
+    body.innerHTML = oneMoreTuneRoom("idle", `
+          <div class="omt-track"><p class="omt-kicker"><span data-i18n="one_more_tune_feature_ten">Every round is ten</span><span data-i18n="one_more_tune_feature_untimed">No clock</span><span data-i18n="one_more_tune_feature_reveal">The reveal opens the original</span></p></div>
+          ${oneMoreTuneRoundStage(null, { idle: true })}
+          <div class="omt-gap"></div>
+          <div class="omt-q"><h2 class="omt-step-title" id="one-more-tune-step-title">${t("one_more_tune_hero_line")}</h2><p class="omt-intro">${t("one_more_tune_hero_intro")}</p></div>
+          <div class="omt-opts">
+            <div class="omt-start">${resumeLine}<button class="${resumable ? "omt-2nd" : "omt-next"}" type="button" data-one-more-tune-command="one-more-tune-start-round"${count ? "" : " disabled"} data-i18n="one_more_tune_start_round">Start a round</button></div>
+            <div class="omt-code">
+              <label class="omt-code-label" for="one-more-tune-challenge-input" data-i18n="one_more_tune_challenge_code_label">Sent a set?</label>
+              <input id="one-more-tune-challenge-input" type="text" autocomplete="off" spellcheck="false" data-i18n-placeholder="one_more_tune_challenge_code_placeholder" placeholder="OMT.1.xxxxxxxx" />
+              <button class="omt-2nd" type="button" data-one-more-tune-command="one-more-tune-open-challenge" data-i18n="one_more_tune_challenge_code_open">Open that set</button>
+            </div>
+          </div>`);
     return;
   }
   const question = oneMoreTuneQuestion();
@@ -4041,71 +4596,93 @@ function renderOneMoreTuneChallenge(body) {
       renderOneMoreTuneAnswerUnaccepted(body);
       return;
     }
+    // An answer sent and not yet scored: the face stays as it is, with the
+    // chosen row held down, until the authority answers.
+    if (question.pending) return;
     const reveal = question.reveal || {};
     // The reveal is the only challenge render that names anything.
     if (reveal.song) announceOneMoreTuneNowPlaying(reveal);
     const verdictKey = question.correct ? "one_more_tune_right"
       : question.outcome === "skipped" ? "one_more_tune_skipped"
         : "one_more_tune_wrong";
-    // The reveal keeps the question's own shape: the stage on the left, the
-    // record and the way onward on the right. The answers were given in that
-    // right-hand column, so "Next" comes back in the same place rather than at
-    // the far end of a 1120px row, and "Play again" is not here at all: another
-    // round is what the round's own end offers, once the ten are done.
-    body.innerHTML = `
-      <section class="one-more-tune-study one-more-tune-step-reveal one-more-tune-round-reveal">
-        <div class="sectiontag">
-          <span class="eyebrow">QUESTION ${String(oneMoreTuneRound.index + 1).padStart(2, "0")} / ${oneMoreTuneRound.questions.length}</span>
-          <span class="tag${question.correct ? " on" : ""}" data-i18n="${verdictKey}">${question.correct ? "Right" : "Not that one"}</span>
-        </div>
-        ${oneMoreTuneRoundStage(question)}
-        <div class="reveal show"><div class="revealbox">
-          ${oneMoreTuneEraBand(reveal)}
-          <h3>${oneMoreTuneEscape(reveal.product)}</h3>
-          <p>${oneMoreTuneEscape(reveal.song)} · ${oneMoreTuneEscape(reveal.artist)}<br>${oneMoreTuneEscape(reveal.film)}${reveal.year ? ` · ${reveal.year}` : ""}</p>
-        </div></div>
-        <div class="one-more-tune-round-tail">
-          <div class="toolbar">
-            ${oneMoreTunePlainLinks(reveal)}
-          </div>
-          ${oneMoreTuneRevealPlayer(reveal)}
-          <p class="previewnote"><span>${t("one_more_tune_points_plain").replace("{points}", String(question.points))}</span><span>${question.mediaFailed ? oneMoreTuneEscape(t("one_more_tune_result_broken")) : ""}</span></p>
-          <div class="toolbar">
-            <button class="btn default" type="button" data-one-more-tune-command="one-more-tune-round-next" data-i18n="one_more_tune_next">Next</button>
-          </div>
-        </div>
-      </section>`;
+    const enter = !question.revealPainted;
+    question.revealPainted = true;
+    const notes = oneMoreTuneLinerNotes(reveal) || { song: "", artist: "", film: "", year: "", era: null };
+    const last = oneMoreTuneRound.index + 1 >= oneMoreTuneRound.questions.length;
+    const correctId = oneMoreTuneCorrectChoiceId(question);
+    const picked = question.outcome === "answered" ? question.chosen : "";
+    // The four answers stay where they were asked. The right one fills and is
+    // ticked, a wrong pick is struck through, and the two that had nothing to
+    // do with it fold away — on the first paint only; later paints omit them.
+    const rows = (question.choices || []).map((choice, index) => {
+      const isRight = choice.id === correctId;
+      const isPick = choice.id === picked && !isRight;
+      const text = `<span class="omt-key" aria-hidden="true">${index + 1}</span><span class="omt-opt-label">${oneMoreTuneEscape(choice.label)}</span>`;
+      if (!isRight && !isPick) {
+        return enter ? `<div class="omt-ow" data-gone aria-hidden="true"><div class="omt-opt"><span class="omt-opt-in">${text}</span></div></div>` : "";
+      }
+      const role = isRight ? t("one_more_tune_row_answer") : t("one_more_tune_row_yours");
+      return `<div class="omt-ow"><div class="omt-opt" data-state="${isRight ? "right" : "wrong"}"${enter && !isRight ? " data-shake" : ""}><span class="omt-opt-in">${text}<span class="omt-sr">${oneMoreTuneEscape(role)}</span>${isRight ? ONE_MORE_TUNE_TICK : ONE_MORE_TUNE_CROSS}</span></div></div>`;
+    }).join("");
+    // The two doors stay in the record's notes, on the line that says where the
+    // music came from: the whole song, and the original in its own window.
+    const watch = oneMoreTuneWatchLink(reveal);
+    const film = watch
+      ? `<button class="omt-link" type="button" data-one-more-tune-command="one-more-tune-play-film" data-one-more-tune-video-id="${oneMoreTuneEscape(reveal.videoId)}" data-one-more-tune-start="${watch.anchor === null ? "" : Math.floor(watch.anchor)}" data-i18n="one_more_tune_watch_plain">Watch the original</button>`
+      : "";
+    const listen = reveal.song ? oneMoreTuneListenLink(reveal) : "";
+    const links = listen || film ? `<span class="omt-links">${listen}${film}</span>` : "";
+    const where = [
+      notes.film ? `<span>${oneMoreTuneEscape(notes.film)}</span>` : "",
+      `<span>${oneMoreTuneEscape(notes.year || t("one_more_tune_era_unknown"))}</span>`,
+      notes.era ? `<span class="omt-era-name" data-era="${notes.era.id}"><i aria-hidden="true"></i>${oneMoreTuneEscape(notes.era.name)}</span>` : "",
+    ].join("");
+    oneMoreTuneCarryRecord(body, question.token, () => {
+      body.innerHTML = oneMoreTuneRoom("reveal", `
+          <div class="omt-track">${oneMoreTuneTrackList(oneMoreTuneRound, { enter })}<span class="omt-verdict" data-s="${question.correct ? "right" : question.outcome === "skipped" ? "skip" : "wrong"}"><span aria-hidden="true">${question.correct ? "✓" : question.outcome === "skipped" ? "–" : "✕"}</span><span data-i18n="${verdictKey}">${oneMoreTuneEscape(t(verdictKey))}</span></span></div>
+          ${oneMoreTuneRoundStage(question)}
+          <div class="omt-gap"></div>
+          <div class="omt-q"><div class="omt-notes">
+            <h2 class="omt-song" id="one-more-tune-step-title">${oneMoreTuneEscape(notes.song)}</h2>
+            ${notes.artist ? `<p class="omt-artist">${oneMoreTuneEscape(notes.artist)}</p>` : ""}
+            <p class="omt-meta">${where}${links}</p>
+            ${question.mediaFailed ? `<p class="omt-note" data-i18n="one_more_tune_result_broken">${oneMoreTuneEscape(t("one_more_tune_result_broken"))}</p>` : ""}
+          </div></div>
+          <div class="omt-opts">
+            <div class="omt-grid">${rows}</div>
+            <div class="omt-act"><button class="omt-next" type="button" data-one-more-tune-command="one-more-tune-round-next" data-i18n="${last ? "one_more_tune_see_result" : "one_more_tune_next"}">${oneMoreTuneEscape(t(last ? "one_more_tune_see_result" : "one_more_tune_next"))}</button></div>
+          </div>`, { era: notes.era ? notes.era.id : "", enter });
+    });
+    // The fold is the motion; the removal is the fact. Once the two rows have
+    // had their 260ms they leave the page, so a fold interrupted by the desk
+    // changing appearance mid-reveal cannot leave them holding their space.
+    if (enter && typeof setTimeout === "function") {
+      setTimeout(() => body.querySelectorAll?.(".omt-room [data-gone]").forEach((row) => row.remove()), 300);
+    }
     return;
   }
   clearOneMoreTuneNowPlaying();
-  // What the question's face is: the progress, the player, the question and the
-  // four answers. The two state chips that used to sit here ("not revealed yet",
-  // "sound has started") said nothing the face did not already show, and the
-  // four controls that sat under it were a pile of buttons for commands a menu
-  // is for: skip, give up, leave, replay. Those live in the Study menu now, and
-  // the one state that still has to be said out loud is a cue that could not
-  // play — because that is the moment the player has to act on it.
-  const rightSoFar = oneMoreTuneRound.questions.filter((entry) => entry.correct).length;
   // The face is about to be painted, so the sound it will be asked for is
   // fetched and decoded now rather than inside the reader's press.
   preloadOneMoreTuneQuestion(question);
-  body.innerHTML = `
-      <section class="one-more-tune-study one-more-tune-step-challenge one-more-tune-face" aria-labelledby="one-more-tune-step-title">
-        <div class="sectiontag">
-          <span class="eyebrow">QUESTION ${String(oneMoreTuneRound.index + 1).padStart(2, "0")} / ${oneMoreTuneRound.questions.length}</span>
-          <span class="tag">${oneMoreTuneEscape(t("one_more_tune_score_so_far").replace("{right}", String(rightSoFar)))}</span>
-        </div>
-        ${oneMoreTuneRoundStage(question)}
-        ${oneMoreTuneSongEmbed(question)}
-        ${question.mediaFailed ? `<p class="playstate"><span class="tag" data-i18n="one_more_tune_media_failed">${oneMoreTuneEscape(t("one_more_tune_media_failed"))}</span><span class="hint" data-i18n="one_more_tune_media_failed_hint">${oneMoreTuneEscape(t("one_more_tune_media_failed_hint"))}</span></p>` : ""}
-        ${oneMoreTuneArrivedFromLink && !question.everHeard ? `<p class="playstate"><span class="tag" data-i18n="one_more_tune_tap_to_hear">${oneMoreTuneEscape(t("one_more_tune_tap_to_hear"))}</span><span class="hint" data-i18n="one_more_tune_tap_to_hear_hint">${oneMoreTuneEscape(t("one_more_tune_tap_to_hear_hint"))}</span></p>` : ""}
-        <div class="one-more-tune-ask">
-          <div class="questionlabel" id="one-more-tune-step-title" data-i18n="${question.prompt}">Which one does this belong to?</div>
-          <div class="choices">
-            ${question.choices.map((choice, index) => `<button class="choice" type="button" data-one-more-tune-submit="${oneMoreTuneEscape(choice.id)}"><span class="letter">${String.fromCharCode(65 + index)}</span>${oneMoreTuneEscape(choice.label)}</button>`).join("")}
-          </div>
-        </div>
-      </section>`;
+  // The one state that still has to be said out loud is a cue that could not
+  // play, because that is the moment the player has to act on it. Skip, give
+  // up, leave and replay are menu rows; the record itself is the replay.
+  const notice = question.mediaFailed
+    ? `<p class="omt-note" role="status"><span data-i18n="one_more_tune_media_failed">${oneMoreTuneEscape(t("one_more_tune_media_failed"))}</span> <span data-i18n="one_more_tune_media_failed_hint">${oneMoreTuneEscape(t("one_more_tune_media_failed_hint"))}</span></p>`
+    : oneMoreTuneArrivedFromLink && !question.everHeard
+      ? `<p class="omt-note"><span data-i18n="one_more_tune_tap_to_hear">${oneMoreTuneEscape(t("one_more_tune_tap_to_hear"))}</span> <span data-i18n="one_more_tune_tap_to_hear_hint">${oneMoreTuneEscape(t("one_more_tune_tap_to_hear_hint"))}</span></p>`
+      : "";
+  oneMoreTuneCarryRecord(body, question.token, () => {
+    body.innerHTML = oneMoreTuneRoom("question", `
+          <div class="omt-track">${oneMoreTuneTrackList(oneMoreTuneRound)}<span class="omt-aux mono" aria-hidden="true"><span data-disc-elapsed>— : —</span><span class="omt-sep">/</span><span data-disc-total>— : —</span></span></div>
+          ${oneMoreTuneRoundStage(question)}
+          <div class="omt-gap"></div>
+          <div class="omt-q"><h2 class="omt-qtext" id="one-more-tune-step-title" data-i18n="${question.prompt}">Which one does this belong to?</h2>${notice}${oneMoreTuneSongEmbed(question)}</div>
+          <div class="omt-opts"><div class="omt-grid">
+            ${question.choices.map((choice, index) => `<div class="omt-ow"><button class="omt-opt" type="button" data-one-more-tune-submit="${oneMoreTuneEscape(choice.id)}"><span class="omt-opt-in"><span class="omt-key" aria-hidden="true">${index + 1}</span><span class="omt-opt-label">${oneMoreTuneEscape(choice.label)}</span></span></button></div>`).join("")}
+          </div></div>`);
+  });
 }
 
 /**
@@ -4384,91 +4961,97 @@ function renderOneMoreTuneLine(body) {
  */
 function renderOneMoreTuneAnswerUnaccepted(body) {
   clearOneMoreTuneNowPlaying();
-  body.innerHTML = `
-      <section class="one-more-tune-study one-more-tune-step-reveal one-more-tune-answer-refused" aria-labelledby="one-more-tune-step-title">
-        <div class="sectiontag">
-          <span class="eyebrow">QUESTION ${String(oneMoreTuneRound.index + 1).padStart(2, "0")} / ${oneMoreTuneRound.questions.length}</span>
-          <span class="tag" data-i18n="one_more_tune_answer_unaccepted">${oneMoreTuneEscape(t("one_more_tune_answer_unaccepted"))}</span>
-        </div>
-        <div class="reveal show"><div class="revealbox">
-          <h3 id="one-more-tune-step-title" data-i18n="one_more_tune_answer_failed">${oneMoreTuneEscape(t("one_more_tune_answer_failed"))}</h3>
-          <p data-i18n="one_more_tune_answer_unaccepted_hint">${oneMoreTuneEscape(t("one_more_tune_answer_unaccepted_hint"))}</p>
-        </div></div>
-        <div class="toolbar">
-          <button class="btn default" type="button" data-one-more-tune-command="one-more-tune-answer-retry" data-i18n="one_more_tune_answer_retry">${oneMoreTuneEscape(t("one_more_tune_answer_retry"))}</button>
-          <button class="btn light" type="button" data-one-more-tune-command="one-more-tune-round-next" data-i18n="one_more_tune_next">Next</button>
-          <button class="btn light" type="button" data-one-more-tune-command="one-more-tune-play-again" data-i18n="one_more_tune_play_again">Play again</button>
-        </div>
-      </section>`;
+  const question = oneMoreTuneQuestion();
+  oneMoreTuneCarryRecord(body, question?.token || "", () => {
+    body.innerHTML = oneMoreTuneRoom("refused", `
+          <div class="omt-track">${oneMoreTuneTrackList(oneMoreTuneRound)}<span class="omt-verdict" data-s="broken"><span aria-hidden="true">!</span><span data-i18n="one_more_tune_answer_unaccepted">${oneMoreTuneEscape(t("one_more_tune_answer_unaccepted"))}</span></span></div>
+          ${oneMoreTuneRoundStage(question)}
+          <div class="omt-gap"></div>
+          <div class="omt-q"><h2 class="omt-qtext" id="one-more-tune-step-title" data-i18n="one_more_tune_answer_failed">${oneMoreTuneEscape(t("one_more_tune_answer_failed"))}</h2>
+            <p class="omt-note" data-i18n="one_more_tune_answer_unaccepted_hint">${oneMoreTuneEscape(t("one_more_tune_answer_unaccepted_hint"))}</p></div>
+          <div class="omt-opts"><div class="omt-act">
+            <button class="omt-next" type="button" data-one-more-tune-command="one-more-tune-answer-retry" data-i18n="one_more_tune_answer_retry">${oneMoreTuneEscape(t("one_more_tune_answer_retry"))}</button>
+            <button class="omt-2nd" type="button" data-one-more-tune-command="one-more-tune-round-next" data-i18n="one_more_tune_next">${oneMoreTuneEscape(t("one_more_tune_next"))}</button>
+          </div></div>`);
+  });
 }
 
+/**
+ * The back cover: the round as the record it was.
+ *
+ * A small record whose ten rings are the ten cards' eras — the round's own
+ * fingerprint, and colour only where every answer is already out — the score
+ * on its label, the ten tracks in one column (two on a wide window), and the
+ * two things a finished round is for: another ten, or sending this one on.
+ * Reviewing the misses lives in the Study menu.
+ */
 function renderOneMoreTuneRoundResult(body) {
   const questions = oneMoreTuneRound.questions;
   const right = questions.filter((question) => question.correct).length;
-  const broken = questions.filter((question) => question.mediaFailed && !question.correct).length;
-  const answered = questions.filter((question) => question.outcome === "answered").length;
-  body.innerHTML = `
-      <section class="one-more-tune-study one-more-tune-round-result">
-        <h3 data-i18n="one_more_tune_round_done">Round finished</h3>
-        <p class="one-more-tune-score">${right} / ${questions.length}</p>
-        <p class="one-more-tune-score-line">${t("one_more_tune_round_line")
-          .replace("{right}", String(right))
-          .replace("{answered}", String(answered))
-          .replace("{broken}", String(broken))}</p>
-        ${oneMoreTuneRound.setId ? `<p class="one-more-tune-set-line eyebrow">${oneMoreTuneEscape(t("one_more_tune_share_card_set")
-          .replace("{setId}", oneMoreTuneSetNumber())
-          .replace("{version}", String(oneMoreTuneRound.deckVersion || 1)))}</p>` : ""}
-        <ul class="one-more-tune-review-list">
-          ${questions.map((question) => {
-            const reveal = question.reveal || {};
-            // Five outcomes, not two: right, wrong, skipped, a cue that never
-            // played, and an answer the round would not take. The design asks
-            // the review to name each one; a skip is not a wrong answer, and an
-            // answer that never left is not one either.
-            const mark = question.correct ? "✓"
-              : question.answerFailed ? "!"
-                : question.mediaFailed ? "⚠"
-                  : question.outcome === "skipped" ? "–" : "✗";
-            const stateKey = question.correct ? "one_more_tune_right"
-              : question.answerFailed ? "one_more_tune_answer_unaccepted"
-                : question.mediaFailed ? "one_more_tune_result_broken"
-                  : question.outcome === "skipped" ? "one_more_tune_skipped"
-                    : "one_more_tune_wrong";
-            // The row carries its own outcome in words even where the phone
-            // hides the state line to keep ten answers on one screen: the mark
-            // is decorative, so the sentence is what a screen reader reads.
-            const stateLabel = t(stateKey);
-            // A question whose reveal never arrived has no song to name, so the
-            // row names its state instead of printing " — " over nothing.
-            const named = reveal.song
-              ? `<strong>${oneMoreTuneEscape(reveal.song)}</strong> — ${oneMoreTuneEscape(reveal.artist)}<br /><span class="hint">${oneMoreTuneEscape(reveal.product)} · ${oneMoreTuneEscape(reveal.film)}</span>`
-              : `<strong>${oneMoreTuneEscape(stateLabel)}</strong>`;
-            const rowLabel = reveal.song ? `${reveal.song} — ${reveal.artist}, ${stateLabel}` : stateLabel;
-            return `<li aria-label="${oneMoreTuneEscape(rowLabel)}"><span class="one-more-tune-review-mark" aria-hidden="true">${mark}</span><div class="one-more-tune-review-text">${named}<br /><span class="one-more-tune-review-state" data-i18n="${stateKey}">${stateLabel}</span>${reveal.song ? oneMoreTunePlainLinks(reveal) : ""}</div></li>`;
-          }).join("")}
-        </ul>
-        <div class="one-more-tune-result-actions">
-          <div class="one-more-tune-step-actions">
-            <button class="btn default" type="button" data-one-more-tune-command="one-more-tune-play-again" data-i18n="one_more_tune_play_again">Play again</button>
-            <button class="btn" type="button" data-one-more-tune-command="one-more-tune-share-round" data-i18n="one_more_tune_share_round">Send this round to a friend</button>
-            <button class="btn" type="button" data-one-more-tune-command="one-more-tune-review-misses" data-i18n="one_more_tune_queue_misses">Add the misses to review</button>
+  const broken = questions.filter((question) => (question.mediaFailed || question.answerFailed) && !question.correct).length;
+  const skipped = questions.filter((question) => question.outcome === "skipped" && !question.mediaFailed).length;
+  const wrong = questions.length - right - broken - skipped;
+  // One custom property per ring, named for its track; the sheet owns the
+  // gradient, and the 1-bit desk swaps every era for its own ink.
+  const rings = questions.slice(0, 10).map((question, index) => {
+    const era = question.reveal ? oneMoreTuneEra(question.reveal) : null;
+    return `--omt-r${index + 1}:var(--omt-ring-${era && era.id !== "none" ? era.id : "none"})`;
+  }).join(";");
+  const counts = t("one_more_tune_round_counts")
+    .replace("{right}", String(right))
+    .replace("{wrong}", String(wrong))
+    .replace("{skipped}", String(skipped + broken));
+  const setLine = oneMoreTuneRound.setId
+    ? ` · ${oneMoreTuneEscape(t("one_more_tune_share_card_set")
+      .replace("{setId}", oneMoreTuneSetNumber())
+      .replace("{version}", String(oneMoreTuneRound.deckVersion || 1)))}`
+    : "";
+  const rows = questions.map((question, index) => {
+    const reveal = question.reveal || {};
+    const era = question.reveal ? oneMoreTuneEra(reveal) : null;
+    // Five outcomes, not two: right, wrong, skipped, a cue that never played,
+    // and an answer the round would not take. A skip is not a wrong answer, and
+    // an answer that never left is not one either.
+    const state = question.correct ? "right"
+      : question.answerFailed ? "unaccepted"
+        : question.mediaFailed ? "broken"
+          : question.outcome === "skipped" ? "skip" : "wrong";
+    const stateKey = { right: "one_more_tune_right", unaccepted: "one_more_tune_answer_unaccepted", broken: "one_more_tune_result_broken", skip: "one_more_tune_skipped", wrong: "one_more_tune_wrong" }[state];
+    const mark = { right: "✓", wrong: "✕", skip: "–", broken: "⚠", unaccepted: "!" }[state];
+    const stateLabel = t(stateKey);
+    const named = reveal.song
+      ? `<b>${oneMoreTuneEscape(reveal.song)}</b>${reveal.artist ? `<span>${oneMoreTuneEscape(reveal.artist)}</span>` : ""}`
+      : `<b>${oneMoreTuneEscape(stateLabel)}</b>`;
+    const rowLabel = reveal.song ? `${reveal.song} — ${reveal.artist || ""}, ${stateLabel}` : stateLabel;
+    return `<li data-s="${state}" aria-label="${oneMoreTuneEscape(rowLabel)}"><span class="omt-no" aria-hidden="true">${oneMoreTuneTrackCode(index)}</span><i class="omt-dot"${era && era.id !== "none" ? ` data-era="${era.id}"` : ""} aria-hidden="true"></i><span class="omt-t" aria-hidden="true">${named}</span><span class="omt-mark-text" aria-hidden="true">${mark}</span></li>`;
+  }).join("");
+  body.innerHTML = oneMoreTuneRoom("result", `
+          <header class="omt-rhead">
+            <span class="omt-mini" style="${rings}" aria-hidden="true"><span class="omt-label omt-label-white"><b>${right}/${questions.length}</b></span></span>
+            <div><h2 class="omt-score" id="one-more-tune-step-title"><span class="omt-sr" data-i18n="one_more_tune_round_done">Round finished</span>${right}<span class="omt-of">/${questions.length}</span></h2>
+            <p class="omt-rsub">${oneMoreTuneEscape(counts)}${setLine}</p></div>
+          </header>
+          <ol class="omt-list">${rows}</ol>
+          <div class="omt-gap"></div>
+          <div class="omt-racts">
+            <button class="omt-next" type="button" data-one-more-tune-command="one-more-tune-play-again" data-i18n="one_more_tune_play_again">Play again</button>
+            <button class="omt-2nd" type="button" data-one-more-tune-command="one-more-tune-share-round" data-i18n="one_more_tune_share_friend">Send to a friend</button>
           </div>
-        </div>
-        <p class="hint one-more-tune-desk-line"><a href="/" target="_blank" rel="noopener noreferrer" data-i18n="one_more_tune_desk_link">One More Tune is one app on AI System 6 — open the desk</a></p>
-      </section>`;
+          ${oneMoreTuneArrivedFromLink ? `<p class="omt-desk"><a href="/" target="_blank" rel="noopener noreferrer" data-i18n="one_more_tune_desk_link">Open the desk</a></p>` : ""}`);
 }
 
 /** Put this round's misses back in the review queue, as the spec asks. */
 /**
  * The share card: what actually leaves the desk.
  *
- * The design draws it 1200×1200 and gives it exactly one place for colour — the
- * six bars, top left, which are the mark and therefore the only thing on the
- * card that is allowed to be an era colour. The ten cells are black and white
- * on purpose: right, wrong and skipped are states, and a state that borrowed an
- * era colour would turn the mark into decoration. 9:41 is the card's second
+ * It is the round's own object — the white label — at 1200×1200: ten bands on
+ * the record, solid for a tune named, hollow for a miss, a hairline for a skip
+ * and a dashed one for a cue that never played. It names no song and paints no
+ * band in an era's colour, because a friend is about to play the same ten. Two
+ * places take colour: the six-bar mark, and the label, which wears the era the
+ * round ended in (the owner's rule: the last card decides). 9:41 is the card's
  * private joke — every device on an Apple keynote screen is stopped at that
- * minute — and, like the bars, the card does not explain it.
+ * minute — and the card does not explain it.
  */
 function oneMoreTuneShareCardCanvas() {
   const round = oneMoreTuneRound;
@@ -4486,35 +5069,25 @@ function oneMoreTuneShareCardCanvas() {
   const wrong = questions.filter((question) => question.outcome === "answered" && !question.correct).length;
   const skipped = questions.filter((question) => question.outcome === "skipped" || question.outcome === "failed").length;
   const eras = ["1", "2", "3", "4", "5", "6"];
-
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 0, size, size);
-  // The round wears the era of its last question. The owner's rule for this
-  // card: no fixed house style — the last card decides, so two rounds of the
-  // same ten produce two different cards and the six eras get seen. The mark
-  // stays the six stripes of the 1977 Apple logo either way; this is the ribbon
-  // at the top and the line that names it.
   const closingEra = oneMoreTuneRoundEra(round);
   const eraColor = closingEra ? oneMoreTuneEraColor(closingEra.id) : "";
-  if (closingEra) {
-    if (eraColor) {
-      ctx.fillStyle = eraColor;
-      ctx.fillRect(0, 0, size, 14);
-    } else {
-      // The 1-bit desk has no rainbow: its six eras arrive as six dot
-      // patterns, so the ribbon arrives as the one this era owns.
-      ctx.fillStyle = "#000000";
-      const step = 3 + Number(closingEra.id || 1);
-      for (let x = 0; x < size; x += step) ctx.fillRect(x, 0, Math.min(step - 1, size - x), 14);
-    }
-  }
-  ctx.fillStyle = "#000000";
-  ctx.textBaseline = "alphabetic";
-  ctx.font = `500 30px ${mono}`;
-  ctx.fillText("9:41", 72, 108);
+  const ink = "#F5F5F7";
+  const soft = "#AEAEB4";
+  const hair = "#8A8A90";
+  const text = (value, x, y, style, color, align = "left") => {
+    ctx.font = style;
+    ctx.fillStyle = color;
+    ctx.textAlign = align;
+    ctx.fillText(value, x, y);
+    ctx.textAlign = "left";
+  };
 
-  // The mark: six bars, the only colour on the card. Their heights are fixed
-  // rather than derived so the mark is the same on every card ever exported.
+  ctx.fillStyle = "#111113";
+  ctx.fillRect(0, 0, size, size);
+  ctx.textBaseline = "alphabetic";
+
+  // The mark: six bars, whose heights are fixed rather than derived so the mark
+  // is the same on every card ever exported.
   const heights = [22, 44, 30, 38, 18, 34];
   heights.forEach((height, index) => {
     const color = oneMoreTuneEraColor(eras[index]);
@@ -4522,85 +5095,110 @@ function oneMoreTuneShareCardCanvas() {
     toppaint: {
       if (color) {
         ctx.fillStyle = color;
-        ctx.fillRect(x, 220 - height, 12, height);
+        ctx.fillRect(x, 108 - height, 12, height);
         break toppaint;
       }
       // Classic has no rainbow: the same six-part mark arrives as six dot
-      // patterns, exactly as it does on the 1-bit desk, so a card exported from
-      // that appearance is still the mark rather than six black rectangles.
+      // patterns, exactly as it does on the 1-bit desk.
       const step = 2 + index;
-      ctx.fillStyle = "#000000";
-      for (let y = 220 - height; y < 220; y += step) {
+      ctx.fillStyle = ink;
+      for (let y = 108 - height; y < 108; y += step) {
         for (let dx = 0; dx < 12; dx += step) ctx.fillRect(x + dx, y, Math.min(step - 1, 12 - dx), 1);
       }
     }
   });
-
-  ctx.fillStyle = "#000000";
-  ctx.font = `600 26px ${mono}`;
-  ctx.fillText("ONE MORE TUNE", 72, 300);
-  ctx.font = `400 24px ${mono}`;
-  ctx.fillText(t("one_more_tune_share_card_set")
+  text("ONE MORE TUNE", 72 + 6 * 22 + 14, 108, `600 26px ${mono}`, ink);
+  text(t("one_more_tune_share_card_set")
     .replace("{setId}", oneMoreTuneSetNumber())
-    .replace("{version}", String(round.deckVersion || 1)), 72, 344);
+    .replace("{version}", String(round.deckVersion || 1)), 72, 150, `400 22px ${mono}`, soft);
+  text("9:41", 1128, 108, `500 30px ${mono}`, soft, "right");
 
-  ctx.font = `600 62px ${font}`;
-  const headline = t("one_more_tune_share_card_headline");
-  headline.split("\n").forEach((line, index) => ctx.fillText(line, 72, 470 + index * 76));
-
-  // Ten cells: one per question, filled for right, outlined for wrong, and a
-  // hairline for a question whose sound never played.
-  const cell = 84;
-  const gap = 22;
+  // The record, and one band per question from the rim inward.
+  const cx = 600;
+  const cy = 525;
+  const radius = 320;
+  const circle = (r) => {
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  };
+  circle(radius);
+  ctx.fillStyle = "#0B0B0C";
+  ctx.fill();
+  ctx.strokeStyle = "#1A1A1C";
+  ctx.lineWidth = 1;
+  for (let r = radius * 0.36; r <= radius * 0.95; r += 3) {
+    circle(r);
+    ctx.stroke();
+  }
   questions.slice(0, 10).forEach((question, index) => {
-    const x = 72 + index * (cell + gap);
-    const y = 640;
+    const outer = radius * (0.955 - 0.06 * index);
+    const inner = outer - radius * 0.05;
+    const mid = (outer + inner) / 2;
     if (question.correct) {
-      ctx.fillStyle = "#000000";
-      ctx.fillRect(x, y, cell, cell);
+      ctx.beginPath();
+      ctx.arc(cx, cy, outer, 0, Math.PI * 2);
+      ctx.arc(cx, cy, inner, 0, Math.PI * 2, true);
+      ctx.fillStyle = ink;
+      ctx.fill();
       return;
     }
-    // Four outcomes, four weights: answered wrong is the heaviest, a skip is a
-    // hairline, and a cue that never played is dashed. A skip is not a miss, so
-    // it must not read like one at a glance.
-    ctx.strokeStyle = "#000000";
-    ctx.lineWidth = question.outcome === "skipped" ? 1 : question.mediaFailed ? 1 : 4;
-    if (question.mediaFailed) ctx.setLineDash([8, 8]);
-    ctx.strokeRect(x + 2, y + 2, cell - 4, cell - 4);
-    ctx.setLineDash([]);
+    // Four outcomes, four weights: a miss is hollow, a skip is a hairline, and
+    // a cue that never played is dashed. A skip is not a miss, so it must not
+    // read like one at a glance.
+    if (question.mediaFailed || question.answerFailed) {
+      ctx.setLineDash([8, 8]);
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = hair;
+      circle(mid);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      return;
+    }
+    if (question.outcome === "skipped") {
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = hair;
+      circle(mid);
+      ctx.stroke();
+      return;
+    }
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = ink;
+    circle(outer - 1.5);
+    ctx.stroke();
+    circle(inner + 1.5);
+    ctx.stroke();
   });
+  // The label wears the era the round ended in — paper on the 1-bit desk, and
+  // paper for a last card nobody dated.
+  circle(radius * 0.31);
+  ctx.fillStyle = eraColor || "#EFEBE1";
+  ctx.fill();
+  const labelInk = eraColor && ["4", "5", "6"].includes(closingEra?.id) ? "#FFFFFF" : "#1D1D1F";
+  text(`${right}/${questions.length}`, cx, 548, `700 88px ${font}`, labelInk, "center");
+  ctx.globalAlpha = 0.65;
+  text("33⅓", cx, 590, `500 24px ${font}`, labelInk, "center");
+  ctx.globalAlpha = 1;
+  circle(7);
+  ctx.fillStyle = "#0B0B0C";
+  ctx.fill();
 
-  ctx.fillStyle = "#000000";
-  ctx.font = `600 44px ${font}`;
-  ctx.fillText(`${right} / ${questions.length}`, 72, 830);
-  ctx.font = `400 24px ${mono}`;
-  ctx.fillText([
+  t("one_more_tune_share_card_headline").split("\n")
+    .forEach((line, index) => text(line, 72, 940 + index * 62, `700 50px ${font}`, ink));
+  text(t("one_more_tune_share_card_invite"), 72, 1068, `600 34px ${font}`, ink);
+  text(oneMoreTuneShareCode() || "", 1128, 1068, `400 28px ${mono}`, soft, "right");
+  const footer = `400 20px ${mono}`;
+  text([
     `${t("one_more_tune_right")} ${right}`,
     `${t("one_more_tune_wrong")} ${wrong}`,
     `${t("one_more_tune_skipped")} ${skipped}`,
-  ].join("   "), 72, 872);
-
-  ctx.font = `600 42px ${font}`;
-  ctx.fillText(t("one_more_tune_share_card_invite"), 72, 1010);
-  ctx.font = `400 28px ${mono}`;
-  ctx.fillText(oneMoreTuneShareCode() || "", 72, 1068);
-  // The era the round ended in, in words: the ribbon above says which one, and
-  // a colour is never the only thing that says anything on this card.
-  if (closingEra) {
-    ctx.font = `400 22px ${mono}`;
-    ctx.fillText(t("one_more_tune_share_card_era").replace("{era}", closingEra.name), 72, 1108);
-  }
-  // The desk the quiz is an app on. A card is the one thing here that travels
-  // without the link around it, so the address travels with the card: whoever
-  // sees a screenshot can find the desk it came from.
-  ctx.font = `400 22px ${mono}`;
-  ctx.fillText(t("one_more_tune_share_card_desk")
-    .replace("{host}", String(window.location?.host || "system6.aaronlau.me")), 72, 1132);
-  // The one place the owner asked to be found. The card is the only thing here
-  // that travels without a link around it, so where to follow the person who
-  // made it travels with the card too.
-  ctx.fillText(t("one_more_tune_share_card_bilibili")
-    .replace("{handle}", ONE_MORE_TUNE_BILIBILI), 72, 1164);
+  ].join("   "), 72, 1122, footer, soft);
+  // The era the round ended in, in words: a colour is never the only thing that
+  // says anything on this card.
+  if (closingEra) text(t("one_more_tune_share_card_era").replace("{era}", closingEra.name), 1128, 1122, footer, soft, "right");
+  // The desk the quiz is an app on, and where to follow the person who made it:
+  // a card is the one thing here that travels without the link around it.
+  text(t("one_more_tune_share_card_desk").replace("{host}", String(window.location?.host || "system6.aaronlau.me")), 72, 1156, footer, soft);
+  text(t("one_more_tune_share_card_bilibili").replace("{handle}", ONE_MORE_TUNE_BILIBILI), 72, 1184, footer, soft);
   return canvas;
 }
 
@@ -5033,6 +5631,7 @@ const ONE_MORE_TUNE_COMMAND_NAMES = [
   "one-more-tune-find-film",
   "one-more-tune-share-card-image",
   "one-more-tune-shelf",
+  "one-more-tune-study-view",
   "one-more-tune-challenge",
   "one-more-tune-sources",
   "one-more-tune-study-hear",
@@ -5198,6 +5797,7 @@ function runOneMoreTuneCommand(action) {
     return void submitOneMoreTuneAnswer("", { outcome: "skipped" });
   }
   if (action === "one-more-tune-shelf") return void setOneMoreTuneView("shelf");
+  if (action === "one-more-tune-study-view") return void setOneMoreTuneView("study");
   if (action === "one-more-tune-challenge") return void setOneMoreTuneView("challenge");
   if (action === "one-more-tune-sources") return void setOneMoreTuneView("sources");
   if (action === "one-more-tune-study-hear") {
@@ -5403,6 +6003,16 @@ function handleOneMoreTuneKeydown(event) {
       return;
     }
   }
+  // 1–4 answer the question in front of you — the keys the four rows are
+  // numbered with on a desk. A phone never shows the numbers.
+  if (/^[1-4]$/.test(event.key) && oneMoreTuneRound && oneMoreTuneQuestion() && !oneMoreTuneQuestion().submitted) {
+    const choice = oneMoreTuneQuestion().choices?.[Number(event.key) - 1];
+    if (choice) {
+      event.preventDefault();
+      void submitOneMoreTuneAnswer(choice.id);
+    }
+    return;
+  }
   if (event.key === "Enter" && oneMoreTuneRound && oneMoreTuneQuestion()?.submitted) {
     event.preventDefault();
     runOneMoreTuneCommand("one-more-tune-round-next");
@@ -5541,7 +6151,7 @@ function disposeOneMoreTune() {
   oneMoreTuneRound = null;
   oneMoreTuneKeynoteRound = null;
   oneMoreTuneUndo = null;
-  oneMoreTuneAudio = { context: null, buffers: new Map(), elements: new Map(), node: null, gate: null, stopTimer: null, playingCardId: "", wechatHooked: false };
+  oneMoreTuneAudio = { context: null, buffers: new Map(), elements: new Map(), node: null, gate: null, stopTimer: null, playingCardId: "", wechatHooked: false, gateArmed: undefined, cueSource: "", cueStart: null, cueEnd: null, cueClockAt: null, discFrame: 0, discAt: 0, pendingCue: false };
 }
 
 // Playing music is exactly the thing a backgrounded application must stop
@@ -5614,7 +6224,10 @@ window.AISystem6RegisterApplicationMenuSet?.("oneMoreTune", [
       { type: "item", action: "one-more-tune-share-card-image", labelKey: "one_more_tune_share_card_image", conditionId: "one-more-tune-share-card-image" },
       { type: "item", action: "one-more-tune-share-score", labelKey: "one_more_tune_share_score", conditionId: "one-more-tune-share-score" },
       { type: "separator" },
+      // The places a person goes to on purpose. They left the tab row when the
+      // round became a room, and this is where they are reached from.
       { type: "item", action: "one-more-tune-shelf", labelKey: "one_more_tune_view_shelf", conditionId: "one-more-tune-shelf" },
+      { type: "item", action: "one-more-tune-study-view", labelKey: "one_more_tune_view_study", conditionId: "one-more-tune-study-view" },
       { type: "item", action: "one-more-tune-end-session", labelKey: "one_more_tune_back_to_shelf", conditionId: "one-more-tune-end-session" },
     ],
   },

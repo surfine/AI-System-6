@@ -1,6 +1,6 @@
 window.AISystem6LaunchIntent = {
   parse(search) {
-    const appearances = "classic platinum aqua snow-leopard yosemite big-sur liquid-glass nextstep".split(" ");
+    const appearances = (window.AISystem6Theme?.themes || []).map(({ id }) => id);
     const commands = {
       micropolis: "open-micropolis",
       teachtext: "open-teachtext",
@@ -69,6 +69,7 @@ window.AISystem6LaunchIntent = {
       noport: { command: "open-shared-disk-noport", window: "teachText", profile: "writing" },
       cdma4: { command: "open-shared-disk-cdma4", window: "teachText", profile: "writing" },
       iphone17: { command: "open-shared-disk-iphone17", window: "teachText", profile: "writing" },
+      windowshade: { command: "open-shared-disk-windowshade", window: "teachText", profile: "writing" },
     };
     const param = (name) => {
       const match = String(search || "").match(new RegExp(`[?&]${name}=([^&#]+)`, "i"));

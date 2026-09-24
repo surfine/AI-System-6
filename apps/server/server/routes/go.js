@@ -50,6 +50,7 @@ const LAUNCH_ROUTES = new Map([
   ["noport", "open-shared-disk-noport"],
   ["cdma4", "open-shared-disk-cdma4"],
   ["iphone17", "open-shared-disk-iphone17"],
+  ["windowshade", "open-shared-disk-windowshade"],
 ]);
 
 /**

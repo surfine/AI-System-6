@@ -974,11 +974,96 @@ function focusIntoWindow(win) {
   win.focus({ preventScroll: true });
 }
 
+// ---- Miniaturize, and the way back --------------------------------------
+//
+// `is-minimized` is the desk's window state: focusWindow clears it, the
+// application switcher lists it, and the working session stores it. The window
+// that is put away is the same element that comes back.
+//
+// The state machine itself -- the caret and scroll snapshot, the restore, and
+// the lamp an era draws -- lives in app/core/window-minimize.js, which loads
+// only for the appearances that can draw a real minimize control (the registry
+// capability `minimize-lamp`, plus the NeXTSTEP shell that drives it). That is
+// what the floppy budget asks for: an era whose windows never had the button
+// pays nothing at startup for it. What stays here are the guards the boot path
+// needs -- focusWindow, the switcher and the title-bar wiring -- each one a
+// call through the module when it is there and a no-op when it is not.
+function minimizeWindow(win) {
+  return window.AISystem6WindowMinimize?.minimize(win) ?? false;
+}
+
+function restoreMinimizedWindow(win, options) {
+  if (window.AISystem6WindowMinimize) return window.AISystem6WindowMinimize.restore(win, options);
+  // A session saved in NeXTSTEP can reopen into an era that never loads the
+  // module; MultiFinder still lists the window, so its row has to work.
+  if (!win?.classList.contains("is-minimized")) return false;
+  unhideApp(getWindowAppId(win));
+  focusWindow(win);
+  syncMobileAppForeground();
+  renderMultiFinderMenu();
+  scheduleWorkingSessionSave();
+  return true;
+}
+
+function restoreWindowFocus(win) {
+  window.AISystem6WindowMinimize?.restoreFocus(win);
+}
+
+function syncWindowMinimizeLamp(win) {
+  window.AISystem6WindowMinimize?.syncLamp(win);
+}
+
+function syncWindowMinimizeLamps(root) {
+  window.AISystem6WindowMinimize?.syncLamps(root);
+}
+
+// A miniaturized window needs a way back: an appearance that draws the control
+// (the NeXTSTEP miniwindow, or the lamp of an era whose Dock ships with it), or
+// the switcher's list of put-away windows, which only MultiFinder under a
+// system-owned menu bar draws. A desk with neither -- minimize in NeXTSTEP,
+// switch to Classic, reload -- would otherwise keep the manuscript open on no
+// screen and in no list.
+//
+// Such a window is rolled up where it stood rather than released to full
+// size: the writer asked for it out of the way, and WindowShade keeps it out
+// of the way without it ever leaving the desk -- a title bar in its own place,
+// double-click to unroll. On a phone the full-screen window was never hidden
+// (the shell outranks the put-away rule), so there only the flag is cleared.
+function appearanceHoldsMiniwindows() {
+  const theme = window.AISystem6Theme;
+  return (isMultiFinderMode() && !usesApplicationOwnedMenuBar())
+    || theme?.getCurrentTheme?.() === "nextstep" || theme?.hasCapability?.("minimize-lamp") === true;
+}
+
+function releaseOrphanedMiniwindows() {
+  if (appearanceHoldsMiniwindows()) return;
+  const orphans = document.querySelectorAll(".window.is-minimized");
+  if (!orphans.length) return;
+  orphans.forEach((win) => {
+    win.classList.remove("is-minimized");
+    if (win.classList.contains("is-mobile-fullscreen") || win.classList.contains("is-collapsed")) return;
+    // Measured once it is back in the layout, the way toggleCollapsed measures.
+    const width = Math.round(win.getBoundingClientRect().width);
+    if (width > 0) setInlineStyleValue(win, "--window-shade-width", `${width}px`);
+    win.dataset.shadeRestoreHeight = inlineStyleValue(win, "height");
+    win.dataset.shadeRestoreMaxHeight = inlineStyleValue(win, "max-height");
+    setInlineStyleValue(win, "height", "");
+    setInlineStyleValue(win, "max-height", "");
+    win.classList.add("is-collapsed");
+    if (isPortraitDocumentFlow() || isNarrowViewport()) setWindowLayerZ(win, windowPinnedZ);
+  });
+  syncMobileAppForeground();
+  renderMultiFinderMenu();
+  scheduleWorkingSessionSave?.();
+}
+
+document.addEventListener("ai-system6-themechange", releaseOrphanedMiniwindows);
+
 function focusWindow(win, reveal=false) {
   if (!win) return;
   const restoredMiniwindow = win.classList.contains("is-minimized");
   win.classList.remove("is-minimized");
-  if (restoredMiniwindow) window.AISystem6NextstepShell?.restoreFocus(win);
+  if (restoredMiniwindow) restoreWindowFocus(win);
   if (reveal && isPortraitDocumentFlow()) {
     revealWindowTitleInPortraitFlow(win);
   } else {
@@ -1005,10 +1090,10 @@ function focusWindow(win, reveal=false) {
   }
   if (hiddenAppIds.has(activeAppId)) {
     hiddenAppIds.delete(activeAppId);
-    windowsForApp(activeAppId).forEach((appWin) => {
-      appWin.classList.remove("is-app-hidden");
-      delete appWin.dataset.appHiddenCollapsed;
-    });
+    // The Hide mark stays on the windows still rolled up, so switching to the
+    // application later unrolls them; only the writer's own WindowShade on a
+    // window (toggleCollapsed) takes the mark off.
+    windowsForApp(activeAppId).forEach((appWin) => appWin.classList.remove("is-app-hidden"));
   }
 
   if (win.dataset.window === "about") {
@@ -1360,9 +1445,13 @@ function syncFinderVolumeSemantics(winOrName) {
 function finderFrameHasContentRoom(win, frame) {
   const height = Number.parseFloat(frame?.height);
   if (!win || !Number.isFinite(height)) return false;
-  const chrome = [...win.children]
-    .filter((el) => el.matches(".title-bar, .details-bar, .finder-navigation-bar"))
-    .reduce((total, el) => total + el.offsetHeight, 0);
+  // The strips' extent, not the sum of their heights: a toolbar window lays
+  // them side by side in one row, where a sum would count that row three times.
+  const strips = [...win.children]
+    .filter((el) => el.matches(".title-bar, .details-bar, .finder-navigation-bar"));
+  const chrome = strips.length
+    ? Math.max(...strips.map((el) => el.offsetTop + el.offsetHeight)) - Math.min(...strips.map((el) => el.offsetTop))
+    : 0;
   const titleBar = win.querySelector(":scope > .title-bar")?.offsetHeight || 0;
   return height - chrome >= titleBar;
 }
@@ -1667,6 +1756,11 @@ function renderFinderNavigationBar(winOrName) {
     const title = win.querySelector(":scope > .title-bar");
     (details || title)?.after(nav);
   }
+  // A Finder page is a toolbar window: its title bar, details strip and this
+  // bar are sibling strips an era may lay out as one unified toolbar (see
+  // .is-toolbar-window in styles/10-windows.css).
+  win.classList.add("is-toolbar-window");
+  renderFinderSidebar(win, windowName);
 
   nav.setAttribute("aria-label", t("finder_location"));
   const back = nav.querySelector(".finder-navigation-back");
@@ -1714,6 +1808,50 @@ function renderFinderNavigationBar(winOrName) {
       );
     });
     breadcrumbs.append(button);
+  });
+}
+
+// The Finder sidebar of the Mac OS X eras (Snow Leopard, Yosemite, Big Sur,
+// Liquid Glass; decided 2026-09-23). It is the tdi-rail source list, not a new
+// primitive: .tdi-rail is the column, .tdi-source-rail-label the section
+// heading, .tdi-tab the row, so every era's existing rail tokens dress it.
+// Its places are the desktop's own objects and it navigates the way the
+// breadcrumb does. System 6, Platinum, NeXTSTEP and Aqua 10.0 stay spatial:
+// their tokens leave the rail undisplayed (--finder-sidebar-display).
+const finderSidebarSections = [
+  ["finder_sidebar_favorites", [["applications", "applications"], ["documents", "folder"]]],
+  ["finder_sidebar_locations", [["disk", "startupDisk"], ["projects", "projectDisk"], ["textDisk", "fileFloppy"], ["trash", "trash"]]],
+];
+
+function renderFinderSidebar(win, windowName) {
+  let rail = win.querySelector(":scope > .finder-sidebar");
+  if (!rail) {
+    rail = document.createElement("nav");
+    rail.className = "tdi-rail tdi-source-rail finder-sidebar";
+    (win.querySelector(":scope > .finder-navigation-bar") || win.querySelector(":scope > .title-bar"))?.after(rail);
+  }
+  rail.setAttribute("aria-label", t("finder_sidebar"));
+  const floppyMounted = typeof getMountedTextDiskChunks === "function" && getMountedTextDiskChunks().length > 0;
+  rail.replaceChildren();
+  finderSidebarSections.forEach(([headingKey, places]) => {
+    const heading = document.createElement("div");
+    heading.className = "tdi-source-rail-label";
+    heading.textContent = t(headingKey);
+    rail.append(heading);
+    places.forEach(([target, iconId]) => {
+      if (target === "textDisk" && !floppyMounted) return;
+      const here = target === windowName;
+      const row = document.createElement("button");
+      row.type = "button";
+      row.className = here ? "tdi-tab is-active" : "tdi-tab";
+      if (here) row.setAttribute("aria-current", "page");
+      row.innerHTML = `${renderSystemIcon(iconId, { className: "tdi-tab-icon" })}<span class="tdi-tab-copy"><span>${escapeHtml(t(finderLocationLabelKeys.get(target)))}</span></span>`;
+      row.addEventListener("click", (event) => {
+        event.stopPropagation();
+        if (!here) navigateFinderLocation(windowName, target);
+      });
+      rail.append(row);
+    });
   });
 }
 
@@ -3015,16 +3153,15 @@ function updateMenuState() {
       const speed = window.AISystem6BonsaiCity?.currentSpeed?.() || "";
       btn.classList.toggle("is-checked", !!speed && btn.dataset.bonsaiSpeedChoice === speed);
     }
-    if (btn.dataset.clioPaintToolChoice) {
-      const tool = window.AISystem6ClioPaint?.currentTool?.() || "";
-      btn.classList.toggle("is-checked", !!tool && btn.dataset.clioPaintToolChoice === tool);
-    }
-    if (btn.dataset.clioPaintFilled) {
-      btn.classList.toggle("is-checked", window.AISystem6ClioPaint?.shapeFilled?.() === true);
+    if (btn.dataset.clioPaintCheck) {
+      btn.classList.toggle("is-checked", window.AISystem6ClioPaint?.menuChecked?.(btn.dataset.clioPaintCheck) === true);
     }
     if (btn.dataset.cmfViewChoice) {
       const view = window.AISystem6CMFStudio?.currentView?.() || "";
       btn.classList.toggle("is-checked", !!view && btn.dataset.cmfViewChoice === view);
+    }
+    if (btn.dataset.clioProjectView) {
+      btn.classList.toggle("is-checked", window.AISystem6ClioProjectWindow?.currentView?.() === btn.dataset.clioProjectView);
     }
     if (btn.dataset.clioChartProjection) {
       const projection = window.AISystem6ClioChart?.currentProjection?.() || "";
@@ -4837,6 +4974,8 @@ async function closeWindow(name, force = false) {
 
 function toggleCollapsed(win) {
   const willCollapse = !win.classList.contains("is-collapsed");
+  // The writer's own roll up or down: from here the shade is theirs, not Hide's.
+  delete win.dataset.appHiddenCollapsed;
   const before = win.getBoundingClientRect();
   if (willCollapse) {
     const width = Math.round(before.width);

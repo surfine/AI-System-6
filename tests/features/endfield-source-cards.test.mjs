@@ -49,8 +49,13 @@ const sources = ctx.document.querySelectorAll(".endfield-source");
 test.assert(sources.length === 5, `answer renders 5 source cards (got ${sources.length})`);
 const missing = ctx.document.querySelectorAll(".endfield-source.is-missing");
 test.assert(missing.length === 1 && missing[0]?.getAttribute("data-kind") === "对话", "one missing dialogue card for comms source");
-test.assert(Boolean(ctx.document.querySelector(".endfield-source .endfield-source-kind")?.textContent), "first card kind label is non-empty");
-test.assert(ctx.document.querySelector(".endfield-source .endfield-stamp")?.textContent === "v1.5", "first card version stamp v1.5");
+test.assert(Boolean(ctx.document.querySelector(".endfield-mission .endfield-source-kind")?.textContent), "first entry group names its kind");
+test.assert(ctx.document.querySelector(".endfield-mission .endfield-stamp")?.textContent === "v1.5", "first entry group carries version stamp v1.5");
+test.assert(ctx.document.querySelectorAll(".endfield-mission").length === 4, "four distinct entries render as four groups");
+test.assert(Boolean(ctx.document.querySelector(".endfield-track")), "the answer shows the story progress track");
+test.assert(ctx.document.querySelectorAll(".endfield-track-stop").length === 4, "the track has one stop per chapter");
+test.assert(ctx.document.querySelector('.endfield-track-stop[data-chapter="v1_5"] b')?.textContent === "1", "the 1.5 stop counts its one hit");
+test.assert(ctx.document.querySelectorAll(".endfield-track-stop.is-ahead").length === 0, "progress Everything leaves no stop ahead");
 test.assert(!ctx.document.querySelector(".endfield-source-quote .endfield-context"), "cards do not render context lines");
 const verdicts = ctx.document.querySelectorAll(".endfield-verdict");
 test.assert(verdicts.length === 2 && Boolean(verdicts[0]?.querySelector("b")?.textContent) && Boolean(verdicts[1]?.querySelector("b")?.textContent) && verdicts[0].querySelector("b")?.textContent !== verdicts[1].querySelector("b")?.textContent, "verdict blocks are two distinct labels");
@@ -67,24 +72,29 @@ if (progress) {
 ctx.renderEndfieldResults(fixture);
 test.assert(ctx.document.querySelectorAll(".endfield-source").length === 2, "progress chapter1 leaves two visible cards");
 test.assert(Boolean(ctx.document.querySelector(".endfield-fold")), "fold row renders when progress folds rows");
+test.assert(ctx.document.querySelectorAll(".endfield-track-stop.is-ahead").length === 2, "stops past Chapter I read as ahead");
+test.assert(Boolean(ctx.document.querySelector(".endfield-track-note .is-gap")), "the track names what the progress gate folded");
 
-// Provenance: the archive's own URL, speaker and line number reach the card,
-// and a line without a real URL says so instead of inventing one.
+// Provenance: the archive's own URL reaches the entry's group head, speaker
+// and line number reach the line, and an entry without a real URL says so
+// instead of inventing one.
 if (progress) {
   progress.value = "all";
   progress.dispatchEvent(new ctx.Event("change"));
 }
 ctx.renderEndfieldResults(fixture);
 const firstCard = ctx.document.querySelector(".endfield-source:not(.is-missing)");
-const link = firstCard?.querySelector("[data-source-url]");
-test.assert(link?.getAttribute("href") === "https://endfield.example/op/tifloss", "card links the archive's own mission URL");
+const firstGroup = ctx.document.querySelector(".endfield-mission");
+const link = firstGroup?.querySelector("[data-source-url]");
+test.assert(link?.getAttribute("href") === "https://endfield.example/op/tifloss", "the entry links the archive's own mission URL");
 test.assert(link?.getAttribute("rel") === "noopener" && link?.getAttribute("target") === "_blank", "source link opens out of the terminal safely");
 test.assert(Boolean(firstCard?.querySelector(".endfield-source-speaker")?.textContent), "card names the speaker");
 test.assert(Boolean(firstCard?.querySelector(".endfield-source-line")?.textContent), "card names the line number");
-const cardsWithoutUrl = Array.from(ctx.document.querySelectorAll(".endfield-source:not(.is-missing)"))
-  .filter((card) => !card.querySelector("[data-source-url]"));
-test.assert(cardsWithoutUrl.length === 3, `results without a URL get no link (got ${cardsWithoutUrl.length})`);
-test.assert(cardsWithoutUrl.every((card) => card.querySelector("[data-source-url-missing]")), "a missing source link is stated, not fabricated");
+const groupsWithoutUrl = Array.from(ctx.document.querySelectorAll(".endfield-mission"))
+  .filter((group) => !group.querySelector("[data-source-url]"));
+test.assert(groupsWithoutUrl.length === 3, `entries without a URL get no link (got ${groupsWithoutUrl.length})`);
+test.assert(groupsWithoutUrl.every((group) => group.querySelector("[data-source-url-missing]")), "a missing source link is stated, not fabricated");
+
 
 // Clipping carries the provenance out of the terminal.
 let clipped = null;
@@ -106,5 +116,21 @@ const failing = ctx.document.querySelector("[data-clip-source]");
 await ctx.clipEndfieldSource(failing);
 test.assert(failing.disabled !== true, "an unmounted clip leaves the button live");
 test.assert(failing.textContent !== ctx.t("endfield_clipped"), "an unmounted clip does not claim success");
+
+// Consecutive lines of one entry share a group, and a repeated speaker is
+// written once on screen while staying in the tree.
+ctx.renderEndfieldResults({
+  query: "q",
+  answer: "",
+  results: [
+    { missionId: "m1", missionTitle: "终其一生", section: "任务", speaker: "老雪祀", text: "一", lineIndex: 1, kind: "对话", version: "v1.5", missionIndex: 211, chapterKey: "other", missionUrl: "https://endfield.example/m1" },
+    { missionId: "m1", missionTitle: "终其一生", section: "任务", speaker: "老雪祀", text: "二", lineIndex: 2, kind: "对话", version: "v1.5", missionIndex: 211, chapterKey: "other", missionUrl: "https://endfield.example/m1" },
+  ],
+});
+test.assert(ctx.document.querySelectorAll(".endfield-mission").length === 1, "two lines of one mission share one group");
+const rows = ctx.document.querySelectorAll(".endfield-mission .endfield-source");
+test.assert(rows.length === 2 && !rows[0].classList.contains("is-continued") && rows[1].classList.contains("is-continued"), "the repeated speaker is marked as a continued turn");
+test.assert(rows[1].querySelector(".endfield-source-speaker")?.textContent === "老雪祀", "a continued turn keeps the speaker's name in the tree");
+test.assert(ctx.document.querySelector(".endfield-track-note")?.textContent.includes("2"), "lines outside the four chapters are counted, not dropped");
 
 test.finish();

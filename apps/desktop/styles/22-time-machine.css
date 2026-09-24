@@ -94,6 +94,13 @@
   gap: 4px;
 }
 
+/* Before any page is open there is no view to choose. The switch keeps its
+   place (so the row does not shift when a page arrives) but is not shown as a
+   pair of disabled options, which Liquid Glass drew with no selection at all. */
+.time-machine-pane:has(#time-machine-home:not([hidden])) .time-machine-view-switch {
+  visibility: hidden;
+}
+
 .time-machine-toggle {
   display: inline-flex;
   align-items: center;
@@ -102,16 +109,18 @@
   white-space: nowrap;
 }
 
+/* The Address label is for screen readers only: beside the Time Machine
+   checkbox it read as one phrase, "Time Machine Address". */
 .time-machine-address-form {
   display: grid;
-  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 6px;
   padding: 4px 5px;
 }
 
 .time-machine-address-form.is-active {
-  grid-template-columns: auto auto minmax(0, 1fr) minmax(9rem, 10rem) auto;
+  grid-template-columns: auto minmax(0, 1fr) minmax(9rem, 10rem) auto;
   border: var(--time-machine-time-border);
   background: var(--time-machine-time-active-bg);
 }
@@ -145,6 +154,12 @@
 
 .time-machine-address-form.is-active .time-machine-time-controls {
   display: contents;
+}
+
+/* An address is typed in the monospaced face; the prompt is a sentence and
+   reads in the interface face. */
+.time-machine-address-form > #time-machine-address::placeholder {
+  font-family: var(--ui-font);
 }
 
 .time-machine-date-control {
@@ -541,10 +556,6 @@
   .time-machine-address-form,
   .time-machine-address-form.is-active {
     grid-template-columns: auto minmax(0, 1fr) auto;
-  }
-
-  .time-machine-address-label {
-    display: none;
   }
 
   .time-machine-address-form.is-active .time-machine-time-controls {

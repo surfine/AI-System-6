@@ -490,13 +490,27 @@ document.addEventListener("ai-system6-appearanceerror", ({ detail }) => {
   if (typeof pushSystemNotification === "function") pushSystemNotification(message, { state: "failed" });
   setStatus(message);
 });
-window.AISystem6Theme?.registerPreparation((theme) => theme.id === "nextstep" && (!window.AISystem6NextstepShellLoaded || !window.AISystem6NextstepDock || !window.AISystem6NextstepMenus || !window.AISystem6FinderColumns)
-  ? Promise.all([
-    ensureLazySystemModule("app/core/nextstep-shell.js", "AISystem6NextstepShellLoaded"),
-    ensureLazySystemModule("app/core/nextstep-dock.js", "AISystem6NextstepDock"),
-    ensureLazySystemModule("app/core/nextstep-menus.js", "AISystem6NextstepMenus"),
-    ensureLazySystemModule("app/features/finder-columns.js", "AISystem6FinderColumns"),
-  ]) : null);
+window.AISystem6Theme?.registerPreparation((theme) => {
+  const modules = [];
+  if (theme.id === "nextstep" && (!window.AISystem6NextstepShellLoaded || !window.AISystem6NextstepDock || !window.AISystem6NextstepMenus || !window.AISystem6FinderColumns)) {
+    modules.push(
+      ensureLazySystemModule("app/core/nextstep-shell.js", "AISystem6NextstepShellLoaded"),
+      ensureLazySystemModule("app/core/nextstep-dock.js", "AISystem6NextstepDock"),
+      ensureLazySystemModule("app/core/nextstep-menus.js", "AISystem6NextstepMenus"),
+      ensureLazySystemModule("app/features/finder-columns.js", "AISystem6FinderColumns"),
+    );
+  }
+  // The miniaturize state machine travels with the appearances that can draw
+  // its control -- NeXTSTEP's own miniaturize button, and the yellow lamp of
+  // an era whose Dock ships with it (none yet: owner decision 2026-09-25). An
+  // era whose windows never had the button does not load it, and the boot
+  // bundle only carries the guards window-manager.js keeps instead.
+  if (!window.AISystem6WindowMinimizeLoaded
+    && (theme.id === "nextstep" || window.AISystem6Theme.hasCapability("minimize-lamp", theme.id))) {
+    modules.push(ensureLazySystemModule("app/core/window-minimize.js", "AISystem6WindowMinimizeLoaded"));
+  }
+  return modules.length ? Promise.all(modules) : null;
+});
 
 // Development surfaces are explicit only: an explicit capabilities flag, or
 // loopback hosts. An UNRESOLVED deployment profile is never treated as
@@ -517,6 +531,15 @@ const bootDebugTheme = bootDebugId ? window.AISystem6Theme?.getTheme?.(bootDebug
 // deployments — including before capabilities resolve — ignore the parameter
 // and always land on the saved release Appearance.
 const developmentPreviewAllowed = isDevelopmentSurface();
+// The Appearance choices are the registry's release list, built here rather
+// than written into index.html, so a new appearance is one declaration.
+appearanceThemeInput?.append(...window.AISystem6Theme.getReleaseReadyThemes().map(({ id, label, labelKey }) => {
+  const option = document.createElement("option");
+  option.value = id;
+  option.textContent = label;
+  option.dataset.i18n = labelKey;
+  return option;
+}));
 if (bootDebugTheme && bootDebugTheme.releaseReady === false && developmentPreviewAllowed) {
   // Dev-only session preview, never persisted: the Appearance selector keeps
   // reflecting the release base, and a reload without the parameter restores
@@ -875,40 +898,11 @@ function getStaticFinderItems(winName) {
   if (winName === "helpFolder") return filterWorkspaceItems(getHelpFolderItems());
   if (winName === "applications") return filterWorkspaceItems(getApplicationsItems());
   if (winName === "disk") return filterWorkspaceItems(getStartupDiskItems());
-  if (winName === "projectDisks") return filterWorkspaceItems(getDemonstrationDiskItems());
+  if (winName === "projectDisks") return filterWorkspaceItems(window.AISystem6DemonstrationDiskItems?.() || []);
   if (winName === "controlStripModules") return filterWorkspaceItems(getControlStripModuleFinderItems());
   return filterWorkspaceItems(getSystemPromptFinderItems());
 }
 
-// The demonstration disks are a folder on the Startup Disk: each row IS one
-// disk, and its action is the command a /go/<route> link runs. Rows come from
-// the index module, so the backups arrive only when one is opened; the writer's
-// own subject line rides along as the description Get Info shows.
-function getDemonstrationDiskItems() {
-  const index = window.AISystem6SharedProjectDisksIndex || {};
-  return withStaticFinderMetadata(
-    Object.keys(index).map((route) => {
-      const disk = index[route] || {};
-      return {
-        name: disk.name || route,
-        iconId: "projectDisk",
-        icon: "project-disk-icon",
-        action: `open-shared-disk-${route}`,
-        kind: t("project_disk"),
-        description: disk.subject || "",
-        createdAt: disk.exportedAt || "",
-        updatedAt: disk.exportedAt || "",
-      };
-    }),
-    t("demo_disks_title")
-  );
-}
-
-// The Control Strip Modules folder is a visible System Folder object, not a
-// JavaScript array hiding behind the scenes. Its file items come from the
-// first-party module descriptors; each file is draggable onto the strip. The
-// descriptors are lazy, so the window's lazy loader renders this after the
-// modules file is present (empty until then is fine — the window is hidden).
 function getControlStripModuleFinderItems() {
   const modules = Array.isArray(window.AISystem6ControlStripModules)
     ? window.AISystem6ControlStripModules
@@ -2763,7 +2757,10 @@ async function importFilesToMountedTextDisk(files, options = {}) {
     const batch = chunks.slice(index, index + batchSize);
     try {
       let embeddings = [];
-      if (hasEmbeddingModel) {
+      // Once the embedder has failed — it would not load, or a batch timed
+      // out — the rest of the file is keyword-indexed at once. Asking again
+      // per batch cost 25 s each: a long txt sat "frozen" for minutes.
+      if (hasEmbeddingModel && !embeddingFailed) {
         const embeddingController = new AbortController();
         let embeddingTimedOut = false;
         const timeoutId = setTimeout(() => {
@@ -3077,8 +3074,12 @@ window.AISystem6AssistantActivity?.setModelReadySource?.(() => {
 
 function applyBootLaunchIntent() {
   const i = window.AISystem6LaunchIntent?.parse?.(bootSearch) || {};
-  if (i.appearance && i.appearance !== getCurrentTheme()) {
-    applyTheme(i.appearance, { persist: false, announce: false });
+  const linked = i.appearance && window.AISystem6Theme.getTheme(i.appearance);
+  if (linked && linked.id !== getCurrentTheme()) {
+    // A link to an appearance still in research previews it only where
+    // ?debugTheme= would; anywhere else the saved appearance stays on screen.
+    if (linked.releaseReady) applyTheme(linked.id, { persist: false, announce: false });
+    else if (developmentPreviewAllowed) window.AISystem6Theme.previewExperimentalTheme(linked.id);
   }
   if (i.tour === "writing" && typeof enterWriterMode === "function") {
     enterWriterMode();

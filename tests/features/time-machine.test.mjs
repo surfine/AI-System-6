@@ -40,6 +40,8 @@ test.assertIncludes(index, 'data-window="timeMachine"', "Time Machine owns an in
 test.assertIncludes(index, 'id="time-machine-back"', "restricted browser exposes Back navigation");
 test.assertIncludes(index, 'id="time-machine-forward"', "restricted browser exposes Forward navigation");
 test.assertIncludes(index, 'id="time-machine-address"', "restricted browser exposes an address field");
+test.assertIncludes(index, 'class="time-machine-address-label visually-hidden"', "the Address label names the field for screen readers without reading as \"Time Machine Address\" beside the checkbox");
+test.assertIncludes(read("styles/22-time-machine.css"), ".time-machine-pane:has(#time-machine-home:not([hidden])) .time-machine-view-switch {\n  visibility: hidden;", "with no page open there is no view to choose, so the switch keeps its place unseen");
 test.assertIncludes(index, 'id="time-machine-enabled"', "time travel is a browsing mode");
 test.assertIncludes(index, 'class="time-machine-time-controls"', "the date expands inside the address bar");
 test.assertIncludes(index, 'id="time-machine-calendar-button"', "calendar icon opens the historical date helper");

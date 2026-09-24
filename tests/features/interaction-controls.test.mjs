@@ -146,11 +146,48 @@ test.assertIncludes(surfaces, ".writing-bell-mode button:hover:not(.is-active)",
 test.assertIncludes(surfaces, ".writing-bell-mode button.is-active:hover", "Active segmented controls keep active styling on hover");
 test.assertIncludes(surfaces, ".writing-bell-presets .mini-btn.is-active:hover", "Active mini buttons keep active styling on hover");
 
+// One birthplace per state. The responsive sheet used to carry a byte-identical
+// copy of the base hover rule; because a later rule of equal specificity wins,
+// that copy outranked .btn:active and a plainly pressed button looked hovered
+// (measured 2026-09-23: rgb(250,250,250) held through a real mouse-down
+// instead of --btn-active-bg). The state priority rule is asserted where the
+// rule now lives, and the pressed rule has to carry the same chain so it can
+// win while the pointer is down.
 test.assertIncludes(
-  responsive,
+  windows,
   ".btn:hover:not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected)",
-  "Responsive button hover keeps the same state priority contract"
+  "Button hover keeps the state priority contract"
 );
+test.assertNotIncludes(
+  responsive,
+  ".btn:hover:not(",
+  "and the responsive sheet does not restate it, so the pressed state is not outranked"
+);
+test.assertIncludes(
+  windows,
+  ".btn:active:not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected)",
+  "the pressed rule carries the same chain and comes later, which is what makes a press look pressed"
+);
+
+// ---- The Return mark (NeXTSTEP 3.3, NS04) ----------------------------------
+//
+// 3.3 prints the Return glyph on the button Return will press, and only while
+// that window holds the keyboard. This desk routes Return to a dialog's default
+// button (modal.js), so the mark is drawn only inside a dialog that says its
+// Return is wired — a mark on an ordinary window's default button would promise
+// a key that does nothing there.
+test.assertIncludes(windows, 'dialog[data-enter-default-wired="true"] .btn.default:not([data-loading="true"])::after',
+  "the Return mark hangs on the dialog that really wires Return");
+test.assertIncludes(windows, "content: var(--btn-default-return-mark, \"\")",
+  "and takes its glyph from a token, so an era without the idiom draws an empty box");
+test.assertIncludes(read("app/core/modal.js"), 'systemModal.dataset.enterDefaultWired = "true"',
+  "the shared confirm dialog states that Return presses its default");
+test.assertIncludes(read("app/core/modal.js"), "dialog.dataset.enterDefaultWired = \"true\"",
+  "and so does the wiring helper every other dialog uses");
+const returnMarkThemes = ["65-appearance-themes.css", "67-aqua-appearance.css", "68-big-sur-appearance.css", "69-nextstep-appearance.css", "70-liquid-glass.css"]
+  .filter((file) => read(`styles/${file}`).includes("--btn-default-return-mark"));
+test.assert(JSON.stringify(returnMarkThemes) === JSON.stringify(["69-nextstep-appearance.css"]),
+  `only the era that had the idiom marks its buttons (found ${returnMarkThemes.join(", ") || "none"})`);
 test.assertNotIncludes(
   responsive,
   ".btn:hover:not(:disabled):not(.is-disabled) {",

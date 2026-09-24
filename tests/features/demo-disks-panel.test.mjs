@@ -13,8 +13,8 @@
 // Two rules survive every refactor here. First, the boot budget: the folder is
 // markup, its rows are lazy, and neither the rows nor the backups may appear in
 // the modules measured against the floppy. Second, opening a folder is not the
-// same act as opening a disk: the list must not fetch thirty-four manuscripts
-// to draw thirty-four names.
+// same act as opening a disk: the list must not fetch thirty-five manuscripts
+// to draw thirty-five names.
 import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 import { createAppBootVm } from "../helpers/app-boot-vm.mjs";
 
@@ -72,7 +72,7 @@ test.assertIncludes(read("app/core/config.js"), '["styles.project-disks.css"]', 
 //    Info apply to it.
 test.assertMatches(
   html,
-  /<section class="window finder-window project-disks-window is-hidden" data-window="projectDisks"[\s\S]{0,900}?class="window-pane finder-grid project-disks-grid window-frame-scroller"/,
+  /<section class="window finder-window project-disks-window is-hidden" data-window="projectDisks"[\s\S]{0,1400}?class="window-pane finder-grid window-frame-scroller"/,
   "the folder is a Finder window with a grid pane, not a bespoke window",
 );
 test.assertIncludes(html, 'data-view-window="projectDisks"', "the folder carries the shared view controls");
@@ -91,16 +91,26 @@ test.assertIncludes(index, "window.AISystem6DemoDisksPanel", "the generator appe
 //    index, each row IS one disk, and its action is the same command a
 //    /go/<route> link runs. Nothing here names a disk, so a thirty-fifth disk
 //    costs one registration and no edit in this window.
-test.assertIncludes(app, "window.AISystem6SharedProjectDisksIndex", "the folder reads the published index");
-test.assertMatches(app, /action: `open-shared-disk-\$\{route\}`/, "a row opens the disk through the route's own command");
-test.assert(
-  !/["'](?:dtk|ipad1|m5mba)["']/.test(app.slice(app.indexOf("function getDemonstrationDiskItems"), app.indexOf("function getDemonstrationDiskItems") + 1200)),
-  "the folder names no disk: a new disk needs one registration, not an edit here",
-);
-test.assert(
-  !/sizeLabel/.test(app.slice(app.indexOf("function getDemonstrationDiskItems"), app.indexOf("function getDemonstrationDiskItems") + 1200)),
-  "a disk reports the shared built-in size rather than a byte figure nobody measured",
-);
+//
+//    The mapper lives in the module that also carries the index (it was in
+//    app.js until the boot budget needed the bytes back: the folder's page asks
+//    for rows through a guarded call, and the module that has the data maps
+//    them). What matters is unchanged: no disk is named, and each row's action
+//    is the route's own command.
+test.assertIncludes(app, "window.AISystem6DemonstrationDiskItems?.()", "the folder's page asks the disk module for its rows");
+test.assertIncludes(panel, "window.AISystem6SharedProjectDisksIndex", "and that module reads the published index");
+test.assertMatches(panel, /action: `open-shared-disk-\$\{route\}`/, "a row opens the disk through the route's own command");
+{
+  const mapper = panel.slice(panel.indexOf("function finderItems()"), panel.indexOf("window.AISystem6DemonstrationDiskItems"));
+  test.assert(
+    !/["'](?:dtk|ipad1|m5mba)["']/.test(mapper),
+    "the folder names no disk: a new disk needs one registration, not an edit here",
+  );
+  test.assert(
+    !/sizeLabel/.test(mapper),
+    "a disk reports the shared built-in size rather than a byte figure nobody measured",
+  );
+}
 test.assertIncludes(index, '"name":', "the index carries the project's own name");
 test.assertIncludes(index, '"subject":', "the index carries the writer's own subject line");
 // That the subject IS the writer's own line, rather than something the build
@@ -209,11 +219,11 @@ await vmw.context.handleAction("open-demo-disks");
 const itemCount = () => vmw.run('document.querySelectorAll(\'.window[data-window="projectDisks"] .finder-item\').length');
 const windowElement = vmw.windowElement("projectDisks");
 test.assert(
-  await vmw.waitFor(() => itemCount() === 34 && !windowElement.classList.contains("is-hidden")),
+  await vmw.waitFor(() => itemCount() === 35 && !windowElement.classList.contains("is-hidden")),
   `the folder lists every published disk once it is open (${itemCount()})`,
 );
 test.assert(
-  vmw.run('document.querySelector(\'.window[data-window="projectDisks"] .details-bar > span:first-child\').textContent') === "34 items",
+  vmw.run('document.querySelector(\'.window[data-window="projectDisks"] .details-bar > span:first-child\').textContent') === "35 items",
   "the count reports what the folder holds, the way every Finder page does",
 );
 test.assert(
@@ -250,14 +260,14 @@ test.assert(
 // change and on a language switch through the same code path as Help Folder.
 vmw.run('toggleViewMode("projectDisks", "list")');
 test.assert(
-  await vmw.waitFor(() => vmw.run('document.querySelectorAll(\'.window[data-window="projectDisks"] .finder-list-row\').length') === 34),
-  "list view is the same 34 disks in the shared list rows",
+  await vmw.waitFor(() => vmw.run('document.querySelectorAll(\'.window[data-window="projectDisks"] .finder-list-row\').length') === 35),
+  "list view is the same 35 disks in the shared list rows",
 );
 vmw.run('toggleViewMode("projectDisks", "icon")');
 vmw.run('currentLanguage = "en"');
 vmw.context.applyLanguage();
 test.assert(
-  await vmw.waitFor(() => vmw.run('document.querySelector(\'.window[data-window="projectDisks"] .details-bar > span:first-child\').textContent') === "34 items"),
+  await vmw.waitFor(() => vmw.run('document.querySelector(\'.window[data-window="projectDisks"] .details-bar > span:first-child\').textContent') === "35 items"),
   "a language switch redraws the folder's count and title with the rest of the desk",
 );
 test.assert(
@@ -270,8 +280,8 @@ test.assert(
 // disks exist, and the button says which kind of visit this is.
 const inlineRows = () => vmw.run('document.querySelectorAll(".backup-preview-section .import-row").length');
 test.assert(
-  await vmw.waitFor(() => inlineRows() === 34),
-  "the Import Utility gets the same 34 rows",
+  await vmw.waitFor(() => inlineRows() === 35),
+  "the Import Utility gets the same 35 rows",
 );
 test.assert(
   vmw.run('document.querySelector(".backup-preview-section").textContent.includes("Each demonstration disk")'),

@@ -156,6 +156,10 @@ export const SHARED_DISKS = Object.freeze([
     route: "iphone17",
     source: "internal/evidence/drafts/iphone17/iPhone 17 标准版 Project Hard Disk Backup.json",
   },
+  {
+    route: "windowshade",
+    source: "internal/evidence/drafts/windowshade/WindowShade 官网 Project Hard Disk Backup.json",
+  },
 ]);
 
 // The nine collections a backup counts. validateBackup refuses a bundle whose

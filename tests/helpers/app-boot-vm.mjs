@@ -217,6 +217,35 @@ function createDomShim(contextRef) {
     return el?.parentElement ? elementChildren(el.parentElement) : [];
   }
 
+  // `before`/`after` are sibling insertions: they need the reference node's own
+  // parent, and they must do nothing at all when the node has no parent, which
+  // is what the DOM spec says and what keeps a detached element's caller from
+  // inventing a container.
+  //
+  // A string argument is a text node in a real DOM (`bar.before(" ")`). This
+  // shim has no text-node class, so a string becomes the smallest object that
+  // behaves like one: it can be detached, it is not an element, and it never
+  // reaches `children` as a bare primitive -- which a later `replaceChildren`
+  // would then try to hang a `parentElement` on, throwing in strict mode.
+  function asInsertable(node) {
+    if (typeof node === "string" || typeof node === "number") {
+      return { nodeType: 3, data: String(node), textContent: String(node), parentElement: null, parentNode: null, children: [] };
+    }
+    return node;
+  }
+
+  function insertSiblings(reference, nodes, offset) {
+    const parent = reference?.parentNode;
+    if (!parent) return;
+    let at = parent.children.indexOf(reference) + offset;
+    if (at < 0) at = parent.children.length;
+    nodes.map(asInsertable).forEach((node) => {
+      parent.children.splice(at, 0, node);
+      adopt(parent, node);
+      at += 1;
+    });
+  }
+
   // `trackForQuery` is false for plain document.createElement(tag) calls: a
   // real DOM never returns an element from document.querySelector until it
   // is actually inserted into the tree, and this shim does not model
@@ -378,17 +407,36 @@ function createDomShim(contextRef) {
       // DOM insertion promotes into the queryable registry (see `promote`
       // above) exactly when — and only when — the parent is itself already
       // reachable from a tracked root.
-      append(...nodes) { nodes.forEach((node) => { this.children.push(node); adopt(this, node); }); },
-      prepend(...nodes) { nodes.forEach((node) => { this.children.unshift(node); adopt(this, node); }); },
-      before: () => {},
-      after: () => {},
-      appendChild(child) { this.children.push(child); adopt(this, child); return child; },
+      append(...nodes) { nodes.map(asInsertable).forEach((node) => { this.children.push(node); adopt(this, node); }); },
+      prepend(...nodes) { nodes.map(asInsertable).forEach((node) => { this.children.unshift(node); adopt(this, node); }); },
+      // Real insertion on both sides, for the same reason append() is real:
+      // app/core/nextstep-shell.js moves the close box with `close.before(marker)`
+      // and app/core/window-minimize.js puts the minimize lamp next to Close with
+      // `close.after(lamp)`. As no-ops here, both read as "the code ran" while the
+      // window kept the control it was supposed to move — a passing shape over a
+      // real browser that does something else. Insertion order follows the DOM
+      // spec: nodes are inserted in argument order, so `a.after(x, y)` yields
+      // a, x, y.
+      before(...nodes) { insertSiblings(this, nodes, 0); },
+      after(...nodes) { insertSiblings(this, nodes, 1); },
+      replaceWith(...nodes) {
+        const parent = this.parentNode;
+        insertSiblings(this, nodes, 0);
+        if (parent) detach(this);
+      },
+      appendChild(child) {
+        const node = asInsertable(child);
+        this.children.push(node);
+        adopt(this, node);
+        return node;
+      },
       insertBefore(child, before) {
+        const node = asInsertable(child);
         const at = before ? this.children.indexOf(before) : -1;
-        if (at < 0) this.children.push(child);
-        else this.children.splice(at, 0, child);
-        adopt(this, child);
-        return child;
+        if (at < 0) this.children.push(node);
+        else this.children.splice(at, 0, node);
+        adopt(this, node);
+        return node;
       },
       insertAdjacentElement: () => {},
       insertAdjacentHTML: () => {},
@@ -397,7 +445,7 @@ function createDomShim(contextRef) {
       replaceChildren(...nodes) {
         [...this.children].forEach(detach);
         this.children = [];
-        nodes.forEach((node) => { this.children.push(node); adopt(this, node); });
+        nodes.map(asInsertable).forEach((node) => { this.children.push(node); adopt(this, node); });
       },
       replaceWith: () => {},
       cloneNode: () => makeElement(tag, id),

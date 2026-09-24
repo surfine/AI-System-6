@@ -630,6 +630,7 @@ function wireAppEvents() {
   registerAskBarSource("docMap", (...args) => describeDocMapAskScope(...args));
 
   window.addEventListener("resize", () => {
+    syncStandaloneSurface();
     if (currentDocMap && !document.querySelector('[data-window="docMap"]')?.classList.contains("is-hidden")) {
       requestAnimationFrame(() => restoreDocMapCanvasView());
     }
@@ -644,8 +645,20 @@ function wireAppEvents() {
     renderMultiFinderMenu();
   });
   window.addEventListener("orientationchange", () => {
+    syncStandaloneSurface();
     requestAnimationFrame(() => requestAnimationFrame(() => reconcileVisibleSystemWindowsToViewport()));
   });
+
+  // The installed web app is its own surface (DEBT-AUDIT §11): the platform's
+  // signal hooks the root, and the sheets size the phone's window chrome for a
+  // thumb rather than for the 11-15px an era draws.
+  function syncStandaloneSurface() {
+    const installed = navigator.standalone === true || matchMedia("(display-mode: standalone)").matches;
+    const root = document.documentElement;
+    if (installed) root.setAttribute("data-installed", "");
+    else root.removeAttribute("data-installed");
+  }
+  syncStandaloneSurface();
 
   // Track how much the on-screen keyboard covers, exposed as a CSS custom
   // property (not an inline layout style) that the full-screen app shell reads
@@ -970,7 +983,7 @@ function wireAppEvents() {
       const appId = appSwitchTarget.dataset.switchApp;
       if (!appSwitchTarget.disabled && appId) {
         if (isPortraitDocumentFlow()) foregroundMobileApp(appId);
-        else switchToApp(appId);
+        else activateApplicationRow(appId);
       }
       appSwitchTarget.blur();
       closeMenus();
@@ -1346,6 +1359,9 @@ function wireAppEvents() {
   function wireTitleBarChrome(bar) {
     if (!bar || titleBarsWired.has(bar)) return;
     titleBarsWired.add(bar);
+    // The appearance decides whether this bar carries a real minimize lamp;
+    // the lamp's command belongs to the shared window manager, not to the bar.
+    syncWindowMinimizeLamp(bar.closest(".window[data-window]"));
     bar.addEventListener("dblclick", (event) => {
       if (event.target.closest("button")) return;
       if (bar.closest(".writing-spine-panel")) {

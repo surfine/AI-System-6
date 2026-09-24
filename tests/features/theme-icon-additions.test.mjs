@@ -53,9 +53,12 @@ test.assertNotIncludes(item.innerHTML, "big-sur/icons/", "leaving Big Sur remove
 select("classic");
 test.assertNotIncludes(item.innerHTML, "nextstep/icons/", "restoring Classic removes NeXTSTEP hrefs");
 const labSource = read("app/features/theme-lab.js");
+const authoringHost = {};
+vm.runInNewContext(read("app/features/theme-authoring.js"), { window: authoringHost });
+const authoringTable = authoringHost.AISystem6ThemeAuthoring;
 const artStart = labSource.indexOf("  function artOf(themeId, id) {");
 const artEnd = labSource.indexOf("\n  }", artStart) + 4;
-const artOf = vm.runInNewContext(`(${labSource.slice(artStart, artEnd)})`, { window: sandbox.window, authoringOf: (theme) => theme.authoring });
+const artOf = vm.runInNewContext(`(${labSource.slice(artStart, artEnd)})`, { window: sandbox.window, authoringOf: (theme) => authoringTable.get(theme?.id) });
 for (const id of additions) {
   test.assert(artOf("nextstep", id).dir === "nextstep" && artOf("nextstep", id).ext === "png", `${id} inspector exposes NeXTSTEP PNGs`);
   test.assertIncludes(labSource, `["${id}",`, `${id} is inspectable alongside the original core objects`);

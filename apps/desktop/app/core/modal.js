@@ -130,6 +130,11 @@ function showSystemModal(message, type = "confirm", options = {}) {
     // only options.defaultAction === "cancel" was ever handled), including
     // the unsaved-changes prompt on close. Focus the actual default button.
     (options.defaultAction === "cancel" ? systemModalCancel : systemModalYes).focus();
+    // Say out loud what that focus means: Return presses this button. The
+    // NeXTSTEP appearance draws its Return mark from this attribute, so the
+    // mark can only appear on a dialog where Enter really is wired to the
+    // default (see styles/10-windows.css, "The Return mark").
+    systemModal.dataset.enterDefaultWired = "true";
   });
 }
 

@@ -132,9 +132,10 @@ html[data-theme="liquid-glass"] .model-providers > span { color: #1c2733; text-s
 :root:not([data-theme]) .scene-note,
 :root:not([data-theme]) .scene-fine,
 :root:not([data-theme]) .hero-sub,
-:root:not([data-theme]) .hero-brand {
+:root:not([data-theme]) .hero-brand,
+:root:not([data-theme]) .scene-kicker {
   background: var(--paper);
-  display: table;
+  width: fit-content;
   margin-left: auto;
   margin-right: auto;
   padding: 2px 14px;
@@ -199,7 +200,7 @@ html[data-theme="liquid-glass"] .hero-brand { color: #1c2733; --head-shadow: non
 }
 :root:not([data-theme]) .hero-head {
   background: var(--paper);
-  display: table;
+  width: fit-content;
   margin-left: auto;
   margin-right: auto;
   padding: 6px 26px 10px;
@@ -283,6 +284,7 @@ html[data-theme="platinum"] .shade-box:focus-visible { outline: 2px solid #333; 
 html[data-theme="aqua"] .mini-tbar .close-box,
 html[data-theme="snow-leopard"] .mini-tbar .close-box,
 html[data-theme="yosemite"] .mini-tbar .close-box,
+html[data-theme="big-sur"] .mini-tbar .close-box,
 html[data-theme="liquid-glass"] .mini-tbar .close-box {
   width: 11px;
   height: 11px;
@@ -486,7 +488,6 @@ html[data-theme] .route-obj.is-active .route-ordinal {
   border-color: transparent;
   color: #fff;
 }
-.route-has-shot { font-size: 11px; line-height: 1.2; opacity: 0.9; }
 
 /* The panel is a window surface, not floating text: copy set straight on the
    desk pattern loses contrast in every era except classic. */
@@ -733,6 +734,10 @@ html[data-theme] .finder-item.selected .desk-icon-label { background: var(--sel-
   padding: 0;
 }
 .claim-row + .claim-row { border-top: 1px solid var(--win-border, var(--ink)); }
+/* A branch is not the next stop on the line: a double rule and a gap say so. */
+.claim-row + .claim-row.is-branch { border-top: 3px double var(--win-border, var(--ink)); margin-top: 10px; }
+/* The branch scene shows one whole capture: a 16:10 frame, never cropped. */
+.branch-card .proof-shot { height: auto; }
 
 .claim-hit {
   display: grid;
@@ -825,7 +830,11 @@ html[data-theme] .claim-row.is-current .claim-era {
   text-align: left;
 }
 .floppy-side { min-width: 0; }
-.floppy-side-theirs { overflow: hidden; }
+.floppy-side-theirs {
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to right, #000 60%, transparent 100%);
+  mask-image: linear-gradient(to right, #000 60%, transparent 100%);
+}
 
 .floppy-pile {
   display: flex;
@@ -842,8 +851,6 @@ html[data-theme] .claim-row.is-current .claim-era {
   max-height: 148px;
   width: 140%;
   overflow: hidden;
-  -webkit-mask-image: linear-gradient(to right, #000 55%, transparent 100%);
-  mask-image: linear-gradient(to right, #000 55%, transparent 100%);
 }
 
 .floppy-label-line {
@@ -1097,6 +1104,7 @@ html[data-theme="platinum"] { --sel-bg: #333399; --gauge-fill-solid: #7a7a7a; }
 html[data-theme="aqua"] { --sel-bg: #3875d7; --gauge-fill-solid: #4a7fc4; }
 html[data-theme="snow-leopard"] { --sel-bg: #2f66b0; --gauge-fill-solid: #5c799f; }
 html[data-theme="yosemite"] { --sel-bg: #0a60ff; --gauge-fill-solid: #0a60ff; }
+html[data-theme="big-sur"] { --sel-bg: #0a64d8; --gauge-fill-solid: #0a64d8; }
 html[data-theme="liquid-glass"] { --sel-bg: rgba(40, 90, 200, 0.8); --gauge-fill-solid: #7fa8e0; }
 
 /* ---------- Reduced motion ---------- */
@@ -1301,6 +1309,605 @@ html[data-theme="liquid-glass"] { --sel-bg: rgba(40, 90, 200, 0.8); --gauge-fill
 .demo-window.has-proof { width: min(560px, 92%); }
 .imp-proof { margin: -2px 0 10px; border: 1px solid var(--win-border, var(--ink)); overflow: hidden; }
 .imp-proof img { display: block; width: 100%; height: auto; }
+
+/* ==========================================================================
+   Editorial rhythm.
+
+   The page is read like a short book: a small chapter label, a headline in
+   sentence case, then one paragraph at a length a person can hold. Three
+   things make that work in every era, not only the glossy ones:
+
+   - Measure. Notes stop at about 36em, prose windows at 34em. A 950px line
+     of 17px text is a line the eye loses on the way back.
+   - Tracking by size and era. Display type tightens as it grows, but only in
+     faces drawn for it: Chicago and Charcoal were bitmap-era system faces and
+     keep their own spacing; Lucida tightens a little; Helvetica Neue and San
+     Francisco tighten the way Apple sets them.
+   - Motion by era. System 6 redrew in steps, so its scenes still arrive in
+     five frames. Every later era eases in, once, on a strong ease-out.
+   ========================================================================== */
+
+:root { --head-track: 0; --head-weight: normal; }
+html[data-theme="aqua"],
+html[data-theme="snow-leopard"] { --head-track: -0.012em; }
+html[data-theme="yosemite"] { --head-track: -0.02em; --head-weight: 300; }
+html[data-theme="big-sur"],
+html[data-theme="liquid-glass"] { --head-track: -0.018em; --head-weight: 600; }
+html[data-theme="nextstep"] { --head-track: -0.01em; --head-weight: 700; }
+
+.scene { margin: 136px 0; }
+#story { margin-top: 40px; }
+
+.scene-kicker {
+  font-family: var(--site-font, var(--ui-font));
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin: 0 auto 16px;
+  color: var(--note-ink, var(--ink));
+  text-shadow: var(--head-shadow, none);
+}
+:root:not([data-theme]) .scene-kicker { padding: 1px 10px; border: 1px solid var(--ink); font-weight: normal; letter-spacing: 0.06em; }
+html[data-theme] .scene-kicker { color: rgba(255, 255, 255, 0.82); --head-shadow: 0 1px 2px rgba(0, 0, 0, 0.35); }
+html[data-theme="liquid-glass"] .scene-kicker { color: rgba(28, 39, 51, 0.62); --head-shadow: none; }
+
+.scene-head,
+.hero-head {
+  font-weight: var(--head-weight);
+  letter-spacing: var(--head-track);
+  text-wrap: balance;
+}
+.scene-head {
+  font-size: clamp(32px, 5.4vw, 58px);
+  line-height: 1.06;
+  margin: 0 auto 18px;
+}
+.hero-head { font-size: clamp(40px, 7.6vw, 84px); line-height: 1.02; }
+
+.scene-note,
+.hero-sub {
+  max-width: 36em;
+  margin: 0 auto 22px;
+  font-size: 19px;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+.scene-fine {
+  max-width: 44em;
+  margin: 10px auto 0;
+  font-size: 15px;
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+.proof-note { max-width: 44em; margin-left: auto; margin-right: auto; }
+/* Chicago is a bitmap face: at the modern note size it reads as shouting. */
+:root:not([data-theme]) .scene-note,
+:root:not([data-theme]) .hero-sub { font-size: 17px; }
+
+/* Scenes arrive once. Classic keeps its five-frame step; later eras ease. */
+html.js[data-theme] .scene.scene-in { animation: scene-rise 720ms cubic-bezier(0.23, 1, 0.32, 1) both; }
+@keyframes scene-rise {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ---------- The story window ---------- */
+
+.story-window {
+  max-width: 720px;
+  margin: 8px auto 0;
+  text-align: left;
+}
+.story-window .finder-status { font-size: 12px; }
+.story-body { padding: 30px clamp(20px, 6vw, 56px) 34px; }
+.story-body p {
+  max-width: 34em;
+  margin: 0 0 1.05em;
+  font-size: 18px;
+  line-height: 1.62;
+  text-wrap: pretty;
+  color: var(--ink);
+}
+:root:not([data-theme]) .story-body p { font-size: 17px; line-height: 1.7; }
+.story-quote.story-quote {
+  margin: 30px 0 0;
+  padding: 24px 0 0;
+  border-top: 1px solid var(--win-border, var(--ink));
+  font-family: var(--display-font);
+  font-size: clamp(22px, 3.2vw, 30px);
+  font-weight: var(--head-weight);
+  line-height: 1.24;
+  letter-spacing: var(--head-track);
+  text-wrap: balance;
+  max-width: 22em;
+}
+:root:not([data-theme]) .story-quote.story-quote { border-top: 2px solid var(--ink); }
+/* Chinese display lines break at their commas, not between two characters
+   of one word: balance alone split 正是 across the quote's two lines. */
+:lang(zh) .story-quote,
+:lang(zh) .scene-head,
+:lang(zh) .hero-head { word-break: keep-all; }
+
+/* ---------- Grids that fit their content ---------- */
+
+/* Four cards read as two pairs, never three and an orphan. */
+.temp-grid-pairs {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: 800px;
+  margin: 0 auto;
+  gap: 14px;
+}
+.temp-card { padding: 16px 18px 18px; }
+.temp-card h3 { font-size: 15px; margin-bottom: 8px; }
+.temp-card p { font-size: 14.5px; line-height: 1.55; }
+.compare-wall { max-width: 800px; margin-left: auto; margin-right: auto; }
+.compare-col { padding: 16px 18px 14px; }
+.compare-col li { font-size: 14.5px; }
+
+/* A single capture is centred at a size that shows it, not left in a column. */
+.games-wall-single { grid-template-columns: minmax(0, 720px); justify-content: center; }
+.games-wall-single .games-shot { aspect-ratio: 16 / 10; }
+
+/* Game captions carry no icon, so they take the whole row. */
+.proof-cap:not(:has(.obj-icon)) { grid-template-columns: minmax(0, 1fr); text-align: left; }
+.proof-cap:not(:has(.obj-icon)) .proof-line { grid-column: 1; }
+
+/* An odd capture closes the wall across both columns instead of hanging
+   alone under the left one. */
+.proof-wall > .proof-card:last-child:nth-child(odd) { grid-column: 1 / -1; }
+.proof-wall > .proof-card:last-child:nth-child(odd) .proof-shot { aspect-ratio: 32 / 10; }
+
+.proof-note + .btn-row { margin-top: 24px; }
+.machine-figure-strip { margin-top: 30px; }
+.model-providers { margin-top: 26px; gap: 34px; }
+
+/* ---------- Press and hover ---------- */
+
+/* Press feedback that belongs to the era: System 6 and Platinum nudged a
+   pixel; everything from Aqua on gives a little under the finger. */
+html[data-theme]:not([data-theme="platinum"]) .btn {
+  transition: transform 140ms ease-out, background-color 160ms ease, color 160ms ease;
+}
+html[data-theme]:not([data-theme="platinum"]) .btn:active { transform: scale(0.97); }
+
+.boot-choice { transition: transform 220ms cubic-bezier(0.23, 1, 0.32, 1), box-shadow 220ms ease; }
+@media (hover: hover) and (pointer: fine) {
+  html[data-theme]:not([data-theme="platinum"]) .boot-choice:hover { transform: translateY(-3px); }
+}
+html[data-theme]:not([data-theme="platinum"]) .boot-choice:active { transform: scale(0.98); }
+
+html[data-theme="big-sur"] .btn-default::after { content: none; }
+html[data-theme="big-sur"] .btn-default { background: #0a64d8; color: #fff; border-color: #0a64d8; }
+
+@media (prefers-reduced-motion: reduce) {
+  html.js[data-theme] .scene.scene-in { animation: none; }
+  .btn, .boot-choice { transition: none; }
+  html[data-theme] .btn:active, html[data-theme] .boot-choice:active { transform: none; }
+}
+
+@media (max-width: 700px) {
+  .scene { margin: 92px 0; }
+  .scene-head { font-size: clamp(28px, 8.4vw, 36px); }
+  .hero-head { font-size: clamp(32px, 9.6vw, 42px); }
+  .scene-note, .hero-sub { font-size: 17px; }
+  .story-body { padding: 22px 18px 24px; }
+  .story-body p { font-size: 17px; }
+  .temp-grid-pairs { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ==========================================================================
+   Site 5: the product page.
+
+   Borrowed from what worked on the WindowShade site and its peers: say the
+   requirements under the button, set alternatives out as a trade-off rather
+   than a feature table, let the reader walk the product with a scroll, open a
+   door to the long story instead of telling it here, and end on questions a
+   first-time visitor actually has. Every surface still rides the era tokens.
+   ========================================================================== */
+
+:root { --accent: #000; --accent-soft: rgba(0, 0, 0, 0.08); --theirs: #000; }
+html[data-theme] { --accent: var(--sel-bg, #2f66b0); --accent-soft: rgba(40, 90, 200, 0.12); --theirs: var(--sel-bg, #2f66b0); }
+html[data-theme="platinum"] { --theirs: #333399; }
+html[data-theme="nextstep"] { --accent: #000; --accent-soft: rgba(0, 0, 0, 0.1); --theirs: #555; }
+
+/* ---------- Facts under a button ---------- */
+.hero-facts,
+.boot-facts,
+.notes-meta {
+  font-size: 13.5px;
+  letter-spacing: 0.01em;
+  color: var(--note-ink, var(--ink));
+  opacity: 0.78;
+  margin: -6px auto 34px;
+}
+.boot-facts { margin: 22px auto 0; }
+:root:not([data-theme]) .hero-facts,
+:root:not([data-theme]) .boot-facts { background: var(--paper); border: 1px solid var(--ink); width: fit-content; padding: 1px 10px; opacity: 1; }
+html[data-theme] .hero-facts,
+html[data-theme] .boot-facts { color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35); opacity: 0.92; }
+html[data-theme="liquid-glass"] .hero-facts,
+html[data-theme="liquid-glass"] .boot-facts { color: #1c2733; text-shadow: none; opacity: 0.72; }
+
+/* Shared window surface for the new cards. */
+.way, .tour-step, .notes-cover, .more-switch {
+  background: var(--win-bg, var(--paper));
+  border: 1px solid var(--win-border, var(--ink));
+  border-radius: var(--win-radius, 0);
+  box-shadow: var(--win-shadow, 2px 2px 0 var(--ink));
+  -webkit-backdrop-filter: var(--win-blur, none);
+  backdrop-filter: var(--win-blur, none);
+  color: var(--ink);
+}
+
+/* ---------- Three ways ---------- */
+.ways {
+  list-style: none;
+  margin: 8px auto 0;
+  padding: 0;
+  max-width: 1000px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  text-align: left;
+}
+.way { overflow: hidden; padding: 0 0 20px; }
+.way h3 { margin: 4px 20px 8px; font-size: 17px; }
+.way p { margin: 0 20px; font-size: 14.5px; line-height: 1.55; text-wrap: pretty; }
+.way .way-num {
+  margin-top: 16px;
+  font-family: var(--mono-font);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  opacity: 0.6;
+}
+.way.is-ours .way-num,
+.way.is-ours h3 { color: var(--accent); opacity: 1; }
+:root:not([data-theme]) .way.is-ours { border-width: 2px; box-shadow: 3px 3px 0 var(--ink); }
+
+/* The drawings are diagrams of an idea, not of the product: grey is you,
+   the accent is the machine, and the only question each one asks is where
+   the machine's lines end up. */
+.way-illo {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  border-bottom: 1px solid var(--win-border, var(--ink));
+  background: var(--accent-soft);
+  overflow: hidden;
+}
+:root:not([data-theme]) .way-illo { background: #fff; }
+.way-illo i, .way-illo b { display: block; }
+.illo-page, .illo-window {
+  position: absolute;
+  background: var(--paper);
+  border: 1px solid var(--win-border, var(--ink));
+  border-radius: calc(var(--win-radius, 0px) * 0.5);
+  padding: 9% 7%;
+  display: grid;
+  align-content: start;
+  gap: 7%;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+}
+:root:not([data-theme]) .illo-page,
+:root:not([data-theme]) .illo-window { box-shadow: 2px 2px 0 var(--ink); }
+.illo-page i, .illo-window i { height: 5px; border-radius: 3px; background: rgba(0, 0, 0, 0.26); }
+.illo-page i.is-theirs, .illo-window i.is-theirs { background: var(--theirs); opacity: 0.8; }
+:root:not([data-theme]) .illo-page i { background: #000; border-radius: 0; }
+:root:not([data-theme]) .illo-page i.is-theirs,
+:root:not([data-theme]) .illo-window i.is-theirs { background: var(--desk-pattern); background-size: 2px 2px; opacity: 1; }
+.illo-page i.is-short, .illo-window i.is-short { width: 60%; }
+
+.way-illo-chat .illo-bubble {
+  position: absolute;
+  left: 10%;
+  width: 34%;
+  height: 11%;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.22);
+}
+.way-illo-chat .illo-bubble:nth-child(1) { top: 16%; width: 26%; }
+.way-illo-chat .illo-bubble.is-reply { top: 34%; left: 16%; background: var(--theirs); opacity: 0.75; }
+.way-illo-chat .illo-bubble.is-reply.is-short { top: 50%; width: 24%; }
+:root:not([data-theme]) .way-illo-chat .illo-bubble { background: #000; border-radius: 8px; }
+:root:not([data-theme]) .way-illo-chat .illo-bubble.is-reply { background: var(--desk-pattern); background-size: 2px 2px; border: 1px solid #000; opacity: 1; }
+.way-illo-chat .illo-arrow {
+  position: absolute;
+  left: 50%;
+  top: 44%;
+  width: 12%;
+  height: 2px;
+  background: var(--ink);
+  opacity: 0.55;
+}
+.way-illo-chat .illo-arrow::after {
+  content: "";
+  position: absolute;
+  right: -2px;
+  top: -4px;
+  border: 5px solid transparent;
+  border-left: 7px solid var(--ink);
+  border-right: 0;
+}
+.way-illo-chat .illo-page { right: 9%; top: 14%; width: 26%; height: 72%; }
+.way-illo-inline .illo-page.is-wide { left: 22%; right: 22%; top: 12%; bottom: -6%; gap: 9%; }
+
+.way-illo-desk .illo-window { top: 16%; width: 34%; height: 66%; padding-top: 0; }
+.way-illo-desk .illo-window b {
+  height: 12%;
+  margin: 0 -8% 8%;
+  border-bottom: 1px solid var(--win-border, var(--ink));
+  background: rgba(0, 0, 0, 0.05);
+}
+:root:not([data-theme]) .way-illo-desk .illo-window b { background: linear-gradient(to bottom, #000 0 1px, transparent 1px 2px) 0 0 / 100% 2px; }
+.way-illo-desk .illo-window.is-model { left: 8%; }
+.way-illo-desk .illo-window.is-yours { right: 8%; }
+.way-illo-desk .illo-hand {
+  position: absolute;
+  left: 44%;
+  top: 46%;
+  width: 12%;
+  border-top: 2px dashed var(--accent);
+}
+.way-illo-desk .illo-hand::after {
+  content: "";
+  position: absolute;
+  right: -3px;
+  top: -6px;
+  border: 5px solid transparent;
+  border-left: 7px solid var(--accent);
+  border-right: 0;
+}
+
+.ways-axis {
+  max-width: 30em;
+  margin: 36px auto 0;
+  font-family: var(--display-font);
+  font-size: clamp(20px, 2.6vw, 27px);
+  font-weight: var(--head-weight);
+  letter-spacing: var(--head-track);
+  line-height: 1.3;
+  text-wrap: balance;
+  color: var(--head-ink, var(--ink));
+  text-shadow: var(--head-shadow, none);
+}
+:root:not([data-theme]) .ways-axis { background: var(--paper); border: 1px solid var(--ink); width: fit-content; padding: 6px 16px; }
+html[data-theme] .ways-axis { color: #fff; --head-shadow: 0 1px 2px rgba(0, 0, 0, 0.35); }
+html[data-theme="liquid-glass"] .ways-axis { color: #1c2733; --head-shadow: none; }
+
+/* ---------- The desk tour ---------- */
+.tour {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: 36px;
+  margin-top: 30px;
+  text-align: left;
+}
+/* The tour breaks out of the reading column: the camera needs the width. */
+@media (min-width: 861px) {
+  .tour {
+    margin-left: calc(50% - min(620px, 50vw - 28px));
+    margin-right: calc(50% - min(620px, 50vw - 28px));
+  }
+}
+.tour-stage-wrap {
+  position: sticky;
+  top: calc(var(--menu-bar-height) + 28px);
+  align-self: start;
+}
+.tour-stage { margin: 0; }
+.tour-port {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border: 1px solid var(--win-border, var(--ink));
+  border-radius: var(--win-radius, 0);
+  box-shadow: var(--win-shadow, 4px 4px 0 rgba(0, 0, 0, 0.55));
+  background: #808080;
+}
+.tour-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform-origin: 0 0;
+  transition: transform 900ms cubic-bezier(0.65, 0, 0.35, 1);
+}
+.tour-spot {
+  position: absolute;
+  border-radius: calc(var(--win-radius, 0px) * 0.8);
+  box-shadow: 0 0 0 200vmax rgba(10, 16, 28, 0.34);
+  outline: 2px solid rgba(255, 255, 255, 0.85);
+  outline-offset: 2px;
+  transition: left 900ms cubic-bezier(0.65, 0, 0.35, 1), top 900ms cubic-bezier(0.65, 0, 0.35, 1), width 900ms cubic-bezier(0.65, 0, 0.35, 1), height 900ms cubic-bezier(0.65, 0, 0.35, 1);
+  pointer-events: none;
+}
+/* 1988 had no translucent anything: the spotlight is a marching-ants box. */
+:root:not([data-theme]) .tour-spot { box-shadow: 0 0 0 200vmax rgba(0, 0, 0, 0.45); outline: 2px dashed #000; outline-offset: 0; border-radius: 0; }
+:root:not([data-theme]) .tour-frame,
+:root:not([data-theme]) .tour-spot { transition-timing-function: steps(6, end); }
+.tour-caption {
+  margin: 10px 0 0;
+  font-size: 12.5px;
+  opacity: 0.75;
+  color: var(--note-ink, var(--ink));
+}
+html[data-theme] .tour-caption { color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4); }
+html[data-theme="liquid-glass"] .tour-caption { color: #1c2733; text-shadow: none; }
+:root:not([data-theme]) .tour-caption { background: var(--paper); border: 1px solid var(--ink); width: fit-content; padding: 0 8px; opacity: 1; }
+
+.tour-steps { list-style: none; margin: 0; padding: 12vh 0 28vh; display: grid; gap: 34vh; }
+.tour-step {
+  padding: 18px 20px 20px;
+  cursor: pointer;
+  opacity: 0.45;
+  transition: opacity 300ms ease, transform 300ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.tour-step.is-active { opacity: 1; }
+html[data-theme] .tour-step.is-active { transform: translateX(-4px); }
+.tour-step:focus-visible { outline: 2px dotted var(--ink); outline-offset: 3px; }
+.tour-step h3 { margin: 2px 0 8px; font-size: 18px; line-height: 1.25; }
+.tour-step .tour-icon { float: right; margin: 0 0 6px 12px; width: 32px; height: 32px; }
+.tour-step p { margin: 0; font-size: 15px; line-height: 1.55; text-wrap: pretty; }
+.tour-step .tour-num { font-family: var(--mono-font); font-size: 12px; letter-spacing: 0.06em; opacity: 0.6; margin-bottom: 4px; }
+.tour-step.is-active .tour-num { color: var(--accent); opacity: 1; }
+/* Without the camera (no capture, no script) the steps read as a list. */
+.scene-tour:not(.tour-ready) .tour-steps { padding: 0; gap: 12px; }
+.scene-tour:not(.tour-ready) .tour-step { opacity: 1; cursor: default; }
+.tour-still .tour-frame, .tour-still .tour-spot, .tour-still .tour-step { transition: none; }
+
+/* ---------- Field Notes doorway ---------- */
+.notes-door {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+  gap: 48px;
+  align-items: center;
+  max-width: 1000px;
+  margin: 0 auto;
+  text-align: left;
+}
+.notes-copy .scene-kicker,
+.notes-copy .scene-head,
+.notes-copy .scene-note { margin-left: 0; margin-right: 0; }
+.notes-copy .scene-note { max-width: 26em; }
+.notes-btns { justify-content: flex-start; margin: 22px 0 12px; }
+.notes-meta { margin: 0; }
+html[data-theme] .notes-meta { color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35); }
+html[data-theme="liquid-glass"] .notes-meta { color: #1c2733; text-shadow: none; }
+:root:not([data-theme]) .notes-meta { background: var(--paper); border: 1px solid var(--ink); width: fit-content; padding: 1px 8px; opacity: 1; }
+
+/* The cover is the essay's own paper, whatever year the page is wearing:
+   the long read keeps one calm face, so its doorway does too. */
+.notes-cover {
+  display: grid;
+  gap: 16px;
+  padding: 26px 28px 24px;
+  text-decoration: none;
+  background: #fbfaf6;
+  color: #1d1c1a;
+  transition: transform 260ms cubic-bezier(0.23, 1, 0.32, 1), box-shadow 260ms ease;
+}
+.notes-cover-label {
+  font-family: var(--face-mono-sf);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+.notes-cover-title {
+  font-family: "New York", "Iowan Old Style", Charter, Georgia, "Songti SC", STSong, "Noto Serif CJK SC", serif;
+  font-size: clamp(26px, 3vw, 34px);
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+.notes-cover-icons { display: flex; gap: 10px; flex-wrap: wrap; padding: 6px 0 2px; }
+.notes-cover-icons img { width: 32px; height: 32px; }
+.notes-cover-icons img.is-pixel { image-rendering: pixelated; }
+.notes-chapters { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; border-top: 1px solid rgba(0, 0, 0, 0.12); }
+.notes-chapters li {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 10px;
+  padding: 8px 0;
+  font-size: 14px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+.notes-chapters b { font-family: var(--face-mono-sf); font-weight: 500; font-size: 12.5px; opacity: 0.55; padding-top: 1px; }
+@media (hover: hover) and (pointer: fine) {
+  html[data-theme] .notes-cover:hover { transform: translateY(-3px); }
+}
+.notes-cover:focus-visible { outline: 2px dotted var(--ink); outline-offset: 4px; }
+
+/* ---------- After hours ---------- */
+.more-switch {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  margin: 6px auto 0;
+  border-radius: calc(var(--btn-radius, 7px) + 3px);
+}
+.more-switch[hidden] { display: none; }
+.more-switch button {
+  appearance: none;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 14.5px;
+  color: var(--ink);
+  padding: 7px 16px;
+  min-height: 36px;
+  border-radius: var(--btn-radius, 7px);
+  cursor: pointer;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+.more-switch button[aria-selected="true"] { background: var(--ink); color: var(--paper); }
+html[data-theme] .more-switch button[aria-selected="true"] { background: var(--accent); color: #fff; }
+html[data-theme="nextstep"] .more-switch button[aria-selected="true"] { background: #fff; color: #000; }
+.more-switch button:focus-visible { outline: 2px dotted var(--ink); outline-offset: 2px; }
+.more-panel { margin-top: 34px; }
+.more-panel[hidden] { display: none; }
+.more-ready .more-panel { animation: none; }
+.more-head {
+  font-family: var(--display-font);
+  font-size: clamp(22px, 3vw, 30px);
+  font-weight: var(--head-weight);
+  letter-spacing: var(--head-track);
+  margin: 0 auto 8px;
+  color: var(--head-ink, var(--ink));
+}
+:root:not([data-theme]) .more-head { background: var(--paper); border: 1px solid var(--ink); width: fit-content; padding: 1px 12px; }
+html[data-theme] .more-head { color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35); }
+html[data-theme="liquid-glass"] .more-head { color: #1c2733; text-shadow: none; }
+.more-panel .scene-fine { margin-bottom: 18px; }
+.more-panel .temp-grid { max-width: 1000px; margin: 0 auto; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.more-panel .finder-window { max-width: 1000px; margin: 0 auto; }
+/* Without the switch, the shelves stack and keep their own headings. */
+#more:not(.more-ready) .more-panel + .more-panel { margin-top: 64px; }
+
+/* ---------- Read Me questions ---------- */
+.readme-window { max-width: 760px; }
+.readme-body { padding: 6px 26px 14px; }
+.faq { border-bottom: 1px solid var(--win-border, var(--ink)); }
+.faq:last-child { border-bottom: 0; }
+.faq summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 0;
+  font-size: 16.5px;
+  font-weight: 600;
+}
+:root:not([data-theme]) .faq summary { font-weight: normal; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: "+"; font-weight: 400; opacity: 0.6; transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1); }
+.faq[open] summary::after { transform: rotate(45deg); }
+.faq summary:focus-visible { outline: 2px dotted var(--ink); outline-offset: 2px; }
+.faq-rules { margin: -4px 0 18px; padding: 0; list-style: none; display: grid; gap: 10px; max-width: 38em; }
+.faq-rules li { font-size: 15px; line-height: 1.6; padding-left: 14px; border-left: 2px solid var(--accent); text-wrap: pretty; }
+.faq-rules b { display: block; margin-bottom: 2px; }
+.faq p { margin: -4px 0 18px; font-size: 15px; line-height: 1.6; max-width: 38em; text-wrap: pretty; }
+
+@media (max-width: 860px) {
+  .ways { grid-template-columns: minmax(0, 1fr); max-width: 520px; }
+  .tour { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .tour-stage-wrap { top: calc(var(--menu-bar-height) + 8px); z-index: 2; }
+  .tour-steps { padding: 4vh 0 24vh; gap: 36vh; }
+  .tour-step { opacity: 0.55; }
+  .notes-door { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+  .more-panel .temp-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 520px) {
+  .more-switch { display: flex; flex-wrap: wrap; justify-content: center; }
+  .more-switch button { padding: 6px 12px; }
+  .more-panel .temp-grid { grid-template-columns: minmax(0, 1fr); }
+  .readme-body { padding: 4px 16px 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tour-frame, .tour-spot, .tour-step, .notes-cover, .more-switch button { transition: none; }
+}
 
 /* Increase Contrast, for the same reason as the application's block of the
    same name: measured with CDP media emulation, this page read identical

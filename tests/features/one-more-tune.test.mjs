@@ -289,7 +289,13 @@ test.assertNotIncludes(recallRender, "era: true", "and neither does the recall q
 const revealRender = source.slice(source.indexOf("function renderOneMoreTuneReveal"), source.indexOf("function oneMoreTuneChallengePool"));
 test.assertIncludes(revealRender, "era: true", "the reveal does, because the product is on the page by then");
 const challengeRender = source.slice(source.indexOf("function renderOneMoreTuneChallenge"), source.indexOf("function renderOneMoreTuneRoundResult"));
-test.assertMatches(challengeRender, /question\.submitted[\s\S]*oneMoreTuneEraBand\(reveal\)/, "the challenge reveal names the era too, and only after a submission");
+// The round's reveal names the era in the record's liner notes and prints it on
+// the white label, rather than in a separate band. The claim is the same one:
+// it is printed, and only after a submission.
+test.assertMatches(challengeRender, /question\.submitted[\s\S]*oneMoreTuneRoundStage\(question\)/, "the challenge reveal draws the stage that carries the naming, and only after a submission");
+test.assertMatches(source, /function oneMoreTuneRoundStage\(question, \{ idle = false \} = \{\}\) \{\s*const reveal = !idle && question\?\.submitted \? question\.reveal \|\| null : null;/, "the stage reads the reveal only after a submission");
+test.assertMatches(source, /function oneMoreTuneLinerNotes\(reveal\)[\s\S]{0,600}era: era\.id !== "none" \? era : null/, "the liner notes carry the era, and a card with no year carries none");
+test.assertMatches(challengeRender, /notes\.era \? `<span class="omt-era-name" data-era="\$\{notes\.era\.id\}">[\s\S]{0,120}notes\.era\.name/, "and the reveal prints the era's name beside its colour, never the colour alone");
 test.assertNotMatches(challengeRender.slice(challengeRender.indexOf("clearOneMoreTuneNowPlaying")), /oneMoreTuneEraBand/, "the unanswered question still does not");
 test.assertIncludes(
   source.slice(source.indexOf("function renderOneMoreTuneLearn"), source.indexOf("function renderOneMoreTuneMatch")),
@@ -312,10 +318,10 @@ test.assertMatches(sheet, /\.tag\.on \{ background:var\(--selection-bg\)/, "a st
 test.assertNotMatches(sheet, /\.rating:nth-child\(/, "no grade button is singled out by its position");
 test.assertNotMatches(sheet, /outline:3px solid #/, "the focus ring is the appearance's, not a colour this window invented");
 test.assertMatches(sheet, /outline:var\(--control-focus-outline\)/, "it reads the shared token");
-// The wordmark is the era mark: six bars, a waveform one way and the 1977
-// stripes the other. Four grey bars were neither.
-test.assertMatches(source, /<span class="brandmark">(<b><\/b>){6}<\/span>/, "the wordmark has six bars");
-test.assertMatches(sheet, /\.brandmark b:nth-child\(6\) \{[^}]*--omt-era-6/, "and the sixth takes the sixth era");
+// The window's title already names it, so the head carries no wordmark; the
+// six-bar era mark travels on the share card instead.
+test.assertNotMatches(source, /class="brand"/, "the window names itself once, in its title bar: the wordmark under it was the repetition");
+test.assertIncludes(source, "const heights = [22, 44, 30, 38, 18, 34];", "the six-bar era mark lives on the share card, the one thing that leaves the window");
 
 // Four grades, four dates. One shared line of small print told a person nothing
 // about the choice they were making — and the dates are the scheduler's own,
@@ -434,14 +440,39 @@ test.assertMatches(sheet, /\.lesson-card \{[^}]*box-shadow:var\(--system-shadow\
 // left the player's own labels invisible in those two appearances.
 test.assertMatches(sheet, /\.one-more-tune-window \{[^}]*--omt-stage-ink:var\(--paper\)/,
   "the deck names one stage ink, the desk's light pole, for the surface the appearance darkens");
-test.assertMatches(sheet, /\.playerhead[^}]*color:var\(--omt-stage-ink\)/, "and the player's small print reads it");
-test.assertMatches(sheet, /\.triangle \{[^}]*border-left:16px solid var\(--omt-stage-ink\)/, "so does the play triangle");
-test.assertMatches(sheet, /\.trackline:before \{[^}]*background:var\(--omt-stage-ink\)/, "and the progress mark");
+test.assertMatches(sheet, /\.one-more-tune-window \{[^}]*--omt-room:#111113;[^}]*--omt-room-ink:#F5F5F7;/, "the round's room is the deck's own dark, whatever the appearance");
+test.assertMatches(sheet, /body\[data-theme="classic"\] \.one-more-tune-window \{[^}]*--omt-room:var\(--ink\);[^}]*--omt-room-ink:var\(--paper\);/, "and the 1-bit desk re-values that room in its own two inks, in the one block that names an appearance");
+// The progress mark moved from a `.trackline:before` painted at 22% whether or
+// not anything was playing to the disc's rim, which is the cue's own clock. The
+// token assertion is the same one: progress is drawn in the stage's ink, never
+// in an era's hue, because colour here is identity and never state.
+test.assertMatches(sheet, /\.omt-rim-arc \{[^}]*stroke:var\(--omt-room-ink\)/, "the progress mark is drawn in the room's ink, never an era's hue");
+test.assertNotMatches(sheet.replace(/\/\*[\s\S]*?\*\//g, ""), /\.trackline/,
+  "the fake progress bar is gone rather than left behind as dead weight");
 test.assertNotMatches(sheet.replace(/\/\*[\s\S]*?\*\//g, ""), /color:var\(--surface-secondary\)/,
   "no text in this sheet takes a surface token as its ink");
+// Reduced motion is an acceptance item of this edition, not a nicety: the deck
+// changes faces on every answer, and a reader who asked the system to stop
+// moving things must get the next face, not a shorter animation. Two blocks,
+// because they arrive from two places: the face fade, and the control
+// transitions the sheet inherits from the desk.
+test.assertMatches(sheet, /@media \(prefers-reduced-motion: reduce\) \{\s*\.one-more-tune-face,\s*\.one-more-tune-line-card \{\s*animation: none;/,
+  "a reduced-motion reader gets the next face without the entrance animation");
+test.assertMatches(sheet, /@media \(prefers-reduced-motion: reduce\) \{[\s\S]{0,200}\.one-more-tune-window \.unit,[\s\S]{0,120}\.choice \{ transition:none \}/,
+  "and the unit and choice transitions are off with it");
 const challengeFace = source.slice(source.indexOf("function renderOneMoreTuneChallenge"), source.indexOf("function renderOneMoreTuneRoundResult"));
 test.assertNotIncludes(challengeFace, "oneMoreTuneEvidencePanel", "a question never shows an evidence panel");
 test.assertNotIncludes(recallRender, "oneMoreTuneEvidencePanel", "and neither does a recall card");
+
+// ---- The practice edition's card -------------------------------------------
+//
+// The 2026-09-23 package also asked for a card describing three desk tasks
+// that are not open to players. It was built and then taken out: a card about
+// things a player cannot do does not help anyone finish a round, and its copy
+// spoke in the build's voice ("prepared and checked"). Keep it out.
+test.assertNotIncludes(challengeFace, "one-more-tune-practice-card", "the challenge face does not advertise closed desk tasks");
+test.assertNotIncludes(en, "one_more_tune_practice_card:", "and the string is gone from English");
+test.assertNotIncludes(zh, "one_more_tune_practice_card:", "and from Chinese");
 
 // ---- A link is the unit of sharing ----------------------------------------
 //
@@ -621,7 +652,7 @@ test.assertMatches(source, /await copyOneMoreTuneText\(link, "one_more_tune_shar
 test.assertMatches(source, /oneMoreTuneShareLink\(\) \|\| oneMoreTuneShareCode\(\)/, "the score card carries the link, so a pasted line stays tappable");
 test.assertIncludes(en, "one_more_tune_share_sent:", "the outcome has words in English");
 test.assertIncludes(zh, "one_more_tune_share_sent:", "and in Chinese");
-test.assertMatches(source, /one-more-tune-desk-line[\s\S]{0,200}data-i18n="one_more_tune_desk_link"/, "the result names the desk this quiz is an app on");
+test.assertMatches(source, /oneMoreTuneArrivedFromLink \? `<p class="omt-desk"><a href="\/"[\s\S]{0,120}data-i18n="one_more_tune_desk_link"/, "a back cover reached from somebody's link names the desk this quiz is an app on");
 test.assertIncludes(en, "one_more_tune_desk_link:", "in English");
 test.assertIncludes(zh, "one_more_tune_desk_link:", "and in Chinese");
 // A card travels without the link around it, so the address travels on the card.
@@ -959,13 +990,16 @@ test.assertIncludes(source, 'media.provider === "youtube" && !/^[\\w-]{11}$/.tes
   }
 }
 
-// ---- A wide window is a desk, not a phone stretched ------------------------
+// ---- One room, three arrangements -------------------------------------------
 //
-// The phone's strategy is one column that has to fit one screen. A desk's is
-// the opposite: spend the width. The round puts the music and the question on
-// the left and the four answers on the right, the entry face puts its copy
-// beside its two ways in, and the ten answers flow down two columns (three on a
-// wider window) so the round is read as a page rather than a list.
+// The round is a room that fits one screen, and the room — not a device's name
+// — decides how it is laid out: `.omt-room` is a size container, and its own
+// shape picks one of three arrangements. Upright, the record sits above the
+// question and its answers, answers last where a thumb is; a short upright room
+// (the Duo's outer display, a phone under Safari's or WeChat's bars) stands the
+// question beside a smaller record; a wide room (a phone on its side, the Duo
+// unfolded, a desk window) gives the record the left column. Measured before it
+// shipped on eleven screens, four faces and two appearances: nothing scrolls.
 test.assertIncludes(source, 'data-one-more-tune-command="one-more-tune-play-again"',
   "the round result offers another round, not only the way out");
 test.assertIncludes(source, 'if (action === "one-more-tune-play-again") return startOneMoreTuneRound();',
@@ -973,25 +1007,39 @@ test.assertIncludes(source, 'if (action === "one-more-tune-play-again") return s
 test.assertIncludes(source, '"one-more-tune-play-again",', "the button's press unlocks the audio, so its first question sounds by itself");
 {
   const css = read("styles/97-one-more-tune.css");
-  const wideStart = css.indexOf("@container (min-width: 851px)");
-  const wideEnd = css.indexOf("/* The left column's own grammar");
-  const wide = css.slice(wideStart, wideEnd);
-  test.assert(wideStart > 0 && wideEnd > wideStart, "the file declares a wide strategy, and it is the one this contract reads");
-  test.assertIncludes(wide, "grid-template-areas:", "the wide strategy places blocks by area instead of stacking them");
-  test.assertIncludes(wide, ".one-more-tune-step-challenge", "the listening face gets its own wide layout");
-  // The question and its four answers are one block on a desk (the wrapper the
-  // face puts them in), so the question can never drift away from the answers it
-  // belongs to, and the block is what the column centers.
-  test.assertIncludes(wide, "grid-area:ask", "the question and its four answers take one column, together");
-  test.assertIncludes(wide, "justify-content:center", "and are centered in it rather than clinging to its top edge");
-  // The reveal keeps the question's own two columns and puts the way onward at
-  // the bottom of the column the answers were given in — the pointer the person
-  // just used does not have to cross the window to leave the question.
-  test.assertIncludes(wide, ".one-more-tune-round-reveal", "the reveal has a desk layout of its own");
-  test.assertIncludes(wide, '"stage record"', "the stage and the record are the question's two columns again");
-  test.assertIncludes(wide, "grid-area:tail", "and the actions live in the record's column");
-  test.assertIncludes(wide, "columns:2", "the ten answers flow down two columns");
-  test.assertIncludes(wide, "@container (min-width: 1000px)", "and three on a window wide enough to hold them");
+  const roomStart = css.indexOf("/* --- The round's room: a white label");
+  const room = css.slice(roomStart);
+  test.assert(roomStart > 0, "the sheet declares the round's room, and it is the block this contract reads");
+  test.assertMatches(room, /\.omt-room \{\s*container:omt\/size;/, "the room is a size container, so a window of any shape can host it");
+  test.assertIncludes(room, 'grid-template-areas:"track" "stage" "gap" "q" "opts"',
+    "upright, the track list, the record, the question and its answers stack, answers last");
+  test.assertMatches(room, /@container omt \(max-aspect-ratio:13\/10\) and \(max-height:600px\) \{[\s\S]{0,500}grid-template-areas:"track track" "stage q" "gap gap" "opts opts"/,
+    "a short upright room stands the question beside a smaller record");
+  test.assertMatches(room, /@container omt \(min-aspect-ratio:13\/10\) \{[\s\S]{0,900}grid-template-areas:"stage track" "stage q" "stage gap" "stage opts"/,
+    "a wide room gives the record the left column and stacks the rest on the right");
+  // The record's size is what the room has left once the question and its four
+  // answers are placed, not a size per breakpoint.
+  test.assertIncludes(room, "--omt-d:clamp(140px,min(100cqh - 440px,(100cqw - 32px) / 1.26),330px)",
+    "the record takes the room's height after the question and its four answers");
+  // A size container whose height came only from min-height measured its own
+  // container units as zero and dropped the record to its floor, so a room
+  // outside the phone shell has a height of its own.
+  test.assertMatches(room, /:not\(\.is-mobile-fullscreen\) \.omt-room \{ flex:none;height:clamp\(/,
+    "a desk window's room has a definite height");
+  // The way onward comes back where the answers were given: it is part of the
+  // answers' own block, so on a desk the pointer does not cross the window and
+  // on a phone the thumb does not travel.
+  test.assertMatches(source, /<div class="omt-opts">\s*<div class="omt-grid">\$\{rows\}<\/div>\s*<div class="omt-act"><button class="omt-next"/,
+    "the reveal's Next sits in the answers' own block");
+  test.assertMatches(room, /grid-auto-flow:column;grid-template-columns:minmax\(0,1fr\) minmax\(0,1fr\)/,
+    "on a wide room the back cover's ten tracks run down two columns");
+  // The room carries no class an old face was styled by: those names still own
+  // layouts written for the disc, and one of them turned the whole room into a
+  // grid whose content column was 6px wide.
+  test.assertMatches(source, /return `<section class="omt-room" data-omt-phase="\$\{phase\}"/,
+    "the room is only the room");
+  test.assertNotMatches(css.replace(/\/\*[\s\S]*?\*\//g, ""), /\.(darkplayer|omt-disc|sleeve|one-more-tune-round-reveal|one-more-tune-round-tail|one-more-tune-challenge-idle|one-more-tune-step-challenge)(?![\w-])/,
+    "and no rule for a face the round no longer paints is left behind");
 
   // ---- What makes the six appearances six, in this window -------------------
   //
@@ -1046,11 +1094,12 @@ test.assertIncludes(source, '"one-more-tune-play-again",', "the button's press u
       : source.indexOf("function reviewOneMoreTuneMisses"),
   );
   const resultCommands = [...resultFace.matchAll(/data-one-more-tune-command="([^"]+)"/g)].map((match) => match[1]);
-  test.assert(resultCommands.length === 3,
-    `the result face carries three buttons, not a rail of six (${resultCommands.join(", ")})`);
-  test.assert(resultCommands.includes("one-more-tune-play-again") && resultCommands.includes("one-more-tune-review-misses")
-    && resultCommands.includes("one-more-tune-share-round"),
-    "and they are another round, sending this round to a friend, and the misses");
+  test.assert(resultCommands.length === 2,
+    `the back cover carries two buttons: another ten, or sending this one on (${resultCommands.join(", ")})`);
+  test.assert(resultCommands.includes("one-more-tune-play-again") && resultCommands.includes("one-more-tune-share-round"),
+    "and they are another round and sending this round to a friend");
+  test.assertMatches(source, /\{ type: "item", action: "one-more-tune-review-misses", labelKey: "one_more_tune_queue_misses"/,
+    "reviewing the misses stays one menu row away, in the Study menu");
   // Leaving the round is still one press away, in the Study menu — what left
   // the face is the button, not the action.
   test.assertIncludes(source, 'action: "one-more-tune-end-round", labelKey: "one_more_tune_leave"',
@@ -1067,8 +1116,14 @@ test.assertIncludes(source, '"one-more-tune-play-again",', "the button's press u
   // score, because this is meant to be a happy thing to send, not a ladder.
   test.assertIncludes(source, "function oneMoreTuneRoundEra(round = oneMoreTuneRound) {",
     "the poster takes its era from the round's last answered question");
-  test.assertMatches(source, /const closingEra = oneMoreTuneRoundEra\(round\);[\s\S]{0,320}ctx\.fillRect\(0, 0, size, 14\)/,
-    "and paints that era as the ribbon across the top of the card");
+  test.assertMatches(source, /const closingEra = oneMoreTuneRoundEra\(round\);[\s\S]{0,6000}ctx\.fillStyle = eraColor \|\| "#EFEBE1";/,
+    "and the record's label wears that era, paper when the last card has none");
+  {
+    const shareCard = source.slice(source.indexOf("function oneMoreTuneShareCardCanvas"), source.indexOf("function oneMoreTuneEraColor"));
+    test.assert((shareCard.match(/oneMoreTuneEraColor\(/g) || []).length === 2,
+      "the only colours the card asks for are the mark's and the closing era's: no band is painted in its question's era, which a friend would read as a hint");
+    test.assertNotMatches(shareCard, /reveal\.song|reveal\.product|question\.reveal/, "and it names no song and no product");
+  }
   test.assertIncludes(en, 'one_more_tune_share_card_era: "last one landed in {era}"',
     "in words as well, because a colour is never the only carrier on this card");
   test.assertIncludes(en, "one_more_tune_share_card_bilibili:",
@@ -1087,7 +1142,7 @@ test.assertIncludes(source, '"one-more-tune-play-again",', "the button's press u
   test.assertMatches(source, /if \(intent\.set\) \{\s*oneMoreTuneArrivedFromLink = true;/,
     "set where the round is opened from that link");
   test.assertMatches(source,
-    /oneMoreTuneArrivedFromLink && !question\.everHeard \? `<p class="playstate">[\s\S]{0,260}one_more_tune_tap_to_hear_hint/,
+    /oneMoreTuneArrivedFromLink && !question\.everHeard\s*\?\s*`<p class="omt-note">[\s\S]{0,200}one_more_tune_tap_to_hear[\s\S]{0,200}one_more_tune_tap_to_hear_hint/,
     "and the question face asks for the one tap that starts the music");
   test.assertIncludes(en, "one_more_tune_tap_to_hear:",
     "in English");
@@ -1125,11 +1180,11 @@ test.assertNotIncludes(source.replace(/function handleOneMoreTuneKeydown[\s\S]*?
 // not take. The fifth is the one this contract grew: an answer the server
 // refused used to fall through to "wrong", which scored a person for a refusal
 // that was not theirs.
-test.assertMatches(source, /const mark = question\.correct \? "✓"\s*\n\s*: question\.answerFailed \? "!"\s*\n\s*: question\.mediaFailed \? "⚠"\s*\n\s*: question\.outcome === "skipped" \? "–" : "✗";/,
+test.assertMatches(source, /const mark = \{ right: "✓", wrong: "✕", skip: "–", broken: "⚠", unaccepted: "!" \}\[state\];/,
   "each row carries a mark, so a result is never told by colour alone");
-test.assertMatches(source, /const stateKey = question\.correct \? "one_more_tune_right"[\s\S]{0,200}one_more_tune_answer_unaccepted[\s\S]{0,200}one_more_tune_skipped/,
+test.assertMatches(source, /const state = question\.correct \? "right"\s*: question\.answerFailed \? "unaccepted"\s*: question\.mediaFailed \? "broken"\s*: question\.outcome === "skipped" \? "skip" : "wrong";/,
   "and right, wrong, skipped, never-played and not-counted are five outcomes, not two");
-test.assertMatches(source, /const broken = questions\.filter\(\(question\) => question\.mediaFailed && !question\.correct\)\.length;/,
+test.assertMatches(source, /const broken = questions\.filter\(\(question\) => \(question\.mediaFailed \|\| question\.answerFailed\) && !question\.correct\)\.length;/,
   "the result separates questions whose cue never played from the ones answered wrong");
 test.assertMatches(source, /mediaPlayed: question\.everHeard === true/,
   "the event records sound that actually started, not the button being pressed");
@@ -1221,72 +1276,46 @@ test.assertIncludes(source, 'id="one-more-tune-source-search"',
 // layout decision lives. Measured at 396x484 and 368x448, both engines: a round
 // starts, the sound plays, nothing scrolls, and all four answers are on screen.
 const omtStyles = read("styles/97-one-more-tune.css");
-test.assertMatches(omtStyles, /@media \(max-width: 430px\) and \(max-height: 520px\) \{[\s\S]{0,2400}\.one-more-tune-window \.brand \{\s*\n\s*display: none;/,
-  "on a watch the masthead stands down — the window title already names the app");
+test.assertNotMatches(source, /class="brand"/,
+  "there is no masthead to stand down on a watch: the window title is the only place the app is named");
 test.assertMatches(omtStyles, /@media \(max-width: 430px\) and \(max-height: 520px\) \{[\s\S]{0,2400}\.one-more-tune-tabs \.system-tab \{\s*\n\s*min-height: 44px;/,
   "the tab row stays, and grows to a thumb, because it is the only way between faces");
 test.assertMatches(omtStyles, /@media \(max-width: 430px\) and \(max-height: 520px\) \{[\s\S]{0,4000}height: auto;\s*\n\s*min-height: 0;\s*\n\s*padding: 4px 12px 2px;/,
   "and the header stops reserving a desktop masthead's 98px, which is what kept the last two answers off a 41mm screen");
-test.assertMatches(omtStyles, /@media \(max-width: 430px\) and \(max-height: 520px\) \{[\s\S]{0,4000}> \.choices \{\s*\n\s*grid-template-columns: 1fr 1fr;/,
-  "the four answers sit two by two, the one shape that fits four labels under a question this short");
-// The three faces are the quiz's only navigation. On a touch screen they were a
-// 28px strip — a row a finger can miss, between the reader and the only way to
-// change which face they are looking at. Measured after: 44px upright, 36px
-// sideways, where height is the scarcest thing the product has.
-test.assertMatches(omtStyles, /@media \(hover: none\) and \(pointer: coarse\) \{\s*\n\s*\.one-more-tune-window \.one-more-tune-tabs \.system-tab \{ min-height:44px;/,
-  "the quiz's own tabs take the touch minimum where the pointer is coarse");
+test.assertMatches(omtStyles, /@container omt \(min-aspect-ratio:13\/10\) and \(max-height:430px\) \{[\s\S]{0,1200}\.omt-grid \{ display:grid;grid-template-columns:1fr 1fr;/,
+  "a short wide room sets the four answers two by two, the one shape that fits four labels in two rows");
+// The faces are the quiz's only navigation. On a touch screen they were a 28px
+// strip — a row a finger can miss, between the reader and the only way to change
+// which face they are looking at. The minimum is stated once, at the end of the
+// sheet, after every size-specific block: three copies of it (one here, one in
+// the sideways block, one in the watch block) each lost to whichever block came
+// last, which is how the tabs shipped at 36px sideways and 24px wide. Measured
+// in the installed web app on an iPhone Air: 44px in both orientations, and the
+// inline padding is what makes the target the size of the thumb rather than the
+// size of the word.
+test.assertMatches(omtStyles, /@media \(hover: none\) and \(pointer: coarse\) \{[\s\S]{0,900}?\.system-tab \{\s*\n\s*min-height: 44px;\s*\n\s*\}\s*\n\s*\/\* These labels are 24-39px wide[\s\S]{0,400}?\.system-tab \{\s*\n\s*padding-inline: 8px;/,
+  "the quiz's own tabs take the touch minimum, and a thumb's width, where the pointer is coarse");
 test.assertMatches(omtStyles, /\.one-more-tune-tabs \.system-tab \{ min-height:36px;/,
-  "and what the sideways layout can spare rather than the floor it used to sit on");
-// ---- The reveal between the phone and the desk ------------------------------
+  "the compact height a mouse gets on a short window is still declared, and the coarse rule at the end of the sheet overrides it");
+// ---- Short rooms --------------------------------------------------------------
 //
-// The owner photographed two defects in one face at ~590px and ~710px wide: the
-// two content links drawn over the song line, and a stage that had become a
-// 171x178 black slab (taller than it is wide) squeezed into a two-column grid
-// that no longer had room for two columns.
-//
-// The tail was a flex-end column with min-height:0, so a pane shorter than the
-// face's content squeezed it below its own two rows and it overflowed UPWARD,
-// over the record box. Measured after: no meaningful overlap at 590, 650, 700,
-// 710, 820, 960 or 1100 wide. Below 700 the reveal stacks like the question
-// face and the stage takes the width the face has (544x143 at 590, where it was
-// 171x178), with a floor so a short pane cannot collapse it to a band.
-test.assertMatches(omtStyles, /@container \(max-width: 700px\) \{\s*\n\s*\.one-more-tune-window \.one-more-tune-round-reveal \{\s*\n\s*display:grid;\s*\n\s*grid-template-columns:minmax\(0,1fr\);/,
-  "below 700 the reveal is one column, like the question face");
-test.assertMatches(omtStyles, /@container \(max-width: 700px\) \{[\s\S]{0,1800}\.one-more-tune-round-reveal > \.darkplayer \{[\s\S]{0,600}min-height:120px;/,
-  "and its stage takes the face's width with a floor under it");
-test.assertMatches(omtStyles, /@container \(max-width: 850px\) \{[\s\S]{0,3200}\.one-more-tune-round-tail \{[\s\S]{0,700}justify-content:flex-start;/,
-  "the stacked tail starts at its own top, so its two rows cannot overflow upward into the record box");
-// ---- Every iPhone, held sideways -------------------------------------------
-//
-// The owner asked for one screen on all of them: the 5.4-inch mini, the 6.9-inch
-// Pro Max and the Duo, portrait and landscape alike. Measured before: the idle
-// face scrolled 265-330px on every landscape iPhone with both ways in under the
-// fold, and the reveal scrolled 84-164px with its way onward clipped. Both faces
-// now take the shape a wide, short screen can afford — the idle puts the hero
-// and the ways side by side (the shape the desk already uses), the reveal puts
-// its links and its buttons on one line each — and the parts a 375px screen
-// cannot hold are named: the three selling points, the second line of the hero.
-// Measured after, on a fixed set so the content is identical: 812x375, 874x402,
-// 912x420, 956x440 and the Duo's 890x626, all four faces, nothing clipped, no
-// page scroll, no pane scroll.
-test.assertMatches(omtStyles, /@media \(orientation: landscape\) and \(max-height: 560px\) and \(max-width: 1000px\) \{[\s\S]{0,4000}\.one-more-tune-challenge-idle \{\s*\n\s*display:grid;\s*\n\s*grid-template-columns:minmax\(0,1fr\) minmax\(230px,\.75fr\);/,
-  "a sideways phone's idle face is two columns, hero beside ways");
-test.assertMatches(omtStyles, /@media \(orientation: landscape\) and \(max-height: 560px\) and \(max-width: 1000px\) \{[\s\S]{0,6000}\.one-more-tune-challenge-idle \.featureline \{ display:none \}/,
-  "and gives up the three selling points it cannot hold");
-test.assertMatches(omtStyles, /@media \(orientation: landscape\) and \(max-height: 560px\) and \(max-width: 1000px\) \{[\s\S]{0,6000}\.one-more-tune-round-reveal > \.one-more-tune-round-tail \{[\s\S]{0,400}flex-direction:row;/,
-  "a sideways reveal puts its links and buttons on one line each");
-test.assertMatches(omtStyles, /@container \(max-width: 900px\) \{[\s\S]{0,400}line-clamp:2;/,
-  "and a credit that would wrap to three lines is capped where the window is narrow");
-// The reveal is the face a round spends its time on after the answer lands, and
-// on a 396x484 wrist its record box ended at 504 with the Next button under it
-// and nothing scrollable: the way onward was off the screen entirely. The
-// challenge face had already learned this; the reveal now gives up the same
-// desktop stage height and the same box padding. Measured after: nothing
-// clipped, no pane scroll, on the wrist and on every phone cell the probe runs.
-test.assertMatches(omtStyles, /@media \(max-width: 430px\) and \(max-height: 520px\) \{[\s\S]{0,4000}\.one-more-tune-round-reveal > \.darkplayer \{\s*\n\s*aspect-ratio: 2 \/ 1;/,
-  "the wrist reveal takes the stage height the screen can spare");
-test.assertMatches(omtStyles, /@media \(max-width: 430px\) and \(max-height: 520px\) \{[\s\S]{0,4000}\.one-more-tune-round-reveal \.revealbox p \{\s*\n\s*margin: 2px 0 6px;/,
-  "and its record box loses the padding a desktop reveal can afford");
+// The two faces with the most to say are the ones a short room squeezes: the
+// start (a question, a way in, a code box) and the reveal (a name, where it
+// aired, two links, the answer and the way onward). On a phone held sideways
+// the start gives up its intro and its selling points, and the reveal keeps the
+// answer and stands the way onward beside it rather than under it; the miss is
+// already said by the verdict and the track list. Nothing in the liner notes is
+// clamped: a room that cannot hold them is a room whose record gets smaller.
+test.assertMatches(omtStyles, /@container omt \(min-aspect-ratio:13\/10\) and \(max-height:430px\) \{[\s\S]{0,2400}\.omt-intro \{ display:none \}/,
+  "a short wide room's start gives up its intro");
+test.assertMatches(omtStyles, /\.omt-room\[data-omt-phase="reveal"\] \.omt-opts \{ display:grid;grid-template-columns:minmax\(0,1fr\) auto;/,
+  "a sideways reveal stands the way onward beside the answer");
+test.assertMatches(omtStyles, /\.omt-room\[data-omt-phase="reveal"\] \.omt-ow:has\(\.omt-opt\[data-state="wrong"\]\) \{ display:none \}/,
+  "and keeps the answer rather than the miss");
+test.assertNotMatches(omtStyles.slice(omtStyles.indexOf("/* --- The round's room")), /line-clamp/,
+  "nothing in the room is clamped: a short room shrinks the record, not the words");
+test.assertMatches(omtStyles, /@container omt \(max-aspect-ratio:13\/10\) and \(max-height:600px\) \{[\s\S]{0,400}--omt-d:clamp\(104px,/,
+  "a short upright room's record keeps a floor it can be read at");
 test.assertIncludes(source, "oneMoreTuneSourceQuery",
   "and the search has state of its own rather than borrowing the shelf's");
 test.assertIncludes(source, 'class="page-footer"',
@@ -1304,7 +1333,9 @@ test.assertIncludes(source, "question.localAnswer || oneMoreTuneCardIdForReveal(
 // fetches: the deck file it shares with the server, and the round authority
 // itself. Both are the real ones, not stand-ins.
 {
-  const painted = { html: "" };
+  // `html` is the face; `status` is the one line of prose the window says about
+  // the last thing that happened, which is where a refusal is reported.
+  const painted = { html: "", status: "" };
   // The English strings, loaded the way the browser loads them, so a rendered
   // sentence is a sentence and not its key.
   const englishContext = { window: {} };
@@ -1353,7 +1384,7 @@ test.assertIncludes(source, "question.localAnswer || oneMoreTuneCardIdForReveal(
     // can check that a sentence exists but not that it composes — the score card
     // printed the key where the score belonged until these were loaded.
     t: (key) => englishStrings[key] ?? key,
-    setStatus: () => {},
+    setStatus: (value) => { painted.status = String(value ?? ""); },
     hydrateSystemIcons: () => {},
     openWindow: async () => {},
     currentLanguage: "en",
@@ -1391,6 +1422,42 @@ test.assertIncludes(source, "question.localAnswer || oneMoreTuneCardIdForReveal(
       AISystem6ApplicationRegistry: { registerApplicationLifecycle: () => {} },
       AISystem6RegisterApplicationMenuSet: () => {},
       AISystem6Runtime: { registerApplication: () => {} },
+    },
+    // A media element the harness can refuse. iOS Safari refuses these store
+    // previews to the decoder and plays them through an element instead, so the
+    // element's own play is the last word on whether a cue sounded — and the
+    // only place a home-screen app's autoplay block lands. It belongs on the
+    // context itself: the module calls `new Audio()`, not `window.Audio`.
+    // The gate's silent quarter-second is built in the page and encoded there,
+    // so the harness has to carry the one browser global that builds it.
+    btoa: (binary) => Buffer.from(String(binary), "binary").toString("base64"),
+    Audio: class {
+      constructor() {
+        this.dataset = {};
+        this.listeners = new Map();
+        this.muted = false;
+        this.playsInline = false;
+        this.preload = "";
+        this.currentTime = 0;
+        this.paused = true;
+        this._src = "";
+      }
+      addEventListener(type, handler) { this.listeners.set(type, handler); }
+      removeEventListener(type) { this.listeners.delete(type); }
+      setAttribute() {}
+      load() {}
+      play() {
+        if (domContext.__refusePlay === true) return Promise.reject(new Error("NotAllowedError"));
+        this.paused = false;
+        return Promise.resolve();
+      }
+      pause() { this.paused = true; }
+      get src() { return this._src; }
+      set src(value) {
+        this._src = String(value);
+        const ready = this.listeners.get("loadeddata");
+        if (ready) setTimeout(() => ready(), 0);
+      }
     },
   };
   domContext.globalThis = domContext;
@@ -1674,8 +1741,8 @@ test.assertIncludes(source, "question.localAnswer || oneMoreTuneCardIdForReveal(
   // answers — nothing else. The two state chips and the row of four controls
   // that used to sit here belong to the Study menu now, and a face that lists
   // every command of a round is the pile the menu bar exists to avoid.
-  test.assertIncludes(painted.html, 'class="darkplayer"', "the question face keeps the player");
-  test.assertIncludes(painted.html, 'class="choices"', "and the four answers");
+  test.assertIncludes(painted.html, 'class="omt-stage"', "the question face keeps the record");
+  test.assertIncludes(painted.html, 'class="omt-grid"', "and the four answers");
   test.assertNotIncludes(painted.html, "one_more_tune_not_revealed", "the face no longer says the answer is unrevealed");
   test.assertNotIncludes(painted.html, "one_more_tune_sounding", "nor narrates the sound it just started");
   for (const command of ["one-more-tune-round-skip", "one-more-tune-find-film", "one-more-tune-end-round", "one-more-tune-hear_again"]) {
@@ -1686,7 +1753,7 @@ test.assertIncludes(source, "question.localAnswer || oneMoreTuneCardIdForReveal(
   // The one state that still has to be said: a cue that could not play, because
   // that is when the player has to act — and the action is in the menu.
   test.assertMatches(source,
-    /\$\{question\.mediaFailed \? `<p class="playstate">[\s\S]{0,240}one_more_tune_media_failed_hint/,
+    /const notice = question\.mediaFailed\s*\?\s*`<p class="omt-note" role="status">[\s\S]{0,240}one_more_tune_media_failed_hint/,
     "and a failed cue is the only state the face still reports, with where to go");
   // Playing is free and repeatable, and the count of listens is what a later
   // reader trusts when the score is not a listening result.
@@ -1714,8 +1781,29 @@ test.assertIncludes(source, "question.localAnswer || oneMoreTuneCardIdForReveal(
   // rows, and "another round" is not here at all: that is what the end of a
   // round offers, once the ten are done.
   const revealFace = painted.html;
-  test.assert((revealFace.match(/one-more-tune-plain-links/g) || []).length === 1,
+  test.assert((revealFace.match(/class="omt-links"/g) || []).length <= 1,
     "the reveal carries its content links as one line");
+  // Where those links and the way onward sit, which the owner asked about after
+  // using it on a phone: the links are the record's own evidence (the film it
+  // came from, the recording the question was cut from) and belong in the card,
+  // and the film's door and the way onward belong on ONE row. Four stacked
+  // things under the card put two buttons on two rows and pushed the way onward
+  // under the fold on every phone.
+  test.assert(
+    !revealFace.includes('class="omt-links"')
+      || (revealFace.indexOf('class="omt-notes"') < revealFace.indexOf('class="omt-links"')
+        && revealFace.indexOf('class="omt-links"') < revealFace.indexOf('class="omt-opts"')),
+    "the links are printed in the record's liner notes, not as a block under the answers",
+  );
+  test.assertIncludes(revealFace, '<div class="omt-act"><button class="omt-next"',
+    "and the way onward is one button, in the answers' own block");
+  test.assertNotMatches(omtStyles, /\.one-more-tune-round-tail \{[^}]*flex-direction:column/,
+    "and no width stacks that row back into a column");
+  // The desk's rules for this box were written as `> .revealbox`, which never
+  // matched — the box is inside `.reveal` — so the phone's padding and the
+  // margin that pushed the action row under the fold were both dead.
+  test.assertNotMatches(omtStyles, /one-more-tune-round-reveal > \.revealbox/,
+    "no rule targets a reveal box that is not the reveal's own child");
   const revealCommands = [...revealFace.matchAll(/data-one-more-tune-command="([^"]+)"/g)].map((match) => match[1]);
   test.assert(
     revealCommands.every((command) => ["one-more-tune-round-next", "one-more-tune-play-film", "one-more-tune-hear"].includes(command)),
@@ -1777,12 +1865,85 @@ test.assertIncludes(source, "question.localAnswer || oneMoreTuneCardIdForReveal(
   test.assert(retried.answerFailed === false && retried.points >= 0, "and clears the refusal");
   test.assert(live.commandAvailability("one-more-tune-answer-retry").available === false,
     "with nothing left to send again, the command greys out rather than vanishing");
-  test.assertIncludes(painted.html, "one-more-tune-round-reveal",
+  test.assertIncludes(painted.html, 'data-omt-phase="reveal"',
     "and the reveal is the face again");
-  test.assertNotIncludes(painted.html, "one-more-tune-answer-refused",
+  test.assertNotIncludes(painted.html, 'data-omt-phase="refused"',
     "with the refusal face gone");
   domContext.window.AISystem6Capabilities.requestService = answerRoute;
   run('runOneMoreTuneCommand("one-more-tune-end-round")');
+
+  // ---- The round waits for you, all ten of it ------------------------------
+  //
+  // Measured on 1.0.55 (20260923.2): answer question 1, go on to question 2,
+  // reload, press 「继续这一局——第 2 题」, and the round that opened was
+  // "QUESTION 01 / 1" — questions.length 1, index 0. The device's place had
+  // gone to the authority as a question number, which is the one-question
+  // link's field, so the resume came back as a one-question round. Driven here
+  // the way a person drives it, against the real authority.
+  {
+    const settle = async (ready) => {
+      for (let tick = 0; tick < 200 && !ready(); tick += 1) await new Promise((resolve) => setTimeout(resolve, 5));
+    };
+    const reference = await serverDeck.startRound({ challengeId: previewSet });
+    const setLabels = reference.questions.map((question) => question.choices.map((choice) => choice.label).join(" / "));
+    const labelsOf = (question) => question.choices.map((choice) => choice.label).join(" / ");
+    const code = `OMT.${reference.deckVersion}.${previewSet}`;
+    await run(`openOneMoreTuneChallenge(${JSON.stringify(code)})`);
+    test.assert(live.round()?.questions.length === 10 && live.round().index === 0,
+      "a set's link with no stored place opens the ten at the first question");
+    await run(`submitOneMoreTuneAnswer(${JSON.stringify(live.round().questions[0].choices[0].id)})`);
+    run('runOneMoreTuneCommand("one-more-tune-round-next")');
+    test.assert(live.round().index === 1, "the person answers question 1 and goes on to question 2");
+
+    // The reload: the page's round is gone and the progress is read back from
+    // the store it was written to.
+    run("stopOneMoreTuneAudio(); oneMoreTuneRound = null; oneMoreTuneState = null; renderOneMoreTune();");
+    test.assertIncludes(painted.html, englishStrings.one_more_tune_continue_round.replace("{n}", "2"),
+      "after the reload the idle face offers the round at question 2");
+    run('runOneMoreTuneCommand("one-more-tune-resume-round")');
+    await settle(() => !!live.round());
+    const resumed = live.round();
+    test.assert(resumed?.questions.length === 10,
+      `continuing reopens the whole ten, not the one question the place names (got ${resumed?.questions.length})`);
+    test.assert(resumed?.index === 1, `with the cursor on question 2 (got index ${resumed?.index})`);
+    test.assert(JSON.stringify(resumed?.questions.map(labelsOf)) === JSON.stringify(setLabels),
+      "and the ten are the set's own, in the set's order");
+    test.assert((painted.html.match(/class="omt-slot"/g) || []).length === 10, "the face shows all ten tracks");
+    test.assertMatches(painted.html, /class="omt-slot"[^>]*>.*?<\/span><span class="omt-slot" data-now/s, "the second track is the current one");
+    test.assert(resumed?.questions[1]?.submitted === false, "question 2 is waiting to be answered");
+    test.assert(run("oneMoreTuneStateNow().round?.index") === 1, "and the stored place still says question 2");
+
+    // A link that names one question is still that question on its own, and
+    // opening it does not move this device's place in the ten.
+    await run(`openOneMoreTuneChallenge(${JSON.stringify(`${code}.3`)})`);
+    const lone = live.round();
+    test.assert(lone?.questions.length === 1 && lone.index === 0,
+      "a link that names one question opens that question alone");
+    test.assert(!!lone && labelsOf(lone.questions[0]) === setLabels[3], "and it is the set's fourth");
+    test.assert((painted.html.match(/class="omt-slot"/g) || []).length === 1, "the face counts it as one");
+    await run(`submitOneMoreTuneAnswer(${JSON.stringify(lone.questions[0].choices[0].id)})`);
+    run('runOneMoreTuneCommand("one-more-tune-round-next")');
+    test.assert(run("oneMoreTuneStateNow().round?.index") === 1,
+      "answering and finishing the lone question leaves the place in the ten at question 2");
+    run('runOneMoreTuneCommand("one-more-tune-end-round")');
+    test.assert(run("oneMoreTuneStateNow().round?.index") === 1, "and so does closing it");
+
+    // Back to the ten: the questions behind the cursor are not asked again.
+    run('runOneMoreTuneCommand("one-more-tune-resume-round")');
+    await settle(() => !!live.round());
+    test.assert(live.round()?.questions.length === 10 && live.round().index === 1,
+      "continuing after the lone question is the ten at question 2 again");
+    const asked = [];
+    while (live.round() && live.round().index < live.round().questions.length) {
+      asked.push(live.round().index);
+      await run('submitOneMoreTuneAnswer("", { outcome: "skipped" })');
+      run('runOneMoreTuneCommand("one-more-tune-round-next")');
+    }
+    test.assert(JSON.stringify(asked) === JSON.stringify([1, 2, 3, 4, 5, 6, 7, 8, 9]),
+      `the rest of the round asks questions 2 to 10 once each and never question 1 (asked ${asked.map((index) => index + 1).join(",")})`);
+    test.assert(run("oneMoreTuneStateNow().round") === null, "and the finished round leaves no place behind");
+    run('runOneMoreTuneCommand("one-more-tune-end-round")');
+  }
 
   // A private practice round is the other answer to "where does the sound come
   // from": the person's own file, with a range they auditioned themselves.
@@ -1933,6 +2094,103 @@ test.assertIncludes(source, "question.localAnswer || oneMoreTuneCardIdForReveal(
   test.assertIncludes(source, "leaveOneMoreTuneEraTheme();", "and the window's own dispose is what gives it back");
   test.assertIncludes(source, 'event?.detail?.committed === true) oneMoreTuneEraVisitTheme = ""',
     "a deliberate Appearance change ends the visit rather than being undone by it");
+
+  // ---- The disc, executed --------------------------------------------------
+  //
+  // The frame is a pure function so this can ask it what it will say without a
+  // DOM, and what it must NOT say: no position and no duration means no arc and
+  // no `aria-valuenow`, because this deck's rule is that an unknown is null and
+  // 0 is an answer.
+  {
+    const unknown = run("oneMoreTuneDiscFrame({ playback: 'idle', position: null, duration: null, reveal: false, era: null })");
+    test.assert(unknown.unknown === true && unknown.progress === null, "a disc with no position has no arc");
+    test.assert(unknown.aria.now === null, "and no aria-valuenow, because unknown is not zero");
+    test.assert(unknown.attrs["data-unknown"] === "true" && !("data-era" in unknown.attrs),
+      "it says so in its attributes, and lights no era");
+    const cue = run("oneMoreTuneDiscFrame({ playback: 'playing', position: 3, duration: 12, reveal: false, era: '6' })");
+    test.assert(cue.progress === 0.25 && cue.aria.now === 25,
+      "a cue three seconds into twelve reads a quarter of its own window");
+    test.assert(cue.elapsed === "0:03" && cue.total === "0:12", "and the readout is the cue's, not the film's");
+    test.assert(cue.attrs["data-playback"] === "playing", "while it plays the platter is told to turn");
+    const lit = run("oneMoreTuneDiscFrame({ playback: 'playing', position: 12, duration: 12, reveal: true, era: '4' })");
+    test.assert(lit.attrs["data-era"] === "4" && lit.attrs["data-reveal"] === "true",
+      "a revealed card hands its era to the one band that comes up");
+    const noYear = run("oneMoreTuneDiscFrame({ playback: 'idle', position: 0, duration: 12, reveal: true, era: 'none' })");
+    test.assert(!("data-era" in noYear.attrs), "and a card with no year lights none of them");
+    const small = run("oneMoreTuneDiscRim(132, 3)");
+    const large = run("oneMoreTuneDiscRim(296, 3)");
+    test.assert(Math.abs(small.length - 2 * Math.PI * small.radius) < 0.001 && large.radius > small.radius,
+      "the rim's circumference is computed from the diameter it was given, at any size");
+    // The window it measures is the segment, not the recording the segment came
+    // from: both play paths hand the rim their own start and end.
+    test.assertMatches(source, /oneMoreTuneAudio\.cueEnd = start \+ length/,
+      "the buffer path tells the rim the length of the segment it scheduled");
+    test.assertMatches(source, /oneMoreTuneAudio\.cueEnd = to/,
+      "and the element path tells it the window it was asked for");
+    // The white label's own geometry. A round is one record, sides A and B of
+    // five tracks, and the tonearm sits on the band of the question in front of
+    // the reader: A1 on the rim, A5 by the label, B1 back on the rim.
+    const codes = run("[0, 4, 5, 9].map((index) => oneMoreTuneTrackCode(index))");
+    test.assert(JSON.stringify(codes) === JSON.stringify(["A1", "A5", "B1", "B5"]), `ten questions are two sides of five (${codes.join(" ")})`);
+    const bands = run("[0, 1, 2, 3, 4].map((index) => oneMoreTuneArmBand(index))");
+    test.assert(bands.every((band, index) => band.to > band.from && (index === 0 || band.from > bands[index - 1].to)),
+      "the arm lands further in on each track and moves inward while one plays, never back over the last one");
+    test.assert(bands[0].from > 10 && bands[4].to < 50,
+      "and every band is on the record: past the resting arm and short of the label");
+    const again = run("oneMoreTuneArmBand(5)");
+    test.assert(Math.abs(again.from - bands[0].from) < 1e-9, "side B starts on the rim again");
+    // Which of the four was right: the authority's word first, a label only
+    // when it is the one label that matches, and nothing rather than a guess.
+    const said = run("oneMoreTuneCorrectChoiceId({ correctChoice: 'c3', choices: [{ id: 'c1', label: 'iPod' }], reveal: { product: 'iPod' } })");
+    test.assert(said === "c3", "the round's own answer names the right row");
+    const byLabel = run("oneMoreTuneCorrectChoiceId({ choices: [{ id: 'c1', label: 'iPod' }, { id: 'c2', label: 'iMac' }], reveal: { product: 'iMac' } })");
+    test.assert(byLabel === "c2", "an older round that did not say is read by the one matching label");
+    const twice = run("oneMoreTuneCorrectChoiceId({ choices: [{ id: 'c1', label: 'iPod' }, { id: 'c2', label: 'iPod' }], reveal: { product: 'iPod' } })");
+    test.assert(twice === "", "and two rows with the answer's label mark neither");
+  }
+
+  // ---- What the home-screen autoplay block does to a cue -------------------
+  //
+  // The owner's next report: in the installed app the sound does not start, and
+  // nothing on screen says so. This is a different mechanism from the
+  // ring/silent switch fixed before — that one was the audio session's
+  // category, and the page now declares `playback` (see
+  // oneMoreTuneClaimPlaybackAudioSession). This one is user activation: a
+  // home-screen launch is a document nobody has touched yet, so the engine may
+  // turn a play down.
+  //
+  // It lands on the element path, which is the path iOS takes for every store
+  // preview because WebKit refuses to decode them (see oneMoreTuneLoadMedia) —
+  // and that path used to discard the engine's answer: the rejection went to an
+  // empty catch, the call returned true anyway, the question was counted as
+  // heard, and the face drew itself as though the sound were playing. A refusal
+  // a finger could have undone was invisible.
+  domContext.__refusePlay = true;
+  run(`
+    oneMoreTuneRound = { index: 0, mode: "preview", questions: [{ token: "probe-token", cardId: "", media: { provider: "preview", url: "https://example.invalid/preview.m4a" }, heard: 1, everHeard: true, mediaFailed: false, submitted: false, correct: false, reveal: null, outcome: "", points: 1, choices: [], autoPlayed: true }] };
+    oneMoreTuneAudio.elements.set("probe-token", "https://example.invalid/preview.m4a");
+    oneMoreTuneAudio.gateArmed = true;
+    window.__probeStarted = playOneMoreTuneWindow("probe-token", 0, 3);
+  `);
+  test.assert(run("window.__probeStarted") === true,
+    "the element path still reports a start immediately, because the engine answers a tick later");
+  await new Promise((resolve) => setTimeout(resolve, 30));
+  const refusedCue = live.round().questions[0];
+  test.assert(refusedCue.heard === 0,
+    "when the engine turns the play down the listening is taken back — a cue nobody heard is not a listening");
+  test.assert(refusedCue.everHeard === false, "and the card is not recorded as heard either");
+  test.assert(refusedCue.mediaFailed === true,
+    "the question is marked broken, which is what makes it skippable instead of lost");
+  test.assert(/holding the sound back/.test(painted.status),
+    "and the window says why, in the words that name the one thing that fixes it");
+  test.assert(run("oneMoreTuneAudio.gateArmed") === false,
+    "the refused element is remembered as unarmed, so the next gesture arms it again instead of trusting it");
+  // The cure, driven the way a person drives it.
+  domContext.__refusePlay = false;
+  run('oneMoreTuneAudio.elements.set("probe-token", "https://example.invalid/preview.m4a"); playOneMoreTuneWindow("probe-token", 0, 3);');
+  await new Promise((resolve) => setTimeout(resolve, 30));
+  test.assert(run("oneMoreTuneAudio.gateArmed") === true,
+    "a play the engine allows arms the element, which is what lets the next question start by itself");
 }
 
 
@@ -1951,7 +2209,7 @@ test.assertMatches(source, /function oneMoreTuneReadableRound\(value\) \{/,
   "a stored cursor is read back as data rather than trusted");
 test.assertMatches(source, /function oneMoreTuneRememberRound\(\) \{[\s\S]{0,600}state\.round = \{/,
   "every move writes the place it reached");
-test.assertMatches(source, /if \(oneMoreTuneRound\.index >= oneMoreTuneRound\.questions\.length\) oneMoreTuneForgetRound\(\);/,
+test.assertMatches(source, /if \(oneMoreTuneRound\.index >= oneMoreTuneRound\.questions\.length\) \{\s*if \(!oneMoreTuneRound\.single\) oneMoreTuneForgetRound\(\);/,
   "and a round that reached its tenth question is finished rather than paused");
 test.assertMatches(source, /oneMoreTuneAdoptRound\(round, \{ index \}\);/,
   "a link that names a set resumes the question this device reached");
@@ -1978,6 +2236,14 @@ test.assertIncludes(zh, "one_more_tune_continue_round:", "and in Chinese");
   test.assert(serverDeck.submitAnswer({ ...input, choiceToken: "foreign-token" }).code === "invalid_choice", "a foreign option is rejected before first-answer consumption");
   const answer = serverDeck.submitAnswer({ ...input, choiceToken: question.choices[0].id });
   test.assert(answer.ok && !answer.repeated, "the first valid answer survives an invalid request");
+  // The answer names the right row once the question is answered, so a miss is
+  // shown beside the answer; and it is one of this question's own four.
+  test.assert(question.choices.some((choice) => choice.id === answer.correctChoice),
+    "the answer says which of the four was right");
+  test.assert(answer.correct === (answer.correctChoice === question.choices[0].id),
+    "and that is the row the score was given against");
+  test.assert(!("correctChoice" in question) && !JSON.stringify(round).includes("correctChoice"),
+    "while the question itself never carries it");
   test.assert(serverDeck.submitAnswer({ ...input, choiceToken: question.choices[1].id }).repeated, "a retry keeps the first accepted answer");
   const mutable = serverDeck.loadDeck();
   const licensed = { ...mutable.cards[0], id: "SYNTH-LICENSED", enabled: true,
@@ -2026,7 +2292,13 @@ test.assertIncludes(zh, "one_more_tune_continue_round:", "and in Chinese");
 // ---- Keynote Relay ---------------------------------------------------------
 const keynoteDeck = require("../../apps/server/server/one-more-tune-keynote.js");
 const keynoteBank = JSON.parse(readFileSync(new URL("../../apps/server/server/one-more-tune-keynote-bank.json", import.meta.url), "utf8"));
-test.assert(keynoteBank.items.length === 8, "the relay starts from eight authored presenter clues");
+// Twenty-three authored presenter clues now: the eight the relay was built
+// with plus the fifteen the 2026-09-22 history package prepared, merged
+// 2026-09-23 once every one of them could name the source record it rests on
+// (they arrived with empty researchIds; the package's own sixteen sources are
+// now in apps/server/server/one-more-tune-history-sources.json). A round still
+// asks six distinct topics, which the group rule below proves.
+test.assert(keynoteBank.items.length === 23, "the relay starts from twenty-three authored presenter clues");
 test.assert(source.includes('data-one-more-tune-view="keynote"'), "the relay has a public tab");
 test.assertIncludes(source, "startOneMoreTuneKeynoteRound", "the relay opens through the existing service boundary");
 {

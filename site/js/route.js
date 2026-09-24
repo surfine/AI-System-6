@@ -87,14 +87,6 @@ export function initRouteScene(stage) {
     label.className = "route-obj-label";
     label.textContent = stop.label;
     button.appendChild(label);
-    if (stop.shot) {
-      const mark = doc.createElement("span");
-      mark.className = "route-has-shot";
-      mark.title = L("Photographed in the running app", "来自运行中应用的截图");
-      mark.setAttribute("aria-label", L("photographed in the running app", "来自运行中应用的截图"));
-      mark.textContent = "◉";
-      button.appendChild(mark);
-    }
     button.addEventListener("click", () => {
       stopWalk();
       select(index);

@@ -18,7 +18,7 @@ import { fileURLToPath } from "node:url";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const styles = join(root, "apps/desktop/styles");
-const BASE = ["00-foundation", "10-windows", "20-reader-docmap", "22-time-machine", "30-surfaces",
+const BASE = ["00-foundation", "10-windows", "20-reader-docmap", "22-time-machine", "23-docmap", "30-surfaces",
   "40-icons", "50-apps", "60-responsive", "66-theme-lab"];
 const APPEARANCE = ["65-appearance-themes", "67-aqua-appearance", "70-liquid-glass"];
 const GEOMETRY = new Set(["width","height","min-width","max-width","min-height","max-height","padding","padding-top","padding-right","padding-bottom","padding-left","padding-inline","padding-block","margin","margin-top","margin-right","margin-bottom","margin-left","margin-inline","margin-block","position","top","right","bottom","left","inset","display","flex","flex-direction","flex-wrap","gap","row-gap","column-gap","align-items","align-self","align-content","justify-content","justify-items","justify-self","order","font-size","font-family","font-weight","line-height","letter-spacing","border-width","overflow","overflow-x","overflow-y","white-space","aspect-ratio","transform","box-sizing","float","vertical-align","text-indent","grid-template-columns","grid-template-rows","grid-column","grid-row","border","border-top","border-right","border-bottom","border-left"]);

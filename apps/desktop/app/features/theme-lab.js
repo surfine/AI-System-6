@@ -406,10 +406,11 @@
     docMap: "C",
   });
 
-  // Appearance authoring data belongs to the boot-safe registry, and the icon
-  // vocabulary belongs to the painter. Theme Lab reads both; it never keeps a
-  // private list that can silently drift from what the desktop ships.
-  const authoringOf = (theme) => theme?.authoring || window.AISystem6Theme?.getAuthoringMetadata?.(theme?.id);
+  // Appearance authoring data lives in theme-authoring.js, which loads with
+  // the Lab rather than at boot, and the icon vocabulary belongs to the
+  // painter. Theme Lab reads both; it never keeps a private list that can
+  // silently drift from what the desktop ships.
+  const authoringOf = (theme) => window.AISystem6ThemeAuthoring?.get(theme?.id);
   const appearanceIconIds = () => window.AISystem6SystemIcons?.ids || [];
 
   const PANELS = Object.freeze(["chrome", "objects", "surfaces", "tokens"]);
@@ -1002,14 +1003,21 @@
         hasAppearanceSelector = true;
         continue;
       }
-      const exact = part.match(/^(?:html|body)\[data-theme=["']([a-z-]+)["']\]$/);
+      // A parent's own rules are written against its lineage so children
+      // inherit them; they still belong to that parent's delta here.
+      const exact = part.match(/^(?:html|body)\[data-(?:theme|lineage~)=["']([a-z0-9-]+)["']\]$/);
       if (exact) {
         themeIds.add(exact[1]);
         hasAppearanceSelector = true;
         continue;
       }
-      const matches = [...part.matchAll(/\[data-theme=["']([a-z-]+)["']\]/g)];
+      const matches = [...part.matchAll(/\[data-(?:theme|lineage~)=["']([a-z0-9-]+)["']\]/g)];
       for (const match of matches) themeIds.add(match[1]);
+      // A family rule reaches every appearance in that family.
+      for (const [, family] of part.matchAll(/\[data-theme-family=["']([a-z0-9-]+)["']\]/g)) {
+        matches.push(family);
+        for (const theme of window.AISystem6Theme?.themes || []) if (theme.family === family) themeIds.add(theme.id);
+      }
       if (part.includes(".use-liquid-glass")) themeIds.add("liquid-glass");
       if (matches.length || part.includes(".use-liquid-glass")) hasAppearanceSelector = true;
       allExactRoots = false;
@@ -1113,7 +1121,7 @@
 
   function buildTokenIndex() {
     return buildTokenIndexFromStyleSheets(document.styleSheets, (themeId) =>
-      window.AISystem6Theme?.getAuthoringMetadata?.(themeId)?.tokenHome?.file || "");
+      window.AISystem6ThemeAuthoring?.get(themeId)?.tokenHome?.file || "");
   }
 
   function tokenGroupName(name) {

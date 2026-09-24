@@ -17,7 +17,13 @@ internal/archive/runtime-legacy/
 /apps/desktop/styles.clio-paint.css
 /apps/desktop/styles.one-more-tune.css
 /apps/desktop/styles.project-disks.css
+/apps/desktop/styles.clio-project.css
+/apps/desktop/styles.docmap.css
 /apps/desktop/styles.big-sur.css
+/apps/desktop/styles.tiger.css
+/apps/desktop/styles.system-7.css
+/apps/desktop/styles.drawing-board.css
+/apps/desktop/styles.lion.css
 /apps/desktop/styles.nextstep.css
 apps/desktop/app/vendor/markmap/*.js
 apps/desktop/app/vendor/embed-model/

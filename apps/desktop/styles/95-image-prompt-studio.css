@@ -1,63 +1,105 @@
-/* Image Prompt Studio is a worksheet in three parts: you say what you want,
-   you press one button, and two finished prompts come back - with what you
-   wrote before kept underneath. Each part is a shared `control-section`, the
-   same framed box every Control Panel section is, so the half you fill in and
-   the half you get back stop wearing the same clothes.
+/* Image Prompt Studio is two halves and a drawer: the brief you fill in on the
+   left, what comes back on the right, and what you wrote before folded away
+   underneath. Position says which half is which, so neither needs a framed
+   box to say it - one rule between them does.
 
    The window shipped with no stylesheet at all: nothing in the repository
    matched `.image-prompt-studio-window` or any `.ips-` class, so it computed to
    0 pixels wide and opened invisible. The first repair gave it a box and a flat
-   column; this is the grouping that column was missing.
+   column; the second stacked three identical framed groups, which read as one
+   long form. This is the arrangement the window's two jobs were asking for.
 
-   Almost nothing here is new. The frames are `.control-section`, the action row
-   is `.button-row` with its `.spacer`, the labels stack through the shared
-   `settings` grammar, and the fields are the ordinary System 6 controls. What
-   is left is this window's own: its box, one two-column line for the two short
-   choices, and the shape of the outputs and the history list. */
+   Almost nothing here is new. The action row is `.button-row` with its
+   `.spacer`, the drop overlay is the shared `.drop-target`, and the fields and
+   radios are the ordinary System 6 controls. What is left is this window's
+   own: its two columns, the drawn aspect choices, the plate, the outputs and
+   the history drawer. Every colour is a shared token, so Classic and Liquid
+   Glass dress the same objects without a rule of their own here. */
 
 .image-prompt-studio-window {
   /* Local to this window, the way Soundscape keeps its own; only the window
      box itself is a shared token, beside its peers in 00-foundation.css. */
-  --ips-gap: 8px;
-  --ips-row-min: 160px;
-  --ips-history-max-height: 132px;
+  --ips-gap: 12px;
+  --ips-column-gap: 14px;
+  --ips-history-max-height: 156px;
+  --ips-plate-max: 284px;
+  --ips-glyph-unit: 2px;
   width: var(--ips-window-width);
-  /* Content-sized, with the token as the ceiling. A fixed height left 260px of
-     bare pane under the three groups whenever the prompts group was still
-     empty - which is how the window always opens. The pane scrolls once the
+  /* Content-sized, with the token as the ceiling. The pane scrolls once the
      prompts arrive and the content passes the ceiling. */
   height: auto;
   max-height: var(--ips-window-height);
 }
 
 .ips-pane {
-  /* Same reason as the Control Panel's own pane: without an explicit track an
-     implicit column sizes to the widest child's max-content, and a single long
-     unbroken prompt line would stretch the pane past the window. */
+  display: grid;
   grid-template-columns: minmax(0, 1fr);
   align-content: start;
+  gap: var(--ips-gap);
   overflow-y: auto;
+  /* The two-column break asks this pane how wide it is, not the viewport:
+     the same window is narrow on a phone and in a tiled half of a desk. */
+  container-type: inline-size;
 }
 
-/* A section is a grid item, and a grid item's implied minimum is its own
-   content's min-content - clamping the pane's track above is not enough on its
-   own. Control Panel's sections carry the same line for the same reason. */
+.ips-body {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  column-gap: var(--ips-column-gap);
+}
+
 .ips-group {
+  display: grid;
+  gap: var(--ips-gap);
+  align-content: start;
   min-width: 0;
 }
 
-.ips-legend {
-  margin: 0;
-  font-size: inherit;
-  font-weight: 700;
+.ips-brief {
+  padding-right: var(--ips-column-gap);
+  border-right: var(--system-control-line) solid var(--separator);
 }
 
-/* The fields carry the width. A bare <span> label followed by an inline-block
-   field would sit beside it, not above it; full-width fields are what stack
-   the pair, the same way the composer's textarea does. */
+@container (max-width: 620px) {
+  .ips-body {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: var(--ips-gap);
+  }
+
+  .ips-brief {
+    padding-right: 0;
+    padding-bottom: var(--ips-gap);
+    border-right: 0;
+    border-bottom: var(--system-control-line) solid var(--separator);
+  }
+}
+
+/* The group headings are kept for screen readers and the language sweep; on
+   screen the columns already say what they are. */
+.ips-legend {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.ips-label {
+  display: block;
+  margin: 0 0 4px;
+  padding: 0;
+  font-weight: var(--system-emphasis-weight);
+}
+
+.ips-control {
+  display: block;
+  min-width: 0;
+}
+
 .ips-control > textarea,
-.ips-control > input,
-.ips-control > .select-wrap {
+.ips-control > input {
   display: block;
   width: 100%;
 }
@@ -66,18 +108,216 @@
   resize: vertical;
 }
 
-/* Aspect ratio and Style are one short decision each: side by side they read as
-   a single settings line rather than two more full-width rows, and they fall
-   back to one column when the window is narrow enough that they would not. */
-.ips-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(var(--ips-row-min), 1fr));
-  gap: var(--ips-gap);
+.ips-choice {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
 }
 
-/* The file input is hidden, but a hidden flex item still takes the row's gap,
-   which reads as a stray space after the last button. */
-.ips-actions > input[hidden] {
+/* Aspect ratio: five drawn frames, the chosen one inverted. The radio itself
+   stays in the tree, clipped rather than hidden, so the group keeps one tab
+   stop and arrow keys. */
+.ips-aspects {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.ips-aspect {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  align-content: end;
+  gap: 4px;
+  min-height: 52px;
+  padding: 4px 0 3px;
+  border: var(--system-control-line) solid transparent;
+  border-radius: var(--surface-radius);
+  cursor: pointer;
+}
+
+.ips-aspect > input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.ips-aspect:has(> input:checked) {
+  border-color: var(--ink);
+}
+
+.ips-aspect:has(> input:focus-visible) {
+  outline: 1px dotted var(--ink);
+  outline-offset: 1px;
+}
+
+.ips-aspect-glyph {
+  display: block;
+  box-sizing: border-box;
+  width: calc(var(--ips-glyph-w) * var(--ips-glyph-unit));
+  height: calc(var(--ips-glyph-h) * var(--ips-glyph-unit));
+  border: 1px solid var(--ink);
+  background: var(--paper);
+}
+
+.ips-aspect > input:checked + .ips-aspect-glyph {
+  background: var(--selection-bg);
+}
+
+/* Each glyph is drawn to its ratio, in whole units so the 1-bit edges land on
+   pixels. The history rows reuse the same glyph at half the unit. */
+.ips-aspect-glyph[data-ratio="16:9"] { --ips-glyph-w: 16; --ips-glyph-h: 9; }
+.ips-aspect-glyph[data-ratio="4:3"] { --ips-glyph-w: 12; --ips-glyph-h: 9; }
+.ips-aspect-glyph[data-ratio="1:1"] { --ips-glyph-w: 10; --ips-glyph-h: 10; }
+.ips-aspect-glyph[data-ratio="3:4"] { --ips-glyph-w: 9; --ips-glyph-h: 12; }
+.ips-aspect-glyph[data-ratio="9:16"] { --ips-glyph-w: 9; --ips-glyph-h: 16; }
+
+.ips-radios {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+}
+
+.ips-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.ips-radio > input {
+  margin: 0;
+}
+
+/* The reference well: what is attached, and the way to take it back. */
+.ips-well {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-height: 56px;
+  padding: 6px 8px;
+  border: 1px dashed var(--ink);
+  border-radius: var(--surface-radius);
+}
+
+.ips-well.is-unavailable {
+  border-style: dotted;
+}
+
+.ips-well-thumb {
+  flex: none;
+  width: 64px;
+  height: 44px;
+  object-fit: cover;
+  border: var(--system-border);
+}
+
+.ips-well-text {
+  flex: 1 1 8em;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.ips-well.is-attached .ips-well-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The shared button row keeps its own spacing; hidden buttons must not take a
+   gap. */
+.ips-actions > [hidden] {
+  display: none;
+}
+
+/* The plate: the chosen shape, where the overlay title sits, and whether a
+   reference rides along. The dots are ink seen through a mask of two stripe
+   patterns intersected - one pixel in every four each way - so they stay
+   crisp at 1x and never depend on the paper being opaque, which it is not
+   under Liquid Glass. */
+.ips-plate-wrap {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  margin: 0;
+}
+
+.ips-plate {
+  position: relative;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: var(--ips-plate-max);
+  aspect-ratio: 16 / 9;
+  border: var(--system-border);
+  background: var(--paper);
+}
+
+.ips-plate::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--ink);
+  -webkit-mask:
+    linear-gradient(to right, transparent 3px, #000 3px) 0 0 / 4px 4px,
+    linear-gradient(to bottom, transparent 3px, #000 3px) 0 0 / 4px 4px;
+  -webkit-mask-composite: source-in;
+  mask:
+    linear-gradient(to right, transparent 3px, #000 3px) 0 0 / 4px 4px,
+    linear-gradient(to bottom, transparent 3px, #000 3px) 0 0 / 4px 4px;
+  mask-composite: intersect;
+}
+
+/* Every shape stands the same 160px tall, so a portrait choice does not push
+   the prompts half a window down. */
+.ips-plate[data-ratio="4:3"] { aspect-ratio: 4 / 3; --ips-plate-max: 213px; }
+.ips-plate[data-ratio="1:1"] { aspect-ratio: 1; --ips-plate-max: 160px; }
+.ips-plate[data-ratio="3:4"] { aspect-ratio: 3 / 4; --ips-plate-max: 120px; }
+.ips-plate[data-ratio="9:16"] { aspect-ratio: 9 / 16; --ips-plate-max: 90px; }
+
+.ips-plate-title,
+.ips-plate-ref {
+  position: relative;
+  padding: 1px 8px;
+  border: var(--system-border);
+  background: var(--paper);
+  max-width: calc(100% - 16px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ips-plate-title {
+  font-weight: var(--system-emphasis-weight);
+}
+
+.ips-plate-ref {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  padding: 0 5px;
+}
+
+.ips-plate-note {
+  text-align: center;
+}
+
+.ips-empty,
+.ips-busy-note {
+  margin: 0;
+}
+
+/* Empty: the plate and one line. Busy: the plate and "Writing…". Filled: the
+   plate and the prompts. A failed or cancelled run keeps whatever was there. */
+.ips-outputs-group:not(.is-filled) > .ips-outputs,
+.ips-outputs-group.is-filled > .ips-empty,
+.ips-outputs-group.is-busy > .ips-empty,
+.ips-outputs-group:not(.is-busy) > .ips-busy-note {
   display: none;
 }
 
@@ -86,48 +326,148 @@
   gap: var(--ips-gap);
 }
 
-/* Each output is read-only prose the writer copies out, so the Copy button
-   belongs with its own text, right-aligned under it. */
-.ips-outputs > .ips-control {
+.ips-output {
   display: grid;
-  justify-items: end;
   gap: 4px;
+  min-width: 0;
 }
 
-.ips-outputs > .ips-control > span {
-  justify-self: start;
-}
-
-/* One line instead of two blank boxes, until there is something to show. Full
-   ink, not grey: Find File and Find Path colour their own empty notes with
-   var(--ink), because a 1-bit system has no grey text to fade into. */
-.ips-empty {
-  margin: 0;
-}
-
-.ips-outputs-group:not(.is-filled) > .ips-outputs,
-.ips-outputs-group.is-filled > .ips-empty {
+.ips-output[hidden] {
   display: none;
 }
 
-.ips-history {
-  border-radius: var(--surface-radius);
+/* The copy button sits where reading starts, on the name of what it copies. */
+.ips-output-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ips-output-head > .ips-label {
   margin: 0;
-  padding: 4px;
+}
+
+.ips-output-head > .ips-output-kind {
+  flex: 1;
+  min-width: 0;
+}
+
+/* The raw universal text is a hidden field; the display rule must not bring
+   it back. */
+.ips-output > textarea:not([hidden]) {
+  display: block;
+  width: 100%;
+  resize: vertical;
+}
+
+.ips-output > textarea[hidden] {
+  display: none;
+}
+
+/* The universal prompt is six fixed lines, so it reads as a two-column list;
+   the copy button still hands over the raw text beneath it. */
+.ips-universal-view {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 3px 12px;
+  margin: 0;
+  padding: 6px 8px;
+  border: var(--system-border);
+  border-radius: var(--surface-radius);
+  background: var(--paper);
+}
+
+.ips-universal-view > dt {
+  font-weight: var(--system-emphasis-weight);
+}
+
+.ips-universal-view > dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.ips-universal-view > dd.is-loose {
+  grid-column: 1 / -1;
+}
+
+/* History: a drawer, closed by default. */
+.ips-history-group {
+  border-top: var(--system-control-line) solid var(--separator);
+  padding-top: 6px;
+}
+
+.ips-history-group > summary {
+  cursor: pointer;
+  font-weight: var(--system-emphasis-weight);
+}
+
+.ips-history {
+  margin: 6px 0 0;
+  padding: 0;
   max-height: var(--ips-history-max-height);
   overflow-y: auto;
   list-style: none;
-  font-weight: 400;
   border: var(--system-border);
+  border-radius: var(--surface-radius);
   background: var(--paper);
 }
 
 .ips-history > li + li {
-  margin-top: 4px;
-  padding-top: 4px;
   border-top: var(--system-control-line) solid var(--separator);
 }
 
-/* The module writes its own empty row into the list rather than leaving the
-   list empty, so `.ips-history:empty` would never match - the line the writer
-   reads is this one, and it needs no rule of its own beyond the list's. */
+.ips-history-empty {
+  padding: 4px 6px;
+}
+
+.ips-history-item {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 4px 6px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.ips-history-item > .ips-aspect-glyph {
+  --ips-glyph-unit: 1px;
+  justify-self: center;
+}
+
+.ips-history-idea {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Hover only where there is a pointer that hovers: on touch a tap would leave
+   the row inverted after the restore it triggered. */
+.ips-history-item:focus-visible {
+  background: var(--selection-bg);
+  color: var(--selection-fg);
+  outline: none;
+}
+
+.ips-history-item:focus-visible > .ips-aspect-glyph {
+  border-color: var(--selection-fg);
+  background: transparent;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .ips-history-item:hover {
+    background: var(--selection-bg);
+    color: var(--selection-fg);
+  }
+
+  .ips-history-item:hover > .ips-aspect-glyph {
+    border-color: var(--selection-fg);
+    background: transparent;
+  }
+}

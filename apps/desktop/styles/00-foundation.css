@@ -131,6 +131,19 @@
   --teachtext-editor-border: var(--system-border);
   --teachtext-editor-radius: 0;
   --teachtext-editor-shadow: var(--system-inset);
+  /* Era hooks for System 6 instruments (the TeachText desk strip, the file
+     well, Finder labels and view buttons, readouts). A token used by two or
+     more rules keeps its default here; one used by a single rule carries its
+     default as that rule's var() fallback -- same result, and a declaration
+     fewer against the floppy budget. */
+  --teachtext-strip-border: var(--system-control-line) solid var(--ink);
+  --teachtext-strip-bg: var(--quiet-panel);
+  --file-well-bg: var(--paper);
+  --empty-object-hatch-base: var(--paper);
+  /* Readouts (status line, page counters, timestamps); code keeps --mono-font. */
+  --readout-font: var(--mono-font);
+  --finder-label-bg: var(--paper);
+  --view-btn-active-bg: var(--ink);
   --scrap-list-bg: var(--paper);
   --scrap-list-border: var(--system-border);
   --scrap-list-radius: 0;
@@ -296,7 +309,6 @@
   --clio-chart-pattern-5: repeating-linear-gradient(-45deg, var(--ink) 0 1px, var(--paper) 1px 5px);
   --clio-chart-material-shadow: none;
   --clio-chart-material-filter: none;
-  --clio-chart-typeface: var(--ui-font);
   --clio-chart-type-size: 11px;
   --clio-chart-radius: 0;
   --clio-chart-cell-radius: 0;
@@ -569,7 +581,6 @@
   --tdi-source-label-border-bottom: 0;
   --tdi-source-label-bg: transparent;
   --tdi-source-label-fg: currentColor;
-  --tdi-source-label-font-family: var(--ui-font);
   --tdi-source-label-font-size: var(--system-caption-size);
   --tdi-source-label-font-weight: var(--system-strong-weight);
   --tdi-source-label-letter-spacing: normal;
@@ -1000,13 +1011,6 @@
   --writing-preview-padding-y: clamp(24px, 5vw, 52px);
   --writing-preview-padding-x: clamp(22px, 6vw, 68px);
 
-  --stripe: repeating-linear-gradient(
-    to bottom,
-    #ffffff 0,
-    #ffffff 1px,
-    #000000 1px,
-    #000000 2px
-  );
 
   /* System 6 draws every drag outline — selection marquee, window move, window
      grow — with the 50% gray pattern: a one-pixel hairline, one pixel on, one
@@ -1506,16 +1510,13 @@
   --reader-content-radius: 0;
   --reader-content-bg: var(--paper);
   --reader-content-shadow: var(--system-inset);
-  --reader-title-divider: var(--system-border);
   --reader-meta-divider: 1px dotted var(--ink);
-  --reader-section-marker: 6px solid var(--ink);
   --drop-target-inset: 8px;
   --drop-target-border: var(--system-control-line) dashed var(--ink);
   --drop-target-radius: 0;
   --drop-target-bg: rgba(255, 255, 255, 0.88);
   --drop-target-shadow: none;
   --drop-target-fg: var(--ink);
-  --drop-target-font-family: var(--ui-font);
   --drop-target-font-size: inherit;
   --drop-target-font-weight: 700;
   --drop-target-text-align: start;
@@ -1890,7 +1891,7 @@
   --cmf-window-width: 1120px;
   --cmf-window-height: 720px;
   --cmf-inspector-width: 286px;
-  --ips-window-width: min(620px, calc(100vw - 72px));
+  --ips-window-width: min(780px, calc(100vw - 72px));
   --ips-window-height: min(680px, calc(100vh - 88px));
   --bonsai-window-width: min(1040px, calc(100vw - 72px));
   --bonsai-window-height: min(720px, calc(100vh - 88px));
@@ -2780,7 +2781,10 @@ body[data-menu-bar-model="system-owned"] {
 
 .project-switcher-copy small {
   display: block;
-  color: #555;
+  /* The counts line is muted ink, not a literal grey. Measured 2026-09-23:
+     `#555` sat on Big Sur's dark popover at 1.95:1 — the line was painted and
+     unreadable, because the appearance's own muted token never reached it. */
+  color: var(--shade-dark);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2788,7 +2792,10 @@ body[data-menu-bar-model="system-owned"] {
 }
 
 .project-switcher-popover button:hover .project-switcher-copy small {
-  color: var(--paper);
+  /* On a selection fill the partner is that fill's own ink. `--paper` is dark
+     in a dark appearance, so the hover state printed dark-on-accent (2.4:1)
+     instead of following the row's foreground token. */
+  color: var(--menu-item-active-fg, var(--selection-fg));
 }
 
 .project-switcher-empty {

@@ -33,9 +33,9 @@ THERE ARE FOUR MORE INSIDE. NO MODEL REQUIRED TO LOOK AROUND.</sub>
 
 **OPEN A SINGLE WINDOW:** [CMF Studio](https://system6.aaronlau.me/go/cmf-studio) · [Bonsai City](https://system6.aaronlau.me/go/bonsai-city) · [Endfield Terminal](https://system6.aaronlau.me/go/endfield-terminal) · [Time Machine](https://system6.aaronlau.me/go/time-machine) · [OpenTTD](https://system6.aaronlau.me/go/openttd) · [DOOM](https://system6.aaronlau.me/go/doom)
 
-**OR OPEN A WHOLE FINISHED DISK:** [After the Bridge Opens](https://system6.aaronlau.me/go/dtk) · [Why the First iPad Had Only 256MB](https://system6.aaronlau.me/go/ipad1) · [M5 iPad Pro](https://system6.aaronlau.me/go/m5ipad) · [iPhone 17e, Pale Pink](https://system6.aaronlau.me/go/iphone17e) · [Toward One Piece of Glass](https://system6.aaronlau.me/go/bongo) · [Glass and Where It Comes From](https://system6.aaronlau.me/go/glass) · [iPad Pro 9.7](https://system6.aaronlau.me/go/ipad97) · [iPhone Air MagSafe Battery](https://system6.aaronlau.me/go/airbattery) · [iPhone 17 Pro Max](https://system6.aaronlau.me/go/pm17) · [Project Sympathy](https://system6.aaronlau.me/go/sympathy) · [The Ceramic Apple Watch](https://system6.aaronlau.me/go/ceramic) · [Mac Pro (2019)](https://system6.aaronlau.me/go/macpro19) · [iPhone Pocket](https://system6.aaronlau.me/go/pocket) · [iPhone 6s Plus](https://system6.aaronlau.me/go/iphone6sp) · [MagSafe Leather Sleeve](https://system6.aaronlau.me/go/sleeve) · [iPhone 12 Pro Max](https://system6.aaronlau.me/go/pm12) · [iPhone 17](https://system6.aaronlau.me/go/iphone17) · [CDMA iPhone 4](https://system6.aaronlau.me/go/cdma4) · [Portless Apple Watch](https://system6.aaronlau.me/go/noport) · [touch 2 Engineering Board](https://system6.aaronlau.me/go/touch2) · [iPhone Air](https://system6.aaronlau.me/go/airact) · [iPhone 4S Demo Unit](https://system6.aaronlau.me/go/ip4sdemo) · [Transparent Air Prototypes](https://system6.aaronlau.me/go/airtrans) · [Apple T2 Network Card](https://system6.aaronlau.me/go/t2nic) · [MagSafe Prototypes](https://system6.aaronlau.me/go/mgscrap) · [iPhone 16 Prototype](https://system6.aaronlau.me/go/ip16p) · [iPad Air 4 Prototype](https://system6.aaronlau.me/go/ipada4) · [WWDC2099](https://system6.aaronlau.me/go/ios19) · [Studio Display](https://system6.aaronlau.me/go/sd) · [Magic Keyboard (USB-C)](https://system6.aaronlau.me/go/mkb) · [iPad mini (A17 Pro)](https://system6.aaronlau.me/go/mini7) · [MacBook Neo](https://system6.aaronlau.me/go/mbneo) · [M5 MacBook Air](https://system6.aaronlau.me/go/m5mba) · [iPhone 11 Pro Max](https://system6.aaronlau.me/go/pm11)
+**OR OPEN A WHOLE FINISHED DISK:** [After the Bridge Opens](https://system6.aaronlau.me/go/dtk) · [Why the First iPad Had Only 256MB](https://system6.aaronlau.me/go/ipad1) · [M5 iPad Pro](https://system6.aaronlau.me/go/m5ipad) · [iPhone 17e, Pale Pink](https://system6.aaronlau.me/go/iphone17e) · [Toward One Piece of Glass](https://system6.aaronlau.me/go/bongo) · [Glass and Where It Comes From](https://system6.aaronlau.me/go/glass) · [iPad Pro 9.7](https://system6.aaronlau.me/go/ipad97) · [iPhone Air MagSafe Battery](https://system6.aaronlau.me/go/airbattery) · [iPhone 17 Pro Max](https://system6.aaronlau.me/go/pm17) · [Project Sympathy](https://system6.aaronlau.me/go/sympathy) · [The Ceramic Apple Watch](https://system6.aaronlau.me/go/ceramic) · [Mac Pro (2019)](https://system6.aaronlau.me/go/macpro19) · [iPhone Pocket](https://system6.aaronlau.me/go/pocket) · [iPhone 6s Plus](https://system6.aaronlau.me/go/iphone6sp) · [MagSafe Leather Sleeve](https://system6.aaronlau.me/go/sleeve) · [iPhone 12 Pro Max](https://system6.aaronlau.me/go/pm12) · [iPhone 17](https://system6.aaronlau.me/go/iphone17) · [WindowShade](https://system6.aaronlau.me/go/windowshade) · [CDMA iPhone 4](https://system6.aaronlau.me/go/cdma4) · [Portless Apple Watch](https://system6.aaronlau.me/go/noport) · [touch 2 Engineering Board](https://system6.aaronlau.me/go/touch2) · [iPhone Air](https://system6.aaronlau.me/go/airact) · [iPhone 4S Demo Unit](https://system6.aaronlau.me/go/ip4sdemo) · [Transparent Air Prototypes](https://system6.aaronlau.me/go/airtrans) · [Apple T2 Network Card](https://system6.aaronlau.me/go/t2nic) · [MagSafe Prototypes](https://system6.aaronlau.me/go/mgscrap) · [iPhone 16 Prototype](https://system6.aaronlau.me/go/ip16p) · [iPad Air 4 Prototype](https://system6.aaronlau.me/go/ipada4) · [WWDC2099](https://system6.aaronlau.me/go/ios19) · [Studio Display](https://system6.aaronlau.me/go/sd) · [Magic Keyboard (USB-C)](https://system6.aaronlau.me/go/mkb) · [iPad mini (A17 Pro)](https://system6.aaronlau.me/go/mini7) · [MacBook Neo](https://system6.aaronlau.me/go/mbneo) · [M5 MacBook Air](https://system6.aaronlau.me/go/m5mba) · [iPhone 11 Pro Max](https://system6.aaronlau.me/go/pm11)
 
-<sub>EVERY APP HAS ONE SHAREABLE ADDRESS, <code>/go/&lt;app-id&gt;</code>. THE DESK OPENS AROUND IT. THE THIRTY-FOUR DEMONSTRATION PROJECT DISKS USE THE SAME ADDRESS RULE, AND THE <b>DEMONSTRATION PROJECT DISKS</b> FOLDER ON THE STARTUP DISK (OR <b>FILE › OPEN DEMONSTRATION PROJECT DISKS…</b>) LISTS EVERY ONE.</sub>
+<sub>EVERY APP HAS ONE SHAREABLE ADDRESS, <code>/go/&lt;app-id&gt;</code>. THE DESK OPENS AROUND IT. THE THIRTY-FIVE DEMONSTRATION PROJECT DISKS USE THE SAME ADDRESS RULE, AND THE <b>DEMONSTRATION PROJECT DISKS</b> FOLDER ON THE STARTUP DISK (OR <b>FILE › OPEN DEMONSTRATION PROJECT DISKS…</b>) LISTS EVERY ONE.</sub>
 
 </div>
 
@@ -48,7 +48,7 @@ THERE ARE FOUR MORE INSIDE. NO MODEL REQUIRED TO LOOK AROUND.</sub>
 - [Chat is an app. Not the whole computer.](#chat-is-an-app-not-the-whole-computer)
 - [What the constraint still leaves room for](#what-the-constraint-still-leaves-room-for)
 - [It also runs DOOM](#it-also-runs-doom)
-- [One desk. Seven systems.](#one-desk-seven-systems)
+- [One desk. Eight systems.](#one-desk-eight-systems)
 - [Built under a 1988 constraint](#built-under-a-1988-constraint)
 - [Bring your own model](#bring-your-own-model)
 - [How this repository keeps itself honest](#how-this-repository-keeps-itself-honest)
@@ -57,6 +57,30 @@ THERE ARE FOUR MORE INSIDE. NO MODEL REQUIRED TO LOOK AROUND.</sub>
 
 ## What's new in 1.0.55
 
+System 7, Drawing Board, Tiger and Lion are also included as experimental appearances; the eight regular choices stay unchanged.
+
+- **NeXTSTEP is the eighth appearance.** The desk Mac OS X descends from, after
+  the 3.3 guidelines: a main menu in the corner, scrollers on the left, a Dock
+  on the right, and an icon of its own for every object. Pick it from Special.
+- **Mac OS X-era Finder windows have a toolbar, and from Snow Leopard on a
+  sidebar.** Favorites and Locations navigate the same window; the classic eras
+  stay spatial, and a phone keeps one column in every era.
+- **A deck can wear any of the desk's eight appearances.** ClioStage's slides
+  gained four independent dimensions: the **era** (the same eight appearances
+  the desk itself has, 1988 to 2025), the **argument mode** (five: conclusions
+  first, story, teaching, visual-led, or neutral briefing), the **page layout**
+  (sixteen, from a cover to a comparison matrix), and a **canvas plus reading
+  distance** that sets the smallest type a page may use. Each era dresses the
+  page as the presentation software of its year did, from an overhead frame in
+  1988 to NeXTSTEP's bevelled panel and Platinum's red wedge. The mode and the
+  reading distance are asked before generation; the era is picked from real
+  miniature previews of your own first page. **Change Era** then restyles a whole
+  deck without touching a word of it, and **Print PDF** lays one slide per page.
+- **A chart handed to a deck now travels as a drawing.** ClioChart serializes
+  the chosen projection into one self-contained SVG — its own patterns, labels,
+  values and "not measured" note, nothing external to fetch — and the deck page
+  carries it as an image plus the source table in a comment, so the page can be
+  saved, reopened, printed and exported without ClioChart being open.
 - **CMF Studio lights its colorways the way the product photographs them.**
   iPhone 17 Pro / Max (one entry, two poses), iPhone Air, iPhone 17e, MacBook
   Neo and the folding iPhone Duo, rendered under the official scene's own
@@ -68,7 +92,7 @@ THERE ARE FOUR MORE INSIDE. NO MODEL REQUIRED TO LOOK AROUND.</sub>
   `/go/doom` and the rest are the single way to hand somebody one window; the
   old bare directories are retired on the server by the installer itself.
 - **A finished project travels as a disk, not as a screenshot.** `/go/dtk`,
-  `/go/ipad1`, `/go/m5ipad`, `/go/iphone17`, `/go/iphone17e`, `/go/bongo`, `/go/glass`, `/go/ipad97`, `/go/airbattery`, `/go/pm17`, `/go/sympathy`, `/go/ceramic`, `/go/macpro19`, `/go/pocket`, `/go/iphone6sp`, `/go/sleeve`, `/go/pm12` and `/go/pm11` mount a whole Project Hard Disk: question sheet, outline,
+  `/go/ipad1`, `/go/m5ipad`, `/go/iphone17`, `/go/iphone17e`, `/go/bongo`, `/go/glass`, `/go/ipad97`, `/go/airbattery`, `/go/pm17`, `/go/sympathy`, `/go/ceramic`, `/go/macpro19`, `/go/pocket`, `/go/iphone6sp`, `/go/sleeve`, `/go/pm12`, `/go/windowshade` and `/go/pm11` mount a whole Project Hard Disk: question sheet, outline,
   section drafts, manuscript, review record. The reader gets their own editable
   copy, and the set lives in one **Demonstration Project Disks** folder on the
   Startup Disk, which is the same window the File menu opens: every disk is
@@ -82,20 +106,31 @@ THERE ARE FOUR MORE INSIDE. NO MODEL REQUIRED TO LOOK AROUND.</sub>
   connects to your desk over the internet, through an invitation that names
   it, under the same tool contract, permissions and Review Desk approvals as
   on your Mac.
+- **Bring a walk back to the desk.** Quick Draft accepts a pasted transcript,
+  picks out the words before spoken marks, and asks before adding it to File
+  Floppy. Your words stay intact; nothing is inserted into the manuscript.
+- **The source tools work together.** Reader keeps reading progress; Scrapbook
+  separates selecting from editing; DocMap lets you select a branch before
+  asking about it. Searcher supports keyboard selection, and Time Machine
+  keeps its archive controls with the page.
 - **One More Tune: a quiz about the music Apple put in its ads.** Every
   question plays itself, because the sound *is* the question. Answer, and the
   reveal opens the original — in a window of its own, centered on the desk —
   and dresses the whole desk in the era the card belongs to, then hands your
   appearance back. The sound is a store preview, and when a network cannot
   reach the store, this desk's own host relays the same file, so the game is
-  playable by ear anywhere; the phone layout keeps a round on one screen.
+  playable by ear anywhere. A white-label record and ten track positions keep
+  the phone round on one screen; continuing a saved round restores all ten
+  questions at the place you reached.
   A second game, Relay, asks who took the handoff instead: six presenter
   clues per round, each one opened costing a point, and the answer kept on the
   server until you choose. A third, Next Act, asks what a keynote line was
   doing and which chapter followed it: ten written questions a round, no sound
   at all, and every answer opens its explanation and the transcript position it
   rests on — including the cases where one phrase has two checked uses and the
-  first explanation would otherwise hand over the second question.
+  first explanation would otherwise hand over the second question. Forty-one
+  Apple-history questions across Relay and Next Act were checked against the
+  pages they cite and passed three owner reviews before entering rotation.
 
 Every beta has [its own release notes](https://github.com/surfine/AI-System-6/releases).
 
@@ -270,7 +305,7 @@ the constraint can contain real software; the writing route earns trust
 separately, through visible objects, deliberate saving, and receipts for what
 actually happened.
 
-## One desk. Seven systems.
+## One desk. Eight systems.
 
 The files and open windows stay put. The whole computer changes era around
 them.
@@ -288,10 +323,11 @@ them.
   </tr>
   <tr>
     <td width="33%" align="center"><img src="site/img/frames/liquid-glass.webp" alt="Liquid Glass appearance"><br><code>2026 / LIQUID GLASS</code></td>
+    <td width="33%" align="center"><img src="site/img/frames/nextstep.webp" alt="NeXTSTEP appearance"><br><code>1995 / NEXTSTEP · BRANCH</code></td>
   </tr>
 </table>
 
-Seven frames, one live desktop, captured by `npm run site:capture-frames`.
+Eight frames, one live desktop, captured by `npm run site:capture-frames`.
 System 6 starts from real System 6.0.8 resources and observed Macintosh
 behavior; later eras own independent, Retina-ready icon families. Nothing here
 is a mockup, because a script re-shoots all of it from the running app.
@@ -305,7 +341,7 @@ is a mockup, because a script re-shoots all of it from the running app.
 ## Built under a 1988 constraint
 
 ```text
-boot-critical payload   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,948,224 bytes
+boot-critical payload   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,949,829 bytes
 two 1.44 MB floppies    ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  2,949,120 bytes
 heavy tools             load lazily, from a third disk
 ```
@@ -389,7 +425,7 @@ an independently verifiable source snapshot.
 
 <img src="site/img/themes/classic/hardDisk.svg" width="40" height="40" alt=""> <img src="site/img/themes/platinum/hardDisk.png" width="40" height="40" alt=""> <img src="site/img/themes/aqua/hardDisk.png" width="40" height="40" alt=""> <img src="site/img/themes/snow-leopard/hardDisk.png" width="40" height="40" alt=""> <img src="site/img/themes/yosemite/hardDisk.png" width="40" height="40" alt=""> <img src="site/img/themes/liquid-glass/hardDisk.png" width="40" height="40" alt="">
 
-<sub>ONE DISK. SIX ERAS. SAME WORK.</sub>
+<sub>ONE DISK. EIGHT ERAS. SAME WORK.</sub>
 
 If AI writing tools should leave your voice alone, **[★ star AI System 6](https://github.com/surfine/AI-System-6)**.
 
@@ -397,4 +433,4 @@ If AI writing tools should leave your voice alone, **[★ star AI System 6](http
 
 </div>
 
-<!-- claim-check: npm run site:check | site/data/floppy-budget.json (bytes 2945088, budget 2954624, written by verify:floppy) | npm run verify:floppy, verify:docs, verify:public | site/img/frames (seven appearances) -->
+<!-- claim-check: npm run site:check | site/data/floppy-budget.json (bytes 2945088, budget 2954624, written by verify:floppy) | npm run verify:floppy, verify:docs, verify:public | site/img/frames (eight appearances) -->

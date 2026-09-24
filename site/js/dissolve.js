@@ -6,7 +6,7 @@
 // The page chrome follows the nearest era, so the whole document ages with
 // the photograph.
 
-import { ERAS, setEra, currentEra, fontLabel, onEraChange } from "./eras.js?v=20260820a";
+import { ERAS, setEra, currentEra, fontLabel, onEraChange, isBranch } from "./eras.js?v=20260820a";
 import { frameSrc, machineManifest } from "./machine.js?v=20260820a";
 import { L } from "./copy.js?v=20260820a";
 
@@ -155,6 +155,10 @@ export function createDissolve(container, opts = {}) {
 
   let position = 0;
   let drifting = null;
+  // Once the visitor takes the controls (the slider, a tick, the Special menu,
+  // the appearance list) the self-playing tour is over for good, even if its
+  // next step was only waiting for a frame to load.
+  let driftDone = false;
 
   function paint(t) {
     const { a, b, k } = blendAt(t);
@@ -176,7 +180,9 @@ export function createDissolve(container, opts = {}) {
     ticks.querySelectorAll(".dissolve-tick").forEach((tick) =>
       tick.classList.toggle("is-near", tick.dataset.era === near.id));
     // The document itself ages with the photograph.
-    if (near.id !== currentEra().id) setEra(near.id, false);
+    // A branch chosen elsewhere is not on this line, so the photograph does
+    // not pull the page back to the nearest year.
+    if (near.id !== currentEra().id && !isBranch(currentEra().id)) setEra(near.id, false);
   }
 
   function setPosition(t, moveThumb) {
@@ -187,7 +193,10 @@ export function createDissolve(container, opts = {}) {
 
   range.addEventListener("input", () => {
     stopDrift();
+    const fromBranch = isBranch(currentEra().id);
     setPosition(Number(range.value) / 1000, false);
+    // Touching the line from a branch comes back onto it.
+    if (fromBranch) setEra(nearestEra(position).id, false);
   });
   range.addEventListener("pointerdown", stopDrift);
   const settle = () => {
@@ -201,12 +210,27 @@ export function createDissolve(container, opts = {}) {
   // The readout names the face the visitor is really reading, and the hosted
   // ones land after first paint. Repaint when the era engine says so, or the
   // specimen keeps announcing whichever fallback was installed at load.
-  onEraChange(() => paint(position));
+  // An era chosen elsewhere (the Special menu, the appearance list) moves the
+  // photograph to that year. Repainting the old position instead would hand
+  // the page straight back to whatever year the slider was resting on, and
+  // every choice made outside the hero would be undone in the same frame.
+  onEraChange((era) => {
+    if (era && isBranch(era.id)) stopDrift();
+    if (era && nearestEra(position).id !== era.id) {
+      const stop = stops.find((s) => s.era.id === era.id);
+      if (stop) {
+        stopDrift();
+        setPosition(stop.t, true);
+        return;
+      }
+    }
+    paint(position);
+  });
 
   // Let the machine play itself once, so a visitor who touches nothing still
   // sees the whole span. Any input takes the controls for good.
   function drift() {
-    if (reducedMotion || opts.autoplay === false) return;
+    if (driftDone || reducedMotion || opts.autoplay === false) return;
     const hold = 1100;
     const cross = 520;
     let index = 0;
@@ -215,6 +239,7 @@ export function createDissolve(container, opts = {}) {
       return !!img && img.complete && img.naturalWidth > 0;
     };
     const step = () => {
+      if (driftDone) return;
       if (index >= stops.length - 1) { drifting = null; return; }
       const from = stops[index].t;
       const to = stops[index + 1].t;
@@ -224,6 +249,7 @@ export function createDissolve(container, opts = {}) {
       }
       const started = performance.now();
       drifting = requestAnimationFrame(function frame(now) {
+        if (driftDone) return;
         const k = Math.min(1, (now - started) / cross);
         setPosition(lerp(from, to, k), true);
         if (k < 1) { drifting = requestAnimationFrame(frame); return; }
@@ -239,11 +265,22 @@ export function createDissolve(container, opts = {}) {
     clearTimeout(drifting);
     drifting = null;
   }
-  function stopDrift() { cancelDrift(); }
+  function stopDrift() { driftDone = true; cancelDrift(); }
 
   container.addEventListener("pointerdown", stopDrift, { once: true });
 
-  setPosition(0, true);
+  // A visitor who chose a year before (the Special menu and the appearance
+  // list remember it) comes back to that year, and the tour does not replay
+  // over their choice. Everyone else starts in 1988 and watches it once.
+  let remembered = null;
+  try { remembered = localStorage.getItem("s6-site-theme"); } catch (e) {}
+  const home = stops.find((s) => s.era.id === remembered);
+  if (home) {
+    driftDone = true;
+    setPosition(home.t, true);
+  } else {
+    setPosition(0, true);
+  }
   if ("IntersectionObserver" in window) {
     const io = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {

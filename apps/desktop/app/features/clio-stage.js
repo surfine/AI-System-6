@@ -4,9 +4,46 @@
 
 window.AISystem6ClioStageLoaded = true;
 
+// --- deck identity ---------------------------------------------------------
+// A slides.md may carry a `<!-- clio-deck: … -->` spec written by the slides
+// export path. When it does, the deck's own era CSS renders the frames and each
+// page's own `_class` decides its layout; when it does not, everything below
+// behaves exactly as it always has.
+
+function clioStageDeckRuntime() {
+  return typeof window !== "undefined" ? window.AISystem6SlideThemes || null : null;
+}
+
+function clioStageApplyDeckStyle(spec) {
+  const runtime = clioStageDeckRuntime();
+  let style = document.querySelector("#clio-stage-deck-style");
+  if (!style) {
+    style = document.createElement("style");
+    style.id = "clio-stage-deck-style";
+    document.head.append(style);
+  }
+  style.textContent = runtime && spec
+    ? runtime.scopeCss(runtime.cssFor(spec.era), ".clio-stage-slide-frame", { dropContainers: true })
+    : "";
+}
+
+function clioStagePageLayout(markdown, index) {
+  const runtime = clioStageDeckRuntime();
+  if (!runtime || !markdown) return { layout: "", surface: "" };
+  const page = runtime.pages(markdown)[index];
+  if (!page) return { layout: "", surface: "" };
+  let surface = page.surface;
+  if (!surface && page.layout) {
+    const layout = runtime.layoutList().find((entry) => entry.id === page.layout);
+    if (layout) surface = layout.surface;
+  }
+  return { layout: page.layout, surface };
+}
+
 const clioStageState = {
   source: null,
   parsed: null,
+  deckSpec: null,
   mode: "document",
   index: 0,
   startedAt: 0,
@@ -277,6 +314,12 @@ function renderClioStageSlide() {
   const frame = document.createElement("section");
   frame.className = `clio-stage-slide-frame clio-stage-slide-${parsed.size.replace(":", "-")} clio-stage-theme-${parsed.theme}`;
   frame.classList.add(...clioStageSlideClasses(clioStageState.index));
+  if (clioStageState.deckSpec) {
+    frame.classList.add(`era-${clioStageState.deckSpec.era}`);
+    const pageLayout = clioStagePageLayout(clioStageState.source?.markdown || "", clioStageState.index);
+    if (pageLayout.layout) frame.classList.add(pageLayout.layout);
+    if (pageLayout.surface) frame.classList.add(pageLayout.surface);
+  }
   // A directive that parses but never paints is a promise the deck cannot
   // keep: header, footer and paginate all reach the frame or none should
   // parse. Per-slide values override the frontmatter; `_paginate: false`
@@ -325,6 +368,7 @@ function renderClioStageSlide() {
   fitClioStageBody(stage, body);
   observeClioStageFit();
   syncClioStageControls();
+  clioStageSyncDeckHealth();
 }
 
 function renderClioStageCue() {
@@ -391,6 +435,109 @@ function fitClioStageBody(surface, body) {
   }
   if (scale < 1) surface.classList.add("clio-stage-fit-active");
   if (body.scrollHeight * scale > surface.clientHeight + 1) surface.classList.add("clio-stage-fit-scroll");
+  surface.dataset.clioFitScale = String(scale);
+}
+
+// --- the deck's own numbers, on the status line ----------------------------
+// A page that overflows, or that the window had to shrink under the reading
+// floor, says so where the writer is already looking. The overflow is measured
+// with the fit transform lifted, because the fit is exactly what hides it.
+function clioStageDeckHealth() {
+  const runtime = clioStageDeckRuntime();
+  const markdown = clioStageState.source?.markdown || "";
+  const spec = clioStageState.deckSpec;
+  if (!runtime || !spec) return null;
+  const frame = clioStageElements().viewport?.querySelector(".clio-stage-slide-frame");
+  const surface = frame?.querySelector(".clio-stage-slide-stage");
+  const body = frame?.querySelector(".clio-stage-slide-body");
+  const floor = runtime.fontFloor(spec);
+  const page = clioStagePageLayout(markdown, clioStageState.index);
+  // The carrier receipt: what every page actually declares, taken from the text
+  // rather than from what a prompt intended. The viewer shows one page; the
+  // receipt is what a reviewer reads.
+  const receipt = runtime.receipt(markdown);
+  const health = {
+    spec,
+    floor,
+    page: clioStageState.index + 1,
+    layout: page.layout,
+    overflow: 0,
+    whitespace: 0,
+    smallest: 0,
+    scale: 1,
+    receipt,
+    pageEntry: receipt[clioStageState.index] || null,
+  };
+  if (!frame || !surface || !body) return health;
+  const previous = body.style.transform;
+  body.style.transform = "none";
+  health.overflow = Math.max(0, Math.round(body.scrollHeight - surface.clientHeight));
+  health.whitespace = Math.max(0, Math.round(surface.clientHeight - Math.min(body.scrollHeight, surface.clientHeight)));
+  body.style.transform = previous;
+  let smallest = Infinity;
+  frame.querySelectorAll("p, li, td, blockquote, h1, h2, h3, figcaption").forEach((node) => {
+    const size = parseFloat(window.getComputedStyle(node).fontSize) || 0;
+    if (size > 0) smallest = Math.min(smallest, size);
+  });
+  const scale = parseFloat(surface.dataset.clioFitScale || "1");
+  health.scale = Number.isFinite(scale) ? scale : 1;
+  health.smallest = Number.isFinite(smallest) ? Math.round(smallest * health.scale) : 0;
+  return health;
+}
+
+// The restyle route: the same deck, another era. The body is untouched — this
+// is the one action that changes a deck's identity without regenerating a word
+// of it. When the window was opened on a project document the file is updated
+// too; when it was handed a copy (Reader, a ClioChart page) the status line says
+// the change is in this window only, because that is the truth.
+async function clioStageRestyleEra(eraId) {
+  const runtime = clioStageDeckRuntime();
+  if (!runtime || !clioStageState.source?.markdown) {
+    setStatus(t("clio_stage_no_slides"));
+    return false;
+  }
+  const spec = { ...(clioStageState.deckSpec || runtime.defaultSpec()), era: eraId };
+  const next = runtime.restyle(clioStageState.source.markdown, spec);
+  const file = typeof chatFiles !== "undefined" && clioStageState.source?.sourceItemId
+    ? chatFiles.find((entry) => entry.id === clioStageState.source.sourceItemId)
+    : null;
+  if (file) {
+    file.body = next;
+    file.updatedAt = new Date().toISOString();
+    if (typeof markDeskDirty === "function") markDeskDirty("chatFiles", file.id);
+    if (typeof saveDeskState === "function") saveDeskState();
+    if (typeof renderDocuments === "function") renderDocuments();
+    if (typeof renderProjectDisks === "function") renderProjectDisks();
+  }
+  const reloaded = await loadClioStageSource({ ...clioStageState.source, markdown: next });
+  if (!reloaded) return false;
+  const era = runtime.byId(eraId);
+  setStatus(file
+    ? t("clio_stage_restyled_saved", era ? era.label : eraId, file.name)
+    : t("clio_stage_restyled_preview", era ? era.label : eraId));
+  return true;
+}
+
+function clioStageSyncDeckHealth() {
+  const health = clioStageDeckHealth();
+  const status = clioStageElements().status;
+  if (!health || !status) return;
+  if (clioStageState.mode !== "slide") return;
+  const zh = currentLanguage === "zh";
+  const title = clioStageState.source?.title || t("clio_stage_label");
+  const parts = [title];
+  if (health.pageEntry && health.pageEntry.job) parts.push(health.pageEntry.job);
+  else if (health.layout) parts.push(health.layout);
+  if (health.smallest && health.smallest < health.floor.body) {
+    parts.push(zh ? `正文 ${health.smallest}px，低于 ${health.floor.body}px` : `body ${health.smallest}px, under ${health.floor.body}px`);
+  }
+  if (health.overflow > 0) {
+    parts.push(zh ? `溢出 ${health.overflow}px` : `overflows ${health.overflow}px`);
+  } else if (health.whitespace > 260) {
+    parts.push(zh ? `底部空 ${health.whitespace}px` : `${health.whitespace}px empty below`);
+  }
+  parts.push(`${clioStageState.index + 1} / ${clioStageState.parsed?.slides.length || 1}`);
+  status.textContent = parts.join(" · ");
 }
 
 function refitClioStage() {
@@ -445,6 +592,12 @@ async function loadClioStageSource(source) {
   const parsed = parseClioStageMarpDocument(markdown);
   clioStageState.source = { ...source, title, markdown };
   clioStageState.parsed = null;
+  const deckRuntime = clioStageDeckRuntime();
+  // cleanSpec, not the raw reader: the era becomes a class name on every frame
+  // and the print sheet's markup, and the file that named it may not be ours.
+  const deckSpecLine = deckRuntime ? deckRuntime.parseSpec(markdown) : null;
+  clioStageState.deckSpec = deckRuntime ? (deckSpecLine ? deckRuntime.cleanSpec(deckSpecLine) : deckRuntime.defaultSpec()) : null;
+  clioStageApplyDeckStyle(clioStageState.deckSpec);
   clioStageState.index = 0;
   clioStageState.mode = "slide";
   clioStageState.startedAt = 0;
@@ -537,6 +690,45 @@ async function askClioStageQuestion(event) {
 
 // The whole slides.md goes with every question, with the current slide called
 // out (see askClioStageQuestion) — the scope row says both.
+// The deck as a PDF: one page per slide, the deck's own era CSS inline, the
+// deck title and page number in the footer. Same shape as DocMap's print sheet
+// (a standalone document written into a popup, then the browser's own print).
+function clioStageExportPdf() {
+  const runtime = clioStageDeckRuntime();
+  const markdown = clioStageState.source?.markdown || "";
+  if (!runtime || !markdown.trim() || !clioStageState.parsed?.slides?.length) {
+    setStatus(t("clio_stage_empty"));
+    return false;
+  }
+  const spec = clioStageState.deckSpec || runtime.parseSpec(markdown) || runtime.defaultSpec();
+  const html = runtime.printHtml({
+    title: clioStageState.source?.title || t("clio_stage_label"),
+    markdown,
+    spec,
+  });
+  const sizes = runtime.printSizes[spec.canvas] || runtime.printSizes["16:9"];
+  const popup = window.open("", "_blank", `width=${Math.round(sizes.width * 3.6)},height=${Math.round(sizes.height * 3.6)}`);
+  if (!popup) {
+    const blocked = t("clio_stage_pdf_blocked");
+    setStatus(blocked);
+    pushSystemNotification(blocked, { state: "failed" });
+    return false;
+  }
+  popup.document.open();
+  popup.document.write(html);
+  popup.document.close();
+  setStatus(t("clio_stage_pdf_ready", clioStageState.parsed.slides.length, spec.canvas));
+  setTimeout(() => {
+    try {
+      popup.focus();
+      popup.print();
+    } catch (error) {
+      setStatus(t("clio_stage_pdf_blocked"));
+    }
+  }, 140);
+  return true;
+}
+
 function describeClioStageAskScope() {
   const slides = clioStageState.parsed?.slides;
   if (!slides?.length || !clioStageState.source?.markdown) {
@@ -571,6 +763,7 @@ function bindClioStageControls() {
   const els = clioStageElements();
   if (!els.viewport || els.viewport.dataset.clioStageReady === "true") return;
   els.viewport.dataset.clioStageReady = "true";
+  clioStageEnsureExportButton();
   els.source?.addEventListener("click", () => setClioStageMode("source"));
   els.document?.addEventListener("click", () => setClioStageMode("document"));
   els.slide?.addEventListener("click", () => setClioStageMode("slide"));
@@ -581,6 +774,23 @@ function bindClioStageControls() {
   registerAskBarSource("clioStage", describeClioStageAskScope);
   document.addEventListener("keydown", handleClioStageKeydown);
   syncClioStageControls();
+}
+
+// The deck's print button belongs to ClioStage, so it arrives with the module
+// rather than sitting in the shell's permanent payload. It lands in the details
+// bar the window already renders, beside the import button.
+function clioStageEnsureExportButton() {
+  if (document.querySelector("#clio-stage-export-pdf")) return;
+  const bar = document.querySelector(".clio-stage-details-bar");
+  if (!bar) return;
+  const button = document.createElement("button");
+  button.className = "btn details-bar-button";
+  button.type = "button";
+  button.id = "clio-stage-export-pdf";
+  button.setAttribute("data-action", "clio-stage-export-pdf");
+  button.setAttribute("data-i18n", "print_pdf");
+  button.textContent = t("print_pdf");
+  bar.insertBefore(button, bar.querySelector("#clio-stage-status"));
 }
 
 bindClioStageControls();
@@ -636,11 +846,23 @@ window.AISystem6ClioStage = {
     const status = clioStageElements().status;
     if (status) status.textContent = message;
   },
+  exportPdf: clioStageExportPdf,
+  deckSpec: () => clioStageState.deckSpec,
+  health: clioStageDeckHealth,
 };
 
 const CLIO_STAGE_COMMAND_NAMES = [
   "clio-stage-docmap",
   "clio-stage-import",
+  "clio-stage-export-pdf",
+  "clio-stage-restyle-classic",
+  "clio-stage-restyle-platinum",
+  "clio-stage-restyle-aqua",
+  "clio-stage-restyle-snow-leopard",
+  "clio-stage-restyle-yosemite",
+  "clio-stage-restyle-big-sur",
+  "clio-stage-restyle-liquid-glass",
+  "clio-stage-restyle-nextstep",
   "clio-stage-previous",
   "clio-stage-next",
   "clio-stage-source",
@@ -707,6 +929,8 @@ function runClioStageRuntimeCommand(action) {
   }
   if (command === "previous") return window.AISystem6ClioStage.previous?.();
   if (command === "next") return window.AISystem6ClioStage.next?.();
+  if (command === "export-pdf") return clioStageExportPdf();
+  if (command.startsWith("restyle-")) return clioStageRestyleEra(command.slice("restyle-".length));
   if (["source", "document", "slide", "cue"].includes(command)) {
     return window.AISystem6ClioStage.setMode?.(command);
   }

@@ -43,6 +43,66 @@
      all — Aqua's is a pinstripe gradient and Liquid Glass's is a 34% wash — so
      the player's small print came out invisible in two of the six appearances. */
   --omt-stage-ink:var(--paper);
+  /* The disc's motion tokens, next to the window's other values rather than
+     inline in the rules that use them. They have to be *declared* somewhere:
+     an unresolved var() inside an `animation` or `transition` shorthand makes
+     the whole declaration invalid at computed-value time, which is how the
+     sleeve's three lines first arrived at opacity:0 and stayed there — the
+     entrance was written, and the token it named did not exist. Constant
+     motion (the platter, the arc) is linear; anything arriving is a strong
+     ease-out; nothing here runs longer than a third of a second. */
+  --omt-ease-out:cubic-bezier(.23,1,.32,1);
+  --omt-ease-drawer:cubic-bezier(.32,.72,0,1);
+  --omt-disc-arc-ms:250ms;
+  --omt-disc-press-ms:100ms;
+  /* The round's room. It is dark in every appearance — a listening room, where
+     the answer's colour has somewhere to arrive — so these are the deck's own
+     values, not the appearance's paper. The 1-bit desk re-values them below. */
+  --omt-room:#111113;
+  --omt-room-ink:#F5F5F7;
+  --omt-room-ink-2:#AEAEB4;
+  --omt-room-ink-3:#8A8A90;
+  --omt-room-hair:rgba(255,255,255,.1);
+  --omt-room-chip:rgba(255,255,255,.055);
+  --omt-room-chip-line:rgba(255,255,255,.12);
+  --omt-room-chip-press:rgba(255,255,255,.15);
+  --omt-room-glow:rgba(255,255,255,.085);
+  --omt-room-wash:44%;
+  --omt-button:#F5F5F7;
+  --omt-button-ink:#111113;
+  --omt-opt-radius:16px;
+  /* The record: vinyl, its grooves, a paper label, and a tonearm. */
+  --omt-vinyl:#0B0B0C;
+  --omt-vinyl-shadow:rgba(0,0,0,.55);
+  --omt-groove:#1A1A1C;
+  --omt-groove-gap:rgba(255,255,255,.085);
+  --omt-groove-land:.9%;
+  --omt-groove-pitch:1.35%;
+  --omt-sheen:conic-gradient(from 210deg,transparent 0 14deg,rgba(255,255,255,.11) 30deg,transparent 46deg 180deg,rgba(255,255,255,.07) 204deg,transparent 222deg);
+  --omt-label:#EFEBE1;
+  --omt-label-ink:#1D1D1F;
+  --omt-label-type-bg:transparent;
+  --omt-arm-base:radial-gradient(circle at 38% 32%,#4B4C51,#18181B 72%);
+  --omt-arm-weight:linear-gradient(90deg,#36373C,#6E6F75 45%,#303136);
+  --omt-arm-tube:linear-gradient(90deg,#85878D,#ECEDF0 45%,#85878D);
+  --omt-arm-head:linear-gradient(90deg,#1F1F22,#2C2C30 50%,#1F1F22);
+  --omt-arm-cap:radial-gradient(circle at 35% 30%,#F2F3F5,#96989E 70%);
+  /* A ring is an era as a solid colour — the track list, the back cover's
+     record, the room's wash — and its ink is what reads on top of it. */
+  --omt-ring-1:var(--omt-era-1);
+  --omt-ring-2:var(--omt-era-2);
+  --omt-ring-3:var(--omt-era-3);
+  --omt-ring-4:var(--omt-era-4);
+  --omt-ring-5:var(--omt-era-5);
+  --omt-ring-6:var(--omt-era-6);
+  --omt-ring-none:#EFEBE1;
+  --omt-ring-ink-1:#08250F;
+  --omt-ring-ink-2:#2A2100;
+  --omt-ring-ink-3:#2C1500;
+  --omt-ring-ink-4:#FFFFFF;
+  --omt-ring-ink-5:#FFFFFF;
+  --omt-ring-ink-6:#FFFFFF;
+  --omt-ring-ink-none:#1D1D1F;
 }
 .one-more-tune-window * { box-sizing:border-box }
 .one-more-tune-window { margin:0;line-height:1.6;-webkit-font-smoothing:antialiased }
@@ -66,16 +126,7 @@
 .one-more-tune-window a { color:inherit;text-underline-offset:4px }
 .one-more-tune-window .wrap { max-width:1200px;padding:0 42px;margin:auto }
 .one-more-tune-window .top { height:98px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--separator);gap:20px }
-.one-more-tune-window .brand { font-weight:770;font-size:23px;letter-spacing:-1.2px;text-decoration:none;display:flex;align-items:center;gap:12px }
-.one-more-tune-window .brand i { font-family:Georgia,serif;font-weight:400 }
-.one-more-tune-window .brandmark { height:22px;display:flex;gap:2px;align-items:flex-end }
-.one-more-tune-window .brandmark b { width:3px;border-radius:3px;box-shadow:inset 0 0 0 1px var(--omt-era-edge) }
-.one-more-tune-window .brandmark b:nth-child(1) { height:10px;background:var(--omt-era-1) }
-.one-more-tune-window .brandmark b:nth-child(2) { height:17px;background:var(--omt-era-2) }
-.one-more-tune-window .brandmark b:nth-child(3) { height:22px;background:var(--omt-era-3) }
-.one-more-tune-window .brandmark b:nth-child(4) { height:14px;background:var(--omt-era-4) }
-.one-more-tune-window .brandmark b:nth-child(5) { height:19px;background:var(--omt-era-5) }
-.one-more-tune-window .brandmark b:nth-child(6) { height:8px;background:var(--omt-era-6) }
+
 .one-more-tune-window .nav { display:flex;gap:24px;align-items:center;font-size:13px }
 .one-more-tune-window .nav a { text-decoration:none }
 .one-more-tune-window .tag { display:inline-flex;align-items:center;padding:4px 10px;border:1px solid var(--separator);border-radius:40px;font-size:11px;letter-spacing:.04em;white-space:nowrap }
@@ -89,8 +140,7 @@
 .one-more-tune-window .collection-head h1 { font-weight:660;font-size:clamp(34px,3.7vw,50px);line-height:1.22;letter-spacing:-2.4px;margin:23px 0 24px }
 .one-more-tune-window .collection-head p { font-size:15px;max-width:390px;color:var(--omt-muted) }
 .one-more-tune-window .collection-head .intro { margin-bottom:30px }
-.one-more-tune-window .featureline { display:flex;flex-wrap:wrap;gap:8px;font-size:12px;color:var(--omt-muted);margin:26px 0 }
-.one-more-tune-window .featureline span+span:before { content:"·";margin-right:8px }
+
 .one-more-tune-window .small { font-size:12px;color:var(--omt-muted) }
 .one-more-tune-window .hairline { height:1px;background:var(--separator);margin:28px 0 }
 .one-more-tune-window .minirow { display:flex;align-items:center;gap:16px }
@@ -98,28 +148,16 @@
 .one-more-tune-window .minirow p { margin:0;font-size:12px;line-height:1.5 }
 .one-more-tune-window .preview { position:relative }
 .one-more-tune-window .sectiontag { display:flex;justify-content:space-between;align-items:center;margin-bottom:13px;font-size:12px }
-.one-more-tune-window .darkplayer { position:relative;overflow:hidden;aspect-ratio:1.66;min-height:262px;border-radius:var(--container-radius);background:var(--omt-stage);color:var(--omt-stage-ink);padding:25px 27px;display:flex;flex-direction:column;justify-content:space-between }
-/* Small print on the player. It reads --omt-stage-ink — the one value that
-   stays light on a stage the appearance painted with its own ink — rather than a
-   panel token that happens to be light in the era the sheet was written in. */
-.one-more-tune-window .playerhead, .one-more-tune-window .playerfoot { position:relative;display:flex;align-items:center;justify-content:space-between;font-size:11px;letter-spacing:.1em;color:var(--omt-stage-ink) }
-.one-more-tune-window .playerhead span:first-child { display:flex;align-items:center;gap:7px }
-/* Two elements, two jobs. The MARK is six bars — a waveform and the Apple
-   stripes at once — and it is always all six: on the blind player that reads
-   as "one of these six, and not saying which", which is the truth before an
-   answer. The BAND below names one era in words with its own stripe beside
-   them, and only ever appears where the answer is already on screen. Keeping
-   identity out of the mark is also why the 1-bit appearance needs nothing but
-   new token values. */
-.one-more-tune-window .era-mark { display:inline-flex;align-items:flex-end;gap:2px;height:11px;vertical-align:-1px }
-.one-more-tune-window .era-mark i { width:3px;border-radius:1px;display:block;box-shadow:inset 0 0 0 1px var(--omt-era-edge) }
-.one-more-tune-window .era-mark i:nth-child(1) { height:5px;background:var(--omt-era-1) }
-.one-more-tune-window .era-mark i:nth-child(2) { height:11px;background:var(--omt-era-2) }
-.one-more-tune-window .era-mark i:nth-child(3) { height:7px;background:var(--omt-era-3) }
-.one-more-tune-window .era-mark i:nth-child(4) { height:9px;background:var(--omt-era-4) }
-.one-more-tune-window .era-mark i:nth-child(5) { height:4px;background:var(--omt-era-5) }
-.one-more-tune-window .era-mark i:nth-child(6) { height:8px;background:var(--omt-era-6) }
-/* A band, not a lamp: it names the era the card belongs to, beside the words
+
+/* Two things, two jobs. The MARK is the disc's label: six bands, always all
+   six, so the blind player reads as "one of these six, and not saying which" —
+   the truth before an answer — and after it the one band this card belongs to
+   comes up while the other five stay where they were. Keeping identity out of
+   the mark is also why the 1-bit appearance needs nothing but new token values.
+   `.era-mark`'s six bars, which used to sit in the stage's head, went with the
+   old player onto the disc on 2026-09-23 (DEBT-AUDIT §13). The BAND below names
+   one era in words, and only ever appears where the answer is already on
+   screen. A band, not a lamp: it names the era the card belongs to, beside the words
    that say the same thing. Colour is never the only carrier. */
 .one-more-tune-window .era-band { display:inline-flex;align-items:center;gap:7px;font-family:var(--mono-font);font-size:10px;letter-spacing:.1em;white-space:nowrap }
 .one-more-tune-window .era-band b { width:22px;height:8px;border-radius:2px;display:block;background:var(--omt-era-none);box-shadow:inset 0 0 0 1px var(--omt-era-edge) }
@@ -129,17 +167,11 @@
 .one-more-tune-window .era-band[data-era="4"] b { background:var(--omt-era-4) }
 .one-more-tune-window .era-band[data-era="5"] b { background:var(--omt-era-5) }
 .one-more-tune-window .era-band[data-era="6"] b { background:var(--omt-era-6) }
-/* The disc follows the stage instead of being a fixed 255px pasted into it: the
-   stage is as tall as the window gives it, and a fixed circle inside a growing
-   rectangle stops composing at some height. */
-.one-more-tune-window .vinyl { position:absolute;width:min(255px,52%);aspect-ratio:1;left:50%;top:50%;transform:translate(-50%,-50%);border-radius:100%;background:repeating-radial-gradient(circle,transparent 0px,transparent 9px,#ffffff09 9.5px,#ffffff09 10px);border:1px solid #ffffff12 }
-/* Six flat wedges, never a gradient: the ring is the mark, and a blurred
-   rainbow is the one way to make it look like clip art. */
-.one-more-tune-window .playbutton { align-self:center;border:0;border-radius:100%;width:82px;height:82px;padding:6px;position:relative;display:grid;place-items:center;background:conic-gradient(var(--omt-era-1) 0deg 60deg,var(--omt-era-2) 60deg 120deg,var(--omt-era-3) 120deg 180deg,var(--omt-era-4) 180deg 240deg,var(--omt-era-5) 240deg 300deg,var(--omt-era-6) 300deg 360deg) }
-.one-more-tune-window .playbutton>span { width:100%;height:100%;border-radius:100%;background:var(--omt-stage);display:grid;place-items:center }
-.one-more-tune-window .triangle { width:0;height:0;border-top:10px solid transparent;border-bottom:10px solid transparent;border-left:16px solid var(--omt-stage-ink);margin-left:5px }
-.one-more-tune-window .trackline { height:2px;background:#ffffff23;flex:1;margin:0 18px }
-.one-more-tune-window .trackline:before { content:"";display:block;width:22%;height:2px;background:var(--omt-stage-ink) }
+
+@keyframes omt-disc-spin { to { transform:rotate(360deg) } }
+
+@keyframes sleeve-in { to { opacity:1;transform:none } }
+
 .one-more-tune-window .questionlabel { font-size:14px;font-weight:650;margin:23px 0 13px }
 .one-more-tune-window .choices { display:grid;grid-template-columns:1fr 1fr;gap:10px }
 /* An answer is a control, so it wears the appearance's control recipe — white
@@ -152,7 +184,6 @@
 .one-more-tune-window .choice .letter { color:inherit;opacity:.6;font-family:var(--mono-font);font-size:10px }
 .one-more-tune-window .choice:hover:not(:disabled) { background:var(--btn-hover-bg);color:var(--btn-hover-fg) }
 .one-more-tune-window .choice.chosen { border-color:var(--selection-bg);background:var(--selection-bg);color:var(--selection-fg) }
-.one-more-tune-window .previewnote { display:flex;justify-content:space-between;gap:10px;margin-top:14px;font-size:11px;color:var(--omt-muted) }
 .one-more-tune-window .linkbutton { background:none;border:0;padding:0;text-decoration:underline;text-underline-offset:4px;color:inherit;font-size:inherit }
 .one-more-tune-window .reveal { display:none }
 .one-more-tune-window .reveal.show { display:block }
@@ -165,8 +196,7 @@
 .one-more-tune-window .creditgap summary { cursor:pointer;color:var(--ink);text-decoration:underline;text-underline-offset:4px }
 .one-more-tune-window .creditgap-hint { margin:6px 0 0;font-size:11px }
 .one-more-tune-window .creditgap-body { margin:6px 0 0;white-space:pre-line;font-family:var(--mono-font) }
-.one-more-tune-window .playstate { display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:12px 0 0 }
-.one-more-tune-window .playstate .hint { font-size:11px;color:var(--omt-muted) }
+
 .one-more-tune-window .deck-spec { margin:16px 0 0;border-top:1px solid var(--separator);padding-top:12px }
 .one-more-tune-window .deck-spec dl { display:grid;grid-template-columns:1fr 1fr;gap:8px 20px;margin:8px 0 0;font-size:12px }
 .one-more-tune-window .deck-spec div { display:flex;justify-content:space-between;gap:12px;min-width:0;border-bottom:1px dotted var(--separator);padding-bottom:4px }
@@ -505,7 +535,6 @@
   width: 68px;
 }
 
-.one-more-tune-step-actions,
 .one-more-tune-grades {
   display: flex;
   flex-wrap: wrap;
@@ -616,18 +645,13 @@
   margin: 0;
 }
 
-/* The reveal's player. YouTube's own controls stay visible and nothing is
-   cropped or covered — hiding the picture while keeping the sound is the thing
-   the platform's policies actually forbid. */
-.one-more-tune-reveal-player {
-  display: flex;
-  flex-direction: column;
-  /* A button that spans its column is the full-width button the layout
-     guidelines warn about: it reads as the page's primary action and competes
-     with the one that actually is (Next). The film button is its own size at
-     every width, from a 786px window to a phone. */
-  align-items: flex-start;
-  gap: 6px;
+/* The links describe the record — the film it came from and the recording this
+   question was cut from — so they are the card's own footer rather than a second
+   block under it spending a line of its own. */
+.one-more-tune-window .revealbox .one-more-tune-plain-links {
+  margin: 10px 0 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--separator);
 }
 
 .one-more-tune-film {
@@ -694,22 +718,6 @@
   cursor: pointer;
 }
 
-/* A result is never colour alone: the mark, the word and the aria text all
-   say the same thing, and a question whose sound never played reads as
-   neither right nor wrong. */
-.one-more-tune-review-mark {
-  flex: none;
-  font-variant-numeric: tabular-nums;
-}
-
-.one-more-tune-review-text {
-  min-width: 0;
-}
-
-.one-more-tune-review-state {
-  opacity: 0.8;
-}
-
 .one-more-tune-grade-key {
   font-variant-numeric: tabular-nums;
   opacity: 0.6;
@@ -719,29 +727,11 @@
   margin: 0;
   font-weight: 600;
 }
-
-.one-more-tune-score {
-  margin: 0;
-  font-size: 34px;
-  font-variant-numeric: tabular-nums;
-  line-height: 1.1;
-}
-
 .one-more-tune-score-line,
 .one-more-tune-pool-count {
   margin: 0;
   font-variant-numeric: tabular-nums;
 }
-
-.one-more-tune-review-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
 /* The film row sits with the answer, never with a question: a link's title is
    the answer. Two lines so the caveat cannot be read as part of the link. */
 .one-more-tune-film-row {
@@ -915,34 +905,11 @@
   text-decoration-thickness: 3px;
 }
 
-/* The design draws the player at 1.66 inside its own column, which lands near
-   350px tall; on the challenge face it spans the whole pane, and at 860px that
-   same ratio would make a 480px-tall slab with a small disc floating in it. The
-   height is capped so the block keeps the proportion the mock shows. */
-.one-more-tune-window .one-more-tune-face .darkplayer {
-  max-height: 360px;
-}
-
 /* The masthead sits on the paper, above the pane's own padding. */
 .one-more-tune-window .one-more-tune-top,
 .one-more-tune-window .top {
   padding: 14px 20px 10px;
   border-bottom: 1px solid var(--separator);
-}
-
-.one-more-tune-window .brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-weight: 770;
-  font-size: 18px;
-  letter-spacing: -1px;
-  color: var(--ink);
-}
-
-.one-more-tune-window .brand i {
-  font-family: Georgia, serif;
-  font-weight: 400;
 }
 
 /* The pane is the page: paper, ink, 15px body copy. */
@@ -955,7 +922,6 @@
   padding: 20px;
 }
 
-
 /* --- The learning mock's own components -----------------------------------
    The shelf and the study faces come from
    One_More_Tune_Learning/design/learning.template.html: the card stack with the
@@ -965,7 +931,6 @@
 .one-more-tune-window button, .one-more-tune-window a, .one-more-tune-window input { touch-action:manipulation }
 .one-more-tune-window [hidden] { display:none }
 .one-more-tune-window header { display:flex;align-items:center;justify-content:space-between;gap:20px;min-height:98px;border-bottom:1px solid var(--separator) }
-.one-more-tune-window .brand em { font-family:Georgia,serif;font-weight:400 }
 .one-more-tune-window nav { display:flex;gap:5px }
 .one-more-tune-window nav button { border:0;background:transparent;border-radius:24px;padding:10px 18px;font-size:13px;min-height:44px }
 .one-more-tune-window nav button[aria-current=page] { background:var(--ink);color:var(--omt-stage-ink) }
@@ -1089,99 +1054,13 @@
   .one-more-tune-window .nav { gap:18px }
   .one-more-tune-window .datahead, .one-more-tune-window .datarow { grid-template-columns:35px 1.5fr 1fr 65px 22px;gap:10px }
   .one-more-tune-window .campaigncol { display:none }
-  /* A window that is wide but short — a 900×700 laptop, a half-screen — used to
-     get the mock's 1.66 at full width: a 760×460 stage that pushed the record
-     and the actions past the window's bottom edge, so the reveal had to be
-     scrolled. The stage is bounded by the height that is actually there, and it
-     keeps its proportion by giving up width it does not need. */
-  .one-more-tune-window .darkplayer { min-height:clamp(180px,28vh,300px);max-height:38vh;aspect-ratio:auto;padding:22px }
-  /* A window this wide has room for the reveal's two columns even though it is
-     too narrow for the question face's. Stacked, the stage, the record and the
-     actions came to 630px in a 510px pane and the reader had to scroll a face
-     that is meant to be read at a glance. Side by side, the stage on the left
-     and the record with its ways onward on the right, is the same picture the
-     desk draws. */
-  .one-more-tune-window .one-more-tune-round-reveal {
-    display:grid;
-    grid-template-columns:minmax(0,1fr) minmax(300px,1fr);
-    grid-template-areas:
-      "tag tag"
-      "stage record"
-      "stage tail";
-    grid-template-rows:auto minmax(0,1fr) auto;
-    column-gap:20px;
-    row-gap:6px;
-  }
-  .one-more-tune-window .one-more-tune-round-reveal > .sectiontag { grid-area:tag }
-  .one-more-tune-window .one-more-tune-round-reveal > .darkplayer { grid-area:stage;align-self:center;min-height:clamp(160px,26vh,280px);max-height:34vh }
-  .one-more-tune-window .one-more-tune-round-reveal > .reveal { grid-area:record;min-width:0 }
-  .one-more-tune-window .one-more-tune-round-reveal > .revealbox { margin-top:0;padding:13px 15px }
-  /* The single-column reveal: the tail sits under the record box, and a
-     flex-end column with min-height:0 can be squeezed below its own two rows —
-     at which point it overflows UPWARD, over the box, and the two content links
-     land on the song line. That is the overlap the owner photographed at 590px
-     wide and 710px wide, in two different appearances. Nothing is below the tail
-     to pin it to here, so it starts at its own top and can only overflow
-     downward, which a scrolling pane can answer. */
-  .one-more-tune-window .one-more-tune-round-reveal > .one-more-tune-round-tail {
-    grid-area:tail;
-    display:flex;
-    flex-direction:column;
-    justify-content:flex-start;
-    gap:12px;
-    min-height:auto;
-  }
-  .one-more-tune-window .one-more-tune-round-tail > .previewnote { margin:0 }
-  .one-more-tune-window .collection-head p { font-size:14px }
+
+.one-more-tune-window .collection-head p { font-size:14px }
   .one-more-tune-window .choices { grid-template-columns:1fr }
   .one-more-tune-window .sheet { margin:0 }
   .one-more-tune-window .media iframe { height:300px }
   /* The learning mock narrows both grids before it touches anything else. */
   .one-more-tune-window .unit-grid, .one-more-tune-window .library-grid { grid-template-columns:repeat(2,minmax(0,1fr)) }
-}
-
-/* Below this the reveal's two columns stop being two columns. Measured at
-   590px wide: the stage was 171x178 — taller than it is wide, a black slab —
-   and the record box beside it had no room for its own text, which is what the
-   owner photographed. The question face already stacks at this width; the
-   reveal follows it, and the stage takes the width the face actually has. */
-/* A credit line that wraps to three lines costs a pane its last control — the
-   Duo's inner display measured 17px of scroll on the reveal with one long
-   credit, and nothing else. Two lines carry the song, the artist and the film;
-   the sources face has the whole credit. */
-@container (max-width: 900px) {
-  .one-more-tune-window .one-more-tune-round-reveal .revealbox p {
-    display:-webkit-box;
-    -webkit-line-clamp:2;
-    -webkit-box-orient:vertical;
-    overflow:hidden;
-  }
-}
-
-@container (max-width: 700px) {
-  .one-more-tune-window .one-more-tune-round-reveal {
-    display:grid;
-    grid-template-columns:minmax(0,1fr);
-    grid-template-areas:
-      "tag"
-      "stage"
-      "record"
-      "tail";
-    grid-template-rows:auto auto minmax(0,1fr) auto;
-    row-gap:8px;
-  }
-  .one-more-tune-window .one-more-tune-round-reveal > .darkplayer {
-    justify-self:stretch;
-    align-self:stretch;
-    aspect-ratio:16 / 9;
-    /* The record and the way onward are the face's content; the stage is the
-       picture that goes with them, so it is the row that yields. Measured: with
-       min-height:0 the stage collapsed to 59px of a 544px row when the pane was
-       shorter than the face's content, and a 59px band of black is not a stage. */
-    min-height:120px;
-    max-height:30vh;
-    width:auto;
-  }
 }
 
 @container (max-width: 600px) {
@@ -1194,35 +1073,38 @@
      space-between pushed its last tab 14px off the right edge and squeezed the
      wordmark until it broke over three lines. Each takes its own row instead. */
   .one-more-tune-window .top { height:auto;flex-wrap:wrap;row-gap:10px }
-  .one-more-tune-window .brand { flex:1 1 100%;font-size:20px }
-  .one-more-tune-window .one-more-tune-tabs { flex:1 1 100%;gap:14px;justify-content:space-between }
+.one-more-tune-window .one-more-tune-tabs { flex:1 1 100%;gap:14px;justify-content:space-between }
   /* The three faces of the quiz are its only navigation, and on a touch screen
      they were a 28px strip: a row of labels a finger can miss, between the
      reader and the only way to change which face they are looking at. The strip
      takes the touch minimum on a coarse pointer and keeps its compact height
      where a pointer is precise. */
   @media (hover: none) and (pointer: coarse) {
-    .one-more-tune-window .one-more-tune-tabs .system-tab { min-height:44px;display:flex;align-items:center }
+    /* A finger needs the width too: these labels are 24-39px wide on their own,
+       and the inline padding is what makes the target the size of the thumb. */
+    .one-more-tune-window .one-more-tune-tabs .system-tab {
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      padding-inline: 8px;
+    }
   }
   .one-more-tune-window .nav a { display:none }
   .one-more-tune-window .nav .tag { font-size:9px }
   .one-more-tune-window .collection-head { display:block;padding:34px 0 36px }
   .one-more-tune-window .collection-head h1 { font-size:35px;letter-spacing:-1.4px;margin:17px 0 16px;max-width:340px }
   .one-more-tune-window .collection-head .intro { margin:0 0 18px }
-  .one-more-tune-window .collection-head .featureline { margin:16px 0 27px }
-  .one-more-tune-window .collection-head .hairline, .one-more-tune-window .collection-head .minirow { display:none }
+.one-more-tune-window .collection-head .hairline, .one-more-tune-window .collection-head .minirow { display:none }
   .one-more-tune-window .preview { margin-top:28px }
-  .one-more-tune-window .darkplayer { min-height:214px;aspect-ratio:1.55;padding:20px }
-  .one-more-tune-window .vinyl { width:235px;height:235px }
-  .one-more-tune-window .choices { grid-template-columns:1fr 1fr;gap:8px }
+
+.one-more-tune-window .choices { grid-template-columns:1fr 1fr;gap:8px }
   .one-more-tune-window .choice { font-size:12px;padding:12px 10px;min-height:55px }
   /* The design's phone artboard is explicit: one option per row, and a long
      product name wraps instead of shrinking. Two columns fit four labels on a
      390px screen and cost every one of them its line: "AirPods 4 (Active Noise
      Cancellation)" broke over two lines inside a half-width cell. */
   .one-more-tune-window .choices { grid-template-columns:1fr }
-  .one-more-tune-window .previewnote { font-size:10px }
-  .one-more-tune-window .catalog { padding-top:35px }
+.one-more-tune-window .catalog { padding-top:35px }
   .one-more-tune-window .sectionhead { display:block }
   .one-more-tune-window .sectionhead h2 { font-size:26px }
   .one-more-tune-window .sectionhead .btn { margin-top:17px }
@@ -1299,23 +1181,7 @@
   .one-more-tune-window .card-stack { margin-top:16px }
   .one-more-tune-window .one-more-tune-progress { margin-top:10px;gap:4px 12px }
 
-  /* The question face: player, state, question, four options, actions.
-
-     The height a phone really has is not the height of its screen: on the
-     402×874 artboard Safari's two bars and the home indicator leave about
-     660px of window, and the four options plus the four actions ran 136px past
-     the bottom — with no scroller anywhere, so "Leave" and the other actions
-     were simply unreachable. So every block that can give space follows `dvh`,
-     the viewport the bars actually leave, instead of a fixed number. At the
-     artboard's own 874 the clamp lands on the same 126px player the mock
-     draws; with the bars showing, the player, the disc, the option gaps and
-     the button row give back the difference. Nothing here scrolls. */
-  .one-more-tune-window .darkplayer { min-height:clamp(92px,15dvh,126px);aspect-ratio:auto;padding:8px 14px }
-  .one-more-tune-window .vinyl { width:clamp(92px,15dvh,132px);height:clamp(92px,15dvh,132px) }
-  .one-more-tune-window .playbutton { width:clamp(44px,7dvh,56px);height:clamp(44px,7dvh,56px);padding:4px }
-  .one-more-tune-window .playstate { margin-top:clamp(2px,.8dvh,8px);gap:6px }
-  .one-more-tune-window .playstate .hint { display:none }
-  .one-more-tune-window .questionlabel { margin:clamp(4px,1.2dvh,10px) 0 clamp(3px,.9dvh,8px);font-size:14px }
+.one-more-tune-window .questionlabel { margin:clamp(4px,1.2dvh,10px) 0 clamp(3px,.9dvh,8px);font-size:14px }
   .one-more-tune-window .choices { gap:clamp(3px,.8dvh,7px) }
   .one-more-tune-window .choice { min-height:clamp(44px,5.6dvh,48px);padding:7px 12px }
   /* Four actions on one row: the second row cost the face 40px that the
@@ -1335,9 +1201,7 @@
      when they were the face's own children. */
   .one-more-tune-window .one-more-tune-ask { display:flex;flex-direction:column;gap:0;min-height:0;flex:0 1 auto }
   .one-more-tune-window .choices { flex:0 1 auto;min-height:0;overflow-y:auto }
-  .one-more-tune-window .previewnote { margin-top:8px }
-
-  /* The card faces: a smaller disc, a shorter copy block, grades two by two. */
+/* The card faces: a smaller disc, a shorter copy block, grades two by two. */
   .one-more-tune-window .disc-area { min-height:92px }
   .one-more-tune-window .disc { width:92px;height:92px }
   .one-more-tune-window .disc-center { width:44px;height:44px;font-size:15px }
@@ -1357,12 +1221,12 @@
   .one-more-tune-window .one-more-tune-music-row,
   .one-more-tune-window .one-more-tune-film-row { margin-top:6px }
   /* The note is the card's provenance, and on a phone it is a paragraph above
-     a sheet that states the same facts as rows. Two lines, then the sheet. */
+     a sheet that states the same facts as rows. It stays whole: a provenance
+     paragraph cut to two lines is a claim whose source cannot be read. */
   .one-more-tune-window .card-copy .one-more-tune-evidence {
-    display:-webkit-box;
-    -webkit-line-clamp:2;
-    -webkit-box-orient:vertical;
-    overflow:hidden;
+    display:block;
+    overflow:visible;
+    max-height:none;
   }
   /* The sheet's own caption explains the em dash the rows already show. */
   .one-more-tune-window .deck-spec-note { display:none }
@@ -1403,64 +1267,16 @@
   .one-more-tune-window .revealbox { padding:10px 12px;margin-top:8px }
   .one-more-tune-window .revealbox h3 { font-size:15px }
   .one-more-tune-window .revealbox p { margin:3px 0 8px }
-  .one-more-tune-window .one-more-tune-step-actions { gap:6px;margin-top:8px }
-  .one-more-tune-window .sectiontag { margin-bottom:6px }
+.one-more-tune-window .sectiontag { margin-bottom:6px }
   .one-more-tune-window .page-footer>div+div { margin-top:8px }
 
-  /* ---- One round, one screen -------------------------------------------
-     The result face is ten answers plus a score, and a phone that makes the
-     player scroll it has hidden the answer to "how did that go". Two lines per
-     answer — the recording, then the pairing it belonged to — with the mark
-     carrying the outcome (the state sentence stays in the row's aria-label)
-     and the two outside links left to the card and the sources. That is about
-     34px an answer, so all ten land above the actions on the 402×874 screen
-     even with Safari's bars and the home indicator taking their share. */
-  .one-more-tune-window .one-more-tune-round-result { gap:4px }
-  /* The heading and the invite line are worth a desk, not a row on a phone
-     where the score right below already says the round is over. */
-  .one-more-tune-window .one-more-tune-round-result h3,
-  .one-more-tune-window .one-more-tune-set-line { display:none }
-  .one-more-tune-window .one-more-tune-score { font-size:22px;line-height:1.1 }
-  .one-more-tune-window .one-more-tune-score-line { font-size:11px }
-  .one-more-tune-window .one-more-tune-review-list {
-    flex:1 1 auto;
-    min-height:0;
-    overflow-y:auto;
-    gap:0;
-    font-size:10px;
-    line-height:1.25;
-  }
-  .one-more-tune-window .one-more-tune-review-list li,
-  .one-more-tune-window .one-more-tune-review-list li * { line-height:1.25 }
-  .one-more-tune-window .one-more-tune-review-list li { gap:5px;padding:1px 0 }
-  .one-more-tune-window .one-more-tune-review-list .hint { font-size:9px }
-  /* The row was three lines: title, pairing, and an empty line the hidden
-     state left behind. One line, then, with the pairing beside the recording. */
-  .one-more-tune-window .one-more-tune-review-text br { display:none }
-  .one-more-tune-window .one-more-tune-review-text .hint { margin-left:4px }
-  .one-more-tune-window .one-more-tune-review-state,
-  .one-more-tune-window .one-more-tune-review-text a,
-  .one-more-tune-window .one-more-tune-review-list .one-more-tune-plain-links { display:none }
-  .one-more-tune-window .one-more-tune-round-result .one-more-tune-step-actions {
-    gap:4px;
-    margin-top:0;
-    flex-wrap:wrap;
-  }
-  .one-more-tune-window .one-more-tune-round-result .one-more-tune-step-actions .btn {
-    min-height:clamp(28px,3.8dvh,34px);
-    padding:5px 8px;
-    font-size:11px;
-    white-space:nowrap;
-  }
-  /* The desk link is a link to the desk this window already is on a phone. */
-  .one-more-tune-window .one-more-tune-desk-line { display:none }
-  .one-more-tune-window .dialog .recall-prompt { padding:18px 20px }
+.one-more-tune-window .one-more-tune-score-line { font-size:11px }
+
+.one-more-tune-window .dialog .recall-prompt { padding:18px 20px }
   .one-more-tune-window .dialog .recall-prompt h2 { font-size:20px }
   .one-more-tune-window .screen .buttons { gap:8px }
   .one-more-tune-window .screen .btn { font-size:11px;padding:10px 15px }
 }
-
-
 
 /* The catalogue rows and the detail they open, in the research reader's shape:
    the row is a grid, so the anchor column and the index line up down the page. */
@@ -1490,150 +1306,7 @@
    the left and the four answers on the right, the entry face puts its copy
    beside its two ways in, and the round's ten answers read as two columns of
    five. Nothing is hidden on the desk that the phone shows — it is placed. */
-@container (min-width: 851px) {
-  /* The entry face: copy left, the two ways in right, as one panel. */
-  .one-more-tune-window .one-more-tune-challenge-idle {
-    display:grid;
-    grid-template-columns:minmax(0,1.15fr) minmax(320px,.85fr);
-    grid-template-areas:"tag tag" "hero ways" "intro ways" "features ways";
-    column-gap:40px;
-    row-gap:12px;
-    align-content:start;
-  }
-  .one-more-tune-window .one-more-tune-challenge-idle .sectiontag { grid-area:tag }
-  .one-more-tune-window .one-more-tune-challenge-idle h1 { grid-area:hero;margin:0 }
-  .one-more-tune-window .one-more-tune-challenge-idle .intro { grid-area:intro;margin:0;max-width:34em }
-  .one-more-tune-window .one-more-tune-challenge-idle .featureline { grid-area:features }
-  /* The toolbar is the panel: a primary way in, then the one somebody was sent. */
-  .one-more-tune-window .one-more-tune-challenge-idle .toolbar {
-    grid-area:ways;
-    flex-direction:column;
-    align-items:stretch;
-    gap:10px;
-    margin:0;
-    padding:18px 20px;
-    border:1px solid var(--separator);
-    border-radius:var(--surface-radius);
-    background:var(--surface-secondary);
-  }
-  .one-more-tune-window .one-more-tune-challenge-idle .toolbar .btn { justify-content:center }
-  .one-more-tune-window .one-more-tune-challenge-idle .toolbar .linkbutton { margin:4px 0 0 }
-  .one-more-tune-window .one-more-tune-challenge-idle .one-more-tune-challenge-input { width:100% }
-
-  /* The round: music and question on the left, the four answers on the right,
-     the actions under both. A 596px-wide answer card on a 1266px window was the
-     phone's row stretched, not a desk's layout. */
-  .one-more-tune-window .one-more-tune-face.one-more-tune-step-challenge {
-    display:grid;
-    /* The stage is the wider of the two columns because it is the thing being
-       asked about: at 1.4/1 it lands near 390px tall at the mock's own 1.66,
-       which is a record sleeve rather than a thumbnail, and the answers still
-       have 460px of column to put a long product name on one line. */
-    grid-template-columns:minmax(0,1.4fr) minmax(320px,460px);
-    grid-template-areas:
-      "tag tag"
-      "player ask"
-      "state ask"
-      "toolbar toolbar";
-    /* The panel holds the question and its four answers as one block, so the
-       two travel together: the question sits directly above the answers that
-       answer it, and the pair is centered in the column the way a form is,
-       with the space that is left split above and below instead of dumped at
-       the bottom of the window. */
-    grid-template-rows:auto minmax(0,1fr) auto auto;
-    column-gap:36px;
-    row-gap:12px;
-    align-content:stretch;
-    /* The pane already keeps the inset; this face spends its own on the round. */
-    padding:0;
-  }
-  .one-more-tune-window .one-more-tune-face.one-more-tune-step-challenge > .sectiontag { grid-area:tag }
-  /* The stage keeps the mock's own proportion (1.66) instead of stretching to
-     whatever the window's height happens to be: a 562×600 slab with a 255px
-     disc floating in it is the shape the earlier fill-the-height pass produced.
-     It grows with the column's width and centers in the row it was given. */
-  .one-more-tune-window .one-more-tune-face.one-more-tune-step-challenge > .darkplayer,
-  .one-more-tune-window .one-more-tune-round-reveal > .darkplayer {
-    grid-area:player;
-    /* The stage takes the height the row has to give, up to a sleeve-sized
-       ceiling, and centers what is left over. The mock's 1.66 stays as the
-       floor rather than the law: a 562px column at exactly 1.66 leaves a third
-       of the window empty above and below it, which is the emptiness this pass
-       is here to remove. */
-    align-self:center;
-    height:min(100%,480px);
-    aspect-ratio:auto;
-    min-height:clamp(240px,34vh,420px);
-    max-height:min(100%,480px);
-  }
-  .one-more-tune-window .one-more-tune-face.one-more-tune-step-challenge > .darkplayer { grid-area:player }
-  .one-more-tune-window .one-more-tune-face.one-more-tune-step-challenge > .one-more-tune-song-embed { grid-area:player }
-  .one-more-tune-window .one-more-tune-face.one-more-tune-step-challenge > .playstate { grid-area:state }
-  .one-more-tune-window .one-more-tune-face.one-more-tune-step-challenge > .one-more-tune-ask {
-    grid-area:ask;
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
-    gap:14px;
-    min-width:0;
-    min-height:0;
-  }
-  .one-more-tune-window .one-more-tune-face.one-more-tune-step-challenge > .one-more-tune-ask > .questionlabel { margin:0 }
-  .one-more-tune-window .one-more-tune-face.one-more-tune-step-challenge > .one-more-tune-ask > .choices {
-    grid-template-columns:1fr;
-    gap:10px;
-    align-content:start;
-    flex:0 0 auto;
-    min-height:0;
-  }
-  /* A four-up question has room to be generous on a desk, and no room to grow
-     into a stack of 180px bands: the rows take the column's slack up to a
-     comfortable ceiling and stop. */
-  .one-more-tune-window .one-more-tune-face.one-more-tune-step-challenge > .one-more-tune-ask > .choices > .choice { min-height:58px;max-height:64px }
-  .one-more-tune-window .one-more-tune-face.one-more-tune-step-challenge > .toolbar { grid-area:toolbar }
-
-  /* The result on a desk: the score, then the ten answers flowing down two
-     columns, then one row of buttons — the round read as a page rather than a
-     list. Multi-column rather than a grid on purpose: a two-column grid whose
-     rows spanned the score's own rows stretched five answers into five 150px
-     bands and pushed the last button under the window's bottom edge. Column
-     flow keeps every answer its own height and stops at the pane. */
-  .one-more-tune-window .one-more-tune-round-result > .one-more-tune-review-list {
-    display:block;
-    columns:2;
-    column-gap:26px;
-  }
-  .one-more-tune-window .one-more-tune-round-result > .one-more-tune-review-list > li {
-    break-inside:avoid;
-    margin:0 0 6px;
-    line-height:1.45;
-  }
-  /* One answer, one line, on a desk that is wide enough to hold it: the
-     recording, the pairing it belonged to, how the answer went and the links
-     out. The phone stacks these because it has 360px; a desk has 1200, and a
-     page of ten answers reads better than a page of ten four-line entries. */
-  .one-more-tune-window .one-more-tune-round-result .one-more-tune-review-text br { display:none }
-  .one-more-tune-window .one-more-tune-round-result .one-more-tune-review-text .hint,
-  .one-more-tune-window .one-more-tune-round-result .one-more-tune-review-state,
-  .one-more-tune-window .one-more-tune-round-result .one-more-tune-plain-links {
-    display:inline;
-    margin:0 0 0 8px;
-  }
-  .one-more-tune-window .one-more-tune-round-result .one-more-tune-plain-links a { margin-left:6px }
-
-  /* A wide window takes the ten answers three across, which is where the round
-     stops needing the pane to scroll at all. */
-  @container (min-width: 1000px) {
-    .one-more-tune-window .one-more-tune-round-result > .one-more-tune-review-list { columns:3 }
-  }
-  .one-more-tune-window .one-more-tune-round-result > .one-more-tune-result-actions {
-    display:flex;
-    flex-wrap:wrap;
-    align-items:center;
-    gap:10px;
-  }
-
-  /* ---- A desk reads the round, it does not stretch it ---------------------
+@container (min-width: 851px) {/* ---- A desk reads the round, it does not stretch it ---------------------
      The window can be any width and the work area any height, and the faces
      used to spend the first and leave the second empty: at 1680×1000 the face
      ended 170px above the bottom of its own window, at 1253×744 about 200px.
@@ -1641,9 +1314,7 @@
      stops growing at a readable width and centers itself, and the player takes
      the height that is actually there (between 240 and 420px) instead of a fixed
      360. Wider than the frame means margin, not a stretched answer card. */
-  .one-more-tune-window .one-more-tune-step-challenge,
-  .one-more-tune-window .one-more-tune-step-reveal,
-  .one-more-tune-window .one-more-tune-round-result {
+  .one-more-tune-window .one-more-tune-step-reveal {
     width:100%;
     max-width:1120px;
     margin-inline:auto;
@@ -1654,59 +1325,7 @@
      stretch, so the round is read at the size of the window instead of stopping
      170px above the bottom. */
   .one-more-tune-window .one-more-tune-body { display:flex;flex-direction:column;min-height:0;flex:1 1 auto }
-  .one-more-tune-window .one-more-tune-step-challenge {
-    flex:1 1 auto;
-  }
 
-  /* The reveal keeps the question's own shape: the stage on the left, the
-     record on the right, and the way onward at the bottom of the right-hand
-     column. The answers were given in that column, so the hand does not travel
-     across the window to leave the question, and the column the eye is already
-     in is the one that changes. */
-  .one-more-tune-window .one-more-tune-round-reveal {
-    flex:1 1 auto;
-    display:grid;
-    grid-template-columns:minmax(0,1.15fr) minmax(340px,520px);
-    grid-template-areas:
-      "tag tag"
-      "stage record"
-      "stage tail";
-    grid-template-rows:auto minmax(0,auto) minmax(0,1fr);
-    column-gap:36px;
-    row-gap:12px;
-    align-content:stretch;
-    padding:0;
-  }
-  .one-more-tune-window .one-more-tune-round-reveal > .sectiontag { grid-area:tag }
-  /* The stage keeps the shared proportion rule above; only its area name is the
-     reveal's own. */
-  .one-more-tune-window .one-more-tune-round-reveal > .darkplayer { grid-area:stage }
-  .one-more-tune-window .one-more-tune-round-reveal > .reveal { grid-area:record;align-self:start;min-width:0 }
-  .one-more-tune-window .one-more-tune-round-reveal > .revealbox { margin-top:0 }
-  /* The tail holds the record's own doors and then the action, pinned to the
-     bottom of the column: watch it, hear it, see the score, go on. */
-  .one-more-tune-window .one-more-tune-round-reveal > .one-more-tune-round-tail { grid-area:tail;display:flex;flex-direction:column;justify-content:flex-end;gap:14px;min-height:0;padding-bottom:2px }
-  .one-more-tune-window .one-more-tune-round-tail > .previewnote { margin:0 }
-  .one-more-tune-window .one-more-tune-round-tail > .toolbar { margin:0 }
-  /* A film button stretched to the column's full width is the full-width button
-     the layout guidelines warn about: it reads as the page's primary action and
-     it competes with the one action that actually is. */
-  .one-more-tune-window .one-more-tune-round-tail .one-more-tune-reveal-player { display:flex;flex-direction:column;align-items:flex-start;gap:10px }
-
-  /* The face that says an answer was not taken is a message and three ways on.
-     On a desk it is centered at a readable measure: a 1120px line of prose is
-     not a wider message, it is a harder one to read. */
-  .one-more-tune-window .one-more-tune-answer-refused {
-    width:100%;
-    max-width:620px;
-    margin-inline:auto;
-    flex:1 1 auto;
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
-    gap:12px;
-    padding-bottom:24px;
-  }
 }
 
 /* The left column's own grammar, from the research mock: a year-range facet
@@ -1820,12 +1439,55 @@ body[data-theme="classic"] .one-more-tune-window {
   --omt-era-5:repeating-linear-gradient(45deg,var(--ink) 0 1px,var(--paper) 1px 3px);
   --omt-era-6:repeating-linear-gradient(45deg,var(--ink) 0 2px,var(--paper) 2px 3px);
   --omt-era-none:repeating-linear-gradient(0deg,var(--ink) 0 1px,var(--paper) 1px 9px);
+  /* The round's room in one bit, as values rather than as rules: this block is
+     the one place in the sheet that names an appearance, and the theme-fork gate
+     holds it to that. Black room, white ink; grooves as rings of paper on ink;
+     no glow and no wash, because a gradient is not a colour this desk has. The
+     printed label takes the era's dither (a type box keeps its words readable
+     on it), every ring is plain paper, and the era is named in words. */
+  --omt-room:var(--ink);
+  --omt-room-ink:var(--paper);
+  --omt-room-ink-2:var(--paper);
+  --omt-room-ink-3:var(--paper);
+  --omt-room-hair:var(--paper);
+  --omt-room-chip:var(--ink);
+  --omt-room-chip-line:var(--paper);
+  --omt-room-chip-press:var(--ink);
+  --omt-room-glow:transparent;
+  --omt-room-wash:0%;
+  --omt-button:var(--paper);
+  --omt-button-ink:var(--ink);
+  --omt-opt-radius:7px;
+  --omt-vinyl:var(--ink);
+  --omt-vinyl-shadow:transparent;
+  --omt-groove:var(--paper);
+  --omt-groove-gap:var(--paper);
+  --omt-groove-land:3%;
+  --omt-groove-pitch:3.6%;
+  --omt-sheen:none;
+  --omt-label:var(--paper);
+  --omt-label-ink:var(--ink);
+  --omt-label-type-bg:var(--paper);
+  --omt-arm-base:var(--ink);
+  --omt-arm-weight:var(--paper);
+  --omt-arm-tube:var(--paper);
+  --omt-arm-head:var(--paper);
+  --omt-arm-cap:var(--ink);
+  --omt-ring-1:var(--paper);
+  --omt-ring-2:var(--paper);
+  --omt-ring-3:var(--paper);
+  --omt-ring-4:var(--paper);
+  --omt-ring-5:var(--paper);
+  --omt-ring-6:var(--paper);
+  --omt-ring-none:var(--paper);
+  --omt-ring-ink-1:var(--ink);
+  --omt-ring-ink-2:var(--ink);
+  --omt-ring-ink-3:var(--ink);
+  --omt-ring-ink-4:var(--ink);
+  --omt-ring-ink-5:var(--ink);
+  --omt-ring-ink-6:var(--ink);
+  --omt-ring-ink-none:var(--ink);
 }
-/* The ring is the one place a pattern cannot stand in for a colour: a dither is
-   not a valid colour stop, so the gradient would drop out entirely rather than
-   degrade. 1-bit gets a solid ring, and the six stay where they can be read —
-   the band, in words. */
-body[data-theme="classic"] .one-more-tune-window .playbutton { background:var(--ink) }
 
 /* --- A phone on its side ----------------------------------------------------
    Height is the scarce axis here, not width: an iPhone on its side is 812 to
@@ -1847,112 +1509,14 @@ body[data-theme="classic"] .one-more-tune-window .playbutton { background:var(--
      244px of the window, which is more than half of the screen before a single
      question. One compact row is enough for a wordmark and four words. */
 
-  /* The idle face on a sideways phone. Stacked, the hero and the ways came to
-     500px of content in a 250px pane: measured 265-330px of scroll on every
-     landscape iPhone, with both ways in — Start a round and Open that set —
-     under the fold. The desk already draws this face as two columns; a sideways
-     phone has the width for exactly that, and needs the height it saves. */
-  .one-more-tune-window .one-more-tune-challenge-idle {
-    display:grid;
-    grid-template-columns:minmax(0,1fr) minmax(230px,.75fr);
-    grid-template-areas:
-      "tag tag"
-      "hero ways"
-      "intro ways"
-      "features ways";
-    column-gap:18px;
-    row-gap:6px;
-    align-content:center;
-    padding:0;
-  }
-  .one-more-tune-window .one-more-tune-challenge-idle .sectiontag { grid-area:tag;min-height:16px }
-  .one-more-tune-window .one-more-tune-challenge-idle h1 { grid-area:hero;font-size:23px;letter-spacing:-.7px;margin:0 }
-  .one-more-tune-window .one-more-tune-challenge-idle .intro {
-    grid-area:intro;
-    margin:0;
-    font-size:12px;
-    display:-webkit-box;
-    -webkit-line-clamp:2;
-    -webkit-box-orient:vertical;
-    overflow:hidden;
-  }
-  .one-more-tune-window .one-more-tune-challenge-idle .featureline { grid-area:features;font-size:11px;gap:10px }
-  .one-more-tune-window .one-more-tune-challenge-idle .toolbar {
-    grid-area:ways;
-    flex-direction:column;
-    align-items:stretch;
-    gap:6px;
-    margin:0;
-    padding:8px 10px;
-  }
-  .one-more-tune-window .one-more-tune-challenge-idle .toolbar .btn { min-height:32px;padding:5px 10px;font-size:12px;justify-content:center }
-  .one-more-tune-window .one-more-tune-challenge-idle .toolbar .linkbutton { margin:0 }
-  .one-more-tune-window .one-more-tune-challenge-idle .one-more-tune-challenge-input { width:100%;min-height:28px }
-
-  /* The reveal shares its right column with a stage, and a 402px screen has no
-     room for the desk's stacked shape: the links and the point note go on one
-     line, the two buttons on the next. Measured before: 84-164px of scroll on
-     every landscape iPhone, and the way onward under the fold on two of them. */
-  .one-more-tune-window .one-more-tune-round-reveal > .one-more-tune-round-tail {
-    display:flex;
-    flex-direction:row;
-    flex-wrap:wrap;
-    align-items:center;
-    justify-content:flex-start;
-    gap:8px 12px;
-    padding-bottom:0;
-  }
-  .one-more-tune-window .one-more-tune-round-tail > .previewnote { margin:0 }
-  .one-more-tune-window .one-more-tune-round-tail > .toolbar { margin:0 }
-  .one-more-tune-window .one-more-tune-round-reveal .revealbox { padding:6px 10px }
-  .one-more-tune-window .one-more-tune-round-reveal .revealbox h3 { font-size:14px;margin:2px 0 }
-  .one-more-tune-window .one-more-tune-round-reveal .revealbox p {
-    margin:0;
-    font-size:11px;
-    display:-webkit-box;
-    -webkit-line-clamp:2;
-    -webkit-box-orient:vertical;
-    overflow:hidden;
-  }
-
-  /* What is left after the columns: the idle face's three selling points and
-     its two-line hero are the parts a 375px screen cannot afford, and the
-     record box's second line of song credit is the part a landscape reveal
-     cannot. Each is still on the desk — the features line on the shelf, the
-     full credit in the sources face — so nothing is lost, only deferred. */
-  .one-more-tune-window .one-more-tune-challenge-idle .featureline { display:none }
-  .one-more-tune-window .one-more-tune-challenge-idle h1 { font-size:20px;letter-spacing:-.5px }
-  .one-more-tune-window .one-more-tune-challenge-idle .toolbar { padding:6px 8px;gap:4px }
-  .one-more-tune-window .one-more-tune-challenge-idle .toolbar .btn { min-height:28px;padding:4px 9px;font-size:11px }
-  .one-more-tune-window .one-more-tune-challenge-idle .one-more-tune-challenge-input { min-height:26px;font-size:11px }
-  .one-more-tune-window .one-more-tune-challenge-idle .sectiontag { min-height:18px;font-size:10px }
-  .one-more-tune-window .one-more-tune-round-reveal > .sectiontag { min-height:18px;font-size:10px }
-  .one-more-tune-window .one-more-tune-round-reveal .revealbox { padding:4px 8px }
-  .one-more-tune-window .one-more-tune-round-reveal .revealbox h3 { font-size:13px;margin:0 }
-  .one-more-tune-window .one-more-tune-round-reveal .revealbox p {
-    -webkit-line-clamp:1;
-  }
-  .one-more-tune-window .one-more-tune-round-tail { gap:6px 10px }
-  .one-more-tune-window .one-more-tune-round-tail .btn { min-height:28px;padding:4px 10px;font-size:11px }
-  .one-more-tune-window .one-more-tune-round-tail .previewnote { font-size:10px }
-
-  /* The pane's own padding and the faces' row gaps are the last 20px of a
+/* The pane's own padding and the faces' row gaps are the last 20px of a
      375px screen: measured 25px of scroll on the 13 mini's idle and 18px on the
      Air's reveal after the trims above, with nothing clipped either way. */
   .one-more-tune-window .one-more-tune-pane { padding:4px 10px 6px }
-  .one-more-tune-window .one-more-tune-round-reveal { row-gap:4px }
-  .one-more-tune-window .one-more-tune-challenge-idle { row-gap:4px }
 
-  @media (max-height: 392px) {
-    /* The shortest landscape phone: the idle face's eyebrow is the one line it
-       can give up, because the window title names the app and the intro on the
-       same face explains the game. */
-    .one-more-tune-window .one-more-tune-challenge-idle .sectiontag { display:none }
-  }
-  .one-more-tune-window .top { height:auto;flex-wrap:nowrap;gap:12px;padding:6px 16px 4px }
-  .one-more-tune-window .brand { font-size:17px;letter-spacing:-.6px;gap:8px }
-  .one-more-tune-window .brandmark { height:16px }
-  .one-more-tune-window .one-more-tune-tabs { gap:14px }
+.one-more-tune-window .top { height:auto;flex-wrap:nowrap;gap:12px;padding:6px 16px 4px }
+
+.one-more-tune-window .one-more-tune-tabs { gap:14px }
   /* Sideways is the tightest layout in the product, so the tabs take what the
      height budget can spare rather than the full thumb: 24 was the floor this
      product's own gate cites, and a finger still misses at the floor. */
@@ -1960,94 +1524,7 @@ body[data-theme="classic"] .one-more-tune-window .playbutton { background:var(--
   .one-more-tune-window .details-bar { min-height:20px;padding:0 14px;font-size:11px }
   .one-more-tune-window .one-more-tune-pane { padding:6px 12px 8px }
 
-  /* The listening face: the stage takes the height it is given, and the four
-     answers become a 2×2 grid, which is the only shape that fits four labels
-     in two rows on a 400px screen. */
-  .one-more-tune-window .one-more-tune-face.one-more-tune-step-challenge {
-    display:grid;
-    grid-template-columns:minmax(0,1fr) minmax(300px,1.05fr);
-    grid-template-areas:
-      "tag tag"
-      "player ask"
-      "state ask"
-      "toolbar toolbar";
-    grid-template-rows:auto minmax(0,1fr) auto auto;
-    column-gap:16px;
-    row-gap:6px;
-    padding:0;
-  }
-  .one-more-tune-window .one-more-tune-face.one-more-tune-step-challenge > .sectiontag { grid-area:tag }
-  .one-more-tune-window .one-more-tune-face.one-more-tune-step-challenge > .darkplayer {
-    grid-area:player;
-    align-self:stretch;
-    aspect-ratio:auto;
-    min-height:0;
-    max-height:none;
-    padding:10px 14px;
-  }
-  .one-more-tune-window .one-more-tune-face.one-more-tune-step-challenge > .one-more-tune-song-embed { grid-area:player }
-  .one-more-tune-window .one-more-tune-face.one-more-tune-step-challenge > .playstate { grid-area:state }
-  .one-more-tune-window .one-more-tune-face.one-more-tune-step-challenge > .one-more-tune-ask {
-    grid-area:ask;
-    justify-content:center;
-    gap:8px;
-  }
-  .one-more-tune-window .one-more-tune-face.one-more-tune-step-challenge > .one-more-tune-ask > .questionlabel { margin:0;font-size:13px }
-  .one-more-tune-window .one-more-tune-face.one-more-tune-step-challenge > .one-more-tune-ask > .choices {
-    grid-template-columns:1fr 1fr;
-    gap:6px;
-    align-content:stretch;
-  }
-  .one-more-tune-window .one-more-tune-face.one-more-tune-step-challenge > .one-more-tune-ask > .choices > .choice {
-    min-height:40px;
-    max-height:none;
-    font-size:12px;
-    padding:6px 10px;
-    gap:6px;
-  }
-  .one-more-tune-window .one-more-tune-face.one-more-tune-step-challenge > .toolbar { grid-area:toolbar;margin:0 }
-
-  /* The reveal keeps the question's two columns and its stage, with the record
-     and the way onward in the right one — the same shape, laid out for a
-     screen that is short rather than a screen that is wide. */
-  .one-more-tune-window .one-more-tune-round-reveal {
-    display:grid;
-    grid-template-columns:minmax(0,1fr) minmax(300px,1.05fr);
-    grid-template-areas:
-      "tag tag"
-      "stage record"
-      "stage tail";
-    grid-template-rows:auto minmax(0,1fr) auto;
-    column-gap:16px;
-    row-gap:6px;
-    padding:0;
-  }
-  .one-more-tune-window .one-more-tune-round-reveal > .sectiontag { grid-area:tag }
-  .one-more-tune-window .one-more-tune-round-reveal > .darkplayer {
-    grid-area:stage;
-    align-self:stretch;
-    aspect-ratio:auto;
-    min-height:0;
-    max-height:none;
-    padding:10px 14px;
-  }
-  .one-more-tune-window .one-more-tune-round-reveal > .reveal { grid-area:record;min-width:0 }
-  .one-more-tune-window .one-more-tune-round-reveal > .revealbox { margin-top:0;padding:9px 12px }
-  .one-more-tune-window .one-more-tune-round-reveal > .revealbox h3 { font-size:15px }
-  .one-more-tune-window .one-more-tune-round-reveal > .revealbox p { margin:3px 0 8px;font-size:11px }
-  .one-more-tune-window .one-more-tune-round-reveal > .one-more-tune-round-tail {
-    grid-area:tail;
-    justify-content:flex-end;
-    gap:6px;
-  }
-  .one-more-tune-window .one-more-tune-round-tail > .toolbar { margin:0 }
-  .one-more-tune-window .one-more-tune-round-tail .btn { min-height:32px;padding:5px 12px;font-size:11px }
-  .one-more-tune-window .one-more-tune-round-tail .previewnote { font-size:10px }
-  .one-more-tune-window .one-more-tune-plain-links { margin:0;font-size:12px }
-  /* A phone on its side has no room for a 480px slab of black: the disc keeps
-     the stage from reading as an empty rectangle at this size. */
-  .one-more-tune-window .vinyl { width:min(200px,42%) }
-  .one-more-tune-window .playbutton { width:56px;height:56px;padding:4px }
+.one-more-tune-window .one-more-tune-plain-links { margin:0;font-size:12px }
 }
 
 /* ---------------------------------------------------------------------------
@@ -2075,10 +1552,7 @@ body[data-theme="classic"] .one-more-tune-window .playbutton { background:var(--
     padding: 4px 12px 2px;
     gap: 8px;
   }
-  .one-more-tune-window .brand {
-    display: none;
-  }
-  .one-more-tune-window .one-more-tune-tabs {
+.one-more-tune-window .one-more-tune-tabs {
     justify-content: space-between;
     gap: 10px;
   }
@@ -2090,75 +1564,379 @@ body[data-theme="classic"] .one-more-tune-window .playbutton { background:var(--
   .one-more-tune-window .one-more-tune-pane {
     padding: 6px 10px 8px;
   }
-  /* The question face on a wrist. The four answers have to fit under the
-     question, so they sit two by two — the same shape the sideways phone uses
-     for the same reason — and every other row gives up what it can: the stage
-     is capped at half its phone height, the section tag keeps its progress but
-     loses its padding, and the answers keep a thumb's height. */
-  .one-more-tune-window .one-more-tune-face.one-more-tune-step-challenge {
-    gap: 4px;
-    padding: 0;
-  }
-  .one-more-tune-window .one-more-tune-face.one-more-tune-step-challenge > .sectiontag {
-    min-height: 16px;
-    padding: 0 2px;
-    font-size: 10px;
-  }
-  .one-more-tune-window .one-more-tune-face.one-more-tune-step-challenge > .darkplayer {
-    aspect-ratio: 2 / 1;
-    min-height: 0;
-    max-height: 118px;
-    padding: 6px 10px;
-  }
-  .one-more-tune-window .one-more-tune-face.one-more-tune-step-challenge > .one-more-tune-ask {
-    gap: 4px;
-  }
-  .one-more-tune-window .one-more-tune-face.one-more-tune-step-challenge > .one-more-tune-ask > .questionlabel {
-    margin: 0;
-    font-size: 12px;
-  }
-  .one-more-tune-window .one-more-tune-face.one-more-tune-step-challenge > .one-more-tune-ask > .choices {
-    grid-template-columns: 1fr 1fr;
-    gap: 4px;
-  }
-  .one-more-tune-window .one-more-tune-face.one-more-tune-step-challenge > .one-more-tune-ask > .choices > .choice {
-    min-height: 44px;
-    max-height: none;
-    padding: 4px 8px;
-    gap: 6px;
-    font-size: 12px;
-  }
-  .one-more-tune-window .one-more-tune-face.one-more-tune-step-challenge > .playstate {
-    min-height: 14px;
-    font-size: 10px;
-  }
 
-  /* The reveal face has the same problem the question face had, and the same
-     answer: the stage gives up its desktop height, the record box loses its
-     padding and its small print, and the way onward lands inside the screen
-     instead of under it. Measured before: on a 396x484 wrist the record box
-     ended at 504 and the Next button was below it, with nothing scrollable. */
-  .one-more-tune-window .one-more-tune-round-reveal > .darkplayer {
-    aspect-ratio: 2 / 1;
-    min-height: 0;
-    max-height: 104px;
-    padding: 6px 10px;
+}
+
+/* --- A thumb, not a mouse ---------------------------------------------------
+   Every control this window offers keeps the platform's 44px minimum on a
+   coarse pointer, at every window size and in both orientations. It is written
+   once, here, after every size-specific block, because the compact heights
+   above answer a different question — a mouse on a small desktop window — and
+   three separate copies of this rule lost that argument to whichever block came
+   last. Measured in the installed home-screen web app on an iPhone Air: the
+   tabs came out 36px held sideways, the way onward 32px, the four answers 40px
+   and the Next button 34px, all of them missable by a thumb. The pane scrolls
+   to pay for the extra height; nothing is clamped to make it fit. */
+@media (hover: none) and (pointer: coarse) {
+  .one-more-tune-window .choice,
+.one-more-tune-window .rating,
+.one-more-tune-window .toolbar .btn,
+.one-more-tune-window .toolbar .linkbutton,
+.one-more-tune-window .toolbar .textbtn,
+.one-more-tune-window .one-more-tune-tabs .system-tab {
+    min-height: 44px;
   }
-  .one-more-tune-window .one-more-tune-round-reveal > .darkplayer .vinyl {
-    height: 60px;
-  }
-  .one-more-tune-window .one-more-tune-round-reveal > .darkplayer .playbutton {
-    width: 34px;
-    height: 34px;
-  }
-  .one-more-tune-window .one-more-tune-round-reveal .revealbox {
-    padding: 6px 8px;
-  }
-  .one-more-tune-window .one-more-tune-round-reveal .revealbox h3 {
-    font-size: 14px;
-  }
-  .one-more-tune-window .one-more-tune-round-reveal .revealbox p {
-    margin: 2px 0 6px;
-    font-size: 11px;
+  /* These labels are 24-39px wide on their own; the padding is what makes the
+     target the size of the thumb rather than the size of the word. */
+  .one-more-tune-window .one-more-tune-tabs .system-tab {
+    padding-inline: 8px;
   }
 }
+
+/* --- The round's room: a white label ----------------------------------------
+   The challenge is played in a listening room: always dark, whatever the desk's
+   appearance, so the answer's colour has somewhere to arrive (2026-09-24 design,
+   internal/evidence/drafts/one-more-tune-redesign/white-label/). The question is
+   an unprinted test pressing — a paper label with a track code and 33⅓ — and
+   only the reveal prints the era's colour onto it and into the room. Right and
+   wrong are marks, never an era's hue.
+
+   The room is a size container, and its three arrangements are chosen by its
+   own shape rather than by a device's name: tall (a phone upright, the Duo's
+   inner display upright, a 680px desk window), compact (an upright room under
+   600px — the Duo's outer display, a phone under Safari's or WeChat's bars) and
+   wide (a phone on its side, the Duo unfolded, a wide window). The record's
+   diameter is what the room has left once the question and its four answers
+   are placed, so every face of a round fits one screen: measured on eleven
+   screens, four states and two appearances before this was built.
+
+   Every colour below is a token declared on the window, and the 1-bit desk
+   re-values those tokens in the one block that names an appearance. */
+.one-more-tune-window[data-omt-room] .one-more-tune-pane { padding:0;overflow:hidden;display:flex;flex-direction:column }
+.one-more-tune-window[data-omt-room] .one-more-tune-body { flex:1 1 auto;min-height:0;display:flex;overflow:hidden }
+/* The head is only the three games' tabs now, so it is one row, not a masthead. */
+.one-more-tune-window .top { height:auto;min-height:0;padding:4px 16px;justify-content:flex-start }
+/* A round in progress hides the tabs; a question on screen hides the status bar
+   too. The back cover keeps the bar, because that is where "copied" lands. */
+.one-more-tune-window[data-omt-round] .top,
+.one-more-tune-window[data-omt-asking] .details-bar { display:none }
+/* The study faces' sections are flex columns on a phone; the room is not. */
+.one-more-tune-window .one-more-tune-body > .omt-room { display:block }
+.one-more-tune-window .omt-room {
+  container:omt/size;position:relative;flex:1 1 auto;min-width:0;min-height:0;overflow:hidden;
+  background:var(--omt-room);color:var(--omt-room-ink);font-family:var(--ui-font);font-size:17px;line-height:1.3;text-align:left;
+  --omt-wash:var(--omt-ring-none);
+}
+.one-more-tune-window .omt-light,
+.one-more-tune-window .omt-wash { position:absolute;inset:0;pointer-events:none }
+.one-more-tune-window .omt-light { background:radial-gradient(85% 52% at 46% 25%,var(--omt-room-glow),transparent 70%) }
+.one-more-tune-window .omt-wash { opacity:0;transition:opacity 620ms ease;background:radial-gradient(118% 76% at 46% 22%,color-mix(in srgb,var(--omt-wash) var(--omt-room-wash),transparent),transparent 72%) }
+.one-more-tune-window .omt-room[data-lit] .omt-wash { opacity:1 }
+.one-more-tune-window .omt-room[data-era="1"] { --omt-wash:var(--omt-ring-1) }
+.one-more-tune-window .omt-room[data-era="2"] { --omt-wash:var(--omt-ring-2) }
+.one-more-tune-window .omt-room[data-era="3"] { --omt-wash:var(--omt-ring-3) }
+.one-more-tune-window .omt-room[data-era="4"] { --omt-wash:var(--omt-ring-4) }
+.one-more-tune-window .omt-room[data-era="5"] { --omt-wash:var(--omt-ring-5) }
+.one-more-tune-window .omt-room[data-era="6"] { --omt-wash:var(--omt-ring-6) }
+.one-more-tune-window .omt-in {
+  position:relative;box-sizing:border-box;height:100%;overflow:hidden;display:grid;
+  grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr) auto auto;
+  grid-template-areas:"track" "stage" "gap" "q" "opts";row-gap:14px;column-gap:16px;padding:14px 16px 16px;
+  --omt-d:clamp(140px,min(100cqh - 440px,(100cqw - 32px) / 1.26),330px);
+}
+.one-more-tune-window .omt-track { grid-area:track;display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:26px;min-width:0 }
+.one-more-tune-window .omt-stage { grid-area:stage;position:relative;width:calc(var(--omt-d) * 1.24);height:var(--omt-d);justify-self:center;align-self:center }
+.one-more-tune-window .omt-gap { grid-area:gap;min-height:0 }
+.one-more-tune-window .omt-q { grid-area:q;min-width:0 }
+.one-more-tune-window .omt-opts { grid-area:opts;min-width:0 }
+.one-more-tune-window .omt-sr { position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap }
+
+/* A desk window grows to its content, and a size container has none, so a room
+   outside the phone shell takes the height the desk can spare. It is a height,
+   not a min-height: a room whose height only came from min-height measured its
+   own container units as zero, and the record fell to its floor. */
+.one-more-tune-window[data-omt-room]:not(.is-mobile-fullscreen) .omt-room { flex:none;height:clamp(480px,calc(100dvh - 190px),760px) }
+.one-more-tune-window[data-omt-room]:not(.is-mobile-fullscreen) .one-more-tune-body { overflow:visible }
+/* The start has less under the record than a question, so an upright room
+   gives the record more of itself there. */
+@container omt (max-aspect-ratio:13/10) and (min-height:601px) {
+  .one-more-tune-window .omt-room[data-omt-phase="idle"] .omt-in { --omt-d:clamp(140px,min(100cqh - 400px,(100cqw - 32px) / 1.26),330px) }
+}
+
+/* The track list: A, then five; B, then five. */
+.one-more-tune-window .omt-slots { display:flex;align-items:center;gap:4px;margin:0;min-width:0 }
+.one-more-tune-window .omt-side { width:12px;text-align:center;font-size:11px;font-weight:700;color:var(--omt-room-ink-3) }
+.one-more-tune-window .omt-side.is-b { margin-left:6px }
+.one-more-tune-window .omt-slot { width:18px;height:18px;flex:none;border-radius:50%;box-shadow:inset 0 0 0 1.5px var(--omt-room-hair);display:grid;place-items:center;font-size:10px;font-weight:800;line-height:1;color:var(--omt-ring-ink-none) }
+.one-more-tune-window .omt-slot[data-now] { box-shadow:inset 0 0 0 1.5px var(--omt-room-ink) }
+.one-more-tune-window .omt-slot[data-now]::after { content:"";width:6px;height:6px;border-radius:50%;background:var(--omt-room-ink) }
+.one-more-tune-window .omt-slot[data-s] { background:var(--omt-ring-none);box-shadow:none }
+.one-more-tune-window .omt-slot[data-s="skip"],
+.one-more-tune-window .omt-slot[data-s="broken"] { background:transparent;box-shadow:inset 0 0 0 1.5px var(--omt-room-ink-3);color:var(--omt-room-ink-2) }
+.one-more-tune-window .omt-slot[data-era="1"] { background:var(--omt-ring-1);color:var(--omt-ring-ink-1) }
+.one-more-tune-window .omt-slot[data-era="2"] { background:var(--omt-ring-2);color:var(--omt-ring-ink-2) }
+.one-more-tune-window .omt-slot[data-era="3"] { background:var(--omt-ring-3);color:var(--omt-ring-ink-3) }
+.one-more-tune-window .omt-slot[data-era="4"] { background:var(--omt-ring-4);color:var(--omt-ring-ink-4) }
+.one-more-tune-window .omt-slot[data-era="5"] { background:var(--omt-ring-5);color:var(--omt-ring-ink-5) }
+.one-more-tune-window .omt-slot[data-era="6"] { background:var(--omt-ring-6);color:var(--omt-ring-ink-6) }
+.one-more-tune-window .omt-room[data-omt-enter] .omt-slot[data-fresh] { animation:omt-pop 220ms var(--omt-ease-out) }
+@keyframes omt-pop { from { transform:scale(.6) } }
+.one-more-tune-window .omt-aux { display:inline-flex;gap:4px;font-size:13px;color:var(--omt-room-ink-3);white-space:nowrap }
+.one-more-tune-window .omt-verdict { display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:99px;background:var(--omt-room-chip);box-shadow:inset 0 0 0 1px var(--omt-room-chip-line);font-size:13px;font-weight:600;line-height:1;white-space:nowrap }
+.one-more-tune-window .omt-kicker { display:flex;flex-wrap:wrap;gap:4px 12px;margin:0;font-size:13px;color:var(--omt-room-ink-3) }
+
+/* The record. The button is the whole record; the rim and the arm are its
+   siblings on the stage. */
+.one-more-tune-window .omt-deck { position:absolute;left:0;top:0;width:var(--omt-d);height:var(--omt-d);padding:0;border:0;border-radius:50%;background:none;color:inherit;cursor:pointer;transition:transform var(--omt-disc-press-ms) var(--omt-ease-out) }
+.one-more-tune-window .omt-deck:active { transform:scale(.985) }
+.one-more-tune-window .omt-deck:focus-visible { outline:var(--control-focus-outline);outline-offset:calc(var(--omt-d) * .06) }
+.one-more-tune-window .omt-flip,
+.one-more-tune-window .omt-spin,
+.one-more-tune-window .omt-grooves { position:absolute;inset:0;border-radius:50% }
+/* Round, and clipped: a turning square's corners would otherwise count as the
+   room's overflow even though nobody can see them. */
+.one-more-tune-window .omt-flip { overflow:hidden;box-shadow:0 calc(var(--omt-d) * .05) calc(var(--omt-d) * .12) var(--omt-vinyl-shadow) }
+.one-more-tune-window .omt-grooves {
+  background:
+    radial-gradient(circle closest-side,transparent 0 45%,var(--omt-groove-gap) 45% 46.2%,transparent 46.2% 54.4%,var(--omt-groove-gap) 54.4% 55.6%,transparent 55.6% 64.4%,var(--omt-groove-gap) 64.4% 65.6%,transparent 65.6% 74.4%,var(--omt-groove-gap) 74.4% 75.6%,transparent 75.6% 84.4%,var(--omt-groove-gap) 84.4% 85.6%,transparent 85.6% 94%,var(--omt-groove-gap) 94% 95.5%,transparent 95.5%),
+    repeating-radial-gradient(circle closest-side,var(--omt-vinyl) 0 var(--omt-groove-land),var(--omt-groove) var(--omt-groove-land) var(--omt-groove-pitch)),
+    var(--omt-vinyl);
+  box-shadow:inset 0 0 0 1px var(--omt-room-hair);
+}
+.one-more-tune-window .omt-label { position:absolute;inset:34%;border-radius:50%;display:grid;place-content:center;justify-items:center;gap:calc(var(--omt-d) * .008);overflow:hidden;text-align:center;line-height:1 }
+.one-more-tune-window .omt-label b { font-size:calc(var(--omt-d) * .074);font-weight:800;letter-spacing:-.02em;background:var(--omt-label-type-bg);padding:0 2px }
+.one-more-tune-window .omt-label small { font-size:calc(var(--omt-d) * .03);font-weight:600;opacity:.66;max-width:calc(var(--omt-d) * .24);background:var(--omt-label-type-bg) }
+.one-more-tune-window .omt-label-white { background:var(--omt-label);color:var(--omt-label-ink) }
+.one-more-tune-window .omt-label-print { background:var(--omt-label);color:var(--omt-label-ink);opacity:0;filter:blur(6px);transform:scale(1.06);transition:opacity 380ms var(--omt-ease-out),filter 380ms var(--omt-ease-out),transform 380ms var(--omt-ease-out) }
+.one-more-tune-window .omt-label-print b { font-size:calc(var(--omt-d) * .064) }
+.one-more-tune-window .omt-stage[data-printed] .omt-label-print { opacity:1;filter:none;transform:none }
+.one-more-tune-window .omt-label-print[data-era="1"] { background:var(--omt-era-1);color:var(--omt-ring-ink-1) }
+.one-more-tune-window .omt-label-print[data-era="2"] { background:var(--omt-era-2);color:var(--omt-ring-ink-2) }
+.one-more-tune-window .omt-label-print[data-era="3"] { background:var(--omt-era-3);color:var(--omt-ring-ink-3) }
+.one-more-tune-window .omt-label-print[data-era="4"] { background:var(--omt-era-4);color:var(--omt-ring-ink-4) }
+.one-more-tune-window .omt-label-print[data-era="5"] { background:var(--omt-era-5);color:var(--omt-ring-ink-5) }
+.one-more-tune-window .omt-label-print[data-era="6"] { background:var(--omt-era-6);color:var(--omt-ring-ink-6) }
+.one-more-tune-window .omt-hole { position:absolute;left:50%;top:50%;width:calc(var(--omt-d) * .028);height:calc(var(--omt-d) * .028);border-radius:50%;background:var(--omt-vinyl);transform:translate(-50%,-50%);box-shadow:0 0 0 1px var(--omt-room-hair) }
+.one-more-tune-window .omt-sheen { position:absolute;inset:0;border-radius:50%;pointer-events:none;background:var(--omt-sheen);
+  -webkit-mask:radial-gradient(circle closest-side,transparent 0 33%,#000 34% 95%,transparent 96%);mask:radial-gradient(circle closest-side,transparent 0 33%,#000 34% 95%,transparent 96%) }
+.one-more-tune-window .omt-rim { position:absolute;left:calc(var(--omt-d) * -.045);top:calc(var(--omt-d) * -.045);width:calc(var(--omt-d) * 1.09);height:calc(var(--omt-d) * 1.09);overflow:visible;pointer-events:none }
+.one-more-tune-window .omt-rim circle { fill:none;stroke-width:1.2 }
+.one-more-tune-window .omt-rim-bed { stroke:var(--omt-room-hair) }
+.one-more-tune-window .omt-rim-arc { stroke:var(--omt-room-ink);stroke-linecap:round;opacity:.9;transition:stroke-dashoffset var(--omt-disc-arc-ms) linear }
+.one-more-tune-window .omt-deck[data-unknown="true"] ~ .omt-rim .omt-rim-arc { opacity:0 }
+.one-more-tune-window .omt-stage[data-playback="idle"] .omt-rim-bed { stroke-dasharray:.6 2.4 }
+/* The tonearm: the swing picks the band, the track follows the cue inward. */
+.one-more-tune-window .omt-arm { position:absolute;left:calc(var(--omt-d) * 1.1);top:calc(var(--omt-d) * .1);width:0;height:0;pointer-events:none }
+.one-more-tune-window .omt-arm-base { position:absolute;left:calc(var(--omt-d) * -.075);top:calc(var(--omt-d) * -.075);width:calc(var(--omt-d) * .15);height:calc(var(--omt-d) * .15);border-radius:50%;background:var(--omt-arm-base);box-shadow:0 calc(var(--omt-d) * .02) calc(var(--omt-d) * .05) var(--omt-vinyl-shadow),inset 0 0 0 1px var(--omt-room-hair) }
+.one-more-tune-window .omt-arm-swing,
+.one-more-tune-window .omt-arm-track { position:absolute;left:0;top:0;transform:rotate(0deg);transition:transform 440ms var(--omt-ease-drawer) }
+.one-more-tune-window .omt-stage:is([data-playback="loading"],[data-playback="playing"],[data-playback="failed"]) .omt-arm-swing { transform:rotate(var(--omt-arm-from)) }
+.one-more-tune-window .omt-stage[data-playback="playing"] .omt-arm-track { transform:rotate(calc((var(--omt-arm-to) - var(--omt-arm-from)) * var(--omt-arm-p,0)));transition:transform var(--omt-disc-arc-ms) linear }
+.one-more-tune-window .omt-arm-cw { position:absolute;left:calc(var(--omt-d) * -.032);top:calc(var(--omt-d) * -.13);width:calc(var(--omt-d) * .064);height:calc(var(--omt-d) * .07);border-radius:calc(var(--omt-d) * .012);background:var(--omt-arm-weight) }
+.one-more-tune-window .omt-arm-tube { position:absolute;left:calc(var(--omt-d) * -.009);top:calc(var(--omt-d) * -.07);width:calc(var(--omt-d) * .018);height:calc(var(--omt-d) * .76);border-radius:99px;background:var(--omt-arm-tube);box-shadow:calc(var(--omt-d) * .012) calc(var(--omt-d) * .02) calc(var(--omt-d) * .02) var(--omt-vinyl-shadow) }
+.one-more-tune-window .omt-arm-head { position:absolute;left:calc(var(--omt-d) * -.03);top:calc(var(--omt-d) * .66);width:calc(var(--omt-d) * .06);height:calc(var(--omt-d) * .12);border-radius:calc(var(--omt-d) * .01);background:var(--omt-arm-head);box-shadow:0 calc(var(--omt-d) * .01) calc(var(--omt-d) * .015) var(--omt-vinyl-shadow);transform-origin:50% 0;transform:rotate(22deg);transition:transform 90ms var(--omt-ease-out),box-shadow 90ms var(--omt-ease-out) }
+/* Cued, not down: fetching the sound, or a sound that would not start. */
+.one-more-tune-window .omt-stage:is([data-playback="loading"],[data-playback="failed"]) .omt-arm-head { transform:rotate(22deg) translateY(calc(var(--omt-d) * -.014)) scale(1.06);box-shadow:0 calc(var(--omt-d) * .045) calc(var(--omt-d) * .04) var(--omt-vinyl-shadow) }
+.one-more-tune-window .omt-arm-cap { position:absolute;left:calc(var(--omt-d) * -.028);top:calc(var(--omt-d) * -.028);width:calc(var(--omt-d) * .056);height:calc(var(--omt-d) * .056);border-radius:50%;background:var(--omt-arm-cap) }
+
+/* The question and its four answers. */
+.one-more-tune-window .omt-qtext { margin:0;font-size:22px;font-weight:650;line-height:1.25;letter-spacing:-.01em;text-wrap:balance }
+.one-more-tune-window .omt-note { margin:8px 0 0;font-size:13px;line-height:1.4;color:var(--omt-room-ink-2) }
+.one-more-tune-window .omt-grid { display:flex;flex-direction:column }
+.one-more-tune-window .omt-ow { display:grid;grid-template-rows:1fr }
+.one-more-tune-window .omt-ow + .omt-ow { margin-top:8px }
+.one-more-tune-window .omt-opt { display:block;width:100%;min-height:0;overflow:hidden;padding:0 16px;border:0;border-radius:var(--omt-opt-radius);background:var(--omt-room-chip);box-shadow:inset 0 0 0 1px var(--omt-room-chip-line);color:var(--omt-room-ink);font-size:17px;font-weight:500;line-height:1.28;text-align:left;transition:transform var(--omt-disc-press-ms) var(--omt-ease-out),background-color 140ms ease }
+.one-more-tune-window .omt-opt-in { display:flex;align-items:center;gap:12px;min-height:54px;padding-block:8px }
+.one-more-tune-window .omt-key { display:none;flex:none;width:14px;font-size:13px;font-weight:600;color:var(--omt-room-ink-3) }
+.one-more-tune-window .omt-opt-label { flex:1;min-width:0 }
+.one-more-tune-window .omt-mark { flex:none;width:20px;height:20px }
+.one-more-tune-window .omt-mark path { fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:24;stroke-dashoffset:0 }
+.one-more-tune-window button.omt-opt:active { transform:scale(.97);background:var(--omt-room-chip-press) }
+.one-more-tune-window .omt-opt[data-state="pending"] { background:var(--omt-room-chip-press);box-shadow:inset 0 0 0 1.5px var(--omt-room-ink) }
+.one-more-tune-window .omt-room[data-omt-waiting] button.omt-opt:not([data-state]) { opacity:.45 }
+.one-more-tune-window .omt-opt[data-state="right"] { background:var(--omt-button);color:var(--omt-button-ink);box-shadow:none }
+.one-more-tune-window .omt-opt[data-state="wrong"] { background:transparent;color:var(--omt-room-ink-2);box-shadow:inset 0 0 0 1px var(--omt-room-hair) }
+.one-more-tune-window .omt-opt[data-state="wrong"] .omt-opt-label { text-decoration:line-through;text-decoration-thickness:1.5px }
+.one-more-tune-window .omt-room[data-omt-enter] .omt-opt[data-state="right"] .omt-mark path { animation:omt-draw 300ms 120ms var(--omt-ease-out) both }
+@keyframes omt-draw { from { stroke-dashoffset:24 } }
+.one-more-tune-window .omt-room[data-omt-enter] .omt-opt[data-shake] { animation:omt-shake 320ms var(--omt-ease-out) }
+@keyframes omt-shake { 20% { transform:translateX(-6px) } 40% { transform:translateX(5px) } 60% { transform:translateX(-3px) } 80% { transform:translateX(2px) } }
+/* The two answers that had nothing to do with it fold away on the reveal's
+   first paint; later paints leave them out. */
+.one-more-tune-window .omt-ow[data-gone] { animation:omt-fold 260ms var(--omt-ease-out) forwards }
+@keyframes omt-fold { to { grid-template-rows:0fr;opacity:0;margin-top:0 } }
+.one-more-tune-window .omt-act,
+.one-more-tune-window .omt-racts { display:flex;gap:10px;margin-top:12px }
+.one-more-tune-window .omt-racts { grid-area:acts;margin-top:0 }
+.one-more-tune-window .omt-next,
+.one-more-tune-window .omt-2nd { min-height:50px;padding:0 22px;border:0;border-radius:99px;font-size:17px;font-weight:600;line-height:1;transition:transform var(--omt-disc-press-ms) var(--omt-ease-out) }
+.one-more-tune-window .omt-next { flex:1;background:var(--omt-button);color:var(--omt-button-ink) }
+.one-more-tune-window .omt-2nd { background:var(--omt-room-chip);color:var(--omt-room-ink);box-shadow:inset 0 0 0 1px var(--omt-room-chip-line) }
+.one-more-tune-window .omt-racts .omt-2nd { flex:1 }
+.one-more-tune-window :is(.omt-next,.omt-2nd):active { transform:scale(.97) }
+.one-more-tune-window .omt-room[data-omt-enter] .omt-act { animation:omt-rise 260ms 200ms var(--omt-ease-out) both }
+
+/* The reveal's liner notes. */
+.one-more-tune-window .omt-notes { display:grid;gap:3px }
+.one-more-tune-window .omt-song { margin:0;font-size:23px;font-weight:700;line-height:1.18;letter-spacing:-.015em;text-wrap:balance }
+.one-more-tune-window .omt-artist { margin:0;font-size:16px;font-weight:500;color:var(--omt-room-ink-2) }
+.one-more-tune-window .omt-meta { display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;margin:5px 0 0;font-size:13px;font-weight:500;line-height:1.4;color:var(--omt-room-ink-3) }
+.one-more-tune-window .omt-era-name { display:inline-flex;align-items:center;gap:6px }
+.one-more-tune-window .omt-era-name i,
+.one-more-tune-window .omt-dot { width:9px;height:9px;flex:none;border-radius:50%;background:var(--omt-ring-none);box-shadow:inset 0 0 0 1px var(--omt-room-hair) }
+.one-more-tune-window .omt-era-name[data-era="1"] i,
+.one-more-tune-window .omt-dot[data-era="1"] { background:var(--omt-ring-1) }
+.one-more-tune-window .omt-era-name[data-era="2"] i,
+.one-more-tune-window .omt-dot[data-era="2"] { background:var(--omt-ring-2) }
+.one-more-tune-window .omt-era-name[data-era="3"] i,
+.one-more-tune-window .omt-dot[data-era="3"] { background:var(--omt-ring-3) }
+.one-more-tune-window .omt-era-name[data-era="4"] i,
+.one-more-tune-window .omt-dot[data-era="4"] { background:var(--omt-ring-4) }
+.one-more-tune-window .omt-era-name[data-era="5"] i,
+.one-more-tune-window .omt-dot[data-era="5"] { background:var(--omt-ring-5) }
+.one-more-tune-window .omt-era-name[data-era="6"] i,
+.one-more-tune-window .omt-dot[data-era="6"] { background:var(--omt-ring-6) }
+.one-more-tune-window .omt-links { display:flex;gap:14px;margin-left:auto }
+.one-more-tune-window .omt-links :is(a,.omt-link) { padding:0;border:0;background:none;color:var(--omt-room-ink);font-size:14px;font-weight:600;line-height:1.4;text-decoration:underline;text-decoration-color:var(--omt-room-chip-line);text-decoration-thickness:1px;text-underline-offset:4px }
+.one-more-tune-window .omt-room[data-omt-enter] .omt-notes > * { animation:omt-rise 280ms var(--omt-ease-out) both }
+.one-more-tune-window .omt-room[data-omt-enter] .omt-notes > :nth-child(2) { animation-delay:50ms }
+.one-more-tune-window .omt-room[data-omt-enter] .omt-notes > :nth-child(3) { animation-delay:100ms }
+.one-more-tune-window .omt-room[data-omt-enter] .omt-notes > :nth-child(4) { animation-delay:150ms }
+@keyframes omt-rise { from { opacity:0;transform:translateY(6px) } }
+
+/* The start. */
+.one-more-tune-window .omt-step-title { margin:0;font-size:27px;font-weight:700;line-height:1.2;letter-spacing:-.02em;text-wrap:balance }
+.one-more-tune-window .omt-intro { margin:6px 0 0;font-size:15px;line-height:1.45;color:var(--omt-room-ink-2) }
+.one-more-tune-window .omt-start { display:grid;gap:8px }
+.one-more-tune-window .omt-code { display:flex;align-items:center;gap:8px;margin-top:10px }
+.one-more-tune-window .omt-code-label { flex:none;font-size:13px;color:var(--omt-room-ink-3) }
+.one-more-tune-window .omt-code input { flex:1;min-width:0;height:44px;padding:0 12px;border:0;border-radius:var(--omt-opt-radius);background:var(--omt-room-chip);box-shadow:inset 0 0 0 1px var(--omt-room-chip-line);color:var(--omt-room-ink);font-size:16px }
+.one-more-tune-window .omt-code input::placeholder { color:var(--omt-room-ink-3) }
+.one-more-tune-window .omt-code .omt-2nd { min-height:44px;padding:0 16px;font-size:15px }
+
+/* The back cover. */
+.one-more-tune-window .omt-room[data-omt-phase="result"] .omt-in { grid-template-rows:auto auto minmax(0,1fr) auto auto;grid-template-areas:"head" "list" "gap" "acts" "desk" }
+.one-more-tune-window .omt-rhead { grid-area:head;display:flex;align-items:center;gap:16px }
+.one-more-tune-window .omt-mini { position:relative;flex:none;width:96px;height:96px;border-radius:50%;box-shadow:0 8px 22px var(--omt-vinyl-shadow);
+  background:radial-gradient(circle closest-side,transparent 0 35%,var(--omt-r10,transparent) 36% 41%,transparent 41% 42%,var(--omt-r9,transparent) 42% 47%,transparent 47% 48%,var(--omt-r8,transparent) 48% 53%,transparent 53% 54%,var(--omt-r7,transparent) 54% 59%,transparent 59% 60%,var(--omt-r6,transparent) 60% 65%,transparent 65% 66%,var(--omt-r5,transparent) 66% 71%,transparent 71% 72%,var(--omt-r4,transparent) 72% 77%,transparent 77% 78%,var(--omt-r3,transparent) 78% 83%,transparent 83% 84%,var(--omt-r2,transparent) 84% 89%,transparent 89% 90%,var(--omt-r1,transparent) 90% 95%,transparent 95%),var(--omt-vinyl) }
+.one-more-tune-window .omt-mini .omt-label { inset:31% }
+.one-more-tune-window .omt-mini .omt-label b { font-size:15px }
+.one-more-tune-window .omt-score { margin:0;font-size:46px;font-weight:800;line-height:1;letter-spacing:-.035em;font-variant-numeric:tabular-nums }
+.one-more-tune-window .omt-of { margin-left:3px;font-size:22px;font-weight:700;letter-spacing:0;color:var(--omt-room-ink-3) }
+.one-more-tune-window .omt-rsub { margin:7px 0 0;font-size:14px;color:var(--omt-room-ink-2) }
+.one-more-tune-window .omt-list { grid-area:list;display:grid;min-width:0;margin:0;padding:0;list-style:none }
+.one-more-tune-window .omt-list li { display:grid;grid-template-columns:22px 10px minmax(0,1fr) 16px;align-items:center;gap:10px;min-width:0;min-height:34px;border-bottom:1px solid var(--omt-room-hair) }
+.one-more-tune-window .omt-no { font-size:11px;font-weight:700;color:var(--omt-room-ink-3);font-variant-numeric:tabular-nums }
+.one-more-tune-window .omt-t { overflow:hidden;font-size:15px;white-space:nowrap;text-overflow:ellipsis }
+.one-more-tune-window .omt-t b { font-weight:600 }
+.one-more-tune-window .omt-t span { margin-left:8px;font-size:13px;color:var(--omt-room-ink-2) }
+.one-more-tune-window .omt-mark-text { font-size:13px;font-weight:800;text-align:center }
+.one-more-tune-window .omt-list li:not([data-s="right"]) .omt-mark-text { color:var(--omt-room-ink-3) }
+.one-more-tune-window .omt-desk { grid-area:desk;margin:0;font-size:13px;text-align:center }
+.one-more-tune-window .omt-desk a { color:var(--omt-room-ink-2) }
+
+/* Compact: an upright room under 600px. The record steps to the left and the
+   question stands beside it. */
+@container omt (max-aspect-ratio:13/10) and (max-height:600px) {
+  .one-more-tune-window .omt-in { grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr) auto;grid-template-areas:"track track" "stage q" "gap gap" "opts opts";row-gap:12px;column-gap:14px;
+    --omt-d:clamp(104px,min(100cqh - 350px,(100cqw - 32px) * .4),200px) }
+  .one-more-tune-window .omt-q { align-self:center }
+  .one-more-tune-window .omt-qtext,
+  .one-more-tune-window .omt-song { font-size:20px }
+  .one-more-tune-window .omt-artist { font-size:15px }
+  .one-more-tune-window .omt-links { margin-left:0 }
+  .one-more-tune-window .omt-step-title { font-size:21px }
+  .one-more-tune-window .omt-step-title br,
+  .one-more-tune-window .omt-intro { display:none }
+  .one-more-tune-window .omt-opt-in { min-height:50px }
+  .one-more-tune-window .omt-room[data-omt-phase="result"] .omt-in { grid-template-columns:minmax(0,1fr) }
+  .one-more-tune-window .omt-list li { min-height:28px }
+  .one-more-tune-window .omt-mini { width:72px;height:72px }
+  .one-more-tune-window .omt-score { font-size:36px }
+  .one-more-tune-window .omt-rsub { margin-top:4px;font-size:13px }
+}
+/* Upright and wide enough for two columns of answers (the Duo unfolded). */
+@container omt (min-width:560px) and (max-aspect-ratio:13/10) {
+  .one-more-tune-window .omt-grid { display:grid;grid-template-columns:1fr 1fr;gap:10px }
+  .one-more-tune-window .omt-ow + .omt-ow { margin-top:0 }
+  .one-more-tune-window .omt-ow[data-gone] { order:9 }
+  .one-more-tune-window .omt-in { --omt-d:clamp(140px,min(100cqh - 420px,(100cqw - 32px) / 1.26),380px) }
+}
+/* Wide: the record takes the left column; the track list, the question and the
+   answers stack on the right, and the way onward comes back where the answers
+   were, so a pointer never crosses the window for it. */
+@container omt (min-aspect-ratio:13/10) {
+  .one-more-tune-window .omt-light { background:radial-gradient(52% 88% at 24% 52%,var(--omt-room-glow),transparent 70%) }
+  .one-more-tune-window .omt-wash { background:radial-gradient(70% 115% at 22% 50%,color-mix(in srgb,var(--omt-wash) var(--omt-room-wash),transparent),transparent 72%) }
+  .one-more-tune-window .omt-in { grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr) auto;grid-template-areas:"stage track" "stage q" "stage gap" "stage opts";column-gap:clamp(20px,4cqw,48px);padding-top:18px;
+    --omt-d:clamp(160px,min(100cqh - 60px,38cqw),380px) }
+  .one-more-tune-window .omt-stage { margin-left:calc(var(--omt-d) * .05) }
+  .one-more-tune-window .omt-key { display:block }
+  .one-more-tune-window .omt-room[data-omt-phase="result"] .omt-in { grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto auto;grid-template-areas:"head list" "head gap" "head acts" "head desk" }
+  .one-more-tune-window .omt-rhead { flex-direction:column;align-items:flex-start;align-self:center }
+  .one-more-tune-window .omt-mini { width:calc(var(--omt-d) * .72);height:calc(var(--omt-d) * .72) }
+  .one-more-tune-window .omt-list { grid-template-rows:repeat(5,auto);grid-auto-flow:column;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:22px }
+}
+@container omt (min-aspect-ratio:13/10) and (max-height:430px) {
+  .one-more-tune-window .omt-in { row-gap:8px;padding-top:10px;padding-bottom:10px;
+    --omt-d:clamp(130px,min(100cqh - 36px,30cqw),300px) }
+  .one-more-tune-window .omt-qtext { font-size:19px }
+  .one-more-tune-window .omt-song { font-size:19px;line-height:1.14 }
+  .one-more-tune-window .omt-artist { font-size:15px }
+  .one-more-tune-window .omt-grid { display:grid;grid-template-columns:1fr 1fr;gap:8px }
+  .one-more-tune-window .omt-ow + .omt-ow { margin-top:0 }
+  .one-more-tune-window .omt-ow[data-gone] { order:9 }
+  .one-more-tune-window .omt-opt { font-size:16px }
+  .one-more-tune-window .omt-opt-in { min-height:48px;padding-block:6px }
+  .one-more-tune-window .omt-act { margin-top:8px }
+  .one-more-tune-window :is(.omt-next,.omt-2nd) { min-height:46px }
+  .one-more-tune-window .omt-step-title { font-size:22px }
+  .one-more-tune-window .omt-step-title br,
+  .one-more-tune-window .omt-intro { display:none }
+  .one-more-tune-window .omt-start { grid-template-columns:1fr 1fr }
+  .one-more-tune-window .omt-code { margin-top:8px }
+  .one-more-tune-window .omt-list li { min-height:30px }
+  .one-more-tune-window .omt-mini { width:calc(var(--omt-d) * .5);height:calc(var(--omt-d) * .5) }
+  .one-more-tune-window .omt-score { font-size:38px }
+  .one-more-tune-window .omt-rsub { font-size:13px }
+  .one-more-tune-window .omt-room[data-omt-phase="idle"] .omt-track { display:none }
+  .one-more-tune-window .omt-room[data-omt-phase="idle"] .omt-in { grid-template-areas:"stage q" "stage q" "stage gap" "stage opts" }
+  /* The reveal on a phone held sideways: the answer rows stack in one column,
+     at full width so a long product name keeps its line, and the way onward
+     stands beside them rather than under them. */
+  .one-more-tune-window .omt-room[data-omt-phase="reveal"] .omt-opts { display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:8px }
+  .one-more-tune-window .omt-room[data-omt-phase="reveal"] .omt-grid { display:flex;flex-direction:column }
+  .one-more-tune-window .omt-room[data-omt-phase="reveal"] .omt-ow + .omt-ow { margin-top:6px }
+  .one-more-tune-window .omt-room[data-omt-phase="reveal"] .omt-opt-in { min-height:44px;padding-block:4px }
+  /* A sideways phone has room for the answer, not for the miss as well: the
+     verdict and the track list already say it was missed. */
+  .one-more-tune-window .omt-room[data-omt-phase="reveal"] .omt-ow:has(.omt-opt[data-state="wrong"]) { display:none }
+  .one-more-tune-window .omt-room[data-omt-phase="reveal"] .omt-act { margin-top:0 }
+  .one-more-tune-window .omt-room[data-omt-phase="reveal"] .omt-next { padding:0 18px }
+  .one-more-tune-window .omt-notes { display:flex;flex-wrap:wrap;align-items:baseline;column-gap:10px }
+  .one-more-tune-window .omt-notes > :is(.omt-meta,.omt-note) { flex-basis:100% }
+}
+/* The two links in the liner notes are words, not buttons, but a finger still
+   needs 44pt to land on one: the hit area grows and the line does not move. */
+@media (hover:none) and (pointer:coarse) {
+  .one-more-tune-window .omt-links :is(a,.omt-link) { padding-block:12px;margin-block:-12px }
+}
+/* A pointer is a keyboard's neighbour: the four answers show the number that
+   picks them wherever there is a fine pointer, in any arrangement. */
+@media (hover:hover) and (pointer:fine) {
+  .one-more-tune-window .omt-key { display:block }
+  .one-more-tune-window button.omt-opt:not([data-state]):hover { background:var(--omt-room-chip-press) }
+}
+/* Reduced motion is gentler, not absent: the platter keeps still (the ticker
+   holds its rate at zero), the arm and the rows arrive without travelling, no
+   answer shakes, and the label and notes fade instead of rising. The rim still
+   moves, because it is information. */
+@media (prefers-reduced-motion: reduce) {
+  .one-more-tune-window :is(.omt-arm-swing,.omt-arm-track,.omt-arm-head,.omt-opt,.omt-deck,.omt-next,.omt-2nd) { transition:none }
+  .one-more-tune-window .omt-room[data-omt-enter] :is(.omt-opt[data-shake],.omt-slot[data-fresh]) { animation:none }
+  .one-more-tune-window .omt-ow[data-gone] { animation:omt-fade-out 1ms forwards }
+  .one-more-tune-window .omt-label-print { filter:none;transform:none;transition:opacity 220ms ease }
+  .one-more-tune-window .omt-room[data-omt-enter] :is(.omt-notes > *,.omt-act) { animation:omt-fade 220ms ease both }
+}
+@keyframes omt-fade { from { opacity:0 } }
+@keyframes omt-fade-out { to { grid-template-rows:0fr;opacity:0;margin-top:0 } }

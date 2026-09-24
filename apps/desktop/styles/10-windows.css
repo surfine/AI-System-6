@@ -13,6 +13,115 @@
   container-type: inline-size;
 }
 
+/* Toolbar windows. A Finder page's strips (title bar, details strip,
+   navigation bar) are direct children of the window, so a later Mac OS X era
+   can lay them out as one unified title-and-toolbar region with a grid,
+   without moving any node: the era names the areas through these tokens.
+   The default is the System 6 stack. Kept above the hidden-window rules,
+   which must still win on display. */
+.window.is-toolbar-window {
+  display: var(--finder-window-display, flex);
+  grid-template: var(--finder-window-grid, none);
+}
+.is-toolbar-window > * { grid-column: 1 / -1; }
+.is-toolbar-window > .title-bar { grid-area: title; }
+.is-toolbar-window > .details-bar { grid-area: details; }
+.is-toolbar-window > .finder-navigation-bar { grid-area: nav; }
+.is-toolbar-window > .window-pane { grid-area: pane; }
+/* The repeated class is deliberate: the family title-bar rule in
+   65-appearance-themes.css is (0,3,1), and the toolbar's edge must win over it
+   only inside a toolbar window. */
+.window.is-toolbar-window > .title-bar.title-bar {
+  border-bottom: var(--finder-toolbar-rule, var(--titlebar-border));
+}
+.window.is-toolbar-window > .details-bar.details-bar {
+  background: var(--finder-toolbar-bg, var(--details-bar-bg));
+  border-bottom: var(--finder-toolbar-edge, 1px solid var(--details-bar-border));
+}
+.window.is-toolbar-window > .finder-navigation-bar.finder-navigation-bar {
+  background: var(--finder-toolbar-bg, var(--finder-navigation-bg));
+  border-bottom: var(--finder-toolbar-edge, var(--finder-navigation-border));
+}
+/* Layout recipes. The registry names each era's Finder layout
+   (finderLayout) and projects it as data-finder-layout; a layout is structure,
+   not an era's material, so it lives here once rather than as tokens every
+   era would have to answer. Eras keep only their material (--toolbar-bg,
+   --toolbar-border, the rail tokens). */
+body[data-finder-layout] {
+  /* A browser-style Finder's content: a white well, plain path labels, a
+     hairline under the action row, no hatch or dotted card for an empty
+     folder. An era that sets these itself keeps its own values. */
+  --file-well-bg: var(--surface-primary);
+  --empty-object-hatch-base: var(--file-well-bg);
+  --empty-object-hatch-alt: var(--file-well-bg);
+  --scrap-empty-card-border: 0;
+  --finder-breadcrumb-text-decoration: none;
+  --finder-pathbar-border: 1px solid var(--rule);
+  --finder-label-bg: transparent;
+}
+.window.is-toolbar-window:not(.is-active) { --finder-toolbar-bg: var(--toolbar-bg-inactive, var(--toolbar-bg)); }
+/* The arrangement itself is a desktop window's: a phone keeps the stacked
+   Finder page (same device query as 60-responsive.css). */
+@media (min-width: 861px) and (not ((hover: none) and (pointer: coarse) and (max-height: 660px))) {
+body[data-finder-layout] {
+  --finder-window-display: grid;
+  --finder-toolbar-rule: 0;
+  --finder-sidebar-display: flex;
+}
+/* The count and location readouts leave the bar, except in 10.0-10.2, where
+   the count is still the status line. */
+body[data-finder-layout]:not([data-finder-layout$="plain"]) .is-toolbar-window > .details-bar > span { display: none; }
+/* In a one-row toolbar (macOS 11) the bar is taller than a title bar and the
+   window's own title gives way to the path's current name. The title stays in
+   the accessibility tree. */
+body[data-finder-layout="one-row"] .is-toolbar-window > .title-bar { min-height: 52px; }
+body[data-finder-layout="one-row"] .is-toolbar-window > .title-bar h2 {
+  position: absolute;
+  clip-path: inset(50%);
+}
+body[data-finder-layout="one-row"] {
+  --finder-window-grid: "title nav details" auto "side pane pane" minmax(0, 1fr) / min(180px, 30%) minmax(0, 1fr) auto;
+}
+body[data-finder-layout^="two-row"] {
+  --finder-window-grid: "title title title" auto "nav nav details" auto "side pane pane" minmax(0, 1fr) / min(170px, 30%) minmax(0, 1fr) auto;
+  --finder-toolbar-bg: var(--toolbar-bg);
+  --finder-toolbar-edge: var(--toolbar-border);
+  --finder-sidebar-edge: 1px solid var(--rule);
+}
+/* Mac OS X 10.0-10.2: no sidebar yet, and the count stays as the status line. */
+body[data-finder-layout="two-row-plain"] {
+  --finder-window-grid: "title title" auto "nav details" auto "pane pane" minmax(0, 1fr) / minmax(0, 1fr) auto;
+  --finder-sidebar-display: none;
+}
+}
+/* The Finder sidebar is the tdi-rail source list; an era that lays out a
+   "side" area turns it on. Everywhere else it stays out of the page. */
+.is-toolbar-window > .finder-sidebar {
+  display: var(--finder-sidebar-display, none);
+  grid-area: side;
+  gap: 1px;
+  min-height: 0;
+  overflow: auto;
+  padding: 8px;
+  border-right: var(--finder-sidebar-edge, 0);
+}
+/* Source-list rows are compact (16px glyphs), unlike document tabs. */
+.finder-sidebar > .tdi-tab.tdi-tab {
+  border: 0;
+  box-shadow: none;
+  height: auto;
+  min-height: var(--finder-sidebar-row-height, 24px);
+  padding: 2px 8px;
+  font-size: var(--finder-sidebar-font-size, 13px);
+}
+.finder-sidebar .tdi-tab-icon,
+.finder-sidebar .tdi-tab-icon > * { width: 16px; height: 16px; }
+.finder-sidebar > .tdi-source-rail-label {
+  /* A visible sidebar always shows its section headings. */
+  display: block;
+  margin-top: 8px;
+}
+
 .window.is-minimized,
 .window.is-hidden {
   display: none;
@@ -400,10 +509,12 @@ body.quick-draft-focus .writing-spine-panel {
   width: 380px;
 }
 
+/* Wide enough for a query, a title on one line and the four handoff
+   controls in one row; at 420px the query clipped and Insert wrapped alone. */
 .find-path-window {
   top: 34px;
   right: 120px;
-  width: 420px;
+  width: min(560px, calc(100vw - 24px));
   height: min(620px, calc(100vh - 65px));
 }
 
@@ -529,101 +640,6 @@ body.quick-draft-focus .writing-spine-panel {
 .project-peek-body {
   min-height: 120px;
   resize: none;
-}
-
-/* ClioProject: the plan for one project, drawn fresh from the route and the
-   Outline on every render. Cards sit on an absolutely positioned canvas over
-   one SVG of arrows; the bolded run is the chain blocking the handoff, and
-   bold — heavier border, heavier line — is the whole vocabulary, exactly the
-   1-bit weight MacProject used for its own marked chain. */
-.clio-project-window {
-  top: 72px;
-  left: 140px;
-  width: 560px;
-}
-
-.clio-project-pane {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  overflow: auto;
-}
-
-.clio-project-canvas {
-  position: relative;
-  flex: none;
-  min-width: var(--clio-project-canvas-min-w, 0);
-  min-height: var(--clio-project-canvas-min-h, 0);
-}
-
-.clio-project-edges {
-  position: absolute;
-  top: 0;
-  left: 0;
-}
-
-.clio-project-edges line {
-  stroke: var(--ink);
-  stroke-width: 1;
-}
-
-.clio-project-edges line.is-blocking {
-  stroke-width: 3;
-}
-
-.clio-project-node {
-  position: absolute;
-  /* Layout comes in as custom properties so the geometry stays a CSS
-     decision and the render loop never writes element.style left/top. */
-  left: var(--clio-project-x, 0);
-  top: var(--clio-project-y, 0);
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: 0 6px;
-  width: 200px;
-  height: 56px;
-  padding: 3px 6px;
-  border: 1px solid var(--ink);
-  background: var(--paper);
-}
-
-.clio-project-node.is-blocking {
-  border-width: 2px;
-}
-
-.clio-project-node.is-blocking .clio-project-node-title {
-  font-weight: bold;
-}
-
-.clio-project-node-title {
-  overflow: hidden;
-  border: 0;
-  background: transparent;
-  color: var(--ink);
-  font: inherit;
-  text-align: left;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.clio-project-date {
-  grid-column: 2;
-  min-width: 0;
-}
-
-.clio-project-done-list {
-  margin: 4px 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.clio-project-done-list li {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-  padding: 1px 2px;
-  color: var(--shade-dark);
 }
 
 /* To Do 待办: the cross-project next-action list. A plan belongs to a project
@@ -1022,15 +1038,20 @@ body.quick-draft-focus .writing-spine-panel {
      WindowShade columns so each control still lands in its own cell. */
   --titlebar-slot-zoom: var(--system-titlebar-control-slot);
   --titlebar-slot-shade: var(--system-titlebar-shade-slot);
+  /* Close and Miniaturize keep slots here too, so an era can group three lamps
+     by value rather than by re-declaring the bar's layout. */
+  --titlebar-slot-close: var(--system-titlebar-control-slot);
+  --titlebar-slot-minimize: var(--system-titlebar-control-slot);
   --titlebar-gutter: max(
     var(--system-titlebar-control-slot),
     calc(var(--titlebar-slot-zoom) + var(--titlebar-slot-shade))
   );
-  grid-template-columns:
+  --titlebar-columns:
     var(--titlebar-gutter)
     minmax(0, 1fr)
     var(--titlebar-slot-zoom)
     calc(var(--titlebar-gutter) - var(--titlebar-slot-zoom));
+  grid-template-columns: var(--titlebar-columns);
   /* The 40px controls are generous hit targets, not the row's painted height.
      Constraining the implicit row keeps their 13px art on the same centerline
      as the title instead of letting the hit target push both below the bars. */
@@ -1064,13 +1085,17 @@ body.quick-draft-focus .writing-spine-panel {
   --titlebar-slot-zoom: 0px;
 }
 
+.title-bar:not(:has(> .minimize-box)) {
+  --titlebar-slot-minimize: 0px;
+}
+
 .title-bar:not(:has(> .shade-box)) {
   --titlebar-slot-shade: 0px;
 }
 
 .title-bar h1,
 .title-bar h2 {
-  grid-column: 2;
+  grid-column: var(--titlebar-title-column, 2);
   grid-row: 1;
   align-self: center;
   justify-self: center;
@@ -1080,6 +1105,7 @@ body.quick-draft-focus .writing-spine-panel {
   padding: 0 0.5em;
   max-width: min(100%, 52ch);
   background: var(--titlebar-title-bg);
+  text-shadow: var(--titlebar-title-shadow, inherit);
   color: var(--titlebar-title-fg);
   font-family: var(--title-font);
   font-size: var(--system-titlebar-font-size);
@@ -1149,9 +1175,30 @@ html:lang(zh-Hans) .title-bar h2 {
 }
 
 .title-bar > .close-box {
-  grid-column: 1;
+  grid-column: var(--titlebar-close-column, 1);
   justify-self: start;
   --system-titlebar-control-art-offset-x: var(--system-titlebar-close-art-offset-x);
+}
+
+/* The Miniaturize control is granted per appearance (registry capability
+   `minimize-lamp`) because a lamp with nothing behind it is a lie. This rule
+   gives it the same hit target as Close and Zoom and no art of its own: the
+   era that opens the slot places the lamp in its own group and paints it. */
+.title-bar > .minimize-box {
+  grid-row: 1;
+  grid-column: var(--titlebar-minimize-column, 2);
+  width: var(--system-titlebar-control-size);
+  height: var(--system-titlebar-control-size);
+  display: block;
+  box-sizing: border-box;
+  align-self: center;
+  flex: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  position: relative;
+  cursor: pointer;
 }
 
 /* WindowShade collapse box. The control is in every title bar so all six
@@ -1188,8 +1235,8 @@ html:lang(zh-Hans) .title-bar h2 {
 }
 
 .title-bar > .resize-box {
-  grid-column: 3;
-  justify-self: end;
+  grid-column: var(--titlebar-zoom-column, 3);
+  justify-self: var(--titlebar-zoom-justify, end);
   --system-titlebar-control-art-offset-x: var(--system-titlebar-resize-art-offset-x);
 }
 
@@ -1403,7 +1450,7 @@ html:lang(zh-Hans) .title-bar h2 {
   display: var(--window-frame-bar-display);
   position: absolute;
   flex-direction: column;
-  background: var(--paper);
+  background: var(--window-frame-bar-bg, var(--paper));
 }
 
 .window-frame-bar.is-vertical {
@@ -1837,8 +1884,9 @@ html:lang(zh-Hans) .title-bar h2 {
   grid-column: 2;
   justify-self: center;
   gap: 2px;
-  border: 1px solid var(--ink);
-  background: var(--paper);
+  border: var(--view-controls-border, 1px solid var(--ink));
+  border-radius: var(--view-controls-radius, 0);
+  background: var(--view-controls-bg, var(--paper));
   height: 20px;
 }
 
@@ -1846,7 +1894,9 @@ html:lang(zh-Hans) .title-bar h2 {
   width: 24px;
   height: 18px;
   border: 0;
+  border-radius: var(--view-btn-radius, 0);
   background: transparent;
+  color: var(--view-btn-glyph, var(--ink));
   padding: 0;
   cursor: pointer;
   position: relative;
@@ -1854,20 +1904,24 @@ html:lang(zh-Hans) .title-bar h2 {
   place-items: center;
 }
 
+/* The glyphs below are drawn in currentColor (a colourless box-shadow takes
+   it), so the selected state is one colour change, not a second copy of each
+   glyph. */
 .view-btn.is-active {
-  background: var(--ink);
+  background: var(--view-btn-active-bg);
+  color: var(--view-btn-active-glyph, var(--paper));
 }
 
 /* Paper on paper is no feedback at all; the shade is what every other System 6
    control uses to say the pointer is on it. */
 .view-btn:hover:not(.is-active),
 .view-btn:focus-visible:not(.is-active) {
-  background: var(--shade);
+  background: var(--view-btn-hover-bg, var(--shade));
 }
 
 .view-btn.is-active:hover,
 .view-btn.is-active:focus-visible {
-  background: var(--ink);
+  background: var(--view-btn-active-bg);
 }
 
 /* Icon view: four blocks, the 1-bit way to say "icons". An empty rectangle —
@@ -1880,19 +1934,9 @@ html:lang(zh-Hans) .title-bar h2 {
   top: 50%;
   width: 4px;
   height: 4px;
-  background: var(--ink);
-  box-shadow:
-    6px 0 0 var(--ink),
-    0 6px 0 var(--ink),
-    6px 6px 0 var(--ink);
+  background: currentColor;
+  box-shadow: 6px 0 0, 0 6px 0, 6px 6px 0;
   transform: translate(-5px, -5px);
-}
-.view-btn[data-view="icon"].is-active::before {
-  background: var(--paper);
-  box-shadow:
-    6px 0 0 var(--paper),
-    0 6px 0 var(--paper),
-    6px 6px 0 var(--paper);
 }
 
 /* List view button icon */
@@ -1903,15 +1947,9 @@ html:lang(zh-Hans) .title-bar h2 {
   top: 50%;
   width: 12px;
   height: 2px;
-  background: var(--ink);
-  box-shadow: 0 -4px 0 var(--ink), 0 4px 0 var(--ink);
+  background: currentColor;
+  box-shadow: 0 -4px 0, 0 4px 0;
   transform: translate(-50%, -50%);
-}
-/* Same offsets as the resting glyph — these used to be 0/+4/+8, which slid the
-   three bars 4px down the button the moment the view was selected. */
-.view-btn[data-view="list"].is-active::before {
-  background: var(--paper);
-  box-shadow: 0 -4px 0 var(--paper), 0 4px 0 var(--paper);
 }
 
 /* List View Container */
@@ -1972,6 +2010,23 @@ html:lang(zh-Hans) .title-bar h2 {
 .finder-list-row.is-selected {
   background: var(--system-selection-bg, var(--selection-bg));
   color: var(--system-selection-fg, var(--selection-fg));
+}
+
+/* Whose highlight it is. An appearance that projects
+   `selectionModel="key-window"` (macOS 11 and later) reserves the accent for
+   the front window, so the same row goes neutral behind another window, the way
+   the Finder's does. Every list in the desk routes its selection through
+   --system-selection-*, so one re-value on the window covers the Finder list,
+   the browsers and the trash instead of a rule per surface — and the pair moves
+   together, neutral fill under neutral ink.
+
+   Measured before this rule: a background Project Hard Disk kept its selected
+   row at rgb(0,105,217) with white text while its title bar had already gone
+   inactive. After: rgba(0,0,0,0.1) with the document ink in the light mode, and
+   rgba(255,255,255,0.17) under the light ink in the dark mode. */
+body[data-selection-model="key-window"] .window[data-window]:not(.is-active) {
+  --system-selection-bg: var(--sidebar-selection-bg);
+  --system-selection-fg: var(--sidebar-selection-fg);
 }
 
 .finder-citation-jump {
@@ -3624,6 +3679,12 @@ select:focus {
   background: var(--btn-hover-bg);
   color: var(--btn-hover-fg);
   box-shadow: var(--btn-hover-shadow);
+  /* A hover must not leave a press transform behind: this declaration used to
+     live in the responsive sheet's byte-identical copy of this rule, which sat
+     later in the cascade and therefore overrode .btn:active — measured
+     2026-09-23, a plain button stayed at the hover fill (rgb(250,250,250))
+     through a real mouse-down. The state belongs with the rest of the rule. */
+  transform: none;
 }
 
 /* Default actions can own a distinct hover while every era keeps using the
@@ -3646,6 +3707,39 @@ select:focus {
 .btn.default:focus-visible {
   outline: var(--btn-default-focus-outline, var(--control-focus-outline));
   outline-offset: var(--control-focus-offset);
+}
+
+/* The Return mark (NeXTSTEP 3.3, NS04): the default button says, on itself,
+   that Return will press it. Two things make that an honest mark rather than
+   decoration --
+
+   1. it is drawn only inside a dialog whose Return key is really wired to its
+      default button (`data-enter-default-wired`, set where that wiring
+      happens: modal.js's showSystemModal and wireDialogEnterDefault). An
+      ordinary window's default button has no Return path here, so it carries
+      nothing;
+   2. it is absolutely positioned, so an era that sets no glyph renders an
+      empty box that cannot widen the button or move its label.
+
+   The glyph itself is a token: an appearance that marks its buttons sets
+   --btn-default-return-mark, and this rule never learns which appearance did. */
+dialog[data-enter-default-wired="true"] .btn.default:not([data-loading="true"])::after {
+  content: var(--btn-default-return-mark, "");
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.85em;
+  line-height: 1;
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+.btn.default {
+  /* The Return mark below is absolutely positioned, so the button has to be
+     its containing block. (A busy button already positions itself: see
+     `.btn[data-loading="true"]`.) */
+  position: relative;
 }
 
 .btn.is-active,
@@ -3690,7 +3784,13 @@ select:focus {
   max-width: 100%;
 }
 
-.btn:active:not(:disabled):not(.is-disabled) {
+/* The pressed state has to carry at least the hover rule's specificity, or the
+   higher-specificity hover chain above wins while the pointer is down and a
+   press never looks pressed. Measured before this: Big Sur's Searcher Search
+   button stayed at the hover fill (rgb(8,116,226)) through a real mouse-down;
+   after, it takes --btn-default-active-bg (rgb(0,88,186)) and the plain button
+   takes --btn-active-bg. */
+.btn:active:not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected) {
   background: var(--btn-active-bg);
   color: var(--btn-active-fg);
   transform: none;
@@ -3738,7 +3838,7 @@ select:focus {
   box-shadow: var(--btn-default-shadow);
 }
 
-.btn.default:active:not(:disabled):not(.is-disabled) {
+.btn.default:active:not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected) {
   background: var(--btn-default-active-bg);
   color: var(--btn-default-active-fg);
 }
@@ -4481,7 +4581,7 @@ body.is-cloud-configured .cloud-state-panel {
 
 .control-footer {
   padding: 5px 7px;
-  border: var(--system-control-line) solid var(--ink);
+  border: var(--control-footer-border, var(--system-control-line) solid var(--ink));
   background: var(--control-footer-bg);
 }
 
@@ -4974,8 +5074,29 @@ body.is-cloud-configured .cloud-state-panel {
   color: var(--find-path-result-detail-color);
 }
 
+/* Two lines of snippet per row so a list is scannable; the selected row
+   shows the whole snippet. */
 .find-path-result p {
+  display: -webkit-box;
+  margin: 3px 0 0;
+  overflow: hidden;
   color: var(--find-path-result-body-color);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.find-path-result.is-selected p {
+  display: block;
+}
+
+/* Synthesize reads all the results, so it stands apart from the verbs that
+   hand one result on. */
+.find-path-actions > #synthesize-find-path {
+  margin-inline-end: auto;
+}
+
+.find-path-send-menu {
+  position: relative;
 }
 
 .find-path-result:hover strong {

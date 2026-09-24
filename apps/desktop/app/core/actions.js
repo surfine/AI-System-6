@@ -928,7 +928,7 @@ async function exportTeachTextToProjectCd() {
 
 async function printMarkdownToSlidesFromMenu() {
   await ensureSlidesExportModule();
-  printActiveMarkdownToSlides();
+  await printSlidesWithSetup();
 }
 
 async function printMarkdownToSlidesAiFromMenu() {
@@ -1719,7 +1719,7 @@ window.AISystem6Runtime?.registerCommand?.("open-teachtext",{handler:openTeachTe
 // built. One row per route: a fifth disk is a string in this list, not a fifth
 // registration, which is what makes the writing route's advice ("adding a disk
 // is one entry") true of the boot payload too.
-"dtk ipad1 m5ipad iphone17e bongo glass ipad97 airbattery pm17 sympathy ceramic macpro19 pocket iphone6sp sleeve pm12 pm11 m5mba mbneo mini7 mkb sd ios19 ipada4 ip16p mgscrap t2nic airtrans ip4sdemo airact touch2 noport cdma4 iphone17".split(" ").forEach((route)=>window.AISystem6Runtime?.registerCommand?.(`open-shared-disk-${route}`,{handler:()=>openSharedProjectDisk(route),isAvailable:()=>!0}));
+"dtk ipad1 m5ipad iphone17e bongo glass ipad97 airbattery pm17 sympathy ceramic macpro19 pocket iphone6sp sleeve pm12 pm11 m5mba mbneo mini7 mkb sd ios19 ipada4 ip16p mgscrap t2nic airtrans ip4sdemo airact touch2 noport cdma4 iphone17 windowshade".split(" ").forEach((route)=>window.AISystem6Runtime?.registerCommand?.(`open-shared-disk-${route}`,{handler:()=>openSharedProjectDisk(route),isAvailable:()=>!0}));
 window.AISystem6Runtime?.registerCommand?.("open-finishing-receipt",{handler:()=>openFinishingReceiptForSelection(),isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-clio-attachment-picker",{handler:beginClioTalkAttachmentPicker,isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-clio-image-picker",{handler:openClioImagePicker,isAvailable:()=>!0});
@@ -1819,4 +1819,4 @@ window.AISystem6Runtime?.registerCommand?.("open-droplet",{handler:({dropletId="
 window.AISystem6Runtime?.registerCommand?.("open-control-strip-module",{handler:({controlStripModuleId})=>{ensureControlStripModulesFolderModule().then(()=>window.AISystem6ControlStripModulesFolder?.openModule?.(controlStripModuleId)).catch(error=>console.warn("Control Strip Modules folder unavailable.",error));},isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-ai-connection-settings",{handler:()=>handleAction("open-cloud-ai-settings"),isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-selected-find-file",{handler:async()=>{await ensureFindPathModule();openSelectedFindFileResult();},isAvailable:()=>!0});
-window.AISystem6Runtime?.registerCommand?.("open-selected-in-reader",{handler:()=>{if(selectedFindPathIndex===null){setStatus(t("select_find_path_first"));return}const result=findPathResults[selectedFindPathIndex];if(!result?.url)return;readerUrlInput.value=result.url;openWindow("reader");fetchReaderPage();},isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-selected-in-reader",{handler:()=>{if(selectedFindPathIndex===null){setStatus(t("select_find_path_first"));return}const result=findPathResults[selectedFindPathIndex];if(!result?.url)return;readerUrlInput.value=result.url;openWindow("reader");fetchReaderPage();},isAvailable:()=>selectedFindPathIndex!==null&&!!findPathResults[selectedFindPathIndex]?.url});

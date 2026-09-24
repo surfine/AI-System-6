@@ -25,9 +25,7 @@ test.assertIncludes(
   "background: var(--liquid-disabled-control-bg);",
   "the shared disabled-control rule reads its surface from a scoped token",
 );
-for (const themeId of ["classic", "platinum", "aqua", "snow-leopard", "yosemite", "liquid-glass"]) {
-  test.assertIncludes(menus, `themeId: "${themeId}"`, `Special → Appearance exposes ${themeId}`);
-}
+test.assertIncludes(menus, "getReleaseReadyThemes()", "Special → Appearance exposes every release-ready registry appearance");
 test.assertNotIncludes(menus, 'themeId: "unknown-theme"', "Special → Appearance never fabricates an unregistered theme");
 test.assertIncludes(menus, 'submenu("appearance", appearanceItems)', "Special owns one Appearance submenu instead of a second theme system");
 

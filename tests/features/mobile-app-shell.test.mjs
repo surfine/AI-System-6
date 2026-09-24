@@ -109,12 +109,12 @@ test.assertIncludes(
 );
 test.assertIncludes(
   responsive,
-  ".find-path-pane > .button-row:last-child {\n    display: grid;\n    grid-template-columns: repeat(4, minmax(0, 1fr));",
+  ".find-path-pane > .button-row:last-child {\n    display: grid;\n    grid-auto-columns: minmax(0, 1fr);\n    grid-auto-flow: column;",
   "Searcher keeps handoff actions on one row so results remain the main surface"
 );
 test.assertIncludes(
   readerStyles,
-  ".reader-pane:has(#reader-docmap-button:not(:disabled)) .reader-url-row,",
+  '.reader-pane[data-reader-state="loaded"]:not([data-reader-entry="open"]) > .reader-toolbar {',
   "Reader removes source-entry chrome after a document is open on phone and desktop"
 );
 test.assertIncludes(

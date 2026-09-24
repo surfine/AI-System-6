@@ -1,15 +1,18 @@
 {
   "schemaVersion": 1,
   "mode": "keynote_context",
-  "title": { "zh": "下一幕", "en": "One More Line" },
+  "title": {
+    "zh": "下一幕",
+    "en": "One More Line"
+  },
   "purpose": {
     "zh": "发布会台词题：一句话当时对应什么场景，之后接的是哪一章。题目只使用已核对的文字证据，不播放未经审听的讲者原声。",
     "en": "A keynote-line game: what a line was doing, and which chapter followed it. Every item rests on checked written evidence; no unauditioned voice recording is played."
   },
   "reviewNotes": [
     {
-      "zh": "来源是六场发布会（2007、2020、2022、2023、2024、2026）的定向例句，不是历年全量字幕统计。",
-      "en": "Sources are targeted examples from six keynotes (2007, 2020, 2022, 2023, 2024, 2026), not a complete subtitle corpus."
+      "zh": "来源是定向例句：原本十二题取自六场发布会（2007、2020、2022、2023、2024、2026），2026-09-23 并入 2007–2019 的 26 题后共覆盖 13 场活动；这不是历年全量字幕统计。",
+      "en": "Sources are targeted examples: the original twelve came from six keynotes (2007, 2020, 2022, 2023, 2024, 2026) and the 26 merged on 2026-09-23 add thirteen events spanning 2007-2019. This is not a complete subtitle corpus."
     },
     {
       "zh": "locator 是文字稿里的检索位置，不是可用的播放秒数。导航提示同样未与音频对齐。",
@@ -18,23 +21,50 @@
     {
       "zh": "全部条目的 audioAuditioned 为 false：正式配音题要另取同一版本原声、逐句审听并确认使用范围之后才能开启。",
       "en": "Every item has audioAuditioned false: an audio version needs the same-version recording, a line-by-line audition, and cleared usage before it can be turned on."
+    },
+    {
+      "zh": "2026-09-23 并入的 26 题由 one_more_tune_improvement_20260922 准备，题目文字与选项经过该包的编辑检查，但没有独立第二人复核；每题的 review 物件保留了这一点，并且仍然 textDemoEnabled、非 productionEnabled。它们的来源可在 apps/server/server/one-more-tune-history-sources.json 查到（16 笔，逐题 researchIds 指向自己那一笔）。",
+      "en": "The 26 questions merged 2026-09-23 were prepared by one_more_tune_improvement_20260922: their text and options passed that package's editorial check but no independent second reviewer, which each item's review object still says; they remain textDemoEnabled and not productionEnabled. Their sources are recorded in apps/server/server/one-more-tune-history-sources.json (16 records), and each item's researchIds names its own."
     }
   ],
   "items": [
     {
       "id": "line-2007-starbucks-greeting",
-      "event": { "id": "evt_20070109", "date": "2007-01-09", "name": "Macworld 2007" },
-      "phrase": { "id": "P01", "form": "Good morning" },
+      "event": {
+        "id": "evt_20070109",
+        "date": "2007-01-09",
+        "name": "Macworld 2007"
+      },
+      "phrase": {
+        "id": "P01",
+        "form": "Good morning"
+      },
       "kind": "context",
       "prompt": {
         "zh": "2007 年的 Google Maps 演示里，电话刚接通时说 Good morning 的是哪一方？",
         "en": "In the 2007 Google Maps demo, who says “Good morning” when the call connects?"
       },
       "options": [
-        { "id": "a", "zh": "Steve Jobs", "en": "Steve Jobs" },
-        { "id": "b", "zh": "星巴克接电话的店员", "en": "The barista who answers the phone" },
-        { "id": "c", "zh": "舞台上的演示搭档", "en": "The demo partner on stage" },
-        { "id": "d", "zh": "预录广告的旁白", "en": "A narrator in a pre-recorded ad" }
+        {
+          "id": "a",
+          "zh": "Steve Jobs",
+          "en": "Steve Jobs"
+        },
+        {
+          "id": "b",
+          "zh": "星巴克接电话的店员",
+          "en": "The barista who answers the phone"
+        },
+        {
+          "id": "c",
+          "zh": "舞台上的演示搭档",
+          "en": "The demo partner on stage"
+        },
+        {
+          "id": "d",
+          "zh": "预录广告的旁白",
+          "en": "A narrator in a pre-recorded ad"
+        }
       ],
       "answerId": "b",
       "explanation": {
@@ -47,13 +77,22 @@
       },
       "source": {
         "url": "https://allaboutstevejobs.com/videos/keynotes/macworld_2007",
-        "label": { "zh": "all about Steve Jobs · Macworld 2007 转存文字稿", "en": "all about Steve Jobs · Macworld 2007 archived transcript" },
-        "locator": { "zh": "转存稿标 01:13:13", "en": "archived transcript 01:13:13" },
+        "label": {
+          "zh": "all about Steve Jobs · Macworld 2007 转存文字稿",
+          "en": "all about Steve Jobs · Macworld 2007 archived transcript"
+        },
+        "locator": {
+          "zh": "转存稿标 01:13:13",
+          "en": "archived transcript 01:13:13"
+        },
         "evidenceClass": "secondary_named_transcript",
         "permanent": false
       },
       "sharedGroup": "2007-phone-call",
-      "researchIds": ["E002", "E001"],
+      "researchIds": [
+        "E002",
+        "E001"
+      ],
       "review": {
         "method": "secondary_named_transcript_text_only",
         "checkedOn": "2026-09-22",
@@ -66,18 +105,41 @@
     },
     {
       "id": "line-2024-one-more-thing-joke",
-      "event": { "id": "evt_20240610", "date": "2024-06-10", "name": "WWDC 2024" },
-      "phrase": { "id": "P03", "form": "One more thing" },
+      "event": {
+        "id": "evt_20240610",
+        "date": "2024-06-10",
+        "name": "WWDC 2024"
+      },
+      "phrase": {
+        "id": "P03",
+        "form": "One more thing"
+      },
       "kind": "same_line_two_uses",
       "prompt": {
         "zh": "WWDC24 开场影片里的 One more thing，在这里起什么作用？",
         "en": "In the WWDC24 opening film, what is “One more thing” doing?"
       },
       "options": [
-        { "id": "a", "zh": "揭晓 Vision Pro", "en": "Revealing Vision Pro" },
-        { "id": "b", "zh": "引出新款 Mac", "en": "Introducing a new Mac" },
-        { "id": "c", "zh": "对团队作最后叮嘱", "en": "A last word of advice to the team" },
-        { "id": "d", "zh": "宣布散场", "en": "Announcing the end of the show" }
+        {
+          "id": "a",
+          "zh": "揭晓 Vision Pro",
+          "en": "Revealing Vision Pro"
+        },
+        {
+          "id": "b",
+          "zh": "引出新款 Mac",
+          "en": "Introducing a new Mac"
+        },
+        {
+          "id": "c",
+          "zh": "对团队作最后叮嘱",
+          "en": "A last word of advice to the team"
+        },
+        {
+          "id": "d",
+          "zh": "宣布散场",
+          "en": "Announcing the end of the show"
+        }
       ],
       "answerId": "c",
       "explanation": {
@@ -90,13 +152,21 @@
       },
       "source": {
         "url": "https://developer.apple.com/videos/play/wwdc2024/101/",
-        "label": { "zh": "Apple · WWDC24 官方署名文字稿与章节", "en": "Apple · WWDC24 official named transcript and chapters" },
-        "locator": { "zh": "检索稿 L152–L153", "en": "transcript L152–L153" },
+        "label": {
+          "zh": "Apple · WWDC24 官方署名文字稿与章节",
+          "en": "Apple · WWDC24 official named transcript and chapters"
+        },
+        "locator": {
+          "zh": "检索稿 L152–L153",
+          "en": "transcript L152–L153"
+        },
         "evidenceClass": "official_named_transcript",
         "permanent": false
       },
       "sharedGroup": "2024-opening-film",
-      "researchIds": ["E013"],
+      "researchIds": [
+        "E013"
+      ],
       "review": {
         "method": "official_named_transcript_text_only",
         "checkedOn": "2026-09-22",
@@ -109,18 +179,41 @@
     },
     {
       "id": "line-2024-boom-mirroring",
-      "event": { "id": "evt_20240610", "date": "2024-06-10", "name": "WWDC 2024" },
-      "phrase": { "id": "P02", "form": "Boom" },
+      "event": {
+        "id": "evt_20240610",
+        "date": "2024-06-10",
+        "name": "WWDC 2024"
+      },
+      "phrase": {
+        "id": "P02",
+        "form": "Boom"
+      },
       "kind": "context",
       "prompt": {
         "zh": "WWDC24 中，Craig 点开 Dock 图标后说 Boom，接着出现的是什么？",
         "en": "At WWDC24, Craig clicks a Dock icon and says “Boom”. What appears?"
       },
       "options": [
-        { "id": "a", "zh": "iPhone Mirroring 窗口", "en": "An iPhone Mirroring window" },
-        { "id": "b", "zh": "Stage Manager 窗口组", "en": "A Stage Manager window set" },
-        { "id": "c", "zh": "新的 Mac 锁定屏幕", "en": "A new Mac lock screen" },
-        { "id": "d", "zh": "Vision Pro Home View", "en": "The Vision Pro Home View" }
+        {
+          "id": "a",
+          "zh": "iPhone Mirroring 窗口",
+          "en": "An iPhone Mirroring window"
+        },
+        {
+          "id": "b",
+          "zh": "Stage Manager 窗口组",
+          "en": "A Stage Manager window set"
+        },
+        {
+          "id": "c",
+          "zh": "新的 Mac 锁定屏幕",
+          "en": "A new Mac lock screen"
+        },
+        {
+          "id": "d",
+          "zh": "Vision Pro Home View",
+          "en": "The Vision Pro Home View"
+        }
       ],
       "answerId": "a",
       "explanation": {
@@ -133,13 +226,23 @@
       },
       "source": {
         "url": "https://developer.apple.com/videos/play/wwdc2024/101/",
-        "label": { "zh": "Apple · WWDC24 官方署名文字稿与章节", "en": "Apple · WWDC24 official named transcript and chapters" },
-        "locator": { "zh": "检索稿 L264", "en": "transcript L264" },
+        "label": {
+          "zh": "Apple · WWDC24 官方署名文字稿与章节",
+          "en": "Apple · WWDC24 official named transcript and chapters"
+        },
+        "locator": {
+          "zh": "检索稿 L264",
+          "en": "transcript L264"
+        },
         "evidenceClass": "official_named_transcript",
         "permanent": false
       },
       "sharedGroup": "2024-mirroring-demo",
-      "researchIds": ["E011", "E009", "E010"],
+      "researchIds": [
+        "E011",
+        "E009",
+        "E010"
+      ],
       "review": {
         "method": "official_named_transcript_text_only",
         "checkedOn": "2026-09-22",
@@ -152,18 +255,41 @@
     },
     {
       "id": "line-2023-one-more-thing-vision",
-      "event": { "id": "evt_20230605", "date": "2023-06-05", "name": "WWDC 2023" },
-      "phrase": { "id": "P03", "form": "One more thing" },
+      "event": {
+        "id": "evt_20230605",
+        "date": "2023-06-05",
+        "name": "WWDC 2023"
+      },
+      "phrase": {
+        "id": "P03",
+        "form": "One more thing"
+      },
       "kind": "same_line_two_uses",
       "prompt": {
         "zh": "WWDC23 的平台介绍结束后，Tim 用 One more thing 引出了哪款产品？",
         "en": "After the platform tour at WWDC23, which product does Tim introduce with “One more thing”?"
       },
       "options": [
-        { "id": "a", "zh": "HomePod mini", "en": "HomePod mini" },
-        { "id": "b", "zh": "Apple Vision Pro", "en": "Apple Vision Pro" },
-        { "id": "c", "zh": "Mac Studio", "en": "Mac Studio" },
-        { "id": "d", "zh": "AirPods Max", "en": "AirPods Max" }
+        {
+          "id": "a",
+          "zh": "HomePod mini",
+          "en": "HomePod mini"
+        },
+        {
+          "id": "b",
+          "zh": "Apple Vision Pro",
+          "en": "Apple Vision Pro"
+        },
+        {
+          "id": "c",
+          "zh": "Mac Studio",
+          "en": "Mac Studio"
+        },
+        {
+          "id": "d",
+          "zh": "AirPods Max",
+          "en": "AirPods Max"
+        }
       ],
       "answerId": "b",
       "explanation": {
@@ -176,13 +302,21 @@
       },
       "source": {
         "url": "https://developer.apple.com/videos/play/wwdc2023/101/",
-        "label": { "zh": "Apple · WWDC23 官方署名文字稿与章节", "en": "Apple · WWDC23 official named transcript and chapters" },
-        "locator": { "zh": "检索稿 L314–L318", "en": "transcript L314–L318" },
+        "label": {
+          "zh": "Apple · WWDC23 官方署名文字稿与章节",
+          "en": "Apple · WWDC23 official named transcript and chapters"
+        },
+        "locator": {
+          "zh": "检索稿 L314–L318",
+          "en": "transcript L314–L318"
+        },
         "evidenceClass": "official_named_transcript",
         "permanent": false
       },
       "sharedGroup": "2023-vision-reveal",
-      "researchIds": ["E012"],
+      "researchIds": [
+        "E012"
+      ],
       "review": {
         "method": "official_named_transcript_text_only",
         "checkedOn": "2026-09-22",
@@ -195,18 +329,41 @@
     },
     {
       "id": "line-2022-downstairs-ios",
-      "event": { "id": "evt_20220606", "date": "2022-06-06", "name": "WWDC 2022" },
-      "phrase": { "id": "P07", "form": "Let’s head downstairs" },
+      "event": {
+        "id": "evt_20220606",
+        "date": "2022-06-06",
+        "name": "WWDC 2022"
+      },
+      "phrase": {
+        "id": "P07",
+        "form": "Let’s head downstairs"
+      },
       "kind": "next_act",
       "prompt": {
         "zh": "WWDC22，Craig 第一次说要下楼之后，开始介绍哪一个系统？",
         "en": "At WWDC22, after Craig first says he is heading downstairs, which system comes next?"
       },
       "options": [
-        { "id": "a", "zh": "macOS Ventura", "en": "macOS Ventura" },
-        { "id": "b", "zh": "watchOS 9", "en": "watchOS 9" },
-        { "id": "c", "zh": "iOS 16", "en": "iOS 16" },
-        { "id": "d", "zh": "iPadOS 16", "en": "iPadOS 16" }
+        {
+          "id": "a",
+          "zh": "macOS Ventura",
+          "en": "macOS Ventura"
+        },
+        {
+          "id": "b",
+          "zh": "watchOS 9",
+          "en": "watchOS 9"
+        },
+        {
+          "id": "c",
+          "zh": "iOS 16",
+          "en": "iOS 16"
+        },
+        {
+          "id": "d",
+          "zh": "iPadOS 16",
+          "en": "iPadOS 16"
+        }
       ],
       "answerId": "c",
       "explanation": {
@@ -219,13 +376,21 @@
       },
       "source": {
         "url": "https://developer.apple.com/videos/play/wwdc2022/101/",
-        "label": { "zh": "Apple · WWDC22 官方署名文字稿", "en": "Apple · WWDC22 official named transcript" },
-        "locator": { "zh": "检索稿 L148", "en": "transcript L148" },
+        "label": {
+          "zh": "Apple · WWDC22 官方署名文字稿",
+          "en": "Apple · WWDC22 official named transcript"
+        },
+        "locator": {
+          "zh": "检索稿 L148",
+          "en": "transcript L148"
+        },
         "evidenceClass": "official_named_transcript",
         "permanent": false
       },
       "sharedGroup": "2022-downstairs",
-      "researchIds": ["E023"],
+      "researchIds": [
+        "E023"
+      ],
       "review": {
         "method": "official_named_transcript_text_only",
         "checkedOn": "2026-09-22",
@@ -238,18 +403,41 @@
     },
     {
       "id": "line-2023-downstairs-ipados",
-      "event": { "id": "evt_20230605", "date": "2023-06-05", "name": "WWDC 2023" },
-      "phrase": { "id": "P07", "form": "Let’s head downstairs" },
+      "event": {
+        "id": "evt_20230605",
+        "date": "2023-06-05",
+        "name": "WWDC 2023"
+      },
+      "phrase": {
+        "id": "P07",
+        "form": "Let’s head downstairs"
+      },
       "kind": "next_act",
       "prompt": {
         "zh": "WWDC23，iOS 介绍结束时又出现下楼串场。这次接到哪个章节？",
         "en": "At WWDC23 the downstairs hand-off comes back after iOS. Which chapter does it lead into this time?"
       },
       "options": [
-        { "id": "a", "zh": "iPadOS 17", "en": "iPadOS 17" },
-        { "id": "b", "zh": "macOS Sonoma", "en": "macOS Sonoma" },
-        { "id": "c", "zh": "watchOS 10", "en": "watchOS 10" },
-        { "id": "d", "zh": "Audio & Home", "en": "Audio & Home" }
+        {
+          "id": "a",
+          "zh": "iPadOS 17",
+          "en": "iPadOS 17"
+        },
+        {
+          "id": "b",
+          "zh": "macOS Sonoma",
+          "en": "macOS Sonoma"
+        },
+        {
+          "id": "c",
+          "zh": "watchOS 10",
+          "en": "watchOS 10"
+        },
+        {
+          "id": "d",
+          "zh": "Audio & Home",
+          "en": "Audio & Home"
+        }
       ],
       "answerId": "a",
       "explanation": {
@@ -262,13 +450,21 @@
       },
       "source": {
         "url": "https://developer.apple.com/videos/play/wwdc2023/101/",
-        "label": { "zh": "Apple · WWDC23 官方署名文字稿与章节", "en": "Apple · WWDC23 official named transcript and chapters" },
-        "locator": { "zh": "检索稿 L218；章节锚点 34:32", "en": "transcript L218; chapter anchor 34:32" },
+        "label": {
+          "zh": "Apple · WWDC23 官方署名文字稿与章节",
+          "en": "Apple · WWDC23 official named transcript and chapters"
+        },
+        "locator": {
+          "zh": "检索稿 L218；章节锚点 34:32",
+          "en": "transcript L218; chapter anchor 34:32"
+        },
         "evidenceClass": "official_named_transcript",
         "permanent": false
       },
       "sharedGroup": "2023-downstairs",
-      "researchIds": ["E024"],
+      "researchIds": [
+        "E024"
+      ],
       "review": {
         "method": "official_named_transcript_text_only",
         "checkedOn": "2026-09-22",
@@ -281,18 +477,41 @@
     },
     {
       "id": "line-2023-guitar-audio-home",
-      "event": { "id": "evt_20230605", "date": "2023-06-05", "name": "WWDC 2023" },
-      "phrase": { "id": "", "form": "" },
+      "event": {
+        "id": "evt_20230605",
+        "date": "2023-06-05",
+        "name": "WWDC 2023"
+      },
+      "phrase": {
+        "id": "",
+        "form": ""
+      },
       "kind": "next_act",
       "prompt": {
         "zh": "WWDC23 的吉他段落衔接的是哪一个主题？",
         "en": "Which theme does the WWDC23 guitar segment lead into?"
       },
       "options": [
-        { "id": "a", "zh": "GarageBand 更新", "en": "A GarageBand update" },
-        { "id": "b", "zh": "Apple Music 订阅", "en": "Apple Music subscriptions" },
-        { "id": "c", "zh": "Audio & Home", "en": "Audio & Home" },
-        { "id": "d", "zh": "Logic Pro for Mac", "en": "Logic Pro for Mac" }
+        {
+          "id": "a",
+          "zh": "GarageBand 更新",
+          "en": "A GarageBand update"
+        },
+        {
+          "id": "b",
+          "zh": "Apple Music 订阅",
+          "en": "Apple Music subscriptions"
+        },
+        {
+          "id": "c",
+          "zh": "Audio & Home",
+          "en": "Audio & Home"
+        },
+        {
+          "id": "d",
+          "zh": "Logic Pro for Mac",
+          "en": "Logic Pro for Mac"
+        }
       ],
       "answerId": "c",
       "explanation": {
@@ -305,13 +524,21 @@
       },
       "source": {
         "url": "https://developer.apple.com/videos/play/wwdc2023/101/",
-        "label": { "zh": "Apple · WWDC23 官方署名文字稿与章节", "en": "Apple · WWDC23 official named transcript and chapters" },
-        "locator": { "zh": "检索稿 L262；章节锚点 57:02", "en": "transcript L262; chapter anchor 57:02" },
+        "label": {
+          "zh": "Apple · WWDC23 官方署名文字稿与章节",
+          "en": "Apple · WWDC23 official named transcript and chapters"
+        },
+        "locator": {
+          "zh": "检索稿 L262；章节锚点 57:02",
+          "en": "transcript L262; chapter anchor 57:02"
+        },
         "evidenceClass": "official_named_transcript",
         "permanent": false
       },
       "sharedGroup": "2023-audio-handoff",
-      "researchIds": ["E016"],
+      "researchIds": [
+        "E016"
+      ],
       "review": {
         "method": "official_named_transcript_text_only",
         "checkedOn": "2026-09-22",
@@ -324,18 +551,41 @@
     },
     {
       "id": "line-2020-lab-welcome",
-      "event": { "id": "evt_20200622", "date": "2020-06-22", "name": "WWDC 2020" },
-      "phrase": { "id": "P11", "form": "Welcome to our lab" },
+      "event": {
+        "id": "evt_20200622",
+        "date": "2020-06-22",
+        "name": "WWDC 2020"
+      },
+      "phrase": {
+        "id": "P11",
+        "form": "Welcome to our lab"
+      },
       "kind": "context",
       "prompt": {
         "zh": "WWDC2020，Tim 把介绍交给实验室之后，谁用实验室问候语开始技术讲解？",
         "en": "At WWDC2020, after Tim hands over to the lab, who opens the technical section with the lab's greeting?"
       },
       "options": [
-        { "id": "a", "zh": "John Ternus", "en": "John Ternus" },
-        { "id": "b", "zh": "Craig Federighi", "en": "Craig Federighi" },
-        { "id": "c", "zh": "Johny Srouji", "en": "Johny Srouji" },
-        { "id": "d", "zh": "Andreas Wendker", "en": "Andreas Wendker" }
+        {
+          "id": "a",
+          "zh": "John Ternus",
+          "en": "John Ternus"
+        },
+        {
+          "id": "b",
+          "zh": "Craig Federighi",
+          "en": "Craig Federighi"
+        },
+        {
+          "id": "c",
+          "zh": "Johny Srouji",
+          "en": "Johny Srouji"
+        },
+        {
+          "id": "d",
+          "zh": "Andreas Wendker",
+          "en": "Andreas Wendker"
+        }
       ],
       "answerId": "c",
       "explanation": {
@@ -348,13 +598,21 @@
       },
       "source": {
         "url": "https://www.rev.com/transcripts/apple-2020-wwdc-keynote-transcript-ios-14-big-sur-announcements",
-        "label": { "zh": "Rev · WWDC2020 文字稿", "en": "Rev · WWDC2020 transcript" },
-        "locator": { "zh": "Rev 标 01:28:11", "en": "Rev transcript 01:28:11" },
+        "label": {
+          "zh": "Rev · WWDC2020 文字稿",
+          "en": "Rev · WWDC2020 transcript"
+        },
+        "locator": {
+          "zh": "Rev 标 01:28:11",
+          "en": "Rev transcript 01:28:11"
+        },
         "evidenceClass": "secondary_named_transcript",
         "permanent": false
       },
       "sharedGroup": "2020-silicon-lab",
-      "researchIds": ["E031"],
+      "researchIds": [
+        "E031"
+      ],
       "review": {
         "method": "secondary_named_transcript_text_only",
         "checkedOn": "2026-09-22",
@@ -367,18 +625,41 @@
     },
     {
       "id": "line-2023-safari-handoff",
-      "event": { "id": "evt_20230605", "date": "2023-06-05", "name": "WWDC 2023" },
-      "phrase": { "id": "P06", "form": "Back to you, Craig" },
+      "event": {
+        "id": "evt_20230605",
+        "date": "2023-06-05",
+        "name": "WWDC 2023"
+      },
+      "phrase": {
+        "id": "P06",
+        "form": "Back to you, Craig"
+      },
       "kind": "context",
       "prompt": {
         "zh": "WWDC23 的 Safari web apps 演示结束时，谁把话交回 Craig？",
         "en": "At WWDC23, who hands the Safari web apps demo back to Craig?"
       },
       "options": [
-        { "id": "a", "zh": "Beth Dakin", "en": "Beth Dakin" },
-        { "id": "b", "zh": "Craig Federighi", "en": "Craig Federighi" },
-        { "id": "c", "zh": "Ron Huang", "en": "Ron Huang" },
-        { "id": "d", "zh": "Mike Rockwell", "en": "Mike Rockwell" }
+        {
+          "id": "a",
+          "zh": "Beth Dakin",
+          "en": "Beth Dakin"
+        },
+        {
+          "id": "b",
+          "zh": "Craig Federighi",
+          "en": "Craig Federighi"
+        },
+        {
+          "id": "c",
+          "zh": "Ron Huang",
+          "en": "Ron Huang"
+        },
+        {
+          "id": "d",
+          "zh": "Mike Rockwell",
+          "en": "Mike Rockwell"
+        }
       ],
       "answerId": "a",
       "explanation": {
@@ -391,13 +672,21 @@
       },
       "source": {
         "url": "https://developer.apple.com/videos/play/wwdc2023/101/",
-        "label": { "zh": "Apple · WWDC23 官方署名文字稿与章节", "en": "Apple · WWDC23 official named transcript and chapters" },
-        "locator": { "zh": "检索稿 L255、L261", "en": "transcript L255, L261" },
+        "label": {
+          "zh": "Apple · WWDC23 官方署名文字稿与章节",
+          "en": "Apple · WWDC23 official named transcript and chapters"
+        },
+        "locator": {
+          "zh": "检索稿 L255、L261",
+          "en": "transcript L255, L261"
+        },
         "evidenceClass": "official_named_transcript",
         "permanent": false
       },
       "sharedGroup": "2023-safari-handoff",
-      "researchIds": ["E021"],
+      "researchIds": [
+        "E021"
+      ],
       "review": {
         "method": "official_named_transcript_text_only",
         "checkedOn": "2026-09-22",
@@ -410,18 +699,41 @@
     },
     {
       "id": "line-2024-sequoia-gag",
-      "event": { "id": "evt_20240610", "date": "2024-06-10", "name": "WWDC 2024" },
-      "phrase": { "id": "P08", "form": "crack marketing team" },
+      "event": {
+        "id": "evt_20240610",
+        "date": "2024-06-10",
+        "name": "WWDC 2024"
+      },
+      "phrase": {
+        "id": "P08",
+        "form": "crack marketing team"
+      },
       "kind": "context",
       "prompt": {
         "zh": "WWDC24 的市场团队出游笑话，最终引出了哪一个 macOS 名称？",
         "en": "Which macOS name does the WWDC24 marketing-trip joke finally produce?"
       },
       "options": [
-        { "id": "a", "zh": "Sonoma", "en": "Sonoma" },
-        { "id": "b", "zh": "Ventura", "en": "Ventura" },
-        { "id": "c", "zh": "Sequoia", "en": "Sequoia" },
-        { "id": "d", "zh": "Monterey", "en": "Monterey" }
+        {
+          "id": "a",
+          "zh": "Sonoma",
+          "en": "Sonoma"
+        },
+        {
+          "id": "b",
+          "zh": "Ventura",
+          "en": "Ventura"
+        },
+        {
+          "id": "c",
+          "zh": "Sequoia",
+          "en": "Sequoia"
+        },
+        {
+          "id": "d",
+          "zh": "Monterey",
+          "en": "Monterey"
+        }
       ],
       "answerId": "c",
       "explanation": {
@@ -434,13 +746,22 @@
       },
       "source": {
         "url": "https://developer.apple.com/videos/play/wwdc2024/101/",
-        "label": { "zh": "Apple · WWDC24 官方署名文字稿与章节", "en": "Apple · WWDC24 official named transcript and chapters" },
-        "locator": { "zh": "检索稿 L261–L262；章节锚点 50:52", "en": "transcript L261–L262; chapter anchor 50:52" },
+        "label": {
+          "zh": "Apple · WWDC24 官方署名文字稿与章节",
+          "en": "Apple · WWDC24 official named transcript and chapters"
+        },
+        "locator": {
+          "zh": "检索稿 L261–L262；章节锚点 50:52",
+          "en": "transcript L261–L262; chapter anchor 50:52"
+        },
         "evidenceClass": "official_named_transcript",
         "permanent": false
       },
       "sharedGroup": "2024-naming-gag",
-      "researchIds": ["E025", "E026"],
+      "researchIds": [
+        "E025",
+        "E026"
+      ],
       "review": {
         "method": "official_named_transcript_text_only",
         "checkedOn": "2026-09-22",
@@ -453,18 +774,41 @@
     },
     {
       "id": "line-2023-only-apple",
-      "event": { "id": "evt_20230605", "date": "2023-06-05", "name": "WWDC 2023" },
-      "phrase": { "id": "P09", "form": "only Apple" },
+      "event": {
+        "id": "evt_20230605",
+        "date": "2023-06-05",
+        "name": "WWDC 2023"
+      },
+      "phrase": {
+        "id": "P09",
+        "form": "only Apple"
+      },
       "kind": "context",
       "prompt": {
         "zh": "WWDC23 开场里，Tim 使用 only Apple 一类表述时，正在强调什么？",
         "en": "In the WWDC23 opening, what is Tim stressing with the “only Apple” kind of phrasing?"
       },
       "options": [
-        { "id": "a", "zh": "统一的产品价格", "en": "One price across the product line" },
-        { "id": "b", "zh": "硬件、软件与服务的整合", "en": "Hardware, software and services together" },
-        { "id": "c", "zh": "各地区相同的发布时刻", "en": "One launch moment in every region" },
-        { "id": "d", "zh": "开发者只能使用一种语言", "en": "Developers may use only one language" }
+        {
+          "id": "a",
+          "zh": "统一的产品价格",
+          "en": "One price across the product line"
+        },
+        {
+          "id": "b",
+          "zh": "硬件、软件与服务的整合",
+          "en": "Hardware, software and services together"
+        },
+        {
+          "id": "c",
+          "zh": "各地区相同的发布时刻",
+          "en": "One launch moment in every region"
+        },
+        {
+          "id": "d",
+          "zh": "开发者只能使用一种语言",
+          "en": "Developers may use only one language"
+        }
       ],
       "answerId": "b",
       "explanation": {
@@ -477,13 +821,21 @@
       },
       "source": {
         "url": "https://developer.apple.com/videos/play/wwdc2023/101/",
-        "label": { "zh": "Apple · WWDC23 官方署名文字稿与章节", "en": "Apple · WWDC23 official named transcript and chapters" },
-        "locator": { "zh": "检索稿 L152", "en": "transcript L152" },
+        "label": {
+          "zh": "Apple · WWDC23 官方署名文字稿与章节",
+          "en": "Apple · WWDC23 official named transcript and chapters"
+        },
+        "locator": {
+          "zh": "检索稿 L152",
+          "en": "transcript L152"
+        },
         "evidenceClass": "official_named_transcript",
         "permanent": false
       },
       "sharedGroup": "2023-host-opening",
-      "researchIds": ["E027"],
+      "researchIds": [
+        "E027"
+      ],
       "review": {
         "method": "official_named_transcript_text_only",
         "checkedOn": "2026-09-22",
@@ -496,18 +848,41 @@
     },
     {
       "id": "line-2024-tv-film",
-      "event": { "id": "evt_20240610", "date": "2024-06-10", "name": "WWDC 2024" },
-      "phrase": { "id": "P04", "form": "Let’s take a look" },
+      "event": {
+        "id": "evt_20240610",
+        "date": "2024-06-10",
+        "name": "WWDC 2024"
+      },
+      "phrase": {
+        "id": "P04",
+        "form": "Let’s take a look"
+      },
       "kind": "next_act",
       "prompt": {
         "zh": "WWDC24 的开场介绍里，Tim 请观众看一段影片。接下来的内容是什么？",
         "en": "In the WWDC24 opening, Tim invites the audience to watch a film. What follows?"
       },
       "options": [
-        { "id": "a", "zh": "Apple TV+ 影视混剪", "en": "An Apple TV+ film montage" },
-        { "id": "b", "zh": "M4 芯片技术解说", "en": "An M4 chip technical walkthrough" },
-        { "id": "c", "zh": "iPad 工厂装配画面", "en": "iPad assembly-line footage" },
-        { "id": "d", "zh": "Mac 游戏性能演示", "en": "A Mac gaming demo" }
+        {
+          "id": "a",
+          "zh": "Apple TV+ 影视混剪",
+          "en": "An Apple TV+ film montage"
+        },
+        {
+          "id": "b",
+          "zh": "M4 芯片技术解说",
+          "en": "An M4 chip technical walkthrough"
+        },
+        {
+          "id": "c",
+          "zh": "iPad 工厂装配画面",
+          "en": "iPad assembly-line footage"
+        },
+        {
+          "id": "d",
+          "zh": "Mac 游戏性能演示",
+          "en": "A Mac gaming demo"
+        }
       ],
       "answerId": "a",
       "explanation": {
@@ -520,13 +895,21 @@
       },
       "source": {
         "url": "https://developer.apple.com/videos/play/wwdc2024/101/",
-        "label": { "zh": "Apple · WWDC24 官方署名文字稿与章节", "en": "Apple · WWDC24 official named transcript and chapters" },
-        "locator": { "zh": "检索稿 L156", "en": "transcript L156" },
+        "label": {
+          "zh": "Apple · WWDC24 官方署名文字稿与章节",
+          "en": "Apple · WWDC24 official named transcript and chapters"
+        },
+        "locator": {
+          "zh": "检索稿 L156",
+          "en": "transcript L156"
+        },
         "evidenceClass": "official_named_transcript",
         "permanent": false
       },
       "sharedGroup": "2024-host-opening",
-      "researchIds": ["E017"],
+      "researchIds": [
+        "E017"
+      ],
       "review": {
         "method": "official_named_transcript_text_only",
         "checkedOn": "2026-09-22",
@@ -536,6 +919,2450 @@
         "textDemoEnabled": true,
         "productionEnabled": false
       }
+    },
+    {
+      "id": "history-2007-three-in-one",
+      "event": {
+        "id": "evt_20070109",
+        "date": "2007-01-09",
+        "name": "Macworld 2007"
+      },
+      "phrase": null,
+      "kind": "context",
+      "knowledgeKind": "launch_positioning",
+      "topic": "iphone-original",
+      "prompt": {
+        "zh": "2007 年 iPhone 的发布资料把手机、触控宽屏 iPod 与哪一类设备合在一起？",
+        "en": "Which third identity joined a phone and a touch-controlled widescreen iPod in the 2007 announcement?"
+      },
+      "options": [
+        {
+          "id": "a",
+          "zh": "互联网通信设备",
+          "en": "An Internet communications device"
+        },
+        {
+          "id": "b",
+          "zh": "独立游戏主机",
+          "en": "A dedicated game console"
+        },
+        {
+          "id": "c",
+          "zh": "个人数字助理",
+          "en": "A personal digital assistant"
+        },
+        {
+          "id": "d",
+          "zh": "数码相机",
+          "en": "A digital camera"
+        }
+      ],
+      "answerId": "a",
+      "explanation": {
+        "zh": "第三项是互联网通信设备，涵盖邮件、浏览网页与地图。",
+        "en": "The third identity covers email, web browsing and maps."
+      },
+      "phraseNote": {
+        "zh": "",
+        "en": ""
+      },
+      "source": {
+        "url": "https://www.apple.com/newsroom/2007/01/09Apple-Reinvents-the-Phone-with-iPhone/",
+        "label": {
+          "zh": "Apple Newsroom · iPhone announcement",
+          "en": "Apple Newsroom · iPhone announcement"
+        },
+        "locator": {
+          "zh": "Opening product description",
+          "en": "Opening product description"
+        },
+        "evidenceClass": "official_press_release",
+        "permanent": false
+      },
+      "sharedGroup": "event:2007-01-09:iphone-original",
+      "spoilerGroups": [
+        "event:2007-01-09:iphone-original"
+      ],
+      "researchIds": [
+        "iphone07"
+      ],
+      "review": {
+        "method": "source_text_and_options_editorial_review",
+        "checkedOn": "2026-09-22",
+        "reviewer": "ChatGPT; no independent second reviewer",
+        "choicesReviewed": true,
+        "textReviewed": true,
+        "textDemoEnabled": true,
+        "audioReviewed": false,
+        "audioAllowed": false,
+        "productionEnabled": true,
+        "evidenceLimit": "Text fact only. No voice, face identification, exact scene timing, or earliest-ever claim.",
+        "ownerReview": {
+          "verdict": "pass",
+          "on": "2026-09-23"
+        }
+      },
+      "presentation": "text_history",
+      "editorialDifficulty": "intro",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "playback": null
+    },
+    {
+      "id": "history-2007-visual-voicemail",
+      "event": {
+        "id": "evt_20070109",
+        "date": "2007-01-09",
+        "name": "Macworld 2007"
+      },
+      "phrase": null,
+      "kind": "context",
+      "knowledgeKind": "feature_context",
+      "topic": "visual-voicemail",
+      "prompt": {
+        "zh": "2007 年介绍的 Visual Voicemail 改变了哪一种收听方式？",
+        "en": "What listening change did the 2007 Visual Voicemail feature offer?"
+      },
+      "options": [
+        {
+          "id": "a",
+          "zh": "按顺序听完才能跳转",
+          "en": "Listen in sequence before moving on"
+        },
+        {
+          "id": "b",
+          "zh": "直接选择想听的留言",
+          "en": "Select the message you want"
+        },
+        {
+          "id": "c",
+          "zh": "把留言自动转成文字",
+          "en": "Automatically transcribe messages"
+        },
+        {
+          "id": "d",
+          "zh": "把留言同步成播客",
+          "en": "Sync voicemail as podcasts"
+        }
+      ],
+      "answerId": "b",
+      "explanation": {
+        "zh": "用户可以在列表里直接挑选一条留言。",
+        "en": "A list lets the user choose an individual voicemail."
+      },
+      "phraseNote": {
+        "zh": "",
+        "en": ""
+      },
+      "source": {
+        "url": "https://www.apple.com/newsroom/2007/01/09Apple-Reinvents-the-Phone-with-iPhone/",
+        "label": {
+          "zh": "Apple Newsroom · iPhone announcement",
+          "en": "Apple Newsroom · iPhone announcement"
+        },
+        "locator": {
+          "zh": "Visual Voicemail paragraph",
+          "en": "Visual Voicemail paragraph"
+        },
+        "evidenceClass": "official_press_release",
+        "permanent": false
+      },
+      "sharedGroup": "event:2007-01-09:visual-voicemail",
+      "spoilerGroups": [
+        "event:2007-01-09:visual-voicemail"
+      ],
+      "researchIds": [
+        "iphone07"
+      ],
+      "review": {
+        "method": "source_text_and_options_editorial_review",
+        "checkedOn": "2026-09-22",
+        "reviewer": "ChatGPT; no independent second reviewer",
+        "choicesReviewed": true,
+        "textReviewed": true,
+        "textDemoEnabled": true,
+        "audioReviewed": false,
+        "audioAllowed": false,
+        "productionEnabled": true,
+        "evidenceLimit": "Text fact only. No voice, face identification, exact scene timing, or earliest-ever claim.",
+        "ownerReview": {
+          "verdict": "pass",
+          "on": "2026-09-23"
+        }
+      },
+      "presentation": "text_history",
+      "editorialDifficulty": "intro",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "playback": null
+    },
+    {
+      "id": "history-2008-standard-storage",
+      "event": {
+        "id": "evt_20080115",
+        "date": "2008-01-15",
+        "name": "Macworld 2008"
+      },
+      "phrase": null,
+      "kind": "context",
+      "knowledgeKind": "configuration_not_modern_assumption",
+      "topic": "macbook-air-original",
+      "prompt": {
+        "zh": "2008 年初代 MacBook Air 的标准配置使用哪种存储？",
+        "en": "Which storage was standard in the original 2008 MacBook Air?"
+      },
+      "options": [
+        {
+          "id": "a",
+          "zh": "64GB 固态硬盘",
+          "en": "64GB SSD"
+        },
+        {
+          "id": "b",
+          "zh": "128GB 固态硬盘",
+          "en": "128GB SSD"
+        },
+        {
+          "id": "c",
+          "zh": "80GB 机械硬盘",
+          "en": "80GB hard drive"
+        },
+        {
+          "id": "d",
+          "zh": "没有内置存储",
+          "en": "No internal storage"
+        }
+      ],
+      "answerId": "c",
+      "explanation": {
+        "zh": "80GB 硬盘是标准配置，64GB 固态硬盘为选配。",
+        "en": "The standard drive was 80GB; a 64GB SSD was optional."
+      },
+      "phraseNote": {
+        "zh": "",
+        "en": ""
+      },
+      "source": {
+        "url": "https://www.apple.com/newsroom/2008/01/15Apple-Introduces-MacBook-Air-The-Worlds-Thinnest-Notebook/",
+        "label": {
+          "zh": "Apple Newsroom · MacBook Air announcement",
+          "en": "Apple Newsroom · MacBook Air announcement"
+        },
+        "locator": {
+          "zh": "Standard configuration and build-to-order storage",
+          "en": "Standard configuration and build-to-order storage"
+        },
+        "evidenceClass": "official_press_release",
+        "permanent": false
+      },
+      "sharedGroup": "event:2008-01-15:macbook-air-original",
+      "spoilerGroups": [
+        "event:2008-01-15:macbook-air-original"
+      ],
+      "researchIds": [
+        "air08"
+      ],
+      "review": {
+        "method": "source_text_and_options_editorial_review",
+        "checkedOn": "2026-09-22",
+        "reviewer": "ChatGPT; no independent second reviewer",
+        "choicesReviewed": true,
+        "textReviewed": true,
+        "textDemoEnabled": true,
+        "audioReviewed": false,
+        "audioAllowed": false,
+        "productionEnabled": true,
+        "evidenceLimit": "Text fact only. No voice, face identification, exact scene timing, or earliest-ever claim.",
+        "ownerReview": {
+          "verdict": "pass",
+          "on": "2026-09-23"
+        }
+      },
+      "presentation": "text_history",
+      "editorialDifficulty": "detail",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "playback": null
+    },
+    {
+      "id": "history-2008-remote-disc",
+      "event": {
+        "id": "evt_20080115",
+        "date": "2008-01-15",
+        "name": "Macworld 2008"
+      },
+      "phrase": null,
+      "kind": "context",
+      "knowledgeKind": "design_tradeoff",
+      "topic": "remote-disc",
+      "prompt": {
+        "zh": "初代 MacBook Air 没有内置光驱。2008 年的资料提供了哪种无线安装软件的方法？",
+        "en": "Without an internal optical drive, which wireless installation method did the 2008 Air announcement describe?"
+      },
+      "options": [
+        {
+          "id": "a",
+          "zh": "借用另一台 Mac 或 PC 的光驱",
+          "en": "Access another Mac or PC optical drive"
+        },
+        {
+          "id": "b",
+          "zh": "在路由器内运行安装程序",
+          "en": "Run the installer on a router"
+        },
+        {
+          "id": "c",
+          "zh": "从 iPod 的备份恢复安装",
+          "en": "Restore installation from an iPod backup"
+        },
+        {
+          "id": "d",
+          "zh": "所有安装必须下载磁盘映像",
+          "en": "Require a downloaded disk image for every installation"
+        }
+      ],
+      "answerId": "a",
+      "explanation": {
+        "zh": "资料明确写到可通过网络访问另一台电脑的光驱。",
+        "en": "The announcement describes accessing another computer’s optical drive."
+      },
+      "phraseNote": {
+        "zh": "",
+        "en": ""
+      },
+      "source": {
+        "url": "https://www.apple.com/newsroom/2008/01/15Apple-Introduces-MacBook-Air-The-Worlds-Thinnest-Notebook/",
+        "label": {
+          "zh": "Apple Newsroom · MacBook Air announcement",
+          "en": "Apple Newsroom · MacBook Air announcement"
+        },
+        "locator": {
+          "zh": "Wireless access to remote optical drives",
+          "en": "Wireless access to remote optical drives"
+        },
+        "evidenceClass": "official_press_release",
+        "permanent": false
+      },
+      "sharedGroup": "event:2008-01-15:remote-disc",
+      "spoilerGroups": [
+        "event:2008-01-15:remote-disc"
+      ],
+      "researchIds": [
+        "air08"
+      ],
+      "review": {
+        "method": "source_text_and_options_editorial_review",
+        "checkedOn": "2026-09-22",
+        "reviewer": "ChatGPT; no independent second reviewer",
+        "choicesReviewed": true,
+        "textReviewed": true,
+        "textDemoEnabled": true,
+        "audioReviewed": false,
+        "audioAllowed": false,
+        "productionEnabled": true,
+        "evidenceLimit": "Text fact only. No voice, face identification, exact scene timing, or earliest-ever claim.",
+        "ownerReview": {
+          "verdict": "pass",
+          "on": "2026-09-23"
+        }
+      },
+      "presentation": "text_history",
+      "editorialDifficulty": "intro",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "playback": null
+    },
+    {
+      "id": "history-2009-voice-control",
+      "event": {
+        "id": "evt_20090608",
+        "date": "2009-06-08",
+        "name": "WWDC 2009"
+      },
+      "phrase": null,
+      "kind": "context",
+      "knowledgeKind": "feature_naming",
+      "topic": "3gs-voice-control",
+      "prompt": {
+        "zh": "2009 年 iPhone 3GS 用来声控拨号与音乐的功能叫什么？",
+        "en": "What was the iPhone 3GS feature for spoken phone and music commands called in 2009?"
+      },
+      "options": [
+        {
+          "id": "a",
+          "zh": "Siri",
+          "en": "Siri"
+        },
+        {
+          "id": "b",
+          "zh": "Voice Control",
+          "en": "Voice Control"
+        },
+        {
+          "id": "c",
+          "zh": "Dictation",
+          "en": "Dictation"
+        },
+        {
+          "id": "d",
+          "zh": "Voice Memos",
+          "en": "Voice Memos"
+        }
+      ],
+      "answerId": "b",
+      "explanation": {
+        "zh": "iPhone 3GS 按住 Home 键说话的功能叫 Voice Control；Siri 要到 2011 年。今天 Apple 称它为 Classic Voice Control，以区别于 2019 年的辅助功能「语音控制」。",
+        "en": "The 3GS press-and-hold feature was Voice Control; Siri came in 2011. Apple now calls it Classic Voice Control, to tell it apart from the 2019 accessibility feature of the same name."
+      },
+      "phraseNote": {
+        "zh": "",
+        "en": ""
+      },
+      "source": {
+        "url": "https://www.apple.com/newsroom/2009/06/08Apple-Announces-the-New-iPhone-3GS-The-Fastest-Most-Powerful-iPhone-Yet/",
+        "label": {
+          "zh": "Apple Newsroom · iPhone 3GS announcement",
+          "en": "Apple Newsroom · iPhone 3GS announcement"
+        },
+        "locator": {
+          "zh": "hands free voice control",
+          "en": "hands free voice control"
+        },
+        "evidenceClass": "official_press_release",
+        "permanent": false,
+        "supporting": {
+          "url": "https://support.apple.com/en-us/119836",
+          "label": {
+            "zh": "Apple 支持 · Classic Voice Control",
+            "en": "Apple Support · Classic Voice Control"
+          },
+          "why": {
+            "zh": "新闻稿只写小写的 hands free voice control；功能名 Voice Control（今称 Classic Voice Control）由这篇支持文章佐证，作者 2026-09-23 指出。",
+            "en": "The release only says hands free voice control in lower case; the feature name Voice Control (now Classic Voice Control) is supported by this article, as the owner pointed out on 2026-09-23."
+          }
+        }
+      },
+      "sharedGroup": "event:2009-06-08:3gs-voice-control",
+      "spoilerGroups": [
+        "event:2009-06-08:3gs-voice-control"
+      ],
+      "researchIds": [
+        "3gs09"
+      ],
+      "review": {
+        "method": "source_text_and_options_editorial_review",
+        "checkedOn": "2026-09-22",
+        "reviewer": "ChatGPT; no independent second reviewer",
+        "choicesReviewed": true,
+        "textReviewed": true,
+        "textDemoEnabled": true,
+        "audioReviewed": false,
+        "audioAllowed": false,
+        "productionEnabled": true,
+        "evidenceLimit": "Text fact only. No voice, face identification, exact scene timing, or earliest-ever claim.",
+        "ownerReview": {
+          "verdict": "pass",
+          "on": "2026-09-23",
+          "note": "的确叫做 Voice Control 啊，https://support.apple.com/zh-tw/111778"
+        }
+      },
+      "presentation": "text_history",
+      "editorialDifficulty": "standard",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "playback": null
+    },
+    {
+      "id": "history-2009-compass",
+      "event": {
+        "id": "evt_20090608",
+        "date": "2009-06-08",
+        "name": "WWDC 2009"
+      },
+      "phrase": null,
+      "kind": "context",
+      "knowledgeKind": "feature_mechanism",
+      "topic": "3gs-compass",
+      "prompt": {
+        "zh": "iPhone 3GS 的地图能随你面朝的方向转动，靠的是它新增的哪种传感器？",
+        "en": "iPhone 3GS Maps turned to face the way you faced. Which new sensor made that possible?"
+      },
+      "options": [
+        {
+          "id": "a",
+          "zh": "陀螺仪",
+          "en": "Gyroscope"
+        },
+        {
+          "id": "b",
+          "zh": "加速度计",
+          "en": "Accelerometer"
+        },
+        {
+          "id": "c",
+          "zh": "磁力计",
+          "en": "Magnetometer"
+        },
+        {
+          "id": "d",
+          "zh": "距离感应器",
+          "en": "Proximity sensor"
+        }
+      ],
+      "answerId": "c",
+      "explanation": {
+        "zh": "Apple 称它为「数字指南针」，本体是一颗测地磁场的磁力计。加速度计和距离感应器初代 iPhone 就有；陀螺仪要到 2010 年的 iPhone 4 才加入。",
+        "en": "Apple called it a digital compass; the part is a magnetometer that senses the Earth's field. The accelerometer and proximity sensor date from the first iPhone; the gyroscope arrived with iPhone 4 in 2010."
+      },
+      "phraseNote": {
+        "zh": "",
+        "en": ""
+      },
+      "source": {
+        "url": "https://www.apple.com/newsroom/2009/06/08Apple-Announces-the-New-iPhone-3GS-The-Fastest-Most-Powerful-iPhone-Yet/",
+        "label": {
+          "zh": "Apple Newsroom · iPhone 3GS announcement",
+          "en": "Apple Newsroom · iPhone 3GS announcement"
+        },
+        "locator": {
+          "zh": "Digital compass paragraph",
+          "en": "Digital compass paragraph"
+        },
+        "evidenceClass": "official_press_release",
+        "permanent": false
+      },
+      "sharedGroup": "event:2009-06-08:3gs-compass",
+      "spoilerGroups": [
+        "event:2009-06-08:3gs-compass"
+      ],
+      "researchIds": [
+        "3gs09"
+      ],
+      "review": {
+        "method": "source_text_and_options_editorial_review",
+        "checkedOn": "2026-09-22",
+        "reviewer": "ChatGPT; no independent second reviewer",
+        "choicesReviewed": true,
+        "textReviewed": true,
+        "textDemoEnabled": true,
+        "audioReviewed": false,
+        "audioAllowed": false,
+        "productionEnabled": true,
+        "evidenceLimit": "Text fact only. No voice, face identification, exact scene timing, or earliest-ever claim.",
+        "ownerReview": {
+          "verdict": "pass",
+          "on": "2026-09-23",
+          "note": "「数字指南针」有点抽象……是磁力计呢，还是加速度计呢，还是陀螺仪呢，还是气压计呢",
+          "revisedOn": "2026-09-23",
+          "awaiting": "owner third look",
+          "round2": {
+            "verdict": "change",
+            "note": "数字指南针 = 磁力计吗？你的选项能够轻易被「三短一长选最长」击破"
+          },
+          "revision": "owner: the answer was guessable as the longest option; options now equal length",
+          "round3": {
+            "verdict": "pass",
+            "on": "2026-09-23"
+          }
+        }
+      },
+      "presentation": "text_history",
+      "editorialDifficulty": "standard",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "playback": null
+    },
+    {
+      "id": "history-2010-price",
+      "event": {
+        "id": "evt_20100127",
+        "date": "2010-01-27",
+        "name": "Apple Special Event · January 2010"
+      },
+      "phrase": null,
+      "kind": "context",
+      "knowledgeKind": "pricing",
+      "topic": "ipad-original-price",
+      "prompt": {
+        "zh": "2010 年首款 iPad 发布时，16GB 仅 Wi-Fi 版的美国建议售价是多少？",
+        "en": "At its 2010 announcement, what was the US suggested price of the original 16GB Wi-Fi iPad?"
+      },
+      "options": [
+        {
+          "id": "a",
+          "zh": "499 美元",
+          "en": "$499"
+        },
+        {
+          "id": "b",
+          "zh": "599 美元",
+          "en": "$599"
+        },
+        {
+          "id": "c",
+          "zh": "629 美元",
+          "en": "$629"
+        },
+        {
+          "id": "d",
+          "zh": "699 美元",
+          "en": "$699"
+        }
+      ],
+      "answerId": "a",
+      "explanation": {
+        "zh": "16GB 仅 Wi-Fi 版是 499 美元。599 与 699 美元是 32GB、64GB 仅 Wi-Fi 版的价格，629 美元是 16GB Wi-Fi + 3G 版。",
+        "en": "The 16GB Wi-Fi model was $499. $599 and $699 were the 32GB and 64GB Wi-Fi models; $629 was the 16GB Wi-Fi + 3G model."
+      },
+      "phraseNote": {
+        "zh": "",
+        "en": ""
+      },
+      "source": {
+        "url": "https://www.apple.com/newsroom/2010/01/27Apple-Launches-iPad/",
+        "label": {
+          "zh": "Apple Newsroom · iPad announcement",
+          "en": "Apple Newsroom · iPad announcement"
+        },
+        "locator": {
+          "zh": "A4 paragraph",
+          "en": "A4 paragraph"
+        },
+        "evidenceClass": "official_press_release",
+        "permanent": false
+      },
+      "sharedGroup": "event:2010-01-27:ipad-original-price",
+      "spoilerGroups": [
+        "event:2010-01-27:ipad-original-price"
+      ],
+      "researchIds": [
+        "ipad10"
+      ],
+      "review": {
+        "method": "source_text_and_options_editorial_review",
+        "checkedOn": "2026-09-22",
+        "reviewer": "ChatGPT; no independent second reviewer",
+        "choicesReviewed": true,
+        "textReviewed": true,
+        "textDemoEnabled": true,
+        "audioReviewed": false,
+        "audioAllowed": false,
+        "productionEnabled": true,
+        "evidenceLimit": "Text fact only. No voice, face identification, exact scene timing, or earliest-ever claim.",
+        "ownerReview": {
+          "verdict": "pass",
+          "on": "2026-09-23",
+          "note": "这个题目过于简单了，不如问下比较早期的",
+          "revisedOn": "2026-09-23",
+          "awaiting": "owner re-review of the rewritten question",
+          "round2": {
+            "verdict": "pass",
+            "on": "2026-09-23"
+          }
+        }
+      },
+      "presentation": "text_history",
+      "editorialDifficulty": "intro",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "playback": null
+    },
+    {
+      "id": "history-2010-iwork-sales",
+      "event": {
+        "id": "evt_20100127",
+        "date": "2010-01-27",
+        "name": "Apple Special Event · January 2010"
+      },
+      "phrase": null,
+      "kind": "context",
+      "knowledgeKind": "business_model",
+      "topic": "iwork-ipad",
+      "prompt": {
+        "zh": "2010 年推出 iWork for iPad 时，Pages、Numbers 和 Keynote 采用哪种销售方式？",
+        "en": "How were Pages, Numbers and Keynote offered for iPad in the 2010 announcement?"
+      },
+      "options": [
+        {
+          "id": "a",
+          "zh": "三个应用分别购买",
+          "en": "Three separate app purchases"
+        },
+        {
+          "id": "b",
+          "zh": "只作为整套一次性购买",
+          "en": "One bundled purchase only"
+        },
+        {
+          "id": "c",
+          "zh": "用 Mac 版序列号免费兑换",
+          "en": "Free with a Mac iWork serial number"
+        },
+        {
+          "id": "d",
+          "zh": "只以年订阅提供",
+          "en": "An annual subscription only"
+        }
+      ],
+      "answerId": "a",
+      "explanation": {
+        "zh": "当年的方案是三款应用分开在 App Store 销售。",
+        "en": "The three apps were sold separately through the App Store."
+      },
+      "phraseNote": {
+        "zh": "",
+        "en": ""
+      },
+      "source": {
+        "url": "https://www.apple.com/newsroom/2010/01/27Apple-Launches-iPad/",
+        "label": {
+          "zh": "Apple Newsroom · iPad announcement",
+          "en": "Apple Newsroom · iPad announcement"
+        },
+        "locator": {
+          "zh": "iWork for iPad paragraph",
+          "en": "iWork for iPad paragraph"
+        },
+        "evidenceClass": "official_press_release",
+        "permanent": false
+      },
+      "sharedGroup": "event:2010-01-27:iwork-ipad",
+      "spoilerGroups": [
+        "event:2010-01-27:iwork-ipad"
+      ],
+      "researchIds": [
+        "ipad10"
+      ],
+      "review": {
+        "method": "source_text_and_options_editorial_review",
+        "checkedOn": "2026-09-22",
+        "reviewer": "ChatGPT; no independent second reviewer",
+        "choicesReviewed": true,
+        "textReviewed": true,
+        "textDemoEnabled": true,
+        "audioReviewed": false,
+        "audioAllowed": false,
+        "productionEnabled": true,
+        "evidenceLimit": "Text fact only. No voice, face identification, exact scene timing, or earliest-ever claim.",
+        "ownerReview": {
+          "verdict": "pass",
+          "on": "2026-09-23"
+        }
+      },
+      "presentation": "text_history",
+      "editorialDifficulty": "standard",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "playback": null
+    },
+    {
+      "id": "history-2011-mobileme",
+      "event": {
+        "id": "evt_20110606",
+        "date": "2011-06-06",
+        "name": "WWDC 2011"
+      },
+      "phrase": null,
+      "kind": "context",
+      "knowledgeKind": "service_history",
+      "topic": "icloud-mobileme",
+      "prompt": {
+        "zh": "2011 年 iCloud 把哪项服务的邮件、通讯录和日历彻底重写并收了进来？",
+        "en": "Which service's mail, contacts and calendar did iCloud rewrite and take over in 2011?"
+      },
+      "options": [
+        {
+          "id": "a",
+          "zh": ".Mac",
+          "en": ".Mac"
+        },
+        {
+          "id": "b",
+          "zh": "MobileMe",
+          "en": "MobileMe"
+        },
+        {
+          "id": "c",
+          "zh": "iTools",
+          "en": "iTools"
+        },
+        {
+          "id": "d",
+          "zh": "eWorld",
+          "en": "eWorld"
+        }
+      ],
+      "answerId": "b",
+      "explanation": {
+        "zh": "是当时在用的 MobileMe。.Mac（2002–2008）与 iTools（2000–2002）是它更早的名字，mac.com 邮箱一路沿用；eWorld 是 Apple 1994 年的在线服务。",
+        "en": "It was MobileMe, the service then in use. .Mac (2002–2008) and iTools (2000–2002) were its earlier names, carrying the mac.com address along; eWorld was Apple's 1994 online service."
+      },
+      "phraseNote": {
+        "zh": "",
+        "en": ""
+      },
+      "source": {
+        "url": "https://www.apple.com/newsroom/2011/06/06Apple-Introduces-iCloud/",
+        "label": {
+          "zh": "Apple Newsroom · iCloud announcement",
+          "en": "Apple Newsroom · iCloud announcement"
+        },
+        "locator": {
+          "zh": "Former MobileMe services bullet",
+          "en": "Former MobileMe services bullet"
+        },
+        "evidenceClass": "official_press_release",
+        "permanent": false
+      },
+      "sharedGroup": "event:2011-06-06:icloud-mobileme",
+      "spoilerGroups": [
+        "event:2011-06-06:icloud-mobileme"
+      ],
+      "researchIds": [
+        "cloud11"
+      ],
+      "review": {
+        "method": "source_text_and_options_editorial_review",
+        "checkedOn": "2026-09-22",
+        "reviewer": "ChatGPT; no independent second reviewer",
+        "choicesReviewed": true,
+        "textReviewed": true,
+        "textDemoEnabled": true,
+        "audioReviewed": false,
+        "audioAllowed": false,
+        "productionEnabled": true,
+        "evidenceLimit": "Text fact only. No voice, face identification, exact scene timing, or earliest-ever claim.",
+        "ownerReview": {
+          "verdict": "pass",
+          "on": "2026-09-23",
+          "note": "题目是好题目，但是候选项太简单了，mac.com 都没有提",
+          "revisedOn": "2026-09-23",
+          "awaiting": "owner re-review of the rewritten question",
+          "round2": {
+            "verdict": "pass",
+            "on": "2026-09-23"
+          }
+        }
+      },
+      "presentation": "text_history",
+      "editorialDifficulty": "standard",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "playback": null
+    },
+    {
+      "id": "history-2011-itunes-match",
+      "event": {
+        "id": "evt_20110606",
+        "date": "2011-06-06",
+        "name": "WWDC 2011"
+      },
+      "phrase": null,
+      "kind": "context",
+      "knowledgeKind": "music_service",
+      "topic": "itunes-match",
+      "prompt": {
+        "zh": "2011 年 iTunes Match 主要解决哪一种音乐库需求？",
+        "en": "Which library task was iTunes Match designed for in its 2011 announcement?"
+      },
+      "options": [
+        {
+          "id": "a",
+          "zh": "把电台节目自动存进曲库",
+          "en": "Save radio shows into the library"
+        },
+        {
+          "id": "b",
+          "zh": "匹配非 iTunes 购买的音乐",
+          "en": "Match music not bought from iTunes"
+        },
+        {
+          "id": "c",
+          "zh": "把音乐批量刻录到光盘",
+          "en": "Burn music to disc"
+        },
+        {
+          "id": "d",
+          "zh": "把歌曲转换成手机铃声",
+          "en": "Turn songs into ringtones"
+        }
+      ],
+      "answerId": "b",
+      "explanation": {
+        "zh": "它先匹配已有曲库；无法匹配的部分再上传。",
+        "en": "It matches an existing library and uploads unmatched tracks."
+      },
+      "phraseNote": {
+        "zh": "",
+        "en": ""
+      },
+      "source": {
+        "url": "https://www.apple.com/newsroom/2011/06/06Apple-Introduces-iCloud/",
+        "label": {
+          "zh": "Apple Newsroom · iCloud announcement",
+          "en": "Apple Newsroom · iCloud announcement"
+        },
+        "locator": {
+          "zh": "iTunes Match paragraph",
+          "en": "iTunes Match paragraph"
+        },
+        "evidenceClass": "official_press_release",
+        "permanent": false
+      },
+      "sharedGroup": "event:2011-06-06:itunes-match",
+      "spoilerGroups": [
+        "event:2011-06-06:itunes-match"
+      ],
+      "researchIds": [
+        "cloud11"
+      ],
+      "review": {
+        "method": "source_text_and_options_editorial_review",
+        "checkedOn": "2026-09-22",
+        "reviewer": "ChatGPT; no independent second reviewer",
+        "choicesReviewed": true,
+        "textReviewed": true,
+        "textDemoEnabled": true,
+        "audioReviewed": false,
+        "audioAllowed": false,
+        "productionEnabled": true,
+        "evidenceLimit": "Text fact only. No voice, face identification, exact scene timing, or earliest-ever claim.",
+        "ownerReview": {
+          "verdict": "pass",
+          "on": "2026-09-23",
+          "revisedOn": "2026-09-23",
+          "revision": "review: the answer was the longest option by far; options rebalanced, facts unchanged",
+          "awaiting": "owner third look",
+          "round3": {
+            "verdict": "pass",
+            "on": "2026-09-23"
+          }
+        }
+      },
+      "presentation": "text_history",
+      "editorialDifficulty": "standard",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "playback": null
+    },
+    {
+      "id": "history-2012-launch-size",
+      "event": {
+        "id": "evt_20120611",
+        "date": "2012-06-11",
+        "name": "WWDC 2012"
+      },
+      "phrase": null,
+      "kind": "context",
+      "knowledgeKind": "version_specific",
+      "topic": "retina-mbp-2012",
+      "prompt": {
+        "zh": "2012 年 6 月介绍的全新 Retina MacBook Pro 是哪个尺寸？",
+        "en": "What size was the new Retina MacBook Pro introduced in June 2012?"
+      },
+      "options": [
+        {
+          "id": "a",
+          "zh": "11 英寸",
+          "en": "11-inch"
+        },
+        {
+          "id": "b",
+          "zh": "13 英寸",
+          "en": "13-inch"
+        },
+        {
+          "id": "c",
+          "zh": "15 英寸",
+          "en": "15-inch"
+        },
+        {
+          "id": "d",
+          "zh": "17 英寸",
+          "en": "17-inch"
+        }
+      ],
+      "answerId": "c",
+      "explanation": {
+        "zh": "这份六月发布资料对应的是 15 英寸机型。",
+        "en": "The June announcement describes the 15-inch model."
+      },
+      "phraseNote": {
+        "zh": "",
+        "en": ""
+      },
+      "source": {
+        "url": "https://www.apple.com/newsroom/2012/06/11Apple-Introduces-All-New-MacBook-Pro-with-Retina-Display/",
+        "label": {
+          "zh": "Apple Newsroom · Retina MacBook Pro announcement",
+          "en": "Apple Newsroom · Retina MacBook Pro announcement"
+        },
+        "locator": {
+          "zh": "Opening paragraph",
+          "en": "Opening paragraph"
+        },
+        "evidenceClass": "official_press_release",
+        "permanent": false
+      },
+      "sharedGroup": "event:2012-06-11:retina-mbp-2012",
+      "spoilerGroups": [
+        "event:2012-06-11:retina-mbp-2012"
+      ],
+      "researchIds": [
+        "retina12"
+      ],
+      "review": {
+        "method": "source_text_and_options_editorial_review",
+        "checkedOn": "2026-09-22",
+        "reviewer": "ChatGPT; no independent second reviewer",
+        "choicesReviewed": true,
+        "textReviewed": true,
+        "textDemoEnabled": true,
+        "audioReviewed": false,
+        "audioAllowed": false,
+        "productionEnabled": true,
+        "evidenceLimit": "Text fact only. No voice, face identification, exact scene timing, or earliest-ever claim.",
+        "ownerReview": {
+          "verdict": "pass",
+          "on": "2026-09-23"
+        }
+      },
+      "presentation": "text_history",
+      "editorialDifficulty": "standard",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "playback": null
+    },
+    {
+      "id": "history-2012-shipping-os",
+      "event": {
+        "id": "evt_20120611",
+        "date": "2012-06-11",
+        "name": "WWDC 2012"
+      },
+      "phrase": null,
+      "kind": "context",
+      "knowledgeKind": "announce_vs_ship",
+      "topic": "retina-mbp-2012",
+      "prompt": {
+        "zh": "2012 年 6 月这款 Retina MacBook Pro 的发布资料写明随机系统是什么？",
+        "en": "Which shipping OS did the June 2012 Retina MacBook Pro announcement specify?"
+      },
+      "options": [
+        {
+          "id": "a",
+          "zh": "OS X Lion",
+          "en": "OS X Lion"
+        },
+        {
+          "id": "b",
+          "zh": "OS X Mountain Lion",
+          "en": "OS X Mountain Lion"
+        },
+        {
+          "id": "c",
+          "zh": "OS X Mavericks",
+          "en": "OS X Mavericks"
+        },
+        {
+          "id": "d",
+          "zh": "Mac OS X Snow Leopard",
+          "en": "Mac OS X Snow Leopard"
+        }
+      ],
+      "answerId": "a",
+      "explanation": {
+        "zh": "资料写的是 Lion，并另行说明可升级 Mountain Lion。",
+        "en": "It shipped with Lion; Mountain Lion was an upgrade offer."
+      },
+      "phraseNote": {
+        "zh": "",
+        "en": ""
+      },
+      "source": {
+        "url": "https://www.apple.com/newsroom/2012/06/11Apple-Introduces-All-New-MacBook-Pro-with-Retina-Display/",
+        "label": {
+          "zh": "Apple Newsroom · Retina MacBook Pro announcement",
+          "en": "Apple Newsroom · Retina MacBook Pro announcement"
+        },
+        "locator": {
+          "zh": "Shipping OS and upgrade paragraph",
+          "en": "Shipping OS and upgrade paragraph"
+        },
+        "evidenceClass": "official_press_release",
+        "permanent": false
+      },
+      "sharedGroup": "event:2012-06-11:retina-mbp-2012",
+      "spoilerGroups": [
+        "event:2012-06-11:retina-mbp-2012"
+      ],
+      "researchIds": [
+        "retina12"
+      ],
+      "review": {
+        "method": "source_text_and_options_editorial_review",
+        "checkedOn": "2026-09-22",
+        "reviewer": "ChatGPT; no independent second reviewer",
+        "choicesReviewed": true,
+        "textReviewed": true,
+        "textDemoEnabled": true,
+        "audioReviewed": false,
+        "audioAllowed": false,
+        "productionEnabled": true,
+        "evidenceLimit": "Text fact only. No voice, face identification, exact scene timing, or earliest-ever claim.",
+        "ownerReview": {
+          "verdict": "pass",
+          "on": "2026-09-23"
+        }
+      },
+      "presentation": "text_history",
+      "editorialDifficulty": "detail",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "playback": null
+    },
+    {
+      "id": "history-2013-preview-not-sale",
+      "event": {
+        "id": "evt_20130610",
+        "date": "2013-06-10",
+        "name": "WWDC 2013"
+      },
+      "phrase": null,
+      "kind": "context",
+      "knowledgeKind": "announce_vs_ship",
+      "topic": "mac-pro-2013",
+      "prompt": {
+        "zh": "WWDC 2013 上亮相的新 Mac Pro，当时的上市安排是什么？",
+        "en": "At WWDC 2013, what availability did Apple give the new Mac Pro?"
+      },
+      "options": [
+        {
+          "id": "a",
+          "zh": "当天在网上商店开放预订",
+          "en": "Pre-orders opened online that day"
+        },
+        {
+          "id": "b",
+          "zh": "先行预览，当年稍后上市",
+          "en": "A preview, available later that year"
+        },
+        {
+          "id": "c",
+          "zh": "先向开发者提供测试样机，零售等到次年",
+          "en": "Developer units first, retail the following year"
+        },
+        {
+          "id": "d",
+          "zh": "次年春季上市",
+          "en": "Available the following spring"
+        }
+      ],
+      "answerId": "b",
+      "explanation": {
+        "zh": "六月的新闻稿只是预览，写明「将在今年稍后推出」；它最终在 2013 年 12 月开卖。",
+        "en": "The June release was a preview that said it would be available later that year; it went on sale in December 2013."
+      },
+      "phraseNote": {
+        "zh": "",
+        "en": ""
+      },
+      "source": {
+        "url": "https://www.apple.com/newsroom/2013/06/10Apple-Gives-Sneak-Peek-Into-the-Future-of-the-Pro-Desktop/",
+        "label": {
+          "zh": "Apple Newsroom · Mac Pro preview",
+          "en": "Apple Newsroom · Mac Pro preview"
+        },
+        "locator": {
+          "zh": "Availability paragraph",
+          "en": "Availability paragraph"
+        },
+        "evidenceClass": "official_press_release",
+        "permanent": false
+      },
+      "sharedGroup": "event:2013-06-10:mac-pro-2013",
+      "spoilerGroups": [
+        "event:2013-06-10:mac-pro-2013"
+      ],
+      "researchIds": [
+        "pro13"
+      ],
+      "review": {
+        "method": "source_text_and_options_editorial_review",
+        "checkedOn": "2026-09-22",
+        "reviewer": "ChatGPT; no independent second reviewer",
+        "choicesReviewed": true,
+        "textReviewed": true,
+        "textDemoEnabled": true,
+        "audioReviewed": false,
+        "audioAllowed": false,
+        "productionEnabled": true,
+        "evidenceLimit": "Text fact only. No voice, face identification, exact scene timing, or earliest-ever claim.",
+        "ownerReview": {
+          "verdict": "pass",
+          "on": "2026-09-23",
+          "note": "第二项一看就不可能啊，第三项也是乱来的，建议你再思索一下",
+          "revisedOn": "2026-09-23",
+          "awaiting": "owner re-review of the rewritten question",
+          "round2": {
+            "verdict": "pass",
+            "on": "2026-09-23"
+          }
+        }
+      },
+      "presentation": "text_history",
+      "editorialDifficulty": "standard",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "playback": null
+    },
+    {
+      "id": "history-2013-thermal-core",
+      "event": {
+        "id": "evt_20130610",
+        "date": "2013-06-10",
+        "name": "WWDC 2013"
+      },
+      "phrase": null,
+      "kind": "context",
+      "knowledgeKind": "design_tradeoff",
+      "topic": "mac-pro-2013",
+      "prompt": {
+        "zh": "2013 年 Mac Pro 的「统一散热核心」做到了什么？",
+        "en": "What did the 2013 Mac Pro's unified thermal core do?"
+      },
+      "options": [
+        {
+          "id": "a",
+          "zh": "让所有处理器共用整机的全部散热能力",
+          "en": "Let all its processors share the machine's entire thermal capacity"
+        },
+        {
+          "id": "b",
+          "zh": "为每颗处理器配独立的风扇与散热片",
+          "en": "Gave each processor its own fan and heat sink"
+        },
+        {
+          "id": "c",
+          "zh": "用液冷回路取代风冷",
+          "en": "Replaced air cooling with a liquid loop"
+        },
+        {
+          "id": "d",
+          "zh": "把显卡移到外置机箱里散热",
+          "en": "Moved the graphics cards into an external chassis to cool"
+        }
+      ],
+      "answerId": "a",
+      "explanation": {
+        "zh": "新闻稿原话：统一散热核心让这台台式机能把全部散热能力高效分给所有处理器。独立风道是旧 Mac Pro 的做法，液冷出现在 2004 年的 Power Mac G5 上。",
+        "en": "The release says the unified thermal core lets the desktop share its entire thermal capacity across all the processors. Separate airflow zones were the old Mac Pro's approach; liquid cooling was the 2004 Power Mac G5's."
+      },
+      "phraseNote": {
+        "zh": "",
+        "en": ""
+      },
+      "source": {
+        "url": "https://www.apple.com/newsroom/2013/06/10Apple-Gives-Sneak-Peek-Into-the-Future-of-the-Pro-Desktop/",
+        "label": {
+          "zh": "Apple Newsroom · Mac Pro preview",
+          "en": "Apple Newsroom · Mac Pro preview"
+        },
+        "locator": {
+          "zh": "Thermal core paragraph",
+          "en": "Thermal core paragraph"
+        },
+        "evidenceClass": "official_press_release",
+        "permanent": false
+      },
+      "sharedGroup": "event:2013-06-10:mac-pro-2013",
+      "spoilerGroups": [
+        "event:2013-06-10:mac-pro-2013"
+      ],
+      "researchIds": [
+        "pro13"
+      ],
+      "review": {
+        "method": "source_text_and_options_editorial_review",
+        "checkedOn": "2026-09-22",
+        "reviewer": "ChatGPT; no independent second reviewer",
+        "choicesReviewed": true,
+        "textReviewed": true,
+        "textDemoEnabled": true,
+        "audioReviewed": false,
+        "audioAllowed": false,
+        "productionEnabled": true,
+        "evidenceLimit": "Text fact only. No voice, face identification, exact scene timing, or earliest-ever claim.",
+        "ownerReview": {
+          "verdict": "pass",
+          "on": "2026-09-23",
+          "note": "再想想，表达要精确",
+          "revisedOn": "2026-09-23",
+          "awaiting": "owner re-review of the rewritten question",
+          "round2": {
+            "verdict": "pass",
+            "on": "2026-09-23"
+          }
+        }
+      },
+      "presentation": "text_history",
+      "editorialDifficulty": "standard",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "playback": null
+    },
+    {
+      "id": "history-2014-swift-objc",
+      "event": {
+        "id": "evt_20140602",
+        "date": "2014-06-02",
+        "name": "WWDC 2014"
+      },
+      "phrase": null,
+      "kind": "context",
+      "knowledgeKind": "developer_history",
+      "topic": "swift-2014",
+      "prompt": {
+        "zh": "2014 年公布 Swift 时，Apple 怎么说它和 Objective-C 的关系？",
+        "en": "When Swift was announced in 2014, how did Apple describe its relationship with Objective-C?"
+      },
+      "options": [
+        {
+          "id": "a",
+          "zh": "可以与现有 Objective-C 代码共存于同一个 App",
+          "en": "It coexists with existing Objective-C code in the same app"
+        },
+        {
+          "id": "b",
+          "zh": "需先用工具把 Objective-C 代码转换成 Swift",
+          "en": "Objective-C code must first be converted to Swift with a tool"
+        },
+        {
+          "id": "c",
+          "zh": "首版只支持 iOS，OS X 稍后跟进",
+          "en": "The first version was iOS-only, with OS X to follow"
+        },
+        {
+          "id": "d",
+          "zh": "iOS 8 起 App Store 不再接收纯 Objective-C 的新 App",
+          "en": "From iOS 8 the App Store would stop taking new Objective-C-only apps"
+        }
+      ],
+      "answerId": "a",
+      "explanation": {
+        "zh": "新闻稿写 Swift 与 Objective-C 代码共存，开发者可以把它逐步加进现有 App；它同时面向 iOS 和 OS X。",
+        "en": "The release says Swift coexists with Objective-C code so developers can add it to existing apps, and it targeted both iOS and OS X."
+      },
+      "phraseNote": {
+        "zh": "",
+        "en": ""
+      },
+      "source": {
+        "url": "https://www.apple.com/newsroom/2014/06/02Apple-Releases-iOS-8-SDK-With-Over-4-000-New-APIs/",
+        "label": {
+          "zh": "Apple Newsroom · iOS 8 SDK announcement",
+          "en": "Apple Newsroom · iOS 8 SDK announcement"
+        },
+        "locator": {
+          "zh": "Swift interoperability paragraph",
+          "en": "Swift interoperability paragraph"
+        },
+        "evidenceClass": "official_press_release",
+        "permanent": false
+      },
+      "sharedGroup": "event:2014-06-02:swift-2014",
+      "spoilerGroups": [
+        "event:2014-06-02:swift-2014"
+      ],
+      "researchIds": [
+        "sdk14"
+      ],
+      "review": {
+        "method": "source_text_and_options_editorial_review",
+        "checkedOn": "2026-09-22",
+        "reviewer": "ChatGPT; no independent second reviewer",
+        "choicesReviewed": true,
+        "textReviewed": true,
+        "textDemoEnabled": true,
+        "audioReviewed": false,
+        "audioAllowed": false,
+        "productionEnabled": true,
+        "evidenceLimit": "Text fact only. No voice, face identification, exact scene timing, or earliest-ever claim.",
+        "ownerReview": {
+          "verdict": "pass",
+          "on": "2026-09-23",
+          "note": "其他三个太离谱",
+          "revisedOn": "2026-09-23",
+          "awaiting": "owner re-review of the rewritten question",
+          "round2": {
+            "verdict": "pass",
+            "on": "2026-09-23"
+          }
+        }
+      },
+      "presentation": "text_history",
+      "editorialDifficulty": "standard",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "playback": null
+    },
+    {
+      "id": "history-2014-metal",
+      "event": {
+        "id": "evt_20140602",
+        "date": "2014-06-02",
+        "name": "WWDC 2014"
+      },
+      "phrase": null,
+      "kind": "context",
+      "knowledgeKind": "developer_history",
+      "topic": "metal-2014",
+      "prompt": {
+        "zh": "WWDC 2014 介绍 Metal 时，Apple 用哪项数字说明它的提升？",
+        "en": "Introducing Metal at WWDC 2014, which figure did Apple use for its gain?"
+      },
+      "options": [
+        {
+          "id": "a",
+          "zh": "绘制调用速度提升 10 倍",
+          "en": "10× faster draw calls"
+        },
+        {
+          "id": "b",
+          "zh": "游戏帧率提升 10 倍",
+          "en": "10× higher frame rates"
+        },
+        {
+          "id": "c",
+          "zh": "显存带宽提升 10 倍",
+          "en": "10× more memory bandwidth"
+        },
+        {
+          "id": "d",
+          "zh": "着色器编译提速 10 倍",
+          "en": "10× faster shader compiles"
+        }
+      ],
+      "answerId": "a",
+      "explanation": {
+        "zh": "Metal 降低的是 CPU 向 GPU 下指令的开销：新闻稿写的是绘制调用（draw call）速度提升 10 倍，目标是 A7 芯片。",
+        "en": "Metal cut the cost of issuing work to the GPU: the release cites a 10 times improvement in draw call speed, targeting the A7 chip."
+      },
+      "phraseNote": {
+        "zh": "",
+        "en": ""
+      },
+      "source": {
+        "url": "https://www.apple.com/newsroom/2014/06/02Apple-Releases-iOS-8-SDK-With-Over-4-000-New-APIs/",
+        "label": {
+          "zh": "Apple Newsroom · iOS 8 SDK announcement",
+          "en": "Apple Newsroom · iOS 8 SDK announcement"
+        },
+        "locator": {
+          "zh": "Metal paragraph",
+          "en": "Metal paragraph"
+        },
+        "evidenceClass": "official_press_release",
+        "permanent": false
+      },
+      "sharedGroup": "event:2014-06-02:metal-2014",
+      "spoilerGroups": [
+        "event:2014-06-02:metal-2014"
+      ],
+      "researchIds": [
+        "sdk14"
+      ],
+      "review": {
+        "method": "source_text_and_options_editorial_review",
+        "checkedOn": "2026-09-22",
+        "reviewer": "ChatGPT; no independent second reviewer",
+        "choicesReviewed": true,
+        "textReviewed": true,
+        "textDemoEnabled": true,
+        "audioReviewed": false,
+        "audioAllowed": false,
+        "productionEnabled": true,
+        "evidenceLimit": "Text fact only. No voice, face identification, exact scene timing, or earliest-ever claim.",
+        "ownerReview": {
+          "verdict": "pass",
+          "on": "2026-09-23",
+          "note": "可不可以不要设计成送分题",
+          "revisedOn": "2026-09-23",
+          "awaiting": "owner third look",
+          "round2": {
+            "verdict": "pass",
+            "note": ""
+          },
+          "revision": "review: the answer was the longest option by far; options rebalanced, facts unchanged",
+          "round3": {
+            "verdict": "change",
+            "on": "2026-09-23",
+            "note": "draw call 没有中文翻译吗？",
+            "applied": "the owner asked for the Chinese term; option now reads 绘制调用"
+          }
+        }
+      },
+      "presentation": "text_history",
+      "editorialDifficulty": "intro",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "playback": null
+    },
+    {
+      "id": "history-2015-pencil-connector",
+      "event": {
+        "id": "evt_20150909",
+        "date": "2015-09-09",
+        "name": "Apple Special Event · September 2015"
+      },
+      "phrase": null,
+      "kind": "context",
+      "knowledgeKind": "accessory_history",
+      "topic": "pencil-original",
+      "prompt": {
+        "zh": "2015 年第一代 Apple Pencil 用哪个接口配对和充电？",
+        "en": "Which connector did the first Apple Pencil use for pairing and charging in 2015?"
+      },
+      "options": [
+        {
+          "id": "a",
+          "zh": "USB-C",
+          "en": "USB-C"
+        },
+        {
+          "id": "b",
+          "zh": "Lightning",
+          "en": "Lightning"
+        },
+        {
+          "id": "c",
+          "zh": "30 针接口",
+          "en": "30-pin connector"
+        },
+        {
+          "id": "d",
+          "zh": "MagSafe 2",
+          "en": "MagSafe 2"
+        }
+      ],
+      "answerId": "b",
+      "explanation": {
+        "zh": "原始发布资料写明了笔上的 Lightning 接头。",
+        "en": "The release specifies its built-in Lightning connector."
+      },
+      "phraseNote": {
+        "zh": "",
+        "en": ""
+      },
+      "source": {
+        "url": "https://www.apple.com/newsroom/2015/09/09Apple-Introduces-iPad-Pro-Featuring-Epic-12-9-inch-Retina-Display/",
+        "label": {
+          "zh": "Apple Newsroom · iPad Pro and accessories announcement",
+          "en": "Apple Newsroom · iPad Pro and accessories announcement"
+        },
+        "locator": {
+          "zh": "Apple Pencil pairing and charging paragraph",
+          "en": "Apple Pencil pairing and charging paragraph"
+        },
+        "evidenceClass": "official_press_release",
+        "permanent": false
+      },
+      "sharedGroup": "event:2015-09-09:pencil-original",
+      "spoilerGroups": [
+        "event:2015-09-09:pencil-original"
+      ],
+      "researchIds": [
+        "pencil15"
+      ],
+      "review": {
+        "method": "source_text_and_options_editorial_review",
+        "checkedOn": "2026-09-22",
+        "reviewer": "ChatGPT; no independent second reviewer",
+        "choicesReviewed": true,
+        "textReviewed": true,
+        "textDemoEnabled": true,
+        "audioReviewed": false,
+        "audioAllowed": false,
+        "productionEnabled": true,
+        "evidenceLimit": "Text fact only. No voice, face identification, exact scene timing, or earliest-ever claim.",
+        "ownerReview": {
+          "verdict": "pass",
+          "on": "2026-09-23"
+        }
+      },
+      "presentation": "text_history",
+      "editorialDifficulty": "intro",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "playback": null
+    },
+    {
+      "id": "history-2015-smart-keyboard",
+      "event": {
+        "id": "evt_20150909",
+        "date": "2015-09-09",
+        "name": "Apple Special Event · September 2015"
+      },
+      "phrase": null,
+      "kind": "context",
+      "knowledgeKind": "accessory_history",
+      "topic": "smart-keyboard-original",
+      "prompt": {
+        "zh": "2015 年的 Smart Keyboard 靠什么省掉了电池、开关和蓝牙配对？",
+        "en": "What let the 2015 Smart Keyboard do without a battery, a power switch or Bluetooth pairing?"
+      },
+      "options": [
+        {
+          "id": "a",
+          "zh": "iPad Pro 的 Lightning 接口",
+          "en": "iPad Pro's Lightning port"
+        },
+        {
+          "id": "b",
+          "zh": "iPad Pro 的 USB-C 接口",
+          "en": "iPad Pro's USB-C port"
+        },
+        {
+          "id": "c",
+          "zh": "iPad Pro 侧面的 Smart Connector",
+          "en": "iPad Pro's Smart Connector on its side"
+        },
+        {
+          "id": "d",
+          "zh": "Smart Cover 的磁吸铰链",
+          "en": "The Smart Cover's magnetic hinge"
+        }
+      ],
+      "answerId": "c",
+      "explanation": {
+        "zh": "键盘接在 iPad Pro 的 Smart Connector 上取电和传数据，所以不需要电池、开关，也不用蓝牙配对。这一代 iPad Pro 用的是 Lightning，USB-C 要到 2018 年那一代。",
+        "en": "The keyboard attaches to iPad Pro's Smart Connector for power and data, so it needs no battery, switch or Bluetooth pairing. This iPad Pro had Lightning; USB-C came with the 2018 model."
+      },
+      "phraseNote": {
+        "zh": "",
+        "en": ""
+      },
+      "source": {
+        "url": "https://www.apple.com/newsroom/2015/09/09Apple-Introduces-iPad-Pro-Featuring-Epic-12-9-inch-Retina-Display/",
+        "label": {
+          "zh": "Apple Newsroom · iPad Pro and accessories announcement",
+          "en": "Apple Newsroom · iPad Pro and accessories announcement"
+        },
+        "locator": {
+          "zh": "Smart Keyboard paragraph",
+          "en": "Smart Keyboard paragraph"
+        },
+        "evidenceClass": "official_press_release",
+        "permanent": false
+      },
+      "sharedGroup": "event:2015-09-09:smart-keyboard-original",
+      "spoilerGroups": [
+        "event:2015-09-09:smart-keyboard-original"
+      ],
+      "researchIds": [
+        "pencil15"
+      ],
+      "review": {
+        "method": "source_text_and_options_editorial_review",
+        "checkedOn": "2026-09-22",
+        "reviewer": "ChatGPT; no independent second reviewer",
+        "choicesReviewed": true,
+        "textReviewed": true,
+        "textDemoEnabled": true,
+        "audioReviewed": false,
+        "audioAllowed": false,
+        "productionEnabled": true,
+        "evidenceLimit": "Text fact only. No voice, face identification, exact scene timing, or earliest-ever claim.",
+        "ownerReview": {
+          "verdict": "pass",
+          "on": "2026-09-23",
+          "note": "其他三个选项太离谱了",
+          "revisedOn": "2026-09-23",
+          "awaiting": "owner third look",
+          "round2": {
+            "verdict": "change",
+            "note": "第三项与题目矛盾"
+          },
+          "revision": "owner: the Bluetooth option contradicted the question; replaced with USB-C",
+          "round3": {
+            "verdict": "pass",
+            "on": "2026-09-23"
+          }
+        }
+      },
+      "presentation": "text_history",
+      "editorialDifficulty": "standard",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "playback": null
+    },
+    {
+      "id": "history-2016-dj-app",
+      "event": {
+        "id": "evt_20161027",
+        "date": "2016-10-27",
+        "name": "Apple Special Event · October 2016"
+      },
+      "phrase": null,
+      "kind": "context",
+      "knowledgeKind": "demo_context",
+      "topic": "djay-touchbar",
+      "prompt": {
+        "zh": "2016 年 10 月发布会中，用 Touch Bar 现场制作音乐的演示使用哪款应用？",
+        "en": "Which app featured in the live Touch Bar music demonstration in October 2016?"
+      },
+      "options": [
+        {
+          "id": "a",
+          "zh": "djay Pro",
+          "en": "djay Pro"
+        },
+        {
+          "id": "b",
+          "zh": "Photoshop",
+          "en": "Photoshop"
+        },
+        {
+          "id": "c",
+          "zh": "Final Cut Pro X",
+          "en": "Final Cut Pro X"
+        },
+        {
+          "id": "d",
+          "zh": "Keynote",
+          "en": "Keynote"
+        }
+      ],
+      "answerId": "a",
+      "explanation": {
+        "zh": "Apple 的活动图注将该演示标为 djay Pro。",
+        "en": "Apple’s caption identifies the app as djay Pro."
+      },
+      "phraseNote": {
+        "zh": "",
+        "en": ""
+      },
+      "source": {
+        "url": "https://www.apple.com/newsroom/2016/10/highlights-from-apples-october-2016-event/",
+        "label": {
+          "zh": "Apple Newsroom · October 2016 named photo captions",
+          "en": "Apple Newsroom · October 2016 named photo captions"
+        },
+        "locator": {
+          "zh": "Karim Morsy photo caption",
+          "en": "Karim Morsy photo caption"
+        },
+        "evidenceClass": "official_named_photo_caption",
+        "permanent": false
+      },
+      "sharedGroup": "event:2016-10-27:djay-touchbar",
+      "spoilerGroups": [
+        "event:2016-10-27:djay-touchbar"
+      ],
+      "researchIds": [
+        "photo16"
+      ],
+      "review": {
+        "method": "source_text_and_options_editorial_review",
+        "checkedOn": "2026-09-22",
+        "reviewer": "ChatGPT; no independent second reviewer",
+        "choicesReviewed": true,
+        "textReviewed": true,
+        "textDemoEnabled": true,
+        "audioReviewed": false,
+        "audioAllowed": false,
+        "productionEnabled": true,
+        "evidenceLimit": "Text fact only. No voice, face identification, exact scene timing, or earliest-ever claim.",
+        "ownerReview": {
+          "verdict": "pass",
+          "on": "2026-09-23"
+        }
+      },
+      "presentation": "text_history",
+      "editorialDifficulty": "standard",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "playback": null
+    },
+    {
+      "id": "history-2016-adobe-touchbar",
+      "event": {
+        "id": "evt_20161027",
+        "date": "2016-10-27",
+        "name": "Apple Special Event · October 2016"
+      },
+      "phrase": null,
+      "kind": "context",
+      "knowledgeKind": "demo_context",
+      "topic": "adobe-touchbar-2016",
+      "prompt": {
+        "zh": "2016 年 10 月发布会上，Adobe 用自家哪款软件演示了 Touch Bar？",
+        "en": "At the October 2016 event, which of its apps did Adobe use to demonstrate Touch Bar?"
+      },
+      "options": [
+        {
+          "id": "a",
+          "zh": "Lightroom",
+          "en": "Lightroom"
+        },
+        {
+          "id": "b",
+          "zh": "Photoshop",
+          "en": "Photoshop"
+        },
+        {
+          "id": "c",
+          "zh": "Illustrator",
+          "en": "Illustrator"
+        },
+        {
+          "id": "d",
+          "zh": "Premiere Pro",
+          "en": "Premiere Pro"
+        }
+      ],
+      "answerId": "b",
+      "explanation": {
+        "zh": "图注写的是 Adobe 的 Bradee Evans 演示 Touch Bar 如何改变 Photoshop 的使用体验。",
+        "en": "The caption has Adobe's Bradee Evans showing how Touch Bar transforms the Photoshop experience."
+      },
+      "phraseNote": {
+        "zh": "",
+        "en": ""
+      },
+      "source": {
+        "url": "https://www.apple.com/newsroom/2016/10/highlights-from-apples-october-2016-event/",
+        "label": {
+          "zh": "Apple Newsroom · October 2016 named photo captions",
+          "en": "Apple Newsroom · October 2016 named photo captions"
+        },
+        "locator": {
+          "zh": "Bradee Evans 图注",
+          "en": "Bradee Evans caption"
+        },
+        "evidenceClass": "official_named_photo_caption",
+        "permanent": false
+      },
+      "sharedGroup": "event:2016-10-27:adobe-touchbar-2016",
+      "spoilerGroups": [
+        "event:2016-10-27:adobe-touchbar-2016"
+      ],
+      "researchIds": [
+        "photo16"
+      ],
+      "review": {
+        "method": "source_text_and_options_editorial_review",
+        "checkedOn": "2026-09-22",
+        "reviewer": "ChatGPT; no independent second reviewer",
+        "choicesReviewed": true,
+        "textReviewed": true,
+        "textDemoEnabled": true,
+        "audioReviewed": false,
+        "audioAllowed": false,
+        "productionEnabled": true,
+        "evidenceLimit": "Text fact only. No voice, face identification, exact scene timing, or earliest-ever claim.",
+        "ownerReview": {
+          "verdict": "pass",
+          "on": "2026-09-23",
+          "note": "肯定要列举第一方应用吧",
+          "revisedOn": "2026-09-23",
+          "awaiting": "owner third look",
+          "round2": {
+            "verdict": "change",
+            "note": "呃，这道题目容易引起歧义，建议你重新出题"
+          },
+          "revision": "owner: ambiguous (Magnetic Timeline dates from 2011, and a relay asks about the same demo); replaced",
+          "round3": {
+            "verdict": "pass",
+            "on": "2026-09-23"
+          }
+        }
+      },
+      "presentation": "text_history",
+      "editorialDifficulty": "standard",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "playback": null
+    },
+    {
+      "id": "history-2017-a8",
+      "event": {
+        "id": "evt_20170605",
+        "date": "2017-06-05",
+        "name": "WWDC 2017"
+      },
+      "phrase": null,
+      "kind": "context",
+      "knowledgeKind": "hardware",
+      "topic": "homepod-original-chip",
+      "prompt": {
+        "zh": "2017 年公布的初代 HomePod 用的是哪颗芯片？",
+        "en": "Which chip powered the original HomePod announced in 2017?"
+      },
+      "options": [
+        {
+          "id": "a",
+          "zh": "A8",
+          "en": "A8"
+        },
+        {
+          "id": "b",
+          "zh": "A9",
+          "en": "A9"
+        },
+        {
+          "id": "c",
+          "zh": "A10 Fusion",
+          "en": "A10 Fusion"
+        },
+        {
+          "id": "d",
+          "zh": "W1",
+          "en": "W1"
+        }
+      ],
+      "answerId": "a",
+      "explanation": {
+        "zh": "是 2014 年 iPhone 6 那一代的 A8。A10 Fusion 是当时最新的 iPhone 7 芯片，W1 是 AirPods 的无线芯片。",
+        "en": "It was the A8, from the 2014 iPhone 6 generation. The A10 Fusion was the then-current iPhone 7 chip; W1 was AirPods' wireless chip."
+      },
+      "phraseNote": {
+        "zh": "",
+        "en": ""
+      },
+      "source": {
+        "url": "https://www.apple.com/newsroom/2017/06/homepod-reinvents-music-in-the-home/",
+        "label": {
+          "zh": "Apple Newsroom · HomePod preview",
+          "en": "Apple Newsroom · HomePod preview"
+        },
+        "locator": {
+          "zh": "Audio technology bullets",
+          "en": "Audio technology bullets"
+        },
+        "evidenceClass": "official_press_release",
+        "permanent": false
+      },
+      "sharedGroup": "event:2017-06-05:homepod-original-chip",
+      "spoilerGroups": [
+        "event:2017-06-05:homepod-original-chip"
+      ],
+      "researchIds": [
+        "home17"
+      ],
+      "review": {
+        "method": "source_text_and_options_editorial_review",
+        "checkedOn": "2026-09-22",
+        "reviewer": "ChatGPT; no independent second reviewer",
+        "choicesReviewed": true,
+        "textReviewed": true,
+        "textDemoEnabled": true,
+        "audioReviewed": false,
+        "audioAllowed": false,
+        "productionEnabled": true,
+        "evidenceLimit": "Text fact only. No voice, face identification, exact scene timing, or earliest-ever claim.",
+        "ownerReview": {
+          "verdict": "pass",
+          "on": "2026-09-23",
+          "note": "其他三个跟正确答案差距太大了，最好拿同时代的做干扰项",
+          "revisedOn": "2026-09-23",
+          "awaiting": "owner re-review of the rewritten question",
+          "round2": {
+            "verdict": "pass",
+            "on": "2026-09-23"
+          }
+        }
+      },
+      "presentation": "text_history",
+      "editorialDifficulty": "detail",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "playback": null
+    },
+    {
+      "id": "history-2017-room-sensing",
+      "event": {
+        "id": "evt_20170605",
+        "date": "2017-06-05",
+        "name": "WWDC 2017"
+      },
+      "phrase": null,
+      "kind": "context",
+      "knowledgeKind": "feature_mechanism",
+      "topic": "homepod-room-sensing",
+      "prompt": {
+        "zh": "2017 年介绍 HomePod 的「空间感知」时，说它会自动做什么？",
+        "en": "Describing HomePod's spatial awareness in 2017, what did Apple say it would do automatically?"
+      },
+      "options": [
+        {
+          "id": "a",
+          "zh": "识别是谁在说话，切换到那个人的账户",
+          "en": "Recognise who is speaking and switch to their account"
+        },
+        {
+          "id": "b",
+          "zh": "根据环境噪音自动调节音量",
+          "en": "Adjust the volume to the room's background noise"
+        },
+        {
+          "id": "c",
+          "zh": "感知自己在房间里的位置，调整声音",
+          "en": "Sense its location in the room and adjust the audio"
+        },
+        {
+          "id": "d",
+          "zh": "按正在播放的曲风切换均衡器",
+          "en": "Switch the equaliser to suit the genre playing"
+        }
+      ],
+      "answerId": "c",
+      "explanation": {
+        "zh": "新闻稿原话：用空间感知识别自己在房间里的位置并自动调整音频。识别说话人的多用户功能是 2019 年才加入的。",
+        "en": "The release says it uses spatial awareness to sense its location in a room and adjust the audio. Recognising individual voices came in 2019."
+      },
+      "phraseNote": {
+        "zh": "",
+        "en": ""
+      },
+      "source": {
+        "url": "https://www.apple.com/newsroom/2017/06/homepod-reinvents-music-in-the-home/",
+        "label": {
+          "zh": "Apple Newsroom · HomePod preview",
+          "en": "Apple Newsroom · HomePod preview"
+        },
+        "locator": {
+          "zh": "Room sensing technology bullet",
+          "en": "Room sensing technology bullet"
+        },
+        "evidenceClass": "official_press_release",
+        "permanent": false
+      },
+      "sharedGroup": "event:2017-06-05:homepod-room-sensing",
+      "spoilerGroups": [
+        "event:2017-06-05:homepod-room-sensing"
+      ],
+      "researchIds": [
+        "home17"
+      ],
+      "review": {
+        "method": "source_text_and_options_editorial_review",
+        "checkedOn": "2026-09-22",
+        "reviewer": "ChatGPT; no independent second reviewer",
+        "choicesReviewed": true,
+        "textReviewed": true,
+        "textDemoEnabled": true,
+        "audioReviewed": false,
+        "audioAllowed": false,
+        "productionEnabled": true,
+        "evidenceLimit": "Text fact only. No voice, face identification, exact scene timing, or earliest-ever claim.",
+        "ownerReview": {
+          "verdict": "pass",
+          "on": "2026-09-23",
+          "note": "干扰项设计得不够好",
+          "revisedOn": "2026-09-23",
+          "awaiting": "owner re-review of the rewritten question",
+          "round2": {
+            "verdict": "pass",
+            "on": "2026-09-23"
+          }
+        }
+      },
+      "presentation": "text_history",
+      "editorialDifficulty": "intro",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "playback": null
+    },
+    {
+      "id": "history-2018-air-upgrade",
+      "event": {
+        "id": "evt_20181030",
+        "date": "2018-10-30",
+        "name": "Apple Special Event · October 2018"
+      },
+      "phrase": null,
+      "kind": "context",
+      "knowledgeKind": "hardware_context",
+      "topic": "macbook-air-2018",
+      "prompt": {
+        "zh": "2018 年 10 月新 MacBook Air 的官方图注，同时点出了哪一组特性？",
+        "en": "Which pair of features does Apple's October 2018 caption give the new MacBook Air?"
+      },
+      "options": [
+        {
+          "id": "a",
+          "zh": "Retina 显示屏与 Touch ID",
+          "en": "Retina display and Touch ID"
+        },
+        {
+          "id": "b",
+          "zh": "Retina 显示屏与 Touch Bar",
+          "en": "Retina display and Touch Bar"
+        },
+        {
+          "id": "c",
+          "zh": "Face ID 与 Retina 显示屏",
+          "en": "Face ID and Retina display"
+        },
+        {
+          "id": "d",
+          "zh": "Touch Bar 与 Touch ID",
+          "en": "Touch Bar and Touch ID"
+        }
+      ],
+      "answerId": "a",
+      "explanation": {
+        "zh": "MacBook Air 的图注写的是 Retina 显示屏、Touch ID 和全天续航。Touch Bar 属于 MacBook Pro，Face ID 是同场 iPad Pro 的。",
+        "en": "The MacBook Air caption names Retina display, Touch ID and all-day battery life. Touch Bar belonged to MacBook Pro, and Face ID to the iPad Pro shown the same day."
+      },
+      "phraseNote": {
+        "zh": "",
+        "en": ""
+      },
+      "source": {
+        "url": "https://www.apple.com/newsroom/2018/10/highlights-from-apples-keynote-event/",
+        "label": {
+          "zh": "Apple Newsroom · October 2018 named photo captions",
+          "en": "Apple Newsroom · October 2018 named photo captions"
+        },
+        "locator": {
+          "zh": "Laura Legros photo caption",
+          "en": "Laura Legros photo caption"
+        },
+        "evidenceClass": "official_named_photo_caption",
+        "permanent": false
+      },
+      "sharedGroup": "event:2018-10-30:macbook-air-2018",
+      "spoilerGroups": [
+        "event:2018-10-30:macbook-air-2018"
+      ],
+      "researchIds": [
+        "photo18"
+      ],
+      "review": {
+        "method": "source_text_and_options_editorial_review",
+        "checkedOn": "2026-09-22",
+        "reviewer": "ChatGPT; no independent second reviewer",
+        "choicesReviewed": true,
+        "textReviewed": true,
+        "textDemoEnabled": true,
+        "audioReviewed": false,
+        "audioAllowed": false,
+        "productionEnabled": true,
+        "evidenceLimit": "Text fact only. No voice, face identification, exact scene timing, or earliest-ever claim.",
+        "ownerReview": {
+          "verdict": "pass",
+          "on": "2026-09-23",
+          "note": "后两个选项太离谱",
+          "revisedOn": "2026-09-23",
+          "awaiting": "owner re-review of the rewritten question",
+          "round2": {
+            "verdict": "pass",
+            "on": "2026-09-23"
+          }
+        }
+      },
+      "presentation": "text_history",
+      "editorialDifficulty": "standard",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "playback": null
+    },
+    {
+      "id": "history-2018-ipad-faceid",
+      "event": {
+        "id": "evt_20181030",
+        "date": "2018-10-30",
+        "name": "Apple Special Event · October 2018"
+      },
+      "phrase": null,
+      "kind": "context",
+      "knowledgeKind": "hardware_context",
+      "topic": "ipad-pro-2018",
+      "prompt": {
+        "zh": "2018 年 10 月的官方图注，把新 iPad Pro 的全面屏设计和哪种身份验证放在一起？",
+        "en": "Which authentication does Apple's October 2018 caption pair with the new iPad Pro's all-screen design?"
+      },
+      "options": [
+        {
+          "id": "a",
+          "zh": "主屏幕按钮里的 Touch ID",
+          "en": "Touch ID in the Home button"
+        },
+        {
+          "id": "b",
+          "zh": "原深感摄像头的 Face ID",
+          "en": "Face ID on the TrueDepth camera"
+        },
+        {
+          "id": "c",
+          "zh": "屏幕下方的指纹识别",
+          "en": "An under-display fingerprint sensor"
+        },
+        {
+          "id": "d",
+          "zh": "顶部按钮里的 Touch ID",
+          "en": "Touch ID in the top button"
+        }
+      ],
+      "answerId": "b",
+      "explanation": {
+        "zh": "图注写的是全面屏设计、Liquid Retina 显示屏与 Face ID。去掉主屏幕按钮后，这一代改用 Face ID；顶部按钮 Touch ID 要到 2020 年的 iPad Air。",
+        "en": "The caption names the all-screen design, Liquid Retina display and Face ID. With the Home button gone this generation used Face ID; Touch ID in the top button came with the 2020 iPad Air."
+      },
+      "phraseNote": {
+        "zh": "",
+        "en": ""
+      },
+      "source": {
+        "url": "https://www.apple.com/newsroom/2018/10/highlights-from-apples-keynote-event/",
+        "label": {
+          "zh": "Apple Newsroom · October 2018 named photo captions",
+          "en": "Apple Newsroom · October 2018 named photo captions"
+        },
+        "locator": {
+          "zh": "John Ternus photo caption",
+          "en": "John Ternus photo caption"
+        },
+        "evidenceClass": "official_named_photo_caption",
+        "permanent": false
+      },
+      "sharedGroup": "event:2018-10-30:ipad-pro-2018",
+      "spoilerGroups": [
+        "event:2018-10-30:ipad-pro-2018"
+      ],
+      "researchIds": [
+        "photo18"
+      ],
+      "review": {
+        "method": "source_text_and_options_editorial_review",
+        "checkedOn": "2026-09-22",
+        "reviewer": "ChatGPT; no independent second reviewer",
+        "choicesReviewed": true,
+        "textReviewed": true,
+        "textDemoEnabled": true,
+        "audioReviewed": false,
+        "audioAllowed": false,
+        "productionEnabled": true,
+        "evidenceLimit": "Text fact only. No voice, face identification, exact scene timing, or earliest-ever claim.",
+        "ownerReview": {
+          "verdict": "pass",
+          "on": "2026-09-23",
+          "note": "第四个选项纯属胡闹，侮辱做题者的智商",
+          "revisedOn": "2026-09-23",
+          "awaiting": "owner third look",
+          "round2": {
+            "verdict": "pass",
+            "note": ""
+          },
+          "revision": "review: the answer was the shortest option by far; options rebalanced, facts unchanged",
+          "round3": {
+            "verdict": "pass",
+            "on": "2026-09-23"
+          }
+        }
+      },
+      "presentation": "text_history",
+      "editorialDifficulty": "intro",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "playback": null
+    },
+    {
+      "id": "history-2019-files-smb",
+      "event": {
+        "id": "evt_20190603",
+        "date": "2019-06-03",
+        "name": "WWDC 2019"
+      },
+      "phrase": null,
+      "kind": "context",
+      "knowledgeKind": "software_context",
+      "topic": "ipados-files-2019",
+      "prompt": {
+        "zh": "2019 年 iPadOS 的「文件」App 新增了哪项能力？",
+        "en": "What did the Files app gain in iPadOS in 2019?"
+      },
+      "options": [
+        {
+          "id": "a",
+          "zh": "接入 USB 驱动器、SD 卡，并登录 SMB 文件服务器",
+          "en": "USB drives, SD cards and SMB file servers"
+        },
+        {
+          "id": "b",
+          "zh": "直接挂载 FTP 服务器",
+          "en": "Mounting FTP servers directly"
+        },
+        {
+          "id": "c",
+          "zh": "接入外置驱动器，但只能导入照片",
+          "en": "External drives, but for importing photos only"
+        },
+        {
+          "id": "d",
+          "zh": "连接 AFP 文件服务器（Mac 传统文件共享）",
+          "en": "AFP file servers (classic Mac file sharing)"
+        }
+      ],
+      "answerId": "a",
+      "explanation": {
+        "zh": "新闻稿写的是可以插入 USB 驱动器、SD 卡，或登录 SMB 文件服务器，都在「文件」App 里完成。",
+        "en": "The release says users can plug in USB drives, SD cards or log into an SMB file server, all from within the Files app."
+      },
+      "phraseNote": {
+        "zh": "",
+        "en": ""
+      },
+      "source": {
+        "url": "https://www.apple.com/newsroom/2019/06/the-new-ipados-powers-unique-experiences-designed-for-ipad/",
+        "label": {
+          "zh": "Apple Newsroom · iPadOS preview",
+          "en": "Apple Newsroom · iPadOS preview"
+        },
+        "locator": {
+          "zh": "More Powerful Files App section",
+          "en": "More Powerful Files App section"
+        },
+        "evidenceClass": "official_press_release",
+        "permanent": false
+      },
+      "sharedGroup": "event:2019-06-03:ipados-files-2019",
+      "spoilerGroups": [
+        "event:2019-06-03:ipados-files-2019"
+      ],
+      "researchIds": [
+        "ipados19"
+      ],
+      "review": {
+        "method": "source_text_and_options_editorial_review",
+        "checkedOn": "2026-09-22",
+        "reviewer": "ChatGPT; no independent second reviewer",
+        "choicesReviewed": true,
+        "textReviewed": true,
+        "textDemoEnabled": true,
+        "audioReviewed": false,
+        "audioAllowed": false,
+        "productionEnabled": true,
+        "evidenceLimit": "Text fact only. No voice, face identification, exact scene timing, or earliest-ever claim.",
+        "ownerReview": {
+          "verdict": "pass",
+          "on": "2026-09-23",
+          "note": "其他三个都太天真了",
+          "revisedOn": "2026-09-23",
+          "awaiting": "owner re-review of the rewritten question",
+          "round2": {
+            "verdict": "pass",
+            "on": "2026-09-23"
+          }
+        }
+      },
+      "presentation": "text_history",
+      "editorialDifficulty": "standard",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "playback": null
+    },
+    {
+      "id": "history-2019-safari-desktop",
+      "event": {
+        "id": "evt_20190603",
+        "date": "2019-06-03",
+        "name": "WWDC 2019"
+      },
+      "phrase": null,
+      "kind": "context",
+      "knowledgeKind": "software_context",
+      "topic": "ipados-safari-2019",
+      "prompt": {
+        "zh": "2019 年的 iPadOS 让 Safari 怎样处理网站？",
+        "en": "In 2019, how did iPadOS have Safari handle websites?"
+      },
+      "options": [
+        {
+          "id": "a",
+          "zh": "默认显示移动版，需要手动「请求桌面网站」",
+          "en": "Show the mobile version unless you request the desktop site"
+        },
+        {
+          "id": "b",
+          "zh": "自动显示桌面版，按 iPad 屏幕缩放并针对触控优化",
+          "en": "Show the desktop site, scaled for iPad and tuned for touch"
+        },
+        {
+          "id": "c",
+          "zh": "显示桌面版，但要接上鼠标或触控板才好操作",
+          "en": "Show the desktop version, usable only with a mouse or trackpad"
+        },
+        {
+          "id": "d",
+          "zh": "由云端把桌面网站转成触控版再显示",
+          "en": "Convert desktop sites to touch versions in the cloud first"
+        }
+      ],
+      "answerId": "b",
+      "explanation": {
+        "zh": "新闻稿写 iPadOS 自动呈现桌面版网站，按 iPad 屏幕缩放并针对触控优化。手动请求桌面网站是之前 iOS 的做法。",
+        "en": "The release says iPadOS automatically presents the desktop version, scaled for the iPad display and optimised for touch. Requesting the desktop site by hand was how earlier iOS worked."
+      },
+      "phraseNote": {
+        "zh": "",
+        "en": ""
+      },
+      "source": {
+        "url": "https://www.apple.com/newsroom/2019/06/the-new-ipados-powers-unique-experiences-designed-for-ipad/",
+        "label": {
+          "zh": "Apple Newsroom · iPadOS preview",
+          "en": "Apple Newsroom · iPadOS preview"
+        },
+        "locator": {
+          "zh": "Desktop-Class Browsing section",
+          "en": "Desktop-Class Browsing section"
+        },
+        "evidenceClass": "official_press_release",
+        "permanent": false
+      },
+      "sharedGroup": "event:2019-06-03:ipados-safari-2019",
+      "spoilerGroups": [
+        "event:2019-06-03:ipados-safari-2019"
+      ],
+      "researchIds": [
+        "ipados19"
+      ],
+      "review": {
+        "method": "source_text_and_options_editorial_review",
+        "checkedOn": "2026-09-22",
+        "reviewer": "ChatGPT; no independent second reviewer",
+        "choicesReviewed": true,
+        "textReviewed": true,
+        "textDemoEnabled": true,
+        "audioReviewed": false,
+        "audioAllowed": false,
+        "productionEnabled": true,
+        "evidenceLimit": "Text fact only. No voice, face identification, exact scene timing, or earliest-ever claim.",
+        "ownerReview": {
+          "verdict": "pass",
+          "on": "2026-09-23",
+          "note": "其他三个都太夸张了",
+          "revisedOn": "2026-09-23",
+          "awaiting": "owner third look",
+          "round2": {
+            "verdict": "pass",
+            "on": "2026-09-23"
+          },
+          "revision": "review: the English answer gave itself away by length; shortened, meaning unchanged",
+          "round3": {
+            "verdict": "pass",
+            "on": "2026-09-23"
+          }
+        }
+      },
+      "presentation": "text_history",
+      "editorialDifficulty": "standard",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "playback": null
     }
   ]
 }

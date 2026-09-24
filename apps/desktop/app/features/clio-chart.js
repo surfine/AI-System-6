@@ -8,6 +8,60 @@
 
 window.AISystem6ClioChartLoaded = true;
 
+// ClioChart is a lazy application, so its menu arrives with it: the shell does
+// not carry the rows of a window that is not open. The desk's menu vocabulary
+// (menu / submenu / menuItem / specialMenu / editWithSelection) comes from
+// menus.js; a bare context — the module contract, a worker — has none of it, so
+// the registration is skipped there instead of throwing at load.
+const CLIO_CHART_MENUS = typeof menu === "function" && typeof editWithSelection !== "undefined" ? [
+  menu("file", "menu_file", [
+    submenu("clio_chart_new_from_template", [
+      menuItem("clio-chart-new-cpu-gpu", "clio_chart_template_cpu_gpu"),
+      menuItem("clio-chart-new-gaming", "clio_chart_template_gaming"),
+      menuItem("clio-chart-new-battery-power", "clio_chart_template_battery"),
+      menuItem("clio-chart-new-noise-heat", "clio_chart_template_noise_heat"),
+      menuItem("clio-chart-new-display", "clio_chart_template_display"),
+      menuItem("clio-chart-new-rating", "clio_chart_template_rating"),
+      menuItem("clio-chart-new-blank", "clio_chart_template_blank"),
+    ]),
+    menuItem("clio-chart-import", "import"),
+    menuItem("clio-chart-save-template", "clio_chart_save_template"),
+    menuItem("clio-chart-hand-back", "clio_chart_hand_back"),
+    menuItem("close-active-window", "close", "close-window"),
+  ]),
+  menu("edit", "menu_edit", editWithSelection),
+  menu("chart", "menu_chart", [
+    // One matrix, six projections, one of them showing. The row for the
+    // projection already on screen was black and did nothing when chosen,
+    // and no row said which one that was.
+    menuItem("clio-chart-bars", "clio_chart_bars", "clio-chart-view-1", { dataset: { clioChartProjection: "bars" } }),
+    menuItem("clio-chart-matrix", "clio_chart_matrix", "clio-chart-view-2", { dataset: { clioChartProjection: "matrix" } }),
+    menuItem("clio-chart-trace", "clio_chart_trace", "clio-chart-view-3", { dataset: { clioChartProjection: "trace" } }),
+    menuItem("clio-chart-grid", "clio_chart_grid", "clio-chart-view-4", { dataset: { clioChartProjection: "grid" } }),
+    menuItem("clio-chart-score", "clio_chart_score", "clio-chart-view-5", { dataset: { clioChartProjection: "score" } }),
+    menuItem("clio-chart-source", "source_view", "", { dataset: { clioChartProjection: "source" } }),
+    menuSeparator,
+    menuItem("clio-chart-presentation", "clio_chart_presentation"),
+    menuItem("clio-chart-send-stage", "clio_chart_send_stage"),
+    menuItem("clio-chart-reverse-sort", "clio_chart_reverse_sort", "clio-chart-reverse"),
+    menuItem("clio-chart-lower-better", "clio_chart_lower_better"),
+    submenu("clio_chart_grid_shape", [
+      menuItem("clio-chart-row-add", "clio_chart_row_add"),
+      menuItem("clio-chart-row-delete", "clio_chart_row_delete"),
+      menuItem("clio-chart-column-add", "clio_chart_column_add"),
+      menuItem("clio-chart-column-delete", "clio_chart_column_delete"),
+    ]),
+    submenu("clio_chart_ask", [
+      menuItem("clio-chart-read", "clio_chart_read"),
+      menuItem("clio-chart-outliers", "clio_chart_outliers"),
+      menuItem("clio-chart-gaps", "clio_chart_gaps"),
+      menuItem("clio-chart-write-up", "clio_chart_write_up"),
+    ]),
+  ]),
+  specialMenu(),
+] : null;
+if (CLIO_CHART_MENUS) window.AISystem6RegisterApplicationMenuSet?.("clioChart", CLIO_CHART_MENUS);
+
 // --- Notebookcheck's own typography, used verbatim as our syntax ------------
 // column header suffix " *"  -> smaller is better
 // cell "76.3 ?"              -> value is uncertain
@@ -145,7 +199,6 @@ function clioChartDefaultConfig() {
     percent: "reference",
     sort: "desc",
     unit: "",
-    group: "rows",
   };
 }
 
@@ -169,7 +222,6 @@ function clioChartParseConfigComment(line) {
     else if (key === "percent" && CLIO_CHART_PERCENT_BASES.includes(value)) config.percent = value;
     else if (key === "sort" && CLIO_CHART_SORTS.includes(value)) config.sort = value;
     else if (key === "unit") config.unit = value;
-    else if (key === "group" && ["rows", "columns"].includes(value)) config.group = value;
   });
   return config;
 }
@@ -181,7 +233,6 @@ function clioChartFormatConfigComment(config) {
   if (config.percent && config.percent !== base.percent) parts.push(`percent=${config.percent}`);
   if (config.sort && config.sort !== base.sort) parts.push(`sort=${config.sort}`);
   if (config.unit) parts.push(`unit="${config.unit}"`);
-  if (config.group && config.group !== base.group) parts.push(`group=${config.group}`);
   return `<!-- cliochart: ${parts.join(", ")} -->`;
 }
 
@@ -377,6 +428,148 @@ function setClioChartConfig(table, patch = {}) {
   return changed;
 }
 
+// --- grid shape ------------------------------------------------------------
+// Adding and removing rows and columns is the difference between "the template
+// happened to fit" and "the writer can work". A shape change rebuilds every
+// line (the parsed row indices are positions in the old text, so a splice would
+// leave them pointing at the wrong rows), then re-parses: one code path for
+// insert, delete and reorder, through the same undo stack and the same
+// write-back as a cell edit.
+
+function clioChartSerializeFresh(table) {
+  const lines = [];
+  if (table.configIndex >= 0) {
+    lines.push(clioChartFormatConfigComment(table.config), "");
+  }
+  const header = clioChartBuildLine(table.style, [
+    table.labelColumn.text,
+    ...table.columns.map((column) => column.text),
+  ]);
+  const divider = clioChartBuildLine(table.style, table.style.widths.map((width) => "-".repeat(Math.max(3, width || 3))));
+  lines.push(header, divider);
+  table.rows.forEach((row) => {
+    lines.push(clioChartBuildLine(table.style, [
+      row.aggregate ? `~ ${row.label}` : row.label,
+      ...row.cells.map((cell) => cell.text),
+    ]));
+  });
+  return lines.join(table.eol);
+}
+
+// Pure: a parsed table plus an edit name in, the new markdown out (or null when
+// the edit is not allowed). Keeping the shape logic here is what lets the
+// contract test the artifact instead of the DOM.
+function clioChartShapeMutate(draft, op, options = {}) {
+  const clamp = (value, max) => Math.max(0, Math.min(Number(value) || 0, max));
+  if (op === "insert-row") {
+    const at = clamp(Number(options.index) + 1, draft.rows.length);
+    const label = `${t("clio_chart_template_object")} ${draft.rows.length + 1}`;
+    // A new row is empty by construction: a plausible-looking number is exactly
+    // the invented figure the guardrail forbids.
+    draft.rows.splice(at, 0, {
+      lineIndex: -1,
+      dirty: true,
+      label,
+      labelText: label,
+      aggregate: false,
+      cells: draft.columns.map(() => clioChartParseCell("")),
+    });
+    return true;
+  }
+  if (op === "delete-row") {
+    if (draft.rows.length <= 1) return false;
+    draft.rows.splice(clamp(options.index, draft.rows.length - 1), 1);
+    return true;
+  }
+  if (op === "move-row") {
+    const from = clamp(options.from, draft.rows.length - 1);
+    const to = clamp(options.to, draft.rows.length - 1);
+    if (from === to) return false;
+    const [row] = draft.rows.splice(from, 1);
+    draft.rows.splice(to, 0, row);
+    return true;
+  }
+  if (op === "insert-column") {
+    const at = clamp(Number(options.index) + 1, draft.columns.length);
+    const name = `${t("clio_chart_template_metric")} ${draft.columns.length + 1}`;
+    draft.columns.splice(at, 0, clioChartParseColumn(name));
+    draft.style.widths.splice(at, 0, Math.max(3, name.length));
+    draft.rows.forEach((row) => row.cells.splice(at, 0, clioChartParseCell("")));
+    return true;
+  }
+  if (op === "delete-column") {
+    if (draft.columns.length <= 1) return false;
+    const at = clamp(options.index, draft.columns.length - 1);
+    draft.columns.splice(at, 1);
+    draft.style.widths.splice(at, 1);
+    draft.rows.forEach((row) => row.cells.splice(at, 1));
+    return true;
+  }
+  return false;
+}
+
+function clioChartShapeApply(table, op, options = {}) {
+  if (!table) return null;
+  const draft = {
+    ...table,
+    columns: table.columns.slice(),
+    style: { ...table.style, widths: table.style.widths.slice() },
+    rows: table.rows.map((row) => ({ ...row, cells: row.cells.slice() })),
+  };
+  if (!clioChartShapeMutate(draft, op, options)) return null;
+  return clioChartSerializeFresh(draft);
+}
+
+function clioChartShapeEdit(op, options = {}) {
+  const table = clioChartState.table;
+  if (!table) return false;
+  pushClioChartUndo();
+  const text = clioChartShapeApply(table, op, options);
+  const next = text ? parseClioChartTable(text, table.offset || 0) : null;
+  if (!next) {
+    clioChartState.undo.pop();
+    return false;
+  }
+  clioChartState.table = next;
+  clioChartState.column = Math.min(clioChartState.column, next.columns.length - 1);
+  clioChartState.selection = {
+    row: Math.max(0, Math.min(clioChartState.selection.row, next.rows.length - 1)),
+    column: Math.max(0, Math.min(clioChartState.selection.column, next.columns.length - 1)),
+  };
+  renderClioChart();
+  writeClioChartBackToOwner();
+  return true;
+}
+
+function insertClioChartRow(afterIndex = clioChartState.table?.rows.length - 1) {
+  return clioChartShapeEdit("insert-row", { index: afterIndex });
+}
+
+function deleteClioChartRow(index) {
+  return clioChartShapeEdit("delete-row", { index });
+}
+
+function insertClioChartColumn(afterIndex = clioChartState.table?.columns.length - 1) {
+  return clioChartShapeEdit("insert-column", { index: afterIndex });
+}
+
+function deleteClioChartColumn(index) {
+  return clioChartShapeEdit("delete-column", { index });
+}
+
+// Row order belongs to the reader only when the chart is not sorting: with an
+// order in force, a drag would be a second, invisible authority over the same
+// question (the reason `sort=source` exists).
+function clioChartCanReorderRows() {
+  return (clioChartState.sortMode || "") === "source";
+}
+
+function moveClioChartRow(from, to) {
+  const table = clioChartState.table;
+  if (!table || !clioChartCanReorderRows()) return false;
+  return clioChartShapeEdit("move-row", { from, to });
+}
+
 // Zero-mark recognition: any GFM table whose first column reads as labels and
 // which has at least one mostly-numeric column is chartable. No opt-in marker
 // is required, so the file stays a normal Markdown table everywhere else.
@@ -435,6 +628,7 @@ const clioChartState = {
   title: "",
   column: 0,
   descending: true,
+  sortMode: "desc",
   projection: "bars",
   selection: { row: 0, column: 0 },
   editing: null,
@@ -479,10 +673,10 @@ function setClioChartStatus(text) {
 // Pasted TSV/CSV becomes a Markdown table first, so there is exactly one
 // internal representation and the round-trip contract still applies.
 function clioChartDelimitedToMarkdown(text) {
-  const lines = clioChartSplitLines(text).filter((line) => line.trim());
-  if (lines.length < 2) return "";
-  const delimiter = lines[0].includes("\t") ? "\t" : ",";
-  const rows = lines.map((line) => line.split(delimiter).map((cell) => cell.trim().replace(/^"|"$/g, "")));
+  const firstLine = clioChartSplitLines(text).find((line) => line.trim()) || "";
+  const delimiter = firstLine.includes("\t") ? "\t" : ",";
+  const rows = clioChartDelimitedRows(text, delimiter);
+  if (rows.length < 2) return "";
   const width = rows[0].length;
   if (width < 2 || rows.some((row) => row.length !== width)) return "";
   const widths = rows[0].map((_, index) => Math.max(...rows.map((row) => (row[index] || "").length)));
@@ -492,6 +686,38 @@ function clioChartDelimitedToMarkdown(text) {
     `| ${widths.map((size) => "-".repeat(Math.max(size, 3))).join(" | ")} |`,
     ...rows.slice(1).map(line),
   ].join("\n");
+}
+
+// A real field reader, not a split: a quoted cell may hold the delimiter, or a
+// line break, and a spreadsheet paste is the highest-volume way data gets here.
+function clioChartDelimitedRows(text, delimiter) {
+  const source = String(text || "");
+  const rows = [];
+  let row = [];
+  let field = "";
+  let quoted = false;
+  for (let index = 0; index < source.length; index += 1) {
+    const char = source[index];
+    if (quoted) {
+      if (char === '"') {
+        if (source[index + 1] === '"') { field += '"'; index += 1; }
+        else quoted = false;
+      } else {
+        field += char;
+      }
+      continue;
+    }
+    if (char === '"' && field.trim() === "") { quoted = true; field = ""; continue; }
+    if (char === delimiter) { row.push(field); field = ""; continue; }
+    if (char === "\n") { row.push(field); rows.push(row); row = []; field = ""; continue; }
+    if (char === "\r") continue;
+    field += char;
+  }
+  row.push(field);
+  rows.push(row);
+  return rows
+    .map((cells) => cells.map((cell) => cell.trim()))
+    .filter((cells) => cells.some((cell) => cell));
 }
 
 function clioChartTextToTable(text) {
@@ -560,7 +786,10 @@ function renderClioChartGrid() {
       const title = cell.unparsed ? ` title="${escapeHtml(t("clio_chart_unreadable", cell.text))}"` : "";
       return `<td class="${cellClasses}" data-row="${rowIndex}" data-cell="${columnIndex}" data-label="${escapeHtml(table.columns[columnIndex].text)}"${title}>${escapeHtml(cell.text)}</td>`;
     }).join("");
-    return `<tr class="${classes}"><td class="is-label" data-row="${rowIndex}" data-label="${escapeHtml(table.labelColumn.text)}">${escapeHtml(row.aggregate ? `~ ${row.label}` : row.label)}</td>${cells}</tr>`;
+    // The full label in a title, because the column is narrow enough to
+    // ellipsize a long machine name and a truncated name is not a name.
+    const draggable = clioChartCanReorderRows() ? ' draggable="true"' : "";
+    return `<tr class="${classes}" data-row="${rowIndex}"><td class="is-label" data-row="${rowIndex}"${draggable} data-label="${escapeHtml(table.labelColumn.text)}" title="${escapeHtml(row.label)}">${escapeHtml(row.aggregate ? `~ ${row.label}` : row.label)}</td>${cells}</tr>`;
   }).join("");
 
   els.grid.innerHTML = `<thead><tr>${header}</tr></thead><tbody>${body}</tbody>`;
@@ -715,7 +944,18 @@ function handleClioChartGridKeydown(event) {
   else if (key === "ArrowDown") { event.preventDefault(); moveClioChartSelection(1, 0); }
   else if (key === "ArrowLeft") { event.preventDefault(); moveClioChartSelection(0, -1); }
   else if (key === "ArrowRight") { event.preventDefault(); moveClioChartSelection(0, 1); }
-  else if (key === "Tab") { event.preventDefault(); moveClioChartSelection(0, event.shiftKey ? -1 : 1); }
+  else if (key === "Tab") {
+    event.preventDefault();
+    // Tab past the last cell adds a row, the way every grid a writer already
+    // knows does it; the empty row is dropped again on the way out.
+    const lastRow = table.rows.length - 1;
+    const lastColumn = table.columns.length - 1;
+    if (!event.shiftKey && row === lastRow && column === lastColumn && insertClioChartRow(row)) {
+      selectClioChartCell(Math.min(row + 1, clioChartState.table.rows.length - 1), 0);
+      return;
+    }
+    moveClioChartSelection(0, event.shiftKey ? -1 : 1);
+  }
   else if (key === "Enter" && !eventIsTextComposition(event)) { event.preventDefault(); beginClioChartCellEdit(row, column); }
   else if (key === "Backspace" || key === "Delete") {
     event.preventDefault();
@@ -743,17 +983,24 @@ function clioChartPercentAgainst(value, base, lower) {
   return Math.round((gain / base) * 100);
 }
 
-function renderClioChartBars() {
-  const table = clioChartState.table;
-  const column = table.columns[clioChartState.column];
-  const els = clioChartElements();
-
+// The projection as markup, with no DOM in it: the renderer pastes the string,
+// and the contract can assert the artifact. The other four projections still
+// build their HTML inline inside their renderers.
+function clioChartBarsMarkup(table, options = {}) {
+  const state = {
+    column: options.column ?? clioChartState.column,
+    descending: options.descending ?? clioChartState.descending,
+    sortMode: options.sortMode ?? clioChartState.sortMode,
+    presentation: options.presentation ?? clioChartState.presentation,
+    revealIndex: options.revealIndex ?? clioChartState.revealIndex,
+  };
+  const column = table.columns[state.column];
   const measured = table.rows
-    .map((row, index) => ({ row, index, cell: row.cells[clioChartState.column] }))
+    .map((row, index) => ({ row, index, cell: row.cells[state.column] }))
     .filter((entry) => entry.cell && entry.cell.value !== null);
   const missing = table.rows
     .filter((row) => {
-      const cell = row.cells[clioChartState.column];
+      const cell = row.cells[state.column];
       return !cell || cell.value === null;
     })
     .map((row) => row.label);
@@ -762,30 +1009,33 @@ function renderClioChartBars() {
   // track — so the first number typed visibly becomes a bar. A blank sheet with
   // a sentence on it would explain the app; this one demonstrates it.
   if (!measured.length) {
-    els.view.innerHTML = table.rows.map((row) => (
-      `<div class="clio-chart-row ${row.label === table.reference ? "is-reference" : ""} ${row.aggregate ? "is-aggregate" : ""}">
+    return {
+      markup: table.rows.map((row) => (
+        `<div class="clio-chart-row ${row.label === table.reference ? "is-reference" : ""} ${row.aggregate ? "is-aggregate" : ""}">
         <div class="clio-chart-row-name">${row.label === table.reference ? "▶ " : ""}${escapeHtml(row.aggregate ? `~ ${row.label}` : row.label)}</div>
         <div class="clio-chart-track"></div>
         <div class="clio-chart-value"></div>
       </div>`
-    )).join("");
-    els.missing.textContent = "";
-    return;
+      )).join(""),
+      missing: "",
+      reveal: false,
+    };
   }
 
-  measured.sort((a, b) => (clioChartState.descending ? b.cell.value - a.cell.value : a.cell.value - b.cell.value));
-  const max = Math.max(...measured.map((entry) => entry.cell.value));
+  if (state.sortMode !== "source") {
+    measured.sort((a, b) => (state.descending ? b.cell.value - a.cell.value : a.cell.value - b.cell.value));
+  }
+  const rawMax = Math.max(...measured.map((entry) => entry.cell.value));
+  const max = Number.isFinite(rawMax) && rawMax > 0 ? rawMax : 0;
   const referenceRow = table.rows.find((row) => row.label === table.reference);
-  const base = referenceRow?.cells[clioChartState.column]?.value ?? null;
+  const base = referenceRow?.cells[state.column]?.value ?? null;
   const percentBase = table.config.percent;
 
   const rows = measured.map((entry, position) => {
     const { row, cell } = entry;
     const isReference = row.label === table.reference;
-    // Solid black is reserved for the reference object; everything else gets a
-    // dither so identity survives on a 1-bit screen and on paper.
     const pattern = row.aggregate ? "aggregate" : (isReference ? "0" : String((entry.index % 5) + 1));
-    const width = Math.max(1, Math.round((cell.value / max) * 100));
+    const width = max > 0 ? Math.max(cell.value > 0 ? 1 : 0, Math.round((cell.value / max) * 100)) : 0;
     const lower = cell.range ? Math.round((cell.range[0] / max) * 100) : null;
     const upper = cell.range ? Math.round((cell.range[1] / max) * 100) : null;
 
@@ -793,15 +1043,15 @@ function renderClioChartBars() {
     if (percentBase === "reference" && !isReference) {
       const percent = clioChartPercentAgainst(cell.value, base, column.lower);
       if (percent !== null) delta = `${percent > 0 ? "+" : ""}${percent}%`;
-    } else if (percentBase === "max") {
+    } else if (percentBase === "max" && max > 0) {
       delta = `∼${Math.round((cell.value / max) * 100)}%`;
     }
 
     const extension = cell.range
       ? `<span class="clio-chart-extension" style="left:${lower}%;width:${Math.max(0, upper - lower)}%"></span>`
       : "";
-    return `<div class="clio-chart-row ${isReference ? "is-reference" : ""} ${row.aggregate ? "is-aggregate" : ""} ${clioChartRevealClass(position)}">
-      <div class="clio-chart-row-name">${isReference ? "▶ " : ""}${escapeHtml(row.aggregate ? `~ ${row.label}` : row.label)}</div>
+    return `<div class="clio-chart-row ${isReference ? "is-reference" : ""} ${row.aggregate ? "is-aggregate" : ""} ${clioChartRevealClassAt(position, state)}">
+      <div class="clio-chart-row-name" title="${escapeHtml(row.aggregate ? `~ ${row.label}` : row.label)}">${isReference ? "▶ " : ""}${escapeHtml(row.aggregate ? `~ ${row.label}` : row.label)}</div>
       <div class="clio-chart-track">
         ${extension}
         <span class="clio-chart-bar ${cell.uncertain ? "is-uncertain" : ""}" data-pattern="${pattern}" style="width:${width}%"></span>
@@ -816,12 +1066,26 @@ function renderClioChartBars() {
     <span><i data-pattern="extension"></i>${escapeHtml(t("clio_chart_legend_extension"))}</span>
     ${column.lower ? `<span>${escapeHtml(t("clio_chart_smaller_is_better"))}</span>` : ""}
   </div>`;
+  return {
+    markup: rows + legend,
+    // A machine did not measure these, so no bar is drawn and the omission is
+    // stated rather than smoothed over with a zero-length bar.
+    missing: missing.length ? t("clio_chart_not_measured", missing.join("、")) : "",
+    reveal: true,
+  };
+}
 
-  els.view.innerHTML = rows + legend;
-  // A machine did not measure these, so no bar is drawn and the omission is
-  // stated rather than smoothed over with a zero-length bar.
-  els.missing.textContent = missing.length ? t("clio_chart_not_measured", missing.join("、")) : "";
-  animateClioChartBars();
+function clioChartRevealClassAt(index, state) {
+  return state.presentation && index >= state.revealIndex ? "is-presentation-muted" : "";
+}
+
+function renderClioChartBars() {
+  const table = clioChartState.table;
+  const els = clioChartElements();
+  const drawn = clioChartBarsMarkup(table);
+  els.view.innerHTML = drawn.markup;
+  els.missing.textContent = drawn.missing;
+  if (drawn.reveal) animateClioChartBars();
 }
 
 function animateClioChartBars() {
@@ -940,9 +1204,11 @@ function clioChartMatrixDelta(value, base, lower) {
   return `${percent > 0 ? "+" : ""}${percent}%`;
 }
 
-function renderClioChartMatrix() {
-  const table = clioChartState.table;
-  const els = clioChartElements();
+function clioChartMatrixMarkup(table, state = {}) {
+  const reveal = (index) => clioChartRevealClassAt(index, {
+    presentation: state.presentation ?? clioChartState.presentation,
+    revealIndex: state.revealIndex ?? clioChartState.revealIndex,
+  });
   const reference = table.rows.find((row) => row.label === table.reference) || table.rows[0];
   const others = table.rows.filter((row) => row !== reference);
   const ordered = [reference, ...others];
@@ -964,7 +1230,7 @@ function renderClioChartMatrix() {
       const delta = clioChartMatrixDelta(cell.value, base, column.lower);
       return `<td>${escapeHtml(cell.text)}${delta ? `<span class="clio-chart-delta">${escapeHtml(delta)}</span>` : ""}</td>`;
     }).join("");
-    return `<tr class="${clioChartRevealClass(columnIndex)}"><th class="is-metric" scope="row">${escapeHtml(column.text)}</th>${cells}</tr>`;
+    return `<tr class="${reveal(columnIndex)}"><th class="is-metric" scope="row">${escapeHtml(column.text)}</th>${cells}</tr>`;
   }).join("");
 
   const rollup = `<tr class="is-rollup"><th class="is-metric" scope="row">${escapeHtml(t("clio_chart_rollup_label"))}</th>${
@@ -982,9 +1248,14 @@ function renderClioChartMatrix() {
     t("clio_chart_rollup_note"),
   ].filter(Boolean).join("　");
 
-  els.view.innerHTML = `<div class="clio-chart-matrix-scroller"><table class="clio-chart-matrix">
+  return `<div class="clio-chart-matrix-scroller"><table class="clio-chart-matrix">
     <thead>${header}</thead><tbody>${body}${rollup}</tbody>
   </table></div><p class="clio-chart-matrix-note">${escapeHtml(notes)}</p>`;
+}
+
+function renderClioChartMatrix() {
+  const els = clioChartElements();
+  els.view.innerHTML = clioChartMatrixMarkup(clioChartState.table);
   els.missing.textContent = "";
 }
 
@@ -1021,15 +1292,13 @@ function clioChartTracePath(points, bounds) {
   return commands.join(" ");
 }
 
-function renderClioChartTrace() {
-  const table = clioChartState.table;
-  const els = clioChartElements();
+function clioChartTraceMarkup(table, state = {}) {
+  const reveal = (index) => clioChartRevealClassAt(index, {
+    presentation: state.presentation ?? clioChartState.presentation,
+    revealIndex: state.revealIndex ?? clioChartState.revealIndex,
+  });
   const series = clioChartTraceSeries(table);
-  if (!series.length) {
-    els.view.innerHTML = `<p class="clio-chart-empty-projection">${escapeHtml(t("clio_chart_trace_empty"))}</p>`;
-    els.missing.textContent = "";
-    return;
-  }
+  if (!series.length) return `<p class="clio-chart-empty-projection">${escapeHtml(t("clio_chart_trace_empty"))}</p>`;
   const allPoints = series.flatMap((item) => item.values).filter((point) => point.value !== null);
   const xs = allPoints.map((point) => point.x);
   const ys = allPoints.map((point) => point.value);
@@ -1044,15 +1313,15 @@ function renderClioChartTrace() {
     spanY: Math.max(1, maxY - minY),
   };
   const paths = series.map((item, index) => (
-    `<path class="clio-chart-trace-line is-drawn ${clioChartRevealClass(index)}" data-pattern="${index % 4}" pathLength="100" d="${clioChartTracePath(item.values, bounds)}"></path>`
+    `<path class="clio-chart-trace-line is-drawn ${reveal(index)}" data-pattern="${index % 4}" pathLength="100" d="${clioChartTracePath(item.values, bounds)}"></path>`
   )).join("");
   const legend = series.map((item, index) => {
     const values = item.values.filter((point) => point.value !== null).map((point) => point.value);
     const average = values.reduce((sum, value) => sum + value, 0) / values.length;
     const unit = item.column.unit || table.config.unit || "";
-    return `<span class="${clioChartRevealClass(index)}"><i data-pattern="${index % 4}"></i>${escapeHtml(item.column.name)} · Ø${escapeHtml(clioChartFormatNumber(average))} (${escapeHtml(clioChartFormatNumber(Math.min(...values)))}–${escapeHtml(clioChartFormatNumber(Math.max(...values)))}) ${escapeHtml(unit)}</span>`;
+    return `<span class="${reveal(index)}"><i data-pattern="${index % 4}"></i>${escapeHtml(item.column.name)} · Ø${escapeHtml(clioChartFormatNumber(average))} (${escapeHtml(clioChartFormatNumber(Math.min(...values)))}–${escapeHtml(clioChartFormatNumber(Math.max(...values)))}) ${escapeHtml(unit)}</span>`;
   }).join("");
-  els.view.innerHTML = `<div class="clio-chart-trace">
+  return `<div class="clio-chart-trace">
     <svg viewBox="0 0 640 260" role="img" aria-label="${escapeHtml(t("clio_chart_trace"))}">
       <line class="clio-chart-axis" x1="52" y1="230" x2="620" y2="230"></line>
       <line class="clio-chart-axis" x1="52" y1="18" x2="52" y2="230"></line>
@@ -1064,6 +1333,12 @@ function renderClioChartTrace() {
     </svg>
     <div class="clio-chart-trace-legend">${legend}</div>
   </div>`;
+}
+
+function renderClioChartTrace() {
+  const table = clioChartState.table;
+  const els = clioChartElements();
+  els.view.innerHTML = clioChartTraceMarkup(table);
   els.missing.textContent = "";
 }
 
@@ -1086,20 +1361,19 @@ function clioChartFormatNumber(value) {
   return Number.isInteger(value) ? String(value) : String(Math.round(value * 100) / 100);
 }
 
-function renderClioChartSpatialGrid() {
-  const table = clioChartState.table;
-  const els = clioChartElements();
+function clioChartSpatialGridMarkup(table, state = {}) {
+  const reveal = (index) => clioChartRevealClassAt(index, {
+    presentation: state.presentation ?? clioChartState.presentation,
+    revealIndex: state.revealIndex ?? clioChartState.revealIndex,
+  });
+  const columnIndex = state.column ?? clioChartState.column;
   const entries = table.rows.map((row, index) => ({
     row,
     index,
-    cell: row.cells[clioChartState.column],
+    cell: row.cells[columnIndex],
   }));
   const measured = entries.filter((entry) => entry.cell?.value !== null);
-  if (!measured.length) {
-    els.view.innerHTML = `<p class="clio-chart-empty-projection">${escapeHtml(t("clio_chart_grid_empty"))}</p>`;
-    els.missing.textContent = "";
-    return;
-  }
+  if (!measured.length) return `<p class="clio-chart-empty-projection">${escapeHtml(t("clio_chart_grid_empty"))}</p>`;
   const values = measured.map((entry) => entry.cell.value);
   const min = Math.min(...values);
   const max = Math.max(...values);
@@ -1108,16 +1382,21 @@ function renderClioChartSpatialGrid() {
   const cells = entries.map((entry, index) => {
     const density = clioChartGridDensity(entry.cell?.value ?? null, min, max);
     const text = entry.cell?.value === null ? "–" : entry.cell.text;
-    return `<div class="clio-chart-spatial-cell ${clioChartRevealClass(index)}" data-density="${density}">
+    return `<div class="clio-chart-spatial-cell ${reveal(index)}" data-density="${density}">
       <span>${escapeHtml(entry.row.label)}</span><b>${escapeHtml(text)}</b>
     </div>`;
   }).join("");
-  els.view.innerHTML = `<div class="clio-chart-spatial-grid columns-${columns}">${cells}</div>
+  return `<div class="clio-chart-spatial-grid columns-${columns}">${cells}</div>
     <div class="clio-chart-spatial-summary">
       <span>${escapeHtml(t("clio_chart_maximum"))}: <b>${escapeHtml(clioChartFormatNumber(max))}</b></span>
       <span>${escapeHtml(t("clio_chart_average"))}: <b>${escapeHtml(clioChartFormatNumber(average))}</b></span>
       <span>${escapeHtml(t("clio_chart_minimum"))}: <b>${escapeHtml(clioChartFormatNumber(min))}</b></span>
     </div>`;
+}
+
+function renderClioChartSpatialGrid() {
+  const els = clioChartElements();
+  els.view.innerHTML = clioChartSpatialGridMarkup(clioChartState.table);
   els.missing.textContent = "";
 }
 
@@ -1126,29 +1405,33 @@ function renderClioChartSpatialGrid() {
 // scores, but carries no weight source, so ClioChart states that it did not
 // calculate a weighted total.
 
-function renderClioChartScores() {
-  const table = clioChartState.table;
-  const els = clioChartElements();
+function clioChartScoresMarkup(table, state = {}) {
+  const reveal = (index) => clioChartRevealClassAt(index, {
+    presentation: state.presentation ?? clioChartState.presentation,
+    revealIndex: state.revealIndex ?? clioChartState.revealIndex,
+  });
+  const columnIndex = state.column ?? clioChartState.column;
   const rows = table.rows.map((row, index) => ({
     row,
     index,
-    cell: row.cells[clioChartState.column],
+    cell: row.cells[columnIndex],
   })).filter((entry) => entry.cell && (entry.cell.score || entry.cell.value !== null));
-  if (!rows.length) {
-    els.view.innerHTML = `<p class="clio-chart-empty-projection">${escapeHtml(t("clio_chart_score_empty"))}</p>`;
-    els.missing.textContent = "";
-    return;
-  }
+  if (!rows.length) return `<p class="clio-chart-empty-projection">${escapeHtml(t("clio_chart_score_empty"))}</p>`;
   const body = rows.map((entry, position) => {
     const normalized = entry.cell.score?.normalized ?? entry.cell.value;
     const width = Math.max(0, Math.min(100, normalized));
-    return `<div class="clio-chart-score-row ${clioChartRevealClass(position)}">
+    return `<div class="clio-chart-score-row ${reveal(position)}">
       <span>${escapeHtml(entry.row.label)}</span>
       <div class="clio-chart-score-track"><i style="width:${width}%"></i></div>
       <b>${escapeHtml(entry.cell.text)}</b>
     </div>`;
   }).join("");
-  els.view.innerHTML = `${body}<p class="clio-chart-score-note">${escapeHtml(t("clio_chart_score_no_total"))}</p>`;
+  return `${body}<p class="clio-chart-score-note">${escapeHtml(t("clio_chart_score_no_total"))}</p>`;
+}
+
+function renderClioChartScores() {
+  const els = clioChartElements();
+  els.view.innerHTML = clioChartScoresMarkup(clioChartState.table);
   els.missing.textContent = "";
 }
 
@@ -1182,42 +1465,306 @@ function revealNextClioChartItem() {
   return true;
 }
 
+// --- the projection as a portable drawing ----------------------------------
+// The chart that reaches a deck is an image the deck owns, not a live DOM
+// subtree: a slides.md that carries a picture can be saved, reopened, printed
+// and handed to Marp, and the picture cannot disagree with a stylesheet that
+// stayed behind. Drawings are 1-bit in spirit — one ink, one tint, and patterns
+// instead of hues — so a printed page and a dark era theme both stay legible.
+
+function clioChartSvgEscape(value) {
+  return String(value === null || value === undefined ? "" : value)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function clioChartSvgPalette() {
+  const view = typeof document !== "undefined" ? clioChartElements().view : null;
+  if (!view || typeof window === "undefined") return { ink: "#111111", tint: "#e8e8e8", paper: "#ffffff" };
+  const styles = window.getComputedStyle(view);
+  const read = (name, fallback) => {
+    const value = (styles.getPropertyValue(name) || "").trim();
+    return value || fallback;
+  };
+  return {
+    ink: read("--clio-chart-ink", "#111111"),
+    tint: read("--clio-chart-panel-quiet", "var(--clio-chart-tint)") === "var(--clio-chart-tint)"
+      ? read("--clio-chart-tint", "#e8e8e8")
+      : read("--clio-chart-panel-quiet", "#e8e8e8"),
+    // A transparent page lets the deck's own era ground show through; the ink
+    // then has to be the deck's ink, so the palette falls back to black only
+    // when nothing is readable.
+    paper: read("--clio-chart-paper", "transparent"),
+  };
+}
+
+function clioChartSvgDefs(palette, id) {
+  return `<defs>
+    <pattern id="${id}-d50" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect class="svg-tint" width="8" height="8" /><rect class="svg-ink" width="4" height="8" />
+    </pattern>
+    <pattern id="${id}-d25" width="8" height="8" patternUnits="userSpaceOnUse">
+      <rect class="svg-tint" width="8" height="8" /><rect class="svg-ink" width="3" height="3" />
+    </pattern>
+    <pattern id="${id}-d12" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)">
+      <rect class="svg-tint" width="10" height="10" /><rect class="svg-ink" width="1.5" height="10" />
+    </pattern>
+    <style>
+      .svg-ink { fill: ${palette.ink}; }
+      .svg-tint { fill: ${palette.tint}; }
+      .svg-ink-line { stroke: ${palette.ink}; fill: none; }
+      .svg-tint-line { stroke: ${palette.tint}; fill: none; }
+      text { font-family: ${palette.body || "-apple-system, Helvetica, sans-serif"}; fill: ${palette.ink}; }
+      .svg-label { font-size: 21px; }
+      .svg-value { font-size: 21px; font-variant-numeric: tabular-nums; }
+      .svg-muted { fill: ${palette.muted || palette.ink}; font-size: 17px; }
+    </style>
+  </defs>`;
+}
+
+// Bars, scores, the spatial grid, a comparison matrix and a trace: five
+// projections of one matrix, drawn with the same primitives.
+function clioChartProjectionSvg(table, projection, paletteInput) {
+  if (!table) return "";
+  const palette = { ...clioChartSvgPalette(), ...(paletteInput || {}) };
+  const id = "cc";
+  const column = table.columns[clioChartState.column] || table.columns[0];
+  const heading = column ? column.name : t("clio_chart_label");
+  const unit = (column && column.unit) || table.config.unit || "";
+  const head = `${clioChartSvgDefs(palette, id)}
+    ${palette.paper === "transparent" ? "" : `<rect x="0" y="0" width="1280" height="720" fill="${palette.paper}" />`}
+    <text x="60" y="64" font-size="30" font-weight="600">${clioChartSvgEscape(heading)}</text>
+    ${unit ? `<text class="svg-muted" x="1220" y="64" text-anchor="end">${clioChartSvgEscape(unit)}</text>` : ""}`;
+  const open = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" role="img" aria-label="${clioChartSvgEscape(`${t("clio_chart_label")} — ${heading}`)}">`;
+  const close = "</svg>";
+
+  if (projection === "matrix") return open + head + clioChartSvgMatrix(table, palette, id) + close;
+  if (projection === "grid") return open + head + clioChartSvgGrid(table, palette, id) + close;
+  if (projection === "trace") return open + head + clioChartSvgTrace(table, palette, id) + close;
+  if (projection === "score") return open + head + clioChartSvgScores(table, palette, id) + close;
+  return open + head + clioChartSvgBars(table, palette, id) + close;
+}
+
+function clioChartSvgMeasured(table) {
+  const columnIndex = clioChartState.column;
+  const rows = table.rows
+    .map((row, index) => ({ row, index, value: row.cells[columnIndex] ? row.cells[columnIndex].value : null }))
+    .filter((entry) => entry.value !== null);
+  if ((clioChartState.sortMode || "desc") !== "source") {
+    rows.sort((a, b) => (clioChartState.descending ? b.value - a.value : a.value - b.value));
+  }
+  return rows;
+}
+
+function clioChartSvgBars(table, palette, id) {
+  const entries = clioChartSvgMeasured(table);
+  if (!entries.length) return `<text class="svg-muted" x="60" y="140">${clioChartSvgEscape(t("clio_chart_not_measured", ""))}</text>`;
+  const reference = table.rows.find((row) => row.label === table.reference);
+  const base = reference ? reference.cells[clioChartState.column]?.value ?? null : null;
+  const max = Math.max(...entries.map((entry) => entry.value), 0);
+  const scale = max > 0 ? max : 1;
+  const trackX = 380;
+  const trackW = 740;
+  const pitch = Math.min(64, Math.floor(560 / entries.length));
+  const barH = Math.min(34, Math.max(16, pitch - 18));
+  const parts = entries.map((entry, position) => {
+    const y = 120 + position * pitch;
+    const isReference = entry.row.label === table.reference;
+    const isAggregate = entry.row.aggregate;
+    const width = Math.round((entry.value / scale) * trackW);
+    const fill = isAggregate ? "none"
+      : isReference ? palette.ink
+        : `url(#${id}-${["d50", "d25", "d12"][entry.index % 3]})`;
+    const stroke = isAggregate || fill !== "none" ? ` stroke="${palette.ink}" stroke-width="1.5"` : "";
+    const dash = isAggregate ? ' stroke-dasharray="6 5"' : "";
+    const cell = entry.row.cells[clioChartState.column];
+    const range = cell && cell.range
+      ? `<rect x="${trackX + Math.round((cell.range[0] / scale) * trackW)}" y="${y - 4}" width="${Math.round(((cell.range[1] - cell.range[0]) / scale) * trackW)}" height="${barH + 8}" fill="none" stroke="${palette.ink}" stroke-width="1" stroke-dasharray="4 3" />`
+      : "";
+    const percent = !isReference && base
+      ? clioChartPercentAgainst(entry.value, base, column_is_lower(table)) : null;
+    const delta = percent === null ? "" : `  ${percent > 0 ? "+" : ""}${percent}%`;
+    return `<text class="svg-label" x="60" y="${y + barH - 4}">${entry.row.aggregate ? "~ " : ""}${clioChartSvgEscape(entry.row.label)}</text>
+      <rect class="svg-tint" x="${trackX}" y="${y - 4}" width="${trackW}" height="${barH + 8}" />
+      ${range}
+      <rect x="${trackX}" y="${y}" width="${Math.max(entry.value > 0 ? 2 : 0, width)}" height="${barH}" fill="${fill}"${stroke}${dash} />
+      <text class="svg-value" x="${trackX + trackW + 14}" y="${y + barH - 2}" text-anchor="end">${clioChartSvgEscape(cell ? cell.text : entry.value)}${clioChartSvgEscape(delta)}</text>`;
+  }).join("\n");
+  const missing = table.rows
+    .filter((row) => {
+      const cell = row.cells[clioChartState.column];
+      return !cell || cell.value === null;
+    })
+    .map((row) => row.label);
+  const note = missing.length ? t("clio_chart_not_measured", missing.join("、")) : "";
+  return `${parts}${note ? `<text class="svg-muted" x="60" y="684">${clioChartSvgEscape(note)}</text>` : ""}`;
+}
+
+function column_is_lower(table) {
+  const column = table.columns[clioChartState.column];
+  return !!(column && column.lower);
+}
+
+function clioChartSvgScores(table, palette, id) {
+  const rows = table.rows
+    .map((row, index) => ({ row, index, cell: row.cells[clioChartState.column] }))
+    .filter((entry) => entry.cell && (entry.cell.score || entry.cell.value !== null));
+  if (!rows.length) return `<text class="svg-muted" x="60" y="140">${clioChartSvgEscape(t("clio_chart_score_empty"))}</text>`;
+  const trackX = 380, trackW = 740;
+  const pitch = Math.min(64, Math.floor(520 / rows.length));
+  return rows.map((entry, position) => {
+    const y = 120 + position * pitch;
+    const normalized = Math.max(0, Math.min(100, entry.cell.score?.normalized ?? entry.cell.value));
+    return `<text class="svg-label" x="60" y="${y + 22}">${clioChartSvgEscape(entry.row.label)}</text>
+      <rect class="svg-tint" x="${trackX}" y="${y}" width="${trackW}" height="28" />
+      <rect class="svg-ink" x="${trackX}" y="${y}" width="${Math.round((normalized / 100) * trackW)}" height="28" />
+      <text class="svg-value" x="${trackX + trackW + 14}" y="${y + 22}" text-anchor="end">${clioChartSvgEscape(entry.cell.text)}</text>`;
+  }).join("\n") + `<text class="svg-muted" x="60" y="684">${clioChartSvgEscape(t("clio_chart_score_no_total"))}</text>`;
+}
+
+function clioChartSvgGrid(table, palette, id) {
+  const entries = table.rows.map((row) => ({ row, cell: row.cells[clioChartState.column] }));
+  const measured = entries.filter((entry) => entry.cell && entry.cell.value !== null);
+  if (!measured.length) return `<text class="svg-muted" x="60" y="140">${clioChartSvgEscape(t("clio_chart_grid_empty"))}</text>`;
+  const values = measured.map((entry) => entry.cell.value);
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const columns = Math.min(6, Math.max(1, Math.ceil(Math.sqrt(entries.length))));
+  const size = Math.min(180, Math.floor(1040 / columns) - 16);
+  const density = { "0": "none", "12": `url(#${id}-d12)`, "25": `url(#${id}-d25)`, "50": `url(#${id}-d50)`, "75": palette.ink, "100": palette.ink, missing: "none" };
+  const cells = entries.map((entry, index) => {
+    const column = index % columns;
+    const row = Math.floor(index / columns);
+    const x = 60 + column * (size + 16);
+    const y = 130 + row * (size + 62);
+    const band = clioChartGridDensity(entry.cell ? entry.cell.value : null, min, max);
+    const text = entry.cell && entry.cell.value !== null ? entry.cell.text : "–";
+    return `<rect x="${x}" y="${y}" width="${size}" height="${size}" fill="${density[band] || "none"}" stroke="${palette.ink}" stroke-width="1" />
+      <text class="svg-label" x="${x}" y="${y + size + 26}">${clioChartSvgEscape(entry.row.label)}</text>
+      <text class="svg-value" x="${x + size}" y="${y + 26}" text-anchor="end">${clioChartSvgEscape(text)}</text>`;
+  }).join("\n");
+  const average = values.reduce((sum, value) => sum + value, 0) / values.length;
+  return `${cells}
+    <text class="svg-muted" x="60" y="684">${clioChartSvgEscape(`${t("clio_chart_minimum")} ${clioChartFormatNumber(min)}  ·  ${t("clio_chart_average")} ${clioChartFormatNumber(average)}  ·  ${t("clio_chart_maximum")} ${clioChartFormatNumber(max)}`)}</text>`;
+}
+
+function clioChartSvgMatrix(table, palette, id) {
+  const reference = table.rows.find((row) => row.label === table.reference) || table.rows[0];
+  const ordered = [reference, ...table.rows.filter((row) => row !== reference)];
+  const rowH = Math.min(48, Math.floor(500 / Math.max(1, table.columns.length)));
+  const colW = Math.floor(880 / Math.max(1, ordered.length));
+  const head = ordered.map((row, index) => (
+    `<text class="svg-label" x="${380 + index * colW}" y="118">${clioChartSvgEscape(row.label)}</text>`
+  )).join("");
+  const body = table.columns.map((column, columnIndex) => {
+    const y = 140 + columnIndex * rowH;
+    const base = reference.cells[columnIndex]?.value ?? null;
+    const cells = ordered.map((row, position) => {
+      const cell = row.cells[columnIndex];
+      if (!cell || cell.value === null) return `<text class="svg-value" x="${380 + position * colW}" y="${y + 24}">–</text>`;
+      const percent = position === 0 ? null : clioChartPercentAgainst(cell.value, base, column.lower);
+      const delta = percent === null ? "" : ` ${percent > 0 ? "+" : ""}${percent}%`;
+      return `<text class="svg-value" x="${380 + position * colW}" y="${y + 24}">${clioChartSvgEscape(cell.text)}${clioChartSvgEscape(delta)}</text>`;
+    }).join("");
+    return `<text class="svg-label" x="60" y="${y + 24}">${clioChartSvgEscape(column.text)}</text>
+      <line class="svg-tint-line" x1="60" y1="${y + rowH - 8}" x2="1220" y2="${y + rowH - 8}" stroke-width="1" />
+      ${cells}`;
+  }).join("\n");
+  return `${head}${body}
+    <text class="svg-muted" x="60" y="684">${clioChartSvgEscape(t("clio_chart_rollup_note"))}</text>`;
+}
+
+function clioChartSvgTrace(table, palette, id) {
+  const series = clioChartTraceSeries(table);
+  if (!series.length) return `<text class="svg-muted" x="60" y="140">${clioChartSvgEscape(t("clio_chart_trace_empty"))}</text>`;
+  const points = series.flatMap((item) => item.values).filter((point) => point.value !== null);
+  const minX = Math.min(...points.map((point) => point.x));
+  const maxX = Math.max(...points.map((point) => point.x));
+  const minY = Math.min(...points.map((point) => point.value));
+  const maxY = Math.max(...points.map((point) => point.value));
+  const bounds = { minX, minY, spanX: Math.max(1, maxX - minX), spanY: Math.max(1, maxY - minY) };
+  const path = (value) => {
+    let open = false;
+    const commands = [];
+    value.forEach((point) => {
+      if (point.value === null) { open = false; return; }
+      const x = 100 + ((point.x - bounds.minX) / bounds.spanX) * 1100;
+      const y = 620 - ((point.value - bounds.minY) / bounds.spanY) * 480;
+      commands.push(`${open ? "L" : "M"}${x.toFixed(1)} ${y.toFixed(1)}`);
+      open = true;
+    });
+    return commands.join(" ");
+  };
+  const dashes = ["", "10 6", "3 5", "12 4 3 4"];
+  const lines = series.map((item, index) => (
+    `<path d="${path(item.values)}" fill="none" stroke="${palette.ink}" stroke-width="2.5" stroke-dasharray="${dashes[index % 4]}" />`
+  )).join("\n");
+  const legend = series.map((item, index) => {
+    const values = item.values.filter((point) => point.value !== null).map((point) => point.value);
+    const average = values.reduce((sum, value) => sum + value, 0) / values.length;
+    const line = `<line x1="60" y1="${676 + index * 28}" x2="112" y2="${676 + index * 28}" stroke="${palette.ink}" stroke-width="2.5" stroke-dasharray="${dashes[index % 4]}" />`;
+    return `${line}<text class="svg-muted" x="124" y="${682 + index * 28}">${clioChartSvgEscape(`${item.column.name} · Ø${clioChartFormatNumber(average)} (${clioChartFormatNumber(Math.min(...values))}–${clioChartFormatNumber(Math.max(...values))})`)}</text>`;
+  }).join("\n");
+  return `<line class="svg-ink-line" x1="100" y1="620" x2="1200" y2="620" stroke-width="1.5" />
+    <line class="svg-ink-line" x1="100" y1="140" x2="100" y2="620" stroke-width="1.5" />
+    <text class="svg-muted" x="100" y="646">${clioChartSvgEscape(clioChartFormatNumber(minX))}</text>
+    <text class="svg-muted" x="1200" y="646" text-anchor="end">${clioChartSvgEscape(clioChartFormatNumber(maxX))}</text>
+    ${lines}${legend}`;
+}
+
+function clioChartBase64(text) {
+  // UTF-8 first, then base64: a drawing carries Chinese labels, and a bare
+  // btoa() refuses anything above Latin-1.
+  const utf8 = encodeURIComponent(String(text))
+    .replace(/%([0-9A-F]{2})/g, (match, hex) => String.fromCharCode(parseInt(hex, 16)));
+  return btoa(utf8);
+}
+
+// What a stage page carries: the drawing itself, and the table it came from so
+// the page can still be audited a year later.
+function clioChartStageMarkdown(table, projection) {
+  const svg = clioChartProjectionSvg(table, projection);
+  const heading = table.columns[clioChartState.column]?.name || t("clio_chart_label");
+  const provenance = serializeClioChartTable(table).replace(/--/g, "—");
+  return [
+    "---",
+    "marp: true",
+    "theme: default",
+    "paginate: true",
+    "size: 16:9",
+    "---",
+    "",
+    "<!-- _class: evidence light -->",
+    `<!-- job: ${t("clio_chart_send_stage_job")} -->`,
+    "",
+    `## ${heading}`,
+    "",
+    `![${t("clio_chart_label")}: ${heading}](data:image/svg+xml;base64,${clioChartBase64(svg)})`,
+    "",
+    `<!-- clio-chart: ${provenance.replace(/\n/g, " / ")} -->`,
+  ].join("\n");
+}
+
 async function sendClioChartToStage() {
   const table = clioChartState.table;
-  const view = clioChartElements().view;
-  if (!table || !view || clioChartState.projection === "source") {
+  if (!table || clioChartState.projection === "source") {
     setClioChartStatus(t("clio_chart_stage_needs_projection"));
     return false;
   }
-  const snapshot = document.createElement("div");
-  snapshot.className = "clio-chart-stage-snapshot";
-  const heading = document.createElement("h1");
-  heading.textContent = table.columns[clioChartState.column]?.name || t("clio_chart_label");
-  const chart = view.cloneNode(true);
-  chart.removeAttribute("id");
-  chart.classList.remove("window-frame-scroller");
-  chart.querySelectorAll("[id]").forEach((node) => node.removeAttribute("id"));
-  chart.querySelectorAll(".is-drawn").forEach((node) => node.classList.remove("is-drawn"));
-  snapshot.append(heading, chart);
-
   if (typeof ensureClioStageModule === "function") await ensureClioStageModule();
   if (!window.AISystem6ClioStage?.open) {
     setClioChartStatus(t("clio_chart_stage_failed"));
     return false;
   }
-  const title = `${t("clio_chart_label")} — ${heading.textContent}`;
+  const heading = table.columns[clioChartState.column]?.name || t("clio_chart_label");
+  const title = `${t("clio_chart_label")} — ${heading}`;
+  // One page that carries its own drawing and its own source table. Nothing
+  // here depends on this window still being open, which is what makes the
+  // page savable, printable and exportable.
   window.AISystem6ClioStage.open({
     title,
     sourceKind: "clioChart",
-    chartSnapshot: snapshot,
-    markdown: [
-      "---",
-      "marp: true",
-      "size: 16:9",
-      "---",
-      "",
-      `# ${heading.textContent}`,
-    ].join("\n"),
+    markdown: clioChartStageMarkdown(table, clioChartState.projection),
   });
   return true;
 }
@@ -1247,6 +1794,12 @@ function writeClioChartBackToOwner() {
   const index = document_.indexOf(owner.text);
   if (index < 0) {
     setClioChartStatus(t("clio_chart_write_back_failed"));
+    return false;
+  }
+  // The same block twice in one draft is not the same block: writing into the
+  // first match could silently edit a table the writer never opened.
+  if (document_.indexOf(owner.text, index + 1) >= 0) {
+    setClioChartStatus(t("clio_chart_write_back_ambiguous"));
     return false;
   }
   const next = serializeClioChartTable(table);
@@ -1566,7 +2119,11 @@ function loadClioChartTable(table, meta = {}) {
   clioChartState.templateFileId = meta.templateFileId || "";
   clioChartState.title = meta.title || t("clio_chart_label");
   clioChartState.column = 0;
-  clioChartState.descending = !table.columns[0]?.lower;
+  // The document's own declaration is authority on load: `sort=source` draws the
+  // file's row order, `sort=asc` draws ascending, and otherwise the column's
+  // smaller-is-better flag decides which end reads first.
+  clioChartState.sortMode = ["source", "asc"].includes(table.config.sort) ? table.config.sort : "auto";
+  clioChartState.descending = clioChartState.sortMode === "asc" ? false : !table.columns[0]?.lower;
   clioChartState.projection = CLIO_CHART_PROJECTIONS.includes(table.config.projection)
     ? table.config.projection
     : "bars";
@@ -1639,6 +2196,7 @@ function chartClioChartColumn(index) {
     clioChartState.descending = !table.columns[index].lower;
   }
   const sort = clioChartState.descending ? "desc" : "asc";
+  clioChartState.sortMode = sort;
   if (table.config.sort !== sort) {
     pushClioChartUndo();
     if (setClioChartConfig(table, { sort })) writeClioChartBackToOwner();
@@ -1705,6 +2263,31 @@ function bindClioChartControls() {
   els.gridPane?.addEventListener("pointerdown", () => {
     if (!clioChartState.editing) els.gridPane.focus({ preventScroll: true });
   });
+
+  // Row order is draggable only when the chart is drawing the file's order.
+  let dragRow = -1;
+  els.grid.addEventListener("dragstart", (event) => {
+    const label = event.target.closest("td.is-label");
+    if (!label || !clioChartCanReorderRows()) return;
+    dragRow = Number(label.dataset.row);
+    event.dataTransfer?.setData("text/plain", String(dragRow));
+    if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
+  });
+  els.grid.addEventListener("dragover", (event) => {
+    if (dragRow < 0) return;
+    event.preventDefault();
+    if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
+  });
+  els.grid.addEventListener("drop", (event) => {
+    const label = event.target.closest("td.is-label, td[data-cell]");
+    if (dragRow < 0 || !label) return;
+    event.preventDefault();
+    const target = Number(label.dataset.row);
+    const from = dragRow;
+    dragRow = -1;
+    moveClioChartRow(from, target);
+  });
+  els.grid.addEventListener("dragend", () => { dragRow = -1; });
 
   // The split handle is the shared TDI grabber, so it drags, steps with the
   // arrow keys, reports aria-valuenow and remembers its width like every other
@@ -1782,6 +2365,25 @@ window.AISystem6ClioChart = {
   setColumnLower: setClioChartColumnLower,
   setColumnText: setClioChartColumnText,
   setConfig: setClioChartConfig,
+  insertRow: insertClioChartRow,
+  deleteRow: deleteClioChartRow,
+  insertColumn: insertClioChartColumn,
+  deleteColumn: deleteClioChartColumn,
+  moveRow: moveClioChartRow,
+  canReorderRows: clioChartCanReorderRows,
+  sortMode: () => clioChartState.sortMode || "",
+  serializeFresh: () => (clioChartState.table ? clioChartSerializeFresh(clioChartState.table) : ""),
+  shapeApply: clioChartShapeApply,
+  delimitedRows: clioChartDelimitedRows,
+  delimitedToMarkdown: clioChartDelimitedToMarkdown,
+  projectionSvg: clioChartProjectionSvg,
+  stageMarkdown: clioChartStageMarkdown,
+  svgBase64: clioChartBase64,
+  barsMarkup: clioChartBarsMarkup,
+  matrixMarkup: clioChartMatrixMarkup,
+  traceMarkup: clioChartTraceMarkup,
+  gridMarkup: clioChartSpatialGridMarkup,
+  scoresMarkup: clioChartScoresMarkup,
 };
 
 // Runtime command surface for ClioChart. The window manager still owns the
@@ -1808,6 +2410,12 @@ const CLIO_CHART_COMMAND_NAMES = [
   "clio-chart-send-stage",
   "clio-chart-reverse-sort",
   "clio-chart-lower-better",
+  "clio-chart-row-add",
+  "clio-chart-row-delete",
+  "clio-chart-row-up",
+  "clio-chart-row-down",
+  "clio-chart-column-add",
+  "clio-chart-column-delete",
   "clio-chart-read",
   "clio-chart-outliers",
   "clio-chart-gaps",
@@ -1864,6 +2472,14 @@ function runClioChartRuntimeCommand(action) {
   if (command === "send-stage") return chart.sendToStage?.();
   if (command === "reverse-sort") return chart.reverseSort?.();
   if (command === "lower-better") return chart.toggleColumnLower?.();
+  // The grid's shape: every one of these is also reachable by keyboard, and a
+  // drag is only live while the chart is drawing the file's own order.
+  if (command === "row-add") return chart.insertRow?.(clioChartState.selection.row);
+  if (command === "row-delete") return chart.deleteRow?.(clioChartState.selection.row);
+  if (command === "row-up") return chart.moveRow?.(clioChartState.selection.row, clioChartState.selection.row - 1);
+  if (command === "row-down") return chart.moveRow?.(clioChartState.selection.row, clioChartState.selection.row + 1);
+  if (command === "column-add") return chart.insertColumn?.(clioChartState.column);
+  if (command === "column-delete") return chart.deleteColumn?.(clioChartState.column);
   if (["bars", "matrix", "trace", "grid", "score", "source"].includes(command)) {
     return chart.setProjection?.(command);
   }

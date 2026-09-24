@@ -11,18 +11,18 @@
     <!-- Let the system choose status glyph contrast. -->
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="theme-color" content="#000000" />
-    <link rel="apple-touch-icon" href="assets/app-icon/app-icon-180.png?v=20260922.5" />
-    <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png?v=20260922.5" />
-    <link rel="manifest" href="assets/app-icon/manifest.json?v=20260922.5" />
-    <script src="app/core/theme-registry.js?v=20260922.5"></script>
-    <link rel="stylesheet" href="styles.bundle.css?v=20260922.5" />
+    <link rel="apple-touch-icon" href="assets/app-icon/app-icon-180.png?v=20260925.1" />
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png?v=20260925.1" />
+    <link rel="manifest" href="assets/app-icon/manifest.json?v=20260925.1" />
+    <script src="app/core/theme-registry.js?v=20260925.1"></script>
+    <link rel="stylesheet" href="styles.bundle.css?v=20260925.1" />
     <!-- Preload the application while parsing the desktop. -->
-    <link rel="preload" as="script" href="app.bundle.js?v=20260922.5" />
+    <link rel="preload" as="script" href="app.bundle.js?v=20260925.1" />
   </head>
   <body class="is-booting">
-    <script src="app/core/theme-body-init.js?v=20260922.5"></script>
+    <script src="app/core/theme-body-init.js?v=20260925.1"></script>
     <!-- Register crash recovery before the application bundle. -->
-    <script src="app/core/boot-safety-net.js?v=20260922.5"></script>
+    <script src="app/core/boot-safety-net.js?v=20260925.1"></script>
     <header class="menu-bar" aria-label="System menu" data-i18n-aria-label="system_menu">
       <div class="menu">
         <button class="apple" aria-label="Apple menu" data-i18n-aria-label="apple_menu" data-balloon-help="balloon_apple_menu">
@@ -776,7 +776,7 @@
 
               <label class="control-field appearance-theme-field" for="appearance-theme" data-balloon-help="balloon_theme_switcher">
                 <span data-i18n="appearance">Appearance</span>
-                <div class="select-wrap"><select id="appearance-theme" data-balloon-help="balloon_theme_switcher"><option value="classic" data-i18n="theme_classic">System 6</option><option value="platinum" data-i18n="theme_platinum">Platinum</option><option value="aqua" data-i18n="theme_aqua">Aqua</option><option value="snow-leopard" data-i18n="theme_snow_leopard">Snow Leopard</option><option value="yosemite" data-i18n="theme_yosemite">Yosemite</option><option value="big-sur" data-i18n="theme_big_sur">Big Sur</option><option value="liquid-glass" data-i18n="theme_liquid_glass">Liquid Glass</option>
+                <div class="select-wrap"><select id="appearance-theme" data-balloon-help="balloon_theme_switcher">
                 </select></div>
               </label>
 
@@ -1284,6 +1284,7 @@
                             <button class="btn" role="menuitem" type="button" data-quick-draft-paste data-i18n="paste">Paste</button>
                             <button class="btn" role="menuitem" type="button" id="quick-draft-use-mounted" data-i18n="quick_draft_use_mounted">Use File Floppy</button>
                             <button class="btn" role="menuitem" type="button" data-action="quick-draft-import-chat" data-i18n="quick_draft_import_chat_records">Import Chat Records</button>
+                            <button class="btn" role="menuitem" type="button" data-action="quick-draft-walk-return" data-i18n="quick_draft_walk_return">Back from a Walk…</button>
                           </section>
                         </div>
                       </details>
@@ -1650,9 +1651,7 @@
         </div>
       </section>
 
-<!-- The disks that ship with the application: a Finder folder on the Startup
-           Disk, drawn from the index module by getDemonstrationDiskItems (app.js),
-           one row per disk, opened by the command a /go/<route> link runs. -->
+<!-- A Finder folder on the Startup Disk; the lazy disk module supplies the rows. -->
       <section class="window finder-window project-disks-window is-hidden" data-window="projectDisks" aria-labelledby="project-disks-title">
         <div class="title-bar" data-standard-controls>
           <h2 id="project-disks-title" data-i18n="demo_disks_title">Demonstration Project Disks</h2>
@@ -1665,7 +1664,7 @@
           </div>
           <span data-i18n="startup_disk">Startup Disk</span>
         </div>
-        <div class="window-pane finder-grid project-disks-grid window-frame-scroller"></div>
+        <div class="window-pane finder-grid window-frame-scroller"></div>
       </section>
 
       <section class="window project-cd-window is-hidden" data-window="projectCd" aria-labelledby="project-cd-title">
@@ -1798,6 +1797,7 @@
             <div class="project-finder-actions">
               <button class="btn" type="button" data-action="open-import-utility" data-i18n="add_ellipsis">Add…</button>
               <button class="btn" type="button" data-action="open-project-backup" data-i18n="project_backup_action" data-i18n-aria-label="open_project_backup">Backup…</button>
+              <button class="btn" type="button" data-action="open-clio-project" data-i18n="project_plan_action">Plan…</button>
             </div>
           </div>
           <div class="project-disk-content-grid">
@@ -2071,19 +2071,22 @@
             <option value="ideas" data-i18n="stack_ideas">Ideas</option>
           </select>
           <div class="window-status-strip" aria-live="polite"><span class="window-status-slot" data-status-host></span></div>
+          <input id="scrap-filter" class="scrap-filter" type="text" inputmode="search" enterkeyhint="search" autocomplete="off" aria-label="Filter scraps" data-i18n-aria-label="scrap_filter_label" placeholder="Filter" data-i18n-placeholder="scrap_filter_hint" />
         </div>
         <div class="window-pane scrapbook-pane">
           <div id="scrap-list" class="scrap-list"></div>
-          <form id="scrap-form" class="scrap-editor">
-            <div id="scrap-title-display" class="scrap-title-display" data-i18n="untitled_scrap">Untitled Scrap</div>
-            <div id="scrap-source-info" class="source-info-panel">
-              <span data-i18n="source_no_origin">No saved source yet.</span>
-            </div>
-            <div id="scrap-tags" class="tag-cloud" hidden></div>
-            <div class="scrap-text-header">
-              <label for="scrap-body-input" data-i18n="text">Text</label>
-              <button class="btn mini-btn" type="button" id="toggle-scrap-translation" data-i18n="show_translation" hidden>Show Translation</button>
-            </div>
+          <form id="scrap-form" class="scrap-editor" data-scrap-mode="single">
+            <header class="scrap-editor-header">
+              <div id="scrap-title-display" class="scrap-title-display" data-i18n="untitled_scrap">Untitled Scrap</div>
+              <div class="scrap-citation-row">
+                <div id="scrap-source-info" class="source-info-panel scrap-citation">
+                  <span data-i18n="source_no_origin">No saved source yet.</span>
+                </div>
+                <button class="btn mini-btn" type="button" id="open-scrap-source" data-action="scrapbook-open-source" data-i18n="open_source">Open Source</button>
+              </div>
+              <div id="scrap-tags" class="tag-cloud"></div>
+            </header>
+            <label class="visually-hidden" for="scrap-body-input" data-i18n="text">Text</label>
             <textarea id="scrap-body-input" rows="7"></textarea>
             <div id="scrap-pictures" class="scrap-pictures is-hidden" aria-label="Clipped pictures" data-i18n-aria-label="scrap_pictures"></div>
             <p id="scrap-unindexed-note" class="small-muted scrap-unindexed-note is-hidden" data-i18n="scrap_image_unindexed">This clip is a picture with no text, so Searcher and project context cannot find it. Read it, then keep the reading to make it searchable.</p>
@@ -2095,21 +2098,25 @@
                 <button class="btn" type="button" data-action="scrapbook-discard-reading" data-i18n="scrap_reading_discard">Discard</button>
               </div>
             </div>
-            <div class="button-row">
-              <button class="btn" type="button" data-action="scrapbook-clip-picture" data-i18n="scrap_clip_picture">Clip Picture</button>
-              <button class="btn" type="button" id="read-scrap-picture" data-action="scrapbook-read-picture" data-i18n="scrap_read_picture">Read Picture</button>
-              <button class="btn" type="button" id="open-scrap-source" data-action="scrapbook-open-source" data-i18n="open_source">Open Source</button>
-              <button class="btn" type="button" id="insert-scrap" data-action="scrapbook-insert" data-i18n="insert">Insert</button>
+            <div class="button-row scrap-actions">
               <button class="btn danger" type="button" id="delete-scrap" data-action="scrapbook-delete" data-i18n="delete">Delete</button>
+              <button class="btn" type="button" id="toggle-scrap-translation" data-i18n="show_translation" hidden>Show Translation</button>
+              <details class="teachtext-command-menu scrap-picture-menu" id="scrap-picture-menu">
+                <summary class="btn" data-i18n="scrap_picture_menu">Picture...</summary>
+                <div class="teachtext-command-popover scrap-picture-popover">
+                  <button class="btn" type="button" data-action="scrapbook-clip-picture" data-i18n="scrap_clip_picture">Clip Picture</button>
+                  <button class="btn" type="button" id="read-scrap-picture" data-action="scrapbook-read-picture" data-i18n="scrap_read_picture">Read Picture</button>
+                </div>
+              </details>
+              <button class="btn default" type="button" id="insert-scrap" data-action="scrapbook-insert" data-i18n="insert">Insert</button>
             </div>
             <button class="btn" type="button" id="attach-scrap-to-assistant" data-action="scrapbook-attach" data-i18n="attach_to_assistant" hidden>Attach to ClioTalk</button>
-            <div class="scrap-selection-actions" hidden>
-              <div id="scrap-selection-count" class="small-muted" data-i18n="no_scraps_selected">No scraps selected</div>
+            <div class="scrap-selection-actions">
+              <div id="scrap-selection-count" class="scrap-selection-count" data-i18n="no_scraps_selected">No scraps selected</div>
+              <p class="small-muted" data-i18n="scrap_multi_hint">These act on every selected scrap. Click one scrap on its own to edit it.</p>
               <div class="button-row">
                 <button class="btn" type="button" id="send-scraps-to-question" data-action="scrapbook-send-question" data-i18n="to_question_sheet">To Question Sheet</button>
                 <button class="btn" type="button" id="outline-scraps" data-action="scrapbook-outline" data-i18n="make_outline">Make Outline</button>
-              </div>
-              <div class="button-row">
                 <button class="btn" type="button" id="scrapbook-docmap" data-action="make-docmap" data-i18n="docmap">DocMap</button>
                 <button class="btn" type="button" id="download-scraps-bilingual" data-action="scrapbook-export-bilingual" data-i18n="download_bilingual_md">Bilingual .md</button>
               </div>
@@ -2186,9 +2193,8 @@
             <details class="teachtext-command-menu command-menu-opens-down reader-command-menu" id="reader-command-menu">
               <summary class="btn" id="reader-command-summary" data-i18n="reader_commands">Commands...</summary>
               <div class="teachtext-command-popover reader-command-popover">
-                <button class="btn" type="button" id="reader-docmap-selection-command" data-action="reader-docmap-selection" data-i18n="docmap_from_selection" disabled>Map Selection</button>
+                <button class="btn" type="button" id="reader-open-another" data-action="reader-open-another" disabled data-i18n="reader_open_another">Open Another Source...</button>
                 <button class="btn" type="button" id="reader-docmap-source-command" data-action="reader-docmap-source" data-i18n="docmap_from_source" disabled>Map Entire Source</button>
-                <button class="btn" type="button" id="reader-clip-translate-button" data-action="reader-clip-translate" data-i18n="clip_translate" disabled>Clip + Translate</button>
                 <button class="btn" type="button" id="reader-open-clio-stage" data-action="reader-open-clio-stage" data-i18n="open_in_clio_stage" disabled data-balloon-help-disabled="balloon_reader_open_clio_stage_disabled">Open in ClioStage</button>
                 <button class="btn" type="button" id="reader-send-manuscript" data-action="reader-send-manuscript" data-i18n="send_copy_to_manuscript" disabled>Send Copy to Manuscript</button>
                 <button class="btn" type="button" id="reader-find-sources" data-action="reader-find-sources" data-i18n="find_related_sources" data-balloon-help="balloon_reader_find_related" data-balloon-help-disabled="balloon_reader_find_related_disabled" disabled>Find Related Sources</button>
@@ -2196,14 +2202,11 @@
             </details>
           </div>
         </div>
-        <div class="window-pane reader-pane">
+        <div class="window-pane reader-pane" data-reader-state="empty">
           <div class="reader-toolbar">
             <div class="reader-url-row">
               <input id="reader-url-input" type="url" placeholder="Paste one URL or drop files..." data-i18n-placeholder="reader_url_hint" />
-            </div>
-            <div class="toolbar-group is-end reader-actions">
               <button class="btn default" type="button" id="reader-fetch-button" data-action="reader-open-source" data-i18n="open">Open</button>
-              <button class="btn" type="button" id="reader-clip-button" data-action="reader-clip" data-i18n="clip" disabled hidden>Clip</button>
             </div>
           </div>
           <div class="reader-workspace drop-target" id="reader-workspace" data-i18n-drop-label="reader_drop_files">
@@ -2213,7 +2216,13 @@
             </div>
             <div id="reader-split-handle" class="tdi-grabber" role="separator" tabindex="0" aria-label="Resize Reader tabs" data-i18n-aria-label="resize_reader_tabs"></div>
             <div id="reader-content" class="reader-content" tabindex="0">
-              <div class="empty-folder-note" data-i18n="reader_empty_hint">Paste a URL or drop files to read and clip passages.</div>
+              <div class="empty-folder-note" data-i18n="reader_empty_hint">Open a web page or a file to read it here. Select a passage to clip it into the Scrapbook.</div>
+            </div>
+            <div class="reader-selection-bar" id="reader-selection-bar" role="toolbar" aria-label="Selection" data-i18n-aria-label="reader_selection_bar" inert>
+              <output class="reader-selection-count" id="reader-selection-count"></output>
+              <button class="btn default" type="button" id="reader-clip-button" data-action="reader-clip" data-i18n="clip" disabled>Clip</button>
+              <button class="btn" type="button" id="reader-clip-translate-button" data-action="reader-clip-translate" data-i18n="clip_translate" disabled hidden>Clip + Translate</button>
+              <button class="btn" type="button" id="reader-docmap-selection-command" data-action="reader-docmap-selection" data-i18n="docmap_from_selection" disabled>Map Selection</button>
             </div>
           </div>
           <form id="reader-ask-form" class="ask-bar" data-ask-source="reader">
@@ -2272,7 +2281,7 @@
                 <input id="time-machine-enabled" type="checkbox" data-balloon-help="balloon_time_machine_archive" />
                 <span data-i18n="time_machine">Time Machine</span>
               </label>
-              <label class="time-machine-address-label" for="time-machine-address" data-i18n="address">Address</label>
+              <label class="time-machine-address-label visually-hidden" for="time-machine-address" data-i18n="address">Address</label>
               <input id="time-machine-address" type="text" inputmode="url" placeholder="https://example.com" data-i18n-placeholder="time_machine_address_hint" />
               <div class="time-machine-time-controls">
                 <div class="time-machine-date-control">
@@ -2391,7 +2400,6 @@
             <option value="draft" data-i18n="label_draft">Draft</option>
             <option value="ai" data-i18n="label_ai">AI Assisted</option>
           </select></div>
-          <!-- View Question Sheet moved to Writing > Go To; this slot carries the route status. -->
           <div class="status-bar-trailing window-status-strip" aria-live="polite"><span class="window-status-slot" data-status-host></span></div>
         </div>
         <div class="window-pane teachtext-surface-pane outline-pane">
@@ -2441,7 +2449,6 @@
             <option value="draft" data-i18n="label_draft">Draft</option>
             <option value="ai" data-i18n="label_ai">AI Assisted</option>
           </select></div>
-          <!-- View Question Sheet moved to Writing > Go To; this slot carries the route status. -->
           <div class="status-bar-trailing window-status-strip" aria-live="polite"><span class="window-status-slot" data-status-host></span></div>
         </div>
         <div class="window-pane teachtext-surface-pane section-drafts-pane">
@@ -2498,27 +2505,26 @@
           <div class="find-path-query-row">
             <input id="find-path-query" type="text" inputmode="search" enterkeyhint="search" data-i18n-placeholder="searcher_web_placeholder" placeholder="Search the web..." />
             <button class="btn default" type="submit" data-i18n="search">Search</button>
-            <button class="btn" type="button" id="synthesize-find-path" data-action="synthesize-search-results" data-i18n="synthesize" hidden>Synthesize</button>
           </div>
 
           <div id="find-path-summary" class="find-path-summary is-hidden"></div>
           <div id="find-path-results" class="find-path-results"></div>
 
-          <div class="button-row">
+          <div class="button-row find-path-actions">
+            <button class="btn" type="button" id="synthesize-find-path" data-action="synthesize-search-results" data-i18n="synthesize" hidden>Synthesize</button>
+            <details class="teachtext-command-menu find-path-send-menu" id="find-path-send-menu">
+              <summary class="btn" data-i18n="searcher_send_menu">Send To...</summary>
+              <div class="teachtext-command-popover find-path-send-popover">
+                <button class="btn" type="button" data-action="find-path-to-floppy" data-i18n="find_path_to_floppy">To File Floppy</button>
+                <button class="btn" type="button" id="copy-find-path" data-action="copy-search-result-markdown" data-i18n="copy_markdown">Copy Markdown</button>
+                <button class="btn" type="button" id="insert-find-path" data-action="insert-search-result" data-i18n="insert">Insert</button>
+              </div>
+            </details>
+            <button class="btn" type="button" data-action="clip-selected-find-path" data-i18n="clip">Clip</button>
             <button class="btn" type="button" data-action="open-selected-in-reader" data-i18n-aria-label="open_in_reader">
               <span class="mobile-control-long" data-i18n="open_in_reader">Open in Reader</span>
               <span class="mobile-control-short" data-i18n="searcher_open_reader_short">Reader</span>
             </button>
-            <button class="btn" type="button" data-action="clip-selected-find-path" data-i18n="clip">Clip</button>
-            <button class="btn" type="button" data-action="find-path-to-floppy" data-i18n-aria-label="find_path_to_floppy">
-              <span class="mobile-control-long" data-i18n="find_path_to_floppy">To File Floppy</span>
-              <span class="mobile-control-short" data-i18n="file_floppy_short">Floppy</span>
-            </button>
-            <button class="btn" type="button" id="copy-find-path" data-action="copy-search-result-markdown" data-i18n-aria-label="copy_markdown">
-              <span class="mobile-control-long" data-i18n="copy_markdown">Copy Markdown</span>
-              <span class="mobile-control-short" data-i18n="copy">Copy</span>
-            </button>
-            <button class="btn" type="button" id="insert-find-path" data-action="insert-search-result" data-i18n="insert">Insert</button>
           </div>
         </form>
       </section>
@@ -2662,7 +2668,7 @@
               <div id="docmap-tree" class="docmap-tree window-frame-scroller">
                 <div class="empty-folder-note docmap-empty-note" data-i18n="docmap_empty">Make a DocMap from Reader, TeachText, Clipboard, or saved Markdown.</div>
               </div>
-              <p class="docmap-mobile-hint" data-i18n="docmap_mobile_hint">Drag to explore · pinch to zoom · tap a branch to fold it</p>
+              <p class="docmap-mobile-hint" data-i18n="docmap_mobile_hint">Drag to explore · pinch to zoom · tap a branch's words to pick it, its dot to fold it</p>
             </div>
           </div>
           <form id="docmap-ask-form" class="ask-bar" data-ask-source="docMap">
@@ -3397,9 +3403,9 @@
       </section>
     </main>
 
-    <script src="app/generated/build-info.js?v=20260922.5"></script>
+    <script src="app/generated/build-info.js?v=20260925.1"></script>
     <template id="standard-window-controls"><button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button><button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button><button class="shade-box" aria-label="Collapse" data-i18n-aria-label="collapse"></button></template>
-    <script src="app.bundle.js?v=20260922.5"></script>
+    <script src="app.bundle.js?v=20260925.1"></script>
 
   </body>
 </html>

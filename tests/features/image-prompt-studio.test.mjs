@@ -119,66 +119,193 @@ const runtime = require("../../apps/desktop/app/features/image-prompt-runtime.js
 }
 
 {
-  // The window is three framed groups, not one flat column.
+  // The window is two halves and a drawer, run for real.
   //
-  // The first repair gave the window a box and stacked its controls in a single
-  // column. That is not what a System 6 window of this kind is: the half you
-  // fill in and the half you get back wore the same clothes, and the verb sat
-  // between them instead of ending the group it acts on.
-  const source = read("app/features/image-prompt-studio.js");
-
-  for (const key of ["ips_group_input", "ips_group_output", "ips_history"]) {
-    test.assert(
-      source.includes(`data-i18n="${key}"`),
-      `the ${key} group carries a legend the language sweep can reach`,
-    );
+  // The stacked version was three identical framed groups: the half you fill
+  // in and the half you get back wore the same clothes, a picked reference
+  // image left only a status line behind, "Copied" appeared at the far end of
+  // the window, a running request could not be stopped, and "Written before"
+  // gave back only the idea. These checks run the module against a DOM and
+  // drive it the way the writer does, rather than reading its source.
+  let parseHTML;
+  try {
+    ({ parseHTML } = await import("linkedom"));
+  } catch {
+    test.fail("linkedom is needed to run the studio against a real DOM");
+    test.finish();
   }
-  test.assert(
-    (source.match(/class="control-section ips-group/g) || []).length === 3,
-    "all three groups are the shared control-section, the same framed box every Control Panel section is",
-  );
+  const vm = await import("node:vm");
+  const { document, window: dom } = parseHTML('<html><body><div class="desktop"></div></body></html>');
 
-  // The action row is the shared primitive, and the default button is last:
-  // a spacer pushes the two verbs right, and SideAsk - which opens another
-  // window rather than producing a prompt - stays at the far left.
-  test.assert(
-    source.includes('class="button-row ips-actions"') && source.includes('class="spacer"'),
-    "the action row is button-row with its spacer rather than a private flex row",
-  );
-  const sideAsk = source.indexOf('id="ips-sideask"');
-  const spacer = source.indexOf('class="spacer"');
-  const attach = source.indexOf('id="ips-ref"');
-  const go = source.indexOf('id="ips-go"');
-  test.assert(
-    sideAsk > 0 && sideAsk < spacer && spacer < attach && attach < go,
-    "SideAsk, then the spacer, then Attach, then the default button last",
-  );
+  // linkedom has no radio state; this is the browser's: a property that
+  // unchecks its named siblings when set.
+  const checkedState = new WeakMap();
+  Object.defineProperty(dom.HTMLInputElement.prototype, "checked", {
+    configurable: true,
+    get() { return checkedState.has(this) ? checkedState.get(this) : this.hasAttribute("checked"); },
+    set(value) {
+      if (value && this.getAttribute("type") === "radio") {
+        document.querySelectorAll(`input[name="${this.getAttribute("name")}"]`).forEach((other) => checkedState.set(other, false));
+      }
+      checkedState.set(this, Boolean(value));
+    },
+  });
 
-  // Two blank boxes are not a result. The group says so until one exists.
+  const store = new Map();
+  const pending = [];
+  const statusKeys = [];
+  const ctx = {
+    document,
+    console: { error() {}, log() {} },
+    localStorage: {
+      getItem: (key) => (store.has(key) ? store.get(key) : null),
+      setItem: (key, value) => store.set(key, String(value)),
+    },
+    navigator: { clipboard: { writeText: async () => {} } },
+    setTimeout: () => 0,
+    clearTimeout: () => {},
+    AbortController,
+    currentLanguage: "en",
+    t: (key) => { statusKeys.push(key); return key; },
+    applyLanguage: () => {},
+    currentModelSupportsImageInputs: () => true,
+    fetchModelPayload: () => {},
+    openTransientFilePicker: () => {},
+    clioVisionImageFilesFromList: (files) => [...files].map((file) => ({ file, type: "image" })),
+    CLIO_IMAGE_MAX_SOURCE_BYTES: 10_000_000,
+    CLIO_IMAGE_ACCEPT: "image/*",
+    prepareClioImageInline: async () => ({ inlineDataUrl: "data:image/png;base64,AAAA" }),
+    // Each call parks until the test settles it, and honours its signal the
+    // way the real model layer does.
+    sendLocalModelTask: ({ payload, signal }) => new Promise((resolve, reject) => {
+      const call = { payload, resolve, reject };
+      pending.push(call);
+      signal?.addEventListener("abort", () => reject(Object.assign(new Error("aborted"), { name: "AbortError" })));
+    }),
+    AISystem6ImagePromptRuntime: runtime,
+    AISystem6ApplicationShell: {
+      createWindow(options) {
+        const win = document.createElement("section");
+        win.className = `window ${options.windowClass}`;
+        win.dataset.window = options.windowName;
+        win.innerHTML = `<div class="details-bar">${options.statusHtml}</div><div class="window-pane ${options.paneClass}">${options.paneHtml}</div>`;
+        document.querySelector(".desktop").append(win);
+        return win;
+      },
+    },
+  };
+  ctx.window = ctx;
+  vm.createContext(ctx);
+  vm.runInContext(read("app/features/image-prompt-studio.js"), ctx);
+  ctx.AISystem6ImagePromptStudio.render();
+
+  const $ = (id) => document.getElementById(id);
+  const click = (el) => el.dispatchEvent(new dom.Event("click", { bubbles: true }));
+  const change = (el) => el.dispatchEvent(new dom.Event("change", { bubbles: true }));
+  const settle = () => new Promise((resolve) => setImmediate(resolve));
+  const reply = (gpt, universal) => `## GPT-Image\n${gpt}\n\n## 通用\n${universal}`;
+
+  // Aspect: five drawn choices in one native radio group, and the plate
+  // follows the one chosen.
+  const aspects = [...document.querySelectorAll('input[name="ips-aspect"]')];
   test.assert(
-    source.includes('data-i18n="ips_output_empty"') && source.includes("ips-outputs-group"),
-    "the prompts group has an empty state and a group to hang its state on",
+    aspects.map((input) => input.getAttribute("value")).join(" ") === "16:9 4:3 1:1 3:4 9:16",
+    "the aspect choice is one radio group of the five ratios, so it keeps one tab stop and arrow keys",
   );
+  test.assert(aspects.every((input) => input.nextElementSibling?.dataset.ratio === input.getAttribute("value")), "each ratio is drawn beside its radio");
+  const portrait = aspects.find((input) => input.getAttribute("value") === "9:16");
+  portrait.checked = true;
+  change(portrait);
+  test.assert($("ips-plate").dataset.ratio === "9:16", "choosing a ratio reshapes the plate");
+
+  // Reference: attached is visible, and Remove takes it back off the request.
+  const well = $("ips-well");
+  const drop = new dom.Event("drop", { cancelable: true });
+  drop.dataTransfer = { types: ["Files"], files: [{ name: "bookshop-rain.jpg", size: 1000 }] };
+  well.dispatchEvent(drop);
+  await settle();
+  test.assert(!$("ips-well-thumb").hidden && !$("ips-ref-remove").hidden, "a dropped image shows its thumbnail and a Remove button");
+  test.assert($("ips-well-text").textContent === "bookshop-rain.jpg", "and names the file, not a hint");
+  click($("ips-ref-remove"));
+  test.assert($("ips-well-thumb").hidden && $("ips-ref-remove").hidden && !$("ips-ref").hidden, "Remove clears the well back to its Choose button");
+
+  // Write: the removed image does not ride along, the prompts land, and the
+  // universal lines read as a list while the raw text stays copyable.
+  $("ips-idea").value = "rain at an old bookshop";
+  click($("ips-go"));
+  test.assert(pending.length === 1, "Write Prompt calls the model once");
+  test.assert(typeof pending[0].payload.messages.find((m) => m.role === "user").content === "string", "a removed reference image is not sent");
+  test.assert($("ips-go").disabled && !$("ips-cancel").hidden, "while writing, the default button is off and Cancel is offered");
+  pending[0].resolve({ text: reply("A quiet photograph.", "Subject: bookshop\nStyle: editorial\nAspect ratio: 9:16") });
+  await settle();
+  test.assert($("ips-gpt-out").value === "A quiet photograph.", "the GPT-Image prompt lands in its field");
+  test.assert($("ips-universal-out").value.includes("Subject: bookshop"), "the raw universal text stays in a field for Copy and SideAsk");
   test.assert(
-    /function syncOutputState\(\)/.test(source) && source.includes('classList.toggle("is-filled"'),
-    "and the state is computed from the textareas rather than assumed",
+    [...$("ips-universal-view").querySelectorAll("dt")].map((dt) => dt.textContent).join("|") === "Subject|Style|Aspect ratio",
+    "and its lines read as a label/value list",
   );
+  test.assert(!$("ips-go").disabled && $("ips-cancel").hidden, "the window is ready again once the prompts arrive");
+
+  // Copy confirms on the button the eye is on.
+  const copyGpt = $("ips-copy-gpt");
+  click(copyGpt);
+  await settle();
+  test.assert(copyGpt.textContent === "ips_copied_button", "Copy says it copied on the button itself");
+
+  // Cancel stops the run and leaves the previous prompts alone.
+  click($("ips-go"));
+  test.assert(pending.length === 2, "a second write starts");
+  click($("ips-cancel"));
+  await settle();
+  test.assert(statusKeys.at(-1) === "ips_cancelled", "Cancel reports that it stopped");
+  test.assert($("ips-gpt-out").value === "A quiet photograph.", "a cancelled run keeps the prompts that were there");
+  test.assert(!$("ips-go").disabled && $("ips-cancel").hidden, "and gives the default button back");
+
+  // History brings back the whole set, and an entry from before the prompts
+  // were kept brings back what it has without blanking the fields.
+  const saved = JSON.parse(store.get("aiSystem6.imagePromptStudio.history"));
+  test.assert(saved.length === 1 && saved[0].gptImage === "A quiet photograph." && saved[0].aspect === "9:16", "history keeps the prompts and the ratio with the idea");
+  // An entry in the older shape, as a browser that used the stacked window
+  // still holds it. The next finished write re-reads the list.
+  store.set("aiSystem6.imagePromptStudio.history", JSON.stringify([...saved, { idea: "an old idea", aspect: "1:1", at: 1 }]));
+  $("ips-gpt-out").value = "";
+  $("ips-idea").value = "";
+  aspects[0].checked = true;
+  const rows = () => [...document.querySelectorAll(".ips-history-item")];
+  click($("ips-go"));
+  test.assert(pending.length === 2, "an empty idea does not call the model");
+  $("ips-idea").value = "fresh";
+  click($("ips-go"));
+  pending[2].resolve({ text: reply("Second.", "Subject: second") });
+  await settle();
+  test.assert(rows().length === 3, "every saved write is listed");
+  click(rows()[1]);
+  test.assert($("ips-gpt-out").value === "A quiet photograph." && $("ips-idea").value === "rain at an old bookshop", "a row brings back its idea and its prompts");
+  test.assert(selectedValueOf(aspects) === "9:16", "and its ratio");
+  click(rows()[2]);
+  test.assert($("ips-idea").value === "an old idea" && $("ips-gpt-out").value === "A quiet photograph.", "an old idea-only row leaves the prompts alone");
+
+  function selectedValueOf(inputs) {
+    return inputs.find((input) => input.checked)?.getAttribute("value");
+  }
+
+  // Source facts a DOM cannot show: the language sweep reaches both legends,
+  // and SideAsk sits left of the spacer with the default button last.
+  const source = read("app/features/image-prompt-studio.js");
+  for (const key of ["ips_group_input", "ips_group_output", "ips_history"]) {
+    test.assert(source.includes(`data-i18n="${key}"`), `the ${key} heading carries a key the language sweep can reach`);
+  }
+  const order = ['id="ips-sideask"', 'class="spacer"', 'id="ips-cancel"', 'id="ips-go"'].map((needle) => source.indexOf(needle));
+  test.assert(order.every((index, i) => index > 0 && (i === 0 || index > order[i - 1])), "SideAsk, the spacer, Cancel, then the default button last");
+  test.assert(/empty\.dataset\.i18n = "ips_history_empty"/.test(source), "the history empty row carries its key, so switching language reaches it");
   test.assert(
     read("styles/95-image-prompt-studio.css").includes(".ips-outputs-group:not(.is-filled) > .ips-outputs"),
-    "the stylesheet hides the outputs while that state is off",
-  );
-
-  // The empty row is built by JS, so it needs the key as well as the text --
-  // without the attribute a Chinese session kept an English line under three
-  // Chinese headings.
-  test.assert(
-    /empty\.dataset\.i18n = "ips_history_empty"/.test(source),
-    "the history empty row carries its key, so switching language reaches it",
+    "the stylesheet hides the outputs until there is something in them",
   );
 
   const en = read("app/data/translations-en.js");
   const zh = read("app/data/translations-zh.js");
-  for (const key of ["ips_group_input", "ips_group_output", "ips_output_empty"]) {
+  for (const key of ["ips_group_input", "ips_group_output", "ips_output_empty", "ips_ref_label", "ips_ref_drop", "ips_ref_choose", "ips_ref_remove", "ips_cancel", "ips_cancelled", "ips_copied_button", "ips_history_restored", "ips_history_restored_idea", "ips_gpt_kind", "ips_universal_kind", "ips_plate_with_ref", "ips_ref_drop_here", "ips_ref_removed"]) {
     test.assert(en.includes(`${key}:`), `${key} exists in English`);
     test.assert(zh.includes(`${key}:`), `${key} exists in Chinese`);
   }

@@ -202,23 +202,100 @@ function renderEndfieldRecent(items = endfieldRecentQueries()) {
   if (!endfieldRecentListEl) return;
   endfieldRecentListEl.innerHTML = items.map((query, index) => `
     <button type="button" class="endfield-recent-item${query === endfieldLastQuery ? " is-selected" : ""}" data-query="${escapeHtml(query)}" aria-pressed="${query === endfieldLastQuery ? "true" : "false"}">
-      <span>${index + 1}</span>
+      <span>Q-${String(index + 1).padStart(2, "0")}</span>
       <b>${escapeHtml(query.replace(/[？?].*$/, ""))}</b>
     </button>
   `).join("");
 }
 
+// Each kind gets a bar as long as its share of the largest kind, so the list
+// says at a glance whether this answer stands on dialogue or on files, and a
+// gap (not archived, beyond progress) is drawn as one instead of as a number.
 function renderEndfieldMatches(groups = []) {
   if (!endfieldMatchListEl) return;
   if (!groups.length) {
     endfieldMatchListEl.innerHTML = `<p class="endfield-empty">${escapeHtml(t("endfield_empty"))}</p>`;
     return;
   }
+  const most = Math.max(1, ...groups.map((group) => group.count));
   endfieldMatchListEl.innerHTML = groups.map((group) => `
-    <div class="endfield-source-group" role="button" tabindex="0" data-source-group="${escapeHtml(group.id || "")}">
-      <span>${escapeHtml(group.label)}</span><small>${group.count}</small>
+    <div class="endfield-source-group${group.id === "missing" || group.id === "folded" ? " is-gap" : ""}" role="button" tabindex="0" data-source-group="${escapeHtml(group.id || "")}">
+      <span>${escapeHtml(group.label)}</span><i class="endfield-source-group-bar" aria-hidden="true"><i style="width:${Math.round((group.count / most) * 100)}%"></i></i><small>${group.count}</small>
     </div>
   `).join("");
+}
+
+// A small English tag beside a label ("结论 VERDICT"). When the UI is already
+// English the tag would only repeat the label, so it is dropped there.
+function endfieldTagHTML(label, tag, className = "endfield-tag") {
+  const same = String(label || "").trim().toLowerCase() === String(tag || "").trim().toLowerCase();
+  return tag && !same ? `<small class="${className}" aria-hidden="true">${escapeHtml(tag)}</small>` : "";
+}
+
+function endfieldCount(value) {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? n.toLocaleString("en-US") : "";
+}
+
+// What the archive holds, from its own meta. Nothing is shown until the meta
+// has arrived, so the welcome never states a number the archive did not give.
+function endfieldCoverageHTML(meta = endfieldMeta) {
+  if (!meta) return "";
+  const cells = [
+    [meta.missionCount, "endfield_coverage_missions"],
+    [meta.transcriptLineCount, "endfield_coverage_lines"],
+    [meta.operatorCount, "endfield_coverage_operators"],
+    [meta.loreCount, "endfield_coverage_lore"],
+  ].filter(([value]) => endfieldCount(value));
+  if (!cells.length) return "";
+  return `<dl class="endfield-coverage" aria-label="${escapeHtml(t("endfield_coverage_label"))}">
+    ${cells.map(([value, key]) => `<div><dt>${escapeHtml(endfieldCount(value))}</dt><dd>${escapeHtml(t(key))}</dd></div>`).join("")}
+  </dl>`;
+}
+
+function endfieldSearchingHTML(query) {
+  const lines = endfieldCount(endfieldMeta?.transcriptLineCount);
+  const steps = [
+    [t("endfield_step_search"), lines ? t("endfield_step_search_value", lines) : ""],
+    [t("endfield_step_pick"), t("endfield_step_pick_value")],
+    [t("endfield_step_model"), endfieldRouteLabel()],
+  ];
+  return `<article class="endfield-answer endfield-loading">
+    <p class="endfield-kicker"><span class="endfield-kicker-tag">SEARCHING</span>${escapeHtml(t("endfield_searching_label"))}</p>
+    <h3>${escapeHtml(query)}</h3>
+    <div class="endfield-scan" aria-hidden="true"><i></i></div>
+    <ol class="endfield-steps">
+      ${steps.map(([label, value]) => `<li><span>${escapeHtml(label)}</span><b>${escapeHtml(value)}</b></li>`).join("")}
+    </ol>
+  </article>`;
+}
+
+// The story line the answer sits on: 序章 → 第一章 → 第二章 → 1.5. Stops up to
+// the reader's progress are filled; each stop counts the lines this answer
+// found in it; what the progress gate folded away is named at the end.
+function endfieldProgressTrackHTML(results, foldedCount) {
+  const stops = Object.keys(ENDFIELD_PROGRESS_ORDER);
+  const reachedUpTo = endfieldProgress === "all" ? Infinity : (ENDFIELD_PROGRESS_ORDER[endfieldProgress] || Infinity);
+  const counts = {};
+  let unchaptered = 0;
+  for (const item of results) {
+    if (ENDFIELD_PROGRESS_ORDER[item.chapterKey] === undefined) unchaptered += 1;
+    else counts[item.chapterKey] = (counts[item.chapterKey] || 0) + 1;
+  }
+  const notes = [];
+  if (unchaptered) notes.push(`<span>${escapeHtml(t("endfield_track_unchaptered", unchaptered))}</span>`);
+  if (foldedCount) notes.push(`<span class="is-gap">${escapeHtml(t("endfield_track_folded", foldedCount))}</span>`);
+  return `<div class="endfield-track" role="group" aria-label="${escapeHtml(t("endfield_track_aria", endfieldProgressLabel()))}">
+    <span class="endfield-track-label">${escapeHtml(t("endfield_track_label"))}</span>
+    <ol>
+      ${stops.map((stop) => {
+        const order = ENDFIELD_PROGRESS_ORDER[stop];
+        const state = order > reachedUpTo ? "is-ahead" : (stop === endfieldProgress ? "is-current" : "is-reached");
+        return `<li class="endfield-track-stop ${state}" data-chapter="${stop}"><span>${escapeHtml(endfieldProgressLabel(stop))}</span><b data-count="${counts[stop] || 0}">${counts[stop] || 0}</b></li>`;
+      }).join("")}
+    </ol>
+    ${notes.length ? `<p class="endfield-track-note">${notes.join("")}</p>` : ""}
+  </div>`;
 }
 
 function endfieldBuildSourceGroups(resultKinds, foldedCount, missingCount) {
@@ -240,14 +317,17 @@ function renderEndfieldWelcome() {
   endfieldRenderedQuery = "";
   endfieldOutputEl.innerHTML = `
     <article class="endfield-answer endfield-welcome">
-      <p class="endfield-kicker">${escapeHtml(t("endfield_kicker_audience"))}</p>
+      <p class="endfield-kicker"><span class="endfield-kicker-tag">ARCHIVE</span>${escapeHtml(t("endfield_kicker_audience"))}</p>
       <h3>${escapeHtml(t("endfield_welcome_title"))}</h3>
+      ${t("endfield_welcome_tagline") ? `<p class="endfield-tagline" aria-hidden="true">${escapeHtml(t("endfield_welcome_tagline"))}</p>` : ""}
       <p>${escapeHtml(t("endfield_welcome_body"))}</p>
+      ${endfieldCoverageHTML()}
       <div class="endfield-question-list" role="group" aria-label="${escapeHtml(t("endfield_suggestions"))}">
-        ${defaultEndfieldQueries.map((query) => {
+        ${defaultEndfieldQueries.map((query, index) => {
           const available = query !== defaultEndfieldQueries[defaultEndfieldQueries.length - 1];
           return `
           <button class="btn" type="button" data-query="${escapeHtml(query)}">
+            <span class="endfield-question-no" aria-hidden="true">${String(index + 1).padStart(2, "0")}</span>
             <span>${escapeHtml(query)}</span>
             <span class="endfield-stamp${available ? "" : " is-gap"}" data-availability>${escapeHtml(t(available ? "endfield_avail_yes" : "endfield_avail_no"))}</span>
           </button>`;
@@ -292,8 +372,9 @@ function renderEndfieldResults(data) {
 
   endfieldOutputEl.innerHTML = `
     <article class="endfield-answer">
-      <p class="endfield-kicker">${escapeHtml(t("endfield_sources_kicker", results.length, endfieldProgressLabel()))}</p>
+      <p class="endfield-kicker"><span class="endfield-kicker-tag">EVIDENCE</span>${escapeHtml(t("endfield_sources_kicker", results.length, endfieldProgressLabel()))}</p>
       <h3>${escapeHtml(data.query || endfieldLastQuery)}</h3>
+      ${endfieldProgressTrackHTML(results, foldedCount)}
       <div class="endfield-sources">${sources}</div>
       ${verdicts}
       ${foldedCount ? `<div class="endfield-fold" data-endfield-fold>${escapeHtml(t("endfield_fold", foldedCount))}</div>` : ""}
@@ -328,18 +409,33 @@ function endfieldSourceRoute(item) {
   return [item?.missionTitle, item?.process || item?.section, item?.chapter].filter(Boolean).join(" · ");
 }
 
-function endfieldSourceOriginHTML(item) {
-  const bits = [];
-  const speaker = String(item?.speaker || "").trim();
-  if (speaker) bits.push(`<span class="endfield-source-speaker">${escapeHtml(speaker)}</span>`);
-  if (Number.isInteger(item?.lineIndex)) {
-    bits.push(`<span class="endfield-source-line">${escapeHtml(t("endfield_source_line", item.lineIndex + 1))}</span>`);
-  }
+// The address belongs to the mission, not to each of its lines: one link in
+// the group head, or one stamp saying the archive has none.
+function endfieldSourceLinkHTML(item) {
   const url = endfieldSourceUrl(item);
-  bits.push(url
+  return url
     ? `<a class="endfield-source-link" href="${escapeHtml(url)}" target="_blank" rel="noopener" data-source-url>${escapeHtml(t("endfield_open_source"))}</a>`
-    : `<span class="endfield-stamp is-gap" data-source-url-missing>${escapeHtml(t("endfield_no_source_url"))}</span>`);
-  return `<p class="endfield-source-origin">${bits.join("")}</p>`;
+    : `<span class="endfield-stamp is-gap" data-source-url-missing>${escapeHtml(t("endfield_no_source_url"))}</span>`;
+}
+
+// Consecutive results from the same entry read as one stretch of transcript,
+// the way the game's own mission review shows them, instead of fourteen
+// identical cards that push the verdict off the screen.
+function endfieldSourceGroupKey(item) {
+  return [item?.kind || "对话", item?.missionId || "", endfieldSourceRoute(item), endfieldSourceUrl(item)].join("\u0001");
+}
+
+function endfieldSourceGroupHeadHTML(item) {
+  const kind = item.kind || "对话";
+  const route = [item.process || item.section, item.chapter].filter(Boolean).join(" · ");
+  return `<header class="endfield-source-head">
+    <span class="endfield-source-kind">${escapeHtml(endfieldKindLabel(kind))}</span>
+    <b class="endfield-mission-title">${escapeHtml(item.missionTitle || t("endfield_untitled"))}</b>
+    ${route ? `<span class="endfield-mission-route">${escapeHtml(route)}</span>` : ""}
+    <span class="endfield-stamp" title="${escapeHtml(item.versionBasis === "mission" ? "按条目" : "按数据集")}">${escapeHtml(item.version || "v?")}</span>
+    ${item.missionIndex != null ? `<span class="endfield-stamp" data-stamp-mission>#${item.missionIndex + 1}</span>` : ""}
+    <span class="endfield-mission-link">${endfieldSourceLinkHTML(item)}</span>
+  </header>`;
 }
 
 // A clipped quote has to survive leaving the terminal, so the file carries the
@@ -365,42 +461,52 @@ function endfieldClipDocument(item, sourceIndex) {
 
 function endfieldSourceCardsHTML(results, questionType, countOnly = false) {
   let missing = 0;
-  const cards = [];
+  const groups = [];
   const missingSet = new Set();
   results.forEach((item, index) => {
     const kind = item.kind || "对话";
-    const route = [item.missionTitle, item.process || item.section, item.chapter].filter(Boolean).join(" · ");
-    cards.push(`
-      <div class="endfield-source" id="endfield-evidence-${index + 1}" tabindex="-1" data-kind="${escapeHtml(kind)}" data-evidence-index="${index + 1}">
+    const key = endfieldSourceGroupKey(item);
+    let group = groups[groups.length - 1];
+    if (!group || group.key !== key) {
+      group = { key, kind, head: endfieldSourceGroupHeadHTML(item), rows: [], lastSpeaker: null };
+      groups.push(group);
+    }
+    const speaker = String(item.speaker || "").trim();
+    // A speaker repeated on the next line is kept for screen readers and
+    // hidden on screen, as a transcript writes a name once per turn.
+    const continued = Boolean(speaker) && speaker === group.lastSpeaker;
+    group.lastSpeaker = speaker;
+    group.rows.push(`
+      <div class="endfield-source${continued ? " is-continued" : ""}" id="endfield-evidence-${index + 1}" tabindex="-1" data-kind="${escapeHtml(kind)}" data-evidence-index="${index + 1}">
         <span class="endfield-evidence-index">${index + 1}</span>
-        <div class="endfield-source-head">
-          <span class="endfield-source-kind">${escapeHtml(endfieldKindLabel(kind))}</span>
-          <span>${escapeHtml(route)}</span>
-          <span class="endfield-stamp" title="${escapeHtml(item.versionBasis === "mission" ? "按条目" : "按数据集")}">${escapeHtml(item.version || "v?")}</span>
-          ${item.missionIndex != null ? `<span class="endfield-stamp" data-stamp-mission>#${item.missionIndex + 1}</span>` : ""}
-        </div>
-        <p class="endfield-source-quote">${escapeHtml(item.text || "")}</p>
-        ${endfieldSourceOriginHTML(item)}
-        <button class="btn mini-btn" type="button" data-clip-source="${index + 1}" data-clip-text="${escapeHtml(item.text || "")}">${escapeHtml(t("endfield_clip_source"))}</button>
+        <span class="endfield-source-speaker">${escapeHtml(speaker || t("endfield_unknown_speaker"))}</span>
+        <p class="endfield-source-quote">${escapeHtml(String(item.text || "").replace(/\n{2,}/g, "\n"))}</p>
+        <p class="endfield-source-origin">
+          ${Number.isInteger(item.lineIndex) ? `<span class="endfield-source-line">${escapeHtml(t("endfield_source_line", item.lineIndex + 1))}</span>` : ""}
+          <button class="btn mini-btn" type="button" data-clip-source="${index + 1}" data-clip-text="${escapeHtml(item.text || "")}">${escapeHtml(t("endfield_clip_source"))}</button>
+        </p>
       </div>
     `);
     if (endfieldShowMissing(item, questionType) && !missingSet.has(`${item.missionId}:${item.speaker}:${item.text}`)) {
       missingSet.add(`${item.missionId}:${item.speaker}:${item.text}`);
       missing += 1;
-      cards.push(`
+      group.lastSpeaker = null;
+      group.rows.push(`
         <div class="endfield-source is-missing" id="endfield-evidence-${index + 1}-missing" data-kind="对话" data-evidence-index="${index + 1}">
           <span class="endfield-evidence-index">${index + 1}</span>
-          <div class="endfield-source-head">
-            <span class="endfield-source-kind">${escapeHtml(t("endfield_kind_dialogue"))}</span>
-            <span>${escapeHtml(item.missionTitle || "")}</span>
-            <span class="endfield-stamp is-gap">${escapeHtml(t("endfield_missing_stamp"))}</span>
-          </div>
+          <span class="endfield-source-speaker"><span class="endfield-stamp is-gap">${escapeHtml(t("endfield_missing_stamp"))}</span></span>
           <p class="endfield-source-quote">${escapeHtml(t("endfield_missing_dialogue"))}</p>
         </div>
       `);
     }
   });
-  return countOnly ? { missing } : cards.join("");
+  if (countOnly) return { missing };
+  return groups.map((group) => `
+    <section class="endfield-mission" data-kind="${escapeHtml(group.kind)}">
+      ${group.head}
+      <div class="endfield-mission-lines">${group.rows.join("")}</div>
+    </section>
+  `).join("");
 }
 
 function endfieldVerdictBlocks(answer) {
@@ -414,8 +520,12 @@ function endfieldVerdictBlocks(answer) {
     else if (line) extra.push(line);
   }
   const blocks = [];
-  if (verdict) blocks.push(`<p class="endfield-verdict"><b>${escapeHtml(t("endfield_verdict_label"))}</b>${markdownToSystemHtml(verdict)}</p>`);
-  if (gap) blocks.push(`<p class="endfield-verdict"><b>${escapeHtml(t("endfield_gap_label"))}</b>${markdownToSystemHtml(gap)}</p>`);
+  const block = (labelKey, tag, text, className = "") => `<div class="endfield-verdict${className}">
+    <span class="endfield-verdict-label"><b>${escapeHtml(t(labelKey))}</b>${endfieldTagHTML(t(labelKey), tag)}</span>
+    <div class="endfield-verdict-body">${markdownToSystemHtml(text)}</div>
+  </div>`;
+  if (verdict) blocks.push(block("endfield_verdict_label", "VERDICT", verdict));
+  if (gap) blocks.push(block("endfield_gap_label", "GAP", gap, " is-gap"));
   if (extra.length) blocks.push(`<div class="markdown-body">${markdownToSystemHtml(extra.join("\n"))}</div>`);
   return blocks.join("");
 }
@@ -451,6 +561,17 @@ endfieldOutputEl?.addEventListener("click", (event) => {
   if (clip) {
     event.preventDefault();
     clipEndfieldSource(clip);
+    return;
+  }
+  // The mount handler scrolls to the cited line; this marks which line it is,
+  // briefly, so the eye lands on the quote rather than somewhere near it.
+  const citation = event.target.closest("[data-endfield-citation]");
+  const evidence = citation && document.getElementById(`endfield-evidence-${citation.dataset.endfieldCitation}`);
+  if (evidence) {
+    evidence.classList.remove("is-flash");
+    void evidence.offsetWidth;
+    evidence.classList.add("is-flash");
+    setTimeout(() => evidence.classList.remove("is-flash"), 700);
   }
 });
 endfieldMatchListEl?.addEventListener("click", (event) => {
@@ -489,6 +610,8 @@ async function loadEndfieldMeta() {
     endfieldMeta = meta;
     endfieldMetaLoaded = true;
     renderEndfieldRoute();
+    // The welcome was drawn before the archive answered; give it the numbers.
+    if (!endfieldLastQuery && endfieldOutputEl?.querySelector(".endfield-welcome")) renderEndfieldWelcome();
   } catch {
     endfieldCountEl.textContent = t("endfield_archive_unavailable");
   }
@@ -590,7 +713,7 @@ async function askEndfield(query) {
   saveEndfieldRecentQuery(normalized);
   renderEndfieldRoute();
   setEndfieldBusy(true);
-  endfieldOutputEl.innerHTML = `<article class="endfield-answer endfield-loading"><p class="endfield-kicker">${escapeHtml(t("endfield_searching_label"))}</p><h3>${escapeHtml(normalized)}</h3><p>${escapeHtml(t("endfield_searching"))}</p></article>`;
+  endfieldOutputEl.innerHTML = endfieldSearchingHTML(normalized);
   renderEndfieldMatches([]);
 
   try {

@@ -48,7 +48,9 @@ for (const theme of api.themes.filter((item) => item.id !== "big-sur")) {
 api.previewExperimentalTheme("big-sur");
 test.assert(desk.document.body.dataset.colorMode === "dark", "returning to Big Sur restores resolved saved preference");
 test.assert(api.getTheme("big-sur").overlay === "none" && api.getTheme("big-sur").fontStrategy === "theme", "Big Sur has theme typography and no glass overlay");
-test.assert(api.getAuthoringMetadata("big-sur").art.dir === "big-sur", "Big Sur uses its independent icon family");
+const authoringWindow = {};
+vm.runInNewContext(read("app/features/theme-authoring.js"), { window: authoringWindow });
+test.assert(authoringWindow.AISystem6ThemeAuthoring.get("big-sur").art.dir === "big-sur", "Big Sur uses its independent icon family");
 const invalid = boot([["ai-system-6-color-mode", "invalid"]]);
 test.assert(invalid.api.getColorMode() === "system", "invalid saved modes fall back to system");
 const blocked = boot([], { blocked: true });

@@ -1,0 +1,86 @@
+/* System 7 (1991) on a colour screen.
+
+   A child of Classic: System 6's geometry, font and object outlines are
+   inherited unchanged; this sheet owns only what colour added.
+
+   Evidence: a running System 7.5.3 (Infinite Mac), read from the emulator's
+   canvas pixel by pixel. Values and the full title-bar dump are recorded in
+   internal/evidence/drafts/system-7-reference/README.zh-CN.md. The palette
+   is System 7's own: the #eeeeee..#444444 grey ramp and the lavender set
+   #ccccff / #9999ff / #9999cc / #333366. */
+html[data-theme="system-7"],
+body[data-theme="system-7"] {
+  /* Title bar: #eeeeee under six #777777 lines, lavender light on the top
+     and left inner edge, #9999cc shade on the bottom and right. */
+  --titlebar-title-bg: #eeeeee;
+  --titlebar-shadow: inset 1px 1px 0 #ccccff, inset -1px -1px 0 #9999cc;
+  /* Two layers: the six lines in the content box, #eeeeee under the whole
+     bar (hence one clip value per layer). */
+  --system-titlebar-active-bg:
+    linear-gradient(to bottom, #777777 0 1px, transparent 1px 2px) 0 0 / 100% 2px repeat-y,
+    #eeeeee;
+  --system-titlebar-inactive-bg: linear-gradient(#eeeeee, #eeeeee), #eeeeee;
+  --system-titlebar-background-origin: content-box;
+  --system-titlebar-background-clip: content-box, border-box;
+  --system-titlebar-inactive-title-color: #777777;
+  /* The desktop pattern System 7.5 boots with: a one-pixel #666666/#aaaaaa
+     checkerboard. */
+  --desktop: #888888;
+  --desktop-surface: repeating-conic-gradient(#666666 0 25%, #aaaaaa 0 50%) 0 0 / 2px 2px;
+  /* Scroll bars: an empty lane is #eeeeee, not System 6's grey dither. The
+     thumb takes the lavender set of the window frame (not measured: the
+     captured window had nothing to scroll). */
+  --window-frame-track-bg: #eeeeee;
+  --window-frame-arrow-bg: #eeeeee;
+  --window-frame-thumb-bg: #ccccff;
+  --scrollbar-corner-bg: #eeeeee;
+}
+
+/* The title sits on the bar's #eeeeee (7.5.3 leaves a gap of bar colour
+   around it). A later responsive rule paints every title box --paper, which
+   is System 6's white box; this reads the era's own title token instead. */
+body[data-theme="system-7"] .title-bar :is(h1, h2) {
+  background: var(--titlebar-title-bg);
+}
+
+/* Classic's desktop is the base sheet's grid; every other era paints its own
+   surface, and System 7's is the checkerboard above. */
+body[data-theme="system-7"] .desktop {
+  background: var(--desktop-surface);
+}
+
+/* Close and zoom boxes, 11 x 11, as 7.5.3 draws them: a sunken outer ring
+   (#333366 top-left, #ccccff bottom-right), a raised inner ring (#ccccff
+   top-left, #333366 bottom-right), #aaaaaa in the middle and a one-pixel
+   #eeeeee gap where the lines stop. The zoom box adds the small box in its
+   top-left corner. */
+body[data-theme="system-7"] .title-bar > :is(.close-box, .resize-box) {
+  --x: var(--system-titlebar-control-art-offset-x);
+  --y: var(--system-titlebar-control-art-offset-y);
+  background:
+    linear-gradient(#333366, #333366) calc(var(--x) + 2px) calc(var(--y) + 9px) / 8px 1px no-repeat,
+    linear-gradient(#333366, #333366) calc(var(--x) + 9px) calc(var(--y) + 2px) / 1px 7px no-repeat,
+    linear-gradient(#ccccff, #ccccff) calc(var(--x) + 1px) calc(var(--y) + 1px) / 9px 1px no-repeat,
+    linear-gradient(#ccccff, #ccccff) calc(var(--x) + 1px) calc(var(--y) + 1px) / 1px 9px no-repeat,
+    linear-gradient(#ccccff, #ccccff) calc(var(--x) + 1px) calc(var(--y) + 10px) / 10px 1px no-repeat,
+    linear-gradient(#ccccff, #ccccff) calc(var(--x) + 10px) calc(var(--y) + 1px) / 1px 10px no-repeat,
+    linear-gradient(#333366, #333366) var(--x) var(--y) / 11px 1px no-repeat,
+    linear-gradient(#333366, #333366) var(--x) var(--y) / 1px 11px no-repeat,
+    linear-gradient(#aaaaaa, #aaaaaa) calc(var(--x) + 2px) calc(var(--y) + 2px) / 7px 7px no-repeat,
+    linear-gradient(#eeeeee, #eeeeee) calc(var(--x) - 1px) calc(var(--y) - 1px) / 13px 13px no-repeat;
+}
+
+/* The zoom box's inner square: System 6 draws its right and bottom strokes
+   from the box's own corner, which on System 7's bevelled box lands black
+   pixels on the outer ring. 7.5.3 starts the square inside the inner ring. */
+body[data-theme="system-7"] .title-bar > .resize-box::before {
+  left: calc(var(--x) + 2px);
+  top: calc(var(--y) + 2px);
+  width: 4px;
+  height: 4px;
+  border-color: #333366;
+}
+
+body[data-theme="system-7"] .sys-icon { background: transparent; }
+body[data-theme="system-7"] .sys-icon-svg > g { display: none; }
+body[data-theme="system-7"] .sys-icon-svg > .sys-icon-system-7 { display: inline; }

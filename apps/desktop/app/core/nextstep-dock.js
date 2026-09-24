@@ -1,5 +1,14 @@
 // Projection of windowRegistry/runningApps. Pins are personal shortcuts; they
 // never construct an application or change its document/session state.
+//
+// NeXTSTEP 3.3 keeps three classes of object in the Dock column and they are
+// not interchangeable: the fixed application icons, the icons of applications
+// that are merely running, and one miniwindow per window. The data was already
+// kept apart here (pins / runningApps / the miniaturized windows on the desk);
+// what was wrong was the projection -- all three went into one flat list of
+// tiles separated by `<hr>`, so an application icon and a window's miniwindow
+// were told apart only by their order. Each class now renders into its own
+// labelled region inside the one Dock root, from that same single source.
 (() => {
   const storageKey = "ai-system-6-nextstep-dock";
   let pins;
@@ -11,6 +20,17 @@
   let queued = false;
   const launching = new Map();
   const failures = new Set();
+
+  // The three regions, in the order the 3.3 Dock reads them top to bottom: the
+  // fixed applications directly under the menu bar, the applications that are
+  // running but not fixed, and the window miniwindows at the foot of the
+  // column. Labels come from strings the desk already ships, so a region never
+  // needs a new translation to say what it holds.
+  const REGIONS = Object.freeze([
+    { id: "fixed", labelKey: "nextstep_dock" },
+    { id: "running", labelKey: "applications" },
+    { id: "windows", labelKey: "nextstep_windows" },
+  ]);
 
   function catalog() {
     const result = new Map();
@@ -75,6 +95,26 @@
     return node;
   }
 
+  function region(descriptor) {
+    const label = t(descriptor.labelKey);
+    const node = document.createElement("section");
+    node.className = `nextstep-dock-region nextstep-dock-${descriptor.id}`;
+    node.dataset.dockRegion = descriptor.id;
+    node.setAttribute("aria-label", label);
+    const heading = document.createElement("h2");
+    heading.className = "nextstep-dock-region-label";
+    heading.textContent = label;
+    node.append(heading);
+    return node;
+  }
+
+  // A region with nothing in it keeps its place in the structure and hides.
+  // The contract pins that: three regions, not one list that grows and shrinks.
+  function settle(node) {
+    if (!node.querySelector(".nextstep-dock-tile")) node.setAttribute("hidden", "");
+    return node;
+  }
+
   function sync() {
     queued = false;
     if (window.AISystem6Theme.getCurrentTheme() !== "nextstep") {
@@ -96,8 +136,7 @@
       document.body.append(root);
     }
     const focusedKey = root.contains(document.activeElement) ? document.activeElement.dataset.dockKey : "";
-    root.replaceChildren();
-    function addApp(id, pinned) {
+    function addApp(id, pinned, container) {
       const entry = apps.get(id);
       if (!entry) return;
       const node = tile(entry.label, () => activate(id), entry.name, `app:${id}`);
@@ -129,18 +168,27 @@
         pins = pinned ? pins.filter((value) => value !== id) : [...pins, id];
         save();
       });
-      root.append(node);
+      container.append(node);
     }
-    pins.forEach((id) => addApp(id, true));
-    root.append(document.createElement("hr"));
-    running.filter((app) => !pins.includes(app.id)).forEach((app) => addApp(app.id, false));
-    if (minis.length) root.append(document.createElement("hr"));
-    minis.forEach((win) => {
-      const node = tile(t("nextstep_restore", applicationWindowTitle(win)),
+    // A miniwindow is one window, never one bucket per application: two open
+    // documents of the same application stay two icons, each named for its own
+    // window, so restoring one cannot restore the other by accident.
+    function addMiniwindow(win, container) {
+      const title = applicationWindowTitle(win);
+      const node = tile(t("nextstep_restore", title),
         () => window.AISystem6NextstepShell.restore(win), "document", `window:${win.dataset.window}`);
       node.dataset.miniwindow = win.dataset.window;
-      root.append(node);
-    });
+      node.classList.add("is-miniwindow");
+      const caption = document.createElement("span");
+      caption.className = "nextstep-dock-tile-label";
+      caption.textContent = title;
+      node.append(caption);
+      container.append(node);
+    }
+    const [fixedRegion, runningRegion, windowRegion] = REGIONS.map(region);
+    pins.forEach((id) => addApp(id, true, fixedRegion));
+    running.filter((app) => !pins.includes(app.id)).forEach((app) => addApp(app.id, false, runningRegion));
+    minis.forEach((win) => addMiniwindow(win, windowRegion));
     const settings = document.createElement("details");
     const summary = document.createElement("summary");
     summary.textContent = t("nextstep_dock_edit");
@@ -156,7 +204,7 @@
       }));
       settings.append(row);
     });
-    root.append(settings);
+    root.replaceChildren(settle(fixedRegion), settle(runningRegion), settle(windowRegion), settings);
     if (focusedKey) Array.from(root.querySelectorAll("[data-dock-key]")).find((node) => node.dataset.dockKey === focusedKey)?.focus({ preventScroll: true });
   }
 

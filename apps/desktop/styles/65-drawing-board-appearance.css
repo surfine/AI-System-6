@@ -1,0 +1,232 @@
+/* Drawing Board (Mac OS 8.5 beta, 1998): the Appearance Manager theme Apple
+   drew in pencil on drafting paper and never shipped.
+
+   A child of Platinum: it inherits every rule Platinum scopes by
+   [data-lineage~="platinum"] - the same controls, the same geometry - and
+   redraws them. Evidence is second-hand and says so: the 1999 WindowBlinds
+   port in internal/evidence/drafts/drawing-board (its author states the
+   parts were redrawn from the original theme). Values below are sampled from
+   its bitmaps and its .uis colour table; nothing from it ships.
+
+   The roughness is the point. A drawing-board desk says a piece of work may
+   be a draft and still be the work. */
+html[data-theme="drawing-board"],
+body[data-theme="drawing-board"] {
+  /* BEGIN derived from Platinum by tooling/build-drawing-board-tokens.mjs */
+  --paper: #cec7bd;
+  --panel: #c0b6aa;
+  --quiet-panel: #e7e3de;
+  --shade: #958671;
+  --shade-dark: #6d6154;
+  --rule: #857765;
+  --desktop: #958671;
+  --desktop-surface: url("./assets/themes/platinum/azul-tile.png") left top / 96px 96px repeat, linear-gradient(#958671, #958671);
+  --pane-bg: #cec7bd;
+  --window-bg: #c0b6aa;
+  --window-shadow: 1px 1px 0 #000000, inset 1px 0 0 #f4efe7, inset 0 1px 0 #f4efe7, inset -1px 0 0 #958671, inset 0 -1px 0 #958671;
+  --inactive-window-shadow: 1px 1px 0 #958671, inset 1px 1px 0 #e7e3de, inset -1px -1px 0 #958671;
+  --system-titlebar-active-bg: linear-gradient(#c0b6aa, #c0b6aa) left top / var(--system-titlebar-control-slot) 100% no-repeat, linear-gradient(#c0b6aa, #c0b6aa) right top / calc(var(--system-titlebar-control-slot) + var(--system-titlebar-shade-slot)) 100% no-repeat, linear-gradient(to bottom, #c0b6aa 0 2px, transparent 2px 13px, #c0b6aa 13px 17px, #958671 17px 18px), repeating-linear-gradient(to bottom, #f4efe7 0 1px, #75685a 1px 2px) 0 1px / 100% 2px repeat-y, #c0b6aa;
+  --system-titlebar-inactive-bg: #cec7bd;
+  --system-titlebar-inactive-title-color: #75685a;
+  --titlebar-title-bg: #c0b6aa;
+  --titlebar-shadow: inset 0 1px 0 #f4efe7;
+  --surface-primary: #cec7bd;
+  --surface-secondary: #cec7bd;
+  --surface-inset: #f4efe7;
+  --toolbar-bg: #cec7bd;
+  --sidebar-bg: #e7e3de;
+  --selection-bg: #fffcdf;
+  --status-placard-bg: #e7e3de;
+  --status-placard-shadow: inset 1px 1px 0 #857765, inset -1px -1px 0 #f4efe7;
+  --tdi-rail-bg: #c0b6aa;
+  --tdi-rail-shadow: inset 1px 1px 0 #857765, inset -1px -1px 0 #f4efe7;
+  --tdi-tab-border-bottom: 1px solid #a59888;
+  --tdi-tab-bg: #e7e3de;
+  --tdi-tab-active-border-bottom: 1px solid #857765;
+  --tdi-tab-active-shadow: inset 1px 1px 0 #f4efe7;
+  --tdi-tab-active-unfocused-border-bottom: 1px solid #a59888;
+  --tdi-tab-active-unfocused-bg: #cec7bd;
+  --tdi-tab-active-unfocused-fg: #574c41;
+  --tdi-tab-active-unfocused-small-color: #75685a;
+  --tdi-tab-hover-bg: #e7e3de;
+  --tdi-tab-pressed-bg: #665a4d;
+  --tdi-tab-pressed-fg: #f4efe7;
+  --tdi-tab-pressed-shadow: inset 1px 1px 0 #3a3129, inset -1px -1px 0 #958671;
+  --find-path-results-bg: #f4efe7;
+  --sidebar-selection-bg: #fffcdf;
+  --separator: #857765;
+  --control-shadow: inset 1px 1px 0 #f4efe7, inset -1px -1px 0 #857765;
+  --control-active-shadow: inset 1px 1px 0 #574c41, inset -1px -1px 0 #958671;
+  --control-focus-outline: 2px solid #958671;
+  --control-disabled-bg: #cec7bd;
+  --control-disabled-field-bg: #f4efe7;
+  --system-disabled-fg: #6d6154;
+  --system-inset: inset 1px 1px 0 #857765, inset -1px -1px 0 #f4efe7;
+  --btn-bg: #cec7bd;
+  --btn-shadow: inset 1px 1px 0 #cec7bd, inset 2px 2px 0 #f4efe7, inset -1px -1px 0 #75685a, inset -2px -2px 0 #a59888;
+  --btn-hover-bg: #cec7bd;
+  --btn-hover-shadow: inset 1px 1px 0 #cec7bd, inset 2px 2px 0 #f4efe7, inset -1px -1px 0 #75685a, inset -2px -2px 0 #a59888;
+  --btn-active-bg: #665a4d;
+  --btn-active-fg: #f4efe7;
+  --btn-active-shadow: inset 1px 1px 0 #3a3129, inset -1px -1px 0 #958671;
+  --field-bg: #f4efe7;
+  --field-focus-bg: #f4efe7;
+  --field-shadow: -1px -1px 0 #857765;
+  --field-focus-ring: 0 0 0 2px #958671;
+  --choice-bg: #cec7bd;
+  --choice-shadow: inset -1px -1px 0 #857765, inset 1px 1px 0 #f4efe7;
+  --choice-checked-bg: #cec7bd;
+  --radio-bg: #cec7bd;
+  --radio-shadow: inset 1px 1px 0 #cec7bd, inset -1px -1px 0 #857765;
+  --radio-image: linear-gradient(to bottom right, #f4efe7, #857765);
+  --radio-checked-image: radial-gradient(circle, #000000 0 3px, transparent 3.5px), linear-gradient(to bottom right, #574c41, #f4efe7);
+  --menu-bar-bg: #cec7bd;
+  --menu-bar-shadow: inset 0 1px 0 #f4efe7, inset 0 -1px 0 #958671;
+  --menu-panel-bg: #cec7bd;
+  --menu-panel-shadow: inset 1px 1px 0 #f4efe7, inset -1px -1px 0 #857765, 1px 1px 0 #000000;
+  --menu-item-bg: #cec7bd;
+  --menu-button-active-bg: #574c41;
+  --menu-button-active-fg: #f4efe7;
+  --menu-item-active-bg: #574c41;
+  --menu-item-active-fg: #f4efe7;
+  --balloon-help-bg: #f7d784;
+  --balloon-help-shadow: 2px 2px 0 #75685a;
+  --window-frame-track-bg: #a59888;
+  --window-frame-track-shadow: inset 1px 1px #75685a, inset -1px -1px #c0b6aa;
+  --window-frame-thumb-bg: #f7d784;
+  --window-frame-thumb-shadow: inset 1px 1px #fffcdf, inset -1px -1px #958671;
+  --window-frame-arrow-bg: #cec7bd;
+  --window-frame-arrow-shadow: inset 1px 1px #f4efe7, inset -1px -1px #958671;
+  --scrollbar-track: #a59888;
+  --scrollbar-button: #cec7bd;
+  --tab-bg: #c0b6aa;
+  --tab-hover-bg: #cec7bd;
+  --tab-active-bg: #e7e3de;
+  --tab-shadow: inset 0 1px #000000, inset 0 2px #c0b6aa, inset 0 3px #cec7bd;
+  --tab-pressed-fg: #f4efe7;
+  --tab-focus-text-shadow: 0 0 2px #958671;
+  --tab-panel-bg: #e7e3de;
+  --tab-panel-shadow: inset 1px 1px #c0b6aa, inset 2px 2px #f4efe7, inset -1px -1px #958671, inset -2px -2px #b2a697;
+  --menu-item-disabled-bg: #cec7bd;
+  --menu-item-disabled-fg: #75685a;
+  --menu-separator-border-top: 1px solid #857765;
+  --menu-separator-border-bottom: 1px solid #f4efe7;
+  --progress-bg: #b2a697;
+  --progress-shadow: 1px 1px #f4efe7, -1px -1px #a59888, inset 1px 1px #857765, inset -1px -1px #cec7bd;
+  --progress-fill-bg: linear-gradient(to bottom, #574c41, #958671, #f7d784, #fffcdf, #e7e3de, #fffcdf, #f7d784, #958671, #574c41, #000088);
+  --progress-fill-shadow: inset 1px 0 #958671, inset 2px 0 rgba(255, 255, 255, 0.2), inset -1px 0 #000055, inset -2px 0 #574c41, 1px 0 #574c41, 2px 0 #857765;
+  --alarm-clock-surface-bg: #cec7bd;
+  --alarm-clock-readout-bg: #f4efe7;
+  --alarm-clock-active-fg: #f4efe7;
+  --alarm-clock-close-bg: #f4efe7;
+  --alarm-clock-close-shadow: inset 1px 1px 0 #f4efe7, inset -1px -1px 0 #857765;
+  --alarm-clock-lever-bg: #cec7bd;
+  --alarm-clock-lever-hover-bg: #e7e3de;
+  --alarm-clock-lever-shadow: inset 1px 1px 0 #f4efe7, inset -1px -1px 0 #857765;
+  --alarm-clock-mode-bg: #cec7bd;
+  --alarm-clock-mode-hover-bg: #e7e3de;
+  --alarm-clock-mode-active-shadow: inset 0 0 0 3px #f4efe7;
+  --control-strip-bg: #cec7bd;
+  --control-strip-border: 1px solid #3a3129;
+  --control-strip-shadow: inset 1px 1px 0 #f4efe7, inset -1px -1px 0 #9e9e9e, 1px 2px 0 rgba(0, 0, 0, 0.35);
+  --control-strip-tile-shadow: inset 0 0 0 1px #7a7a7a, inset 1px 1px 0 rgba(255, 255, 255, 0.85), inset -1px -1px 0 #958671;
+  --control-strip-tile-hover-shadow: inset 0 0 0 1px #6d6154, inset 1px 1px 0 #f4efe7, inset -1px -1px 0 #958671;
+  --control-strip-hover-fg: #1d1813;
+  --control-strip-active-fg: #1d1813;
+  --control-strip-active-shadow: inset 0 0 0 1px #6d6154, inset 1px 1px 0 rgba(0, 0, 0, 0.35);
+  --control-strip-gauge: #3a3129;
+  --control-strip-gauge-bg: #f4efe7;
+  --control-strip-grip: repeating-linear-gradient(to bottom, #efe9e1 0 1px, #8e8e8e 1px 2px, rgba(0, 0, 0, 0) 2px 4px) 50% 50% / 10px 100% no-repeat;
+  /* END derived from Platinum */
+  /* Title bar: a 22 px band of drafting paper between two pencil lines
+     (#625c58 in the reference), no Platinum grooves. */
+  --system-titlebar-active-bg: #d0c8c0;
+  --system-titlebar-inactive-bg: #ddd6ce;
+  --system-titlebar-background-origin: border-box;
+  --system-titlebar-background-clip: border-box;
+  --titlebar-border: 1px solid #625c58;
+  --titlebar-title-bg: transparent;
+  /* Drafting-board desktop: warm paper under a faint pencil grid, one cell
+     every 128/11 px as in the reference tile. */
+  --desktop: #c6b59c;
+  --desktop-surface:
+    linear-gradient(rgba(110, 100, 80, 0.13) 1px, transparent 1px) 0 0 / 11.64px 11.64px,
+    linear-gradient(90deg, rgba(110, 100, 80, 0.13) 1px, transparent 1px) 0 0 / 11.64px 11.64px,
+    #c6b59c;
+  --drawing-board-pencil: #3f3a35;
+  /* The reference separates window content (237,227,218) from control face
+     (206,199,189); Platinum uses one grey for both. Paper takes the lighter
+     content colour so writing stays easy to read. */
+  --paper: #ede3da;
+  --pane-bg: #ede3da;
+}
+
+body[data-theme="drawing-board"] .desktop {
+  background: var(--desktop-surface);
+}
+
+/* Title-bar boxes: a pencilled square with a registration cross running
+   through and past it - the construction line the reference draws running
+   off every corner, kept inside the bar so the window never clips it. */
+body[data-theme="drawing-board"] .title-bar > :is(.close-box, .resize-box, .shade-box) {
+  --x: var(--system-titlebar-control-art-offset-x);
+  --y: var(--system-titlebar-control-art-offset-y);
+  background:
+    linear-gradient(var(--drawing-board-pencil), var(--drawing-board-pencil)) calc(var(--x) - 2px) calc(var(--y) + 5px) / 15px 1px no-repeat,
+    linear-gradient(var(--drawing-board-pencil), var(--drawing-board-pencil)) calc(var(--x) + 5px) calc(var(--y) - 2px) / 1px 15px no-repeat,
+    linear-gradient(var(--drawing-board-pencil), var(--drawing-board-pencil)) var(--x) var(--y) / 11px 1px no-repeat,
+    linear-gradient(var(--drawing-board-pencil), var(--drawing-board-pencil)) var(--x) calc(var(--y) + 10px) / 11px 1px no-repeat,
+    linear-gradient(var(--drawing-board-pencil), var(--drawing-board-pencil)) var(--x) var(--y) / 1px 11px no-repeat,
+    linear-gradient(var(--drawing-board-pencil), var(--drawing-board-pencil)) calc(var(--x) + 10px) var(--y) / 1px 11px no-repeat,
+    linear-gradient(#e2dbd2, #e2dbd2) var(--x) var(--y) / 11px 11px no-repeat;
+}
+
+/* Platinum draws its bevelled box on ::before; here the pencil square above
+   is the box, so the bevel steps aside and Platinum's zoom and WindowShade
+   marks (::after) sit inside the pencilled square. */
+body[data-theme="drawing-board"] .title-bar :is(.close-box, .resize-box, .shade-box)::before {
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+
+/* A background window keeps the drafting paper. Platinum writes these greys
+   as literals in its own rule rather than tokens, so the derived palette
+   cannot reach them; the values are the same map (#dddddd -> #cec7bd,
+   #eeeeee -> #e7e3de, #555555 -> #574c41). */
+body[data-theme="drawing-board"] .window:not(.is-active) {
+  --pane-bg: #e7e3de;
+  --titlebar-title-bg: transparent;
+  border-color: #574c41;
+  background: #cec7bd;
+  color: #574c41;
+}
+
+body[data-theme="drawing-board"] .window:not(.is-active) .title-bar {
+  border-bottom-color: #574c41;
+}
+
+/* The grow box, pencilled: Platinum's diagonal grooves on the warm face. */
+body[data-theme-family="classic"][data-theme="drawing-board"] .grow-box {
+  background:
+    repeating-linear-gradient(to bottom right, #f4efe7 0 1px, #c0b6aa 1px 2px, #75685a 2px 3px, #c0b6aa 3px 4px),
+    #c0b6aa;
+}
+
+body[data-theme-family="classic"][data-theme="drawing-board"] .window:not(.is-active) .grow-box {
+  background-image: none;
+  background-color: #c0b6aa;
+}
+
+/* Pressed: the pencilled square fills with graphite, the lines still showing. */
+body[data-theme="drawing-board"] .title-bar :is(.close-box, .resize-box, .shade-box):active::before {
+  background: rgba(63, 58, 53, 0.35);
+}
+
+/* The system's higher-contrast request. The global answer lives in a boot
+   sheet this lazy sheet follows, so Drawing Board restates it in its own ink. */
+@media (prefers-contrast: more) {
+  body[data-theme="drawing-board"] {
+    --system-disabled-fg: #3a3129;
+  }
+}

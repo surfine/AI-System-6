@@ -3730,43 +3730,6 @@ function isGemma4ModelName(value = "") {
   return /gemma[-_/ ]?4/i.test(String(value || ""));
 }
 
-function qwen35ChatDefaults(modelName, options = {}) {
-  if (!isQwen35ModelName(modelName)) return {};
-  const taskKind = String(options.taskKind || "chat").toLowerCase();
-  const thinking = false;
-  const maxTokens = qwen35AppMaxTokens(taskKind);
-  const temperature = Number.isFinite(options.temperature)
-    ? options.temperature
-    : qwen35TaskTemperature(taskKind);
-  return {
-    max_tokens: maxTokens,
-    temperature,
-    top_p: 0.8,
-    top_k: 20,
-    min_p: 0,
-    presence_penalty: 1.5,
-    enable_thinking: thinking,
-    reasoning_effort: "none",
-    chat_template_kwargs: { enable_thinking: thinking },
-  };
-}
-
-function gemma4ChatDefaults(modelName, options = {}) {
-  if (!isGemma4ModelName(modelName)) return {};
-  const taskKind = String(options.taskKind || "chat").toLowerCase();
-  return {
-    max_tokens: localTaskMaxTokens(taskKind),
-    temperature: Number.isFinite(options.temperature) ? options.temperature : 1.0,
-    top_p: 0.95,
-    top_k: 64,
-    min_p: 0,
-    enable_thinking: false,
-    thinking: { type: "disabled" },
-    reasoning_effort: "none",
-    chat_template_kwargs: { enable_thinking: false },
-  };
-}
-
 function scrubVisibleModelOutput(text = "") {
   if (window.AISystem6ModelTaskRuntime?.scrubVisibleModelOutput) {
     return window.AISystem6ModelTaskRuntime.scrubVisibleModelOutput(text);
@@ -3778,38 +3741,12 @@ function scrubVisibleModelOutput(text = "") {
     .trim();
 }
 
-function qwen35TaskTemperature(taskKind = "chat") {
-  const kind = String(taskKind || "chat").toLowerCase();
-  if (/dictation|speech|transcript/.test(kind)) return 0.25;
-  if (/draft|rewrite|polish|writing-tool|continue|chat/.test(kind)) return 0.55;
-  if (/organize-question-sheet|question-sheet|generate-outline|docmap|review|claim|hkrr|dictionary/.test(kind)) return 0.35;
-  return 0.6;
-}
-
-function localTaskMaxTokens(taskKind = "chat") {
-  return qwen35AppMaxTokens(taskKind);
-}
-
-function localNoThinkingDefaults(taskKind = "chat") {
-  return {
-    max_tokens: localTaskMaxTokens(taskKind),
-    enable_thinking: false,
-    thinking: { type: "disabled" },
-    reasoning_effort: "none",
-    chat_template_kwargs: { enable_thinking: false },
-  };
-}
-
+// Local defaults — thinking off, Qwen/Gemma sampling, task budgets — have one
+// owner: the shared model-task runtime, which boots before this file and is
+// what the server tunes with too. The copy that used to sit here could only
+// run if that runtime were missing, which it never is.
 function localChatDefaults(modelName, options = {}) {
-  if (window.AISystem6ModelTaskRuntime?.localChatDefaults) {
-    return window.AISystem6ModelTaskRuntime.localChatDefaults(modelName, options);
-  }
-  const taskKind = String(options.taskKind || "chat").toLowerCase();
-  return {
-    ...localNoThinkingDefaults(taskKind),
-    ...gemma4ChatDefaults(modelName, options),
-    ...qwen35ChatDefaults(modelName, options),
-  };
+  return window.AISystem6ModelTaskRuntime?.localChatDefaults?.(modelName, options) || {};
 }
 
 function qwen35AppMaxTokens(taskKind = "chat") {

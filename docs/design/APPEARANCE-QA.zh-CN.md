@@ -1,12 +1,12 @@
 <!-- canonical-source: docs/design/APPEARANCE-QA.md -->
-<!-- source-sha256: b1e6a24d9874acba80d07c2f114955830bf08e51be1aa489a798f983fd401b00 -->
+<!-- source-sha256: 313ba9fedf7f3e009462f668d3f70dfe4da9c3fa0efd74dc9a951027edaef079 -->
 
 英文版为准。本文档仅供人类参考。
 
 # 外观 QA 矩阵
 
-AI System 6 有七套正式外观，以及第八套 NeXTSTEP 预览外壳。由于专用图标仍按用户
-要求押后，预览暂不进入普通外观选择器。
+AI System 6 有八套正式外观。下表记录的是最初的六套；Big Sur（2026-09-22）与
+NeXTSTEP（2026-09-23 正式发布）由下文各自的小节覆盖，不靠表里的勾。
 
 | 表面 | Classic / System 6 | Platinum | Aqua | Snow Leopard | Yosemite | Liquid Glass |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -26,10 +26,9 @@ AI System 6 有七套正式外观，以及第八套 NeXTSTEP 预览外壳。由�
 | 菜单栏 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | 手机布局 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 
-七套正式外观（注册表 `releaseReady: true`）在 Control Panel 的
-Appearance 选择器与 Special 菜单中开放。NeXTSTEP 使用
-`releaseReady: false`，只能通过 loopback 的 `debugTheme=nextstep` 预览，等专用
-图标工作获准后再开放。四套
+八套正式外观（注册表 `releaseReady: true`）在 Control Panel 的
+Appearance 选择器与 Special 菜单中开放。NeXTSTEP 于 2026-09-23 按作者决定加入，
+此前已记录它的工作流与边界门禁、59/59 图标和触摸目标。四套
 历史外观还须通过 `npm run verify:theme-lab:fidelity` 对已 pin 的 canonical
 reference 校验。该命令检查两个互不混淆的层级：来自记录运行的 `tolerances`
 （回归层），以及共享的 `FIDELITY_FLOOR`（与时代目标的绝对差距层）。每个
@@ -157,7 +156,9 @@ Theme Lab 截图工具现仅隐藏 `.window[data-window]` 管理窗口。原先�
 共享现代家族输入框规则同时排除了 `.mde-input`：原先的不透明填色会盖住
 Yosemite 和 Big Sur 的文稿绘制层，现在两者都保持编辑层透明与字形对齐。
 
-NeXTSTEP 预览证据还覆盖原生式窗口按钮、key/main 标题状态、浮动与可分离菜单、右侧
+NeXTSTEP 证据还覆盖原生式窗口按钮、key/main 标题状态、浮动与可分离菜单、右侧
 Dock、最小化窗口、列式 Finder/Shelf、滚动条、输入法切换、离线资源和跨外观／会话
-恢复。图标仍明确回退 Classic；三个新增应用的专用图标和逐项历史核验仍为 pending。
-本次交付不提升此前历史相似度结论，也不代表所有图标族已获历史审核通过。
+恢复。这套外观映射到的每个对象现在都有自己的 3.3 风格图标（59/59），Classic 图标回退
+已经取消。NeXTSTEP 没有 canonical 的 Theme Lab 基准板：`verify-nextstep-workflow` 及其
+边界配套是它的检测工具，`verify:theme-lab:fidelity` 通过并不说明它的情况。它的发布
+不提升此前历史相似度结论，也不代表所有图标族已获历史审核通过。

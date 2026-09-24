@@ -8,6 +8,64 @@
   overscroll-behavior: contain;
   z-index: var(--z-control-strip);
   background: var(--panel);
+  display: flex;
+  flex-direction: column;
+}
+
+/* The three classes of object the 3.3 Dock holds, each in its own region
+   inside the one column. The fixed applications sit directly under the menu
+   bar, the applications that are only running follow them, and the window
+   miniwindows hang at the foot of the column. Every region carries its label,
+   which is what keeps a narrow column reading as three things instead of one
+   undifferentiated list; moving a region is a change here, not in the
+   projection. */
+.nextstep-dock-region { display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  flex: none;
+}
+
+.nextstep-dock-region[hidden] { display: none;
+}
+
+.nextstep-dock-region-label { margin: 0;
+  padding: 2px 1px;
+  background: var(--system-titlebar-active-bg);
+  color: var(--titlebar-title-fg);
+  /* 10px, not 11: the region names are longer than the 64px column and a
+     label that breaks mid-word ("Application / s") reads as damage. */
+  font: 10px Helvetica, Arial, sans-serif;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.nextstep-dock-fixed { border-bottom: 1px solid var(--ink);
+}
+
+.nextstep-dock-running { border-bottom: 1px solid var(--ink);
+}
+
+.nextstep-dock-windows { margin-top: auto;
+  border-top: 1px solid var(--ink);
+}
+
+/* A miniwindow is one window and says which one: the title sits under the icon
+   so two documents of the same application are told apart without hovering.
+   The tile grows past 64px when the title needs the room. */
+.nextstep-dock-tile.is-miniwindow { flex-direction: column;
+  gap: 2px;
+  height: auto;
+  min-height: 64px;
+  padding-bottom: 3px;
+}
+
+.nextstep-dock-tile-label { max-width: 100%;
+  max-height: 2.2em;
+  overflow: hidden;
+  font: 10px Helvetica, Arial, sans-serif;
+  line-height: 1.1;
+  text-align: center;
+  overflow-wrap: anywhere;
 }
 
 .nextstep-dock-tile { display: flex;
@@ -109,6 +167,12 @@
   box-shadow: var(--system-shadow);
   text-align: left;
   font: inherit;
+}
+
+/* NeXTSTEP menus carry no separators (Release 3.3 Visual Guide, Menus): the
+   shared menu model's dividers drew as unlabelled browser rules between
+   Windows and Hide and between Show All and Quit. */
+.nextstep-menu-palette hr { display: none;
 }
 
 .nextstep-menu-palette [aria-haspopup="menu"]::after { content: "▸";

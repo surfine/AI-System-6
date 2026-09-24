@@ -1,0 +1,97 @@
+/* Tiger (Mac OS X 10.4, 2005).
+
+   A child of Snow Leopard in the registry: it inherits every rule 10.6 scopes
+   by [data-lineage~="snow-leopard"] (title-bar grid, traffic lights, Aqua
+   controls) and owns only the delta below.
+
+   Evidence: Apple Human Interface Guidelines, 2005-09-08, "Window
+   Appearance" pp. 180-181, sampled at 1x from the figures (the PDF's own
+   embedded screenshots, kept in the git-ignored fidelity cache).
+
+   The guidelines decide which window is metal. A brushed metal window is for
+   "a single-window application that provides a source list", "for example,
+   iTunes or the Finder"; it is NOT for "a document-based application - for
+   example, TextEdit", and Figure 13-12 marks the metal document window wrong.
+   A mix is expected: "as the Finder does". So here the Finder's windows are
+   metal and every writing window stays a standard Tiger window on white
+   paper. */
+html[data-theme="tiger"],
+body[data-theme="tiger"] {
+  /* Standard window, Figure 13-12 (right): a 22 px bar, #f9f9f9 highlight,
+     #e6e6e6 -> #cacaca ramp, #8c8c8c base line - lighter than 10.6's. */
+  --system-titlebar-active-bg: linear-gradient(to bottom,
+    #f9f9f9 0 1px, #efefef 1px 2px, #e6e6e6 2px 6px, #e0e0e0 10px,
+    #d7d7d7 15px, #cfcfcf 19px, #cacaca 22px);
+  --system-titlebar-inactive-bg: linear-gradient(to bottom,
+    #fbfbfb 0 1px, #f1f1f1 1px 22px);
+  --titlebar-border: 1px solid #8c8c8c;
+  --titlebar-border-inactive: 1px solid #b4b4b4;
+  --window-bg: #ececec;
+  /* Paper is white again, as in 10.2: the guidelines' document window and
+     the Finder's file list are white. 10.6's grey paper is a later era. */
+  --paper: #fff;
+  --pane-bg: #fff;
+  --toolbar-bg: linear-gradient(#ececec, #dcdcdc);
+  --toolbar-bg-inactive: linear-gradient(#f2f2f2, #ececec);
+  --toolbar-border: 1px solid #8c8c8c;
+  /* Brushed metal, Figure 13-11 (iSync): the light runs ACROSS the sheet,
+     not down it - #a8adb4 at the edges to #d5d7dd at the middle, faintly
+     blue - under fine one-pixel horizontal streaks. */
+  --tiger-metal-streaks: repeating-linear-gradient(to bottom,
+    rgba(255, 255, 255, 0.1) 0 1px, transparent 1px 2px,
+    rgba(0, 0, 0, 0.05) 2px 3px, transparent 3px 5px,
+    rgba(255, 255, 255, 0.06) 5px 6px, transparent 6px 7px);
+  --tiger-metal: var(--tiger-metal-streaks),
+    linear-gradient(to right, #a8adb4 0%, #b2b7be 11%, #bfc3ca 25%,
+      #cfd1d7 44%, #d5d7dd 51%, #cccfd5 58%, #c2c5cb 72%, #aeb3ba 91%, #acb0b8 100%);
+  /* Jaguar's Aqua Blue: 10.4 shipped the same blue family by default. */
+  --desktop: #4979b0;
+  --desktop-surface:
+    radial-gradient(120% 80% at 22% 8%, rgba(255, 255, 255, 0.3), transparent 45%),
+    linear-gradient(128deg,
+      #3b6ba3 0%, #4d86ba 34%, #6ea6d6 46%, #82b6e2 52%,
+      #6ea6d6 58%, #4d85ba 70%, #416f9f 100%);
+  /* Period tokens every era answers. Tiger answers them with the values
+     Snow Leopard already draws (the foundation defaults it inherits). */
+  --balloon-help-shadow: var(--system-object-shadow);
+  --control-strip-tile-height: calc(var(--control-strip-thickness) - 2px);
+  --control-strip-tile-margin: 0;
+  --control-strip-tile-radius: 0;
+  --desktop-label-box-shadow: none;
+  --menu-item-fg: var(--ink);
+  --surface-backdrop-filter: none;
+  --window-backdrop-filter: none;
+}
+
+/* The Finder's windows are one sheet of metal: the title bar and the toolbar
+   show it through instead of each painting a band, and the file list stays a
+   white well inside it. */
+body[data-theme="tiger"] .window[data-app="finder"] {
+  --system-titlebar-active-bg: transparent;
+  --system-titlebar-inactive-bg: transparent;
+  --titlebar-border: 0;
+  --titlebar-border-inactive: 0;
+  --titlebar-shadow: none;
+  --toolbar-bg: transparent;
+  --toolbar-bg-inactive: transparent;
+  --app-toolbar-bg: transparent;
+  --details-bar-bg: transparent;
+  --system-status-surface: transparent;
+  --details-bar-border: transparent;
+  --finder-navigation-bg: transparent;
+  --view-controls-bg: transparent;
+  --window-border: 1px solid #9a9a9a;
+  background-image: var(--tiger-metal);
+}
+
+body[data-theme="tiger"] .sys-icon-svg .sys-icon-snow-leopard {
+  display: none;
+}
+
+body[data-theme="tiger"] .sys-icon-svg .sys-icon-aqua {
+  display: block;
+}
+
+body[data-theme="tiger"] .sys-icon {
+  --aqua-icon: url("./assets/themes/aqua/aqua-sprite.png");
+}

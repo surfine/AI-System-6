@@ -655,6 +655,24 @@ const completeEraSystemIconIds = new Set(("startupDisk hardDisk folder document 
   + "endfieldTerminal documents alias systemFile multiFinderApp daHandler writingBell trashFull control localModel "
   + "controlStrip imagePromptStudio micropolis openttd doom lightroom bonsaiCity clioPaint clioProject oneMoreTune").split(" "));
 const supplementarySystemIconIds = new Set("clioPaint clioProject oneMoreTune".split(" "));
+// NeXTSTEP's own objects. The three applications above are "supplementary" to
+// Classic; these are the objects and system applications the era really drew
+// differently -- the folder, the page, the drive, the trash, and the utility
+// applications -- authored by tooling/build-nextstep-core-icons.mjs. Anything
+// not listed here still paints Classic art in this appearance, and the family
+// ledger in assets/themes/nextstep records how many objects that is.
+const nextstepCoreSystemIconIds = new Set((
+  "finderApp folder document hardDisk trash trashFull "
+  + "searcher dictionary systemHelp importUtility controlPanel chooser "
+  + "writingStudio assistant quickDraft projectDisk projectDisc questionSheet "
+  + "outline sectionDrafts manuscript reviewDesk scrapbook reader "
+  + "startupDisk applications fileFloppy systemFolder helpFolder documents "
+  + "teachText writingDemo chatFile chatImport systemFile alias docMap "
+  + "rebuildArticle bureaucracyMeme endfieldTerminal "
+  + "clioStage clioChart liquidCover cmfStudio soundscape multiFinderApp "
+  + "cloudModel cloudModelOff timeMachine systemStatus contextPanel daHandler "
+  + "writingBell control localModel controlStrip"
+).split(" "));
 const classicBigSurFallbackIds = new Set("imagePromptStudio micropolis openttd doom lightroom bonsaiCity".split(" "));
 const liquidGlassRoundedRectIconIds = new Set(("finderApp assistant writingStudio cloudModel cloudModelOff reviewDesk searcher reader timeMachine docMap clioStage clioChart liquidCover cmfStudio soundscape scrapbook importUtility controlPanel chooser systemHelp dictionary teachText chatImport systemStatus contextPanel rebuildArticle bureaucracyMeme endfieldTerminal multiFinderApp daHandler writingBell control localModel controlStrip clioPaint clioProject oneMoreTune").split(" "));
 function liquidGlassIconUsesRoundedRect(iconId) {
@@ -838,9 +856,13 @@ function systemIconSvg(iconId, options = {}) {
   // Conditional families carry no href until selected. Dynamic icons use the
   // same path; the registry refreshes existing icons on every era transition.
   const era = window.AISystem6Theme?.getCurrentTheme?.();
-  const independent = era === "big-sur" || (era === "nextstep" && supplementarySystemIconIds.has(id));
-  const independentSourceSize = independent ? systemIconModernSourceSize(options, sourceSize, [16, 32, 64, 128]) : modernSourceSize;
-  const eraArt = independent ? (classicBigSurFallbackIds.has(id) ? paths
+  const independent = window.AISystem6Theme?.hasCapability?.("independent-icons")
+    || (era === "nextstep" && (supplementarySystemIconIds.has(id) || nextstepCoreSystemIconIds.has(id)));
+  // An era drawn at the Classic tiers (System 7) uses the Classic source size.
+  const independentSourceSize = !independent ? modernSourceSize
+    : window.AISystem6Theme?.getTheme?.()?.classicIconTiers ? sourceSize
+      : systemIconModernSourceSize(options, sourceSize, [16, 32, 64, 128]);
+  const eraArt = independent ? (era === "big-sur" && classicBigSurFallbackIds.has(id) ? paths
     : completeEraRasterSystemIconArt(era, id, independentSourceSize)) : "";
   const liquidPaths = liquidGlassSystemIconArt(id, modernSourceSize);
   const maskClass = coreArt ? " has-classic-mask" : "";

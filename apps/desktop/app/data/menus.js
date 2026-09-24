@@ -67,15 +67,10 @@ const editWithWriting = [
   ...flatSelectionTools,
 ];
 
-const appearanceItems = [
-  menuItem("set-theme-classic", "theme_classic", "", { themeId: "classic" }),
-  menuItem("set-theme-platinum", "theme_platinum", "", { themeId: "platinum" }),
-  menuItem("set-theme-aqua", "theme_aqua", "", { themeId: "aqua" }),
-  menuItem("set-theme-snow-leopard", "theme_snow_leopard", "", { themeId: "snow-leopard" }),
-  menuItem("set-theme-yosemite", "theme_yosemite", "", { themeId: "yosemite" }),
-  menuItem("set-theme-big-sur", "theme_big_sur", "", { themeId: "big-sur" }),
-  menuItem("set-theme-liquid-glass", "theme_liquid_glass", "", { themeId: "liquid-glass" }),
-];
+// One item per release-ready appearance, in registry order: the registry is
+// the only list, so adding an appearance never edits this menu.
+const appearanceItems = (window.AISystem6Theme?.getReleaseReadyThemes() || [])
+  .map(({ id, labelKey }) => menuItem(`set-theme-${id}`, labelKey, "", { themeId: id }));
 
 const systemSpecialItems = [
   menuItem("tile-windows", "tile_windows"),
@@ -425,6 +420,7 @@ const quickDraftMenus = [
     menuItem("quick-draft-apply", "quick_draft_preview_adjustments"),
     menuSeparator,
     menuItem("quick-draft-import-chat", "quick_draft_import_chat_records"),
+    menuItem("quick-draft-walk-return", "quick_draft_walk_return"),
     menuItem("quick-draft-vent-on", "quick_draft_vent_start"),
     menuItem("quick-draft-vent-off", "quick_draft_vent_stop"),
     menuItem("quick-draft-vent-summary", "quick_draft_vent_summarize"),
@@ -614,6 +610,17 @@ const searcherMenus = [
 const clioStageMenus = [
   menu("file", "menu_file", [
     menuItem("clio-stage-import", "import"),
+    menuItem("clio-stage-export-pdf", "print_pdf"),
+    submenu("clio_stage_restyle", [
+      menuItem("clio-stage-restyle-classic", "theme_classic"),
+      menuItem("clio-stage-restyle-platinum", "theme_platinum"),
+      menuItem("clio-stage-restyle-aqua", "theme_aqua"),
+      menuItem("clio-stage-restyle-snow-leopard", "theme_snow_leopard"),
+      menuItem("clio-stage-restyle-yosemite", "theme_yosemite"),
+      menuItem("clio-stage-restyle-big-sur", "theme_big_sur"),
+      menuItem("clio-stage-restyle-liquid-glass", "theme_liquid_glass"),
+      menuItem("clio-stage-restyle-nextstep", "theme_nextstep"),
+    ]),
     menuItem("close-active-window", "close", "close-window"),
   ]),
   menu("edit", "menu_edit", editWithSelection),
@@ -631,60 +638,6 @@ const clioStageMenus = [
   specialMenu(),
 ];
 
-const clioChartMenus = [
-  menu("file", "menu_file", [
-    submenu("clio_chart_new_from_template", [
-      menuItem("clio-chart-new-cpu-gpu", "clio_chart_template_cpu_gpu"),
-      menuItem("clio-chart-new-gaming", "clio_chart_template_gaming"),
-      menuItem("clio-chart-new-battery-power", "clio_chart_template_battery"),
-      menuItem("clio-chart-new-noise-heat", "clio_chart_template_noise_heat"),
-      menuItem("clio-chart-new-display", "clio_chart_template_display"),
-      menuItem("clio-chart-new-rating", "clio_chart_template_rating"),
-      menuItem("clio-chart-new-blank", "clio_chart_template_blank"),
-    ]),
-    menuItem("clio-chart-import", "import"),
-    menuItem("clio-chart-save-template", "clio_chart_save_template"),
-    menuItem("clio-chart-hand-back", "clio_chart_hand_back"),
-    menuItem("close-active-window", "close", "close-window"),
-  ]),
-  menu("edit", "menu_edit", editWithSelection),
-  menu("chart", "menu_chart", [
-    // One matrix, six projections, one of them showing. The row for the
-    // projection already on screen was black and did nothing when chosen,
-    // and no row said which one that was.
-    menuItem("clio-chart-bars", "clio_chart_bars", "clio-chart-view-1", { dataset: { clioChartProjection: "bars" } }),
-    menuItem("clio-chart-matrix", "clio_chart_matrix", "clio-chart-view-2", { dataset: { clioChartProjection: "matrix" } }),
-    menuItem("clio-chart-trace", "clio_chart_trace", "clio-chart-view-3", { dataset: { clioChartProjection: "trace" } }),
-    menuItem("clio-chart-grid", "clio_chart_grid", "clio-chart-view-4", { dataset: { clioChartProjection: "grid" } }),
-    menuItem("clio-chart-score", "clio_chart_score", "clio-chart-view-5", { dataset: { clioChartProjection: "score" } }),
-    menuItem("clio-chart-source", "source_view", "", { dataset: { clioChartProjection: "source" } }),
-    menuSeparator,
-    menuItem("clio-chart-presentation", "clio_chart_presentation"),
-    menuItem("clio-chart-send-stage", "clio_chart_send_stage"),
-    menuItem("clio-chart-reverse-sort", "clio_chart_reverse_sort", "clio-chart-reverse"),
-    menuItem("clio-chart-lower-better", "clio_chart_lower_better"),
-    submenu("clio_chart_ask", [
-      menuItem("clio-chart-read", "clio_chart_read"),
-      menuItem("clio-chart-outliers", "clio_chart_outliers"),
-      menuItem("clio-chart-gaps", "clio_chart_gaps"),
-      menuItem("clio-chart-write-up", "clio_chart_write_up"),
-    ]),
-  ]),
-  specialMenu(),
-];
-
-// ClioProject: the plan is derived, so the menus hold only what the writer
-// decides — the layout nudges they want back, and the window itself.
-const clioProjectMenus = [
-  menu("file", "menu_file", [
-    menuItem("close-active-window", "close", "close-window"),
-  ]),
-  menu("edit", "menu_edit", editWithSelection),
-  menu("plan", "menu_plan", [
-    menuItem("clio-project-reset-layout", "clio_project_reset_layout"),
-  ]),
-  specialMenu(),
-];
 
 const liquidCoverMenus = [
   menu("file", "menu_file", [
@@ -805,8 +758,6 @@ const applicationMenuSets = Object.freeze({
   scrapbook: scrapbookMenus,
   searcher: searcherMenus,
   clioStage: clioStageMenus,
-  clioChart: clioChartMenus,
-  clioProject: clioProjectMenus,
   liquidCover: liquidCoverMenus,
   cmfStudio: cmfStudioMenus,
   soundscape: soundscapeMenus,

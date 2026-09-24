@@ -1,7 +1,7 @@
 // AI System 6 official site - entry module. Progressive enhancement only:
 // with JS off the page is a readable document with a desktop screenshot.
 
-import { ERAS, setEra, onEraChange, prefetchEras, refreshIcons } from "./eras.js?v=20260820a";
+import { ERAS, setEra, onEraChange, prefetchEras, refreshIcons, iconSrc } from "./eras.js?v=20260820a";
 import { initBalloons, setBalloons, balloonsEnabled, flashBalloon } from "./balloon.js?v=20260820a";
 import { loadMachine, createMachine, warmAllFrames, machineManifest } from "./machine.js?v=20260820a";
 import { createDissolve } from "./dissolve.js?v=20260820a";
@@ -11,6 +11,8 @@ import { initFloppies } from "./floppies.js?v=20260820a";
 import { initQuickTime } from "./quicktime.js?v=20260820a";
 import { initArgument } from "./argument.js?v=20260820a";
 import { initShareCard } from "./sharecard.js?v=20260820a";
+import { initTour } from "./tour.js?v=20260923a";
+import { initMore } from "./more.js?v=20260923a";
 import { L } from "./copy.js?v=20260820a";
 
 const doc = document;
@@ -187,18 +189,28 @@ if (heroDissolve) {
   const prov = doc.getElementById("hero-provenance");
   const m = machineManifest();
   if (prov && m.build) {
-    prov.textContent = L("REAL SYSTEM CAPTURE / BUILD ", "真实系统截图 / 构建 ") + m.build;
+    prov.textContent = L("Real screenshots of the running app, build ", "运行中应用的真实截图，构建 ") + m.build;
   }
 }
 
 initRouteScene(doc.getElementById("route-stage"));
+if (machineReady) initTour(doc.getElementById("desk"));
+initMore(doc.getElementById("more"));
 
-const routeMachine = doc.getElementById("route-machine");
-if (routeMachine && machineReady) {
-  createMachine(routeMachine, {
-    region: "scrapbook",
-    pad: 0.03,
-    alt: L("The Scrapbook window on the captured desk, holding two clips that each remember their source.", "桌面截图中的 Scrapbook 窗口，保存着两条各自记得来源的摘录。"),
+// The Field Notes cover carries the manuscript icon as each era drew it: the
+// same object, seven times, which is the essay's argument in one line.
+const notesIcons = doc.getElementById("notes-icons");
+if (notesIcons) {
+  ERAS.forEach((era) => {
+    const img = doc.createElement("img");
+    img.src = iconSrc("teachText", era);
+    img.width = 32;
+    img.height = 32;
+    img.alt = "";
+    img.loading = "lazy";
+    img.decoding = "async";
+    if (era.id === "classic" || era.id === "platinum") img.classList.add("is-pixel");
+    notesIcons.appendChild(img);
   });
 }
 

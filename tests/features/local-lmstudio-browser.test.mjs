@@ -338,6 +338,28 @@ const modelPayload = {
   const chatBody = JSON.parse(requests.find((request) => request.url.endsWith("/api/v1/chat")).options.body);
   ok(chatBody.input === "hello" && chatBody.store === true, "maps system/user chat payloads to native v1 input and state storage");
   ok(!("ai_system6_task_kind" in chatBody), "does not leak client-only tuning fields to LM Studio");
+  ok(chatBody.reasoning === "off", "asks native chat to answer without thinking, not the model's own default");
+}
+
+{
+  // LM Studio errors when `reasoning` is sent to a model that exposes no
+  // reasoning configuration; a thinking-by-default model needs it or it
+  // spends the output budget thinking and answers with nothing.
+  const bodies = [];
+  const client = makeClient(async (url, options) => {
+    if (!url.endsWith("/api/v1/chat")) return Response.json(modelPayload);
+    const body = JSON.parse(options.body);
+    bodies.push(body);
+    if (body.reasoning) {
+      return Response.json({ error: { message: "Model 'plain-4b' does not expose reasoning configuration.", param: "reasoning" } }, { status: 400 });
+    }
+    return Response.json({ output: [{ type: "message", content: "plain" }], stats: {}, response_id: "resp_plain" });
+  });
+  const ask = () => client.chat({ model: "plain-4b", messages: [{ role: "user", content: "hi" }], stream: false });
+  ok((await (await ask()).json()).choices[0].message.content === "plain", "a model that refuses the reasoning setting still answers");
+  await ask();
+  ok(bodies.length === 3 && bodies[0].reasoning === "off" && !("reasoning" in bodies[1]) && !("reasoning" in bodies[2]),
+    "retries once without the setting and remembers the refusal for that model");
 }
 
 {

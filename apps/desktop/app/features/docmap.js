@@ -1894,6 +1894,10 @@ function renderDocMapMarkmap(map = currentDocMap) {
     docMapMarkmapInstance = null;
   }
   if (!window.markmap?.Markmap || !window.markmap?.Transformer) return false;
+  if (!svg.dataset.pickWired) {
+    svg.dataset.pickWired = "true";
+    svg.addEventListener("click", pickDocMapCanvasNode);
+  }
   const balanced = map.kind !== "videoDocMap" && docMapLayoutFor(map) === "balanced";
   const transformer = new window.markmap.Transformer();
   const { root } = transformer.transform(docMapMarkdownForMarkmap(map));
@@ -1903,6 +1907,10 @@ function renderDocMapMarkmap(map = currentDocMap) {
     autoFit: !balanced,
     duration: 0,
     fitRatio: 0.94,
+    // Fitting a three-branch map used to blow it up to twice its size, so the
+    // labels outgrew the window's own type. A small map now stays near its
+    // natural size and simply sits in the middle.
+    maxInitialScale: 1.25,
     maxWidth: map.kind === "videoDocMap" ? 360 : 280,
     spacingHorizontal: map.kind === "videoDocMap" ? 70 : 84,
     spacingVertical: map.kind === "videoDocMap" ? 10 : 8,
@@ -1912,6 +1920,7 @@ function renderDocMapMarkmap(map = currentDocMap) {
   if (!balanced) {
     syncDocMapSvgSizeAttributes({ svg: { node: () => svg } });
     docMapMarkmapInstance = window.markmap.Markmap.create(svg, options, root);
+    requestAnimationFrame(() => requestAnimationFrame(() => markDocMapCanvasSelection(svg)));
     return true;
   }
   // Render the full tree, then reflect half of it into a two-sided mind map.
@@ -1933,6 +1942,7 @@ function renderDocMapMarkmap(map = currentDocMap) {
     if (docMapMarkmapInstance === inst && token === renderToken) {
       mirrorMarkmapBalanced(inst);
       docMapBalancedPending = false;
+      markDocMapCanvasSelection(svg);
     }
   };
   // Mark the balanced layout as not-yet-centered so fit()/print wait for the
@@ -1941,6 +1951,110 @@ function renderDocMapMarkmap(map = currentDocMap) {
   docMapBalancedPending = true;
   docMapBalancedReadyPromise = inst.setData(root).catch(() => {});
   return true;
+}
+
+// --- Picking a branch ------------------------------------------------------
+//
+// The canvas is Markmap's drawing of the map's Markdown, and Markmap only
+// folds: its circle toggles a branch and its words did nothing. So every node
+// command (Make Question Sheet, Draft Outline, the ask bar's focus) quietly
+// acted on the root. Clicking a branch's words now picks it; the circle still
+// folds it. The Markdown carries no ids, so the words are matched back to the
+// map's own node by title, preferring a node at the same depth.
+
+function docMapPlainLabel(value) {
+  return String(value || "").replace(/\s+/g, "").toLowerCase();
+}
+
+function docMapNodeForCanvasLabel(label, depth) {
+  const text = docMapPlainLabel(label);
+  if (!text || depth === 0) return null;
+  let best = null;
+  flattenDocMapNodes().forEach((node) => {
+    const title = docMapPlainLabel(node.title);
+    if (!title || !(text === title || text.startsWith(title) || title.startsWith(text))) return;
+    const sameDepth = (depth === 1) === (node.kind === "branch");
+    const score = (text === title ? 2 : 1) + (sameDepth ? 1 : 0);
+    if (!best || score > best.score || (score === best.score && title.length > best.length)) {
+      best = { node, score, length: title.length };
+    }
+  });
+  return best?.node || null;
+}
+
+function pickedDocMapNode() {
+  if (!currentDocMap || currentDocMap.kind === "videoDocMap") return null;
+  if (!selectedDocMapNodeId || selectedDocMapNodeId === "central") return null;
+  return flattenDocMapNodes().find((node) => node.id === selectedDocMapNodeId) || null;
+}
+
+function markDocMapCanvasSelection(svg = docMapTreeEl?.querySelector(".docmap-markmap-svg")) {
+  if (!svg) return;
+  const picked = pickedDocMapNode();
+  svg.querySelectorAll("g.markmap-node").forEach((group) => {
+    const depth = group.__data__?.state?.depth ?? -1;
+    const isPicked = !!picked && docMapNodeForCanvasLabel(group.textContent, depth)?.id === picked.id;
+    group.classList.toggle("is-docmap-picked", isPicked);
+  });
+}
+
+function pickDocMapCanvasNode(event) {
+  if (event.target.closest("circle")) return;
+  const group = event.target.closest("g.markmap-node");
+  const node = group ? docMapNodeForCanvasLabel(group.textContent, group.__data__?.state?.depth ?? -1) : null;
+  selectedDocMapNodeId = node?.id || "central";
+  markDocMapCanvasSelection(event.currentTarget);
+  renderDocMapNodeStrip();
+  if (typeof refreshAskBar === "function") refreshAskBar("docMap");
+}
+
+// The picked branch, under the canvas: its title, the source words it is
+// anchored to (or its summary when it carries no quotation), and what can be
+// done with that branch alone. Built here rather than in index.html, so the
+// strip loads with the lazy DocMap module instead of riding every boot.
+function ensureDocMapNodeStrip() {
+  let strip = document.getElementById("docmap-node-strip");
+  if (strip) return strip;
+  const layout = docMapTreeEl?.closest(".docmap-layout");
+  if (!layout) return null;
+  strip = document.createElement("div");
+  strip.id = "docmap-node-strip";
+  strip.className = "docmap-node-strip";
+  strip.hidden = true;
+  strip.setAttribute("role", "region");
+  strip.innerHTML = `
+    <div class="docmap-node-strip-copy"><strong></strong><span></span></div>
+    <div class="button-row docmap-node-strip-actions">
+      <button class="btn" type="button" data-docmap-node-command="ask"></button>
+      <button class="btn" type="button" data-docmap-node-command="outline"></button>
+      <button class="btn" type="button" data-docmap-node-command="question"></button>
+    </div>`;
+  strip.addEventListener("click", (event) => {
+    const command = event.target.closest("[data-docmap-node-command]")?.dataset.docmapNodeCommand;
+    if (command === "question") sendDocMapNodeToQuestionSheet();
+    else if (command === "outline") insertDocMapNodeAsOutline();
+    else if (command === "ask") document.getElementById("docmap-question")?.focus();
+  });
+  layout.append(strip);
+  return strip;
+}
+
+function renderDocMapNodeStrip() {
+  const strip = ensureDocMapNodeStrip();
+  if (!strip) return;
+  const picked = pickedDocMapNode();
+  strip.hidden = !picked;
+  if (!picked) return;
+  strip.setAttribute("aria-label", t("docmap_node_strip"));
+  strip.querySelector("strong").textContent = picked.title;
+  const detail = picked.quote || (picked.summary && picked.summary !== picked.title ? picked.summary : "");
+  const detailEl = strip.querySelector("span");
+  detailEl.textContent = detail;
+  detailEl.classList.toggle("is-quote", !!picked.quote);
+  const labels = { ask: "docmap_ask_branch", outline: "insert_as_outline", question: "send_to_question_sheet" };
+  strip.querySelectorAll("[data-docmap-node-command]").forEach((button) => {
+    button.textContent = t(labels[button.dataset.docmapNodeCommand]);
+  });
 }
 
 function fitDocMapCanvasToView() {
@@ -2004,6 +2118,7 @@ function renderDocMap() {
     [docMapSendQuestionButton, docMapAskHkrrButton, docMapInsertOutlineButton, docMapSaveButton, docMapPrintPdfButton].forEach((button) => {
       if (button) button.disabled = true;
     });
+    renderDocMapNodeStrip();
     return;
   }
 
@@ -2031,6 +2146,7 @@ function renderDocMap() {
   if (docMapInsertOutlineButton && map.kind === "videoDocMap") {
     docMapInsertOutlineButton.disabled = true;
   }
+  renderDocMapNodeStrip();
 }
 
 function activeDocMapTab() {

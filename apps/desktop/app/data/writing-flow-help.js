@@ -24,7 +24,7 @@ window.AISystem6WritingFlowHelpData = (() => {
     shared: Object.freeze({
       question: "What are the demonstration project disks?",
       stuckPoint: "A finished piece is usually passed around as a file or a screenshot, so the route that produced it disappears.",
-      directAnswer: "Thirty-four disks ship with the application; the Startup Disk holds a folder that lists them, /go/dtk and /go/ipad1 open single ones, and each becomes an ordinary editable project on this computer.",
+      directAnswer: "Thirty-five disks ship with the application; the Startup Disk holds a folder that lists them, /go/dtk and /go/ipad1 open single ones, and each becomes an ordinary editable project on this computer.",
       boundary: "Nothing is imported until someone opens a disk on purpose, and the disks carry the writers' own working material rather than a polished showcase.",
     }),
   });
@@ -255,7 +255,7 @@ The practical rule is short: if something matters, put it in a visible project o
     shared: Object.freeze({
       en: `# Demonstration Project Disks
 
-Thirty-four project disks ship with the application, so the way a finished piece travels from a question sheet to a manuscript stays visible. They are a folder on the Startup Disk, beside the writer's own Project Hard Disk; the File menu opens the same folder. Each disk also has an address of its own, \`https://system6.aaronlau.me/go/<route>\`, which anyone can pass on.
+Thirty-five project disks ship with the application, so the way a finished piece travels from a question sheet to a manuscript stays visible. They are a folder on the Startup Disk, beside the writer's own Project Hard Disk; the File menu opens the same folder. Each disk also has an address of its own, \`https://system6.aaronlau.me/go/<route>\`, which anyone can pass on.
 
 ## What happens when you open one
 
@@ -263,42 +263,43 @@ Thirty-four project disks ship with the application, so the way a finished piece
 - What passes becomes an ordinary project on this computer. It comes back from the Project Hard Disk list like any other project, and it stays editable.
 - Opening the same disk again reuses the copy you already have instead of adding a second one.
 
-## The thirty-four disks
+## The thirty-five disks
 
-- \`/go/dtk\` — *After the Bridge Opens*: six years of a 2020 Developer Transition Kit, from being lent out to a server that no longer recognises it.
+- \`/go/dtk\` — *After the Bridge Opens*: six years of a 2020 Developer Transition Kit, from GoldenGateSeedSpike to macOS 27 Golden Gate: a board brought back to life, and a server that no longer recognises it.
 - \`/go/ipad1\` — *Why the First iPad Had Only 256MB*: from a blurry childhood video to the 2010 specification sheet.
 - \`/go/m5ipad\` — *M5 iPad Pro: Mac's last line, or the start of something else?*: two people, two sizes, and one keyboard that decides which of the two machines you get.
 - \`/go/iphone17e\` — *iPhone 17e, pale pink: unremarkable, and better than it looks*: the cheapest new iPhone, argued from the things you bump into while using it.
-- \`/go/sleeve\` — *The MagSafe Leather Sleeve*: an accessory that put the phone away, the 2018 idea behind it, and why the always-on display went the other way.
+- \`/go/sleeve\` — *The MagSafe Leather Sleeve: how did Apple think about phone dependence?*: a window that ran the always-on logic on iPhone two years early, the 2018 belief in digital wellbeing behind it, and why Apple's always-on display went another way.
 - \`/go/iphone6sp\` — *Does anyone remember 3D Touch?*: the generation that made "durable" a word for an iPhone, and the press-and-hold that stayed.
 - \`/go/pocket\` — *When the iPhone wears Issey Miyake*: one cloth, one pocket, and the line of Apple accessories that made the device part of your body.
 - \`/go/macpro19\` — *The Mac Pro (2019): the drawer that holds the Intel era*: the last expandable tower, and the only machine that ever had MPX.
-- \`/go/ceramic\` — *The ceramic Apple Watch: the material that left the test bench*: how a finish with every advantage ended up being out-learned.
+- \`/go/ceramic\` — *The ceramic Apple Watch: my first love*: a finish Apple barely advertised, retired in 2020 as its advantages wore away — and back in 2026.
 - \`/go/sympathy\` — *Project Sympathy: the iPod is gone, the music is not*: AirPods Max read as the continuation of the iPod line, with a cable that proves it.
 - \`/go/pm17\` — *The generation where form followed function*: aluminium came back for heat, three fused cameras made the middle quality tier usable, and A19 Pro pays for Liquid Glass.
 - \`/go/airbattery\` — *The iPhone Air MagSafe Battery: three generations, one question — who charges whom*: the mechanism behind Apple's battery accessories, told through the same cell as the phone.
 - \`/go/ipad97\` — *iPad Pro 9.7: the same rebellion, one size down*: what the smaller Pro kept, what it gave back, and why its successor was called Air.
 - \`/go/glass\` — *Glass and Where It Comes From*: Aqua, Aero, iOS 7 and Liquid Glass read as one trade — what each era's glass was for.
 - \`/go/bongo\` — *Toward One Piece of Glass*: Project Bongo, the two 2006 prototypes Apple rejected, and why a button you cannot press is the entry ticket for a glass phone.
-- \`/go/pm12\` — *iPhone 12 Pro Max: the first time Apple sold a phone as a production tool*: Dolby Vision from capture to playback, what an 8-bit panel does with a 10-bit chain, and the leather sleeve that argued the other way.
+- \`/go/pm12\` — *iPhone 12 Pro Max: unboxing one never activated, and Apple's oddest case*: a sealed unit revived by raising a flat battery's voltage, the gemstone blue, the first iPhone to shoot 10-bit and where it fell short, and a leather sleeve that assumes you own the whole Apple family.
 - \`/go/iphone17\` — *iPhone 17: where the base model stopped being the cheap one*: the year 120Hz, 256GB and a self-designed radio chip all moved down a tier, and what that says about who the base model is really for.
-- \`/go/cdma4\` — *CDMA iPhone 4*: Writing a number into the phone is the opposite of eSIM: one welds the identity to the hardware, the other frees it — the missing slot is their only shared feature.
+- \`/go/windowshade\` — *Shade the window, keep its place*: the WindowShade site read as one piece — a 1994 double-click that became a System 7.5 control panel, lost out to the Dock, lived on in Stickies, and came back to the Mac thirty years later.
+- \`/go/cdma4\` — *CDMA iPhone 4*: The first "China eSIM" iPhone — only half true: writing a number welds it to the phone while eSIM frees it, yet China's eSIM walked back to the counter.
 - \`/go/noport\` — *Portless Apple Watch*: A safety net came before the missing port: the diagnostic link went from pins to 60.5GHz, and the real driver was that a device has to be able to recover itself.
 - \`/go/touch2\` — *touch 2 Engineering Board*: A device that is not a device: built to test a chip rather than be an iPod, it answers to two products, has no serial number, and outlives its own launch.
 - \`/go/airact\` — *iPhone Air*: 165 grams used to be a normal phone: the radical move here is subtraction, and it proves thin does not have to mean short battery life — the costs land elsewhere.
-- \`/go/ip4sdemo\` — *iPhone 4S Demo Unit*: A letter posted in 2011: a demo unit belongs switched on — its value comes from being used, not enshrined, and it recalibrates what a good experience feels like.
+- \`/go/ip4sdemo\` — *iPhone 4S Demo Unit*: A key back to the past: a demo unit belongs switched on — its value comes from being used, not enshrined, and it recalibrates what a good experience feels like.
 - \`/go/airtrans\` — *Transparent Air Prototypes*: Transparency is a working method, not a colourway: the clear shell is the engineer's window onto a product before it is frozen, and that habit now shows up as material and depth in the interface.
 - \`/go/t2nic\` — *Apple T2 Network Card*: Two devices on one card: the NIC half is standard, and the real question is the device beside it — Apple builds interfaces, not single-purpose parts.
-- \`/go/mgscrap\` — *MagSafe Prototypes*: A charger born on 1 May 2019: no scrapped projects, only a step not yet moved onto the line — and the answer to that direction is written in the Apple Watch cable.
-- \`/go/ip16p\` — *iPhone 16 Prototype*: Seeing 2027 from 2025: every limit is a design decision, and the machine's real value is the two-to-three-year roadmap it leaves on the table.
-- \`/go/ipada4\` — *iPad Air 4 Prototype*: Not a developer toy but a factory tool that reached our hands — three gates of mirroring, login and code signing before you see how Apple builds hardware.
+- \`/go/mgscrap\` — *MagSafe Prototypes*: How Apple treats its failures: two months after AirPower was cancelled, Apple had already turned — these unsold samples are proof of effort, and what Apple lacks today is execution, not invention.
+- \`/go/ip16p\` — *iPhone 16 Prototype*: Details of products to come: a board with no screen, and last year's firmware already naming this year's chips — some shipped, some stayed in testing.
+- \`/go/ipada4\` — *iPad Air 4 Prototype*: Digging through Apple's internal system — a factory machine with no screen — mirrored, copied out, and found to still carry the model number of an A8X iPad Pro Apple never shipped.
 - \`/go/ios19\` — *WWDC2099*: Engineering files never record what is about to ship, only what was once bet on — reading an internal build through the placeholder that admits it.
 - \`/go/sd\` — *Studio Display*: Buying peace of mind: why a 60Hz panel still holds the desk, from pixel-exact rendering to system features that live in the display — and the expensive mismatch for PC and HDR buyers.
 - \`/go/mkb\` — *Magic Keyboard (USB-C)*: A 1399 membrane keyboard does not sell feel, it sells certainty: Touch ID wired into the system, keys that only the first party can deliver, and a tool that never asks for attention.
 - \`/go/mini7\` — *iPad mini (A17 Pro)*: The one that actually leaves the house: the short-edge camera and the slide-over saga say it is built for content, and its value is utilisation, not speed.
 - \`/go/mbneo\` — *MacBook Neo*: The first Mac with an iPhone chip is not a cheap Mac but a trade-off table: the price came first, and it decided which lines were cut and which were kept.
 - \`/go/m5mba\` — *M5 MacBook Air*: The upgrade is in the drive, not the chip: internal storage wins on speed and on price for the first time, and the line between Air and Pro moves to thermals, screen and ports.
-- \`/go/pm11\` — *iPhone 11 Pro Max*: Out-of-frame capture and Deep Fusion read as one trade: the frame's surroundings saved before the shutter, the picture computed after it, and only enough compute for one camera at a time.
+- \`/go/pm11\` — *iPhone 11 Pro Max*: The ugliest iPhone, in my view: a sealed AT&T unit on iOS 13.0, before Deep Fusion and with the out-of-frame capture iOS 14 would remove — and an unlock that made it perfect.
 
 ## What is inside
 
@@ -307,7 +308,7 @@ The question sheet, the outline, the section drafts, the manuscript and the revi
 A disk that arrives as a file from another computer goes in through the Project backup section of the Write to Project Hard Disk window. The address and the file are two doors to the same room.`,
       zh: `# 演示用项目硬盘
 
-这三十四块盘随应用发布，用来看清一篇作品是怎么从问题单走到正文的。它们是启动磁盘上的一个文件夹，就放在作者自己那块项目硬盘旁边；文件菜单打开的是同一个文件夹。每块盘另有一个自己的地址 \`https://system6.aaronlau.me/go/<route>\`，谁都可以把它转给别人。
+这三十五块盘随应用发布，用来看清一篇作品是怎么从问题单走到正文的。它们是启动磁盘上的一个文件夹，就放在作者自己那块项目硬盘旁边；文件菜单打开的是同一个文件夹。每块盘另有一个自己的地址 \`https://system6.aaronlau.me/go/<route>\`，谁都可以把它转给别人。
 
 ## 打开之后会发生什么
 
@@ -315,42 +316,43 @@ A disk that arrives as a file from another computer goes in through the Project 
 - 通过之后，它成为这台电脑上的一个普通项目；回到桌面，从「项目硬盘」的列表里就能再打开它，可以照常修改，也能随时导出成备份。
 - 再打开同一块盘，用的是你已经有的那一份，不会多出一份副本。
 
-## 现在有哪三十四块
+## 现在有哪三十五块
 
-- \`/go/dtk\`《未来通车之后》：一台 2020 年 DTK 的六年，从借出、撤场到服务器不再承认它。
+- \`/go/dtk\`《未来通车之后》：一台 2020 年 DTK 的六年，从 GoldenGateSeedSpike 到 macOS 27 Golden Gate：一块救回来的板子，和一台不再承认它的服务器。
 - \`/go/ipad1\`《初代 iPad 为什么只有 256MB》：从童年一段模糊视频，追到 2010 年的那张配置表。
 - \`/go/m5ipad\`《M5 iPad Pro：是 Mac 的防线，还是 AI 交互的起点？》：两个人、两个尺寸，和一块键盘决定的两种生活。
 - \`/go/iphone17e\`《iPhone 17e 浅粉色：其貌不扬，但很有料》：最便宜的一台新 iPhone，从用的时候撞到的那些瞬间写起。
-- \`/go/sleeve\`《MagSafe 皮革保护套》：一个把手机装起来的套子，它背后的 2018 年，以及息屏显示为什么走了另一条路。
+- \`/go/sleeve\`《MagSafe 皮革保护套：苹果是怎么看待手机依赖的？》：一扇提前两年跑过息屏显示逻辑的小窗，它背后 2018 年「数字健康」的信念，以及苹果的息屏显示为什么走了另一条路。
 - \`/go/iphone6sp\`《还有人记得 3D Touch 吗 · iPhone 6s Plus》：让「耐用」第一次能用在一台 iPhone 上的那一代。
 - \`/go/pocket\`《当 iPhone 穿上三宅一生》：一块布、一个口袋，以及那条把设备变成身体延伸的配件线。
 - \`/go/macpro19\`《大学时的白月光 · Mac Pro (2019)》：苹果最后一次把选择权摊在桌面上，也是唯一有 MPX 的机器。
-- \`/go/ceramic\`《陶瓷 Apple Watch：材质试验田里退场的那一个》：一种占尽优势的材料，为什么被别的材料把好处学走了。
+- \`/go/ceramic\`《陶瓷 Apple Watch：我的白月光》：一种苹果几乎没宣传过的工艺，优势被一条条抵消后在 2020 年退场，2026 年又回来了。
 - \`/go/sympathy\`《Project Sympathy：iPod 消失了，音乐没有》：把 AirPods Max 接回 iPod，用一根线检验这条线有没有断。
 - \`/go/pm17\`《形式追随功能的一代 · iPhone 17 Pro Max》：铝回来是为了散热，三颗融合式是为了让中间那一档画质可用。
 - \`/go/airbattery\`《iPhone Air 专用 MagSafe 电池：三代电池，改的是谁给谁充》：苹果外接电池的机制谱系，讲的是关系不是容量。
 - \`/go/ipad97\`《iPad Pro 9.7：叛逆的另一种尺寸》：小一号的 Pro 留下了什么、拿走了什么，以及它的继任者为什么叫 Air。
 - \`/go/glass\`《玻璃与他们的产地》：Aqua、Aero、iOS 7 到 Liquid Glass，问的不是谁抄谁，是每一代玻璃为什么在那儿。
 - \`/go/bongo\`《走向一整块玻璃》：从 Project Bongo 与两台被否掉的原型机，看 iPhone 为什么非得变成一整块玻璃。
-- \`/go/pm12\`《iPhone 12 Pro Max：苹果第一次把手机当制作工具来卖》：杜比视界从拍摄走到播放，「8 抖 10」的屏幕怎么装下 10bit 的链路，以及同年那个方向相反的皮革保护套。
+- \`/go/pm12\`《iPhone 12 Pro Max：开箱一台未激活的，还有苹果最奇葩的手机壳》：放了五年的全新机，电池只是亏电没坏；从宝石来的蓝；第一代能拍 10-bit，却卡在接口和屏幕；一个假设你有全家桶的皮革保护套。
 - \`/go/iphone17\`《iPhone 17 标准版：诚意不是心情，是价格行为》：高刷、256GB 起步与自研无线芯片在同一年下放到标准版；这一代真正被抬高的，是 iPhone 的体验基线。
-- \`/go/cdma4\`《CDMA iPhone 4》：写号不是 eSIM，而是它的反面：一个是把号码焊进硬件（机卡合一），一个是让号码脱离硬件（机卡分离）——没有卡槽只是它们唯一的共同点。
+- \`/go/windowshade\`《收起窗口，留下位置：一个比 Mac 还老的双击》：把 WindowShade 官网整站读成一篇文章——1994 年的一个双击，进了 System 7.5 的控制面板，被 Dock 送走，在便笺里留了一口气，三十年后又回到 Mac 上。
+- \`/go/cdma4\`《CDMA iPhone 4》：最早的「国行 eSIM」iPhone：这话只对了一半——写号把号码锁进机器，eSIM 把它解放出来，可国行 eSIM 又走回了营业厅的柜台。
 - \`/go/noport\`《无接口 Apple Watch》：先有安全网，才敢拆掉那个口：诊断接口从针脚走到 60.5GHz，真正的推手是「设备必须能自己恢复」——手表又一次替手机先走一步。
 - \`/go/touch2\`《touch 2 工程板》：一块不是设备的设备：它的使命是测一颗芯片，而不是当一台播放器——既是 nano 4 也是 touch 2、没有序列号、比同期 iPhone 还快，却活得比发布会更久。
 - \`/go/airact\`《iPhone Air》：165 克本该是正常手机的重量：做减法反而少见——它证明轻薄不等于续航差，真正的代价落在接口、扬声器与相机上。
-- \`/go/ip4sdemo\`《iPhone 4S Demo》：一封从 2011 年寄来的信：展示机的正确归宿是亮起来——它的价值来自被使用，而不是被供奉；这台机器是一次对好体验的校准。
+- \`/go/ip4sdemo\`《iPhone 4S Demo》：回到过去的钥匙：展示机的正确归宿是亮起来——它的价值来自被使用，而不是被供奉；这台机器是一次对好体验的校准。
 - \`/go/airtrans\`《透明探索版 Air》：透明不是配色，是工作方法：透明外壳是工程师的观察窗，记录的是定稿之前的样子；这份讲究今天变成了界面里的材质与层次。
 - \`/go/t2nic\`《T2 网卡》：一块卡上的两台设备：网卡那半是标准件，真正的问题在旁边那个只知道编号的设备——苹果做的是接口，而不是单品。
-- \`/go/mgscrap\`《MagSafe 废案》：一块 2019 年 5 月 1 日出生的充电器：没有废案，只有还没被搬到量产线上的那一步——而那个方向的答案，写在 Apple Watch 的充电线上。
-- \`/go/ip16p\`《iPhone 16 工程机》：在 2025 年看见 2027 年：每一道限制都是设计——没有屏幕、禁用密码登录、16 位色深、两套缓存与代码签名，而它真正值钱的地方是把两三年的押注摊在桌面上。
-- \`/go/ipada4\`《iPad Air 4 工程机》：工程机不是开发者的玩具，是一台走到我们手上的产线工具：投屏、连接与权限三关之后，才看得见苹果怎么造硬件。
+- \`/go/mgscrap\`《MagSafe 废案》：苹果怎么对待失败的作品：AirPower 取消两个月后，苹果已经换了一条路；这些没卖出去的样品是它努力过的证明，今天缺的不是创新，是执行力。
+- \`/go/ip16p\`《iPhone 16 工程机》：竟然有未来产品的细节？一块没有屏幕的主板，去年的固件里已经写着今年的芯片——有的发布了，有的停在了测试里。
+- \`/go/ipada4\`《iPad Air 4 工程机》：挖挖苹果内部的工程系统：一台没有屏幕的产线机器，投屏、拷贝系统之后，在一个弃用的测试 App 里翻出了一台苹果从未发布的 A8X iPad Pro。
 - \`/go/ios19\`《WWDC2099》：苹果最诚实的标签：工程文件记录的不是「即将发布什么」，而是「曾经被押注过什么」——从 TargetRelease 的占位符读懂一份内部构建。
 - \`/go/sd\`《Studio Display》：买断一份安心：一块 60Hz 的屏幕为什么还占着桌面 C 位——点对点渲染、解耦的系统功能，以及对 PC 与 HDR 刚需者的昂贵错配。
 - \`/go/mkb\`《Magic Keyboard》：一把 1399 元的薄膜键盘卖的不是手感，是确定性：Touch ID 与系统的深度集成、地球键与菜单键的按键语义，以及永远在那儿不打断创作的状态。
 - \`/go/mini7\`《iPad mini (A17 Pro)》：每天跟着你出门的那一台：短边摄像头与 Slide Over 的进出，说明它被定位成消费内容的设备；它的价值在利用率，不在性能。
 - \`/go/mbneo\`《MacBook Neo》：苹果把 iPhone 芯片放进 Mac 的第一天：这不是便宜的 Mac，而是一张取舍表——先定价格，再决定砍掉哪几条线、保住哪几条线。
 - \`/go/m5mba\`《M5 MacBook Air》：这一次的牙膏挤在硬盘上：内置存储第一次同时赢了速度与价格，而 Air 与 Pro 的分界从 CPU 挪到了散热、屏幕与接口。
-- \`/go/pm11\`《iPhone 11 Pro Max》：从超取景框取景与 Deep Fusion 看快门如何变成一段过程：框外的画面在按下之前就被留下，画质在按下之后才被算出来，而这两件事只够同时容纳一颗摄像头。
+- \`/go/pm11\`《iPhone 11 Pro Max》：我觉得最丑的一代 iPhone：一台全新的美版有锁机，停在 iOS 13.0，还没有 Deep Fusion，还留着后来被取消的超取景框取景，最后官方解锁成功。
 
 ## 盘里有什么
 

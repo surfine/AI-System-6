@@ -1,131 +1,348 @@
 /* ClioPaint — the 1-bit painting surface, MacPaint lineage.
    Every selector here is scoped to .clio-paint-*; the window travels lazily
    with ensureClioPaintModule() and this sheet loads with it (see
-   tooling/style-manifest.mjs). Toggle buttons reuse the shared
-   .view-switch-option component (30-surfaces.css) for their pressed/hover
-   states instead of inventing a second toggle-button skin. */
+   tooling/style-manifest.mjs).
+
+   The layout is the 2026-09-24 redesign: tools and line widths in a column on
+   the left, the 38 patterns in a bar under the status strip, and the page on
+   a desk in a viewport the window's own System 6 scroll bars scroll. Colour
+   comes from the theme tokens only — paper, ink, the control line, the
+   selection pair and the menu wardrobe — so every appearance dresses the same
+   objects without a line of appearance CSS here. The picture itself is not
+   chrome: it is drawn black on white in every appearance, because a 1-bit
+   picture has exactly those two colours. */
 
 .clio-paint-window {
-  width: min(720px, calc(100vw - 72px));
+  width: min(760px, calc(100vw - 72px));
 }
+
+/* ---- Status strip: tool and position, saved state, magnification, reads -- */
+
+.clio-paint-info {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.clio-paint-status-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.clio-paint-saved {
+  color: var(--shade-dark);
+  white-space: nowrap;
+}
+
+.clio-paint-zoom-wrap {
+  min-width: 64px;
+}
+
+/* ---- Pattern bar ---------------------------------------------------------- */
+
+.clio-paint-patternbar {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  border-bottom: var(--system-border);
+  background: var(--paper);
+}
+
+.clio-paint-current {
+  padding: 3px;
+  border: 0;
+  border-right: var(--system-border);
+  border-radius: 0;
+  background: var(--paper);
+  box-shadow: none;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+/* A pattern is a picture, not chrome: the swatch paints the pattern's own
+   black and white pixels at one pixel per bit. */
+.clio-paint-swatch {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  min-height: 20px;
+  border: 1px solid var(--ink);
+  background: var(--clio-paint-pattern) 0 0 / 8px 8px;
+  image-rendering: pixelated;
+}
+
+.clio-paint-patterns {
+  display: grid;
+  grid-template-columns: repeat(19, minmax(0, 1fr));
+  grid-template-rows: repeat(2, 13px);
+}
+
+.clio-paint-pattern {
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-right: var(--system-border);
+  border-bottom: var(--system-border);
+  border-radius: 0;
+  background: var(--clio-paint-pattern) 0 0 / 8px 8px;
+  box-shadow: none;
+  image-rendering: pixelated;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.clio-paint-patterns .clio-paint-pattern:nth-child(19n) {
+  border-right: 0;
+}
+
+.clio-paint-patterns .clio-paint-pattern:nth-child(n + 20) {
+  border-bottom: 0;
+}
+
+.clio-paint-pattern:focus-visible,
+.clio-paint-tool:focus-visible,
+.clio-paint-width:focus-visible {
+  outline: 2px solid var(--selection-bg);
+  outline-offset: -3px;
+}
+
+/* ---- Pane: palette beside the viewport ------------------------------------ */
 
 .clio-paint-pane {
+  position: relative;
+  padding: 0;
+  /* The banner paper at 1:1 with its desk margin, and the whole tool column. */
+  min-height: 344px;
+}
+
+.clio-paint-body {
+  display: grid;
+  flex: 1;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas: "palette viewport";
+  min-height: 0;
+}
+
+.clio-paint-palette {
+  grid-area: palette;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 10px;
-  box-sizing: border-box;
-  overflow: auto;
+  min-height: 0;
+  border-right: var(--system-border);
+  background: var(--paper);
 }
 
-.clio-paint-toolbar,
-.clio-paint-patterns {
-  border-radius: var(--micro-radius);
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2px;
-  padding: 2px;
-  border: var(--system-border);
-  background: var(--shade);
+.clio-paint-toolbar {
+  display: grid;
+  grid-template-columns: repeat(2, 25px);
+  grid-auto-rows: 21px;
+  border-bottom: var(--system-border);
 }
 
-.clio-paint-toolbar .view-switch-option {
-  min-width: 52px;
-  padding: 4px 8px;
-  font-family: var(--ui-font);
-  font-size: 12px;
-}
-
-.clio-paint-tool-sep {
-  width: 1px;
-  align-self: stretch;
-  background: var(--shade-dark);
-  margin: 2px 4px;
-}
-
-.clio-paint-patterns .view-switch-option {
-  width: 28px;
-  height: 20px;
-  min-width: 28px;
+.clio-paint-tool {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 0;
   padding: 0;
-  background-repeat: repeat;
-  background-position: 0 0;
-  image-rendering: pixelated;
+  border: 0;
+  border-right: var(--system-border);
+  border-bottom: var(--system-border);
+  border-radius: 0;
+  background: var(--paper);
+  box-shadow: none;
+  color: var(--ink);
+  appearance: none;
+  -webkit-appearance: none;
 }
 
-.clio-paint-canvas-wrap {
-  border-radius: var(--surface-radius);
-  position: relative;
-  align-self: flex-start;
-  border: var(--system-border);
-  background: #fff;
-  line-height: 0;
+.clio-paint-toolbar .clio-paint-tool:nth-child(2n) {
+  border-right: 0;
 }
 
-.clio-paint-canvas {
+.clio-paint-toolbar .clio-paint-tool:nth-last-child(-n + 2) {
+  border-bottom: 0;
+}
+
+/* The tool in hand is the selected cell, inverted the way System 6 marks a
+   choice; other appearances bring their own selection pair. No hover state:
+   the palette answers on the press. */
+.clio-paint-tool[aria-pressed="true"] {
+  background: var(--selection-bg);
+  color: var(--selection-fg);
+}
+
+/* Glyphs are 1-bit masks filled with the current text colour, so a selected
+   tool, a disabled button and every appearance colour them without new art. */
+.clio-paint-glyph {
   display: block;
-  background: #fff;
-  image-rendering: pixelated;
+  width: 16px;
+  height: 16px;
+  background: currentColor;
+  -webkit-mask: var(--clio-paint-glyph) center / 16px 16px no-repeat;
+  mask: var(--clio-paint-glyph) center / 16px 16px no-repeat;
+}
+
+.clio-paint-widths {
+  display: grid;
+  grid-auto-rows: 11px;
+  padding: 4px 0;
+}
+
+.clio-paint-width {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  min-height: 0;
+  padding: 0 6px 0 14px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--ink);
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.clio-paint-width-line {
+  display: block;
+  width: 100%;
+  height: 1px;
+  background: currentColor;
+}
+
+.clio-paint-width[data-clio-paint-width="0"] .clio-paint-width-line,
+.clio-paint-touch-width[data-clio-paint-width-shown="0"] .clio-paint-width-line {
+  background: repeating-linear-gradient(to right, currentColor 0 1px, transparent 1px 3px);
+}
+
+.clio-paint-width[data-clio-paint-width="2"] .clio-paint-width-line,
+.clio-paint-touch-width[data-clio-paint-width-shown="2"] .clio-paint-width-line {
+  height: 2px;
+}
+
+.clio-paint-width[data-clio-paint-width="3"] .clio-paint-width-line,
+.clio-paint-touch-width[data-clio-paint-width-shown="3"] .clio-paint-width-line {
+  height: 3px;
+}
+
+.clio-paint-width[data-clio-paint-width="5"] .clio-paint-width-line,
+.clio-paint-touch-width[data-clio-paint-width-shown="5"] .clio-paint-width-line {
+  height: 5px;
+}
+
+/* The width in force carries a check mark, as MacPaint's line box did. */
+.clio-paint-width[aria-checked="true"]::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  margin-top: -4px;
+  background: currentColor;
+  -webkit-mask: var(--clio-paint-check) center / 7px 7px no-repeat;
+  mask: var(--clio-paint-check) center / 7px 7px no-repeat;
+}
+
+.clio-paint-touchbar {
+  display: none;
+}
+
+/* ---- Viewport: the page on the desk --------------------------------------- */
+
+.clio-paint-viewport {
+  grid-area: viewport;
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  outline: none;
   touch-action: none;
+  /* The desk: one ink pixel in four, from the theme's own two colours. */
+  background: conic-gradient(var(--ink) 0 25%, var(--paper) 0) 0 0 / 2px 2px;
+  cursor: var(--clio-paint-cursor, crosshair);
 }
 
-.clio-paint-canvas[data-clio-paint-tool="pencil"],
-.clio-paint-canvas[data-clio-paint-tool="fill"],
-.clio-paint-canvas[data-clio-paint-tool="text"] {
-  cursor: crosshair;
+.clio-paint-viewport[data-clio-paint-tool="brush"],
+.clio-paint-viewport[data-clio-paint-tool="eraser"] {
+  /* The footprint is drawn on the page at its real size instead. */
+  cursor: none;
 }
 
-.clio-paint-canvas[data-clio-paint-tool="eraser"] {
-  cursor: cell;
-}
-
-.clio-paint-canvas[data-clio-paint-tool="marquee"] {
-  cursor: default;
+.clio-paint-viewport[data-clio-paint-tool="text"] {
+  cursor: text;
 }
 
 /* A selection that can be dragged has to look draggable before the pointer is
-   down, not after: the canvas itself reports whether the pointer is over the
-   marquee, and this is the only thing that reads it. */
-.clio-paint-canvas[data-clio-paint-tool="marquee"][data-clio-paint-selection="inside"] {
+   down, not after: the viewport reports whether the pointer is over the
+   selection, and this is the only thing that reads it. */
+.clio-paint-viewport[data-clio-paint-selection="inside"] {
   cursor: move;
 }
 
-/* Undo and Redo use the shared .view-switch-option:disabled skin (30-surfaces)
-   when their stack is empty, so a step that cannot run does not look like one
-   that will. */
+.clio-paint-viewport[data-clio-paint-grabbing="true"] {
+  cursor: grabbing;
+}
 
-.clio-paint-marquee {
-  position: absolute;
-  border: 1px dashed var(--ink);
-  pointer-events: none;
+.clio-paint-sizer {
+  position: relative;
+  width: max(100%, var(--clio-paint-content-w, 100%));
+  height: max(100%, var(--clio-paint-content-h, 100%));
+}
+
+/* The drawing surface is the size of the visible area and stays put while the
+   sizer scrolls underneath it; the renderer reads the scroll offset. */
+.clio-paint-view {
+  position: sticky;
+  left: 0;
+  top: 0;
+  display: block;
+  width: var(--clio-paint-view-w, 100%);
+  height: var(--clio-paint-view-h, 100%);
 }
 
 .clio-paint-text-input {
   position: absolute;
   left: var(--clio-paint-text-x, 0px);
   top: var(--clio-paint-text-y, 0px);
-  min-width: 60px;
+  min-width: 80px;
   padding: 1px 2px;
-  border: 1px solid var(--ink);
+  border: 1px solid #000;
   background: #fff;
-  font-family: var(--mono-font);
-  font-size: 14px;
-  line-height: 1;
+  color: #000;
+  font: 12px/1 var(--ui-font);
 }
 
-.clio-paint-status-actions {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
+/* ---- Read Sketch result: the sketch beside what was read ------------------ */
 
 /* Side-by-side echo: the sketch on the left, what the model read on the
    right, per the sketch-to-outline evidence draft — a reader who cannot see
-   both at once cannot tell a good read from a bad one. */
+   both at once cannot tell a good read from a bad one. It sits over the page
+   like a small window of its own and goes when it is closed; nothing in it is
+   written anywhere until Apply to Outline. */
 .clio-paint-result {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  width: min(560px, calc(100% - 32px));
+  max-height: calc(100% - 32px);
+  margin: 16px auto 0;
+  padding: 10px;
+  box-sizing: border-box;
+  overflow: auto;
   container-type: inline-size;
-  border: var(--system-border);
-  padding: 8px;
+  background: var(--window-bg);
+  border: var(--window-border);
+  border-radius: var(--window-radius);
+  box-shadow: var(--window-shadow);
 }
 
 .clio-paint-result-echo {
@@ -134,7 +351,7 @@
   gap: 8px;
 }
 
-@container (min-width: 480px) {
+@container (min-width: 440px) {
   .clio-paint-result-echo {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
@@ -151,7 +368,7 @@
   margin: 0;
   padding: 6px;
   border: var(--system-border);
-  background: #fff;
+  background: var(--paper);
   font-family: var(--mono-font);
   font-size: 12px;
   white-space: pre-wrap;
@@ -174,72 +391,256 @@
 
 .clio-paint-result-actions {
   display: flex;
+  justify-content: flex-end;
   gap: 6px;
   margin-top: 8px;
   flex-wrap: wrap;
 }
 
-.clio-paint-pane[data-clio-paint-busy="true"] .clio-paint-toolbar,
-.clio-paint-pane[data-clio-paint-busy="true"] .clio-paint-status-actions {
+.clio-paint-pane[data-clio-paint-busy="true"] .clio-paint-palette,
+.clio-paint-window:has(.clio-paint-pane[data-clio-paint-busy="true"]) .clio-paint-read-button {
   opacity: 0.6;
   pointer-events: none;
 }
 
-/* The paint document is a fixed 480px bitmap. On a phone that is wider than the
-   window, so the canvas is scaled down to fit rather than scrolled -- the
-   pointer maths already divides by the rendered rect (`canvas.width /
-   rect.width` in clio-paint.js), so a scaled canvas still paints the pixel the
-   finger is on, and `image-rendering: pixelated` keeps the bitmap a bitmap.
+/* ---- Popover: read menu, brush shapes, pattern editor, touch choices ------- */
 
-   Width was only half of it. Turn the same phone sideways and height becomes
-   the scarce axis: a 912x420 iPhone Air leaves 284px of pane for a 300px
-   document, an 844x390 leaves 254px, and the width cap says nothing about
-   either -- so the bottom of the paper sat below the screen and had to be
-   scrolled to. A paint document whose edge you cannot see is not a document
-   you can compose in, so the height half follows in the block below -- on a
-   narrower query, for the reason written there. */
-@media (hover: none) and (pointer: coarse) {
-  .clio-paint-canvas-wrap {
-    max-width: 100%;
+/* Dressed from the menu tokens, so it is a menu panel in every appearance. */
+.clio-paint-popover {
+  position: absolute;
+  left: var(--clio-paint-pop-x, 0px);
+  top: var(--clio-paint-pop-y, 0px);
+  min-width: 150px;
+  padding: var(--menu-panel-padding, 2px 0);
+  background: var(--menu-panel-bg);
+  border: var(--menu-panel-border);
+  border-radius: var(--menu-panel-radius);
+  box-shadow: var(--menu-panel-shadow);
+  backdrop-filter: var(--menu-panel-backdrop-filter);
+  -webkit-backdrop-filter: var(--menu-panel-backdrop-filter);
+  color: var(--menu-item-fg);
+}
+
+.clio-paint-popover-item {
+  display: block;
+  width: 100%;
+  min-height: var(--menu-item-min-height, auto);
+  padding: var(--menu-item-padding, 2px 12px 2px 28px);
+  border: 0;
+  border-radius: 0;
+  background: var(--menu-item-bg);
+  box-shadow: none;
+  color: var(--menu-item-fg);
+  font-family: var(--menu-item-font-family, inherit);
+  font-size: var(--menu-item-font-size, inherit);
+  line-height: var(--menu-item-line-height, 1.4);
+  text-align: left;
+  white-space: nowrap;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.clio-paint-popover-item:hover,
+.clio-paint-popover-item:focus-visible {
+  background: var(--menu-item-active-bg);
+  color: var(--menu-item-active-fg);
+  outline: none;
+}
+
+.clio-paint-brush-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 30px);
+  grid-auto-rows: 26px;
+  padding: 4px;
+}
+
+.clio-paint-brush-choice {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--menu-item-fg);
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.clio-paint-brush-choice[aria-pressed="true"] {
+  background: var(--selection-bg);
+  color: var(--selection-fg);
+}
+
+.clio-paint-pattern-editor {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px;
+}
+
+/* The pattern as FatBits: eight by eight, one-pixel gutter between bits. */
+.clio-paint-pattern-cells {
+  display: grid;
+  grid-template-columns: repeat(8, 14px);
+  grid-auto-rows: 14px;
+  border: 1px solid #000;
+  background: #fff;
+  touch-action: none;
+}
+
+.clio-paint-pattern-cell {
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: #fff;
+  box-shadow: inset -1px -1px 0 #fff;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.clio-paint-pattern-cell[aria-pressed="true"] {
+  background: #000;
+}
+
+.clio-paint-pattern-preview {
+  display: block;
+  width: 72px;
+  height: 56px;
+  border: 1px solid #000;
+  background: var(--clio-paint-pattern) 0 0 / 8px 8px;
+  image-rendering: pixelated;
+}
+
+.clio-paint-popover-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 0 8px 8px;
+}
+
+/* MacPaint 2.0's torn-off pattern palette: five across, eight down, the
+   current pattern spanning the first two cells. */
+.clio-paint-touch-patterns {
+  display: grid;
+  grid-template-columns: repeat(5, 34px);
+  grid-auto-rows: 24px;
+  gap: 2px;
+  padding: 4px;
+}
+
+.clio-paint-touch-patterns .clio-paint-touch-current {
+  grid-column: span 2;
+}
+
+.clio-paint-touch-patterns .clio-paint-pattern {
+  border: 1px solid var(--ink);
+}
+
+.clio-paint-touch-width-choice {
+  width: 120px;
+  height: 24px;
+}
+
+/* ---- Phones and narrow windows: the same palette, turned on its side ------- */
+
+/* Narrower than a desk window can hold the tool column, the palette moves
+   under the page and transposes: two rows of ten, each column still the same
+   pair of tools, so the right five columns read hollow over filled. The
+   pattern bar and the width box fold into two buttons on a touch bar, beside
+   Undo and Redo — a phone has no Command-Z. */
+@container (max-width: 559px) {
+  .clio-paint-patternbar,
+  .clio-paint-widths,
+  .clio-paint-saved {
+    display: none;
   }
 
-  .clio-paint-canvas {
-    max-width: 100%;
-    height: auto;
+  .clio-paint-body {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+    grid-template-areas: "viewport" "palette";
+  }
+
+  .clio-paint-palette {
+    border-right: 0;
+    border-top: var(--system-border);
+  }
+
+  .clio-paint-toolbar {
+    grid-template-columns: none;
+    grid-template-rows: repeat(2, 30px);
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+  }
+
+  .clio-paint-toolbar .clio-paint-tool:nth-child(n) {
+    border-right: var(--system-border);
+    border-bottom: 0;
+  }
+
+  .clio-paint-toolbar .clio-paint-tool:nth-child(odd) {
+    border-bottom: var(--system-border);
+  }
+
+  .clio-paint-toolbar .clio-paint-tool:nth-last-child(-n + 2) {
+    border-right: 0;
+  }
+
+  .clio-paint-touchbar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 6px;
+  }
+
+  .clio-paint-touch-spacer {
+    flex: 1;
+  }
+
+  .clio-paint-touch-swatch,
+  .clio-paint-touch-width {
+    display: flex;
+    align-items: center;
+    width: 44px;
+    height: 26px;
+    padding: 3px;
+    border: var(--system-border);
+    border-radius: 0;
+    background: var(--paper);
+    box-shadow: none;
+    color: var(--ink);
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+  .clio-paint-touch-width {
+    padding: 0 7px;
+  }
+
+  .clio-paint-touch-history {
+    display: grid;
+    place-items: center;
+    min-width: 36px;
+    padding: 0 8px;
   }
 }
 
-/* The height half, and it is deliberately keyed on the phone DEVICE CLASS
-   rather than on the touch class above. Height needs a number to fit into,
-   the number is the pane's, and a size container is the only way to name it --
-   but size containment lays the pane out as if it had no contents, so it is
-   only safe where the pane's height comes from somewhere other than its
-   contents. That is exactly the phone flow: the query below is character for
-   character `phoneViewportQuery` in window-manager.js, which is what puts
-   clioPaint in `mobileFullScreenAppIds` on the shell's grid, so wherever this
-   matches the pane is already grid-sized. Applied one query wider, on the
-   touch class, it collapsed the floating iPad-landscape window to a 20px pane
-   and a 0x0 canvas -- measured, not reasoned. */
+/* The phone device class, character for character `phoneViewportQuery` in
+   window-manager.js (which puts clioPaint in mobileFullScreenAppIds). There the
+   pane's height comes from the shell, not from its contents, so the desk-window
+   floor has to go: a 390px-tall landscape phone has no room for it, and the
+   page would sit below the screen. The tool column scrolls if it has to. */
 @media (max-width: 860px), (hover: none) and (pointer: coarse) and (max-height: 660px) {
   .clio-paint-pane {
-    /* `.clio-paint-result` above is an inline-size container, which offers no
-       cqh and does not contain the canvas, so 100cqh below is unambiguous. */
-    container-type: size;
+    min-height: 0;
   }
 
-  .clio-paint-canvas {
-    /* Minus the wrap's two border lines: they sit outside the canvas but
-       inside the pane, so they are part of what has to fit. With both axes
-       capped the replaced-element sizing rules do the rest -- the canvas
-       keeps its 8:5 ratio and contains itself in whichever axis runs out
-       first, which is still width in both portrait cells.
-       A cap, deliberately, and not `min-height: 0` on the wrap to let flex
-       shrink it. Shrinking measures the same in an empty window and then
-       fails the moment the result panel opens: the two flex items share the
-       shortfall and the paper collapses to 0x0 (measured, all five cells). A
-       cap is a cap; a shrink is a competition. */
-    max-height: calc(100cqh - (2 * var(--system-control-line)));
-    width: auto;
-    height: auto;
+  .clio-paint-palette {
+    overflow-y: auto;
   }
 }

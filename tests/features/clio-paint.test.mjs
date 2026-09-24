@@ -269,7 +269,7 @@ const freehand = constrainPoint({ x: 10, y: 10 }, { x: 50, y: -5 }, "rect", fals
 test.assert(freehand.x === 50 && freehand.y === -5, "with Shift up the shape goes exactly where the pointer is");
 
 // ---- The wiring: what the window claims, and what it leaves alone ----------
-test.assertIncludes(source, 'data-action="clio-paint-redo"', "the toolbar carries the other half of undo");
+test.assertIncludes(source, 'data-action="clio-paint-redo"', "the touch bar carries the other half of undo, for a phone that has no Command-Z");
 test.assertIncludes(source, '"clio-paint-redo",', "Redo is a command like every other Paint command");
 test.assert(
   en.includes("clio_paint_nothing_to_redo:") && zh.includes("clio_paint_nothing_to_redo:"),
@@ -330,6 +330,52 @@ test.assertMatches(
   /function handleClioPaintKeydown\(event\)\s*\{[\s\S]{0,400}?if \(event\.defaultPrevented\) return;/,
   "and Delete, Escape and the arrows stand back from a key an open menu or dialog already answered"
 );
+
+// ---- The redesign's structure, executed ------------------------------------
+//
+// The 2026-09-24 redesign rests on three claims about the palette that are
+// rules, not rendering choices, so they run here against the module's own
+// data: twenty tools whose last ten are hollow/filled pairs (the reason the
+// global "Filled" switch could go), thirty-eight patterns led by white and
+// black, and five line widths starting with "no border".
+const toolsLiteral = source.slice(source.indexOf("const CLIO_PAINT_TOOLS = ["), source.indexOf("];", source.indexOf("const CLIO_PAINT_TOOLS = [")) + 2);
+const tools = vm.runInContext(`${toolsLiteral.replace("const CLIO_PAINT_TOOLS =", "")}`, vm.createContext({}));
+test.assert(tools.length === 20, "the palette holds twenty tools, two columns of ten");
+test.assert(new Set(tools).size === 20, "and no tool appears twice");
+const pairs = tools.slice(10);
+test.assert(
+  pairs.every((tool, index) => (index % 2 === 0 ? !tool.endsWith("-filled") && pairs[index + 1] === `${tool}-filled` : true)),
+  "every row of the lower half is one shape, hollow beside filled"
+);
+test.assertNotIncludes(source, "shapeFilled", "no global Filled switch survives beside the filled tools");
+
+const patternSlice = source.slice(source.indexOf("const CLIO_PAINT_BAYER"), source.indexOf("clioPaintState.patterns = clioPaintPatternRows();"));
+const patternContext = vm.createContext({});
+vm.runInContext(patternSlice, patternContext);
+const patterns = vm.runInContext("clioPaintPatternRows()", patternContext);
+test.assert(patterns.length === 38, "the pattern palette has MacPaint's thirty-eight cells");
+test.assert(patterns.every((rows) => rows.length === 8 && rows.every((byte) => Number.isInteger(byte) && byte >= 0 && byte <= 255)), "each pattern is eight rows of one byte");
+test.assert(patterns[0].every((byte) => byte === 0) && patterns[1].every((byte) => byte === 255), "white and black lead the palette");
+test.assert(new Set(patterns.map((rows) => rows.join())).size === 38, "no two cells hold the same pattern");
+test.assertMatches(source, /const CLIO_PAINT_LINE_WIDTHS = \[0, 1, 2, 3, 5\];/, "the width box offers no border and four widths");
+
+// ---- A saved picture opens at its own size ----------------------------------
+//
+// Found while designing the three papers: the loader drew every saved PNG into
+// whatever size the canvas already had, so a 576x720 page would have come back
+// squeezed into a 480x300 strip. The canvas takes the picture's size.
+const loadBody = source.slice(source.indexOf("function loadClioPaintRecord"), source.indexOf("function clioPaintBlankCanvas"));
+test.assertIncludes(loadBody, "image.naturalWidth", "loading reads the picture's own width");
+test.assertMatches(loadBody, /canvas\.width = width;\s*canvas\.height = height;/, "and sizes the document to it before drawing");
+test.assertNotIncludes(loadBody, "drawImage(image, 0, 0, canvas.width, canvas.height)", "instead of stretching it to the canvas it found");
+for (const paper of ["clio_paint_paper_banner", "clio_paint_paper_screen", "clio_paint_paper_page"]) {
+  test.assert(en.includes(`${paper}:`) && zh.includes(`${paper}:`), `${paper} is named in both languages`);
+}
+
+// ---- The menu's check marks come from the module ----------------------------
+test.assertIncludes(windowManager, "btn.dataset.clioPaintCheck", "updateMenuState asks one question for every ClioPaint check mark");
+test.assertIncludes(windowManager, "window.AISystem6ClioPaint?.menuChecked?.(btn.dataset.clioPaintCheck)", "and the module answers it, so an unloaded module marks nothing");
+test.assertIncludes(source, "menuChecked: clioPaintMenuChecked", "the module exposes that answer");
 
 // The JS Paint borrowings are recorded where the mechanism is, so the next
 // reader knows why the shape is what it is.

@@ -3,8 +3,8 @@ import { createFeatureTest, read, exists } from "../helpers/feature-test-harness
 
 const test = createFeatureTest("big-sur-icon-assets");
 const window = {};
-vm.runInNewContext(read("app/core/theme-registry.js"), { window });
-const art = window.AISystem6Theme.getAuthoringMetadata("big-sur").art;
+vm.runInNewContext(read("app/features/theme-authoring.js"), { window });
+const art = window.AISystem6ThemeAuthoring.get("big-sur").art;
 test.assert(art.dir === "big-sur" && art.ext === "png" && art.appearances.join() === "default", "Big Sur owns its default-only PNG family");
 const source = read("app/features/theme-lab.js");
 const start = source.indexOf("  function compactHintSource(themeId, id) {");

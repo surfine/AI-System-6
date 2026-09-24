@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Field Notes share card source - screenshot me at 1200x630</title>
+<!-- Not linked from the site. Renders the two Field Notes share cards,
+     img/og-history.png (?lang=en) and img/og-history-zh.png (?lang=zh), with
+     npm run site:render-og. The card wears the essay's own paper face, not an
+     era skin: it has to read at the size a chat app shows a link preview. -->
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1200px; height: 630px; overflow: hidden; }
+  body {
+    background: #f6f4ef;
+    color: #1d1c1a;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", sans-serif;
+    position: relative;
+  }
+  .rule { position: absolute; left: 0; top: 0; bottom: 0; width: 14px; background: #2554c7; }
+  .card { position: absolute; inset: 0 0 0 14px; padding: 64px 80px 0 86px; }
+  .label {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 21px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #6b6760;
+  }
+  h1 {
+    font-family: ui-serif, "New York", "Iowan Old Style", Georgia, "Songti SC", STSong, serif;
+    font-weight: 400;
+    font-size: 88px;
+    line-height: 1.06;
+    letter-spacing: -0.015em;
+    margin: 30px 0 26px;
+  }
+  :lang(zh) h1 { font-size: 92px; line-height: 1.12; letter-spacing: 0; }
+  .epigraph {
+    font-family: ui-serif, "New York", "Iowan Old Style", Georgia, "Songti SC", STSong, serif;
+    font-style: italic;
+    font-size: 30px;
+    color: #45423c;
+  }
+  .foot {
+    position: absolute;
+    left: 86px;
+    right: 80px;
+    bottom: 54px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    border-top: 2px solid rgba(29, 28, 26, 0.12);
+    padding-top: 24px;
+  }
+  .eras { display: flex; gap: 18px; list-style: none; }
+  .eras li { display: grid; justify-items: center; gap: 6px; }
+  .eras img { width: 44px; height: 44px; }
+  .eras img.px { image-rendering: pixelated; }
+  .eras b { font: 500 15px/1 ui-monospace, "SF Mono", Menlo, monospace; color: #6b6760; }
+  .where { text-align: right; }
+  .where strong { display: block; font-size: 26px; font-weight: 600; }
+  .where span { font: 19px/1.4 ui-monospace, "SF Mono", Menlo, monospace; color: #6b6760; }
+</style>
+</head>
+<body>
+<div class="rule"></div>
+<div class="card">
+  <p class="label" data-en="AI System 6 Field Notes · No. 001" data-zh="AI System 6 往事 · 第 001 篇"></p>
+  <h1 data-en="The computer used to<br>wait for you." data-zh="电脑，<br>曾经是会等你的。"></h1>
+  <p class="epigraph" data-en="A computer is a bicycle for the mind." data-zh="电脑是思想的自行车。"></p>
+</div>
+<div class="foot">
+  <ol class="eras">
+    <li><img class="px" src="img/themes/classic/teachText.svg" alt=""><b>1988</b></li>
+    <li><img class="px" src="img/themes/platinum/teachText.png" alt=""><b>1999</b></li>
+    <li><img src="img/themes/aqua/teachText.png" alt=""><b>2002</b></li>
+    <li><img src="img/themes/snow-leopard/teachText.png" alt=""><b>2009</b></li>
+    <li><img src="img/themes/yosemite/teachText.png" alt=""><b>2014</b></li>
+    <li><img src="img/themes/big-sur/teachText.png" alt=""><b>2020</b></li>
+    <li><img src="img/themes/liquid-glass/teachText.png" alt=""><b>2026</b></li>
+  </ol>
+  <p class="where"><strong data-en="Seven chapters, every date sourced" data-zh="七章往事，每个年份都有出处"></strong><span data-en="aisystem6.pages.dev/history" data-zh="aisystem6.pages.dev/history/zh-CN"></span></p>
+</div>
+<script>
+  const zh = new URLSearchParams(location.search).get("lang") === "zh";
+  document.documentElement.lang = zh ? "zh-CN" : "en";
+  document.querySelectorAll("[data-en]").forEach((el) => {
+    el.innerHTML = zh ? el.dataset.zh : el.dataset.en;
+  });
+</script>
+</body>
+</html>
